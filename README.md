@@ -1,10 +1,13 @@
 # dMATH - Formal Verification Tools
 
+![Status](https://img.shields.io/badge/status-preview-orange)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+
 Formal verification and theorem proving tools from Dropbox.
 
 ## Thesis
 
-Software correctness shouldn't be optional. These tools bring formal methods—SMT solving, model checking, neural network verification, and theorem proving—into practical reach for everyday development.
+**If you can't prove it, you don't know it.** These tools make mathematical proof practical for software: SMT solvers that check your constraints, model checkers that explore your state space, and theorem provers that verify your logic. From neural network robustness to distributed system correctness, we're building the infrastructure to know—not just believe—that code works.
 
 ## Projects
 
