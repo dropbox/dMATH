@@ -13,7 +13,7 @@ Formal verification and theorem proving tools.
 
 | Project | Description | Status |
 |---------|-------------|--------|
-| **z4** | Z3 ported to Rust. SAT/SMT queries, constraint solving, proving code correct. | Preview |
+| **z4** | Z3 ported to Rust. SAT/SMT queries, constraint solving, proving code correct. | Usable |
 | **tla2** | TLA+ 2.0 in Rust. Distributed system specs, temporal logic, model checking. | Preview |
 | **gamma-crown** | α,β-CROWN NN verifier. Prove neural network properties (robustness, safety). | Preview |
 | **kani_fast** | Kani fork. Bounded model checking of Rust code. | Preview |
