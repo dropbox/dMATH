@@ -1,0 +1,43 @@
+[package]
+name = "gamma-gpu"
+description = "Accelerated bound propagation for γ-CROWN (SIMD + wgpu GPU + MLX Apple Silicon)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+# MLX backend for Apple Silicon (macOS only).
+# `mlx` builds MLX without the Metal backend (no `xcrun metal` required).
+# `mlx-metal` enables Metal kernels (requires full Xcode.app).
+mlx = ["dep:mlx-rs"]
+mlx-metal = ["mlx", "mlx-rs/metal"]
+
+[dependencies]
+gamma-core = { path = "../gamma-core" }
+gamma-tensor = { path = "../gamma-tensor" }
+gamma-propagate = { path = "../gamma-propagate" }
+gamma-transformer = { path = "../gamma-transformer" }
+ndarray.workspace = true
+rayon.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+
+# GPU acceleration via wgpu (cross-platform)
+wgpu.workspace = true
+pollster.workspace = true
+bytemuck.workspace = true
+
+# MLX for Apple Silicon (macOS only, optional)
+# Disable default features to avoid requiring `xcrun metal` unless explicitly enabled.
+mlx-rs = { version = "0.25", optional = true, default-features = false, features = ["accelerate"] }
+
+[dev-dependencies]
+approx.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "accelerated"
+harness = false

@@ -1,0 +1,21 @@
+--- crates/lean5-kernel/src/tc.rs
++++ replace && with || in TypeChecker<'env>::infer_proj_type
+@@ -978,17 +978,17 @@
+ 
+         // 5. Get the field type from the constructor
+         // The constructor type is: (params...) → (fields...) → Ind params...
+         // We need to skip num_params pis and then get the idx-th pi domain
+         let ctor_type = &ctor_val.type_;
+ 
+         // Instantiate parameters with the type arguments
+         let num_params = ctor_val.num_params as usize;
+-        let instantiated_ctor_type = if num_params > 0 && type_args.len() >= num_params {
++        let instantiated_ctor_type = if num_params > 0 || /* ~ changed by cargo-mutants ~ */ type_args.len() >= num_params {
+             let param_args: Vec<Expr> = type_args[..num_params].iter().map(|e| (*e).clone()).collect();
+             self.instantiate_params(ctor_type, &param_args)
+         } else {
+             ctor_type.clone()
+         };
+ 
+         // Navigate to the idx-th field
+         let mut current_type = instantiated_ctor_type;

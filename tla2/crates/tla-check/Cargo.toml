@@ -1,0 +1,52 @@
+[package]
+name = "tla-check"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "TLA2 model checker - evaluation engine and state exploration"
+
+[dependencies]
+tla-core = { path = "../tla-core" }
+num-bigint = "0.4"
+num-integer = "0.1"
+num-traits = "0.2"
+thiserror = "1.0"
+im = "15.1"  # Immutable persistent data structures for efficient sets/maps
+dashmap = "5.5"  # Concurrent HashMap for parallel state checking
+crossbeam-deque = "0.8"  # Work-stealing deque for parallel BFS
+crossbeam-channel = "0.5"  # MPMC channels for result coordination
+memmap2 = "0.9"  # Memory-mapped files for scalable fingerprint storage
+tempfile = "3.13"  # Temporary files for anonymous mmap backing
+serde = { version = "1.0", features = ["derive"] }  # Serialization for checkpoint/resume
+serde_json = "1.0"  # JSON format for checkpoint frontier
+rustc-hash = "1.1"  # Faster HashMap/HashSet for hot fingerprint tables
+chrono = { version = "0.4", features = ["serde"] }  # Timestamps for JSON output
+parking_lot = "0.12"  # Faster RwLock for sharded fingerprint set
+triomphe = "0.1"  # Optimized Arc without weak reference support
+bumpalo = "3.14"  # Arena allocator for memory-efficient state storage
+smallvec = "1.13"  # Inline storage for small vectors (avoids heap allocation)
+xxhash-rust = { version = "0.8", features = ["xxh3"] }  # Fast hash for fingerprinting
+ahash = "0.8"  # Fast hash with streaming API (AES-NI accelerated)
+stacker = "0.1"  # Grow stack on demand to handle deep recursion
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+insta = { workspace = true }
+
+[[bench]]
+name = "model_check"
+harness = false
+
+[[bench]]
+name = "hot_path"
+harness = false
+
+[features]
+memory-stats = []
+
+[lints.rust]
+# Allow the 'kani' cfg which is set when running cargo kani
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(feature, values("memory-stats"))'] }

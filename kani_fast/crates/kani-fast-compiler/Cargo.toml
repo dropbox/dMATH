@@ -1,0 +1,70 @@
+# Copyright Kani Fast Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+[package]
+name = "kani-fast-compiler"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/dropbox/dMATH/kani_fast"
+description = "Rustc driver for Kani Fast verification - captures MIR and encodes to CHC"
+publish = false
+
+# This crate uses rustc internal APIs via rustc_private
+# Requires nightly Rust with rustc-dev component
+[lib]
+crate-type = ["dylib"]
+
+[[bin]]
+name = "kani-fast-driver"
+path = "src/bin/driver.rs"
+
+[dependencies]
+# Internal crates - paths relative to this crate
+kani-fast-chc = { path = "../kani-fast-chc" }
+kani-fast-kinduction = { path = "../kani-fast-kinduction" }
+kani_metadata = { path = "kani_metadata" }
+
+# Z4 native CHC solver (no subprocess needed!)
+z4-chc = { path = "../../../z4/crates/z4-chc" }
+
+# For CLI argument parsing (required by args.rs from Kani)
+clap = { version = "4.4.11", features = ["derive", "cargo"] }
+
+# For enum string conversion (required by args.rs from Kani)
+strum = "0.27.1"
+strum_macros = "0.27.1"
+
+# For logging and diagnostics
+tracing = { version = "0.1", features = ["max_level_trace", "release_max_level_debug"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json", "fmt"] }
+tracing-tree = "0.4.0"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+# Lazy static for global state
+lazy_static = "1.4"
+
+# Additional dependencies for kani_middle (from Kani)
+syn = { version = "2.0.72", features = ["parsing", "extra-traits"] }
+quote = "1.0.36"
+itertools = "0.14"
+regex = "1.11.1"
+sha1-checked = "0.10.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+indexmap = { version = "2.7.1", features = ["serde"] }
+tempfile = "3"
+
+# Note: rustc_* dependencies are provided by the compiler itself when building
+# with the nightly toolchain and rustc-dev component installed.
+# They don't appear in Cargo.toml but are accessed via extern crate.
+
+[features]
+default = []
+
+[package.metadata.rust-analyzer]
+# This package uses rustc crates
+rustc_private = true
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(feature, values(\"cprover\", \"llbc\"))"] }

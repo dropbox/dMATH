@@ -1,0 +1,112 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/gamma-core",
+    "crates/gamma-tensor",
+    "crates/gamma-propagate",
+    "crates/gamma-transformer",
+    "crates/gamma-onnx",
+    "crates/gamma-cli",
+    "crates/gamma-gpu",
+    "crates/gamma-smt",
+    "crates/gamma-python",
+]
+# Exclude Python extension from default builds (use maturin instead)
+default-members = [
+    "crates/gamma-core",
+    "crates/gamma-tensor",
+    "crates/gamma-propagate",
+    "crates/gamma-transformer",
+    "crates/gamma-onnx",
+    "crates/gamma-cli",
+    "crates/gamma-gpu",
+    "crates/gamma-smt",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Andrew Yates <ayates@dropbox.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/dropbox/dMATH/gamma-crown"
+rust-version = "1.75"
+
+[workspace.dependencies]
+# Core
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Tensor operations - matrixmultiply provides fast matrix ops
+# For maximum performance, BLAS can be enabled but requires system-specific setup
+ndarray = { version = "0.16", features = ["rayon", "serde", "matrixmultiply-threading"] }
+
+# High-performance linear algebra (competitive with BLAS, pure Rust)
+faer = "0.21"
+num-traits = "0.2"
+rayon = "1.10"
+libm = "0.2"
+rand = "0.9"
+
+# GPU acceleration
+wgpu = "24"  # Requires Rust 1.76+, compatible with our 1.91.1
+pollster = "0.4"  # For blocking on async wgpu calls
+bytemuck = { version = "1.20", features = ["derive"] }
+
+# ONNX support
+ort = "2.0.0-rc.10"  # ONNX Runtime bindings
+prost = "0.13"
+
+# SafeTensors support
+safetensors = "0.7"
+
+# PyTorch support (for loading .pt/.pth files)
+candle-core = { version = "0.9", default-features = false }
+
+# CoreML support (for loading .mlpackage/.mlmodel files)
+coreml-proto = "0.1"
+
+# GGUF support (for loading llama.cpp .gguf files)
+gguf = "0.1"
+
+# Memory-mapped file I/O (for efficient large model loading)
+memmap2 = "0.9"
+
+# Zip archive support (for PyTorch nested models)
+zip = "4.2"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Testing
+approx = "0.5"
+proptest = "1"
+
+# NumPy interop
+ndarray-npy = "0.9"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Half-precision floats
+half = { version = "2.4", features = ["num-traits", "serde"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.bench]
+lto = true
+codegen-units = 1
+
+[patch.crates-io]
+# mlx-sys defaults to building Metal kernels which requires `xcrun metal` (full Xcode.app).
+# We vendor mlx-sys to make Metal opt-in via `mlx-sys/metal` so `--features mlx` can build
+# with Command Line Tools only.
+mlx-sys = { path = "vendor/mlx-sys" }

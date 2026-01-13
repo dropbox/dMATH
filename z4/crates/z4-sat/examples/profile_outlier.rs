@@ -1,0 +1,80 @@
+//! Profile slow outlier cases to understand performance gaps
+
+use std::fs;
+use std::time::Instant;
+use z4_sat::{parse_dimacs, SolveResult, Solver};
+
+fn profile_file(path: &str) {
+    let content = match fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("{}: ERROR - {}", path, e);
+            return;
+        }
+    };
+    let formula = parse_dimacs(&content).expect("parse");
+
+    let mut solver = Solver::new(formula.num_vars);
+    for c in &formula.clauses {
+        solver.add_clause(c.clone());
+    }
+
+    let start = Instant::now();
+    let result = solver.solve();
+    let elapsed = start.elapsed();
+
+    let result_status = match result {
+        SolveResult::Sat(_) => "SAT",
+        SolveResult::Unsat => "UNSAT",
+        SolveResult::Unknown => "UNKNOWN",
+    };
+
+    // Get statistics
+    let conflicts = solver.num_conflicts();
+    let restarts = solver.num_restarts();
+    let decisions = solver.num_decisions();
+    let propagations = solver.num_propagations();
+
+    println!("{}", path);
+    println!(
+        "  Result: {}  Time: {:.1}ms",
+        result_status,
+        elapsed.as_secs_f64() * 1000.0
+    );
+    println!(
+        "  conflicts: {}  restarts: {}  decisions: {}  propagations: {}",
+        conflicts, restarts, decisions, propagations
+    );
+    if conflicts > 0 {
+        println!(
+            "  conflicts/restart: {:.0}  props/conflict: {:.1}",
+            conflicts as f64 / restarts.max(1) as f64,
+            propagations as f64 / conflicts as f64
+        );
+    }
+    println!();
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() > 1 {
+        // Profile specific files from command line
+        for path in &args[1..] {
+            profile_file(path);
+        }
+    } else {
+        // Profile current outliers (from verbose benchmark run)
+        println!("=== Slow outliers (>10x slower than CaDiCaL) ===\n");
+        profile_file("benchmarks/satlib/uf250/uf250-029.cnf"); // 30.85x
+        profile_file("benchmarks/satlib/uf250/uf250-054.cnf"); // 25.13x
+        profile_file("benchmarks/satlib/uf250/uf250-09.cnf"); // 16.01x
+        profile_file("benchmarks/satlib/uf250/uf250-077.cnf"); // 6.37x
+        profile_file("benchmarks/satlib/uf250/uf250-07.cnf"); // 4.95x
+
+        println!("=== Fast cases (Z4 wins, <0.20x) ===\n");
+        profile_file("benchmarks/satlib/uf250/uf250-010.cnf"); // 0.17x
+        profile_file("benchmarks/satlib/uf250/uf250-03.cnf"); // 0.15x
+        profile_file("benchmarks/satlib/uf250/uf250-032.cnf"); // 0.16x
+    }
+}

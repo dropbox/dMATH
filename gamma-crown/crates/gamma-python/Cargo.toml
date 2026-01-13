@@ -1,0 +1,33 @@
+[package]
+name = "gamma-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Python bindings for γ-CROWN neural network verification"
+
+[lib]
+name = "gamma"
+crate-type = ["cdylib"]
+# Disable rustdoc for this cdylib - Python users use docstrings, not rustdoc.
+# Also avoids doc filename collision with gamma-cli's `gamma` binary.
+doc = false
+
+[dependencies]
+pyo3 = { version = "0.27", features = ["extension-module"] }
+gamma-onnx = { path = "../gamma-onnx" }
+gamma-core = { path = "../gamma-core" }
+gamma-propagate = { path = "../gamma-propagate" }
+gamma-tensor = { path = "../gamma-tensor" }
+ndarray = { workspace = true }
+
+# For numpy interop
+numpy = "0.27"
+
+[features]
+default = ["pytorch", "gguf", "coreml"]
+# Enable PyTorch weight file loading (.pt, .pth, .bin)
+pytorch = ["gamma-onnx/pytorch"]
+# Enable GGUF weight file loading (.gguf)
+gguf = ["gamma-onnx/gguf"]
+# Enable CoreML weight file loading (.mlmodel, .mlpackage)
+coreml = ["gamma-onnx/coreml"]
