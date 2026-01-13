@@ -7,7 +7,7 @@ Formal verification and theorem proving tools from Dropbox.
 
 ## Thesis
 
-**If you can't prove it, you don't know it.** These tools make mathematical proof practical for software: SMT solvers that check your constraints, model checkers that explore your state space, and theorem provers that verify your logic. From neural network robustness to distributed system correctness, we're building the infrastructure to know—not just believe—that code works.
+**Proof is the only scalable code review.** AI generates code faster than humans can review it. But we don't need to understand the code or remember the proof—we just need to verify that a proof exists. These tools make verification practical: SMT solvers check constraints, model checkers explore state spaces, theorem provers verify logic. The result is durable progress without growing context windows or trusting code we haven't read.
 
 ## Projects
 
