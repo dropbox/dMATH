@@ -10,14 +10,15 @@ Software correctness shouldn't be optional. These tools bring formal methods—S
 
 | Project | Description | Status |
 |---------|-------------|--------|
-| **z4** | SMT (Satisfiability Modulo Theories) solver in Rust | Planned |
-| **gamma-crown** | Neural network verification using α,β-CROWN | Planned |
-| **tla2** | TLA+ specification language tooling | Planned |
-| **lean5** | Theorem prover implementation | Planned |
-
-## Status
-
-These projects are in **preview** status. APIs may change.
+| **z4** | Z3 ported to Rust. SAT/SMT queries, constraint solving, proving code correct. | Planned |
+| **tla2** | TLA+ 2.0 in Rust. Distributed system specs, temporal logic, model checking. | Planned |
+| **gamma-crown** | α,β-CROWN NN verifier. Prove neural network properties (robustness, safety). | Planned |
+| **kani_fast** | Kani fork. Bounded model checking of Rust code. | Planned |
+| **lean5** | Lean4 in Rust. Theorem proving, type theory, mathematical proofs. | Planned |
+| **dashprove** | Orchestrates multiple provers. | Planned |
+| **zksolve** | R1CS/ZK constraint solver. Witness generation, proving. | Planned |
+| **proverif-rs** | Dolev-Yao protocol verification. Security protocol proofs. | Planned |
+| **galg** | Gröbner basis (F4/F5). Polynomial system solving. | Planned |
 
 ## License
 
