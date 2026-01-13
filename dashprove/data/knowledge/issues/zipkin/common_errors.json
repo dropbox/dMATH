@@ -1,0 +1,188 @@
+{
+  "tool": "zipkin",
+  "version": "2.24+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|ECONNREFUSED|Unable to connect|connection reset",
+      "message": "Cannot connect to Zipkin server",
+      "cause": "Zipkin server not running or network issue",
+      "solutions": [
+        {
+          "approach": "Check server status",
+          "code": "# Docker\ndocker ps | grep zipkin\n\n# Check health endpoint\ncurl http://localhost:9411/health",
+          "when": "Server may not be running"
+        },
+        {
+          "approach": "Start Zipkin server",
+          "code": "# Quick start with Docker\ndocker run -d -p 9411:9411 openzipkin/zipkin\n\n# Or with Java\njava -jar zipkin-server-2.24.0-exec.jar",
+          "when": "Need to start server"
+        },
+        {
+          "approach": "Check firewall/network",
+          "code": "# Test connectivity\ntelnet localhost 9411\nnc -zv zipkin-host 9411",
+          "when": "Network may be blocking"
+        }
+      ]
+    },
+    {
+      "id": "span_not_reported",
+      "pattern": "span.*not reported|dropped spans|failed to report|Reporter queue full",
+      "message": "Spans not being sent to Zipkin",
+      "cause": "Reporter misconfigured, queue full, or sampling dropping spans",
+      "solutions": [
+        {
+          "approach": "Check reporter config",
+          "code": "// Java (Brave)\nSpanHandler handler = AsyncZipkinSpanHandler.create(\n    URLConnectionSender.create(\"http://localhost:9411/api/v2/spans\")\n);\n\n// Verify endpoint URL is correct",
+          "when": "Reporter misconfigured"
+        },
+        {
+          "approach": "Check sampling rate",
+          "code": "// Set to 100% for debugging\nSampler sampler = Sampler.ALWAYS_SAMPLE;\n\n// Java Spring\nspring.sleuth.sampler.probability=1.0",
+          "when": "Sampling dropping spans"
+        },
+        {
+          "approach": "Increase reporter queue",
+          "code": "AsyncZipkinSpanHandler.newBuilder(sender)\n    .queuedMaxSpans(10000)\n    .messageMaxBytes(5 * 1024 * 1024)\n    .build();",
+          "when": "High throughput dropping spans"
+        },
+        {
+          "approach": "Check flush timing",
+          "code": "// Ensure spans are flushed before process exits\ntracing.close();\n// Or use sync reporter for testing",
+          "when": "Process exiting before flush"
+        }
+      ]
+    },
+    {
+      "id": "storage_error",
+      "pattern": "Elasticsearch|Cassandra|MySQL|storage error|failed to store",
+      "message": "Zipkin storage backend error",
+      "cause": "Backend database unreachable or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check Elasticsearch",
+          "code": "# Verify ES is healthy\ncurl http://localhost:9200/_cluster/health\n\n# Zipkin config\nSTORAGE_TYPE=elasticsearch\nES_HOSTS=http://localhost:9200",
+          "when": "Using Elasticsearch backend"
+        },
+        {
+          "approach": "Check Cassandra",
+          "code": "# Verify Cassandra\ncqlsh -e 'describe keyspaces;'\n\n# Zipkin config\nSTORAGE_TYPE=cassandra3\nCASSANDRA_CONTACT_POINTS=localhost",
+          "when": "Using Cassandra backend"
+        },
+        {
+          "approach": "Use in-memory for testing",
+          "code": "# Default - no config needed\nSTORAGE_TYPE=mem\n\n# Warning: data lost on restart",
+          "when": "Testing/development"
+        },
+        {
+          "approach": "Check storage indices",
+          "code": "# ES index pattern\ncurl http://localhost:9200/_cat/indices/zipkin*\n\n# May need to create index template",
+          "when": "Missing indices"
+        }
+      ]
+    },
+    {
+      "id": "no_traces",
+      "pattern": "no traces|traces not appearing|empty results|no data",
+      "message": "Traces not showing in Zipkin UI",
+      "cause": "Traces not being collected, wrong time range, or service filter",
+      "solutions": [
+        {
+          "approach": "Check time range",
+          "code": "# Zipkin UI defaults to last 15 minutes\n# Adjust lookback or ensure recent activity",
+          "when": "Traces outside default window"
+        },
+        {
+          "approach": "Verify instrumentation",
+          "code": "// Check span is being created and finished\nSpan span = tracer.nextSpan().name(\"my-operation\").start();\ntry (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {\n    // do work\n} finally {\n    span.finish();  // Must call finish!\n}",
+          "when": "Spans not properly created"
+        },
+        {
+          "approach": "Check service name filter",
+          "code": "// Ensure service name is set\nTracing.newBuilder()\n    .localServiceName(\"my-service\")\n    .build();\n\n# Then filter by 'my-service' in UI",
+          "when": "Wrong service selected in UI"
+        },
+        {
+          "approach": "Use API directly",
+          "code": "# Query traces via API\ncurl 'http://localhost:9411/api/v2/traces?serviceName=my-service&limit=10'\n\n# Check if data exists",
+          "when": "UI issue vs data issue"
+        }
+      ]
+    },
+    {
+      "id": "trace_id_mismatch",
+      "pattern": "trace.*not propagated|missing parent|orphan span|context not propagated",
+      "message": "Trace context not propagating between services",
+      "cause": "Context propagation not configured or headers not forwarded",
+      "solutions": [
+        {
+          "approach": "Configure propagation",
+          "code": "// Use B3 propagation (default)\nTracing.newBuilder()\n    .propagationFactory(B3Propagation.FACTORY)\n    .build();\n\n// Or W3C Trace Context\n.propagationFactory(W3CPropagation.FACTORY)",
+          "when": "Propagation not configured"
+        },
+        {
+          "approach": "Forward headers",
+          "code": "// Ensure these headers are forwarded:\n// B3: X-B3-TraceId, X-B3-SpanId, X-B3-ParentSpanId, X-B3-Sampled\n// W3C: traceparent, tracestate\n\n// In HTTP client, inject context\ninjector.inject(span.context(), request);",
+          "when": "Headers not forwarded"
+        },
+        {
+          "approach": "Check instrumentation libraries",
+          "code": "<!-- Spring Cloud Sleuth auto-instruments -->\n<dependency>\n    <groupId>org.springframework.cloud</groupId>\n    <artifactId>spring-cloud-starter-sleuth</artifactId>\n</dependency>\n<dependency>\n    <groupId>org.springframework.cloud</groupId>\n    <artifactId>spring-cloud-sleuth-zipkin</artifactId>\n</dependency>",
+          "when": "Manual instrumentation missing"
+        }
+      ]
+    },
+    {
+      "id": "high_latency",
+      "pattern": "high latency|slow|performance|query timeout",
+      "message": "Zipkin queries slow or timing out",
+      "cause": "Large data volume or storage not optimized",
+      "solutions": [
+        {
+          "approach": "Add indices",
+          "code": "# For Elasticsearch, ensure mappings\ncurl -X PUT 'http://localhost:9200/_template/zipkin' -H 'Content-Type: application/json' -d @zipkin-template.json",
+          "when": "Missing search indices"
+        },
+        {
+          "approach": "Increase storage resources",
+          "code": "# Elasticsearch heap\nES_JAVA_OPTS=\"-Xms4g -Xmx4g\"\n\n# Or scale cluster",
+          "when": "Storage under-resourced"
+        },
+        {
+          "approach": "Configure retention",
+          "code": "# Delete old data\nES_INDEX_REPLICAS=0\nES_INDEX_SHARDS=1\n\n# Use ILM for automatic cleanup\n# Or Cassandra TTL",
+          "when": "Too much historical data"
+        },
+        {
+          "approach": "Reduce sampling",
+          "code": "// Sample 10% in production\nSampler sampler = Sampler.create(0.1f);",
+          "when": "Too many traces being stored"
+        }
+      ]
+    },
+    {
+      "id": "memory_oom",
+      "pattern": "OutOfMemory|heap|GC overhead|memory limit",
+      "message": "Zipkin server out of memory",
+      "cause": "Insufficient heap or too many in-flight spans",
+      "solutions": [
+        {
+          "approach": "Increase heap",
+          "code": "# Docker\ndocker run -e JAVA_OPTS=\"-Xms1g -Xmx2g\" openzipkin/zipkin\n\n# Standalone\njava -Xms1g -Xmx2g -jar zipkin-server.jar",
+          "when": "Heap too small"
+        },
+        {
+          "approach": "Use streaming storage",
+          "code": "# Kafka collector buffers externally\nKAFKA_BOOTSTRAP_SERVERS=localhost:9092\nSTORAGE_TYPE=elasticsearch",
+          "when": "High throughput"
+        },
+        {
+          "approach": "Configure collectors",
+          "code": "# Limit concurrent requests\nCOLLECTOR_HTTP_ENABLED=true\nCOLLECTOR_KAFKA_ENABLED=false  # Use one collector",
+          "when": "Too many collectors"
+        }
+      ]
+    }
+  ]
+}

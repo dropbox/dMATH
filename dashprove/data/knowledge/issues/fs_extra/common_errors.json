@@ -1,0 +1,74 @@
+{
+  "tool": "fs_extra",
+  "category": "file_operations",
+  "common_errors": [
+    {
+      "pattern": "ENOENT: no such file or directory",
+      "meaning": "Source or destination path does not exist",
+      "causes": [
+        "Source path typo or already removed",
+        "Destination parent directory missing",
+        "Relative path resolved from wrong cwd"
+      ],
+      "solutions": [
+        "Verify paths before copy/move",
+        "Create parents: await fs.ensureDir(path.dirname(dest))",
+        "Use absolute paths or process.cwd() awareness"
+      ]
+    },
+    {
+      "pattern": "EEXIST: file already exists|dest already exists",
+      "meaning": "Destination exists when overwrite disabled",
+      "causes": [
+        "copy/move defaults overwrite: false",
+        "ensureFile called on existing directory"
+      ],
+      "solutions": [
+        "Set { overwrite: true } for copy/move if safe",
+        "Remove destination first or rename",
+        "Use ensureDir for directories instead of ensureFile"
+      ]
+    },
+    {
+      "pattern": "EACCES|EPERM: operation not permitted",
+      "meaning": "Insufficient permissions for file system operation",
+      "causes": [
+        "Writing to system-protected path",
+        "Windows read-only attributes/antivirus locks",
+        "Running without elevated privileges"
+      ],
+      "solutions": [
+        "Choose writable output directory",
+        "Adjust permissions or run with required privileges",
+        "Close file handles before overwrite on Windows"
+      ]
+    },
+    {
+      "pattern": "copy.*infinite loop|Maximum call stack size exceeded",
+      "meaning": "Recursive copy into its own descendant",
+      "causes": [
+        "Destination inside source directory",
+        "Symlink cycle followed during copy"
+      ],
+      "solutions": [
+        "Ensure dest not nested under src",
+        "Use { dereference: false } to avoid following symlinks",
+        "Set filter to exclude destination path"
+      ]
+    },
+    {
+      "pattern": "Unexpected token.*in JSON|readJson failed",
+      "meaning": "Invalid JSON content when using readJson/writeJson",
+      "causes": [
+        "File contains comments or trailing commas",
+        "Partial writes leaving corrupt JSON",
+        "Encoding not UTF-8"
+      ],
+      "solutions": [
+        "Sanitize JSON (no comments/trailing commas)",
+        "Write atomically: writeJson with { spaces: 2 } and fs.move temp file",
+        "Ensure file saved as UTF-8"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "tool": "bzip2",
+  "version": "1.0.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_bzip2_format",
+      "pattern": "not in bzip2 format|bad magic number|not a bzip2 file",
+      "message": "File is not bzip2 format",
+      "cause": "Wrong file format or corrupted",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "file filename  # Identify actual format",
+          "when": "Verify type"
+        },
+        {
+          "approach": "Force",
+          "code": "bzip2 -df filename  # Force decompress",
+          "when": "Try anyway"
+        },
+        {
+          "approach": "Try other",
+          "code": "gzip -d filename.gz\nxz -d filename.xz",
+          "when": "Different format"
+        }
+      ]
+    },
+    {
+      "id": "data_integrity_error",
+      "pattern": "Data integrity error|CRC|crc error|corrupted",
+      "message": "Compressed file is corrupted",
+      "cause": "File damaged or incomplete",
+      "solutions": [
+        {
+          "approach": "Test file",
+          "code": "bzip2 -t file.bz2  # Test integrity\nbzip2 -tv file.bz2  # Verbose test",
+          "when": "Check file"
+        },
+        {
+          "approach": "Recovery tool",
+          "code": "bzip2recover file.bz2  # Salvage what's possible",
+          "when": "Partial recovery"
+        },
+        {
+          "approach": "Re-download",
+          "code": "# Get fresh copy\nmd5sum file.bz2",
+          "when": "Get new copy"
+        }
+      ]
+    },
+    {
+      "id": "keep_original",
+      "pattern": "original|keep|preserve|delete",
+      "message": "Original file deleted",
+      "cause": "bzip2 removes original by default",
+      "solutions": [
+        {
+          "approach": "Keep original",
+          "code": "bzip2 -k filename  # Keep source\nbzip2 --keep filename",
+          "when": "Preserve"
+        },
+        {
+          "approach": "To stdout",
+          "code": "bzip2 -c filename > filename.bz2",
+          "when": "Redirect"
+        }
+      ]
+    },
+    {
+      "id": "compression_level",
+      "pattern": "compression|level|block size|faster|smaller",
+      "message": "Adjust compression level",
+      "cause": "Need different speed/size tradeoff",
+      "solutions": [
+        {
+          "approach": "Fast",
+          "code": "bzip2 -1 filename  # 100k block, fastest\nbzip2 --fast filename",
+          "when": "Speed priority"
+        },
+        {
+          "approach": "Best",
+          "code": "bzip2 -9 filename  # 900k block, best compression\nbzip2 --best filename",
+          "when": "Size priority"
+        }
+      ]
+    },
+    {
+      "id": "stdin_stdout",
+      "pattern": "stdin|stdout|pipe|stream",
+      "message": "Compress/decompress from pipe",
+      "cause": "Need to use with pipes",
+      "solutions": [
+        {
+          "approach": "From stdin",
+          "code": "cat file | bzip2 > file.bz2\ncommand | bzip2 -c > output.bz2",
+          "when": "Pipe compress"
+        },
+        {
+          "approach": "To stdout",
+          "code": "bzip2 -dc file.bz2  # Decompress to stdout\nbzcat file.bz2",
+          "when": "Output to pipe"
+        },
+        {
+          "approach": "Both",
+          "code": "bzcat file.bz2 | process | bzip2 > new.bz2",
+          "when": "Process compressed"
+        }
+      ]
+    },
+    {
+      "id": "slow_vs_gzip",
+      "pattern": "slow|gzip|faster|alternative",
+      "message": "bzip2 is slow",
+      "cause": "bzip2 slower than gzip",
+      "solutions": [
+        {
+          "approach": "Use pbzip2",
+          "code": "pbzip2 -p4 filename  # Parallel bzip2, 4 threads\npbzip2 -d file.bz2",
+          "when": "Multi-core"
+        },
+        {
+          "approach": "Use lbzip2",
+          "code": "lbzip2 filename  # Multi-threaded\nlbzip2 -d file.bz2",
+          "when": "Alternative parallel"
+        },
+        {
+          "approach": "Use gzip/xz",
+          "code": "gzip filename  # Faster, less compression\nxz -T0 filename  # Better compression, parallel",
+          "when": "Different tool"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,243 @@
+{
+  "tool": "bandit",
+  "version": "1.7.7",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "b101_assert",
+      "pattern": "B101|assert.*used|Use of assert detected",
+      "message": "Use of assert detected (B101)",
+      "cause": "Assert statements can be stripped in optimized mode",
+      "solutions": [
+        {
+          "approach": "Use explicit exception",
+          "code": "# Instead of:\nassert user_id > 0, \"Invalid user ID\"\n\n# Use:\nif user_id <= 0:\n    raise ValueError(\"Invalid user ID\")",
+          "when": "Security-critical check"
+        },
+        {
+          "approach": "Skip in tests",
+          "code": "# In pyproject.toml:\n[tool.bandit]\nexclude_dirs = [\"tests\", \"test\"]\n\n# Or skip specific test:\nassert x > 0  # nosec B101",
+          "when": "Assert in test code"
+        },
+        {
+          "approach": "Ignore if appropriate",
+          "code": "# If assert is intentional:\nassert isinstance(data, dict)  # nosec B101 - type check only",
+          "when": "Development-only check"
+        }
+      ]
+    },
+    {
+      "id": "b102_exec",
+      "pattern": "B102|exec.*used|Use of exec detected",
+      "message": "Use of exec detected (B102)",
+      "cause": "exec() can execute arbitrary code",
+      "solutions": [
+        {
+          "approach": "Use safer alternatives",
+          "code": "# Instead of:\nexec(user_code)\n\n# Use AST evaluation for safe expressions:\nimport ast\nresult = ast.literal_eval(user_expression)\n\n# Or use restricted execution:\nfrom RestrictedPython import compile_restricted",
+          "when": "User-provided code"
+        },
+        {
+          "approach": "Whitelist operations",
+          "code": "# Define allowed operations:\nALLOWED_OPS = {'add': lambda a, b: a + b}\nop = ALLOWED_OPS.get(user_op)\nif op:\n    result = op(a, b)",
+          "when": "Limited operations needed"
+        }
+      ]
+    },
+    {
+      "id": "b103_chmod",
+      "pattern": "B103|set_bad_file_permissions|chmod.*world.*write",
+      "message": "Potentially insecure file permissions (B103)",
+      "cause": "Setting overly permissive file permissions",
+      "solutions": [
+        {
+          "approach": "Use restrictive permissions",
+          "code": "# Instead of:\nos.chmod(filename, 0o777)  # World-writable!\n\n# Use:\nos.chmod(filename, 0o644)  # Owner rw, others read\nos.chmod(filename, 0o600)  # Owner only",
+          "when": "Regular files"
+        },
+        {
+          "approach": "Set umask",
+          "code": "import os\nold_umask = os.umask(0o077)  # Restrictive default\ntry:\n    create_files()\nfinally:\n    os.umask(old_umask)",
+          "when": "Creating multiple files"
+        }
+      ]
+    },
+    {
+      "id": "b104_hardcoded_bind",
+      "pattern": "B104|hardcoded_bind_all_interfaces|0\\.0\\.0\\.0",
+      "message": "Binding to all interfaces (B104)",
+      "cause": "Server binds to 0.0.0.0, exposing to network",
+      "solutions": [
+        {
+          "approach": "Bind to localhost",
+          "code": "# Instead of:\nserver.bind(('0.0.0.0', 8080))\n\n# For local only:\nserver.bind(('127.0.0.1', 8080))\n\n# Or use config:\nhost = os.environ.get('BIND_HOST', '127.0.0.1')\nserver.bind((host, 8080))",
+          "when": "Development server"
+        },
+        {
+          "approach": "Document if intentional",
+          "code": "# If public binding is needed:\nserver.bind(('0.0.0.0', 8080))  # nosec B104 - intentional public service",
+          "when": "Public service"
+        }
+      ]
+    },
+    {
+      "id": "b105_hardcoded_password",
+      "pattern": "B105|hardcoded_password|password.*=.*['\"]",
+      "message": "Hardcoded password detected (B105)",
+      "cause": "Password or secret stored in source code",
+      "solutions": [
+        {
+          "approach": "Use environment variables",
+          "code": "import os\n\n# Instead of:\npassword = \"secret123\"\n\n# Use:\npassword = os.environ.get('DB_PASSWORD')\nif not password:\n    raise ValueError(\"DB_PASSWORD not set\")",
+          "when": "Production credentials"
+        },
+        {
+          "approach": "Use secrets manager",
+          "code": "from aws_secretsmanager_caching import SecretCache\n\ncache = SecretCache()\nsecret = cache.get_secret_string('my-secret-id')",
+          "when": "Cloud deployment"
+        },
+        {
+          "approach": "Use config file",
+          "code": "import configparser\nimport os\n\nconfig = configparser.ConfigParser()\nconfig.read(os.path.expanduser('~/.myapp/config.ini'))\npassword = config['database']['password']",
+          "when": "Local configuration"
+        }
+      ]
+    },
+    {
+      "id": "b106_hardcoded_sql",
+      "pattern": "B106|hardcoded_password_funcarg|password.*argument",
+      "message": "Hardcoded password in function argument (B106)",
+      "cause": "Password passed as literal string to function",
+      "solutions": [
+        {
+          "approach": "Load from config",
+          "code": "# Instead of:\nconnect(password=\"secret123\")\n\n# Use:\nconnect(password=os.environ['DB_PASSWORD'])",
+          "when": "Database connection"
+        },
+        {
+          "approach": "False positive handling",
+          "code": "# If it's not actually a password:\nmy_function(password_hash=\"abc123\")  # nosec B106 - hash not secret",
+          "when": "Variable named 'password' but isn't"
+        }
+      ]
+    },
+    {
+      "id": "b108_temp_file",
+      "pattern": "B108|hardcoded_tmp_directory|/tmp|tempfile",
+      "message": "Insecure use of temp file (B108)",
+      "cause": "Using predictable temp file paths",
+      "solutions": [
+        {
+          "approach": "Use tempfile module",
+          "code": "import tempfile\n\n# Instead of:\nwith open('/tmp/myfile.txt', 'w') as f:\n    f.write(data)\n\n# Use:\nwith tempfile.NamedTemporaryFile(mode='w', delete=False) as f:\n    f.write(data)\n    temp_path = f.name",
+          "when": "Temp file needed"
+        },
+        {
+          "approach": "Use secure directory",
+          "code": "import tempfile\n\n# Create secure temp directory:\nwith tempfile.TemporaryDirectory() as tmpdir:\n    filepath = os.path.join(tmpdir, 'data.txt')\n    # Work with file\n# Directory auto-deleted",
+          "when": "Multiple temp files"
+        }
+      ]
+    },
+    {
+      "id": "b110_try_except_pass",
+      "pattern": "B110|try_except_pass|except.*:.*pass",
+      "message": "Try-except-pass detected (B110)",
+      "cause": "Silently ignoring exceptions can hide security issues",
+      "solutions": [
+        {
+          "approach": "Log the exception",
+          "code": "import logging\n\ntry:\n    risky_operation()\nexcept Exception as e:\n    logging.warning(f\"Operation failed: {e}\")\n    # Or re-raise if critical",
+          "when": "Need to handle gracefully"
+        },
+        {
+          "approach": "Handle specific exceptions",
+          "code": "try:\n    value = cache.get(key)\nexcept KeyError:\n    value = None  # Expected case\nexcept Exception as e:\n    logging.error(f\"Unexpected cache error: {e}\")\n    raise",
+          "when": "Some exceptions expected"
+        }
+      ]
+    },
+    {
+      "id": "b201_flask_debug",
+      "pattern": "B201|flask_debug_true|debug.*=.*True",
+      "message": "Flask debug mode enabled (B201)",
+      "cause": "Debug mode in production exposes sensitive info",
+      "solutions": [
+        {
+          "approach": "Use environment variable",
+          "code": "import os\n\napp = Flask(__name__)\napp.run(debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')",
+          "when": "Need debug in development"
+        },
+        {
+          "approach": "Use config",
+          "code": "# config.py\nclass ProductionConfig:\n    DEBUG = False\n\nclass DevelopmentConfig:\n    DEBUG = True\n\napp.config.from_object(os.environ.get('APP_CONFIG', 'config.ProductionConfig'))",
+          "when": "Multiple environments"
+        }
+      ]
+    },
+    {
+      "id": "b301_pickle",
+      "pattern": "B301|pickle|Pickle.*deserialization",
+      "message": "Pickle deserialization detected (B301)",
+      "cause": "Pickle can execute arbitrary code during deserialization",
+      "solutions": [
+        {
+          "approach": "Use JSON instead",
+          "code": "import json\n\n# Instead of:\ndata = pickle.loads(untrusted_data)\n\n# Use:\ndata = json.loads(untrusted_data)",
+          "when": "Untrusted data"
+        },
+        {
+          "approach": "Use safer serialization",
+          "code": "# For complex objects:\nimport msgpack\ndata = msgpack.unpackb(raw_data, raw=False)\n\n# Or use protocol buffers, flatbuffers, etc.",
+          "when": "Need binary format"
+        },
+        {
+          "approach": "Validate source",
+          "code": "# If pickle is necessary:\nimport hmac\n\ndef secure_unpickle(data, signature, secret_key):\n    expected_sig = hmac.new(secret_key, data, 'sha256').digest()\n    if hmac.compare_digest(signature, expected_sig):\n        return pickle.loads(data)\n    raise ValueError(\"Invalid signature\")",
+          "when": "Trusted internal data"
+        }
+      ]
+    },
+    {
+      "id": "b303_md5",
+      "pattern": "B303|md5|MD5.*hash",
+      "message": "Use of insecure MD5 hash (B303)",
+      "cause": "MD5 is cryptographically broken",
+      "solutions": [
+        {
+          "approach": "Use SHA-256",
+          "code": "import hashlib\n\n# Instead of:\nhash_val = hashlib.md5(data).hexdigest()\n\n# Use:\nhash_val = hashlib.sha256(data).hexdigest()",
+          "when": "Need secure hash"
+        },
+        {
+          "approach": "Use for non-crypto purposes",
+          "code": "# If just for checksums/dedup:\nimport hashlib\nchecksum = hashlib.md5(data, usedforsecurity=False).hexdigest()  # nosec B303",
+          "when": "Not security-sensitive"
+        }
+      ]
+    },
+    {
+      "id": "b608_sql_injection",
+      "pattern": "B608|hardcoded_sql_expressions|SQL.*injection",
+      "message": "Possible SQL injection (B608)",
+      "cause": "SQL query built from string concatenation",
+      "solutions": [
+        {
+          "approach": "Use parameterized queries",
+          "code": "# Instead of:\ncursor.execute(f\"SELECT * FROM users WHERE id = {user_id}\")\n\n# Use:\ncursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))",
+          "when": "Raw SQL needed"
+        },
+        {
+          "approach": "Use ORM",
+          "code": "from sqlalchemy import select\nfrom models import User\n\n# Instead of raw SQL:\nuser = session.execute(\n    select(User).where(User.id == user_id)\n).scalar_one()",
+          "when": "Using ORM"
+        },
+        {
+          "approach": "Validate identifiers",
+          "code": "# For dynamic column/table names (can't parameterize):\nimport re\n\ndef safe_identifier(name):\n    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name):\n        raise ValueError(\"Invalid identifier\")\n    return name\n\ncolumn = safe_identifier(user_column)\nquery = f\"SELECT {column} FROM users\"  # nosec B608",
+          "when": "Dynamic identifiers"
+        }
+      ]
+    }
+  ]
+}

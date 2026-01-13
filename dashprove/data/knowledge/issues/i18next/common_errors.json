@@ -1,0 +1,122 @@
+{
+  "tool": "i18next",
+  "category": "i18n_localization",
+  "common_errors": [
+    {
+      "pattern": "i18next::translator: missingKey",
+      "meaning": "Translation key not found in any loaded namespace",
+      "causes": [
+        "Typo in translation key",
+        "Namespace not loaded or wrong namespace specified",
+        "JSON file not found or failed to load",
+        "Key exists in default language but not in current language"
+      ],
+      "solutions": [
+        "Check key spelling matches JSON file exactly",
+        "Ensure namespace is loaded with useTranslation('namespace')",
+        "Verify JSON file path in backend configuration",
+        "Add missing key to translation files",
+        "Use fallbackLng to handle missing translations gracefully"
+      ]
+    },
+    {
+      "pattern": "i18next::backendConnector: loading namespace .* for language .* failed",
+      "meaning": "Failed to fetch translation file from backend",
+      "causes": [
+        "Incorrect loadPath configuration",
+        "Translation file does not exist at expected path",
+        "CORS issues when loading from different origin",
+        "Network error or server unavailable"
+      ],
+      "solutions": [
+        "Check loadPath pattern matches your file structure: loadPath: '/locales/{{lng}}/{{ns}}.json'",
+        "Verify file exists at runtime path (check browser network tab)",
+        "Configure CORS headers on server serving translation files",
+        "Use addResourceBundle for bundled translations in production"
+      ]
+    },
+    {
+      "pattern": "React-i18next:: You will need to pass in an i18next instance",
+      "meaning": "i18next not initialized before using useTranslation hook",
+      "causes": [
+        "I18nextProvider not wrapping component tree",
+        "i18next.init() not called before render",
+        "Async initialization not awaited"
+      ],
+      "solutions": [
+        "Wrap app with I18nextProvider: <I18nextProvider i18n={i18n}>",
+        "Use Suspense or wait for i18next.init() promise",
+        "Call i18n.init() in application entry point before ReactDOM.render()"
+      ]
+    },
+    {
+      "pattern": "interpolation value .* is undefined",
+      "meaning": "Variable in translation string not provided",
+      "causes": [
+        "Forgot to pass interpolation values to t() function",
+        "Typo in variable name between translation and code",
+        "Variable is null/undefined at runtime"
+      ],
+      "solutions": [
+        "Pass values: t('greeting', { name: userName })",
+        "Ensure variable names match: 'Hello {{name}}' needs { name: 'value' }",
+        "Use defaultValue for optional interpolations"
+      ]
+    },
+    {
+      "pattern": "Cannot read property 't' of undefined",
+      "meaning": "Translation function not available",
+      "causes": [
+        "useTranslation called outside I18nextProvider",
+        "i18next not initialized",
+        "Component rendered before initialization complete"
+      ],
+      "solutions": [
+        "Ensure component is inside I18nextProvider tree",
+        "Use useSuspense: false and handle loading state",
+        "Add Suspense boundary: <Suspense fallback='Loading...'>"
+      ]
+    },
+    {
+      "pattern": "Circular dependency detected",
+      "meaning": "Translation files reference each other or configuration creates loop",
+      "causes": [
+        "Namespace A references namespace B which references A",
+        "Plugin configuration creates circular initialization"
+      ],
+      "solutions": [
+        "Restructure namespaces to avoid cross-references",
+        "Load shared keys in common namespace",
+        "Review plugin initialization order"
+      ]
+    },
+    {
+      "pattern": "pluralization error|plural_rule",
+      "meaning": "Plural form handling failed",
+      "causes": [
+        "Missing plural keys (_one, _other, etc.)",
+        "Language doesn't have Intl.PluralRules support",
+        "Count value not a number"
+      ],
+      "solutions": [
+        "Add all required plural forms: key_one, key_other (English); key_one, key_few, key_many, key_other (Russian)",
+        "Ensure count is numeric: t('items', { count: Number(value) })",
+        "Add pluralization polyfill for older browsers"
+      ]
+    },
+    {
+      "pattern": "language .* is not preloaded",
+      "meaning": "Attempting to use language before resources loaded",
+      "causes": [
+        "Changed language without loading resources first",
+        "preload option doesn't include target language",
+        "Lazy loading failed"
+      ],
+      "solutions": [
+        "Add to preload array: preload: ['en', 'de', 'fr']",
+        "Await changeLanguage: await i18n.changeLanguage('de')",
+        "Check backend connector for lazy loading errors"
+      ]
+    }
+  ]
+}

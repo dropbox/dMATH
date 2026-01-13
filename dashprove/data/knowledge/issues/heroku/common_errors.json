@@ -1,0 +1,191 @@
+{
+  "tool": "heroku",
+  "version": "8.7.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not logged in|authentication.*failed|Invalid credentials|IP address mismatch",
+      "message": "Authentication error",
+      "cause": "Not logged in or credentials expired",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "heroku login\nheroku login -i  # Interactive, no browser",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "API key",
+          "code": "export HEROKU_API_KEY=your-api-key\nheroku auth:token  # Get current token",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Refresh",
+          "code": "heroku auth:logout\nheroku login",
+          "when": "Token expired"
+        }
+      ]
+    },
+    {
+      "id": "h10_crash",
+      "pattern": "H10.*App crashed|Process exited.*status|crashed.*boot timeout",
+      "message": "Application crashed (H10)",
+      "cause": "App failed to start",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "heroku logs --tail",
+          "when": "See crash reason"
+        },
+        {
+          "approach": "Check Procfile",
+          "code": "# Procfile should have:\nweb: npm start\n# Or for Python:\nweb: gunicorn app:app",
+          "when": "Missing/wrong Procfile"
+        },
+        {
+          "approach": "Local test",
+          "code": "heroku local web",
+          "when": "Test locally"
+        }
+      ]
+    },
+    {
+      "id": "h12_timeout",
+      "pattern": "H12.*Request timeout|30 seconds|timeout.*exceeded",
+      "message": "Request timeout (H12)",
+      "cause": "Request took longer than 30 seconds",
+      "solutions": [
+        {
+          "approach": "Background job",
+          "code": "# Move long tasks to worker dyno\n# Procfile:\nworker: node worker.js\n\nheroku ps:scale worker=1",
+          "when": "Long processing"
+        },
+        {
+          "approach": "Streaming response",
+          "code": "// Send periodic data to prevent timeout\nres.write('processing...');\n// Do work\nres.end('done');",
+          "when": "Can stream"
+        },
+        {
+          "approach": "Optimize",
+          "code": "# Add caching, optimize queries, reduce payload",
+          "when": "Slow endpoint"
+        }
+      ]
+    },
+    {
+      "id": "h14_memory",
+      "pattern": "H14.*No web dynos|R14.*Memory quota exceeded",
+      "message": "Memory quota exceeded (R14) or no dynos (H14)",
+      "cause": "App using too much memory or no dynos running",
+      "solutions": [
+        {
+          "approach": "Scale dynos",
+          "code": "heroku ps:scale web=1\nheroku ps",
+          "when": "No dynos running"
+        },
+        {
+          "approach": "Upgrade dyno",
+          "code": "heroku ps:type web=standard-1x",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Fix leak",
+          "code": "heroku logs --tail | grep memory\n# Profile app for memory leaks",
+          "when": "Memory leak"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Build failed|Push rejected|npm ERR!|pip.*failed",
+      "message": "Build failed",
+      "cause": "Dependency or build script error",
+      "solutions": [
+        {
+          "approach": "Check buildpack",
+          "code": "heroku buildpacks\nheroku buildpacks:set heroku/nodejs",
+          "when": "Wrong buildpack"
+        },
+        {
+          "approach": "Check Node version",
+          "code": "// In package.json:\n{\n  \"engines\": {\n    \"node\": \"18.x\"\n  }\n}",
+          "when": "Node version"
+        },
+        {
+          "approach": "Check Python",
+          "code": "# Create runtime.txt:\npython-3.11.4",
+          "when": "Python version"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "DATABASE_URL.*not set|PG::ConnectionBad|connection.*refused",
+      "message": "Database connection error",
+      "cause": "Database not provisioned or connection issue",
+      "solutions": [
+        {
+          "approach": "Add Postgres",
+          "code": "heroku addons:create heroku-postgresql:essential-0\nheroku config | grep DATABASE_URL",
+          "when": "No database"
+        },
+        {
+          "approach": "Check connection",
+          "code": "heroku pg:info\nheroku pg:psql",
+          "when": "Test connection"
+        },
+        {
+          "approach": "SSL config",
+          "code": "// Node.js:\nconst pool = new Pool({\n  connectionString: process.env.DATABASE_URL,\n  ssl: { rejectUnauthorized: false }\n});",
+          "when": "SSL required"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "config.*not found|environment.*undefined|Missing.*variable",
+      "message": "Missing configuration variable",
+      "cause": "Environment variable not set",
+      "solutions": [
+        {
+          "approach": "Set config",
+          "code": "heroku config:set API_KEY=value SECRET=value",
+          "when": "Add variable"
+        },
+        {
+          "approach": "View config",
+          "code": "heroku config",
+          "when": "Check variables"
+        },
+        {
+          "approach": "Local .env",
+          "code": "# Create .env for local:\nAPI_KEY=value\n\nheroku local web",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "git_error",
+      "pattern": "git.*rejected|not a git repository|remote.*heroku.*not found",
+      "message": "Git deployment error",
+      "cause": "Git not configured correctly",
+      "solutions": [
+        {
+          "approach": "Add remote",
+          "code": "heroku git:remote -a your-app-name",
+          "when": "Missing remote"
+        },
+        {
+          "approach": "Init git",
+          "code": "git init\nheroku git:remote -a your-app-name\ngit add .\ngit commit -m \"Initial commit\"\ngit push heroku main",
+          "when": "Not a git repo"
+        },
+        {
+          "approach": "Force push",
+          "code": "git push heroku main --force\n# Use carefully - overwrites remote",
+          "when": "History mismatch"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "tool": "aequitas",
+  "version": "0.42.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_required_columns",
+      "pattern": "KeyError: '(score|label_value|entity_id)'",
+      "message": "Required column not found in dataframe",
+      "cause": "Input dataframe missing required columns for bias analysis",
+      "solutions": [
+        {
+          "approach": "Add required columns",
+          "code": "df['score'] = model.predict_proba(X)[:, 1]\ndf['label_value'] = y_true",
+          "when": "Score or label columns are missing"
+        },
+        {
+          "approach": "Rename existing columns",
+          "code": "df = df.rename(columns={'prediction': 'score', 'target': 'label_value'})",
+          "when": "Columns exist with different names"
+        }
+      ]
+    },
+    {
+      "id": "no_protected_attributes",
+      "pattern": "No protected attributes found",
+      "message": "No protected attribute columns specified",
+      "cause": "Dataframe must contain at least one protected attribute column",
+      "solutions": [
+        {
+          "approach": "Add protected attribute",
+          "code": "df['race'] = sensitive_attr_values",
+          "when": "Protected attribute data is available"
+        },
+        {
+          "approach": "Specify attribute columns",
+          "code": "g = Group()\nxtab, _ = g.get_crosstabs(df, attr_cols=['gender', 'age_group'])",
+          "when": "Attributes exist but aren't detected"
+        }
+      ]
+    },
+    {
+      "id": "insufficient_samples",
+      "pattern": "(Insufficient samples|too few observations)",
+      "message": "Not enough samples in group for reliable metrics",
+      "cause": "Some protected groups have too few samples for statistical significance",
+      "solutions": [
+        {
+          "approach": "Set minimum sample threshold",
+          "code": "b = Bias()\nbdf = b.get_disparity_predefined_groups(xtab, min_group_size=30)",
+          "when": "Want to filter small groups"
+        },
+        {
+          "approach": "Aggregate smaller groups",
+          "code": "df['age_group'] = pd.cut(df['age'], bins=[0, 30, 50, 100], labels=['young', 'middle', 'senior'])",
+          "when": "Can meaningfully combine groups"
+        },
+        {
+          "approach": "Use bootstrapping",
+          "code": "# Sample with replacement for small groups",
+          "when": "Cannot collect more data"
+        }
+      ]
+    },
+    {
+      "id": "invalid_score_range",
+      "pattern": "(Score values must be|scores outside range)",
+      "message": "Score values outside expected range [0, 1]",
+      "cause": "Model scores not normalized to probability range",
+      "solutions": [
+        {
+          "approach": "Use predict_proba",
+          "code": "df['score'] = model.predict_proba(X)[:, 1]  # Probability of positive class",
+          "when": "Model supports probability output"
+        },
+        {
+          "approach": "Normalize scores",
+          "code": "from sklearn.preprocessing import MinMaxScaler\ndf['score'] = MinMaxScaler().fit_transform(df[['raw_score']])",
+          "when": "Have raw scores that need scaling"
+        }
+      ]
+    },
+    {
+      "id": "reference_group_not_found",
+      "pattern": "Reference group .* not found",
+      "message": "Specified reference group does not exist",
+      "cause": "The reference group for disparity calculation doesn't match data",
+      "solutions": [
+        {
+          "approach": "Check available groups",
+          "code": "print(df['protected_attr'].unique())",
+          "when": "Unsure of group names"
+        },
+        {
+          "approach": "Use predefined reference",
+          "code": "bdf = b.get_disparity_predefined_groups(xtab, original_df=df, ref_groups_dict={'race': 'white', 'gender': 'male'})",
+          "when": "Want to specify majority group explicitly"
+        },
+        {
+          "approach": "Use majority reference",
+          "code": "bdf = b.get_disparity_major_group(xtab)",
+          "when": "Want largest group as reference"
+        }
+      ]
+    },
+    {
+      "id": "fairness_threshold_violation",
+      "pattern": "Fairness criteria (failed|not met)",
+      "message": "Model does not meet fairness threshold",
+      "cause": "Disparity ratios exceed acceptable bounds (typically 0.8-1.25)",
+      "solutions": [
+        {
+          "approach": "Adjust thresholds",
+          "code": "f = Fairness()\nfdf = f.get_group_value_fairness(bdf, tau=0.7)  # More lenient",
+          "when": "Default threshold too strict for use case"
+        },
+        {
+          "approach": "Apply preprocessing mitigation",
+          "code": "# Rebalance training data using reweighting or resampling",
+          "when": "Can modify training pipeline"
+        },
+        {
+          "approach": "Apply postprocessing mitigation",
+          "code": "# Adjust decision thresholds per group",
+          "when": "Cannot retrain model"
+        }
+      ]
+    },
+    {
+      "id": "metric_undefined",
+      "pattern": "(metric|ratio) (undefined|NaN|inf)",
+      "message": "Fairness metric cannot be computed",
+      "cause": "Division by zero or missing values in metric calculation",
+      "solutions": [
+        {
+          "approach": "Filter undefined metrics",
+          "code": "bdf_valid = bdf[bdf['fpr_disparity'].notna()]",
+          "when": "Some metrics are undefined"
+        },
+        {
+          "approach": "Use alternative metric",
+          "code": "# Use difference instead of ratio for metrics near zero\nbdf['fpr_diff'] = bdf['fpr'] - bdf.loc[ref_group, 'fpr']",
+          "when": "Ratios are unstable"
+        }
+      ]
+    }
+  ]
+}

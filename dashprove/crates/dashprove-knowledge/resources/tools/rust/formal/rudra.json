@@ -1,0 +1,115 @@
+{
+  "id": "rudra",
+  "name": "Rudra",
+  "category": "rust_formal_verification",
+  "subcategory": "bug_finder",
+
+  "description": "Memory safety bug finder for Rust",
+  "long_description": "Rudra is a static analyzer specifically designed to find memory safety bugs in Rust programs, particularly in unsafe code. It was developed at Georgia Tech and has found hundreds of CVEs in the Rust ecosystem. Rudra focuses on common bug patterns in unsafe Rust.",
+
+  "capabilities": [
+    "unsafe_analysis",
+    "panic_safety",
+    "send_sync_variance",
+    "higher_order_safety",
+    "memory_bugs",
+    "cve_detection"
+  ],
+  "property_types": ["bug_pattern", "safety_violation"],
+  "input_languages": ["rust"],
+  "output_formats": ["report", "diagnostic"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/sslab-gatech/Rudra", "command": "git clone https://github.com/sslab-gatech/Rudra && cd Rudra && ./setup_rudra_env.sh && cargo install --path ."}
+    ],
+    "dependencies": ["rust-nightly-2021-10-21"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/sslab-gatech/Rudra",
+    "tutorial": "https://github.com/sslab-gatech/Rudra#usage",
+    "api_reference": "https://github.com/sslab-gatech/Rudra/tree/master/src/analysis",
+    "examples": "https://github.com/sslab-gatech/Rudra/tree/master/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "panic_safety",
+      "description": "Check for panic safety bugs",
+      "syntax": "rudra --panic-safety",
+      "when_to_use": "To find bugs where panics cause UB",
+      "examples": ["Detects: Vec::set_len followed by panic-able code"]
+    },
+    {
+      "name": "send_sync",
+      "description": "Check Send/Sync impl correctness",
+      "syntax": "rudra --send-sync",
+      "when_to_use": "To find incorrect Send/Sync implementations",
+      "examples": ["Detects: unsafe impl Send for T containing non-Send field"]
+    },
+    {
+      "name": "higher_order",
+      "description": "Check higher-order function safety",
+      "syntax": "rudra --higher-order",
+      "when_to_use": "To find bugs in closures/callbacks",
+      "examples": ["Detects: ReadBuf callback unsafety"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "UnsafeDestructor",
+      "meaning": "Destructor runs on potentially invalid state",
+      "common_causes": ["set_len before initialization", "mem::forget misuse"],
+      "fixes": ["Use ManuallyDrop", "Ensure initialization before length set"]
+    },
+    {
+      "pattern": "SendSyncVariance",
+      "meaning": "Incorrect Send/Sync implementation",
+      "common_causes": ["Missing PhantomData", "Wrong variance"],
+      "fixes": ["Add proper PhantomData", "Remove incorrect unsafe impl"]
+    },
+    {
+      "pattern": "UnsafeDataflow",
+      "meaning": "Unsafe data flows to dangerous operation",
+      "common_causes": ["Unchecked pointer arithmetic", "Missing validation"],
+      "fixes": ["Add bounds checks", "Validate before unsafe operations"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["bug_pattern"],
+    "cli_command": "dashprove verify --backend rudra"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds per crate",
+    "scalability": "Designed for ecosystem-wide scanning",
+    "memory_usage": "2-8GB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["miri", "mirai", "clippy"],
+    "advantages": [
+      "Found 100+ CVEs in production code",
+      "Fast static analysis",
+      "Focused on real-world bug patterns",
+      "No runtime overhead"
+    ],
+    "disadvantages": [
+      "Specific nightly version required",
+      "May have false positives",
+      "Limited to known bug patterns"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Georgia Tech SSLab",
+    "license": "MIT"
+  }
+}

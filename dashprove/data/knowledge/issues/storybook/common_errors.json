@@ -1,0 +1,237 @@
+{
+  "tool": "storybook",
+  "version": "8.0+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "builder_error",
+      "pattern": "builder.*error|webpack.*failed|vite.*error|Module build failed",
+      "message": "Build system error",
+      "cause": "Webpack or Vite configuration issue",
+      "solutions": [
+        {
+          "approach": "Clear cache",
+          "code": "rm -rf node_modules/.cache/storybook",
+          "when": "Stale cache"
+        },
+        {
+          "approach": "Check webpack config",
+          "code": "// .storybook/main.js\nwebpackFinal: async (config) => { return config; }",
+          "when": "Custom webpack needed"
+        },
+        {
+          "approach": "Switch to Vite",
+          "code": "npx storybook@latest init --type react --builder vite",
+          "when": "Webpack issues persistent"
+        }
+      ]
+    },
+    {
+      "id": "component_not_found",
+      "pattern": "Cannot find module|Component.*not found|import.*failed",
+      "message": "Component import failed",
+      "cause": "Component path or module resolution issue",
+      "solutions": [
+        {
+          "approach": "Fix import path",
+          "code": "import { Button } from '../components/Button';",
+          "when": "Wrong relative path"
+        },
+        {
+          "approach": "Configure aliases",
+          "code": "// .storybook/main.js\nwebpackFinal: (config) => {\n  config.resolve.alias['@'] = path.resolve(__dirname, '../src');\n  return config;\n}",
+          "when": "Using path aliases"
+        },
+        {
+          "approach": "Check TypeScript paths",
+          "code": "// Include tsconfig paths in Storybook",
+          "when": "TS path mapping"
+        }
+      ]
+    },
+    {
+      "id": "story_syntax_error",
+      "pattern": "Invalid story|Story.*invalid|CSF.*error|meta.*required",
+      "message": "Story file syntax error",
+      "cause": "Component Story Format (CSF) syntax issue",
+      "solutions": [
+        {
+          "approach": "Use CSF 3.0 format",
+          "code": "import type { Meta, StoryObj } from '@storybook/react';\n\nconst meta: Meta<typeof Button> = {\n  component: Button,\n};\nexport default meta;\n\ntype Story = StoryObj<typeof Button>;\nexport const Primary: Story = { args: { primary: true } };",
+          "when": "Modern CSF format"
+        },
+        {
+          "approach": "Export default meta",
+          "code": "export default { title: 'Components/Button', component: Button };",
+          "when": "Missing default export"
+        },
+        {
+          "approach": "Check story naming",
+          "code": "// Stories must be named exports (not anonymous)",
+          "when": "Anonymous export"
+        }
+      ]
+    },
+    {
+      "id": "addon_error",
+      "pattern": "addon.*not found|addon.*error|Cannot find addon",
+      "message": "Storybook addon error",
+      "cause": "Addon not installed or configured incorrectly",
+      "solutions": [
+        {
+          "approach": "Install addon",
+          "code": "npm install @storybook/addon-essentials",
+          "when": "Addon not installed"
+        },
+        {
+          "approach": "Register in main.js",
+          "code": "// .storybook/main.js\naddons: ['@storybook/addon-essentials']",
+          "when": "Addon not registered"
+        },
+        {
+          "approach": "Check version compatibility",
+          "code": "// Addon version must match Storybook version",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "decorator_error",
+      "pattern": "decorator.*error|wrapper.*failed|Provider.*error",
+      "message": "Story decorator error",
+      "cause": "Decorator configuration issue",
+      "solutions": [
+        {
+          "approach": "Fix decorator syntax",
+          "code": "export const decorators = [\n  (Story) => <ThemeProvider><Story /></ThemeProvider>\n];",
+          "when": "Wrapper syntax wrong"
+        },
+        {
+          "approach": "Add global decorator",
+          "code": "// .storybook/preview.js\nexport const decorators = [withTheme];",
+          "when": "Need global wrapper"
+        },
+        {
+          "approach": "Check provider dependencies",
+          "code": "// Ensure providers have required context",
+          "when": "Missing context"
+        }
+      ]
+    },
+    {
+      "id": "args_type_error",
+      "pattern": "args.*type error|argTypes.*invalid|control.*error",
+      "message": "Story args/controls configuration error",
+      "cause": "ArgTypes configuration doesn't match component props",
+      "solutions": [
+        {
+          "approach": "Define argTypes",
+          "code": "argTypes: {\n  backgroundColor: { control: 'color' },\n  size: { control: { type: 'select' }, options: ['sm', 'md', 'lg'] }\n}",
+          "when": "Need custom controls"
+        },
+        {
+          "approach": "Use autodocs",
+          "code": "tags: ['autodocs']",
+          "when": "Auto-generate from TS types"
+        },
+        {
+          "approach": "Fix prop types",
+          "code": "// Ensure component has proper TypeScript types",
+          "when": "TS types missing"
+        }
+      ]
+    },
+    {
+      "id": "interaction_test_error",
+      "pattern": "play function.*error|interaction.*failed|testing-library.*error",
+      "message": "Interaction test failed",
+      "cause": "Play function or testing-library issue",
+      "solutions": [
+        {
+          "approach": "Install testing library",
+          "code": "npm install @storybook/test",
+          "when": "Testing utils missing"
+        },
+        {
+          "approach": "Fix play function",
+          "code": "play: async ({ canvasElement }) => {\n  const canvas = within(canvasElement);\n  await userEvent.click(canvas.getByRole('button'));\n}",
+          "when": "Play syntax wrong"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "await canvas.findByText('Loaded');",
+          "when": "Async content"
+        }
+      ]
+    },
+    {
+      "id": "typescript_error",
+      "pattern": "TS.*error|TypeScript.*failed|type.*not assignable",
+      "message": "TypeScript compilation error",
+      "cause": "TypeScript configuration or type errors",
+      "solutions": [
+        {
+          "approach": "Configure TS for Storybook",
+          "code": "// .storybook/main.js\ntypescript: { check: true }",
+          "when": "Enable type checking"
+        },
+        {
+          "approach": "Fix story types",
+          "code": "const meta = { component: Button } satisfies Meta<typeof Button>;",
+          "when": "Meta type error"
+        },
+        {
+          "approach": "Add react types",
+          "code": "npm install @types/react @types/react-dom",
+          "when": "Missing React types"
+        }
+      ]
+    },
+    {
+      "id": "static_dir_error",
+      "pattern": "static.*not found|public.*directory|asset.*404",
+      "message": "Static directory not configured",
+      "cause": "Static assets not served",
+      "solutions": [
+        {
+          "approach": "Configure staticDirs",
+          "code": "// .storybook/main.js\nstaticDirs: ['../public', '../assets']",
+          "when": "Custom static paths"
+        },
+        {
+          "approach": "Use default public",
+          "code": "// Put assets in ./public/ folder",
+          "when": "Using defaults"
+        },
+        {
+          "approach": "Import assets directly",
+          "code": "import logo from './logo.svg';",
+          "when": "Bundled assets"
+        }
+      ]
+    },
+    {
+      "id": "hot_reload_broken",
+      "pattern": "HMR.*error|hot reload.*failed|changes not reflecting",
+      "message": "Hot module reload not working",
+      "cause": "HMR configuration issue",
+      "solutions": [
+        {
+          "approach": "Restart Storybook",
+          "code": "# Stop and restart: npm run storybook",
+          "when": "HMR stuck"
+        },
+        {
+          "approach": "Check file watchers",
+          "code": "# Increase watchers: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf",
+          "when": "Linux watcher limit"
+        },
+        {
+          "approach": "Clear node_modules",
+          "code": "rm -rf node_modules && npm install",
+          "when": "Corrupted dependencies"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "tool": "supertest",
+  "category": "http_testing",
+  "common_errors": [
+    {
+      "pattern": "Error: listen EADDRINUSE",
+      "meaning": "Test server port already in use",
+      "causes": [
+        "App.listen called in tests while another instance running",
+        "Port not released between tests"
+      ],
+      "solutions": [
+        "Pass Express app directly to supertest: request(app) instead of app.listen()",
+        "If binding a port, close server in afterEach: server.close()"
+      ]
+    },
+    {
+      "pattern": "Timeout of .* exceeded|test timed out",
+      "meaning": "Request never completed",
+      "causes": [
+        "Route handler not calling res.end()/next()",
+        "Promise not returned/awaited in test",
+        "Supertest chain missing await/return"
+      ],
+      "solutions": [
+        "Ensure route sends response or handles errors",
+        "Return/await request: await request(app).get('/').expect(200)",
+        "Increase timeout only after fixing handler logic"
+      ]
+    },
+    {
+      "pattern": "Cannot set headers after they are sent",
+      "meaning": "Response sent multiple times during test",
+      "causes": [
+        "Calling res.send twice in handler",
+        "Async error handler writing after response finished",
+        "Unhandled promise rejection leading to default Express error response"
+      ],
+      "solutions": [
+        "Add return statements to stop execution after send",
+        "Wrap async handlers with error middleware (next(err))",
+        "Use express-async-handler or similar to centralize errors"
+      ]
+    },
+    {
+      "pattern": "expected .* \\.expect\\(\\) or .* got .*|expected 200 .* but got 404",
+      "meaning": "Assertion mismatch or route not found",
+      "causes": [
+        "Incorrect route path or method",
+        "Middleware order causing 404 before handler",
+        "Test hitting wrong base path when using Router"
+      ],
+      "solutions": [
+        "Verify route registration before tests",
+        "Mount router with same prefix in tests as production",
+        "Check case sensitivity and trailing slashes"
+      ]
+    },
+    {
+      "pattern": "ECONNREFUSED|connection refused",
+      "meaning": "Request attempted to external port instead of injected app",
+      "causes": [
+        "Using request('http://localhost:3000') instead of request(app)",
+        "Server not started when hitting port URL",
+        "HTTPS mismatch (http vs https)"
+      ],
+      "solutions": [
+        "Use in-memory app: request(app) to avoid network dependency",
+        "Start server before hitting actual port if required",
+        "Match protocol to server configuration"
+      ]
+    }
+  ]
+}

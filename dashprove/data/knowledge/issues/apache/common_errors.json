@@ -1,0 +1,168 @@
+{
+  "tool": "apache",
+  "version": "2.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "port_already_in_use",
+      "pattern": "Address already in use|could not bind|AH00072|make_sock.*bind",
+      "message": "Port already in use",
+      "cause": "Another process using port 80/443",
+      "solutions": [
+        {
+          "approach": "Find process",
+          "code": "sudo lsof -i :80\nsudo ss -tlnp | grep ':80'\nsudo netstat -tlnp | grep ':80'",
+          "when": "Identify conflict"
+        },
+        {
+          "approach": "Stop nginx",
+          "code": "sudo systemctl stop nginx",
+          "when": "Nginx running"
+        },
+        {
+          "approach": "Change port",
+          "code": "# In /etc/apache2/ports.conf:\nListen 8080",
+          "when": "Use different port"
+        }
+      ]
+    },
+    {
+      "id": "config_syntax_error",
+      "pattern": "Syntax error|AH00526|Invalid command|configuration failed|Unknown directive",
+      "message": "Configuration syntax error",
+      "cause": "Invalid Apache configuration",
+      "solutions": [
+        {
+          "approach": "Test config",
+          "code": "sudo apachectl configtest\nsudo apache2ctl -t",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Find error",
+          "code": "sudo apache2ctl -t 2>&1 | head -20",
+          "when": "Locate issue"
+        },
+        {
+          "approach": "Enable module",
+          "code": "sudo a2enmod rewrite\nsudo a2enmod ssl\nsudo a2enmod headers",
+          "when": "Missing module"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|AH00035|AH01630|Forbidden|client denied by server",
+      "message": "Permission denied",
+      "cause": "File permissions or directory access",
+      "solutions": [
+        {
+          "approach": "Fix ownership",
+          "code": "sudo chown -R www-data:www-data /var/www/html\nsudo chmod -R 755 /var/www/html",
+          "when": "Wrong owner"
+        },
+        {
+          "approach": "Check SELinux",
+          "code": "sudo setenforce 0  # Temporarily disable\nsudo setsebool -P httpd_read_user_content 1",
+          "when": "SELinux blocking"
+        },
+        {
+          "approach": "Directory config",
+          "code": "<Directory /var/www/html>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>",
+          "when": "Apache config"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "Cannot load.*module|module.*not found|undefined symbol|AH00534",
+      "message": "Module not found or incompatible",
+      "cause": "Module not installed or wrong version",
+      "solutions": [
+        {
+          "approach": "List modules",
+          "code": "sudo apache2ctl -M\nsudo apachectl -M",
+          "when": "Check loaded"
+        },
+        {
+          "approach": "Install module",
+          "code": "# Ubuntu/Debian\nsudo apt install libapache2-mod-php\nsudo apt install libapache2-mod-wsgi-py3\n# Enable module\nsudo a2enmod php8.1",
+          "when": "Missing module"
+        },
+        {
+          "approach": "Disable broken",
+          "code": "sudo a2dismod module_name",
+          "when": "Module causing issues"
+        }
+      ]
+    },
+    {
+      "id": "ssl_certificate_error",
+      "pattern": "SSL.*certificate|AH02565|AH01909|SSLCertificateFile|unable to configure RSA",
+      "message": "SSL certificate error",
+      "cause": "Certificate missing, expired, or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check paths",
+          "code": "# Verify certificate files exist:\nls -la /etc/letsencrypt/live/example.com/\nls -la /etc/ssl/certs/",
+          "when": "File missing"
+        },
+        {
+          "approach": "Test certificate",
+          "code": "openssl x509 -in /path/to/cert.pem -text -noout\nopenssl verify /path/to/cert.pem",
+          "when": "Verify cert"
+        },
+        {
+          "approach": "Renew cert",
+          "code": "sudo certbot renew\nsudo systemctl restart apache2",
+          "when": "Cert expired"
+        }
+      ]
+    },
+    {
+      "id": "htaccess_not_working",
+      "pattern": "AllowOverride|htaccess ignored|RewriteEngine|mod_rewrite",
+      "message": ".htaccess not working",
+      "cause": "AllowOverride not enabled",
+      "solutions": [
+        {
+          "approach": "Enable AllowOverride",
+          "code": "<Directory /var/www/html>\n    AllowOverride All\n</Directory>",
+          "when": "In vhost config"
+        },
+        {
+          "approach": "Enable rewrite",
+          "code": "sudo a2enmod rewrite\nsudo systemctl restart apache2",
+          "when": "Rewrite not loaded"
+        },
+        {
+          "approach": "Check file",
+          "code": "cat /var/www/html/.htaccess\n# Make sure no invisible characters",
+          "when": "File issues"
+        }
+      ]
+    },
+    {
+      "id": "virtual_host_not_working",
+      "pattern": "NameVirtualHost|default-ssl|wrong host|site not loading",
+      "message": "Virtual host not responding",
+      "cause": "VHost misconfigured or not enabled",
+      "solutions": [
+        {
+          "approach": "Enable site",
+          "code": "sudo a2ensite example.com.conf\nsudo systemctl reload apache2",
+          "when": "Site disabled"
+        },
+        {
+          "approach": "Check config",
+          "code": "sudo apache2ctl -S  # Show virtual hosts",
+          "when": "Verify vhosts"
+        },
+        {
+          "approach": "ServerName",
+          "code": "<VirtualHost *:80>\n    ServerName example.com\n    ServerAlias www.example.com\n    DocumentRoot /var/www/example.com\n</VirtualHost>",
+          "when": "Missing ServerName"
+        }
+      ]
+    }
+  ]
+}

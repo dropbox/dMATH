@@ -1,0 +1,125 @@
+{
+  "tool": "dc",
+  "version": "dc 1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "stack_empty",
+      "pattern": "stack empty|dc:.*empty|stack underflow",
+      "message": "Not enough values on stack",
+      "cause": "Operation requires more operands than available",
+      "solutions": [
+        {
+          "approach": "Push before operate",
+          "code": "echo '3 4 + p' | dc  # Push 3, push 4, add, print (7)",
+          "when": "Basic operation"
+        },
+        {
+          "approach": "Check stack",
+          "code": "echo '3 4 f' | dc  # f prints entire stack",
+          "when": "Debug stack"
+        },
+        {
+          "approach": "RPN order",
+          "code": "# dc uses Reverse Polish Notation\n# 3 + 4 becomes: 3 4 +\n# (3 + 4) * 5 becomes: 3 4 + 5 *",
+          "when": "Understand RPN"
+        }
+      ]
+    },
+    {
+      "id": "negative_numbers",
+      "pattern": "negative|_|leading minus",
+      "message": "Negative number syntax",
+      "cause": "dc uses _ for negative, not -",
+      "solutions": [
+        {
+          "approach": "Negative syntax",
+          "code": "echo '_5 3 + p' | dc  # -5 + 3 = -2",
+          "when": "Negative operand"
+        },
+        {
+          "approach": "Subtraction",
+          "code": "echo '3 5 - p' | dc  # 3 - 5 = -2",
+          "when": "Subtract operation"
+        }
+      ]
+    },
+    {
+      "id": "precision",
+      "pattern": "scale|precision|decimal|truncated",
+      "message": "No decimal places shown",
+      "cause": "Default precision is 0",
+      "solutions": [
+        {
+          "approach": "Set precision",
+          "code": "echo '4 k 22 7 / p' | dc  # k sets precision",
+          "when": "Need decimals"
+        },
+        {
+          "approach": "Example",
+          "code": "echo '10 k 2 v p' | dc  # sqrt(2) with 10 decimals",
+          "when": "Square root"
+        }
+      ]
+    },
+    {
+      "id": "unknown_command",
+      "pattern": "unimplemented|unknown|illegal|dc:.*'",
+      "message": "Unknown dc command",
+      "cause": "Character not a valid dc command",
+      "solutions": [
+        {
+          "approach": "Common commands",
+          "code": "# Arithmetic: + - * / % ^ v(sqrt)\n# Stack: p(print top) f(print all) c(clear) d(dup) r(swap)\n# Registers: sa(store a) la(load a)\n# Precision: k(set) K(get)",
+          "when": "Valid commands"
+        },
+        {
+          "approach": "Print result",
+          "code": "echo '3 4 + p' | dc  # p prints top of stack\necho '3 4 + n' | dc  # n prints without newline",
+          "when": "See output"
+        }
+      ]
+    },
+    {
+      "id": "base_conversion",
+      "pattern": "ibase|obase|input.*base|output.*base",
+      "message": "Base conversion",
+      "cause": "Need to set input/output radix",
+      "solutions": [
+        {
+          "approach": "Set bases",
+          "code": "echo '16 i FF p' | dc   # Hex in: 255\necho '16 o 255 p' | dc  # Hex out: FF\necho '2 o 255 p' | dc   # Binary: 11111111",
+          "when": "Base conversion"
+        },
+        {
+          "approach": "Hex operations",
+          "code": "echo '16 i FF 10 + p' | dc  # FF + 10(hex) in decimal",
+          "when": "Hex arithmetic"
+        }
+      ]
+    },
+    {
+      "id": "multiline_input",
+      "pattern": "interactive|multiline|script",
+      "message": "Complex calculations",
+      "cause": "Need multiple commands",
+      "solutions": [
+        {
+          "approach": "Here-doc",
+          "code": "dc <<EOF\n10 k\n22 7 /\np\nEOF",
+          "when": "Multiple lines"
+        },
+        {
+          "approach": "File input",
+          "code": "dc script.dc",
+          "when": "From file"
+        },
+        {
+          "approach": "Single line",
+          "code": "dc -e '4 k 22 7 / p'",
+          "when": "Expression argument"
+        }
+      ]
+    }
+  ]
+}

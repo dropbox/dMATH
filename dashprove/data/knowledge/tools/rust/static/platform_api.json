@@ -1,0 +1,159 @@
+{
+  "id": "platform_api",
+  "name": "Platform API Static Checker",
+  "category": "rust_platform_api",
+  "subcategory": "state_machine_checker",
+  "description": "Generates Rust static checkers from platform API state machines",
+  "long_description": "DashProve's Platform API backend compiles USL `platform_api` blocks into Rust modules that enforce correct API call sequences. It models platform/host APIs (e.g., Metal, CUDA, POSIX primitives) as finite-state machines with pre/postconditions, generating typestate-like trackers and diagnostics without relying on external tools.",
+  "capabilities": [
+    "state_machine_modeling",
+    "api_sequence_verification",
+    "typestate_checking",
+    "resource_lifetime_tracking",
+    "code_generation",
+    "custom_api_catalogs",
+    "static_analysis",
+    "diagnostic_traces"
+  ],
+  "property_types": [
+    "platform_api",
+    "api_contract",
+    "state_machine"
+  ],
+  "input_languages": [
+    "usl_platform_api",
+    "rust"
+  ],
+  "output_formats": [
+    "rust_checker_module",
+    "diagnostics",
+    "generated_code"
+  ],
+  "installation": {
+    "methods": [
+      {
+        "type": "cargo",
+        "command": "cargo build -p dashprove-platform-api"
+      },
+      {
+        "type": "source",
+        "url": "https://github.com/dropbox/dMATH/dashprove/tree/main/crates/dashprove-platform-api"
+      }
+    ],
+    "dependencies": [
+      "rust",
+      "cargo"
+    ],
+    "platforms": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  },
+  "documentation": {
+    "official": "https://github.com/dropbox/dMATH/dashprove/tree/main/crates/dashprove-platform-api",
+    "tutorial": "https://github.com/dropbox/dMATH/dashprove/tree/main/crates/dashprove-platform-api#readme",
+    "api_reference": "https://github.com/dropbox/dMATH/dashprove/tree/main/crates/dashprove-platform-api/src",
+    "examples": "https://github.com/dropbox/dMATH/dashprove/blob/main/crates/dashprove-platform-api/src/catalog.rs"
+  },
+  "tactics": [
+    {
+      "name": "generate_checkers",
+      "description": "Compile USL platform_api specs into Rust state tracker modules",
+      "syntax": "dashprove verify --backend platform_api spec.usl",
+      "when_to_use": "Enforcing correct call sequences for platform/host APIs",
+      "examples": [
+        "dashprove verify --backend platform_api metal_api.usl"
+      ]
+    },
+    {
+      "name": "use_catalog_api",
+      "description": "Reuse curated API models (Metal, CUDA, POSIX) from the catalog",
+      "syntax": "use dashprove_platform_api::catalog::mtl_command_buffer();",
+      "when_to_use": "Starting from known-good API state machines instead of authoring from scratch",
+      "examples": [
+        "let api = dashprove_platform_api::catalog::cuda_stream();"
+      ]
+    },
+    {
+      "name": "check_api_sequence",
+      "description": "Validate a concrete call trace against the generated checker",
+      "syntax": "check_api_sequence(&api, &[\"create\", \"commit\", ...])",
+      "when_to_use": "Unit testing library/client code for protocol violations",
+      "examples": [
+        "check_api_sequence(&api, &[\"begin\", \"commit\", \"present\"]);"
+      ]
+    }
+  ],
+  "error_patterns": [
+    {
+      "pattern": "No platform_api specifications found",
+      "meaning": "The USL file did not include any platform_api blocks",
+      "common_causes": [
+        "Wrong property type selected",
+        "Spec missing platform_api section"
+      ],
+      "fixes": [
+        "Add a platform_api block to the USL spec",
+        "Run backend on a spec containing platform constraints"
+      ]
+    },
+    {
+      "pattern": "Invalid transition 'X' from state 'Y'",
+      "meaning": "Call sequence violates the declared state machine",
+      "common_causes": [
+        "API call ordering bug",
+        "Missing guard or transition in spec"
+      ],
+      "fixes": [
+        "Reorder calls to follow the allowed transitions",
+        "Add the transition to the platform_api model if legitimate"
+      ]
+    },
+    {
+      "pattern": "Unknown state 'S' in API 'A'",
+      "meaning": "The state machine references an undefined state",
+      "common_causes": [
+        "Typo in state name",
+        "Out-of-date catalog entry"
+      ],
+      "fixes": [
+        "Normalize state names",
+        "Update the platform_api definition to declare the state"
+      ]
+    }
+  ],
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": [
+      "platform_api"
+    ],
+    "cli_command": "dashprove verify --backend platform_api"
+  },
+  "performance": {
+    "typical_runtime": "Milliseconds to a few seconds (code generation only)",
+    "scalability": "Linear in number of states/transitions; suitable for large API catalogs",
+    "memory_usage": "Low (pure Rust codegen)"
+  },
+  "comparisons": {
+    "similar_tools": [
+      "typestate_checkers",
+      "refinement_type_systems"
+    ],
+    "advantages": [
+      "Generates compilable Rust modules with deterministic diagnostics",
+      "Works offline without external solvers",
+      "Ships with curated API catalogs (Metal, CUDA, POSIX primitives)"
+    ],
+    "disadvantages": [
+      "Limited to finite-state API protocols",
+      "Generated code still needs to be compiled/linked into client build"
+    ]
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "last_updated": "2025-12-21",
+    "maintainer": "DashProve Team",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "tool": "verus",
+  "version": "0.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "precondition_not_satisfied",
+      "pattern": "precondition not satisfied",
+      "message": "Precondition not satisfied",
+      "cause": "Calling function without meeting its requires clause",
+      "solutions": [
+        {
+          "approach": "Assert precondition first",
+          "code": "assert(x > 0);  // Help verifier\nlet y = divide(z, x);",
+          "when": "Need to establish precondition"
+        },
+        {
+          "approach": "Add to caller's requires",
+          "code": "requires x > 0,",
+          "when": "Caller should require this"
+        },
+        {
+          "approach": "Use proof block",
+          "code": "proof {\n    // Establish fact here\n}",
+          "when": "Need intermediate reasoning"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_failed",
+      "pattern": "postcondition not satisfied",
+      "message": "Postcondition not satisfied",
+      "cause": "Function doesn't establish its ensures clause",
+      "solutions": [
+        {
+          "approach": "Add assert before return",
+          "code": "assert(result > 0);  // Help verifier see postcond holds",
+          "when": "Verifier needs hint"
+        },
+        {
+          "approach": "Check all return paths",
+          "code": "// Each branch must establish postcondition",
+          "when": "Some branch doesn't establish postcond"
+        },
+        {
+          "approach": "Strengthen loop invariant",
+          "code": "invariant result >= 0,",
+          "when": "Loop doesn't preserve enough info"
+        }
+      ]
+    },
+    {
+      "id": "arithmetic_overflow",
+      "pattern": "possible arithmetic overflow",
+      "message": "Possible arithmetic overflow/underflow",
+      "cause": "Integer operation may overflow",
+      "solutions": [
+        {
+          "approach": "Add bounds precondition",
+          "code": "requires a < u64::MAX - b,",
+          "when": "Caller should ensure no overflow"
+        },
+        {
+          "approach": "Use spec types",
+          "code": "let x: int = a as int + b as int;  // Unbounded in spec",
+          "when": "Working in ghost/proof code"
+        },
+        {
+          "approach": "Use checked operations",
+          "code": "let result = a.checked_add(b);",
+          "when": "Runtime should handle overflow"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_entry",
+      "pattern": "invariant not satisfied before loop",
+      "message": "Loop invariant not satisfied on entry",
+      "cause": "Invariant false before loop starts",
+      "solutions": [
+        {
+          "approach": "Check initial values",
+          "code": "let mut i: usize = 0;  // Ensure invariant holds initially",
+          "when": "Initial state doesn't satisfy invariant"
+        },
+        {
+          "approach": "Weaken invariant",
+          "code": "invariant i <= n,  // Not i < n if i starts at 0",
+          "when": "Invariant too strong for initial state"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_preserved",
+      "pattern": "invariant not preserved",
+      "message": "Loop invariant not preserved by iteration",
+      "cause": "Loop body breaks invariant",
+      "solutions": [
+        {
+          "approach": "Add missing invariant",
+          "code": "invariant forall|j: int| 0 <= j < i ==> arr[j] != target,",
+          "when": "Need invariant about processed elements"
+        },
+        {
+          "approach": "Assert after modification",
+          "code": "arr[i] = value;\nassert(invariant_still_holds);",
+          "when": "Verifier loses track after assignment"
+        }
+      ]
+    },
+    {
+      "id": "decreases_failed",
+      "pattern": "cannot prove termination",
+      "message": "Cannot prove termination",
+      "cause": "Recursive call doesn't decrease measure",
+      "solutions": [
+        {
+          "approach": "Add decreases clause",
+          "code": "decreases n,",
+          "when": "Need explicit termination measure"
+        },
+        {
+          "approach": "Use lexicographic",
+          "code": "decreases (a, b),  // Lexicographic ordering",
+          "when": "Single measure doesn't work"
+        }
+      ]
+    },
+    {
+      "id": "spec_exec_mismatch",
+      "pattern": "spec and exec mode mismatch",
+      "message": "Cannot use exec-mode value in spec context",
+      "cause": "Mixing specification and execution code incorrectly",
+      "solutions": [
+        {
+          "approach": "Use @ for spec values",
+          "code": "ensures result@ == old(arr)@.len(),",
+          "when": "Need spec view of exec value"
+        },
+        {
+          "approach": "Mark function as spec",
+          "code": "spec fn helper(x: int) -> int { ... }",
+          "when": "Function is purely specification"
+        },
+        {
+          "approach": "Use ghost variable",
+          "code": "let ghost g: int = ...;",
+          "when": "Need ghost value in exec code"
+        }
+      ]
+    },
+    {
+      "id": "trigger_missing",
+      "pattern": "no trigger found",
+      "message": "Quantifier has no trigger",
+      "cause": "Verifier cannot efficiently instantiate quantifier",
+      "solutions": [
+        {
+          "approach": "Add explicit trigger",
+          "code": "forall|i: int| #[trigger] f(i) ==> g(i)",
+          "when": "Need to guide instantiation"
+        },
+        {
+          "approach": "Rewrite to add function call",
+          "code": "// Wrap in function to create trigger point",
+          "when": "No natural trigger exists"
+        }
+      ]
+    }
+  ]
+}

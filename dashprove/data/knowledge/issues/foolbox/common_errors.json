@@ -1,0 +1,148 @@
+{
+  "tool": "foolbox",
+  "version": "3.3.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_not_wrapped",
+      "pattern": "(Model.*wrapper|fmodel|bounds)",
+      "message": "Model must be wrapped in Foolbox model",
+      "cause": "Foolbox requires models wrapped with bounds information",
+      "solutions": [
+        {
+          "approach": "Wrap PyTorch model",
+          "code": "import foolbox as fb\nfmodel = fb.PyTorchModel(model, bounds=(0, 1))",
+          "when": "Using PyTorch"
+        },
+        {
+          "approach": "Wrap TensorFlow model",
+          "code": "fmodel = fb.TensorFlowModel(model, bounds=(0, 1))",
+          "when": "Using TensorFlow"
+        },
+        {
+          "approach": "Wrap JAX model",
+          "code": "fmodel = fb.JAXModel(predict_fn, bounds=(0, 1))",
+          "when": "Using JAX"
+        }
+      ]
+    },
+    {
+      "id": "bounds_mismatch",
+      "pattern": "(bounds|data.*range|clip)",
+      "message": "Data bounds don't match model bounds",
+      "cause": "Input data range differs from specified bounds",
+      "solutions": [
+        {
+          "approach": "Set correct bounds",
+          "code": "# For ImageNet normalized data\nfmodel = fb.PyTorchModel(model, bounds=(-2.5, 2.5))\n# For [0,1] normalized\nfmodel = fb.PyTorchModel(model, bounds=(0, 1))",
+          "when": "Data is normalized"
+        },
+        {
+          "approach": "Normalize data",
+          "code": "# Ensure data is in [0,1]\nimages = images / 255.0\nfmodel = fb.PyTorchModel(model, bounds=(0, 1))",
+          "when": "Data in [0,255]"
+        }
+      ]
+    },
+    {
+      "id": "attack_failed",
+      "pattern": "(attack.*failed|no adversarial|all.*unsuccessful)",
+      "message": "Attack could not find adversarial examples",
+      "cause": "Model may be robust or attack parameters too conservative",
+      "solutions": [
+        {
+          "approach": "Increase epsilon",
+          "code": "attack = fb.attacks.LinfPGD()\n_, advs, success = attack(fmodel, images, labels, epsilons=[0.01, 0.03, 0.1])",
+          "when": "Small perturbations not enough"
+        },
+        {
+          "approach": "Use stronger attack",
+          "code": "# Use CW attack for harder cases\nattack = fb.attacks.L2CarliniWagnerAttack(steps=1000)\n_, advs, success = attack(fmodel, images, labels, epsilons=None)",
+          "when": "PGD not effective"
+        },
+        {
+          "approach": "Increase iterations",
+          "code": "attack = fb.attacks.LinfPGD(steps=100, rel_stepsize=0.01)",
+          "when": "Attack needs more steps"
+        }
+      ]
+    },
+    {
+      "id": "gradient_error",
+      "pattern": "(gradient|backward|differentiable)",
+      "message": "Cannot compute gradients for attack",
+      "cause": "Model not differentiable or gradients disabled",
+      "solutions": [
+        {
+          "approach": "Use decision-based attack",
+          "code": "# For non-differentiable models\nattack = fb.attacks.BoundaryAttack()\n_, advs, success = attack(fmodel, images, labels, epsilons=None)",
+          "when": "No gradient access"
+        },
+        {
+          "approach": "Use score-based attack",
+          "code": "attack = fb.attacks.GenAttack()\n_, advs, success = attack(fmodel, images, labels, epsilons=None)",
+          "when": "Have confidence scores"
+        },
+        {
+          "approach": "Enable gradients",
+          "code": "model.train()  # May help with some models\nimages.requires_grad_(True)",
+          "when": "Gradients should be available"
+        }
+      ]
+    },
+    {
+      "id": "shape_error",
+      "pattern": "(shape|dimension|batch)",
+      "message": "Input shape doesn't match model expectation",
+      "cause": "Batch dimension or channel order incorrect",
+      "solutions": [
+        {
+          "approach": "Add batch dimension",
+          "code": "images = images.unsqueeze(0)  # Add batch dim\nlabels = labels.unsqueeze(0) if labels.dim() == 0 else labels",
+          "when": "Single image input"
+        },
+        {
+          "approach": "Fix channel order",
+          "code": "# NHWC to NCHW for PyTorch\nimages = images.permute(0, 3, 1, 2)",
+          "when": "Channel dimension wrong"
+        }
+      ]
+    },
+    {
+      "id": "epsilon_list_error",
+      "pattern": "(epsilon|epsilons.*list|iterable)",
+      "message": "Epsilons parameter format error",
+      "cause": "Some attacks require list of epsilons, others don't",
+      "solutions": [
+        {
+          "approach": "Use epsilon list",
+          "code": "# For attacks that try multiple epsilons\nepsilons = [0.0, 0.001, 0.01, 0.03, 0.1, 0.3, 1.0]\n_, advs, success = attack(fmodel, images, labels, epsilons=epsilons)",
+          "when": "Want multiple perturbation levels"
+        },
+        {
+          "approach": "Use single epsilon",
+          "code": "# For minimum-norm attacks\n_, advs, success = attack(fmodel, images, labels, epsilons=None)",
+          "when": "Using CW or similar"
+        }
+      ]
+    },
+    {
+      "id": "cuda_memory",
+      "pattern": "(CUDA|out of memory|GPU)",
+      "message": "GPU memory error during attack",
+      "cause": "Attack computation exceeds GPU memory",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "# Process smaller batches\nfor i in range(0, len(images), batch_size):\n    batch = images[i:i+batch_size]\n    _, advs, _ = attack(fmodel, batch, labels[i:i+batch_size], epsilons=epsilons)",
+          "when": "Large batch causing OOM"
+        },
+        {
+          "approach": "Use CPU",
+          "code": "model = model.cpu()\nfmodel = fb.PyTorchModel(model, bounds=(0, 1), device='cpu')",
+          "when": "GPU memory limited"
+        }
+      ]
+    }
+  ]
+}

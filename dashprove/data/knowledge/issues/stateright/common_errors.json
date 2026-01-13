@@ -1,0 +1,173 @@
+{
+  "tool": "stateright",
+  "version": "0.30.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "state_space_explosion",
+      "pattern": "out of memory|too many states|state space.*exceeded",
+      "message": "State space explosion - too many states to explore",
+      "cause": "Model has too many reachable states for exhaustive checking",
+      "solutions": [
+        {
+          "approach": "Use symmetry reduction",
+          "code": "#[derive(Clone, Debug, PartialEq, Eq, Hash)]\nstruct State { /* use canonical ordering */ }",
+          "when": "Model has symmetric states"
+        },
+        {
+          "approach": "Reduce state variables",
+          "code": "// Use smaller types: u8 instead of u64\nstruct Counter(u8);",
+          "when": "Can bound state values"
+        },
+        {
+          "approach": "Use partial order reduction",
+          "code": ".with_visitor(stateright::checker::BfsVisitor::new())",
+          "when": "Many interleavings are equivalent"
+        },
+        {
+          "approach": "Limit exploration depth",
+          "code": ".within_boundary(|_, depth| depth < 100)",
+          "when": "Deep bugs unlikely or can bound"
+        }
+      ]
+    },
+    {
+      "id": "property_violation",
+      "pattern": "property.*violated|invariant.*failed|safety.*violation",
+      "message": "Safety property violated",
+      "cause": "Model reached a state that violates the specified invariant",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "model.checker()\n    .threads(1)\n    .spawn_bfs()\n    .join()\n    .into_path()",
+          "when": "Need to understand violation"
+        },
+        {
+          "approach": "Strengthen preconditions",
+          "code": "fn init() -> Self {\n    // Add invariant-preserving initial state\n}",
+          "when": "Initial state allows violation"
+        },
+        {
+          "approach": "Fix transition function",
+          "code": "fn next_state(&self, action: Action) -> Option<Self> {\n    // Ensure invariant preserved\n}",
+          "when": "Bug in state transition"
+        }
+      ]
+    },
+    {
+      "id": "liveness_violation",
+      "pattern": "liveness.*violated|no progress|deadlock",
+      "message": "Liveness property violated (deadlock or livelock)",
+      "cause": "Model can reach a state with no progress or cyclic non-progress",
+      "solutions": [
+        {
+          "approach": "Add fairness constraints",
+          "code": ".with_fairness(|state, action| ...)",
+          "when": "Need fair scheduling assumption"
+        },
+        {
+          "approach": "Check for deadlock",
+          "code": "fn next_states(&self) -> Vec<Action> {\n    // Ensure non-empty in progress states\n}",
+          "when": "Process gets stuck"
+        },
+        {
+          "approach": "Add progress conditions",
+          "code": "fn check_progress(&self, path: &[State]) -> bool {\n    // Verify eventual progress\n}",
+          "when": "Livelock without progress"
+        }
+      ]
+    },
+    {
+      "id": "hash_collision",
+      "pattern": "hash.*collision|duplicate.*state",
+      "message": "Hash collision detected in state space",
+      "cause": "Two different states have the same hash, causing incorrect exploration",
+      "solutions": [
+        {
+          "approach": "Improve Hash implementation",
+          "code": "impl Hash for State {\n    fn hash<H: Hasher>(&self, state: &mut H) {\n        // Include all distinguishing fields\n    }\n}",
+          "when": "Custom Hash is incomplete"
+        },
+        {
+          "approach": "Use #[derive(Hash)]",
+          "code": "#[derive(Hash)]\nstruct State { ... }",
+          "when": "Can use derived implementation"
+        },
+        {
+          "approach": "Add state fingerprint",
+          "code": "struct State {\n    data: ...,\n    fingerprint: u64,  // Full hash for collision detection\n}",
+          "when": "Need collision detection"
+        }
+      ]
+    },
+    {
+      "id": "network_model_error",
+      "pattern": "network.*error|message.*lost|duplicate.*delivery",
+      "message": "Network model behaving unexpectedly",
+      "cause": "Network semantics (loss, duplication, reordering) causing issues",
+      "solutions": [
+        {
+          "approach": "Use reliable network",
+          "code": "Network::new_reliable()",
+          "when": "Testing application logic only"
+        },
+        {
+          "approach": "Handle message loss",
+          "code": "fn on_msg(&mut self, msg: Msg) -> Vec<Out> {\n    // Idempotent handling\n}",
+          "when": "Network drops messages"
+        },
+        {
+          "approach": "Add message deduplication",
+          "code": "struct State {\n    seen_msgs: HashSet<MsgId>,\n}",
+          "when": "Network duplicates messages"
+        }
+      ]
+    },
+    {
+      "id": "actor_panic",
+      "pattern": "actor.*panic|thread.*panic|unwrap.*failed",
+      "message": "Actor panicked during execution",
+      "cause": "Model code panicked, likely due to unwrap() on None/Err",
+      "solutions": [
+        {
+          "approach": "Use Option handling",
+          "code": "if let Some(val) = self.map.get(&key) {\n    // use val\n}",
+          "when": "Accessing optional data"
+        },
+        {
+          "approach": "Handle all message types",
+          "code": "match msg {\n    Msg::A(x) => ...,\n    Msg::B(y) => ...,\n    _ => {}  // Ignore unexpected\n}",
+          "when": "Unexpected message type"
+        },
+        {
+          "approach": "Add defensive checks",
+          "code": "fn on_msg(&mut self, msg: Msg) {\n    if !self.is_valid_state() { return; }\n}",
+          "when": "Invalid state combinations"
+        }
+      ]
+    },
+    {
+      "id": "checker_timeout",
+      "pattern": "timeout|took too long|exceeded.*time",
+      "message": "Model checking timed out",
+      "cause": "State space too large to explore within time limit",
+      "solutions": [
+        {
+          "approach": "Use random walk",
+          "code": ".spawn_random_walk(Duration::from_secs(60))",
+          "when": "Exhaustive check infeasible"
+        },
+        {
+          "approach": "Use BFS with depth limit",
+          "code": ".within_boundary(|_, d| d < 50)\n.spawn_bfs()",
+          "when": "Can bound depth"
+        },
+        {
+          "approach": "Increase parallelism",
+          "code": ".threads(num_cpus::get())",
+          "when": "Have more CPU cores"
+        }
+      ]
+    }
+  ]
+}

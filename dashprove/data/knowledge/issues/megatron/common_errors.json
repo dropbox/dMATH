@@ -1,0 +1,201 @@
+{
+  "tool": "megatron",
+  "version": "core-0.5.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "tensor_parallel_error",
+      "pattern": "Tensor parallel.*mismatch|tp_rank.*error",
+      "message": "Tensor parallelism configuration error",
+      "cause": "TP degree doesn't divide hidden size or vocab size evenly",
+      "solutions": [
+        {
+          "approach": "Adjust TP degree",
+          "code": "--tensor-model-parallel-size 4  # Must divide hidden_size",
+          "when": "TP size doesn't divide evenly"
+        },
+        {
+          "approach": "Pad vocabulary",
+          "code": "--make-vocab-size-divisible-by 128",
+          "when": "Vocab size not divisible by TP"
+        },
+        {
+          "approach": "Check hidden size divisibility",
+          "code": "# hidden_size must be divisible by (tp_size * num_attention_heads)",
+          "when": "Attention head configuration wrong"
+        }
+      ]
+    },
+    {
+      "id": "pipeline_parallel_error",
+      "pattern": "Pipeline parallel.*error|pp_rank",
+      "message": "Pipeline parallelism configuration error",
+      "cause": "Number of layers not divisible by PP degree",
+      "solutions": [
+        {
+          "approach": "Match layers to PP",
+          "code": "--num-layers 24 --pipeline-model-parallel-size 4  # 24/4=6 layers per stage",
+          "when": "Layers not evenly divisible"
+        },
+        {
+          "approach": "Check virtual pipeline stages",
+          "code": "--virtual-pipeline-model-parallel-size 2",
+          "when": "Using interleaved pipeline schedule"
+        },
+        {
+          "approach": "Verify rank assignment",
+          "code": "# Total GPUs = TP * PP * DP",
+          "when": "Rank configuration mismatch"
+        }
+      ]
+    },
+    {
+      "id": "data_loader_error",
+      "pattern": "Data loader.*error|IndexError.*dataset",
+      "message": "Data loading failed",
+      "cause": "Dataset path wrong, preprocessing issue, or DP mismatch",
+      "solutions": [
+        {
+          "approach": "Check data path",
+          "code": "--data-path /path/to/data/my_dataset_text_document",
+          "when": "Cannot find data files"
+        },
+        {
+          "approach": "Regenerate index",
+          "code": "python tools/preprocess_data.py \\\n    --input data.json \\\n    --output-prefix my_dataset \\\n    --vocab vocab.json",
+          "when": "Index file corrupted"
+        },
+        {
+          "approach": "Check split",
+          "code": "--split 900,50,50",
+          "when": "Train/val/test split invalid"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_mismatch",
+      "pattern": "Checkpoint.*mismatch|resume.*failed",
+      "message": "Cannot resume from checkpoint",
+      "cause": "Parallelism config changed or checkpoint corrupted",
+      "solutions": [
+        {
+          "approach": "Match parallel config",
+          "code": "# Must use same TP/PP/DP as checkpoint was saved with",
+          "when": "Changed parallelism degrees"
+        },
+        {
+          "approach": "Reshape checkpoint",
+          "code": "python tools/checkpoint/convert.py \\\n    --model-type GPT \\\n    --load-dir old_ckpt \\\n    --save-dir new_ckpt \\\n    --target-tp 8 --target-pp 4",
+          "when": "Need different parallelism"
+        },
+        {
+          "approach": "Skip optimizer state",
+          "code": "--no-load-optim --no-load-rng",
+          "when": "Only need model weights"
+        }
+      ]
+    },
+    {
+      "id": "nccl_timeout",
+      "pattern": "NCCL timeout|watchdog.*expired",
+      "message": "NCCL communication timeout",
+      "cause": "Rank desync, network issue, or load imbalance",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "export NCCL_TIMEOUT=1800",
+          "when": "Legitimate slow operations"
+        },
+        {
+          "approach": "Debug with barrier",
+          "code": "torch.distributed.barrier()",
+          "when": "Need to find where ranks diverge"
+        },
+        {
+          "approach": "Check for stragglers",
+          "code": "# Monitor GPU utilization across ranks",
+          "when": "Load imbalance"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "CUDA out of memory|OOM",
+      "message": "GPU memory exhausted",
+      "cause": "Model too large or activations consuming memory",
+      "solutions": [
+        {
+          "approach": "Enable activation checkpointing",
+          "code": "--recompute-activations",
+          "when": "Activations too large"
+        },
+        {
+          "approach": "Increase parallelism",
+          "code": "--tensor-model-parallel-size 8",
+          "when": "Model params don't fit"
+        },
+        {
+          "approach": "Reduce micro batch",
+          "code": "--micro-batch-size 1",
+          "when": "Batch activations too large"
+        },
+        {
+          "approach": "Use sequence parallelism",
+          "code": "--sequence-parallel",
+          "when": "Long sequence length"
+        }
+      ]
+    },
+    {
+      "id": "loss_nan",
+      "pattern": "loss.*nan|nan.*detected",
+      "message": "NaN loss detected",
+      "cause": "Numerical instability, bad data, or LR too high",
+      "solutions": [
+        {
+          "approach": "Use loss scaling",
+          "code": "--loss-scale 1.0 --initial-loss-scale 1.0",
+          "when": "FP16 overflow"
+        },
+        {
+          "approach": "Reduce learning rate",
+          "code": "--lr 1e-5 --min-lr 1e-6",
+          "when": "Training unstable"
+        },
+        {
+          "approach": "Check data",
+          "code": "# Look for NaN/Inf in input data",
+          "when": "Bad data causing NaN"
+        },
+        {
+          "approach": "Use BF16",
+          "code": "--bf16",
+          "when": "FP16 instability on Ampere+"
+        }
+      ]
+    },
+    {
+      "id": "initialization_error",
+      "pattern": "Initialization.*failed|init_method.*error",
+      "message": "Distributed initialization failed",
+      "cause": "Master address/port wrong or network config issue",
+      "solutions": [
+        {
+          "approach": "Set master addr/port",
+          "code": "export MASTER_ADDR=node-0\nexport MASTER_PORT=6000",
+          "when": "Nodes can't find master"
+        },
+        {
+          "approach": "Use torch distributed launch",
+          "code": "torchrun --nnodes=2 --nproc_per_node=8 \\\n    --rdzv_backend=c10d \\\n    --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT \\\n    train.py",
+          "when": "Standard launch not working"
+        },
+        {
+          "approach": "Check firewall",
+          "code": "# Ensure port is open between nodes",
+          "when": "Network connectivity issue"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "tool": "keda",
+  "category": "autoscaling",
+  "common_errors": [
+    {
+      "error_pattern": "ScaledObject.*not scaling",
+      "description": "KEDA not scaling workload",
+      "causes": [
+        "Metrics not available",
+        "Trigger configuration wrong",
+        "External scaler unreachable"
+      ],
+      "solutions": [
+        "Check ScaledObject status: kubectl get scaledobject",
+        "View KEDA operator logs",
+        "Verify trigger authentication"
+      ]
+    },
+    {
+      "error_pattern": "TriggerAuthentication.*not found",
+      "description": "Missing or invalid trigger authentication",
+      "causes": [
+        "TriggerAuthentication not created",
+        "Name mismatch in reference",
+        "Secrets not accessible"
+      ],
+      "solutions": [
+        "Create TriggerAuthentication resource",
+        "Match name in authenticationRef",
+        "Verify secrets exist and have correct data"
+      ]
+    },
+    {
+      "error_pattern": "scaler.*error",
+      "description": "Scaler failed to get metrics",
+      "causes": [
+        "External system unavailable",
+        "Query/metric expression invalid",
+        "Authentication failed"
+      ],
+      "solutions": [
+        "Check external system (Prometheus, Kafka, etc.)",
+        "Verify query syntax",
+        "Update credentials in TriggerAuthentication"
+      ]
+    },
+    {
+      "error_pattern": "HPA.*already exists",
+      "description": "Conflicting HPA on same target",
+      "causes": [
+        "Existing HPA on workload",
+        "KEDA trying to create HPA",
+        "Multiple ScaledObjects on same target"
+      ],
+      "solutions": [
+        "Remove existing HPA",
+        "Use KEDA's HPA only",
+        "One ScaledObject per workload"
+      ]
+    },
+    {
+      "error_pattern": "prometheus.*connection refused",
+      "description": "Cannot connect to Prometheus",
+      "causes": [
+        "Prometheus URL incorrect",
+        "Prometheus not running",
+        "Network policy blocking"
+      ],
+      "solutions": [
+        "Verify serverAddress in trigger",
+        "Check Prometheus is running",
+        "Allow KEDA to reach Prometheus"
+      ]
+    },
+    {
+      "error_pattern": "kafka.*topic.*not found",
+      "description": "Kafka topic doesn't exist",
+      "causes": [
+        "Topic name wrong",
+        "Topic not created yet",
+        "Consumer group issue"
+      ],
+      "solutions": [
+        "Create Kafka topic",
+        "Verify topic name in trigger",
+        "Check consumer group configuration"
+      ]
+    },
+    {
+      "error_pattern": "cron.*invalid expression",
+      "description": "Invalid cron schedule",
+      "causes": [
+        "Malformed cron syntax",
+        "Timezone not recognized"
+      ],
+      "solutions": [
+        "Use valid cron expression: 0 * * * *",
+        "Specify timezone correctly",
+        "Test cron with crontab.guru"
+      ]
+    },
+    {
+      "error_pattern": "cooldown.*in progress",
+      "description": "Scaling blocked by cooldown period",
+      "causes": [
+        "Recently scaled up/down",
+        "Cooldown period active"
+      ],
+      "solutions": [
+        "Wait for cooldown to expire",
+        "Adjust cooldownPeriod in ScaledObject",
+        "Default cooldown is 300 seconds"
+      ]
+    },
+    {
+      "error_pattern": "fallback.*activated",
+      "description": "Scaler falling back to default replicas",
+      "causes": [
+        "Metrics temporarily unavailable",
+        "External system error",
+        "Network issues"
+      ],
+      "solutions": [
+        "Check external system health",
+        "Configure fallback behavior",
+        "Set failureThreshold appropriately"
+      ]
+    },
+    {
+      "error_pattern": "min replicas.*not honored",
+      "description": "Workload scaled below minReplicas",
+      "causes": [
+        "HPA overriding KEDA",
+        "ScaledObject misconfigured",
+        "Pause scaling enabled"
+      ],
+      "solutions": [
+        "Check minReplicaCount in ScaledObject",
+        "Remove conflicting HPA",
+        "Verify no pause annotations"
+      ]
+    },
+    {
+      "error_pattern": "external push.*failed",
+      "description": "External scaler push metrics failed",
+      "causes": [
+        "External scaler service unavailable",
+        "gRPC connection error",
+        "Scaler returned error"
+      ],
+      "solutions": [
+        "Check external scaler pod logs",
+        "Verify gRPC port and address",
+        "Debug external scaler implementation"
+      ]
+    },
+    {
+      "error_pattern": "azure.*authentication error",
+      "description": "Azure scaler authentication failed",
+      "causes": [
+        "Service principal credentials invalid",
+        "Managed identity not configured",
+        "Missing Azure permissions"
+      ],
+      "solutions": [
+        "Update Azure credentials",
+        "Configure pod identity/workload identity",
+        "Grant required Azure RBAC roles"
+      ]
+    }
+  ]
+}

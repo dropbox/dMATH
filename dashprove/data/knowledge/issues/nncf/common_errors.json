@@ -1,0 +1,110 @@
+{
+  "tool": "nncf",
+  "version": "2.8.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_creation_error",
+      "pattern": "(create_compressed_model|NNCFNetwork|wrap)",
+      "message": "NNCF model creation error",
+      "cause": "Failed to wrap model with NNCF",
+      "solutions": [
+        {
+          "approach": "Create NNCF model (PyTorch)",
+          "code": "import nncf\nfrom nncf import NNCFConfig\nnncf_config = NNCFConfig.from_json_file('config.json')\ncompression_ctrl, model = nncf.create_compressed_model(\n    model, nncf_config\n)",
+          "when": "Wrapping PyTorch model"
+        },
+        {
+          "approach": "Use config dict",
+          "code": "nncf_config_dict = {\n    'input_info': {'sample_size': [1, 3, 224, 224]},\n    'compression': {'algorithm': 'quantization'}\n}\ncompression_ctrl, model = nncf.create_compressed_model(\n    model, NNCFConfig(nncf_config_dict)\n)",
+          "when": "Using Python config"
+        }
+      ]
+    },
+    {
+      "id": "input_info_error",
+      "pattern": "(input_info|sample_size|example_input)",
+      "message": "Input info configuration error",
+      "cause": "Model input shape not properly specified",
+      "solutions": [
+        {
+          "approach": "Specify input info",
+          "code": "nncf_config = {\n    'input_info': {\n        'sample_size': [1, 3, 224, 224],\n        'type': 'float',\n        'filler': 'zeros'\n    }\n}",
+          "when": "Single input"
+        },
+        {
+          "approach": "Multiple inputs",
+          "code": "nncf_config = {\n    'input_info': [\n        {'sample_size': [1, 3, 224, 224], 'keyword': 'image'},\n        {'sample_size': [1, 10], 'keyword': 'label'}\n    ]\n}",
+          "when": "Multiple inputs"
+        }
+      ]
+    },
+    {
+      "id": "quantization_error",
+      "pattern": "(quantization|int8|precision)",
+      "message": "Quantization configuration error",
+      "cause": "Invalid quantization parameters",
+      "solutions": [
+        {
+          "approach": "Configure quantization",
+          "code": "nncf_config = {\n    'input_info': {'sample_size': [1, 3, 224, 224]},\n    'compression': {\n        'algorithm': 'quantization',\n        'preset': 'performance',  # or 'accuracy'\n        'initializer': {\n            'range': {'num_init_samples': 256}\n        }\n    }\n}",
+          "when": "Setting up INT8"
+        },
+        {
+          "approach": "Per-layer config",
+          "code": "nncf_config = {\n    'compression': {\n        'algorithm': 'quantization',\n        'scope_overrides': {\n            'weights': {'mode': 'asymmetric'},\n            'activations': {'mode': 'symmetric'}\n        }\n    }\n}",
+          "when": "Custom per-layer"
+        }
+      ]
+    },
+    {
+      "id": "pruning_error",
+      "pattern": "(pruning|filter|sparsity)",
+      "message": "Pruning configuration error",
+      "cause": "Error in filter or weight pruning",
+      "solutions": [
+        {
+          "approach": "Configure filter pruning",
+          "code": "nncf_config = {\n    'compression': {\n        'algorithm': 'filter_pruning',\n        'pruning_init': 0.1,\n        'pruning_target': 0.5,\n        'num_init_steps': 1,\n        'pruning_flops_target': 0.5\n    }\n}",
+          "when": "Structured pruning"
+        },
+        {
+          "approach": "Configure magnitude pruning",
+          "code": "nncf_config = {\n    'compression': {\n        'algorithm': 'magnitude_sparsity',\n        'sparsity_init': 0.05,\n        'sparsity_target': 0.5,\n        'sparsity_target_epoch': 30\n    }\n}",
+          "when": "Unstructured pruning"
+        }
+      ]
+    },
+    {
+      "id": "training_error",
+      "pattern": "(training|scheduler|compression_ctrl)",
+      "message": "Training loop integration error",
+      "cause": "Compression controller not properly integrated",
+      "solutions": [
+        {
+          "approach": "Training loop",
+          "code": "for epoch in range(num_epochs):\n    compression_ctrl.scheduler.epoch_step()\n    for batch in train_loader:\n        compression_ctrl.scheduler.step()\n        output = model(batch)\n        loss = criterion(output, target)\n        compression_loss = compression_ctrl.loss()\n        total_loss = loss + compression_loss\n        total_loss.backward()\n        optimizer.step()",
+          "when": "Training with NNCF"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "(export|ONNX|OpenVINO)",
+      "message": "Model export error",
+      "cause": "Failed to export compressed model",
+      "solutions": [
+        {
+          "approach": "Export to ONNX",
+          "code": "compression_ctrl.export_model('model.onnx')",
+          "when": "ONNX export"
+        },
+        {
+          "approach": "Export for OpenVINO",
+          "code": "from nncf.torch.exporter import count_model_params\ncompression_ctrl.export_model(\n    'model.onnx',\n    input_names=['input'],\n    output_names=['output']\n)\n# Then convert with OpenVINO mo",
+          "when": "OpenVINO deployment"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "tool": "rollup",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unresolved_import",
+      "pattern": "Unresolved import|Could not resolve|Cannot find module|missing global",
+      "message": "Rollup cannot resolve an import",
+      "cause": "Module not installed or needs plugin",
+      "solutions": [
+        {
+          "approach": "Install node-resolve plugin",
+          "code": "npm install @rollup/plugin-node-resolve\n\n// rollup.config.js\nimport resolve from '@rollup/plugin-node-resolve';\n\nexport default {\n  plugins: [resolve()]\n};",
+          "when": "Can't resolve node_modules"
+        },
+        {
+          "approach": "Mark as external",
+          "code": "// rollup.config.js\nexport default {\n  external: ['lodash', 'react', /^node:.*/]\n};",
+          "when": "Don't want to bundle"
+        },
+        {
+          "approach": "Configure extensions",
+          "code": "import resolve from '@rollup/plugin-node-resolve';\n\nplugins: [\n  resolve({\n    extensions: ['.js', '.jsx', '.ts', '.tsx']\n  })\n]",
+          "when": "Non-JS files not resolving"
+        },
+        {
+          "approach": "Set browser field",
+          "code": "import resolve from '@rollup/plugin-node-resolve';\n\nplugins: [\n  resolve({\n    browser: true  // Use browser field in package.json\n  })\n]",
+          "when": "Wrong module resolution for browser"
+        }
+      ]
+    },
+    {
+      "id": "cjs_named_exports",
+      "pattern": "Named export.*not found|not provide an export|does not export",
+      "message": "CommonJS module has no named exports",
+      "cause": "CJS module imported with ESM syntax",
+      "solutions": [
+        {
+          "approach": "Use commonjs plugin",
+          "code": "npm install @rollup/plugin-commonjs\n\n// rollup.config.js\nimport commonjs from '@rollup/plugin-commonjs';\n\nexport default {\n  plugins: [commonjs()]\n};",
+          "when": "CJS modules not converting"
+        },
+        {
+          "approach": "Use default import",
+          "code": "// Instead of\nimport { something } from 'cjs-package';\n\n// Use\nimport pkg from 'cjs-package';\nconst { something } = pkg;",
+          "when": "Single CJS package"
+        },
+        {
+          "approach": "Configure named exports",
+          "code": "import commonjs from '@rollup/plugin-commonjs';\n\nplugins: [\n  commonjs({\n    namedExports: {\n      'react': ['useState', 'useEffect', 'createElement'],\n      'react-dom': ['render']\n    }\n  })\n]",
+          "when": "Auto-detection fails"
+        }
+      ]
+    },
+    {
+      "id": "circular_dependency",
+      "pattern": "Circular dependency|circular reference",
+      "message": "Circular dependency detected",
+      "cause": "Module A imports B which imports A",
+      "solutions": [
+        {
+          "approach": "Check warnings",
+          "code": "// Rollup warns about cycles by default\n// Check warning message for files involved\n// Output: (!) Circular dependency: src/a.js -> src/b.js -> src/a.js",
+          "when": "Need to identify cycle"
+        },
+        {
+          "approach": "Refactor to break cycle",
+          "code": "// Extract shared code to third module\n// Before: A <-> B\n// After: A -> C, B -> C",
+          "when": "Can restructure"
+        },
+        {
+          "approach": "Silence warning",
+          "code": "// rollup.config.js\nexport default {\n  onwarn(warning, warn) {\n    if (warning.code === 'CIRCULAR_DEPENDENCY') return;\n    warn(warning);\n  }\n};",
+          "when": "Cycle is intentional/safe"
+        }
+      ]
+    },
+    {
+      "id": "tree_shaking_issue",
+      "pattern": "tree.?shaking|unused export|side.?effects|moduleSideEffects",
+      "message": "Tree shaking not removing unused code",
+      "cause": "Side effects preventing removal",
+      "solutions": [
+        {
+          "approach": "Mark side-effect-free",
+          "code": "// package.json\n{\n  \"sideEffects\": false\n}\n\n// Or in rollup.config.js\nplugins: [\n  resolve({\n    moduleSideEffects: false\n  })\n]",
+          "when": "Package has sideEffects:true"
+        },
+        {
+          "approach": "Use pure annotations",
+          "code": "// Mark function as pure\nconst result = /*#__PURE__*/ expensiveCall();",
+          "when": "Function call not removed"
+        },
+        {
+          "approach": "Check output format",
+          "code": "export default {\n  output: {\n    format: 'es'  // ESM has best tree shaking\n  },\n  treeshake: {\n    moduleSideEffects: false,\n    propertyReadSideEffects: false\n  }\n};",
+          "when": "Using IIFE or UMD"
+        }
+      ]
+    },
+    {
+      "id": "this_undefined",
+      "pattern": "this.*undefined|Cannot read.*this|'this' is undefined",
+      "message": "'this' is undefined in module scope",
+      "cause": "CJS module uses 'this' at top level, which is undefined in ESM",
+      "solutions": [
+        {
+          "approach": "Use commonjs plugin",
+          "code": "import commonjs from '@rollup/plugin-commonjs';\n\nplugins: [\n  commonjs({\n    ignoreTryCatch: false\n  })\n]",
+          "when": "CJS module issue"
+        },
+        {
+          "approach": "Replace this",
+          "code": "import replace from '@rollup/plugin-replace';\n\nplugins: [\n  replace({\n    'this': 'undefined',  // or 'globalThis'\n    include: ['**/problematic-module.js']\n  })\n]",
+          "when": "Specific module"
+        },
+        {
+          "approach": "Set output context",
+          "code": "export default {\n  output: {\n    format: 'iife',\n    name: 'MyBundle',\n    globals: {\n      'this': 'window'\n    }\n  }\n};",
+          "when": "Browser bundle"
+        }
+      ]
+    },
+    {
+      "id": "jsx_error",
+      "pattern": "JSX|Unexpected token|pragma|React.*not defined",
+      "message": "JSX not being transformed",
+      "cause": "No JSX plugin configured",
+      "solutions": [
+        {
+          "approach": "Use Babel plugin",
+          "code": "npm install @rollup/plugin-babel @babel/preset-react\n\nimport babel from '@rollup/plugin-babel';\n\nplugins: [\n  babel({\n    babelHelpers: 'bundled',\n    presets: ['@babel/preset-react']\n  })\n]",
+          "when": "React JSX"
+        },
+        {
+          "approach": "Use esbuild plugin",
+          "code": "npm install rollup-plugin-esbuild\n\nimport esbuild from 'rollup-plugin-esbuild';\n\nplugins: [\n  esbuild({\n    jsx: 'automatic',\n    jsxImportSource: 'react'\n  })\n]",
+          "when": "Want faster builds"
+        },
+        {
+          "approach": "Use SWC plugin",
+          "code": "npm install @rollup/plugin-swc\n\nimport swc from '@rollup/plugin-swc';\n\nplugins: [\n  swc({\n    jsc: {\n      parser: { jsx: true },\n      transform: { react: { runtime: 'automatic' } }\n    }\n  })\n]",
+          "when": "SWC preferred"
+        }
+      ]
+    },
+    {
+      "id": "sourcemap_warning",
+      "pattern": "Sourcemap.*missing|Unable to.*sourcemap|broken sourcemap",
+      "message": "Source map issues",
+      "cause": "Source maps not passed through plugins",
+      "solutions": [
+        {
+          "approach": "Enable source maps",
+          "code": "export default {\n  output: {\n    sourcemap: true  // or 'inline'\n  }\n};",
+          "when": "Source maps not generated"
+        },
+        {
+          "approach": "Configure plugins",
+          "code": "import typescript from '@rollup/plugin-typescript';\n\nplugins: [\n  typescript({\n    sourceMap: true,\n    inlineSources: true\n  })\n]",
+          "when": "Plugin not passing source maps"
+        },
+        {
+          "approach": "Silence warnings",
+          "code": "export default {\n  onwarn(warning, warn) {\n    if (warning.code === 'SOURCEMAP_BROKEN') return;\n    warn(warning);\n  }\n};",
+          "when": "Third-party module issue"
+        }
+      ]
+    },
+    {
+      "id": "output_format",
+      "pattern": "output format|UMD|IIFE|requires.*name|global.*name",
+      "message": "Output format configuration error",
+      "cause": "IIFE/UMD requires name, or wrong format",
+      "solutions": [
+        {
+          "approach": "Provide name for IIFE/UMD",
+          "code": "export default {\n  output: {\n    format: 'iife',\n    name: 'MyLibrary',  // Required for IIFE/UMD\n    globals: {\n      'react': 'React',  // Map externals to globals\n      'react-dom': 'ReactDOM'\n    }\n  }\n};",
+          "when": "IIFE/UMD without name"
+        },
+        {
+          "approach": "Choose correct format",
+          "code": "// ES modules (modern bundlers, Node 14+)\nformat: 'es'\n\n// CommonJS (Node.js)\nformat: 'cjs'\n\n// Browser script tag\nformat: 'iife'\n\n// Universal (works everywhere)\nformat: 'umd'",
+          "when": "Unsure which format"
+        },
+        {
+          "approach": "Multiple outputs",
+          "code": "export default {\n  input: 'src/index.js',\n  output: [\n    { file: 'dist/bundle.cjs', format: 'cjs' },\n    { file: 'dist/bundle.mjs', format: 'es' },\n    { file: 'dist/bundle.umd.js', format: 'umd', name: 'MyLib' }\n  ]\n};",
+          "when": "Need multiple formats"
+        }
+      ]
+    }
+  ]
+}

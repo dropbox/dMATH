@@ -1,0 +1,99 @@
+{
+  "tool": "cloud_storage",
+  "category": "gcp_storage",
+  "description": "Google Cloud Storage - object storage service",
+  "common_errors": [
+    {
+      "id": "access_denied",
+      "pattern": "AccessDenied",
+      "regex": "(?i)access.*denied|403|forbidden|not.*authorized",
+      "cause": "IAM or ACL permissions deny access",
+      "solution": "Grant roles/storage.objectViewer or storage.objectAdmin, check bucket IAM policy, verify uniform bucket-level access",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "bucket_not_found",
+      "pattern": "BucketNotFound",
+      "regex": "(?i)bucket.*not.*found|does.*not.*exist|404.*bucket|no.*such.*bucket",
+      "cause": "Specified bucket does not exist",
+      "solution": "Verify bucket name (globally unique), check project, create bucket if needed",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "object_not_found",
+      "pattern": "ObjectNotFound",
+      "regex": "(?i)object.*not.*found|no.*such.*object|blob.*not.*found|404",
+      "cause": "Specified object does not exist in bucket",
+      "solution": "Verify object path, list bucket contents, check if object was deleted by lifecycle policy",
+      "severity": "medium",
+      "category": "resources"
+    },
+    {
+      "id": "bucket_exists",
+      "pattern": "BucketAlreadyExists",
+      "regex": "(?i)bucket.*already.*exists|bucket.*name.*taken|409.*conflict",
+      "cause": "Bucket name already in use globally",
+      "solution": "Choose unique bucket name, include project ID or random suffix",
+      "severity": "medium",
+      "category": "resources"
+    },
+    {
+      "id": "rate_limit",
+      "pattern": "RateLimitExceeded",
+      "regex": "(?i)rate.*limit|too.*many.*requests|429|retry.*after",
+      "cause": "GCS API rate limit exceeded",
+      "solution": "Implement exponential backoff, batch operations, avoid hotspot object names",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "cors_error",
+      "pattern": "CORS",
+      "regex": "(?i)cors|cross.*origin|access-control-allow|preflight",
+      "cause": "CORS configuration missing or misconfigured",
+      "solution": "Configure bucket CORS settings with 'gsutil cors set', allow required origins and methods",
+      "severity": "medium",
+      "category": "configuration"
+    },
+    {
+      "id": "signed_url_error",
+      "pattern": "SignedURL",
+      "regex": "(?i)signed.*url|signature.*expired|invalid.*signature|access.*denied.*signed",
+      "cause": "Signed URL expired or signature invalid",
+      "solution": "Generate new signed URL, check system clock synchronization, verify service account key",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "lifecycle_error",
+      "pattern": "Lifecycle",
+      "regex": "(?i)lifecycle|object.*deleted|retention.*policy|object.*hold",
+      "cause": "Object affected by lifecycle policy or retention",
+      "solution": "Review lifecycle rules, check retention policy, remove object hold if needed",
+      "severity": "medium",
+      "category": "lifecycle"
+    },
+    {
+      "id": "encryption_error",
+      "pattern": "KMS",
+      "regex": "(?i)kms.*error|customer.*managed.*key|cmek|encryption.*key",
+      "cause": "Customer-managed encryption key (CMEK) access issue",
+      "solution": "Grant Cloud Storage service account access to KMS key, verify key is enabled",
+      "severity": "high",
+      "category": "security"
+    },
+    {
+      "id": "resumable_upload",
+      "pattern": "ResumableUpload",
+      "regex": "(?i)resumable.*upload|upload.*failed|session.*expired|503.*service.*unavailable",
+      "cause": "Resumable upload session failed or expired",
+      "solution": "Retry upload, use resumable uploads for files >5MB, implement retry logic with session resumption",
+      "severity": "medium",
+      "category": "uploads"
+    }
+  ],
+  "related_tools": ["gcloud", "gsutil", "bigquery", "dataflow"],
+  "documentation_url": "https://cloud.google.com/storage/docs"
+}

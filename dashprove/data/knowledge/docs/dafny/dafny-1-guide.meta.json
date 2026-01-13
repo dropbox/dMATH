@@ -1,0 +1,702 @@
+{
+  "id": "dafny-1-guide",
+  "source": "https://dafny.org/latest/OnlineTutorial/guide",
+  "backend": "Dafny",
+  "title": "Getting Started with Dafny: A Guide | Dafny Documentation",
+  "content": "## Getting Started with Dafny: A Guide\n\n(*The examples use Dafny 4 syntax.*)\n\n### Introduction\n\nDafny is a language that is designed to make it easy to write correct code. This\nmeans correct in the sense of not having any runtime errors, but also correct in\nactually doing what the programmer intended it to do. To accomplish this, Dafny\nrelies on high-level annotations to reason about and prove correctness of code.\nThe effect of a piece of code can be given abstractly, using a natural,\nhigh-level expression of the desired behavior, which is easier and less error\nprone to write than the implementation code itself. Dafny then generates a proof\nthat the code matches the annotations (assuming they are correct, of course!).\nDafny lifts the burden of writing bug-free *code* into that of writing bug-free\n*annotations*. This is often easier than writing the code, because annotations\nare shorter and more direct. For example, the following fragment of annotation\nin Dafny says that every element of the array is strictly positive:\n\n`forall k: int :: 0 <= k < a.Length ==> 0 < a[k]\n`\n\nThis says that for all integers `k` that are indices into the array, the value\nat that index is greater than zero. By writing these annotations, one is\nconfident that the code is correct. Further, the very act of writing the\nannotations can help one understand what the code is doing at a deeper level.\n\nIn addition to proving a correspondence to user supplied annotations, Dafny\nproves that there are no run time errors, such as index out of bounds, null\ndereferences, division by zero, etc. This guarantee is a powerful one, and is a\nstrong case in and of itself for the use of Dafny and tools like it. Dafny also\nproves the termination of code, except in specially designated loops.\n\nLet’s get started writing some Dafny programs.\n\n### Methods\n\nDafny resembles a typical imperative programming language in many ways. There\nare methods, variables, types, loops, if statements, arrays, integers, and more.\nOne of the basic units of any Dafny program is the *method*. A method is a piece\nof imperative, executable code. In other languages, they might be called\nprocedures, or functions, but in Dafny the term “function” is reserved for a\ndifferent concept that we will cover later. A method is declared in the\nfollowing way:\n\n`method Abs(x: int) returns (y: int)\n{\n  ...\n}\n`\n\nThis declares a method called “`Abs`” which takes a single integer parameter,\ncalled “`x`”, and returns a single integer, called “`y`”. Note that the types\nare required for each parameter and return value, and follow each name after a\ncolon (`:`). Also, the return values are named, and there can be multiple return\nvalues, as in this code:\n\n`method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n{\n  ...\n}\n`\n\nThe method body is the code contained within the braces, which until now has\nbeen cleverly represented as “`...`” (which is *not* Dafny syntax). The body\nconsists of a series of *statements*, such as the familiar imperative\nassignments, `if` statements, loops, other method calls, `return` statements,\netc. For example, the `MultipleReturns` method may be implemented as:\n\n`method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n{\n  more := x + y;\n  less := x - y;\n  // comments: are not strictly necessary.\n}\n`\n\nAssignments do not use “`=`”, but rather “`:=`”. (In fact, as Dafny uses “`==`”\nfor equality, there is no use of a single equals sign in Dafny expressions.)\nSimple statements must be followed by a semicolon, and whitespace and comments\n(`//` and `/**/`) are ignored. To return a value from a method, the value is\nassigned to one of the named return values sometime before a `return` statement.\nIn fact, the return values act very much like local variables, and can be\nassigned to more than once. The input parameters, however, are read only.\n`return` statements are used when one wants to return before reaching the end of\nthe body block of the method. Return statements can be just the `return` keyword\n(where the current value of the out parameters are used), or they can take a\nlist of values to return. There are also compound statements, such as `if`\nstatements. `if` statements do not require parentheses around the boolean\ncondition, and act as one would expect:\n\n`method Abs(x: int) returns (y: int)\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\nOne caveat is that they always need braces around the branches, even if the\nbranch only contains a single statement (compound or otherwise). Here the `if`\nstatement checks whether `x` is less than zero, using the familiar comparison\noperator syntax, and returns the absolute value as appropriate. (Other\ncomparison operators are `<=`, `>`, `>=`, `!=` and `==`, with the expected\nmeaning. See the reference for more on operators.)\n\n### Pre- and Postconditions\n\nNone of what we have seen so far has any specifications: the code could be\nwritten in virtually any imperative language (with appropriate considerations\nfor multiple return values). The real power of Dafny comes from the ability to\nannotate these methods to specify their behavior. For example, one property that\nwe observe with the `Abs` method is that the result is always greater than or\nequal to zero, regardless of the input. We could put this observation in a\ncomment, but then we would have no way to know whether the method actually had\nthis property. Further, if someone came along and changed the method, we\nwouldn’t be guaranteed that the comment was changed to match. With annotations,\nwe can have Dafny prove that the property we claim of the method is true. There\nare several ways to give annotations, but some of the most common, and most\nbasic, are method *pre-* and *postconditions*.\n\nThis property of the `Abs` method, that the result is always non-negative, is an\nexample of a postcondition: it is something that is true after the method\nreturns. Postconditions, declared with the `ensures` keyword, are given as part\nof the method’s declaration, after the return values (if present) and before the\nmethod body. The keyword is followed by the boolean expression. Like an `if` or\n`while` condition and most specifications, a postcondition is always a boolean\nexpression: something that can be *true* or *false*. In the case of the `Abs`\nmethod, a reasonable postcondition is the following:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\nYou can see here why return values are given names. This makes them easy to\nrefer to in the postcondition of a method. When the expression is true, we say\nthat the postcondition *holds*. The postcondition must hold for every invocation\nof the function, and for every possible return point (including the implicit one\nat the end of the function body). In this case, the only property we are\nexpressing is that the return value is always at least zero.\n\nSometimes there are multiple properties that we would like to establish about\nour code. In this case, we have two options. We can either join the two\nconditions together with the boolean “and” operator (`&&`), or we can write\nmultiple `ensures` specifications. The latter is basically the same as the\nformer, but it separates distinct properties. For example, the return value\nnames from the `MultipleReturns` method might lead one to guess the following\npostconditions:\n\n`method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x\n  ensures x < more\n{\n  more := x + y;\n  less := x - y;\n}\n`\n\nThe postcondition can also be written:\n\n`method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x && x < more\n{\n  more := x + y;\n  less := x - y;\n}\n`\n\nor even:\n\n`method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x < more\n{\n  more := x + y;\n  less := x - y;\n}\n`\n\nbecause of the chaining comparison operator syntax in Dafny. (In general, most\nof the comparison operators can be chained, but only “in one direction”, i.e.\nnot mixing “greater than” and “less than”. See the reference for details.)\n\nThe first way of expressing the postconditions separates the “less” part from\nthe “more” part, which may be desirable. Another thing to note is that we have\nincluded one of the input parameters in the postcondition. This is useful\nbecause it allows us to relate the input and output of the method to one another\n(this works because input parameters are read only, and so are the same at the\nend as they were at the beginning).\n\nDafny actually rejects this program, claiming that the first postcondition does\nnot hold (i.e. is not true). This means that Dafny wasn’t able to prove that\nthis annotation holds every time the method returns. In general, there are two\nmain causes for Dafny verification errors: specifications that are inconsistent\nwith the code, and situations where it is not “clever” enough to prove the\nrequired properties. Differentiating between these two possibilities can be a\ndifficult task, but fortunately, Dafny and the Boogie/Z3 system on which it is\nbased are pretty smart, and will prove matching code and specifications with a\nminimum of fuss.\n\nIn this situation, Dafny is correct in saying there is an error with the code.\nThe key to the problem is that `y` is an integer, so it can be negative. If `y`\nis negative (or zero), then `more` can actually be smaller than or equal to `x`.\nOur method will not work as intended unless `y` is strictly larger than zero.\nThis is precisely the idea of a *precondition*. A precondition is similar to a\npostcondition, except that it is something that must be true *before* a method\nis called. When you call a method, it is your job to establish (make true) the\npreconditions, something Dafny will enforce using a proof. Likewise, when you\nwrite a method, you get to assume the preconditions, but you must establish the\npostconditions. The caller of the method then gets to assume that the\npostconditions hold after the method returns.\n\nPreconditions have their own keyword, `requires`. We can give the necessary\nprecondition to `MultipleReturns` as below:\n\n`method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  requires 0 < y\n  ensures less < x < more\n{\n  more := x + y;\n  less := x - y;\n}\n`\n\nLike postconditions, multiple preconditions can be written either with the\nboolean “and” operator (`&&`), or by multiple `requires` keywords.\nTraditionally, `requires` precede `ensures` in the source code, though this is\nnot strictly necessary (although the order of the `requires` and `ensures`\nannotations with respect to others of the same type can sometimes matter, as we\nwill see later). With the addition of this condition, Dafny now verifies the\ncode as correct, because this assumption is all that is needed to guarantee the\ncode in the method body is correct.\n\n**Exercise 0.** *Write a method `Max` that takes two integer parameters and\nreturns their maximum. Add appropriate annotations and make sure your code\nverifies.*\n\n`method Max(a: int, b: int) returns (c: int)\n  // What postcondition should go here, so that the function operates as expecte\nd?\n  // Hint: there are many ways to write this.\n{\n  // fill in the code here\n}\n`\n\nNot all methods necessarily have preconditions. For example, the `Abs` method we\nhave already seen is defined for all integers, and so has no preconditions\n(other than the trivial requirement that its argument is an integer, which is\nenforced by the type system). Even though it has no need of preconditions, the\n`Abs` function as it stands now is not very useful. To investigate why, we need\nto make use of another kind of annotation, the *assertion*.\n\n### Assertions\n\nUnlike pre- and postconditions, an assertion is placed somewhere in the middle\nof a method. Like the previous two annotations, an assertion has a keyword,\n`assert`, followed by the boolean expression and the semicolon that terminates\nsimple statements. An assertion says that a particular expression always holds\nwhen control reaches that part of the code. For example, the following is a\ntrivial use of an assertion inside a dummy method:\n\n`method Testing()\n{\n  assert 2 < 3;\n  // Try \"asserting\" something that is not true.\n  // What does Dafny output?\n}\n`\n\nDafny proves this method correct, as `2` is always less than `3`. Asserts have\nseveral uses, but chief among them is checking whether your expectations of what\nis true at various points is actually true. You can use this to check basic\narithmetical facts, as above, but they can also be used in more complex\nsituations. Assertions are a powerful tool for debugging annotations, by\nchecking what Dafny is able to prove about your code. For example, we can use it\nto investigate what Dafny knows about the `Abs` function.\n\nTo do this, we need one more concept: local variables. Local variables behave\nexactly as you would expect, except maybe for a few issues with shadowing. (See\nthe reference for details.) Local variables are declared with the `var` keyword,\nand can optionally have type declarations. Unlike method parameters, where types\nare required, Dafny can infer the types of local variables in almost all\nsituations. This is an example of an initialized, explicitly typed variable\ndeclaration:\n\n`method m()\n{\n  var x: int := 5;\n}\n`\n\nThe type annotation can be dropped in this case:\n\n`method m()\n{\n  var x := 5;\n}\n`\n\nMultiple variables can be declared at once:\n\n`method m()\n{\n  var x, y, z: bool := 1, 2, true;\n}\n`\n\nExplicit type declarations only apply to the immediately preceding variable, so\nhere the `bool` declaration only applies to `z`, and not `x` or `y`, which are\nboth inferred to be `int`s. We needed variables because we want to talk about\nthe return value of the `Abs` method. We cannot put `Abs` inside a specification\ndirectly, as the method could change memory state, among other problems. So we\ncapture the return value of a call to `Abs` as follows:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n}\n`\n\nThis is an example of a situation where we can ask Dafny what it knows about the\nvalues in the code, in this case `v`. We do this by adding assertions, like the\none above. Every time Dafny encounters an assertion, it tries to prove that the\ncondition holds for all executions of the code. In this example, there is only\none control path through the method, and Dafny is able to prove the annotation\neasily because it is exactly the postcondition of the `Abs` method. `Abs`\nguarantees that the return value is non-negative, so it trivially follows that\n`v`, which is this value, is non-negative after the call to `Abs`.\n\n**Exercise 1.** *Write a test method that calls your `Max` method from Exercise\n0 and then asserts something about the result.*\n\n`method Max(a: int, b:int) returns (c: int)\n  // Use your code from Exercise 0\nmethod Testing() {\n  // Assert some things about Max. Does it operate as you expect?\n  // If it does not, can you think of a way to fix it?\n}\n`\n\nBut we know something stronger about the `Abs` method. In particular, for\nnon-negative `x`, `Abs(x) == x`. Specifically, in the above program, the value\nof `v` is 3. If we try adding an assertion (or changing the existing one) to\nsay:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  assert v == 3;\n}\n`\n\nwe find that Dafny cannot prove our assertion, and gives an error. The reason\nthis happens is that Dafny “forgets” about the body of every method except the\none it is currently working on. This simplifies Dafny’s job tremendously, and is\none of the reasons it is able to operate at reasonable speeds. It also helps us\nreason about our programs by breaking them apart and so we can analyze each\nmethod in isolation (given the annotations for the other methods). We don’t care\nat all what happens inside each method when we call it, as long as it satisfies\nits annotations. This works because Dafny will prove that all the methods\nsatisfy their annotations, and refuse to compile our code until they do.\n\nFor the `Abs` method, this means that the only thing Dafny knows in the Testing\nmethod about the value returned from `Abs` is what the postconditions say about\nit, *and nothing more*. This means that Dafny won’t know the nice property about\n`Abs` and non-negative integers unless we tell it by putting this in the\npostcondition of the `Abs` method. Another way to look at it is to consider the\nmethod annotations (along with the type of the parameters and return values) as\nfixing the behavior of the method. Everywhere the method is used, we assume that\nit is any one of the conceivable method(s) that satisfies the pre- and\npostconditions. In the `Abs` case, we might have written:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  y := 0;\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  // this still does not verify, but now it is actually not true:\n  assert v == 3;\n}\n`\n\nThis method satisfies the postconditions, but clearly the program fragment:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  y := 0;\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  assert v == 3;\n}\n`\n\nwould not be true in this case. Dafny is considering, in an abstract way, all\nmethods with those annotations. The mathematical absolute value certainly is\nsuch a method, but so are all methods that return a positive constant, for\nexample. We need stronger postconditions to eliminate these other possibilities,\nand “fix” the method down to exactly the one we want. We can partially do this\nwith the following:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\nThis expresses exactly the property we discussed before, that the absolute value\nis the same for non-negative integers. The second `ensures` is expressed via the\nimplication operator `==>`, which basically says that the left hand side implies\nthe right in the mathematical sense (it binds more weakly than boolean “and” and\ncomparisons, so the above says `0 <= x` implies `y == x`). The left and right\nsides must both be boolean expressions.\n\nThe postcondition says that after `Abs` is called, if the value of `x` was\nnon-negative, then `y` is equal to `x`. One caveat of the implication is that it\nis still true if the left part (the antecedent) is false. So the second\npostcondition is trivially true when `x` is negative. In fact, the only thing\nthat the annotations say when `x` is negative is that the result, `y`, is\npositive. But this is still not enough to fix the method, so we must add another\npostcondition, to make the following complete annotation covering all cases:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\nThese annotations are enough to require that our method actually computes the\nabsolute value of `x`. These postconditions are not the only way to express this\nproperty. For example, this is a different, and somewhat shorter, way of saying\nthe same thing:\n\n`method Abs(x: int) returns (y: int)\n  ensures 0 <= y && (y == x || y == -x)\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\nIn general, there can be many ways to write down a given property. Most of the\ntime it doesn’t matter which one you pick, but a good choice can make it easier\nto understand the stated property and verify that it is correct.\n\nBut we still have an issue: there seems to be a lot of duplication. The body of\nthe method is reflected very closely in the annotations. While this is correct\ncode, we want to eliminate this redundancy. As you might guess, Dafny provides a\nmeans of doing this: functions.\n\n**Exercise 2.** *Using a precondition, change `Abs` to say it can only be called\non negative values. Simplify the body of `Abs` into just one return statement\nand make sure the method still verifies.*\n\n`method Abs(x: int) returns (y: int)\n  // Add a precondition here.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  // Simplify the body to just one return statement\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\n**Exercise 3.** *Keeping the postconditions of `Abs` the same as above, change\nthe body of `Abs` to just `y := x + 2`. What precondition do you need to\nannotate the method with in order for the verification to go through? What\nprecondition do you need if the body is `y := x + 1`? What does that\nprecondition say about when you can call the method?*\n\n`method Abs(x: int) returns (y: int)\n  // Add a precondition here so that the method verifies.\n  // Don't change the postconditions.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  y:= x + 2;\n}\nmethod Abs2(x: int) returns (y: int)\n  // Add a precondition here so that the method verifies.\n  // Don't change the postconditions.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  y:= x + 1;\n}\n`\n\n### Functions\n\n`function abs(x: int): int\n{\n  ...\n}\n`\n\nThis declares a function called `abs` which takes a single integer, and returns\nan integer (the second `int`). Unlike a method, which can have all sorts of\nstatements in its body, a function body must consist of exactly one expression,\nwith the correct type. Here our body must be an integer expression. In order to\nimplement the absolute value function, we need to use an *`if` expression*. An\n`if` expression is like the ternary operator in other languages.\n\n`function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\n`\n\nObviously, the condition must be a boolean expression, and the two branches must\nhave the same type. You might wonder why anyone would bother with functions, if\nthey are so limited compared to methods. The power of functions comes from the\nfact that they can be *used directly in specifications*. So we can write:\n\n`function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\nmethod m()\n{\n  assert abs(3) == 3;\n}\n`\n\nIn fact, not only can we write this statement directly without capturing to a\nlocal variable, we didn’t even need to write any postconditions to caputure the\nbehavior as we did with the method (though functions can and do have pre- and\npostconditions in general). The limitations of functions are precisely what\nenable Dafny to do this. Unlike with methods, Dafny does not forget the body of\na function when using it. So it can expand the definition of `abs` in the above\nassertion and determine that the result is actually `3`.\n\n**Exercise 4.** *Write a **function** `max` that returns the larger of two given\ninteger parameters. Write a test method using an `assert` that checks that your\nfunction is correct.*\n\n`function max(a: int, b: int): int\n{\n  0 // Fill in an expression here.\n}\nmethod Testing() {\n  // Add assertions to check max here.\n}\n`\n\n**Exercise 5.** *Now that we have an `abs` function, change the postcondition of\nmethod `Abs` to make use of `abs`. After confirming the method still verifies,\nchange the body of `Abs` to also use `abs`. (After doing this, you will realize\nthere is not much point in having a method that does exactly the same thing as a\nfunction.)*\n\n`function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\nmethod Abs(x: int) returns (y: int)\n  // Use abs here, then confirm the method still verifies.\n{\n  // Then change this body to also use abs.\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n`\n\nUnlike methods, functions can appear in expressions. Thus we can do something\nlike implement the mathematical Fibonacci function:\n\n`function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\n`\n\nHere we use `nat`s, the type of natural numbers (non-negative integers), which\nis often more convenient than annotating everything to be non-negative. Using\nthis function for actually calculating the Fibonacci numbers would be extremely\nslow, as this implementation has exponential complexity. There are much better\nways to calculate the Fibonacci function. But this function is still useful, as\nwe can have Dafny prove that a fast version really matches the mathematical\ndefinition. We can get the best of both worlds: the guarantee of correctness and\nthe performance we want.\n\nWe can start by defining a method like the following:\n\n`function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  ...\n}\n`\n\nWe haven’t written the body yet, so Dafny will complain that our postcondition\ndoesn’t hold. We need an algorithm to calculate the `n`^{th} Fibonacci number.\nThe basic idea is to keep a counter and repeatedly calculate adjacent pairs of\nFibonacci numbers until the desired number is reached. To do this, we need a\nloop. In Dafny, this is done via a *`while` loop*. A while loop looks like the\nfollowing:\n\n`method m(n: nat)\n{\n  var i := 0;\n  while i < n\n  {\n    i := i + 1;\n  }\n}\n`\n\nThis is a trivial loop that just increments `i` until it reaches `n`. This will\nform the core of our loop to calculate Fibonacci numbers.\n\n### Loop Invariants\n\n`while` loops present a problem for Dafny. There is no way for Dafny to know in\nadvance how many times the code will go around the loop. But Dafny needs to\nconsider all paths through a program, which could include going around the loop\nany number of times. To make it possible for Dafny to work with loops, you need\nto provide *loop invariants*, another kind of annotation.\n\nA loop invariant is an expression that holds upon entering a loop and after\nevery execution of the loop body. It captures something that is invariant, i.e.\ndoes not change, about every step of the loop. Now, obviously we are going to\nwant to change variables, etc. each time around the loop, or we wouldn’t need\nthe loop. Like pre- and postconditions, an invariant is a *property* that is\npreserved for each execution of the loop, expressed using the same boolean\nexpressions we have seen. For example, we see in the above loop that if `i`\nstarts off positive, then it stays positive. So we can add the invariant, using\nits own keyword, to the loop:\n\n`method m(n: nat)\n{\n  var i := 0;\n  while i < n\n    invariant 0 <= i\n  {\n    i := i + 1;\n  }\n}\n`\n\nWhen you specify an invariant, Dafny proves two things: the invariant holds upon\nentering the loop and it is preserved by the loop. By preserved, we mean that\nassuming that the invariant holds at the beginning of the loop, we must show\nthat executing the loop body once makes the invariant hold again. Dafny can only\nknow upon analyzing the loop body what the invariants say, in addition to the\nloop guard (the loop condition). Just as Dafny will not discover properties of a\nmethod on its own, it will not know any but the most basic properties of a loop\nare preserved unless it is told via an invariant.\n\nIn our example, the point of the loop is to build up the Fibonacci numbers one\n(well, two) at a time until we reach the desired number. After we exit the loop,\nwe will have that `i == n`, because `i` will stop being incremented when it\nreaches `n`. We can use our assertion trick to check to see if Dafny sees this\nfact as well:\n\n`method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n`\n\nWe find that this assertion fails. As far as Dafny knows, it is possible that\n`i` somehow became much larger than `n` at some point during the loop. All it\nknows after the loop exits (i.e. in the code after the loop) is that the loop\nguard failed and the invariants hold. In this case, this amounts to `n <= i` and\n`0 <= i`. But this is not enough to guarantee that `i == n`, just that `n <= i`.\nSomehow we need to eliminate the possibility of `i` exceeding `n`. One first\nguess for solving this problem might be the following:\n\n`method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i < n\n  {\n    i := i + 1;\n  }\n}\n`\n\nThis does not verify, as Dafny complains that the invariant is not preserved\n(also known as not maintained) by the loop. We want to be able to say that after\nthe loop exits, then all the invariants hold. Our invariant holds for every\nexecution of the loop *except* for the very last one. Because the loop body is\nexecuted only when the loop guard holds, in the last iteration `i` goes from `n\n- 1` to `n`, but does not increase further, as the loop exits. Thus, we have\nonly omitted exactly one case from our invariant, and repairing it is relatively\neasy:\n\n`method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i <= n\n  {\n    i := i + 1;\n  }\n}\n`\n\nNow we can say both that `n <= i` from the loop guard and `0 <= i <= n` from the\ninvariant, which allows Dafny to prove the assertion `i == n`. The challenge in\npicking loop invariants is finding one that is preserved by the loop, but also\nthat lets you prove what you need after the loop has executed.\n\n**Exercise 6.** *Change the loop invariant to `0 <= i <= n+2`. Does the loop\nstill verify? Does the assertion `i == n` after the loop still verify?*\n\n`method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i <= n  // Change this. What happens?\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n`\n\n**Exercise 7.** *With the original loop invariant, change the loop guard from `i\n< n` to `i != n`. Do the loop and the assertion after the loop still verify? Why\nor why not?*\n\n`method m(n: nat)\n{\n  var i: int := 0;\n  while i < n  // Change this. What happens?\n    invariant 0 <= i <= n\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n`\n\nIn addition to the counter, our algorithm called for a pair of numbers which\nrepresent adjacent Fibonacci numbers in the sequence. Unsurprisingly, we will\nhave another invariant or two to relate these numbers to each other and the\ncounter. To find these invariants, we employ a common Dafny trick: working\nbackwards from the postconditions.\n\nOur postcondition for the Fibonacci method is that the return value `b` is equal\nto `fib(n)`. But after the loop, we have that `i == n`, so we need `b == fib(i)`\nat the end of the loop. This might make a good invariant, as it relates\nsomething to the loop counter. This observation is surprisingly common\nthroughout Dafny programs. Often a method is just a loop that, when it ends,\nmakes the postcondition true by having a counter reach another number, often an\nargument or the length of an array or sequence. So we have that the variable\n`b`, which is conveniently our out parameter, will be the current Fibonacci\nnumber:\n\n`  invariant b == fib(i)\n`\n\nWe also note that in our algorithm, we can compute any Fibonacci number by\nkeeping track of a pair of numbers and summing them to get the next number. So\nwe want a way of tracking the previous Fibonacci number, which we will call `a`.\nAnother invariant will express that number’s relation to the loop counter. The\ninvariants are:\n\n`  invariant a == fib(i - 1)\n`\n\nAt each step of the loop, the two values are summed to get the next leading\nnumber, while the trailing number is the old leading number. Using a parallel\nassignment, we can write a loop that performs this operation:\n\n`function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  var i := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n`\n\nHere `a` is the trailing number and `b` is the leading number. The parallel\nassignment means that the entire right hand side is calculated before the\nassignments to the variables are made. Thus `a` will get the old value of `b`,\nand `b` will get the sum of the two old values, which is precisely the behavior\nwe want.\n\nWe also have made a change to the loop counter `i`. Because we also want to\ntrack the trailing number, we can’t start the counter at zero, as otherwise we\nwould have to calculate a negative Fibonacci number. The problem with doing this\nis that the loop counter invariant may not hold when we enter the loop. The only\nproblem is when `n` is zero. This can be eliminated as a special case, by\ntesting for this condition at the beginning of the loop. The completed Fibonacci\nmethod becomes:\n\n`function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  if n == 0 { return 0; }\n  var i: int := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n`\n\nDafny no longer complains about the loop invariant not holding, because if `n`\nwere zero, it would return before reaching the loop. Dafny is also able to use\nthe loop invariants to prove that after the loop, `i == n` and `b == fib(i)`,\nwhich together imply the postcondition, `b == fib(n)`.\n\n**Exercise 8.** *The `ComputeFib` method above is more complicated than\nnecessary. Write a simpler program by not introducing `a` as the Fibonacci\nnumber that precedes `b`, but instead introducing a variable `c` that succeeds\n`b`. Verify your program is correct according to the mathematical definition of\nFibonacci.*\n\n`function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)  // Do not change this postcondition\n{\n  // Change the method body to instead use c as described.\n  // You will need to change both the initialization and the loop.\n  if n == 0 { return 0; }\n  var i: int := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n`\n\n**Exercise 9.** *Starting with the completed `ComputeFib` method above, delete\nthe `if` statement and initialize `i` to `0`, `a` to `1`, and `b` to `0`. Verify\nthis new program by adjusting the loop invariants to match the new behavior.*\n\n`function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  var i: int := 0;\n  var a := 1;\n  b := 0;\n  while i < n\n    // Fill in the invariants here.\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n`\n\nOne of the problems with using invariants is that it is easy to forget to have\nthe loop *make progress*, i.e. do work at each step. For example, we could have\nomitted the entire body of the loop in the previous program. The invariants\nwould be correct, because they are still true upon entering the loop, and since\nthe loop doesn’t change anything, they would be preserved by the loop. We know\nthat *if* we exit the loop, then we can assume the negation of the guard and the\ninvariants, but this says nothing about what happens if we never exit the loop.\nThus we would like to make sure the loop ends at some point, which gives us a\nstronger correctness guarantee (the technical term is *total correctness*).\n\n### Termination\n\nDafny proves that code terminates, i.e. does not loop forever, by using\n`decreases` annotations. For many things, Dafny is able to guess the right\nannotations, but sometimes it needs to be made explicit. In fact, for all of the\ncode we have seen so far, Dafny has been able to do this proof on its own, which\nis why we haven’t seen the `decreases` annotation explicitly yet. There are two\nplaces Dafny proves termination: loops and recursion. Both of these situations\nrequire either an explicit annotation or a correct guess by Dafny.\n\nA `decreases` annotation, as its name suggests, gives Dafny an expression that\ndecreases with every loop iteration or recursive call. There are two conditions\nthat Dafny needs to verify when using a `decreases` expression: that the\nexpression actually gets smaller and that it is bounded. Many times, an integral\nvalue (natural or plain integer) is the quantity that decreases, but other\nthings can be used as well. (See the reference for details.) In the case of\nintegers, the bound is assumed to be zero. For example, the following is a\nproper use of `decreases` on a loop (with its own keyword, of course):\n\n`method m ()\n{\n  var i := 20;\n  while 0 < i\n    invariant 0 <= i\n    decreases i\n  {\n    i := i - 1;\n  }\n}\n`\n\nHere Dafny has all the ingredients it needs to prove termination. The variable\n`i` gets smaller each loop iteration and is bounded below by zero. This is fine,\nexcept the loop is backwards compared to most loops, which tend to count up\ninstead of down. In this case, what decreases is not the counter itself, but\nrather the distance between the counter and the upper bound. A simple trick for\ndealing with this situation is given below:\n\n`method m()\n{\n  var i, n := 0, 20;\n  while i < n\n    invariant 0 <= i <= n\n    decreases n - i\n  {\n    i := i + 1;\n  }\n}\n`\n\nThis is actually Dafny’s guess for this situation, as it sees `i < n` and\nassumes that `n - i` is the quantity that decreases. The upper bound of the loop\ninvariant implies that `0 <= n – i`, and gives Dafny a lower bound on the\nquantity. This also works when the bound `n` is not constant, such as in the\nbinary search algorithm, where two quantities approach each other, and neither\nis fixed.\n\n**Exercise 10.** *In the loop above, the invariant `i <= n` and the negation of\nthe loop guard allow us to conclude `i == n` after the loop (as we checked\npreviously with an `assert`. Note that if the loop guard were instead written as\n`i != n` (as in Exercise 7), then the negation of the guard immediately gives `i\n== n` after the loop, regardless of the loop invariant. Change the loop guard to\n`i != n` and delete the invariant annotation. Does the program verify? What\nhappened?*\n\n`method m()\n{\n  var i, n := 0, 20;\n  while i != n\n    decreases n - i\n  {\n    i := i + 1;\n  }\n}\n`\n\nThe other situation that requires a termination proof is when methods or\nfunctions are recursive. Similarly to looping forever, these methods could\npotentially call themselves forever, never returning to their original caller.\nWhen Dafny is not able to guess the termination condition, an explicit decreases\nclause can be given along with pre- and postconditions, as in the unnecessary\nannotation for the fib function:\n\n`function fib(n: nat): nat\n  decreases n\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\n`\n\nAs before, Dafny can guess this condition on its own, but sometimes the\ndecreasing condition is hidden within a field of an object or somewhere else\nwhere Dafny cannot find it on its own, and it requires an explicit annotation.\n\nThere is a longer tutorial on termination [here][1].\n\n### Arrays\n\nAll that we have considered is fine for toy functions and little mathematical\nexercises, but it really isn’t helpful for real programs. So far we have only\nconsidered a handful of values at a time in local variables. Now we turn our\nattention to arrays of data. Arrays are a built-in part of the language, with\ntheir own type, `array<T>`, where `T` is another type; the companion type\n`array?<T>` is the type of possibly-null arrays. That is, `array?<T>` includes\nall references to one-dimensional arrays of element type `T` (i.e., `array<T>`)\nand the null reference. For now we only consider arrays of integers, with type\n`array<int>`. Arrays have a built-in length field, `a.Length`. Element access\nuses the standard bracket syntax and indexes from zero, so `a[3]` is preceded by\nthe 3 elements `a[0]`, `a[1]`, and `a[2]`, in that order. All array accesses\nmust be proven to be within bounds, which is part of Dafny’s no-runtime-errors\nsafety guarantee. Because bounds checks are proven at verification time, no\nruntime checks need to be made. To create a new array, it must be allocated with\nthe `new` keyword, but for now we will only work with methods that take a\npreviously allocated array as an argument.\n\nOne of the most basic things we might want to do with an array is search through\nit for a particular key, and return the index of a place where we can find the\nkey if it exists. We have two outcomes for a search, with a different\ncorrectness condition for each. If the algorithm returns an index (i.e.\nnon-negative integer), then the key should be present at that index. This might\nbe expressed as follows:\n\n`method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n{\n  // Can you write code that satisfies the postcondition?\n  // Hint: you can do it with one statement.\n}\n`\n\nThe array index here is safe because the implication operator is *short\ncircuiting*. Short circuiting means if the left part is false, then the\nimplication is already true regardless of the truth value of the second part,\nand thus it does not need to be evaluated. Using the short circuiting property\nof the implication operator, along with the boolean “and” (`&&`), which is also\nshort circuiting, is a common Dafny practice. The condition `index < a.Length`\nis necessary because otherwise the method could return a large integer which is\nnot an index into the array. Together, the short circuiting behavior means that\nby the time control reaches the array access, `index` must be a valid index.\n\nIf the key is not in the array, then we would like the method to return a\nnegative number. In this case, we want to say that the method did not miss an\noccurrence of the key; in other words, that the key is not in the array. To\nexpress this property, we turn to another common Dafny tool: quantifiers.\n\n### Quantifiers\n\nA quantifier in Dafny most often takes the form of a forall expression, also\ncalled a universal quantifier. As its name suggests, this expression is true if\nsome property holds for all elements of some set. For now, we will consider the\nset of integers. An example universal quantifier, wrapped in an assertion, is\ngiven below:\n\n`method m()\n{\n  assert forall k :: k < k + 1;\n}\n`\n\nA quantifier introduces a temporary name for each element of the set it is\nconsidering. This is called the bound variable, in this case `k`. The bound\nvariable has a type, which is almost always inferred rather than given\nexplicitly and is usually `int` anyway. (In general, one can have any number of\nbound variables, a topic we will return to later.) A pair of colons (`::`)\nseparates the bound variable and its optional type from the quantified property\n(which must be of type `bool`). In this case, the property is that adding one to\nany integer makes a strictly larger integer. Dafny is able to prove this simple\nproperty automatically. Generally it is not very useful to quantify over\ninfinite sets, such as all the integers. Instead, quantifiers are typically used\nto quantify over all elements in an array or data structure. We do this for\narrays by using the implication operator to make the quantified property\ntrivially true for values which are not indices:\n\n`  assert forall k :: 0 <= k < a.Length ==> ...a[k]...;\n`\n\nThis says that some property holds for each element of the array. The\nimplication makes sure that `k` is actually a valid index into the array before\nevaluating the second part of the expression. Dafny can use this fact not only\nto prove that the array is accessed safely, but also to reduce the set of\nintegers it must consider to only those that are indices into the array.\n\nWith a quantifier, saying the key is not in the array is straightforward:\n\n`  forall k :: 0 <= k < a.Length ==> a[k] != key\n`\n\nThus our method postconditions become:\n\n`method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  // There are many ways to fill this in. Can you write one?\n}\n`\n\nNote that because `a` has type `array<int>`, it is implicitly non-null.\n\nWe can fill in the body of this method in a number of ways, but perhaps the\neasiest is a linear search, implemented below:\n\n`method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n`\n\nAs you can see, we have omitted the loop invariants on the `while` loop, so\nDafny gives us a verification error on one of the postconditions. The reason we\nget an error is that Dafny does not know that the loop actually covers all the\nelements. In order to convince Dafny of this, we have to write an invariant that\nsays that everything before the current index has already been looked at (and\nare not the key). Just like the postcondition, we can use a quantifier to\nexpress this property:\n\n`method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n    invariant forall k :: 0 <= k < index ==> a[k] != key\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n`\n\nThis says that everything before, but excluding, the current index is not the\nkey. Notice that upon entering the loop, `index` is zero, so the first part of\nthe implication is always false, and thus the quantified property is always\ntrue. This common situation is known as *vacuous truth*: the quantifier holds\nbecause it is quantifying over an empty set of objects. This means that it is\ntrue when entering the loop. We test the value of the array before we extend the\nnon-key part of the array, so Dafny can prove that this invariant is preserved.\nOne problem arises when we try to add this invariant: Dafny complains about the\nindex being out of range for the array access within the invariant.\n\nThis code does not verify because there is no invariant on `index`, so it could\nbe greater than the length of the array. Then the bound variable, `k`, could\nexceed the length of the array. To fix this, we put the standard bounds on\n`index`, `0 <= index <= a.Length`. Note that because we say `k < index`, the\narray access is still protected from error even when `index == a.Length`. The\nuse of a variable that is one past the end of a growing range is a common\npattern when working with arrays, where it is often used to build a property up\none element at a time. The complete method is given below:\n\n`method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n    invariant 0 <= index <= a.Length\n    invariant forall k :: 0 <= k < index ==> a[k] != key\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n`\n\n**Exercise 11.** *Write a method that takes an integer array, which it requires\nto have at least one element, and returns an index to the maximum of the array’s\nelements. Annotate the method with pre- and postconditions that state the intent\nof the method, and annotate its body with loop invariant to verify it.*\n\n`method FindMax(a: array<int>) returns (i: int)\n  // Annotate this method with pre- and postconditions\n  // that ensure it behaves as described.\n{\n  // Fill in the body that calculates the INDEX of the maximum.\n}\n`\n\nA linear search is not very efficient, especially when many queries are made of\nthe same data. If the array is sorted, then we can use the very efficient binary\nsearch procedure to find the key. But in order for us to be able to prove our\nimplementation correct, we need some way to require that the input array\nactually is sorted. We could do this directly with a quantifier inside a\n`requires` clause of our method, but a more modular way to express this is\nthrough a *predicate*.\n\n### Predicates\n\nA predicate is a function which returns a boolean. It is a simple but powerful\nidea that occurs throughout Dafny programs. For example, we define the *`sorted`\npredicate* over arrays of integers as a function that takes an array as an\nargument, and returns `true` if and only if that array is sorted in increasing\norder. The use of predicates makes our code shorter, as we do not need to write\nout a long property over and over. It can also make our code easier to read by\ngiving a common property a name.\n\nThere are a number of ways we could write the `sorted` predicate, but the\neasiest is to use a quantifier over the indices of the array. We can write a\nquantifier that expresses the property, “if `x` is before `y` in the array, then\n`x <= y`,” as a quantifier over two bound variables:\n\n`  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n`\n\nHere we have two bound variables, `j` and `k`, which are both integers. The\ncomparisons between the two guarantee that they are both valid indices into the\narray, and that `j` is before `k`. Then the second part says that they are\nordered properly with respect to one another. Quantifiers are just a type of\nboolean valued expression in Dafny, so we can write the sorted predicate as:\n\n`predicate sorted(a: array<int>)\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n`\n\nNote that there is no return type, because predicates always return a boolean.\n\nDafny rejects this code as given, claiming that the predicate cannot read `a`.\nFixing this issue requires another annotation, the *reads annotation*.\n\n### Framing\n\nThe sorted predicate is not able to access the array because the array was not\nincluded in the function’s *reading frame*. The reading frame of a function (or\npredicate) is all the memory locations that the function is allowed to read. The\nreason we might limit what a function can read is so that when we write to\nmemory, we can be sure that functions that did not read that part of memory have\nthe same value they did before. For example, we might have two arrays, one of\nwhich we know is sorted. If we did not put a reads annotation on the sorted\npredicate, then when we modify the unsorted array, we cannot determine whether\nthe other array stopped being sorted. While we might be able to give invariants\nto preserve it in this case, it gets even more complex when manipulating data\nstructures. In this case, framing is essential to making the verification\nprocess feasible.\n\n`predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n`\n\nA `reads` annotation is not a boolean expression, like the other annotations we\nhave seen, and can appear anywhere along with the pre- and postconditions.\nInstead of a property that should be true, it specifies a set of memory\nlocations that the function is allowed to access. The name of an array, like `a`\nin the above example, stands for all the elements of that array. One can also\nspecify object fields and sets of objects, but we will not concern ourselves\nwith those topics here. Dafny will check that you do not read any memory\nlocation that is not stated in the reading frame. This means that function calls\nwithin a function must have reading frames that are a subset of the calling\nfunction’s reading frame. One thing to note is that parameters to the function\nthat are not memory locations do not need to be declared.\n\nFrames also affect methods. As you might have guessed, they are not required to\nlist the things they read, as we have written a method which accesses an array\nwith no `reads` annotation. Methods are allowed to read whatever memory they\nlike, but they are required to list which parts of memory they modify, with a\n*modifies annotation*. They are almost identical to their `reads` cousins,\nexcept they say what can be changed, rather than what the value of the function\ndepends on. In combination with reads, modification restrictions allow Dafny to\nprove properties of code that would otherwise be very difficult or impossible.\n`reads` and `modifies` are among the tools that enable Dafny to work on one\nmethod at a time, because they restrict what would otherwise be arbitrary\nmodifications of memory to something that Dafny can reason about.\n\nNote that framing only applies to the *heap*, or memory accessed through\nreferences. Local variables are not stored on the heap, so they cannot be\nmentioned in `reads` annotations. Note also that types like sets, sequences, and\nmultisets are value types, and are treated like integers or local variables.\nArrays and objects are reference types, and they are stored on the heap (though\nas always there is a subtle distinction between the reference itself and the\nvalue it points to.)\n\n**Exercise 12.** *Modify the definition of the `sorted` predicate so that it\nreturns true exactly when the array is sorted and all its elements are\ndistinct.*\n\n`predicate sorted(a: array<int>)\n  reads a\n{\n  false // Fill in a new body here.\n}\n`\n\n**Exercise 13.** *Change the definition of `sorted` so that it allows its\nargument to be null (using a nullable array type) but returns false if it is.*\n\n`predicate sorted(a: array<int>) // Change the type\n  reads a\n{\n  // Change this definition to treat null arrays as \"not sorted\".\n  // (i.e. return false for null arrays)\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n`\n\n### Binary Search\n\nPredicates are usually used to make other annotations clearer:\n\n`predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  // This one is a little harder. What should go here?\n}\n`\n\nWe have the same postconditions that we did for the linear search, as the goal\nis the same. The difference is that now we know the array is sorted. Because\nDafny can unwrap functions, inside the body of the method it knows this too. We\ncan then use that property to prove the correctness of the search. The method\nbody is given below:\n\n`predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  var low, high := 0, a.Length;\n  while low < high\n    invariant 0 <= low <= high <= a.Length\n    invariant forall i ::\n      0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n  {\n    var mid := (low + high) / 2;\n    if a[mid] < value {\n      low := mid + 1;\n    } else if value < a[mid] {\n      high := mid;\n    } else {\n      return mid;\n    }\n  }\n  return -1;\n}\n`\n\nThis is a fairly standard binary search implementation. First we declare our\nrange to search over. This can be thought of as the remaining space where the\nkey could possibly be. The range is inclusive-exclusive, meaning it encompasses\nindices [`low`, `high`). The first invariant expresses the fact that this range\nis within the array. The second says that the key is not anywhere outside of\nthis range. In the first two branches of the `if` chain, we find the element in\nthe middle of our range is not the key, and so we move the range to exclude that\nelement and all the other elements on the appropriate side of it. We need the\naddition of one when moving the lower end of the range because it is inclusive\non the low side. If we do not add one, then the loop may continue forever when\n`mid == low`, which happens when `low + 1 == high`. We could change this to say\nthat the loop exits when `low` and `high` are one apart, but this would mean we\nwould need an extra check after the loop to determine if the key was found at\nthe one remaining index. In the above formulation, this is unnecessary because\nwhen `low == high`, the loop exits. But this means that no elements are left in\nthe search range, so the key was not found. This can be deduced from the loop\ninvariant:\n\n`  invariant forall i ::\n    0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n`\n\nWhen `low == high`, the negated condition in the first part of the implication\nis always true (because no `i` can be both at least and strictly smaller than\nthe same value). Thus the invariant says that all elements in the array are not\nthe key, and the second postcondition holds. As you can see, it is easy to\nintroduce subtle off by one errors in this code. With the invariants, not only\ncan Dafny prove the code correct, but we can understand the operation of the\ncode more easily ourselves.\n\n**Exercise 14.** *Change the assignments in the body of `BinarySearch` to set\n`low` to `mid` or to set `high` to `mid - 1`. In each case, what goes wrong?*\n\n`predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  var low, high := 0, a.Length;\n  while low < high\n    invariant 0 <= low <= high <= a.Length\n    invariant forall i ::\n         0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n  {\n    var mid := (low + high) / 2;\n    if a[mid] < value {\n      low := mid + 1;\n    } else if value < a[mid] {\n      high := mid;\n    } else {\n      return mid;\n    }\n  }\n  return -1;\n}\n`\n\n### Conclusion\n\nWe’ve seen a whirlwind tour of the major features of Dafny, and used it for some\ninteresting, if a little on the small side, examples of what Dafny can do. But\nto really take advantage of the power Dafny offers, one needs to plow ahead into\nthe advanced topics: objects, sequences and sets, data structures, lemmas, etc.\nNow that you are familiar with the basics of Dafny, you can peruse the tutorials\non each of these topics at your leisure. Each tutorial is designed to be a\nrelatively self-contained guide to its topic, though some benefit from reading\nothers beforehand. The examples are also a good place to look for model Dafny\nprograms. Finally, the reference contains the gritty details of Dafny syntax and\nsemantics, for when you just need to know what the disjoint set operator is\n(it’s `!!`, for those interested).\n\nEven if you do not use Dafny regularly, the idea of writing down exactly what it\nis that the code does in a precise way, and using this to prove code correct is\na useful skill. Invariants, pre- and postconditions, and annotations are useful\nin debugging code, and also as documentation for future developers. When\nmodifying or adding to a codebase, they confirm that the guarantees of existing\ncode are not broken. They also ensure that APIs are used correctly, by\nformalizing behavior and requirements and enforcing correct usage. Reasoning\nfrom invariants, considering pre- and postconditions, and writing assertions to\ncheck assumptions are all general computer science skills that will benefit you\nno matter what language you work in.\n\n[1]: ./Termination\n",
+  "content_type": "Tutorial",
+  "fetched_at": "2025-12-19T17:31:48.078480Z",
+  "metadata": {
+    "sections": [
+      "Getting Started with Dafny: A Guide",
+      "Introduction",
+      "Methods",
+      "Pre- and Postconditions",
+      "Assertions",
+      "Functions",
+      "Loop Invariants",
+      "Termination",
+      "Arrays",
+      "Quantifiers",
+      "Predicates",
+      "Framing",
+      "Binary Search",
+      "Conclusion"
+    ],
+    "tags": [],
+    "code_blocks": [
+      {
+        "language": "text",
+        "code": "forall k: int :: 0 <= k < a.Length ==> 0 < a[k]\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "forall k: int :: 0 <= k < a.Length ==> 0 < a[k]\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n{\n  more := x + y;\n  less := x - y;\n  // comments: are not strictly necessary.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n{\n  more := x + y;\n  less := x - y;\n  // comments: are not strictly necessary.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x\n  ensures x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x\n  ensures x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x && x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x && x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  ensures less < x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  requires 0 < y\n  ensures less < x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method MultipleReturns(x: int, y: int) returns (more: int, less: int)\n  requires 0 < y\n  ensures less < x < more\n{\n  more := x + y;\n  less := x - y;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Max(a: int, b: int) returns (c: int)\n  // What postcondition should go here, so that the function operates as expected?\n  // Hint: there are many ways to write this.\n{\n  // fill in the code here\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Max(a: int, b: int) returns (c: int)\n  // What postcondition should go here, so that the function operates as expected?\n  // Hint: there are many ways to write this.\n{\n  // fill in the code here\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Testing()\n{\n  assert 2 < 3;\n  // Try \"asserting\" something that is not true.\n  // What does Dafny output?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Testing()\n{\n  assert 2 < 3;\n  // Try \"asserting\" something that is not true.\n  // What does Dafny output?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var x: int := 5;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var x: int := 5;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var x := 5;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var x := 5;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var x, y, z: bool := 1, 2, true;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var x, y, z: bool := 1, 2, true;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Max(a: int, b:int) returns (c: int)\n  // Use your code from Exercise 0\nmethod Testing() {\n  // Assert some things about Max. Does it operate as you expect?\n  // If it does not, can you think of a way to fix it?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Max(a: int, b:int) returns (c: int)\n  // Use your code from Exercise 0\nmethod Testing() {\n  // Assert some things about Max. Does it operate as you expect?\n  // If it does not, can you think of a way to fix it?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  assert v == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  assert v == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  y := 0;\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  // this still does not verify, but now it is actually not true:\n  assert v == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  y := 0;\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  // this still does not verify, but now it is actually not true:\n  assert v == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  y := 0;\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  assert v == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n{\n  y := 0;\n}\nmethod Testing()\n{\n  var v := Abs(3);\n  assert 0 <= v;\n  assert v == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y && (y == x || y == -x)\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  ensures 0 <= y && (y == x || y == -x)\n{\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  // Add a precondition here.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  // Simplify the body to just one return statement\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  // Add a precondition here.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  // Simplify the body to just one return statement\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  // Add a precondition here so that the method verifies.\n  // Don't change the postconditions.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  y:= x + 2;\n}\nmethod Abs2(x: int) returns (y: int)\n  // Add a precondition here so that the method verifies.\n  // Don't change the postconditions.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  y:= x + 1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Abs(x: int) returns (y: int)\n  // Add a precondition here so that the method verifies.\n  // Don't change the postconditions.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  y:= x + 2;\n}\nmethod Abs2(x: int) returns (y: int)\n  // Add a precondition here so that the method verifies.\n  // Don't change the postconditions.\n  ensures 0 <= y\n  ensures 0 <= x ==> y == x\n  ensures x < 0 ==> y == -x\n{\n  y:= x + 1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\nmethod m()\n{\n  assert abs(3) == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\nmethod m()\n{\n  assert abs(3) == 3;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function max(a: int, b: int): int\n{\n  0 // Fill in an expression here.\n}\nmethod Testing() {\n  // Add assertions to check max here.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function max(a: int, b: int): int\n{\n  0 // Fill in an expression here.\n}\nmethod Testing() {\n  // Add assertions to check max here.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\nmethod Abs(x: int) returns (y: int)\n  // Use abs here, then confirm the method still verifies.\n{\n  // Then change this body to also use abs.\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function abs(x: int): int\n{\n  if x < 0 then -x else x\n}\nmethod Abs(x: int) returns (y: int)\n  // Use abs here, then confirm the method still verifies.\n{\n  // Then change this body to also use abs.\n  if x < 0 {\n    return -x;\n  } else {\n    return x;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  ...\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i := 0;\n  while i < n\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i := 0;\n  while i < n\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i := 0;\n  while i < n\n    invariant 0 <= i\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i := 0;\n  while i < n\n    invariant 0 <= i\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i < n\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i < n\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i <= n\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i <= n\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i <= n  // Change this. What happens?\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n\n    invariant 0 <= i <= n  // Change this. What happens?\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n  // Change this. What happens?\n    invariant 0 <= i <= n\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m(n: nat)\n{\n  var i: int := 0;\n  while i < n  // Change this. What happens?\n    invariant 0 <= i <= n\n  {\n    i := i + 1;\n  }\n  assert i == n;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  invariant b == fib(i)\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  invariant b == fib(i)\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  invariant a == fib(i - 1)\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  invariant a == fib(i - 1)\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  var i := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  var i := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  if n == 0 { return 0; }\n  var i: int := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  if n == 0 { return 0; }\n  var i: int := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)  // Do not change this postcondition\n{\n  // Change the method body to instead use c as described.\n  // You will need to change both the initialization and the loop.\n  if n == 0 { return 0; }\n  var i: int := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)  // Do not change this postcondition\n{\n  // Change the method body to instead use c as described.\n  // You will need to change both the initialization and the loop.\n  if n == 0 { return 0; }\n  var i: int := 1;\n  var a := 0;\n  b := 1;\n  while i < n\n    invariant 0 < i <= n\n    invariant a == fib(i - 1)\n    invariant b == fib(i)\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  var i: int := 0;\n  var a := 1;\n  b := 0;\n  while i < n\n    // Fill in the invariants here.\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\nmethod ComputeFib(n: nat) returns (b: nat)\n  ensures b == fib(n)\n{\n  var i: int := 0;\n  var a := 1;\n  b := 0;\n  while i < n\n    // Fill in the invariants here.\n  {\n    a, b := b, a + b;\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m ()\n{\n  var i := 20;\n  while 0 < i\n    invariant 0 <= i\n    decreases i\n  {\n    i := i - 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m ()\n{\n  var i := 20;\n  while 0 < i\n    invariant 0 <= i\n    decreases i\n  {\n    i := i - 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var i, n := 0, 20;\n  while i < n\n    invariant 0 <= i <= n\n    decreases n - i\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var i, n := 0, 20;\n  while i < n\n    invariant 0 <= i <= n\n    decreases n - i\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var i, n := 0, 20;\n  while i != n\n    decreases n - i\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  var i, n := 0, 20;\n  while i != n\n    decreases n - i\n  {\n    i := i + 1;\n  }\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n  decreases n\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "function fib(n: nat): nat\n  decreases n\n{\n  if n == 0 then 0\n  else if n == 1 then 1\n  else fib(n - 1) + fib(n - 2)\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n{\n  // Can you write code that satisfies the postcondition?\n  // Hint: you can do it with one statement.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n{\n  // Can you write code that satisfies the postcondition?\n  // Hint: you can do it with one statement.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  assert forall k :: k < k + 1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method m()\n{\n  assert forall k :: k < k + 1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  assert forall k :: 0 <= k < a.Length ==> ...a[k]...;\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  assert forall k :: 0 <= k < a.Length ==> ...a[k]...;\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  forall k :: 0 <= k < a.Length ==> a[k] != key\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  forall k :: 0 <= k < a.Length ==> a[k] != key\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  // There are many ways to fill this in. Can you write one?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  // There are many ways to fill this in. Can you write one?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n    invariant forall k :: 0 <= k < index ==> a[k] != key\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n    invariant forall k :: 0 <= k < index ==> a[k] != key\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n    invariant 0 <= index <= a.Length\n    invariant forall k :: 0 <= k < index ==> a[k] != key\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method Find(a: array<int>, key: int) returns (index: int)\n  ensures 0 <= index ==> index < a.Length && a[index] == key\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != key\n{\n  index := 0;\n  while index < a.Length\n    invariant 0 <= index <= a.Length\n    invariant forall k :: 0 <= k < index ==> a[k] != key\n  {\n    if a[index] == key { return; }\n    index := index + 1;\n  }\n  index := -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method FindMax(a: array<int>) returns (i: int)\n  // Annotate this method with pre- and postconditions\n  // that ensure it behaves as described.\n{\n  // Fill in the body that calculates the INDEX of the maximum.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "method FindMax(a: array<int>) returns (i: int)\n  // Annotate this method with pre- and postconditions\n  // that ensure it behaves as described.\n{\n  // Fill in the body that calculates the INDEX of the maximum.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  false // Fill in a new body here.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  false // Fill in a new body here.\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>) // Change the type\n  reads a\n{\n  // Change this definition to treat null arrays as \"not sorted\".\n  // (i.e. return false for null arrays)\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>) // Change the type\n  reads a\n{\n  // Change this definition to treat null arrays as \"not sorted\".\n  // (i.e. return false for null arrays)\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  // This one is a little harder. What should go here?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  // This one is a little harder. What should go here?\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  var low, high := 0, a.Length;\n  while low < high\n    invariant 0 <= low <= high <= a.Length\n    invariant forall i ::\n      0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n  {\n    var mid := (low + high) / 2;\n    if a[mid] < value {\n      low := mid + 1;\n    } else if value < a[mid] {\n      high := mid;\n    } else {\n      return mid;\n    }\n  }\n  return -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  var low, high := 0, a.Length;\n  while low < high\n    invariant 0 <= low <= high <= a.Length\n    invariant forall i ::\n      0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n  {\n    var mid := (low + high) / 2;\n    if a[mid] < value {\n      low := mid + 1;\n    } else if value < a[mid] {\n      high := mid;\n    } else {\n      return mid;\n    }\n  }\n  return -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  invariant forall i ::\n    0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "  invariant forall i ::\n    0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  var low, high := 0, a.Length;\n  while low < high\n    invariant 0 <= low <= high <= a.Length\n    invariant forall i ::\n         0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n  {\n    var mid := (low + high) / 2;\n    if a[mid] < value {\n      low := mid + 1;\n    } else if value < a[mid] {\n      high := mid;\n    } else {\n      return mid;\n    }\n  }\n  return -1;\n}\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "predicate sorted(a: array<int>)\n  reads a\n{\n  forall j, k :: 0 <= j < k < a.Length ==> a[j] <= a[k]\n}\nmethod BinarySearch(a: array<int>, value: int) returns (index: int)\n  requires 0 <= a.Length && sorted(a)\n  ensures 0 <= index ==> index < a.Length && a[index] == value\n  ensures index < 0 ==> forall k :: 0 <= k < a.Length ==> a[k] != value\n{\n  var low, high := 0, a.Length;\n  while low < high\n    invariant 0 <= low <= high <= a.Length\n    invariant forall i ::\n         0 <= i < a.Length && !(low <= i < high) ==> a[i] != value\n  {\n    var mid := (low + high) / 2;\n    if a[mid] < value {\n      low := mid + 1;\n    } else if value < a[mid] {\n      high := mid;\n    } else {\n      return mid;\n    }\n  }\n  return -1;\n}\n",
+        "description": null
+      }
+    ],
+    "original_format": "html",
+    "word_count": 10809
+  }
+}

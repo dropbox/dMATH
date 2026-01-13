@@ -1,0 +1,126 @@
+{
+  "id": "toxiproxy",
+  "name": "Toxiproxy",
+  "category": "chaos_engineering",
+  "subcategory": "network",
+
+  "description": "TCP proxy for simulating network conditions",
+  "long_description": "Toxiproxy is a framework for simulating network conditions created by Shopify. It sits between your application and its dependencies (databases, APIs) to inject latency, bandwidth limits, connection failures, and other network faults. Simpler than Kubernetes-based solutions.",
+
+  "capabilities": [
+    "latency_injection",
+    "bandwidth_limiting",
+    "connection_reset",
+    "timeout_simulation",
+    "packet_loss",
+    "slicer",
+    "limit_data"
+  ],
+  "property_types": ["resilience", "timeout_handling", "retry_behavior"],
+  "input_languages": ["http_api", "cli"],
+  "output_formats": ["json"],
+
+  "installation": {
+    "methods": [
+      {"type": "brew", "command": "brew install toxiproxy"},
+      {"type": "apt", "command": "apt install toxiproxy"},
+      {"type": "docker", "command": "docker run -d -p 8474:8474 ghcr.io/shopify/toxiproxy"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/Shopify/toxiproxy",
+    "tutorial": "https://github.com/Shopify/toxiproxy#usage",
+    "api_reference": "https://github.com/Shopify/toxiproxy#http-api",
+    "examples": "https://github.com/Shopify/toxiproxy/tree/main/client"
+  },
+
+  "tactics": [
+    {
+      "name": "create_proxy",
+      "description": "Create TCP proxy",
+      "syntax": "toxiproxy-cli create <name> -l <listen> -u <upstream>",
+      "when_to_use": "To proxy a service",
+      "examples": ["toxiproxy-cli create postgres -l localhost:5433 -u localhost:5432"]
+    },
+    {
+      "name": "add_toxic",
+      "description": "Add network fault",
+      "syntax": "toxiproxy-cli toxic add -t <type> -a <attr> <proxy>",
+      "when_to_use": "To inject chaos",
+      "examples": ["# Add 100ms latency\ntoxiproxy-cli toxic add -t latency -a latency=100 postgres\n\n# Add 50% packet loss\ntoxiproxy-cli toxic add -t timeout -a timeout=5000 postgres"]
+    },
+    {
+      "name": "api",
+      "description": "HTTP API for toxics",
+      "syntax": "POST /proxies/<proxy>/toxics",
+      "when_to_use": "For programmatic control",
+      "examples": ["curl -X POST http://localhost:8474/proxies/postgres/toxics \\\n  -d '{\"name\": \"slow\", \"type\": \"latency\", \"attributes\": {\"latency\": 1000}}'"]
+    },
+    {
+      "name": "client_lib",
+      "description": "Use client library",
+      "syntax": "toxiproxy.Client()",
+      "when_to_use": "For test integration",
+      "examples": ["# Python\nfrom toxiproxy import Toxiproxy\n\ntp = Toxiproxy()\nproxy = tp.create(name='postgres', listen='localhost:5433', upstream='localhost:5432')\nproxy.add_toxic(type='latency', attributes={'latency': 100})"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "proxy.*already exists",
+      "meaning": "Duplicate proxy name",
+      "common_causes": ["Previous test didn't clean up"],
+      "fixes": ["Delete existing proxy first"]
+    },
+    {
+      "pattern": "connection.*refused",
+      "meaning": "Toxiproxy not running",
+      "common_causes": ["Server not started"],
+      "fixes": ["Start toxiproxy-server"]
+    },
+    {
+      "pattern": "upstream.*unreachable",
+      "meaning": "Target service down",
+      "common_causes": ["Wrong upstream address"],
+      "fixes": ["Check upstream service is running"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["resilience", "timeout"],
+    "cli_command": "dashprove verify --backend toxiproxy"
+  },
+
+  "performance": {
+    "typical_runtime": "Continuous",
+    "scalability": "Good for local/CI",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["chaos-mesh", "comcast", "pumba"],
+    "advantages": [
+      "Simple to use",
+      "No Kubernetes required",
+      "Client libraries",
+      "CI/CD friendly",
+      "Deterministic"
+    ],
+    "disadvantages": [
+      "TCP only",
+      "Must route through proxy",
+      "Single host focus"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.7.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Shopify",
+    "license": "MIT"
+  }
+}

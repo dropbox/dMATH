@@ -1,0 +1,232 @@
+{
+  "tool": "pprof",
+  "version": "2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_profile_data",
+      "pattern": "profile is empty|no samples",
+      "message": "Profile contains no samples",
+      "cause": "Program ran too quickly or profiling not enabled",
+      "solutions": [
+        {
+          "approach": "Import pprof in Go",
+          "code": "import _ \"net/http/pprof\"\n\ngo func() {\n    http.ListenAndServe(\":6060\", nil)\n}()",
+          "when": "Go web server profiling"
+        },
+        {
+          "approach": "Run longer workload",
+          "code": "# Ensure program runs long enough to collect samples",
+          "when": "Short-lived program"
+        },
+        {
+          "approach": "CPU profile duration",
+          "code": "go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30",
+          "when": "Need more sample time"
+        }
+      ]
+    },
+    {
+      "id": "binary_not_found",
+      "pattern": "could not find binary|no such file",
+      "message": "Cannot find binary for symbolization",
+      "cause": "Binary moved or path changed since profiling",
+      "solutions": [
+        {
+          "approach": "Specify binary path",
+          "code": "go tool pprof /path/to/binary profile.pb.gz",
+          "when": "Binary in different location"
+        },
+        {
+          "approach": "Use same binary",
+          "code": "# Ensure binary matches the one used during profiling",
+          "when": "Binary was rebuilt"
+        },
+        {
+          "approach": "Set PPROF_BINARY_PATH",
+          "code": "export PPROF_BINARY_PATH=/path/to/binaries",
+          "when": "Multiple binaries"
+        }
+      ]
+    },
+    {
+      "id": "graphviz_not_found",
+      "pattern": "graphviz.*not installed|dot.*not found",
+      "message": "Graphviz not installed",
+      "cause": "dot command needed for graph visualization",
+      "solutions": [
+        {
+          "approach": "Install graphviz",
+          "code": "# macOS:\nbrew install graphviz\n# Ubuntu:\nsudo apt install graphviz",
+          "when": "Want graph output"
+        },
+        {
+          "approach": "Use text mode",
+          "code": "go tool pprof -text profile.pb.gz",
+          "when": "Don't need visual graph"
+        },
+        {
+          "approach": "Use web UI",
+          "code": "go tool pprof -http=:8080 profile.pb.gz",
+          "when": "Prefer browser interface"
+        }
+      ]
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "address already in use|bind.*failed",
+      "message": "Port already in use for pprof server",
+      "cause": "Another process using the port",
+      "solutions": [
+        {
+          "approach": "Use different port",
+          "code": "go tool pprof -http=:8081 profile.pb.gz",
+          "when": "Default port busy"
+        },
+        {
+          "approach": "Kill existing process",
+          "code": "lsof -i :6060 | awk 'NR>1 {print $2}' | xargs kill",
+          "when": "Want to free the port"
+        },
+        {
+          "approach": "Use random port",
+          "code": "go tool pprof -http=:0 profile.pb.gz",
+          "when": "Any port is fine"
+        }
+      ]
+    },
+    {
+      "id": "profile_parse_error",
+      "pattern": "parsing profile|invalid profile",
+      "message": "Cannot parse profile file",
+      "cause": "Corrupted or incompatible profile format",
+      "solutions": [
+        {
+          "approach": "Check file format",
+          "code": "file profile.pb.gz  # Should be gzip compressed",
+          "when": "Unknown format"
+        },
+        {
+          "approach": "Regenerate profile",
+          "code": "curl -o profile.pb.gz http://localhost:6060/debug/pprof/profile?seconds=30",
+          "when": "File corrupted"
+        },
+        {
+          "approach": "Try legacy format",
+          "code": "go tool pprof -proto profile.txt",
+          "when": "Old pprof format"
+        }
+      ]
+    },
+    {
+      "id": "heap_labels_missing",
+      "pattern": "no allocation.*labels|tagging not enabled",
+      "message": "Memory allocation labels not available",
+      "cause": "Memory profiling labels not enabled",
+      "solutions": [
+        {
+          "approach": "Set sample rate",
+          "code": "runtime.MemProfileRate = 1  // Profile all allocations",
+          "when": "Want detailed memory info"
+        },
+        {
+          "approach": "Use allocs profile",
+          "code": "go tool pprof http://localhost:6060/debug/pprof/allocs",
+          "when": "Want allocation counts"
+        },
+        {
+          "approach": "Use heap profile",
+          "code": "go tool pprof http://localhost:6060/debug/pprof/heap",
+          "when": "Want live heap"
+        }
+      ]
+    },
+    {
+      "id": "flat_vs_cum_confusion",
+      "pattern": "flat.*cum.*difference",
+      "message": "Confusion between flat and cumulative",
+      "cause": "Not understanding flat vs cumulative time",
+      "solutions": [
+        {
+          "approach": "Understand metrics",
+          "code": "# flat: time spent in function itself\n# cum: time in function + all callees\n# flat = cum means leaf function",
+          "when": "Interpreting results"
+        },
+        {
+          "approach": "Sort by flat",
+          "code": "go tool pprof -flat profile.pb.gz\n(pprof) top -flat",
+          "when": "Find hot functions"
+        },
+        {
+          "approach": "Sort by cumulative",
+          "code": "(pprof) top -cum",
+          "when": "Find expensive call trees"
+        }
+      ]
+    },
+    {
+      "id": "mutex_contention_zero",
+      "pattern": "mutex.*no contention|0 contentions",
+      "message": "No mutex contention recorded",
+      "cause": "Mutex profiling not enabled or no contention occurred",
+      "solutions": [
+        {
+          "approach": "Enable mutex profiling",
+          "code": "runtime.SetMutexProfileFraction(5)  // Sample 1/5 of mutex events",
+          "when": "Mutex profiling disabled"
+        },
+        {
+          "approach": "Increase load",
+          "code": "# Run with more concurrent goroutines to induce contention",
+          "when": "Low concurrency"
+        },
+        {
+          "approach": "Check block profile too",
+          "code": "go tool pprof http://localhost:6060/debug/pprof/block",
+          "when": "Want blocking events"
+        }
+      ]
+    },
+    {
+      "id": "goroutine_stack_truncated",
+      "pattern": "stack truncated|...more frames",
+      "message": "Goroutine stack truncated",
+      "cause": "Stack too deep for default capture",
+      "solutions": [
+        {
+          "approach": "Increase stack depth",
+          "code": "runtime.SetCPUProfileRate(100)  // Adjust profile rate",
+          "when": "Need deeper stacks"
+        },
+        {
+          "approach": "Use GODEBUG",
+          "code": "GODEBUG=tracebackancestors=10 ./program",
+          "when": "Want ancestor goroutines"
+        }
+      ]
+    },
+    {
+      "id": "symbolization_failed",
+      "pattern": "failed to symbolize|unsymbolized",
+      "message": "Failed to symbolize profile",
+      "cause": "Binary stripped or symbols unavailable",
+      "solutions": [
+        {
+          "approach": "Build with symbols",
+          "code": "go build -o myapp  # Go includes symbols by default",
+          "when": "Symbols stripped"
+        },
+        {
+          "approach": "Keep debug binary",
+          "code": "go build -ldflags=\"\" -o myapp_debug",
+          "when": "Need full debug info"
+        },
+        {
+          "approach": "Local symbolization",
+          "code": "go tool pprof -symbolize=local binary profile.pb.gz",
+          "when": "Symbols available locally"
+        }
+      ]
+    }
+  ]
+}

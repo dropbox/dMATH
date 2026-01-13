@@ -1,0 +1,135 @@
+{
+  "tool": "tr",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unequal_sets",
+      "pattern": "sets are not.*same length|truncating|unequal",
+      "message": "SET1 and SET2 different lengths",
+      "cause": "Translation sets must be equal length (or use options)",
+      "solutions": [
+        {
+          "approach": "Truncate",
+          "code": "tr -t 'abc' 'xy' < file.txt  # Truncates to shorter",
+          "when": "Accept truncation"
+        },
+        {
+          "approach": "Equal sets",
+          "code": "tr 'abc' 'xyz' < file.txt  # Same length",
+          "when": "Fix sets"
+        },
+        {
+          "approach": "Repeat last",
+          "code": "tr 'abcdef' 'xy'  # f→y (last char repeated)",
+          "when": "Intentional"
+        }
+      ]
+    },
+    {
+      "id": "no_file_argument",
+      "pattern": "extra operand|too many arguments|file.*argument",
+      "message": "tr doesn't accept file arguments",
+      "cause": "tr reads stdin only, no file arguments",
+      "solutions": [
+        {
+          "approach": "Use redirection",
+          "code": "tr 'a-z' 'A-Z' < file.txt",
+          "when": "Read file"
+        },
+        {
+          "approach": "Use cat",
+          "code": "cat file.txt | tr 'a-z' 'A-Z'",
+          "when": "Pipe"
+        },
+        {
+          "approach": "In-place with sponge",
+          "code": "tr 'a-z' 'A-Z' < file.txt | sponge file.txt",
+          "when": "Modify file"
+        }
+      ]
+    },
+    {
+      "id": "special_characters",
+      "pattern": "special.*character|escape|backslash|newline",
+      "message": "Special characters not working",
+      "cause": "Need proper escaping or octal notation",
+      "solutions": [
+        {
+          "approach": "Use escapes",
+          "code": "tr '\\n' ' ' < file.txt  # Newline to space\ntr '\\t' ' ' < file.txt  # Tab to space",
+          "when": "Common escapes"
+        },
+        {
+          "approach": "Use $''",
+          "code": "tr $'\\n' ' ' < file.txt  # Bash ANSI-C quoting",
+          "when": "Shell escaping"
+        },
+        {
+          "approach": "Octal notation",
+          "code": "tr '\\012' ' ' < file.txt  # Newline (octal 012)",
+          "when": "Portable"
+        }
+      ]
+    },
+    {
+      "id": "character_classes",
+      "pattern": "character class|[:alpha:]|[:digit:]",
+      "message": "Character class not working",
+      "cause": "Wrong syntax or locale issues",
+      "solutions": [
+        {
+          "approach": "Correct syntax",
+          "code": "tr '[:lower:]' '[:upper:]' < file.txt\ntr '[:space:]' '_' < file.txt",
+          "when": "POSIX classes"
+        },
+        {
+          "approach": "Set locale",
+          "code": "LC_ALL=C tr '[:lower:]' '[:upper:]' < file.txt",
+          "when": "Locale issues"
+        },
+        {
+          "approach": "Available classes",
+          "code": "# [:alnum:] [:alpha:] [:blank:] [:cntrl:]\n# [:digit:] [:graph:] [:lower:] [:print:]\n# [:punct:] [:space:] [:upper:] [:xdigit:]",
+          "when": "Reference"
+        }
+      ]
+    },
+    {
+      "id": "delete_complement",
+      "pattern": "delete.*except|keep.*only|complement.*delete",
+      "message": "Want to keep only certain characters",
+      "cause": "Need to combine -d and -c",
+      "solutions": [
+        {
+          "approach": "Delete complement",
+          "code": "tr -cd '[:alnum:]' < file.txt  # Keep only alphanumeric\ntr -cd '0-9' < file.txt  # Keep only digits",
+          "when": "Keep specific chars"
+        },
+        {
+          "approach": "Delete specific",
+          "code": "tr -d '[:punct:]' < file.txt  # Remove punctuation",
+          "when": "Remove class"
+        }
+      ]
+    },
+    {
+      "id": "squeeze_repeated",
+      "pattern": "squeeze|repeated|multiple.*single",
+      "message": "Replace repeated chars with single",
+      "cause": "Want to collapse consecutive identical chars",
+      "solutions": [
+        {
+          "approach": "Squeeze",
+          "code": "tr -s ' ' < file.txt  # Multiple spaces to single\ntr -s '\\n' < file.txt  # Remove blank lines",
+          "when": "Collapse repeated"
+        },
+        {
+          "approach": "Translate and squeeze",
+          "code": "tr -s '[:space:]' ' ' < file.txt  # All whitespace to single space",
+          "when": "Normalize whitespace"
+        }
+      ]
+    }
+  ]
+}

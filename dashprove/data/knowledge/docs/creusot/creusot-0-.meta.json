@@ -1,0 +1,86 @@
+{
+  "id": "creusot-0-",
+  "source": "https://creusot-rs.github.io/creusot/guide/",
+  "backend": "Creusot",
+  "title": "Quickstart - Creusot User Guide",
+  "content": "# [Quick start][1]\n\n## [Installation][2]\n\nSee the [Installation][3] section.\n\n## [Create a project][4]\n\nCreate a new project with this command:\n\n`cargo creusot new project-name\n`\n\n> Note\n> \n> If you are using the development version of Creusot (`master` branch), you\n> should also point your project to your local copy of `creusot-contracts`,\n> using the `--creusot-contracts` option (otherwise the default is to use the\n> released version on crates.io). To avoid hard-coding local paths in your\n> configuration, one approach is to set `--creusot-contracts creusot-contracts`,\n> and make a symbolic link `creusot-contracts` pointing to your local\n> `creusot-contracts`.\n\nThat command creates a directory `package-name` containing the basic elements of\na Rust project verified with Creusot. The file `src/lib.rs` is initialized with\nan example function annotated with a contract:\n\n`// src/lib.rs\nuse creusot_contracts::prelude::*;\n\n#[requires(x@ < i64::MAX@)]\n#[ensures(result@ == x@ + 1)]\npub fn add_one(x: i64) -> i64 {\n    x + 1\n}`\n\n## [Compile and prove][5]\n\nTo verify this project, run this command:\n\n`cargo creusot prove\n`\n\nA successful run gives us the certainty that functions defined in this package\nsatisfy their contracts: for all arguments satisfying the preconditions\n(`requires` clauses), the result of the function will satisfy the postconditions\n(`ensures` clauses).\n\nThe command `cargo creusot prove` does two things: compile your Rust crate to\nComa, then search for proofs of verification conditions generated from the Coma\ncode using Why3find. These steps can be performed separately.\n\n1. Run only the compiler and obtain Coma code:\n   \n   `cargo creusot\n   `\n2. Run Why3find’s proof search only on a specific Coma file (by default,\n   Why3find is run on all Coma files under the `verif`):\n   \n   `cargo creusot prove verif/[COMA_FILE]\n   `\n   \n   Multiple files can also be specified in a single command.\n\nWhen the proof fails, you can add the `-i` option to open the Coma file in Why3\nIDE.\n\n`cargo creusot prove verif/[COMA_FILE] -i\n`\n\nThe `-i` option only launches the Why3 IDE if the proof fails. You can also use\n`--ide-always`\n\n`cargo creusot prove verif/[COMA_FILE] --ide-always\n`\n\nWhen you know that the proof is going to fail, it can be slow to update every\ntime you modify your code. To skip proof search and just reuse the existing\n`proof.json` as is, add the option `--replay`.\n\n`cargo creusot prove verif/[COMA_FILE] --ide-always --replay\n`\n\nThe documentation for the Why3 IDE can be found [here][6].\n\nWe also recommend section 2.3 of this [thesis][7] for a brief overview of Why3\nand Creusot proofs.\n\n### [Troubleshooting][8]\n\nIf you get an error like this\n\n`error: The `creusot_contracts` crate is loaded, but the following items are mis\nsing: <a list of identifiers> Maybe your version of `creusot-contracts` is wrong\n?\n`\n\nAdd the following to your `Cargo.toml` file:\n\n`[patch.crates-io]\ncreusot-contracts = { path = \"/relative/or/absolute/path/to/creusot-contracts/in\n/creusot/directory\" }\n`\n\nAnd please notify the Creusot developers that the version of Creusot should be\nbumped to `NEXT_VERSION-dev` to prevent this error.\n\n## [Legacy workflow with Why3 IDE][9]\n\nThis workflow is intended to help projects using old versions of Creusot that\nstill use `why3session.xml`.\n\nRun the Creusot compiler:\n\n`cargo creusot\n`\n\nLaunch the Why3 IDE:\n\n`cargo creusot why3 ide [FILE]\n`\n\nYou must specify a file `why3session.xml` or a Coma file.\n\nDifference with `cargo creusot prove`:\n\n* `cargo creusot prove` (with `-i` or `--ide-always`) runs the Creusot compiler\n  and the Why3find proof search beforehand, ensuring that you’re always working\n  on the latest version of your code.\n* `cargo creusot why3 ide` only runs `why3 ide` with the necessary options to\n  load Coma files produced by Creusot. It’s up to you to make sure that the Coma\n  files are up-to-date.\n\n[1]: #quick-start\n[2]: #installation\n[3]: https://creusot-rs.github.io/creusot/guide/installation.html\n[4]: #create-a-project\n[5]: #compile-and-prove\n[6]: https://www.why3.org/doc/starting.html#getting-started-with-the-gui\n[7]: https://sarsko.github.io/_pages/SarekSkot%C3%A5m_thesis.pdf\n[8]: #troubleshooting\n[9]: #legacy-workflow-with-why3-ide\n",
+  "content_type": "Reference",
+  "fetched_at": "2025-12-19T17:32:19.432522Z",
+  "metadata": {
+    "sections": [
+      "Keyboard shortcuts",
+      "Creusot User Guide",
+      "Quick start",
+      "Installation",
+      "Create a project",
+      "Compile and prove",
+      "Troubleshooting",
+      "Legacy workflow with Why3 IDE"
+    ],
+    "tags": [],
+    "code_blocks": [
+      {
+        "language": "text",
+        "code": "cargo creusot new project-name\n",
+        "description": null
+      },
+      {
+        "language": "rust",
+        "code": "// src/lib.rs\nuse creusot_contracts::prelude::*;\n\n#[requires(x@ < i64::MAX@)]\n#[ensures(result@ == x@ + 1)]\npub fn add_one(x: i64) -> i64 {\n    x + 1\n}",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot prove\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot prove verif/[COMA_FILE]\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot prove verif/[COMA_FILE] -i\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot prove verif/[COMA_FILE] --ide-always\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot prove verif/[COMA_FILE] --ide-always --replay\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "error: The `creusot_contracts` crate is loaded, but the following items are missing: <a list of identifiers> Maybe your version of `creusot-contracts` is wrong?\n",
+        "description": null
+      },
+      {
+        "language": "text",
+        "code": "[patch.crates-io]\ncreusot-contracts = { path = \"/relative/or/absolute/path/to/creusot-contracts/in/creusot/directory\" }\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot\n",
+        "description": null
+      },
+      {
+        "language": "sh",
+        "code": "cargo creusot why3 ide [FILE]\n",
+        "description": null
+      }
+    ],
+    "original_format": "html",
+    "word_count": 612
+  }
+}

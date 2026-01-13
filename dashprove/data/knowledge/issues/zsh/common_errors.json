@@ -1,0 +1,168 @@
+{
+  "tool": "zsh",
+  "version": "5.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "compinit_insecure",
+      "pattern": "compinit.*insecure|insecure.*directories",
+      "message": "Compinit: insecure directories",
+      "cause": "Completion directories have group/world writable permissions",
+      "solutions": [
+        {
+          "approach": "Fix permissions",
+          "code": "compaudit | xargs chmod g-w,o-w",
+          "when": "Fix insecure directories"
+        },
+        {
+          "approach": "Ignore check",
+          "code": "compinit -u",
+          "when": "Skip security check"
+        },
+        {
+          "approach": "Specify fpath",
+          "code": "fpath=(~/.zsh/completions $fpath)",
+          "when": "Use custom completion path"
+        }
+      ]
+    },
+    {
+      "id": "no_matches_found",
+      "pattern": "no matches found|zsh:.*no matches",
+      "message": "No matches found",
+      "cause": "Glob pattern didn't match any files",
+      "solutions": [
+        {
+          "approach": "Quote the pattern",
+          "code": "ls '*.txt'  or  ls \"*.txt\"",
+          "when": "Literal asterisk needed"
+        },
+        {
+          "approach": "Set nullglob",
+          "code": "setopt nullglob",
+          "when": "Treat non-matching globs as empty"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "ls \\*.txt",
+          "when": "Single file with special char"
+        }
+      ]
+    },
+    {
+      "id": "bad_pattern",
+      "pattern": "bad pattern|invalid.*pattern",
+      "message": "Bad pattern",
+      "cause": "Invalid glob or regex pattern in zsh",
+      "solutions": [
+        {
+          "approach": "Escape brackets",
+          "code": "Use \\[ and \\] for literal brackets",
+          "when": "Brackets in filename"
+        },
+        {
+          "approach": "Quote argument",
+          "code": "grep '[pattern]' file",
+          "when": "Pattern for other command"
+        },
+        {
+          "approach": "Disable extended glob",
+          "code": "setopt no_extended_glob",
+          "when": "Don't need extended patterns"
+        }
+      ]
+    },
+    {
+      "id": "history_corruption",
+      "pattern": "history.*corrupt|zsh_history.*error",
+      "message": "History file corruption",
+      "cause": "History file damaged, possibly from concurrent writes",
+      "solutions": [
+        {
+          "approach": "Rebuild history",
+          "code": "mv ~/.zsh_history ~/.zsh_history.bak\nstrings ~/.zsh_history.bak > ~/.zsh_history",
+          "when": "Remove corrupted entries"
+        },
+        {
+          "approach": "Set history options",
+          "code": "setopt INC_APPEND_HISTORY SHARE_HISTORY",
+          "when": "Prevent future corruption"
+        },
+        {
+          "approach": "Use separate histories",
+          "code": "setopt no_share_history",
+          "when": "Multiple terminals conflict"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found_handler",
+      "pattern": "command_not_found_handler|command not found",
+      "message": "Command not found",
+      "cause": "Command not in PATH or not installed",
+      "solutions": [
+        {
+          "approach": "Check PATH",
+          "code": "echo $path  # zsh uses lowercase array",
+          "when": "Verify PATH contents"
+        },
+        {
+          "approach": "Install handler",
+          "code": "brew install command-not-found  # suggests packages",
+          "when": "Want installation suggestions"
+        },
+        {
+          "approach": "Rehash",
+          "code": "rehash  # Rebuild command hash table",
+          "when": "Recently installed command"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "parse error|unexpected.*end",
+      "message": "Parse error in zsh",
+      "cause": "Syntax error in script or .zshrc",
+      "solutions": [
+        {
+          "approach": "Check for unmatched quotes",
+          "code": "zsh -n script.zsh  # Syntax check",
+          "when": "Validate syntax"
+        },
+        {
+          "approach": "Check heredocs",
+          "code": "Ensure <<EOF has matching EOF on its own line",
+          "when": "Heredoc not terminated"
+        },
+        {
+          "approach": "Debug sourcing",
+          "code": "zsh -x  # Show commands as executed",
+          "when": "Debug startup"
+        }
+      ]
+    },
+    {
+      "id": "plugin_slow",
+      "pattern": "slow.*startup|zsh.*slow|slow.*load",
+      "message": "Slow shell startup",
+      "cause": "Too many plugins or slow plugin initialization",
+      "solutions": [
+        {
+          "approach": "Profile startup",
+          "code": "zsh -xv 2>&1 | ts -s '%.s' > zsh_startup.log",
+          "when": "Find slow components"
+        },
+        {
+          "approach": "Lazy load plugins",
+          "code": "Use zinit ice wait'0' lucid",
+          "when": "Defer plugin loading"
+        },
+        {
+          "approach": "Compile completions",
+          "code": "zcompile ~/.zcompdump",
+          "when": "Speed up completion"
+        }
+      ]
+    }
+  ]
+}

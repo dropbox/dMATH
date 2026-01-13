@@ -1,0 +1,130 @@
+{
+  "id": "spin",
+  "name": "SPIN",
+  "category": "model_checker",
+  "subcategory": "ltl",
+
+  "description": "LTL model checker for concurrent systems in Promela",
+  "long_description": "SPIN (Simple Promela INterpreter) is an open-source software verification tool for concurrent systems. It uses Promela as its modeling language and verifies Linear Temporal Logic (LTL) properties. SPIN generates C code for verification, enabling efficient state space exploration.",
+
+  "capabilities": [
+    "ltl_model_checking",
+    "deadlock_detection",
+    "assertion_checking",
+    "partial_order_reduction",
+    "on_the_fly_verification",
+    "simulation"
+  ],
+  "property_types": ["ltl", "never_claim", "assertion", "progress", "accept"],
+  "input_languages": ["promela"],
+  "output_formats": ["counterexample_trail", "never_automaton", "statistics"],
+
+  "installation": {
+    "methods": [
+      {"type": "apt", "command": "apt install spin"},
+      {"type": "brew", "command": "brew install spin"},
+      {"type": "source", "url": "https://github.com/nimble-code/Spin"}
+    ],
+    "dependencies": ["gcc"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://spinroot.com/spin/whatispin.html",
+    "tutorial": "https://spinroot.com/spin/Man/",
+    "api_reference": "https://spinroot.com/spin/Man/promela.html",
+    "examples": "https://spinroot.com/spin/Man/GettingStarted.html"
+  },
+
+  "tactics": [
+    {
+      "name": "never",
+      "description": "Specify LTL property as never claim",
+      "syntax": "never { ... }",
+      "when_to_use": "For complex LTL properties",
+      "examples": ["never { do :: !p -> skip :: p -> break od }"]
+    },
+    {
+      "name": "ltl",
+      "description": "Direct LTL specification",
+      "syntax": "ltl name { formula }",
+      "when_to_use": "For readable LTL properties",
+      "examples": ["ltl safety { [](!error) }", "ltl liveness { []<>(done) }"]
+    },
+    {
+      "name": "por",
+      "description": "Partial order reduction",
+      "syntax": "-DPARTIAL",
+      "when_to_use": "For concurrent systems",
+      "examples": ["spin -a model.pml && cc -DPARTIAL -o pan pan.c"]
+    },
+    {
+      "name": "bfs",
+      "description": "Breadth-first search",
+      "syntax": "-DBFS",
+      "when_to_use": "For shortest counterexamples",
+      "examples": ["cc -DBFS -o pan pan.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "pan: assertion violated",
+      "meaning": "Assert statement failed",
+      "common_causes": ["Invalid state reached", "Bug in model"],
+      "fixes": ["Check assertion condition", "Review model logic"]
+    },
+    {
+      "pattern": "pan: invalid end state",
+      "meaning": "Deadlock detected",
+      "common_causes": ["Missing synchronization", "Wrong guards"],
+      "fixes": ["Add end labels", "Fix synchronization"]
+    },
+    {
+      "pattern": "pan: out of memory",
+      "meaning": "State space too large",
+      "common_causes": ["Unbounded variables", "Too many processes"],
+      "fixes": ["Use state compression", "Reduce model", "Use bitstate hashing"]
+    },
+    {
+      "pattern": "ltl formula: syntax error",
+      "meaning": "Invalid LTL syntax",
+      "common_causes": ["Wrong operator", "Missing parentheses"],
+      "fixes": ["Check LTL syntax", "Use atomic propositions"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["temporal", "safety", "liveness"],
+    "cli_command": "dashprove verify --backend spin"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "Billions of states with bitstate hashing",
+    "memory_usage": "Configurable via compression"
+  },
+
+  "comparisons": {
+    "similar_tools": ["nusmv", "uppaal", "tlaplus"],
+    "advantages": [
+      "Mature and well-tested",
+      "Efficient partial order reduction",
+      "Good documentation",
+      "Large user community"
+    ],
+    "disadvantages": [
+      "Promela learning curve",
+      "Limited data types",
+      "No real-time support"
+    ]
+  },
+
+  "metadata": {
+    "version": "6.5.2",
+    "last_updated": "2025-12-22",
+    "maintainer": "Gerard Holzmann",
+    "license": "BSD-3"
+  }
+}

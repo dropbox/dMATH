@@ -1,0 +1,99 @@
+{
+  "tool": "rds",
+  "category": "aws_database",
+  "description": "Amazon Relational Database Service - managed relational database",
+  "common_errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused",
+      "regex": "(?i)connection.*refused|cannot.*connect|timeout.*connecting|host.*unreachable",
+      "cause": "Cannot establish connection to RDS instance",
+      "solution": "Check security group allows inbound on DB port, verify VPC/subnet configuration, ensure instance is publicly accessible if connecting from outside VPC",
+      "severity": "high",
+      "category": "connectivity"
+    },
+    {
+      "id": "auth_failed",
+      "pattern": "Access denied",
+      "regex": "(?i)access.*denied|authentication.*failed|invalid.*password|login.*failed|FATAL.*password",
+      "cause": "Database authentication failed",
+      "solution": "Verify master username/password, reset credentials via AWS Console if needed, check IAM database authentication setup",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "storage_full",
+      "pattern": "storage full",
+      "regex": "(?i)storage.*full|disk.*space|no.*space.*left|transaction.*log.*full",
+      "cause": "RDS instance storage capacity exhausted",
+      "solution": "Enable storage autoscaling, manually increase allocated storage, identify and delete large unused data",
+      "severity": "high",
+      "category": "storage"
+    },
+    {
+      "id": "too_many_connections",
+      "pattern": "too many connections",
+      "regex": "(?i)too.*many.*connections|max.*connections|connection.*limit|connection.*pool.*exhausted",
+      "cause": "Maximum database connections exceeded",
+      "solution": "Implement connection pooling (RDS Proxy), increase max_connections parameter, review application connection handling",
+      "severity": "high",
+      "category": "connections"
+    },
+    {
+      "id": "parameter_group",
+      "pattern": "parameter group",
+      "regex": "(?i)parameter.*group|invalid.*parameter|pending.*reboot|static.*parameter",
+      "cause": "Parameter group changes not applied or invalid",
+      "solution": "Reboot instance for static parameter changes, verify parameter values are valid for engine/version",
+      "severity": "medium",
+      "category": "configuration"
+    },
+    {
+      "id": "backup_error",
+      "pattern": "backup",
+      "regex": "(?i)backup.*failed|automated.*backup|snapshot.*error|backup.*window",
+      "cause": "Automated backup or snapshot operation failed",
+      "solution": "Check backup retention period, ensure sufficient storage, verify backup window doesn't overlap with maintenance window",
+      "severity": "medium",
+      "category": "backup"
+    },
+    {
+      "id": "ssl_required",
+      "pattern": "SSL",
+      "regex": "(?i)ssl.*required|ssl.*connection|certificate.*verify|tls.*handshake",
+      "cause": "SSL/TLS connection required but not configured",
+      "solution": "Download RDS CA certificate, configure client to use SSL, set rds.force_ssl parameter if needed",
+      "severity": "medium",
+      "category": "security"
+    },
+    {
+      "id": "replication_lag",
+      "pattern": "replication lag",
+      "regex": "(?i)replication.*lag|replica.*lag|seconds.*behind.*master|replica.*error",
+      "cause": "Read replica falling behind primary instance",
+      "solution": "Check replica instance class is adequate, review long-running queries, consider multiple read replicas",
+      "severity": "medium",
+      "category": "replication"
+    },
+    {
+      "id": "maintenance_window",
+      "pattern": "maintenance",
+      "regex": "(?i)maintenance.*window|pending.*maintenance|auto.*minor.*version|patching",
+      "cause": "Pending maintenance actions on RDS instance",
+      "solution": "Schedule maintenance during low-traffic periods, apply immediately if urgent, enable auto minor version upgrade",
+      "severity": "low",
+      "category": "maintenance"
+    },
+    {
+      "id": "encryption_error",
+      "pattern": "encryption",
+      "regex": "(?i)kms.*key|encryption.*error|decrypt.*error|key.*policy",
+      "cause": "KMS key access issue for encrypted RDS instance",
+      "solution": "Verify KMS key policy allows RDS service, check key isn't deleted/disabled, ensure cross-account permissions if applicable",
+      "severity": "high",
+      "category": "security"
+    }
+  ],
+  "related_tools": ["aws_cli", "mysql_client", "psql_cmd", "cloudwatch"],
+  "documentation_url": "https://docs.aws.amazon.com/rds/"
+}

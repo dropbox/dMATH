@@ -1,0 +1,184 @@
+// USL Standard Library: Graph Theory
+// Types and properties for graph structures
+// See docs/DESIGN.md for DashFlow integration patterns
+
+// =============================================================================
+// Core Graph Types
+// =============================================================================
+
+// Basic node with unique identifier
+type Node = {
+    id: String,
+    label: String
+}
+
+// Directed edge between nodes
+type Edge = {
+    source: Node,
+    target: Node
+}
+
+// Directed graph with nodes and edges
+type Graph = {
+    nodes: Set<Node>,
+    edges: Set<Edge>
+}
+
+// Path in a graph
+type Path = {
+    nodes: List<Node>,
+    length: Int
+}
+
+// =============================================================================
+// Graph Structure Invariants
+// =============================================================================
+
+// No self-loops: edges cannot connect a node to itself
+invariant no_self_loops {
+    forall g: Graph, e in (g.edges) . e.source != e.target
+}
+
+// All edges reference valid nodes
+invariant edges_valid {
+    forall g: Graph, e in (g.edges) .
+        contains(g.nodes, e.source) and contains(g.nodes, e.target)
+}
+
+// Unique node identifiers
+invariant unique_node_ids {
+    forall g: Graph, n1 in (g.nodes), n2 in (g.nodes) .
+        (n1.id == n2.id) implies n1 == n2
+}
+
+// =============================================================================
+// Reachability Properties
+// =============================================================================
+
+// Reachability is reflexive
+theorem reachability_reflexive {
+    forall g: Graph, n in (g.nodes) . reachable(n, n, g)
+}
+
+// Reachability is transitive
+theorem reachability_transitive {
+    forall g: Graph, a: Node, b: Node, c: Node .
+        (reachable(a, b, g) and reachable(b, c, g)) implies reachable(a, c, g)
+}
+
+// Single-source reachability: all nodes reachable from root means connected
+theorem root_reachability {
+    forall g: Graph, root: Node .
+        (forall n in (g.nodes) . reachable(root, n, g)) implies connected(g)
+}
+
+// =============================================================================
+// Acyclicity Properties
+// =============================================================================
+
+// Acyclic graphs have no non-trivial self-reachability
+invariant acyclic_definition {
+    forall g: Graph .
+        acyclic(g) implies (forall n in (g.nodes) . not reachable_nontrivial(n, n, g))
+}
+
+// Acyclic graphs with entry points always terminate
+theorem acyclic_terminates {
+    forall g: Graph, s: State .
+        (acyclic(g) and has_entry(g)) implies
+            exists s_final: State . terminates(g, s, s_final)
+}
+
+// DAG has topological ordering
+theorem dag_has_topo_order {
+    forall g: Graph .
+        acyclic(g) implies has_topo_order(g)
+}
+
+// =============================================================================
+// Connectivity Properties
+// =============================================================================
+
+// Connectivity is symmetric for undirected interpretation
+theorem connectivity_symmetric {
+    forall g: Graph, a: Node, b: Node .
+        symmetric(g) implies (reachable(a, b, g) implies reachable(b, a, g))
+}
+
+// Strong connectivity: every pair of nodes mutually reachable
+invariant strong_connectivity {
+    forall g: Graph .
+        strongly_connected(g) implies
+            (forall a in (g.nodes), b in (g.nodes) .
+                reachable(a, b, g) and reachable(b, a, g))
+}
+
+// =============================================================================
+// Tree Properties
+// =============================================================================
+
+// Tree structure: connected and acyclic
+theorem tree_structure {
+    forall g: Graph .
+        is_tree(g) implies (connected(g) and acyclic(g))
+}
+
+// Tree has unique path between any two nodes
+theorem tree_unique_path {
+    forall g: Graph, a: Node, b: Node .
+        is_tree(g) implies exists_unique_path(a, b, g)
+}
+
+// Tree is minimally connected
+theorem tree_minimally_connected {
+    forall g: Graph, e in (g.edges) .
+        is_tree(g) implies not connected(remove_edge(g, e))
+}
+
+// =============================================================================
+// DashFlow-Specific Properties
+// =============================================================================
+
+// Entry node exists and is unique
+invariant entry_unique {
+    forall g: Graph .
+        has_entry(g) implies has_unique_entry(g)
+}
+
+// All nodes reachable from entry
+invariant all_reachable_from_entry {
+    forall g: Graph .
+        has_entry(g) implies all_reachable(g)
+}
+
+// No dead-end nodes (except terminals)
+invariant no_dead_ends {
+    forall g: Graph, n in (g.nodes) .
+        not is_terminal(n, g) implies has_successors(n, g)
+}
+
+// Execution preserves graph invariants
+theorem execution_preserves_invariants {
+    forall g: Graph, s: State, s_next: State .
+        (valid_graph(g) and step(g, s, s_next)) implies valid_graph(g)
+}
+
+// =============================================================================
+// Bounded Properties
+// =============================================================================
+
+// Bounded degree for all nodes
+invariant bounded_degree {
+    forall g: Graph, n in (g.nodes) . has_bounded_degree(n, g)
+}
+
+// Bounded path length
+invariant bounded_path_length {
+    forall g: Graph . has_bounded_paths(g)
+}
+
+// No infinite paths in acyclic graphs
+theorem finite_paths {
+    forall g: Graph .
+        acyclic(g) implies all_paths_finite(g)
+}

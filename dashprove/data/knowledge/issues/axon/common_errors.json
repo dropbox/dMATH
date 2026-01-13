@@ -1,0 +1,132 @@
+{
+  "tool": "axon",
+  "category": "event_sourcing",
+  "common_errors": [
+    {
+      "id": "axon_aggregate_not_found",
+      "pattern": "AggregateNotFoundException|Aggregate .* was not found",
+      "severity": "error",
+      "causes": [
+        "Aggregate ID does not exist in event store",
+        "Aggregate was deleted or snapshotted incorrectly",
+        "Wrong aggregate identifier used in command"
+      ],
+      "solutions": [
+        "Verify aggregate ID exists before sending commands",
+        "Check event store for aggregate events",
+        "Use @TargetAggregateIdentifier on correct field",
+        "Implement aggregate creation command first"
+      ]
+    },
+    {
+      "id": "axon_command_handler_duplicate",
+      "pattern": "CommandHandlerSubscription already exists for command|duplicate command handler",
+      "severity": "error",
+      "causes": [
+        "Multiple @CommandHandler methods for same command type",
+        "Aggregate registered multiple times",
+        "Bean duplication in Spring context"
+      ],
+      "solutions": [
+        "Remove duplicate command handlers",
+        "Check component scanning for duplicates",
+        "Ensure single aggregate registration per type"
+      ]
+    },
+    {
+      "id": "axon_event_handler_exception",
+      "pattern": "EventHandler.*exception|Error handling event",
+      "severity": "error",
+      "causes": [
+        "Exception thrown in @EventHandler method",
+        "Event deserialization failure",
+        "Missing required event handler dependencies"
+      ],
+      "solutions": [
+        "Add try-catch in event handlers for non-critical errors",
+        "Use @ExceptionHandler for handler error recovery",
+        "Configure dead-letter queue for failed events",
+        "Ensure event schema compatibility with stored events"
+      ]
+    },
+    {
+      "id": "axon_saga_association_not_found",
+      "pattern": "SagaAssociationValue.*not found|No saga found for association",
+      "severity": "warning",
+      "causes": [
+        "Saga association property not set correctly",
+        "Association removed before expected event",
+        "Saga ended prematurely"
+      ],
+      "solutions": [
+        "Use @SagaEventHandler(associationProperty = \"propertyName\")",
+        "Call SagaLifecycle.associateWith() in start handler",
+        "Verify association value matches event property name"
+      ]
+    },
+    {
+      "id": "axon_upcaster_failure",
+      "pattern": "Upcaster.*failed|Unable to upcast event",
+      "severity": "error",
+      "causes": [
+        "Event schema changed incompatibly",
+        "Missing upcaster for old event version",
+        "Upcaster chain order incorrect"
+      ],
+      "solutions": [
+        "Implement EventUpcaster for schema changes",
+        "Chain upcasters in version order",
+        "Use intermediate document for complex migrations",
+        "Test upcasters with historical event data"
+      ]
+    },
+    {
+      "id": "axon_snapshot_outdated",
+      "pattern": "Snapshot.*incompatible|Cannot restore aggregate from snapshot",
+      "severity": "error",
+      "causes": [
+        "Aggregate class changed after snapshot creation",
+        "Snapshot serializer mismatch",
+        "Missing fields in snapshot"
+      ],
+      "solutions": [
+        "Clear old snapshots and rebuild from events",
+        "Implement snapshot upcasting",
+        "Use @Revision annotation on aggregate",
+        "Configure snapshot trigger threshold appropriately"
+      ]
+    },
+    {
+      "id": "axon_query_timeout",
+      "pattern": "QueryTimeoutException|Query execution timed out",
+      "severity": "error",
+      "causes": [
+        "Query handler taking too long",
+        "Scatter-gather query with slow responders",
+        "Network issues to query handlers"
+      ],
+      "solutions": [
+        "Increase query timeout configuration",
+        "Optimize query handler performance",
+        "Use streaming query for large results",
+        "Configure appropriate scatter-gather timeout"
+      ]
+    },
+    {
+      "id": "axon_serialization_error",
+      "pattern": "SerializationException|Cannot serialize|Cannot deserialize",
+      "severity": "error",
+      "causes": [
+        "Class changed incompatibly (fields removed/renamed)",
+        "Missing no-arg constructor for deserialization",
+        "Incompatible serializer configuration"
+      ],
+      "solutions": [
+        "Use XStream or Jackson with type info",
+        "Add @JsonCreator for immutable classes",
+        "Implement custom serializer for complex types",
+        "Use upcasters for evolving event schemas"
+      ]
+    }
+  ]
+}

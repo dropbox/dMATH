@@ -1,0 +1,115 @@
+{
+  "id": "crown",
+  "name": "alpha-beta-CROWN",
+  "category": "neural_network_verification",
+  "subcategory": "verifier",
+
+  "description": "GPU-accelerated neural network verifier",
+  "long_description": "alpha-beta-CROWN is a state-of-the-art neural network verifier that combines bound propagation with branch-and-bound search. It won VNN-COMP 2021-2023 and leverages GPU acceleration for fast verification of robustness and other properties.",
+
+  "capabilities": [
+    "robustness_verification",
+    "certified_defense",
+    "gpu_acceleration",
+    "bound_propagation",
+    "branch_and_bound",
+    "general_properties"
+  ],
+  "property_types": ["robustness", "property", "specification"],
+  "input_languages": ["onnx", "pytorch"],
+  "output_formats": ["verified/violated", "bounds", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install auto-lirpa"},
+      {"type": "source", "url": "https://github.com/Verified-Intelligence/alpha-beta-CROWN"}
+    ],
+    "dependencies": ["pytorch", "cuda"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/Verified-Intelligence/alpha-beta-CROWN",
+    "tutorial": "https://github.com/Verified-Intelligence/alpha-beta-CROWN#quick-start",
+    "api_reference": "https://auto-lirpa.readthedocs.io/",
+    "examples": "https://github.com/Verified-Intelligence/alpha-beta-CROWN/tree/main/complete_verifier"
+  },
+
+  "tactics": [
+    {
+      "name": "bab",
+      "description": "Branch-and-bound verification",
+      "syntax": "python abcrown.py --config config.yaml",
+      "when_to_use": "For complete verification",
+      "examples": ["python abcrown.py --config mnist_config.yaml"]
+    },
+    {
+      "name": "crown",
+      "description": "Linear bound propagation",
+      "syntax": "model.compute_bounds()",
+      "when_to_use": "For fast incomplete verification",
+      "examples": ["lb, ub = model.compute_bounds()"]
+    },
+    {
+      "name": "alpha-crown",
+      "description": "Optimized bound propagation",
+      "syntax": "method='alpha-CROWN'",
+      "when_to_use": "For tighter bounds",
+      "examples": ["lb, ub = model.compute_bounds(method='alpha-CROWN')"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "verified",
+      "meaning": "Property holds for all inputs in region",
+      "common_causes": ["Network is robust"],
+      "fixes": ["None needed"]
+    },
+    {
+      "pattern": "falsified",
+      "meaning": "Found adversarial example",
+      "common_causes": ["Network not robust"],
+      "fixes": ["Retrain with adversarial training", "Use certified defense"]
+    },
+    {
+      "pattern": "unknown",
+      "meaning": "Could not determine",
+      "common_causes": ["Timeout", "Bounds too loose"],
+      "fixes": ["Increase timeout", "Use tighter method"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["nn_property", "robustness"],
+    "cli_command": "dashprove verify --backend crown"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Handles large networks with GPU",
+    "memory_usage": "GPU memory dependent"
+  },
+
+  "comparisons": {
+    "similar_tools": ["marabou", "eran", "verinet"],
+    "advantages": [
+      "VNN-COMP winner",
+      "GPU acceleration",
+      "State-of-the-art speed",
+      "General activation support"
+    ],
+    "disadvantages": [
+      "GPU required for best performance",
+      "Complex configuration"
+    ]
+  },
+
+  "metadata": {
+    "version": "2024",
+    "last_updated": "2025-12-20",
+    "maintainer": "UCLA",
+    "license": "BSD-3"
+  }
+}

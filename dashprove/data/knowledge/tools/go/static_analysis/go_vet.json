@@ -1,0 +1,177 @@
+{
+  "id": "go_vet",
+  "name": "go vet",
+  "category": "go_static_analysis",
+  "subcategory": "builtin_checker",
+
+  "description": "Built-in Go static analyzer for suspicious constructs",
+  "long_description": "go vet is the official static analysis tool built into the Go toolchain. It examines Go source code and reports suspicious constructs that are likely bugs but wouldn't be caught by the compiler. It checks for issues like Printf format string mismatches, unreachable code, shadowed variables, and incorrect struct tags.",
+
+  "capabilities": [
+    "printf_analysis",
+    "struct_tag_validation",
+    "unreachable_code",
+    "shadowed_variables",
+    "nil_function_comparison",
+    "shift_bounds",
+    "test_signature_checking",
+    "atomic_alignment"
+  ],
+  "property_types": ["lint_warning", "suspicious_construct"],
+  "input_languages": ["go"],
+  "output_formats": ["text", "json"],
+
+  "installation": {
+    "methods": [
+      {"type": "builtin", "command": "Included in Go toolchain"}
+    ],
+    "dependencies": ["go"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://pkg.go.dev/cmd/vet",
+    "analyzers": "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes",
+    "examples": "https://go.dev/doc/effective_go#commentary"
+  },
+
+  "analyzers": [
+    {
+      "name": "printf",
+      "description": "Check Printf format strings match arguments",
+      "examples": ["fmt.Printf(\"%d\", \"string\") // ERROR: wrong type"]
+    },
+    {
+      "name": "structtag",
+      "description": "Check struct field tags are well-formed",
+      "examples": ["type T struct { F int `json:\"f\" xml` } // ERROR: bad xml tag"]
+    },
+    {
+      "name": "unreachable",
+      "description": "Find unreachable code",
+      "examples": ["return x\ny = 1 // ERROR: unreachable"]
+    },
+    {
+      "name": "shadow",
+      "description": "Find shadowed variables",
+      "examples": ["x := 1\nif true { x := 2 } // WARNING: shadows x"]
+    },
+    {
+      "name": "nilfunc",
+      "description": "Check for useless nil comparisons of functions",
+      "examples": ["if fn == nil {} // ERROR if fn is function"]
+    },
+    {
+      "name": "shift",
+      "description": "Check for shifts exceeding integer width",
+      "examples": ["var x int32; x << 32 // ERROR"]
+    },
+    {
+      "name": "tests",
+      "description": "Check test function signatures",
+      "examples": ["func TestFoo(testing.T) {} // ERROR: wrong signature"]
+    },
+    {
+      "name": "atomic",
+      "description": "Check for misuse of sync/atomic",
+      "examples": ["var x int64; atomic.AddInt64(&x, 1) // check alignment"]
+    },
+    {
+      "name": "copylocks",
+      "description": "Check for copies of sync.Mutex",
+      "examples": ["func f(m sync.Mutex) {} // ERROR: copies lock"]
+    }
+  ],
+
+  "tactics": [
+    {
+      "name": "run_all",
+      "description": "Run all vet checks",
+      "syntax": "go vet ./...",
+      "when_to_use": "Standard pre-commit check",
+      "examples": ["go vet ./...", "go vet ./pkg/..."]
+    },
+    {
+      "name": "select_analyzers",
+      "description": "Run specific analyzers only",
+      "syntax": "go vet -ANALYZER ./...",
+      "when_to_use": "Focus on specific issue types",
+      "examples": ["go vet -printf ./...", "go vet -shadow ./..."]
+    },
+    {
+      "name": "json_output",
+      "description": "Output in JSON format",
+      "syntax": "go vet -json ./...",
+      "when_to_use": "Integration with other tools",
+      "examples": ["go vet -json ./... | jq ."]
+    },
+    {
+      "name": "disable_analyzer",
+      "description": "Disable specific analyzer",
+      "syntax": "go vet -ANALYZER=false ./...",
+      "when_to_use": "Skip noisy or inapplicable checks",
+      "examples": ["go vet -shadow=false ./..."]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Printf format %\\w+ has arg .* of wrong type",
+      "meaning": "Printf argument type doesn't match format specifier",
+      "common_causes": ["Wrong format verb", "Wrong argument order", "Type changed but format not updated"],
+      "fixes": ["Use correct format verb", "Fix argument order", "Update format string"]
+    },
+    {
+      "pattern": "struct field tag .* not compatible with reflect.StructTag.Get",
+      "meaning": "Malformed struct tag",
+      "common_causes": ["Missing quotes", "Wrong syntax", "Typo in tag"],
+      "fixes": ["Fix tag syntax: `key:\"value\"`"]
+    },
+    {
+      "pattern": "unreachable code",
+      "meaning": "Code after return/panic/etc. will never execute",
+      "common_causes": ["Return in wrong place", "Refactoring left dead code"],
+      "fixes": ["Remove unreachable code", "Fix control flow"]
+    },
+    {
+      "pattern": "declaration of .* shadows declaration",
+      "meaning": "Variable in inner scope shadows outer variable",
+      "common_causes": ["Reusing name in nested block", "Short variable declaration"],
+      "fixes": ["Use different name", "Use assignment instead of declaration"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "goland", "vim", "emacs"],
+    "ci_integration": ["github_actions", "gitlab_ci", "travis"]
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to seconds",
+    "scalability": "Very fast, built into go build cache",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["staticcheck", "golangci-lint", "revive"],
+    "advantages": [
+      "Built into Go toolchain - always available",
+      "Fast and well-maintained by Go team",
+      "Low false positive rate",
+      "No external dependencies"
+    ],
+    "disadvantages": [
+      "Limited check coverage compared to staticcheck",
+      "No custom checks support",
+      "Less detailed error messages"
+    ]
+  },
+
+  "metadata": {
+    "version": "go1.21+",
+    "last_updated": "2025-12-22",
+    "maintainer": "Go Team",
+    "license": "BSD-3-Clause"
+  }
+}

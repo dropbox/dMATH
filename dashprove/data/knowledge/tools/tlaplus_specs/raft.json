@@ -1,0 +1,98 @@
+{
+  "id": "tlaplus_raft",
+  "name": "Raft TLA+ Specification",
+  "category": "tlaplus_specifications",
+  "subcategory": "consensus",
+
+  "description": "Formal TLA+ specification of the Raft consensus algorithm",
+  "long_description": "The canonical TLA+ specification of Raft consensus algorithm, created by Diego Ongaro. Specifies leader election, log replication, and safety properties. Used as a reference for implementing Raft (etcd, Consul, CockroachDB) and as a teaching example for TLA+. Includes membership changes and log compaction extensions.",
+
+  "capabilities": [
+    "consensus_specification",
+    "leader_election",
+    "log_replication",
+    "safety_verification",
+    "liveness_properties",
+    "model_checking"
+  ],
+  "property_types": ["safety", "liveness", "invariants"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/ongardie/raft.tla",
+    "etcd": "https://github.com/etcd-io/etcd/tree/main/contrib/raftexample",
+    "paper": "https://raft.github.io/raft.pdf"
+  },
+
+  "documentation": {
+    "official": "https://raft.github.io/",
+    "tla_spec": "https://github.com/ongardie/raft.tla",
+    "tutorial": "https://lamport.azurewebsites.net/tla/raft.html"
+  },
+
+  "key_properties": [
+    {
+      "name": "ElectionSafety",
+      "description": "At most one leader can be elected in a given term",
+      "tla_formula": "\\A i, j \\in Server : state[i] = Leader /\\ state[j] = Leader /\\ currentTerm[i] = currentTerm[j] => i = j"
+    },
+    {
+      "name": "LeaderAppendOnly",
+      "description": "A leader never overwrites or deletes entries in its log",
+      "tla_formula": "Leaders only append to their log"
+    },
+    {
+      "name": "LogMatching",
+      "description": "If two logs contain an entry with the same index and term, the logs are identical up to that index",
+      "tla_formula": "\\A i, j \\in Server : \\A k \\in 1..Len(log[i]) : log[i][k].term = log[j][k].term => SubSeq(log[i], 1, k) = SubSeq(log[j], 1, k)"
+    },
+    {
+      "name": "LeaderCompleteness",
+      "description": "If a log entry is committed in a given term, it will be present in the logs of leaders for all higher terms",
+      "tla_formula": "Committed entries are preserved by future leaders"
+    },
+    {
+      "name": "StateMachineSafety",
+      "description": "If a server has applied a log entry at a given index, no other server will ever apply a different log entry for that index",
+      "tla_formula": "All applied entries match across servers"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "currentTerm", "type": "Nat", "description": "Latest term server has seen"},
+    {"name": "votedFor", "type": "Server \\cup {Nil}", "description": "CandidateId that received vote in current term"},
+    {"name": "log", "type": "Seq([term: Nat, value: Value])", "description": "Log entries"},
+    {"name": "commitIndex", "type": "Nat", "description": "Index of highest log entry known to be committed"},
+    {"name": "state", "type": "{Follower, Candidate, Leader}", "description": "Server state"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Server": "{s1, s2, s3}",
+      "Value": "{v1, v2}",
+      "MaxTerm": "3",
+      "MaxLogLen": "3"
+    },
+    "invariants": ["TypeOK", "ElectionSafety", "LogMatching"],
+    "expected_states": "Millions with small constants"
+  },
+
+  "related_specs": ["paxos", "multi_paxos", "viewstamped_replication", "zab"],
+
+  "implementations_verified": [
+    "etcd (Go)",
+    "Consul (Go)",
+    "CockroachDB (Go)",
+    "TiKV (Rust)",
+    "Hazelcast Raft (Java)"
+  ],
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Diego Ongaro",
+    "license": "CC BY 4.0"
+  }
+}

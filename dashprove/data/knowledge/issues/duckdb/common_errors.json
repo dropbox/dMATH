@@ -1,0 +1,191 @@
+{
+  "tool": "duckdb",
+  "version": "0.10.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "out_of_memory",
+      "pattern": "Out of Memory|OutOfMemoryException|memory budget",
+      "message": "Out of memory error",
+      "cause": "Query requires more memory than available",
+      "solutions": [
+        {
+          "approach": "Set memory limit",
+          "code": "SET memory_limit = '8GB';\nSET temp_directory = '/tmp/duckdb';",
+          "when": "Allow more memory"
+        },
+        {
+          "approach": "Use external sorting",
+          "code": "PRAGMA enable_external_access;\nSET preserve_insertion_order = false;",
+          "when": "Large sorts"
+        },
+        {
+          "approach": "Process in chunks",
+          "code": "SELECT * FROM parquet_scan('data/*.parquet')\nLIMIT 1000000 OFFSET 0;",
+          "when": "Process incrementally"
+        }
+      ]
+    },
+    {
+      "id": "file_not_found",
+      "pattern": "Could not open file|File not found|No such file",
+      "message": "File not found",
+      "cause": "Cannot find or access file",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "SELECT * FROM '/absolute/path/to/file.parquet';",
+          "when": "Use absolute path"
+        },
+        {
+          "approach": "Glob pattern",
+          "code": "SELECT * FROM read_parquet('data/**/*.parquet');\nSELECT * FROM read_csv_auto('logs/*.csv');",
+          "when": "Multiple files"
+        },
+        {
+          "approach": "List files",
+          "code": "SELECT * FROM glob('data/*.parquet');",
+          "when": "Debug paths"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Cannot cast|Type mismatch|Conversion error",
+      "message": "Type conversion error",
+      "cause": "Cannot convert between types",
+      "solutions": [
+        {
+          "approach": "Explicit cast",
+          "code": "SELECT CAST(string_col AS INTEGER) FROM table;\nSELECT TRY_CAST(maybe_number AS INTEGER);",
+          "when": "Type conversion"
+        },
+        {
+          "approach": "Handle nulls",
+          "code": "SELECT COALESCE(TRY_CAST(col AS INT), 0)\nFROM table;",
+          "when": "With default"
+        },
+        {
+          "approach": "Check schema",
+          "code": "DESCRIBE SELECT * FROM 'file.parquet';",
+          "when": "Inspect types"
+        }
+      ]
+    },
+    {
+      "id": "parquet_error",
+      "pattern": "Parquet|parquet_scan|Invalid parquet file",
+      "message": "Parquet file error",
+      "cause": "Issue reading parquet file",
+      "solutions": [
+        {
+          "approach": "Read with options",
+          "code": "SELECT * FROM read_parquet('file.parquet',\n    hive_partitioning=true,\n    filename=true\n);",
+          "when": "Partitioned data"
+        },
+        {
+          "approach": "Union schemas",
+          "code": "SELECT * FROM read_parquet('*.parquet',\n    union_by_name=true\n);",
+          "when": "Different schemas"
+        },
+        {
+          "approach": "Validate file",
+          "code": "SELECT * FROM parquet_metadata('file.parquet');\nSELECT * FROM parquet_schema('file.parquet');",
+          "when": "Inspect parquet"
+        }
+      ]
+    },
+    {
+      "id": "csv_error",
+      "pattern": "CSV|csv_scan|delimiter|Invalid CSV",
+      "message": "CSV parsing error",
+      "cause": "Issue parsing CSV file",
+      "solutions": [
+        {
+          "approach": "Specify options",
+          "code": "SELECT * FROM read_csv_auto('file.csv',\n    delim=';',\n    header=true,\n    quote='\"',\n    escape='\\\\'\n);",
+          "when": "Custom format"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "SELECT * FROM read_csv_auto('file.csv',\n    ignore_errors=true,\n    null_padding=true\n);",
+          "when": "Malformed rows"
+        },
+        {
+          "approach": "Sample first",
+          "code": "SELECT * FROM read_csv_auto('file.csv',\n    sample_size=10000\n) LIMIT 100;",
+          "when": "Test parsing"
+        }
+      ]
+    },
+    {
+      "id": "concurrency_error",
+      "pattern": "Could not acquire|locked|concurrent",
+      "message": "Concurrency error",
+      "cause": "Database lock or concurrent access issue",
+      "solutions": [
+        {
+          "approach": "Read-only mode",
+          "code": "ATTACH 'database.db' AS db (READ_ONLY);",
+          "when": "Multiple readers"
+        },
+        {
+          "approach": "In-memory",
+          "code": "duckdb :memory:",
+          "when": "Avoid locking"
+        },
+        {
+          "approach": "Access mode",
+          "code": "import duckdb\ncon = duckdb.connect('db.duckdb', read_only=True)",
+          "when": "Python read-only"
+        }
+      ]
+    },
+    {
+      "id": "extension_error",
+      "pattern": "Extension|httpfs|postgres_scanner|not loaded",
+      "message": "Extension not loaded",
+      "cause": "Required extension not installed or loaded",
+      "solutions": [
+        {
+          "approach": "Install extension",
+          "code": "INSTALL httpfs;\nLOAD httpfs;",
+          "when": "Install and load"
+        },
+        {
+          "approach": "Auto-load",
+          "code": "SET autoinstall_known_extensions = true;\nSET autoload_known_extensions = true;",
+          "when": "Auto-install"
+        },
+        {
+          "approach": "Common extensions",
+          "code": "-- httpfs: S3/HTTP access\n-- postgres_scanner: PostgreSQL access\n-- spatial: GIS functions\n-- json: JSON functions\nINSTALL httpfs; LOAD httpfs;",
+          "when": "Popular extensions"
+        }
+      ]
+    },
+    {
+      "id": "s3_error",
+      "pattern": "S3|s3://|Unable to connect|credentials",
+      "message": "S3 access error",
+      "cause": "Cannot access S3 bucket",
+      "solutions": [
+        {
+          "approach": "Set credentials",
+          "code": "SET s3_access_key_id = 'your_key';\nSET s3_secret_access_key = 'your_secret';\nSET s3_region = 'us-east-1';",
+          "when": "AWS credentials"
+        },
+        {
+          "approach": "Use environment",
+          "code": "export AWS_ACCESS_KEY_ID=xxx\nexport AWS_SECRET_ACCESS_KEY=xxx\nexport AWS_REGION=us-east-1",
+          "when": "Env vars"
+        },
+        {
+          "approach": "Public bucket",
+          "code": "SET s3_url_style = 'path';\nSELECT * FROM 's3://bucket/path/*.parquet';",
+          "when": "Public access"
+        }
+      ]
+    }
+  ]
+}

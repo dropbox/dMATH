@@ -1,0 +1,191 @@
+{
+  "tool": "release_please",
+  "version": "16.7.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_release_pr",
+      "pattern": "No release PR|no releasable commits|nothing to release",
+      "message": "No release PR created",
+      "cause": "No conventional commits found to release",
+      "solutions": [
+        {
+          "approach": "Use conventional commits",
+          "code": "feat: add new feature\nfix: resolve bug issue\ndocs: update README\nchore: update dependencies",
+          "when": "Wrong commit format"
+        },
+        {
+          "approach": "Check configuration",
+          "code": "# release-please-config.json\n{\n  \"release-type\": \"node\",\n  \"packages\": {\n    \".\": {}\n  }\n}",
+          "when": "Missing config"
+        },
+        {
+          "approach": "Bootstrap first release",
+          "code": "# .release-please-manifest.json\n{\n  \".\": \"1.0.0\"\n}",
+          "when": "First release"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "Invalid configuration|release-please-config|manifest",
+      "message": "Configuration error",
+      "cause": "Invalid release-please configuration",
+      "solutions": [
+        {
+          "approach": "Create config",
+          "code": "// release-please-config.json\n{\n  \"$schema\": \"https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json\",\n  \"packages\": {\n    \".\": {\n      \"release-type\": \"node\",\n      \"changelog-path\": \"CHANGELOG.md\"\n    }\n  }\n}",
+          "when": "Node.js project"
+        },
+        {
+          "approach": "Create manifest",
+          "code": "// .release-please-manifest.json\n{\n  \".\": \"0.0.0\"\n}",
+          "when": "Track versions"
+        },
+        {
+          "approach": "Monorepo config",
+          "code": "{\n  \"packages\": {\n    \"packages/core\": {\"release-type\": \"node\"},\n    \"packages/cli\": {\"release-type\": \"node\"}\n  }\n}",
+          "when": "Multiple packages"
+        }
+      ]
+    },
+    {
+      "id": "github_action_error",
+      "pattern": "GitHub Action|workflow|GITHUB_TOKEN|permission",
+      "message": "GitHub Action error",
+      "cause": "Workflow or token permission issue",
+      "solutions": [
+        {
+          "approach": "Basic workflow",
+          "code": "# .github/workflows/release-please.yml\nname: release-please\non:\n  push:\n    branches: [main]\njobs:\n  release-please:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: google-github-actions/release-please-action@v4\n        with:\n          release-type: node",
+          "when": "Set up action"
+        },
+        {
+          "approach": "With publish",
+          "code": "- uses: google-github-actions/release-please-action@v4\n  id: release\n- if: ${{ steps.release.outputs.release_created }}\n  run: npm publish\n  env:\n    NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
+          "when": "Publish on release"
+        },
+        {
+          "approach": "Token permissions",
+          "code": "permissions:\n  contents: write\n  pull-requests: write",
+          "when": "Permission error"
+        }
+      ]
+    },
+    {
+      "id": "release_type_error",
+      "pattern": "release-type|Unknown release type|unsupported",
+      "message": "Invalid release type",
+      "cause": "Release type not supported or misconfigured",
+      "solutions": [
+        {
+          "approach": "Common types",
+          "code": "# Supported release-types:\n# node, python, go, rust, java, ruby, php, dart\n# simple, helm, terraform-module",
+          "when": "Check type"
+        },
+        {
+          "approach": "Node.js config",
+          "code": "{\n  \"release-type\": \"node\",\n  \"bump-minor-pre-major\": true,\n  \"bump-patch-for-minor-pre-major\": true\n}",
+          "when": "Node.js"
+        },
+        {
+          "approach": "Generic config",
+          "code": "{\n  \"release-type\": \"simple\",\n  \"extra-files\": [\"version.txt\"]\n}",
+          "when": "Generic project"
+        }
+      ]
+    },
+    {
+      "id": "changelog_error",
+      "pattern": "changelog|CHANGELOG|update-changelog",
+      "message": "Changelog generation error",
+      "cause": "Changelog format or path issue",
+      "solutions": [
+        {
+          "approach": "Configure changelog",
+          "code": "{\n  \"changelog-path\": \"CHANGELOG.md\",\n  \"changelog-type\": \"github\"\n}",
+          "when": "Changelog settings"
+        },
+        {
+          "approach": "Include changelog",
+          "code": "{\n  \"include-component-in-tag\": true,\n  \"include-v-in-tag\": true\n}",
+          "when": "Tag format"
+        },
+        {
+          "approach": "Custom sections",
+          "code": "{\n  \"changelog-sections\": [\n    {\"type\": \"feat\", \"section\": \"Features\"},\n    {\"type\": \"fix\", \"section\": \"Bug Fixes\"},\n    {\"type\": \"perf\", \"section\": \"Performance\"}\n  ]\n}",
+          "when": "Custom grouping"
+        }
+      ]
+    },
+    {
+      "id": "version_error",
+      "pattern": "version|version bump|bump-minor|bump-major",
+      "message": "Version bump error",
+      "cause": "Incorrect version calculation",
+      "solutions": [
+        {
+          "approach": "Force version",
+          "code": "# Use --release-as in CLI\nrelease-please release-pr --release-as 2.0.0",
+          "when": "Override version"
+        },
+        {
+          "approach": "Pre-1.0 handling",
+          "code": "{\n  \"bump-minor-pre-major\": true,\n  \"bump-patch-for-minor-pre-major\": true\n}",
+          "when": "Before 1.0"
+        },
+        {
+          "approach": "Breaking change",
+          "code": "feat!: breaking change\nfeat: feature BREAKING CHANGE: description",
+          "when": "Major bump"
+        }
+      ]
+    },
+    {
+      "id": "monorepo_error",
+      "pattern": "monorepo|workspace|component|package path",
+      "message": "Monorepo configuration error",
+      "cause": "Multi-package setup issue",
+      "solutions": [
+        {
+          "approach": "Configure packages",
+          "code": "// release-please-config.json\n{\n  \"packages\": {\n    \"packages/core\": {},\n    \"packages/cli\": {},\n    \"packages/utils\": {}\n  }\n}",
+          "when": "Define packages"
+        },
+        {
+          "approach": "Component tags",
+          "code": "{\n  \"include-component-in-tag\": true,\n  \"tag-separator\": \"-\"\n}",
+          "when": "Package-specific tags"
+        },
+        {
+          "approach": "Linked versions",
+          "code": "{\n  \"group-pull-request-title-pattern\": \"chore: release ${version}\",\n  \"separate-pull-requests\": false\n}",
+          "when": "Single PR for all"
+        }
+      ]
+    },
+    {
+      "id": "pr_conflict_error",
+      "pattern": "merge conflict|PR conflict|stale PR",
+      "message": "Release PR has conflicts",
+      "cause": "Release PR conflicts with main branch",
+      "solutions": [
+        {
+          "approach": "Update PR",
+          "code": "# Close and re-trigger workflow\n# Or manually resolve conflicts",
+          "when": "Minor conflicts"
+        },
+        {
+          "approach": "Force update",
+          "code": "# Add commit to main to re-trigger\ngit commit --allow-empty -m \"chore: trigger release\"",
+          "when": "Retrigger"
+        },
+        {
+          "approach": "Reset manifest",
+          "code": "# Update .release-please-manifest.json\n# to match actual versions",
+          "when": "Version mismatch"
+        }
+      ]
+    }
+  ]
+}

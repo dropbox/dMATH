@@ -1,0 +1,69 @@
+{
+  "tool_id": "systemverilog",
+  "tool_name": "SystemVerilog",
+  "description": "Hardware description and verification language extending Verilog with advanced features including SystemVerilog Assertions (SVA) for formal verification",
+  "common_errors": [
+    {
+      "id": "sva_vacuous_pass",
+      "pattern": "assertion passed vacuously|antecedent never true|implication vacuously satisfied",
+      "category": "assertions",
+      "severity": "medium",
+      "cause": "Implication assertion's antecedent (left side of |-> or |=>) never holds true, so property passes without testing the consequent",
+      "solution": "Add cover property to verify antecedent can be true. Check stimulus actually triggers the scenario. Review assertion for logic errors. Use cover to debug.",
+      "example": "// If req is never high, this passes vacuously\nassert property (req |-> ##1 ack);\n// Add cover to ensure req happens\ncover property (req);",
+      "related_concepts": ["vacuous_pass", "implication_operator", "cover_property"]
+    },
+    {
+      "id": "sequence_matching_error",
+      "pattern": "sequence did not match|property failed|timing violation in assertion",
+      "category": "assertions",
+      "severity": "medium",
+      "cause": "SVA sequence expected certain timing or signal values that didn't occur in the trace",
+      "solution": "Use ## delay ranges for flexible timing (##[1:5]). Add $past() for value checking. Verify clock is correctly specified. Check for off-by-one errors.",
+      "example": "// Flexible timing: grant within 1-5 cycles\nassert property (@(posedge clk) req |-> ##[1:5] grant);",
+      "related_concepts": ["sequence_timing", "delay_range", "clock_specification"]
+    },
+    {
+      "id": "class_randomization_failure",
+      "pattern": "randomization failed|constraint conflict|could not solve constraints",
+      "category": "testbench",
+      "severity": "medium",
+      "cause": "Constrained random generation has conflicting constraints making them unsatisfiable",
+      "solution": "Use constraint_mode() to disable conflicting constraints. Check for contradictory bounds. Use solve...before for ordering. Simplify constraint expressions.",
+      "example": "constraint c1 { size inside {[1:100]}; }\nconstraint c2 { size > 50; }  // compatible with c1",
+      "related_concepts": ["constrained_random", "constraint_solver", "soft_constraints"]
+    },
+    {
+      "id": "interface_modport_mismatch",
+      "pattern": "modport direction mismatch|interface connection error|incompatible modport",
+      "category": "connectivity",
+      "severity": "high",
+      "cause": "Module connected to interface with wrong modport or signal direction mismatch",
+      "solution": "Verify modport defines correct direction for each signal. Use explicit modport in port connection. Check signal names match interface definition.",
+      "example": "interface bus_if;\n  logic req, ack;\n  modport master (output req, input ack);\n  modport slave (input req, output ack);\nendinterface",
+      "related_concepts": ["interface", "modport", "port_direction"]
+    },
+    {
+      "id": "uvm_phase_error",
+      "pattern": "phase error|objection not raised|test terminated early",
+      "category": "uvm",
+      "severity": "high",
+      "cause": "UVM test phases not properly managed, causing simulation to end before test completion",
+      "solution": "Raise objection at start of time-consuming phases, drop when done. Use phase.raise_objection(this) / phase.drop_objection(this). Check for missing super.run_phase() calls.",
+      "example": "task run_phase(uvm_phase phase);\n  phase.raise_objection(this);\n  // ... test code ...\n  phase.drop_objection(this);\nendtask",
+      "related_concepts": ["uvm_phases", "objection_mechanism", "test_completion"]
+    }
+  ],
+  "best_practices": [
+    "Use assertions early in design, not just verification",
+    "Combine assert and cover to ensure non-vacuous checking",
+    "Use bind to attach assertions to RTL without modification",
+    "Use UVM for complex testbenches with reuse in mind",
+    "Run formal verification on critical protocol assertions"
+  ],
+  "references": [
+    "https://www.accellera.org/downloads/standards/systemverilog",
+    "https://verificationacademy.com/",
+    "https://www.doulos.com/knowhow/systemverilog/systemverilog-assertions/"
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "tool": "wasmtime",
+  "version": "17.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_invalid",
+      "pattern": "Invalid module|failed to parse|WebAssembly.*invalid",
+      "message": "Invalid WebAssembly module",
+      "cause": "Module validation failed",
+      "solutions": [
+        {
+          "approach": "Validate module",
+          "code": "wasmtime compile --validate module.wasm",
+          "when": "Check validity"
+        },
+        {
+          "approach": "Enable proposals",
+          "code": "wasmtime run --wasm-features all module.wasm",
+          "when": "Module uses proposals"
+        },
+        {
+          "approach": "Check binary",
+          "code": "wasm-tools validate module.wasm",
+          "when": "Detailed validation"
+        }
+      ]
+    },
+    {
+      "id": "trap_error",
+      "pattern": "wasm trap|unreachable|call stack exhausted",
+      "message": "WebAssembly trap occurred",
+      "cause": "Runtime error in wasm execution",
+      "solutions": [
+        {
+          "approach": "Enable debug info",
+          "code": "wasmtime run --debug-info module.wasm",
+          "when": "Get stack trace"
+        },
+        {
+          "approach": "Increase stack",
+          "code": "wasmtime run --max-wasm-stack 1048576 module.wasm",
+          "when": "Stack overflow"
+        },
+        {
+          "approach": "Check unreachable",
+          "code": "# Look for unreachable instructions in wasm",
+          "when": "Logic error"
+        }
+      ]
+    },
+    {
+      "id": "import_not_found",
+      "pattern": "unknown import|import.*not provided|link error",
+      "message": "Import not satisfied",
+      "cause": "Module imports unavailable function",
+      "solutions": [
+        {
+          "approach": "Use WASI",
+          "code": "wasmtime run module.wasm",
+          "when": "WASI module"
+        },
+        {
+          "approach": "Provide imports",
+          "code": "// In Rust:\nlet mut linker = Linker::new(&engine);\nlinker.func_wrap(\"env\", \"my_func\", |x: i32| x + 1)?;",
+          "when": "Custom host functions"
+        },
+        {
+          "approach": "Inspect imports",
+          "code": "wasmtime compile --print-imports module.wasm",
+          "when": "See required imports"
+        }
+      ]
+    },
+    {
+      "id": "wasi_capability_error",
+      "pattern": "capability|preopened|filesystem.*denied",
+      "message": "WASI capability denied",
+      "cause": "Missing filesystem or capability access",
+      "solutions": [
+        {
+          "approach": "Map directory",
+          "code": "wasmtime run --dir /data::./data module.wasm",
+          "when": "Need filesystem"
+        },
+        {
+          "approach": "Provide stdin",
+          "code": "echo 'input' | wasmtime run module.wasm",
+          "when": "Need stdin"
+        },
+        {
+          "approach": "Environment vars",
+          "code": "wasmtime run --env KEY=value module.wasm",
+          "when": "Need env vars"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "memory.*limit|maximum memory|allocation failed",
+      "message": "Memory limit exceeded",
+      "cause": "Module exceeded memory limits",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "wasmtime run --max-memory-size 536870912 module.wasm",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Configure in code",
+          "code": "// In Rust:\nlet mut config = Config::new();\nconfig.max_memory_size(512 * 1024 * 1024);",
+          "when": "Programmatic limit"
+        }
+      ]
+    },
+    {
+      "id": "fuel_exhausted",
+      "pattern": "fuel.*exhausted|out of fuel|execution limit",
+      "message": "Execution fuel exhausted",
+      "cause": "Module exceeded execution limits",
+      "solutions": [
+        {
+          "approach": "Increase fuel",
+          "code": "wasmtime run --fuel 1000000 module.wasm",
+          "when": "Need more execution"
+        },
+        {
+          "approach": "Disable fuel",
+          "code": "// Don't use consume_fuel in config",
+          "when": "No limits needed"
+        }
+      ]
+    },
+    {
+      "id": "component_error",
+      "pattern": "component.*error|wit|interface.*invalid",
+      "message": "Component model error",
+      "cause": "Component or WIT interface error",
+      "solutions": [
+        {
+          "approach": "Enable components",
+          "code": "wasmtime run --wasm component-model module.wasm",
+          "when": "Component module"
+        },
+        {
+          "approach": "Check WIT",
+          "code": "wasm-tools component wit module.wasm",
+          "when": "Inspect interface"
+        },
+        {
+          "approach": "Use wit-bindgen",
+          "code": "wit-bindgen rust --out-dir src interface.wit",
+          "when": "Generate bindings"
+        }
+      ]
+    },
+    {
+      "id": "epoch_interruption",
+      "pattern": "epoch.*interrupt|deadline exceeded|timeout",
+      "message": "Execution interrupted",
+      "cause": "Epoch-based interruption triggered",
+      "solutions": [
+        {
+          "approach": "Increase epochs",
+          "code": "// In code: increase epoch deadline",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Disable epochs",
+          "code": "// Don't enable epoch interruption",
+          "when": "No timeout needed"
+        }
+      ]
+    }
+  ]
+}

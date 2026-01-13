@@ -1,0 +1,226 @@
+{
+  "tool": "tlaplus",
+  "version": "1.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "state_space_explosion",
+      "pattern": "Model checking .* states generated",
+      "message": "State space too large",
+      "cause": "Too many reachable states to explore",
+      "solutions": [
+        {
+          "approach": "Add state constraint",
+          "code": "StateConstraint == /\\ x < 10 /\\ y < 10",
+          "when": "Can bound state variables"
+        },
+        {
+          "approach": "Use symmetry",
+          "code": "SYMMETRY Nodes  (* in model config *)",
+          "when": "States are symmetric under permutation"
+        },
+        {
+          "approach": "Reduce constants",
+          "code": "CONSTANT N <- 3  (* smaller values *)",
+          "when": "Can verify with smaller model"
+        },
+        {
+          "approach": "Add action constraint",
+          "code": "ActionConstraint == action_name => condition",
+          "when": "Can restrict transitions"
+        }
+      ]
+    },
+    {
+      "id": "invariant_violated",
+      "pattern": "Invariant .* is violated",
+      "message": "Invariant violation found",
+      "cause": "Some reachable state violates the invariant",
+      "solutions": [
+        {
+          "approach": "Examine error trace",
+          "code": "(* Click on error in TLC output to see trace *)",
+          "when": "Need to understand counterexample"
+        },
+        {
+          "approach": "Fix the spec",
+          "code": "(* Bug in specification - fix the logic *)",
+          "when": "Spec doesn't match intention"
+        },
+        {
+          "approach": "Strengthen preconditions",
+          "code": "Action == precond /\\ ...",
+          "when": "Action enabled when it shouldn't be"
+        },
+        {
+          "approach": "Weaken invariant",
+          "code": "(* Invariant too strong for this spec *)",
+          "when": "Invariant is incorrect"
+        }
+      ]
+    },
+    {
+      "id": "deadlock",
+      "pattern": "Deadlock reached",
+      "message": "TLC found a deadlock",
+      "cause": "Reached state where no action is enabled",
+      "solutions": [
+        {
+          "approach": "Add termination condition",
+          "code": "Spec == Init /\\ [][Next]_vars /\\ Termination",
+          "when": "Deadlock is expected termination"
+        },
+        {
+          "approach": "Allow stuttering",
+          "code": "Next == action \\/ UNCHANGED vars",
+          "when": "System should be able to stutter"
+        },
+        {
+          "approach": "Fix missing transitions",
+          "code": "(* Add missing action for this state *)",
+          "when": "Deadlock is a bug"
+        },
+        {
+          "approach": "Check preconditions",
+          "code": "(* Ensure some action is always enabled *)",
+          "when": "Preconditions too restrictive"
+        }
+      ]
+    },
+    {
+      "id": "liveness_violated",
+      "pattern": "Temporal property .* is violated",
+      "message": "Liveness property violation",
+      "cause": "System can avoid reaching required state forever",
+      "solutions": [
+        {
+          "approach": "Add fairness",
+          "code": "Spec == Init /\\ [][Next]_vars /\\ WF_vars(Action)",
+          "when": "Need weak fairness assumption"
+        },
+        {
+          "approach": "Use strong fairness",
+          "code": "SF_vars(Action)  (* stronger than WF *)",
+          "when": "Action may be repeatedly enabled/disabled"
+        },
+        {
+          "approach": "Check the property",
+          "code": "(* Property may be too strong *)",
+          "when": "Liveness expectation is wrong"
+        },
+        {
+          "approach": "Examine counterexample",
+          "code": "(* Look at looping behavior in trace *)",
+          "when": "Need to understand violation"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "Encountered .* at line",
+      "message": "TLA+ syntax error",
+      "cause": "Invalid TLA+ syntax",
+      "solutions": [
+        {
+          "approach": "Check operator syntax",
+          "code": "/\\ (and), \\/ (or), => (implies), <=> (iff)",
+          "when": "Using wrong logical operators"
+        },
+        {
+          "approach": "Check quantifier syntax",
+          "code": "\\A x \\in S : P(x)  (* forall *)\n\\E x \\in S : P(x)  (* exists *)",
+          "when": "Quantifier syntax wrong"
+        },
+        {
+          "approach": "Check set syntax",
+          "code": "{x \\in S : P(x)}  (* set comprehension *)\n[x \\in S |-> f(x)]  (* function *)",
+          "when": "Set or function syntax wrong"
+        },
+        {
+          "approach": "Check priming",
+          "code": "x' = expr  (* next state value *)",
+          "when": "Prime notation wrong"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Attempted to .* a non-",
+      "message": "TLC type error",
+      "cause": "Operation applied to wrong type",
+      "solutions": [
+        {
+          "approach": "Check operator domain",
+          "code": "(* DOMAIN f for functions, not sets *)",
+          "when": "Applying function op to set"
+        },
+        {
+          "approach": "Check set operations",
+          "code": "(* \\cup, \\cap, \\subseteq for sets *)",
+          "when": "Set operation on non-set"
+        },
+        {
+          "approach": "Add type invariant",
+          "code": "TypeOK == x \\in Nat /\\ y \\in BOOLEAN",
+          "when": "Want to catch type errors early"
+        }
+      ]
+    },
+    {
+      "id": "undefined_identifier",
+      "pattern": "Unknown operator",
+      "message": "Undefined identifier",
+      "cause": "Variable or operator not defined",
+      "solutions": [
+        {
+          "approach": "Add to EXTENDS",
+          "code": "EXTENDS Naturals, Sequences, FiniteSets",
+          "when": "Using standard library operators"
+        },
+        {
+          "approach": "Define the operator",
+          "code": "Op(x) == expression",
+          "when": "Custom operator needed"
+        },
+        {
+          "approach": "Check VARIABLES",
+          "code": "VARIABLES x, y, z",
+          "when": "State variable not declared"
+        },
+        {
+          "approach": "Check CONSTANTS",
+          "code": "CONSTANTS N, Nodes",
+          "when": "Model constant not declared"
+        }
+      ]
+    },
+    {
+      "id": "pluscal_error",
+      "pattern": "PlusCal translation error",
+      "message": "PlusCal cannot be translated",
+      "cause": "Invalid PlusCal syntax or semantics",
+      "solutions": [
+        {
+          "approach": "Check label placement",
+          "code": "(* Labels required before while, with, etc. *)",
+          "when": "Missing required labels"
+        },
+        {
+          "approach": "Check await/when",
+          "code": "await condition;  (* blocks until true *)",
+          "when": "Blocking condition syntax wrong"
+        },
+        {
+          "approach": "Check process syntax",
+          "code": "process (p \\in Procs)\nvariables local = 0;\nbegin\n  ...\nend process;",
+          "when": "Process definition malformed"
+        },
+        {
+          "approach": "Translate manually",
+          "code": "(* Ctrl+T in toolbox to translate *)",
+          "when": "Need to regenerate TLA+"
+        }
+      ]
+    }
+  ]
+}

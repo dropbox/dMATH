@@ -1,0 +1,247 @@
+{
+  "tool": "clangd",
+  "version": "18+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "compile_commands_not_found",
+      "pattern": "compile_commands.json.*not found|Failed to find compilation database|ASTWorker failed",
+      "message": "Compilation database not found",
+      "cause": "No compile_commands.json for project",
+      "solutions": [
+        {
+          "approach": "Generate with CMake",
+          "code": "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..",
+          "when": "Using CMake"
+        },
+        {
+          "approach": "Generate with Bear",
+          "code": "bear -- make",
+          "when": "Using Make"
+        },
+        {
+          "approach": "Use compile_flags.txt",
+          "code": "echo '-std=c++20\n-I/usr/include' > compile_flags.txt",
+          "when": "Simple project"
+        },
+        {
+          "approach": "Symlink database",
+          "code": "ln -s build/compile_commands.json .",
+          "when": "Database in build dir"
+        }
+      ]
+    },
+    {
+      "id": "header_not_found",
+      "pattern": "'.*' file not found|Cannot find include|unknown header",
+      "message": "Header file not found",
+      "cause": "Include path not configured",
+      "solutions": [
+        {
+          "approach": "Add include path to compile_commands.json",
+          "code": "// Regenerate compile_commands.json with correct paths",
+          "when": "Missing -I flag"
+        },
+        {
+          "approach": "Add to compile_flags.txt",
+          "code": "-I/path/to/includes",
+          "when": "Using compile_flags.txt"
+        },
+        {
+          "approach": "Query driver for system includes",
+          "code": "// clangd uses --query-driver to find system headers",
+          "when": "System headers missing"
+        },
+        {
+          "approach": "Configure query-driver",
+          "code": "clangd --query-driver=/usr/bin/g++",
+          "when": "Cross-compilation"
+        }
+      ]
+    },
+    {
+      "id": "pch_error",
+      "pattern": "precompiled header|PCH.*error|AST file.*corrupt",
+      "message": "Precompiled header error",
+      "cause": "PCH out of date or corrupted",
+      "solutions": [
+        {
+          "approach": "Clear clangd cache",
+          "code": "rm -rf ~/.cache/clangd",
+          "when": "Stale PCH"
+        },
+        {
+          "approach": "Rebuild project",
+          "code": "# Clean and rebuild to regenerate PCH",
+          "when": "PCH needs rebuild"
+        },
+        {
+          "approach": "Disable PCH",
+          "code": "// Remove PCH flags from compile_commands.json",
+          "when": "PCH not needed for IDE"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "background index|indexing.*failed|symbol.*not found",
+      "message": "Background indexing error",
+      "cause": "Index corrupted or incomplete",
+      "solutions": [
+        {
+          "approach": "Clear index",
+          "code": "rm -rf .cache/clangd/index",
+          "when": "Index corrupted"
+        },
+        {
+          "approach": "Wait for indexing",
+          "code": "// Initial indexing takes time on large projects",
+          "when": "Still indexing"
+        },
+        {
+          "approach": "Configure index location",
+          "code": "clangd --background-index --index-file=.clangd-index",
+          "when": "Custom index location"
+        }
+      ]
+    },
+    {
+      "id": "memory_usage",
+      "pattern": "out of memory|memory limit|malloc failed",
+      "message": "High memory usage",
+      "cause": "Large codebase or many translation units",
+      "solutions": [
+        {
+          "approach": "Limit background threads",
+          "code": "clangd -j=4",
+          "when": "Reduce parallelism"
+        },
+        {
+          "approach": "Reduce preamble builds",
+          "code": "// Close unused files",
+          "when": "Many open files"
+        },
+        {
+          "approach": "Increase system memory",
+          "code": "// Large C++ projects need substantial RAM",
+          "when": "Need more resources"
+        }
+      ]
+    },
+    {
+      "id": "completion_slow",
+      "pattern": "completion.*slow|timeout|autocomplete.*delay",
+      "message": "Code completion slow",
+      "cause": "Large headers or slow disk",
+      "solutions": [
+        {
+          "approach": "Enable preamble caching",
+          "code": "// clangd caches preambles by default",
+          "when": "Repeated headers"
+        },
+        {
+          "approach": "Simplify headers",
+          "code": "// Use forward declarations",
+          "when": "Heavy includes"
+        },
+        {
+          "approach": "Enable PCH",
+          "code": "// Use precompiled headers for common includes",
+          "when": "Many common headers"
+        }
+      ]
+    },
+    {
+      "id": "diagnostics_wrong",
+      "pattern": "false positive|diagnostic.*wrong|error.*not an error",
+      "message": "Incorrect diagnostics",
+      "cause": "Compilation flags differ from actual build",
+      "solutions": [
+        {
+          "approach": "Regenerate compile_commands.json",
+          "code": "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..",
+          "when": "Database out of date"
+        },
+        {
+          "approach": "Add missing defines",
+          "code": "-DSOME_DEFINE=1",
+          "when": "Missing preprocessor defines"
+        },
+        {
+          "approach": "Match compiler version",
+          "code": "// Ensure clangd uses same std as actual compiler",
+          "when": "C++ version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "config_not_found",
+      "pattern": "config.*not loaded|.clangd.*ignored",
+      "message": "Configuration file not loaded",
+      "cause": ".clangd file not found or invalid",
+      "solutions": [
+        {
+          "approach": "Create .clangd file",
+          "code": "CompileFlags:\n  Add: [-std=c++20, -Wall]\n  Remove: [-W*]",
+          "when": "Need config file"
+        },
+        {
+          "approach": "Check YAML syntax",
+          "code": "python -c \"import yaml; yaml.safe_load(open('.clangd'))\"",
+          "when": "Invalid YAML"
+        },
+        {
+          "approach": "Use correct location",
+          "code": "// .clangd in project root",
+          "when": "Wrong location"
+        }
+      ]
+    },
+    {
+      "id": "cross_tu_issues",
+      "pattern": "cross-TU|translation unit|definition.*not found",
+      "message": "Cross-translation unit issues",
+      "cause": "Definition in other translation unit not found",
+      "solutions": [
+        {
+          "approach": "Enable background index",
+          "code": "clangd --background-index",
+          "when": "Index disabled"
+        },
+        {
+          "approach": "Index all files",
+          "code": "// Ensure all .cpp files in compile_commands.json",
+          "when": "Files missing from database"
+        },
+        {
+          "approach": "Wait for index",
+          "code": "// Background indexing finds cross-TU definitions",
+          "when": "Index incomplete"
+        }
+      ]
+    },
+    {
+      "id": "remote_index_error",
+      "pattern": "remote index|gRPC|index server",
+      "message": "Remote index connection error",
+      "cause": "Can't connect to remote index server",
+      "solutions": [
+        {
+          "approach": "Use local index",
+          "code": "clangd --background-index",
+          "when": "Don't need remote"
+        },
+        {
+          "approach": "Check server URL",
+          "code": "clangd --remote-index-address=grpc://server:port",
+          "when": "Wrong server address"
+        },
+        {
+          "approach": "Check network",
+          "code": "# Ensure network connectivity to index server",
+          "when": "Network issue"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "goose",
+  "version": "3.18",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "driver_not_found",
+      "pattern": "unknown driver|sql: unknown driver|unsupported driver",
+      "message": "Database driver not registered",
+      "cause": "Driver package not imported or wrong driver name",
+      "solutions": [
+        {
+          "approach": "Import driver",
+          "code": "import _ \"github.com/lib/pq\"  // postgres\nimport _ \"github.com/go-sql-driver/mysql\"  // mysql",
+          "when": "Driver not linked"
+        },
+        {
+          "approach": "Use correct name",
+          "code": "goose postgres \"postgres://...\" up\ngoose mysql \"user:pass@/db\" up",
+          "when": "Wrong driver string"
+        },
+        {
+          "approach": "Build with tags",
+          "code": "go build -tags 'postgres mysql'",
+          "when": "Using pressly/goose with build tags"
+        }
+      ]
+    },
+    {
+      "id": "migration_not_found",
+      "pattern": "no migration files found|no migrations to run|migration.*not found",
+      "message": "Migration files not detected",
+      "cause": "Wrong directory, incorrect file naming, or no pending migrations",
+      "solutions": [
+        {
+          "approach": "Specify directory",
+          "code": "goose -dir ./migrations postgres \"$DB_URL\" up",
+          "when": "Migrations not in current dir"
+        },
+        {
+          "approach": "Check naming",
+          "code": "ls migrations/  # Should be: YYYYMMDDHHMMSS_name.sql or .go",
+          "when": "Files don't match pattern"
+        },
+        {
+          "approach": "Check status",
+          "code": "goose -dir ./migrations postgres \"$DB_URL\" status",
+          "when": "Verify what's applied"
+        }
+      ]
+    },
+    {
+      "id": "version_mismatch",
+      "pattern": "migration version .* has already been applied|duplicate migration version",
+      "message": "Migration version conflict",
+      "cause": "Same timestamp used for multiple migrations or manual edits to goose_db_version",
+      "solutions": [
+        {
+          "approach": "Renumber migration",
+          "code": "mv 20240101000000_foo.sql 20240101000001_foo.sql",
+          "when": "Fix duplicate timestamp"
+        },
+        {
+          "approach": "Check version table",
+          "code": "SELECT * FROM goose_db_version ORDER BY id;",
+          "when": "Inspect applied versions"
+        },
+        {
+          "approach": "Use sequential",
+          "code": "goose -s create add_users sql  # sequential numbering",
+          "when": "Avoid timestamp collisions"
+        }
+      ]
+    },
+    {
+      "id": "sql_syntax_error",
+      "pattern": "syntax error|Error.*sql|migration failed.*sql",
+      "message": "SQL syntax error in migration",
+      "cause": "Invalid SQL, missing semicolons, or driver-specific syntax",
+      "solutions": [
+        {
+          "approach": "Use statement separators",
+          "code": "-- +goose Up\nCREATE TABLE...;\n\n-- +goose Down\nDROP TABLE...;",
+          "when": "Multiple statements need separation"
+        },
+        {
+          "approach": "Enable transactions",
+          "code": "-- +goose Up\n-- +goose StatementBegin\nCREATE OR REPLACE FUNCTION...;\n-- +goose StatementEnd",
+          "when": "PL/pgSQL or complex statements"
+        },
+        {
+          "approach": "Disable transactions",
+          "code": "-- +goose NO TRANSACTION",
+          "when": "DDL that can't run in transaction"
+        }
+      ]
+    },
+    {
+      "id": "connection_failed",
+      "pattern": "connection refused|dial tcp.*connection|failed to connect",
+      "message": "Cannot connect to database",
+      "cause": "Wrong connection string, database not running, or network issue",
+      "solutions": [
+        {
+          "approach": "Format postgres URL",
+          "code": "goose postgres \"postgres://user:pass@localhost:5432/dbname?sslmode=disable\" up",
+          "when": "PostgreSQL connection"
+        },
+        {
+          "approach": "Format mysql URL",
+          "code": "goose mysql \"user:pass@tcp(localhost:3306)/dbname\" up",
+          "when": "MySQL connection"
+        },
+        {
+          "approach": "Test connection",
+          "code": "psql \"$DB_URL\" -c '\\conninfo'",
+          "when": "Verify credentials"
+        }
+      ]
+    },
+    {
+      "id": "down_failed",
+      "pattern": "cannot rollback|down migration failed|no down migration",
+      "message": "Rollback failed",
+      "cause": "Missing down migration, dependencies, or irreversible change",
+      "solutions": [
+        {
+          "approach": "Check down exists",
+          "code": "grep -A5 '-- +goose Down' migrations/xxx.sql",
+          "when": "Verify down section"
+        },
+        {
+          "approach": "Reset specific",
+          "code": "goose -dir ./migrations postgres \"$DB_URL\" down-to VERSION",
+          "when": "Rollback to specific version"
+        },
+        {
+          "approach": "Mark irreversible",
+          "code": "-- +goose Down\n-- SQL in this section is executed when migration is rolled back\nSELECT 1;  -- No-op placeholder",
+          "when": "Intentionally irreversible"
+        }
+      ]
+    }
+  ]
+}

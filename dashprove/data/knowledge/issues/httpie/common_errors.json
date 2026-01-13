@@ -1,0 +1,191 @@
+{
+  "tool": "httpie",
+  "version": "3.2.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_error",
+      "pattern": "ConnectionError|Connection refused|Unable to connect",
+      "message": "Cannot connect to server",
+      "cause": "Server not reachable or not running",
+      "solutions": [
+        {
+          "approach": "Check URL",
+          "code": "http GET http://localhost:8080/api/health",
+          "when": "URL may be wrong"
+        },
+        {
+          "approach": "Check port",
+          "code": "lsof -i :8080  # Check if server is listening",
+          "when": "Server may not be running"
+        },
+        {
+          "approach": "Use timeout",
+          "code": "http --timeout=30 GET https://slow-server.com/api",
+          "when": "Slow server"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate|CERTIFICATE_VERIFY_FAILED",
+      "message": "SSL certificate error",
+      "cause": "Invalid or self-signed certificate",
+      "solutions": [
+        {
+          "approach": "Skip verification",
+          "code": "http --verify=no GET https://self-signed.example.com/api",
+          "when": "Development/testing"
+        },
+        {
+          "approach": "Specify cert",
+          "code": "http --cert=/path/to/cert.pem GET https://api.example.com",
+          "when": "Client certificate"
+        },
+        {
+          "approach": "Use CA bundle",
+          "code": "http --verify=/path/to/ca-bundle.crt GET https://api.example.com",
+          "when": "Custom CA"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "401|Unauthorized|authentication required",
+      "message": "Authentication failed",
+      "cause": "Missing or invalid credentials",
+      "solutions": [
+        {
+          "approach": "Basic auth",
+          "code": "http -a username:password GET https://api.example.com/resource",
+          "when": "Basic authentication"
+        },
+        {
+          "approach": "Bearer token",
+          "code": "http GET https://api.example.com/resource \"Authorization: Bearer $TOKEN\"",
+          "when": "Token authentication"
+        },
+        {
+          "approach": "Use session",
+          "code": "http --session=mysession POST https://api.example.com/login username=user password=pass\nhttp --session=mysession GET https://api.example.com/protected",
+          "when": "Session-based auth"
+        }
+      ]
+    },
+    {
+      "id": "json_parsing_error",
+      "pattern": "JSON|syntax error|Expecting",
+      "message": "Invalid JSON in request",
+      "cause": "Malformed JSON data",
+      "solutions": [
+        {
+          "approach": "Use key=value syntax",
+          "code": "http POST https://api.example.com/users name=John email=john@test.com",
+          "when": "Simple JSON"
+        },
+        {
+          "approach": "Use := for non-strings",
+          "code": "http POST https://api.example.com/users age:=30 active:=true tags:='[\"a\",\"b\"]'",
+          "when": "Numbers, booleans, arrays"
+        },
+        {
+          "approach": "Read from file",
+          "code": "http POST https://api.example.com/users < data.json",
+          "when": "Complex JSON"
+        }
+      ]
+    },
+    {
+      "id": "redirect_error",
+      "pattern": "redirect|301|302|Too many redirects",
+      "message": "Redirect handling issue",
+      "cause": "Server returning redirects",
+      "solutions": [
+        {
+          "approach": "Follow redirects",
+          "code": "http --follow GET http://example.com/old-path",
+          "when": "Need to follow"
+        },
+        {
+          "approach": "Limit redirects",
+          "code": "http --follow --max-redirects=5 GET http://example.com/path",
+          "when": "Limit redirect depth"
+        },
+        {
+          "approach": "Show redirect",
+          "code": "http --all GET http://example.com/redirecting",
+          "when": "Debug redirects"
+        }
+      ]
+    },
+    {
+      "id": "content_type_error",
+      "pattern": "Content-Type|Unsupported Media Type|415",
+      "message": "Wrong content type",
+      "cause": "Server expects different content type",
+      "solutions": [
+        {
+          "approach": "Set content type",
+          "code": "http POST https://api.example.com/data Content-Type:application/xml < data.xml",
+          "when": "Non-JSON content"
+        },
+        {
+          "approach": "Form data",
+          "code": "http --form POST https://api.example.com/upload file@/path/to/file.txt",
+          "when": "File upload"
+        },
+        {
+          "approach": "Raw body",
+          "code": "echo 'raw data' | http POST https://api.example.com/raw Content-Type:text/plain",
+          "when": "Plain text"
+        }
+      ]
+    },
+    {
+      "id": "encoding_error",
+      "pattern": "encoding|UnicodeDecodeError|charset",
+      "message": "Character encoding error",
+      "cause": "Response encoding mismatch",
+      "solutions": [
+        {
+          "approach": "Download binary",
+          "code": "http --download GET https://api.example.com/file.pdf",
+          "when": "Binary file"
+        },
+        {
+          "approach": "Specify output",
+          "code": "http GET https://api.example.com/data --output=response.bin",
+          "when": "Save to file"
+        },
+        {
+          "approach": "Raw output",
+          "code": "http --body GET https://api.example.com/data > output.txt",
+          "when": "Just body"
+        }
+      ]
+    },
+    {
+      "id": "proxy_error",
+      "pattern": "proxy|ProxyError|HTTPS_PROXY",
+      "message": "Proxy connection error",
+      "cause": "Proxy misconfigured or unreachable",
+      "solutions": [
+        {
+          "approach": "Set proxy",
+          "code": "http --proxy=http:http://proxy:8080 --proxy=https:http://proxy:8080 GET https://api.example.com",
+          "when": "Use proxy"
+        },
+        {
+          "approach": "Environment variable",
+          "code": "export HTTP_PROXY=http://proxy:8080\nexport HTTPS_PROXY=http://proxy:8080\nhttp GET https://api.example.com",
+          "when": "System-wide proxy"
+        },
+        {
+          "approach": "Bypass proxy",
+          "code": "http --proxy= GET https://internal-api.local",
+          "when": "Skip proxy"
+        }
+      ]
+    }
+  ]
+}

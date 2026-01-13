@@ -1,0 +1,97 @@
+{
+  "tool": "verifast",
+  "version": "24.10",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "missing_predicate",
+      "pattern": "Unfolding failed|predicate not found",
+      "message": "Proof obligations reference undeclared predicate",
+      "cause": "Predicate not defined or wrong parameters",
+      "solutions": [
+        {
+          "approach": "Define predicate before use",
+          "code": "predicate list(node *p) = p == 0 ? emp : malloc_block_node(p) &*& list(p->next);",
+          "when": "Introducing new heap shape"
+        },
+        {
+          "approach": "Match predicate arguments",
+          "code": "open list(xs); close list(xs);",
+          "when": "Arity mismatch"
+        }
+      ]
+    },
+    {
+      "id": "fractional_permission_error",
+      "pattern": "insufficient permission|permission mismatch",
+      "message": "Thread lacks required heap permission",
+      "cause": "Splitting/composing fractional permissions incorrectly",
+      "solutions": [
+        {
+          "approach": "Use share tokens",
+          "code": "lemma split_fraction() returns (real f1, real f2)\n  requires true; ensures f1 + f2 == 1;",
+          "when": "Sharing resources"
+        },
+        {
+          "approach": "Close predicate with matching fraction",
+          "code": "close list(p)(1/2);",
+          "when": "Combining thread permissions"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_missing",
+      "pattern": "Loop invariant not established|failed to prove invariant",
+      "message": "Verifier cannot prove loop soundness",
+      "cause": "Loop lacks invariant or variant for termination",
+      "solutions": [
+        {
+          "approach": "State heap shape and progress",
+          "code": "for ( ; p != 0; p = p->next)\n  //@ invariant list(p, ?xs) &*& length(xs) >= 0;",
+          "when": "Linked list traversal"
+        },
+        {
+          "approach": "Add decreases clause",
+          "code": "//@ decreases length(xs);",
+          "when": "Proving termination"
+        }
+      ]
+    },
+    {
+      "id": "dangling_pointer",
+      "pattern": "dangling pointer|disposed block accessed",
+      "message": "Accessing freed memory in proof context",
+      "cause": "Predicate not closed before free or resource still assumed",
+      "solutions": [
+        {
+          "approach": "Close predicates before free",
+          "code": "close list(p); free(p);",
+          "when": "Deallocating structured heap"
+        },
+        {
+          "approach": "Use malloc_block facts",
+          "code": "open malloc_block_node(p);",
+          "when": "Need block permission after alloc"
+        }
+      ]
+    },
+    {
+      "id": "lemma_requires_proof",
+      "pattern": "Lemma application failed|cannot prove postcondition",
+      "message": "Lemma used without satisfying preconditions",
+      "cause": "Required predicates or arithmetic facts not available",
+      "solutions": [
+        {
+          "approach": "Open necessary predicates",
+          "code": "open list(p); assert p->next |-> _;",
+          "when": "Lemma expects heap facts"
+        },
+        {
+          "approach": "Prove arithmetic side conditions",
+          "code": "assert length(xs) >= 0;",
+          "when": "Lemma requires bounds"
+        }
+      ]
+    }
+  ]
+}

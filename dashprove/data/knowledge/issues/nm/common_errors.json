@@ -1,0 +1,191 @@
+{
+  "tool": "nm",
+  "version": "2.41",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_symbols",
+      "pattern": "no symbols|stripped",
+      "message": "No symbols found",
+      "cause": "Binary has been stripped",
+      "solutions": [
+        {
+          "approach": "Use dynamic symbols",
+          "code": "nm -D ./program  # Dynamic symbols only",
+          "when": "Want exported symbols"
+        },
+        {
+          "approach": "Rebuild with symbols",
+          "code": "gcc -g -o program program.c",
+          "when": "Need debug symbols"
+        },
+        {
+          "approach": "Use separate debug file",
+          "code": "# If debug symbols in separate file:\nobjcopy --add-gnu-debuglink=program.debug program",
+          "when": "Debug symbols separate"
+        }
+      ]
+    },
+    {
+      "id": "file_format_not_recognized",
+      "pattern": "File format not recognized|not an object file",
+      "message": "File format not recognized",
+      "cause": "Not an ELF/object file or wrong architecture",
+      "solutions": [
+        {
+          "approach": "Check file type",
+          "code": "file ./target_file",
+          "when": "Identify file format"
+        },
+        {
+          "approach": "Use correct tool",
+          "code": "# For Mach-O (macOS): nm ./program\n# For archives: nm -s archive.a\n# For Windows: dumpbin /symbols file.obj",
+          "when": "Different platform"
+        },
+        {
+          "approach": "Specify format",
+          "code": "nm --target=binary ./rawfile",
+          "when": "Raw binary file"
+        }
+      ]
+    },
+    {
+      "id": "symbol_type_confusion",
+      "pattern": "symbol type|T vs t",
+      "message": "Symbol type confusion",
+      "cause": "Understanding nm symbol types",
+      "solutions": [
+        {
+          "approach": "Decode symbol types",
+          "code": "# T = global text (code)\n# t = local text\n# D = global data\n# d = local data\n# B = global BSS (uninitialized)\n# b = local BSS\n# U = undefined (external)\n# W = weak symbol",
+          "when": "Reading nm output"
+        },
+        {
+          "approach": "Filter by type",
+          "code": "nm ./program | grep ' T '  # Only global text\nnm ./program | grep ' U '  # Only undefined",
+          "when": "Find specific types"
+        }
+      ]
+    },
+    {
+      "id": "c_plus_plus_mangling",
+      "pattern": "_Z|mangled|demangled",
+      "message": "C++ name mangling",
+      "cause": "C++ symbols are mangled",
+      "solutions": [
+        {
+          "approach": "Demangle symbols",
+          "code": "nm -C ./program  # Demangle C++ names",
+          "when": "C++ code"
+        },
+        {
+          "approach": "Demangle manually",
+          "code": "c++filt _ZN3Foo3barEi",
+          "when": "Single symbol"
+        },
+        {
+          "approach": "Pipe through c++filt",
+          "code": "nm ./program | c++filt",
+          "when": "Alternative demangling"
+        }
+      ]
+    },
+    {
+      "id": "symbol_not_found",
+      "pattern": "looking for.*not found",
+      "message": "Specific symbol not found",
+      "cause": "Symbol doesn't exist or has different name",
+      "solutions": [
+        {
+          "approach": "Case-insensitive search",
+          "code": "nm ./program | grep -i 'symbol'",
+          "when": "Case mismatch"
+        },
+        {
+          "approach": "Partial match",
+          "code": "nm ./program | grep 'partial'",
+          "when": "Don't know full name"
+        },
+        {
+          "approach": "Check for mangling",
+          "code": "nm -C ./program | grep 'ClassName::method'",
+          "when": "C++ symbol"
+        }
+      ]
+    },
+    {
+      "id": "archive_symbols",
+      "pattern": "archive|.a file",
+      "message": "Reading archive symbols",
+      "cause": "Working with static libraries",
+      "solutions": [
+        {
+          "approach": "List archive index",
+          "code": "nm -s libfoo.a  # Show archive index first",
+          "when": "See archive contents"
+        },
+        {
+          "approach": "Per-object listing",
+          "code": "nm -A libfoo.a  # Show which .o has each symbol",
+          "when": "Find symbol location"
+        },
+        {
+          "approach": "Extract and examine",
+          "code": "ar x libfoo.a\nnm foo.o",
+          "when": "Examine single object"
+        }
+      ]
+    },
+    {
+      "id": "versioned_symbols",
+      "pattern": "@@|symbol version",
+      "message": "Versioned symbols",
+      "cause": "Symbols have version tags",
+      "solutions": [
+        {
+          "approach": "Show versions",
+          "code": "nm -D ./program  # Shows versioned symbols like func@@GLIBC_2.17",
+          "when": "See version info"
+        },
+        {
+          "approach": "Filter versions",
+          "code": "nm -D ./program | grep '@'",
+          "when": "Find versioned symbols"
+        },
+        {
+          "approach": "Check required versions",
+          "code": "objdump -T ./program | grep GLIBC",
+          "when": "See GLIBC requirements"
+        }
+      ]
+    },
+    {
+      "id": "sort_options",
+      "pattern": "sort|order",
+      "message": "Symbol ordering options",
+      "cause": "Want different sort order",
+      "solutions": [
+        {
+          "approach": "Sort by address",
+          "code": "nm -n ./program  # Numeric/address sort",
+          "when": "See memory layout"
+        },
+        {
+          "approach": "Sort by size",
+          "code": "nm -S --size-sort ./program",
+          "when": "Find largest symbols"
+        },
+        {
+          "approach": "Reverse sort",
+          "code": "nm -r ./program",
+          "when": "Reverse order"
+        },
+        {
+          "approach": "No sort (original order)",
+          "code": "nm -p ./program",
+          "when": "Preserve original order"
+        }
+      ]
+    }
+  ]
+}

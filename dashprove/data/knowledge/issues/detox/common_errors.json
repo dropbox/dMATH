@@ -1,0 +1,270 @@
+{
+  "tool": "detox",
+  "version": "20.18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "element_not_found",
+      "pattern": "Cannot find.*element|Element not found|No matching element",
+      "message": "Element not found in view hierarchy",
+      "cause": "Matcher doesn't find any element",
+      "solutions": [
+        {
+          "approach": "Use testID",
+          "code": "// In component:\n<Button testID=\"login-button\" />\n\n// In test:\nawait element(by.id('login-button')).tap();",
+          "when": "Add testID"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "await waitFor(element(by.id('success'))).toBeVisible().withTimeout(10000);",
+          "when": "Async content"
+        },
+        {
+          "approach": "Debug hierarchy",
+          "code": "await element(by.id('root')).getAttributes();\n// Or use Detox CLI:\ndetox build-framework-cache",
+          "when": "Understand hierarchy"
+        },
+        {
+          "approach": "Scroll to element",
+          "code": "await waitFor(element(by.id('item')))\n  .toBeVisible()\n  .whileElement(by.id('scrollView'))\n  .scroll(50, 'down');",
+          "when": "Element off screen"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "Build failed|Could not build|xcodebuild.*error|gradle.*failed",
+      "message": "App build failed",
+      "cause": "Build configuration or dependency issue",
+      "solutions": [
+        {
+          "approach": "Check build command",
+          "code": "detox build -c ios.sim.debug --verbose\n# Or Android:\ndetox build -c android.emu.debug --verbose",
+          "when": "See build output"
+        },
+        {
+          "approach": "Clean build",
+          "code": "cd ios && rm -rf build && pod install --repo-update\ncd android && ./gradlew clean",
+          "when": "Stale cache"
+        },
+        {
+          "approach": "Check .detoxrc.js",
+          "code": "module.exports = {\n  apps: {\n    'ios.debug': {\n      type: 'ios.app',\n      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/MyApp.app',\n      build: 'xcodebuild -workspace ios/MyApp.xcworkspace -scheme MyApp -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build'\n    }\n  }\n};",
+          "when": "Config issue"
+        }
+      ]
+    },
+    {
+      "id": "device_not_found",
+      "pattern": "Device .* not found|No device|Simulator.*not available",
+      "message": "Test device/simulator not available",
+      "cause": "Specified device doesn't exist",
+      "solutions": [
+        {
+          "approach": "List available devices",
+          "code": "xcrun simctl list devices  # iOS\nemulator -list-avds  # Android",
+          "when": "Find device name"
+        },
+        {
+          "approach": "Update .detoxrc.js",
+          "code": "devices: {\n  simulator: {\n    type: 'ios.simulator',\n    device: { type: 'iPhone 14' }\n  },\n  emulator: {\n    type: 'android.emulator',\n    device: { avdName: 'Pixel_4_API_30' }\n  }\n}",
+          "when": "Fix device name"
+        },
+        {
+          "approach": "Boot device first",
+          "code": "xcrun simctl boot \"iPhone 14\"\n# Or:\nemulator @Pixel_4_API_30 &",
+          "when": "Device not running"
+        }
+      ]
+    },
+    {
+      "id": "synchronization_timeout",
+      "pattern": "Sync.*timeout|UI did not become idle|waitFor.*timeout",
+      "message": "Synchronization timeout",
+      "cause": "App didn't become idle before timeout",
+      "solutions": [
+        {
+          "approach": "Disable synchronization temporarily",
+          "code": "await device.disableSynchronization();\nawait element(by.id('button')).tap();\nawait device.enableSynchronization();",
+          "when": "Animation blocking"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "await waitFor(element(by.id('result')))\n  .toBeVisible()\n  .withTimeout(30000);",
+          "when": "Slow operation"
+        },
+        {
+          "approach": "Handle animations",
+          "code": "// In Jest setup or test:\nbeforeAll(async () => {\n  await device.setURLBlacklist(['.*analytics.*']);\n});",
+          "when": "Network blocking"
+        },
+        {
+          "approach": "Use idlingResource",
+          "code": "// Track async operations:\nDetoxIdlingResource.increment();\nawait doAsyncWork();\nDetoxIdlingResource.decrement();",
+          "when": "Custom async"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "Assertion failed|Expected.*visible|toHaveText.*failed",
+      "message": "Test assertion failed",
+      "cause": "Element state doesn't match expectation",
+      "solutions": [
+        {
+          "approach": "Check actual value",
+          "code": "const attrs = await element(by.id('text')).getAttributes();\nconsole.log('Text:', attrs.text);",
+          "when": "Debug actual value"
+        },
+        {
+          "approach": "Use flexible matching",
+          "code": "// Partial text:\nawait expect(element(by.text('Welcome'))).toBeVisible();\n\n// Contains:\nawait expect(element(by.id('message'))).toHaveText(\n  expect.stringContaining('success')\n);",
+          "when": "Flexible assertion"
+        },
+        {
+          "approach": "Take screenshot",
+          "code": "await device.takeScreenshot('debug-screenshot');",
+          "when": "Visual debug"
+        }
+      ]
+    },
+    {
+      "id": "tap_failed",
+      "pattern": "Failed to tap|Tap.*not registered|Cannot tap",
+      "message": "Tap action not performed",
+      "cause": "Element not tappable or obscured",
+      "solutions": [
+        {
+          "approach": "Check visibility first",
+          "code": "await expect(element(by.id('button'))).toBeVisible();\nawait element(by.id('button')).tap();",
+          "when": "Ensure visible"
+        },
+        {
+          "approach": "Tap at point",
+          "code": "await element(by.id('container')).tap({ x: 50, y: 50 });",
+          "when": "Specific position"
+        },
+        {
+          "approach": "Dismiss keyboard first",
+          "code": "await element(by.id('input')).typeText('text');\nawait element(by.id('input')).tapReturnKey();\nawait element(by.id('submit')).tap();",
+          "when": "Keyboard blocking"
+        }
+      ]
+    },
+    {
+      "id": "typetext_failed",
+      "pattern": "typeText.*failed|Cannot type|Input not accepted",
+      "message": "Text input failed",
+      "cause": "Can't type text into element",
+      "solutions": [
+        {
+          "approach": "Tap to focus first",
+          "code": "await element(by.id('input')).tap();\nawait element(by.id('input')).typeText('Hello');",
+          "when": "Focus required"
+        },
+        {
+          "approach": "Clear and type",
+          "code": "await element(by.id('input')).clearText();\nawait element(by.id('input')).typeText('New text');",
+          "when": "Replace existing"
+        },
+        {
+          "approach": "Replace text",
+          "code": "await element(by.id('input')).replaceText('Complete replacement');",
+          "when": "Full replacement"
+        }
+      ]
+    },
+    {
+      "id": "swipe_failed",
+      "pattern": "Swipe.*failed|Cannot scroll|scroll.*not performed",
+      "message": "Swipe/scroll action failed",
+      "cause": "Container not scrollable or wrong direction",
+      "solutions": [
+        {
+          "approach": "Use correct scroll method",
+          "code": "// ScrollView:\nawait element(by.id('scrollView')).scroll(300, 'down');\n\n// FlatList:\nawait element(by.id('flatList')).scroll(200, 'down', NaN, NaN, 0.5);",
+          "when": "Choose scroll type"
+        },
+        {
+          "approach": "Swipe on element",
+          "code": "await element(by.id('card')).swipe('left');\nawait element(by.id('card')).swipe('right', 'slow', 0.5);",
+          "when": "Swipe gesture"
+        },
+        {
+          "approach": "ScrollTo specific item",
+          "code": "await waitFor(element(by.text('Item 50')))\n  .toBeVisible()\n  .whileElement(by.id('list'))\n  .scroll(100, 'down');",
+          "when": "Find in list"
+        }
+      ]
+    },
+    {
+      "id": "permission_alert",
+      "pattern": "System alert|permission.*dialog|Allow.*button",
+      "message": "System permission dialog blocking test",
+      "cause": "iOS/Android permission prompt needs handling",
+      "solutions": [
+        {
+          "approach": "Handle iOS alert",
+          "code": "try {\n  await element(by.label('Allow')).tap();\n} catch (e) {\n  // Alert not present\n}",
+          "when": "Tap permission"
+        },
+        {
+          "approach": "Pre-grant on iOS",
+          "code": "// In .detoxrc.js:\napps: {\n  'ios.debug': {\n    permissions: { camera: 'YES', photos: 'YES' }\n  }\n}",
+          "when": "Auto-grant iOS"
+        },
+        {
+          "approach": "Grant on Android",
+          "code": "adb shell pm grant com.myapp android.permission.CAMERA",
+          "when": "Pre-grant Android"
+        }
+      ]
+    },
+    {
+      "id": "jest_timeout",
+      "pattern": "Timeout.*exceeded|Test timeout|Exceeded timeout",
+      "message": "Test exceeded Jest timeout",
+      "cause": "Test took longer than allowed time",
+      "solutions": [
+        {
+          "approach": "Increase test timeout",
+          "code": "it('long test', async () => {\n  // test code\n}, 60000);  // 60 second timeout",
+          "when": "Single test"
+        },
+        {
+          "approach": "Global timeout in jest.config.js",
+          "code": "module.exports = {\n  testTimeout: 120000,\n  // ... other config\n};",
+          "when": "All tests"
+        },
+        {
+          "approach": "Optimize test",
+          "code": "// Reduce waits, batch assertions\n// Use device.reloadReactNative() instead of full restart",
+          "when": "Speed up test"
+        }
+      ]
+    },
+    {
+      "id": "react_native_bridge",
+      "pattern": "Bridge.*error|RN bridge|metro.*failed|bundle.*error",
+      "message": "React Native bridge/bundler error",
+      "cause": "Metro bundler or JS bridge issue",
+      "solutions": [
+        {
+          "approach": "Start Metro bundler",
+          "code": "npx react-native start\n# In another terminal:\ndetox test -c ios.sim.debug",
+          "when": "Metro not running"
+        },
+        {
+          "approach": "Clear Metro cache",
+          "code": "npx react-native start --reset-cache",
+          "when": "Cache issues"
+        },
+        {
+          "approach": "Reload app",
+          "code": "await device.reloadReactNative();",
+          "when": "Reset JS bridge"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "tool": "file",
+  "version": "5.44",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unknown_type",
+      "pattern": "data|unknown|cannot open|no magic",
+      "message": "File type not recognized",
+      "cause": "Unknown format or corrupt file",
+      "solutions": [
+        {
+          "approach": "Check contents",
+          "code": "xxd file | head  # View raw bytes\nstrings file | head  # Find text",
+          "when": "Inspect manually"
+        },
+        {
+          "approach": "Check extension",
+          "code": "# Extension may hint at type\n# Try opening with expected program",
+          "when": "Use context"
+        },
+        {
+          "approach": "Update magic",
+          "code": "# macOS: brew install libmagic\n# Linux: sudo apt install file",
+          "when": "Outdated database"
+        }
+      ]
+    },
+    {
+      "id": "mime_type",
+      "pattern": "mime|content-type|MIME type",
+      "message": "Want MIME type instead",
+      "cause": "Need MIME type for web/API use",
+      "solutions": [
+        {
+          "approach": "MIME output",
+          "code": "file -i file.pdf  # Output MIME type\nfile --mime-type file.pdf  # Just type",
+          "when": "Get MIME"
+        },
+        {
+          "approach": "Brief mode",
+          "code": "file -b file.pdf  # No filename prefix",
+          "when": "Clean output"
+        },
+        {
+          "approach": "With encoding",
+          "code": "file -i file.txt  # Shows charset too",
+          "when": "Need encoding"
+        }
+      ]
+    },
+    {
+      "id": "symlink_handling",
+      "pattern": "symbolic link|symlink|link to",
+      "message": "Reports symlink instead of target",
+      "cause": "file shows link info by default",
+      "solutions": [
+        {
+          "approach": "Follow link",
+          "code": "file -L symlink  # Follow symbolic link",
+          "when": "Get target type"
+        },
+        {
+          "approach": "Show both",
+          "code": "file symlink\nfile -L symlink",
+          "when": "Compare"
+        }
+      ]
+    },
+    {
+      "id": "compressed_file",
+      "pattern": "compressed|gzip|inside compressed",
+      "message": "Want type of compressed contents",
+      "cause": "Shows compression instead of content type",
+      "solutions": [
+        {
+          "approach": "Look inside",
+          "code": "file -z file.gz  # Check inside compressed\nzcat file.gz | file -",
+          "when": "See contents"
+        },
+        {
+          "approach": "Decompress first",
+          "code": "gunzip -c file.gz | file -",
+          "when": "Pipe contents"
+        }
+      ]
+    },
+    {
+      "id": "multiple_files",
+      "pattern": "multiple|batch|many files|directory",
+      "message": "Check multiple files",
+      "cause": "Want to check many files at once",
+      "solutions": [
+        {
+          "approach": "Multiple args",
+          "code": "file file1 file2 file3\nfile *",
+          "when": "List files"
+        },
+        {
+          "approach": "Recursive",
+          "code": "find . -type f -exec file {} +\nfile $(find . -type f)",
+          "when": "Directory tree"
+        },
+        {
+          "approach": "From file",
+          "code": "file -f list_of_files.txt",
+          "when": "File list"
+        }
+      ]
+    },
+    {
+      "id": "wrong_detection",
+      "pattern": "wrong.*type|misidentified|incorrect",
+      "message": "File type detected incorrectly",
+      "cause": "Magic number collision or corrupt file",
+      "solutions": [
+        {
+          "approach": "Check header",
+          "code": "xxd file | head -3  # View file header",
+          "when": "Manual check"
+        },
+        {
+          "approach": "Special files",
+          "code": "file -s /dev/sda  # Special files\nfile -s disk.img",
+          "when": "Device/image"
+        },
+        {
+          "approach": "Force check",
+          "code": "file -k file  # Keep checking, don't stop at first match",
+          "when": "Multiple matches"
+        }
+      ]
+    }
+  ]
+}

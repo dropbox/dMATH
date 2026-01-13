@@ -1,0 +1,145 @@
+{
+  "tool": "p_queue",
+  "version": "8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "esm_import_error",
+      "pattern": "ERR_REQUIRE_ESM|Must use import|Cannot use require",
+      "message": "Module import error",
+      "cause": "p-queue is ESM-only since v7",
+      "solutions": [
+        {
+          "approach": "Use ESM import",
+          "code": "import PQueue from 'p-queue';\nconst queue = new PQueue({ concurrency: 2 });",
+          "when": "ES modules"
+        },
+        {
+          "approach": "Dynamic import in CJS",
+          "code": "const PQueue = await import('p-queue');\nconst queue = new PQueue.default({ concurrency: 2 });",
+          "when": "CommonJS"
+        },
+        {
+          "approach": "Use v6 for CJS",
+          "code": "npm install p-queue@6\n// Then: const PQueue = require('p-queue');",
+          "when": "Need CommonJS"
+        }
+      ]
+    },
+    {
+      "id": "task_rejection",
+      "pattern": "unhandled rejection|task failed|queue error",
+      "message": "Task threw unhandled error",
+      "cause": "Error in queued task not caught",
+      "solutions": [
+        {
+          "approach": "Catch individual tasks",
+          "code": "const result = await queue.add(() => riskyTask()).catch(handleError);",
+          "when": "Per-task handling"
+        },
+        {
+          "approach": "Listen to error event",
+          "code": "queue.on('error', (error) => {\n  console.error('Task error:', error);\n});\nqueue.add(() => riskyTask());",
+          "when": "Global handler"
+        },
+        {
+          "approach": "Use throwOnTimeout",
+          "code": "const queue = new PQueue({\n  concurrency: 1,\n  throwOnTimeout: true,\n  timeout: 5000\n});",
+          "when": "Timeout as error"
+        }
+      ]
+    },
+    {
+      "id": "queue_paused",
+      "pattern": "queue paused|tasks not running|stuck|idle",
+      "message": "Queue not processing tasks",
+      "cause": "Queue is paused or waiting",
+      "solutions": [
+        {
+          "approach": "Check if paused",
+          "code": "if (queue.isPaused) {\n  queue.start();\n}",
+          "when": "Accidentally paused"
+        },
+        {
+          "approach": "Auto-start",
+          "code": "const queue = new PQueue({\n  concurrency: 2,\n  autoStart: true  // default\n});",
+          "when": "Ensure auto-start"
+        },
+        {
+          "approach": "Wait for idle",
+          "code": "await queue.onIdle();\nconsole.log('All tasks complete');",
+          "when": "Wait for completion"
+        }
+      ]
+    },
+    {
+      "id": "concurrency_exhausted",
+      "pattern": "waiting|pending tasks|queue full|slow processing",
+      "message": "Queue backed up with pending tasks",
+      "cause": "Tasks added faster than processed at current concurrency",
+      "solutions": [
+        {
+          "approach": "Increase concurrency",
+          "code": "queue.concurrency = 10;  // can change dynamically",
+          "when": "Safe to parallelize more"
+        },
+        {
+          "approach": "Monitor queue size",
+          "code": "if (queue.size > 100) {\n  console.warn(`Queue backed up: ${queue.size} pending`);\n}\nconsole.log(`Active: ${queue.pending}, Waiting: ${queue.size}`);",
+          "when": "Monitoring"
+        },
+        {
+          "approach": "Add backpressure",
+          "code": "if (queue.size >= maxQueueSize) {\n  await queue.onSizeLessThan(maxQueueSize);\n}\nqueue.add(task);",
+          "when": "Limit queue size"
+        }
+      ]
+    },
+    {
+      "id": "timeout_not_cancelling",
+      "pattern": "task continued|timeout didn't stop|still running",
+      "message": "Task continues after timeout",
+      "cause": "Timeout rejects promise but doesn't abort underlying operation",
+      "solutions": [
+        {
+          "approach": "Use AbortController",
+          "code": "queue.add(async ({ signal }) => {\n  const response = await fetch(url, { signal });\n  return response.json();\n}, { signal: AbortSignal.timeout(5000) });",
+          "when": "Fetch/network"
+        },
+        {
+          "approach": "Check for abort",
+          "code": "queue.add(async ({ signal }) => {\n  for (const item of items) {\n    if (signal?.aborted) throw new Error('Aborted');\n    await processItem(item);\n  }\n});",
+          "when": "Long-running loop"
+        },
+        {
+          "approach": "Task-level timeout",
+          "code": "queue.add(() => Promise.race([\n  actualTask(),\n  new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))\n]));",
+          "when": "Manual timeout"
+        }
+      ]
+    },
+    {
+      "id": "priority_not_working",
+      "pattern": "priority ignored|wrong order|FIFO instead",
+      "message": "Task priority not respected",
+      "cause": "Priority only affects pending tasks, not running ones",
+      "solutions": [
+        {
+          "approach": "Set priority correctly",
+          "code": "queue.add(() => task1(), { priority: 10 });  // higher = runs first\nqueue.add(() => task2(), { priority: 1 });",
+          "when": "Basic priority"
+        },
+        {
+          "approach": "Clear and re-add",
+          "code": "queue.clear();  // removes pending (not running)\nqueue.add(highPriorityTask, { priority: 100 });",
+          "when": "Emergency task"
+        },
+        {
+          "approach": "Understand priority scope",
+          "code": "// Priority only determines order among PENDING tasks\n// Running tasks (up to concurrency limit) continue\nconsole.log(`Running: ${queue.pending}, Pending: ${queue.size}`);",
+          "when": "Debugging priority"
+        }
+      ]
+    }
+  ]
+}

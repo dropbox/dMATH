@@ -1,0 +1,135 @@
+{
+  "tool": "xxd",
+  "version": "vim-common",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "xxd:.*command not found|xxd:.*not found",
+      "message": "xxd not installed",
+      "cause": "xxd comes with vim, not always installed",
+      "solutions": [
+        {
+          "approach": "Install via vim",
+          "code": "sudo apt install vim-common  # Debian/Ubuntu\nsudo yum install vim-common  # RHEL",
+          "when": "Install xxd"
+        },
+        {
+          "approach": "Use hexdump",
+          "code": "hexdump -C file  # Similar output",
+          "when": "Alternative"
+        },
+        {
+          "approach": "Use od",
+          "code": "od -A x -t x1z -v file",
+          "when": "od available"
+        }
+      ]
+    },
+    {
+      "id": "revert_error",
+      "pattern": "invalid|-r.*error|cannot revert|wrong format",
+      "message": "Cannot revert hex dump to binary",
+      "cause": "Input not in xxd format or corrupted",
+      "solutions": [
+        {
+          "approach": "Correct revert",
+          "code": "xxd file.bin > file.hex\n# Edit file.hex\nxxd -r file.hex > modified.bin",
+          "when": "Revert edited hex"
+        },
+        {
+          "approach": "Plain hex revert",
+          "code": "xxd -r -p <<< '48454c4c4f'  # Plain hex, no formatting",
+          "when": "Just hex string"
+        },
+        {
+          "approach": "Check format",
+          "code": "# xxd output format:\n# 00000000: 4865 6c6c 6f  Hello\n# Addresses must be intact for -r",
+          "when": "Verify format"
+        }
+      ]
+    },
+    {
+      "id": "output_format",
+      "pattern": "format|columns|grouping|width",
+      "message": "Change output format",
+      "cause": "Default may not suit needs",
+      "solutions": [
+        {
+          "approach": "Columns",
+          "code": "xxd -c 8 file     # 8 bytes per line\nxxd -c 32 file    # 32 bytes per line",
+          "when": "Line width"
+        },
+        {
+          "approach": "Grouping",
+          "code": "xxd -g 1 file     # 1-byte groups: 48 65 6c\nxxd -g 4 file     # 4-byte groups: 48656c6c",
+          "when": "Byte grouping"
+        },
+        {
+          "approach": "Plain hex",
+          "code": "xxd -p file       # Just hex, no formatting\nxxd -p -c 32 file # Plain hex, 32 bytes/line",
+          "when": "No addresses/ASCII"
+        }
+      ]
+    },
+    {
+      "id": "binary_mode",
+      "pattern": "binary|bits|bit.*dump",
+      "message": "Want binary (bits) instead of hex",
+      "cause": "Default is hexadecimal",
+      "solutions": [
+        {
+          "approach": "Binary output",
+          "code": "xxd -b file   # Shows bits: 01001000 01100101 ...",
+          "when": "Bit-level view"
+        },
+        {
+          "approach": "Hex is usually better",
+          "code": "# Hex is more compact: 48 = 01001000\n# Each hex digit = 4 bits",
+          "when": "Understanding"
+        }
+      ]
+    },
+    {
+      "id": "seek_length",
+      "pattern": "seek|offset|partial|limit",
+      "message": "View portion of file",
+      "cause": "Want to skip or limit bytes",
+      "solutions": [
+        {
+          "approach": "Skip bytes",
+          "code": "xxd -s 100 file      # Start at byte 100\nxxd -s 0x100 file    # Start at byte 256 (hex)",
+          "when": "Offset"
+        },
+        {
+          "approach": "Limit length",
+          "code": "xxd -l 64 file       # Only first 64 bytes\nxxd -s 100 -l 32 file  # 32 bytes from offset 100",
+          "when": "Limit output"
+        },
+        {
+          "approach": "Negative seek",
+          "code": "xxd -s -64 file      # Last 64 bytes",
+          "when": "End of file"
+        }
+      ]
+    },
+    {
+      "id": "include_format",
+      "pattern": "include|-i|C array|header",
+      "message": "Want C source code format",
+      "cause": "Need to embed binary in code",
+      "solutions": [
+        {
+          "approach": "C array",
+          "code": "xxd -i file.bin > data.h\n# Produces:\n# unsigned char file_bin[] = { 0x48, 0x65, ... };\n# unsigned int file_bin_len = 12345;",
+          "when": "Embed in C"
+        },
+        {
+          "approach": "Custom name",
+          "code": "xxd -i file.bin | sed 's/file_bin/my_data/g'",
+          "when": "Rename variable"
+        }
+      ]
+    }
+  ]
+}

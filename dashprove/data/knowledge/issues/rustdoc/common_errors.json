@@ -1,0 +1,232 @@
+{
+  "tool": "rustdoc",
+  "version": "1.75+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unresolved_link",
+      "pattern": "unresolved link to|cannot resolve",
+      "message": "Documentation link cannot be resolved",
+      "cause": "Intra-doc link target doesn't exist or is private",
+      "solutions": [
+        {
+          "approach": "Use full path",
+          "code": "/// See [`crate::module::Type`]",
+          "when": "Relative path not working"
+        },
+        {
+          "approach": "Make target public",
+          "code": "pub struct Target;",
+          "when": "Target is private"
+        },
+        {
+          "approach": "Re-export item",
+          "code": "pub use internal::Type;",
+          "when": "Need to link to private item"
+        },
+        {
+          "approach": "Disambiguate",
+          "code": "/// [`Type` (struct)][Type]\n/// [`type`][type@Type]",
+          "when": "Name collision"
+        }
+      ]
+    },
+    {
+      "id": "broken_html",
+      "pattern": "invalid HTML|malformed|unclosed tag",
+      "message": "Invalid HTML in documentation",
+      "cause": "Raw HTML in doc comments has syntax errors",
+      "solutions": [
+        {
+          "approach": "Escape angle brackets",
+          "code": "/// Use `<T>` for generics",
+          "when": "Generic params look like HTML"
+        },
+        {
+          "approach": "Use markdown instead",
+          "code": "/// **bold** and _italic_",
+          "when": "HTML not necessary"
+        },
+        {
+          "approach": "Close all tags",
+          "code": "/// <details><summary>Info</summary>Content</details>",
+          "when": "Using HTML elements"
+        }
+      ]
+    },
+    {
+      "id": "missing_docs",
+      "pattern": "missing documentation|public item.*no docs|#\\[warn\\(missing_docs\\)\\]",
+      "message": "Public item lacks documentation",
+      "cause": "missing_docs lint enabled but doc comment missing",
+      "solutions": [
+        {
+          "approach": "Add documentation",
+          "code": "/// Brief description of the item.\npub fn my_function() {}",
+          "when": "Item needs docs"
+        },
+        {
+          "approach": "Allow at item level",
+          "code": "#[allow(missing_docs)]\npub struct InternalType;",
+          "when": "Intentionally undocumented"
+        },
+        {
+          "approach": "Disable lint",
+          "code": "#![allow(missing_docs)]",
+          "when": "Early development"
+        }
+      ]
+    },
+    {
+      "id": "doc_test_failed",
+      "pattern": "doctest.*failed|couldn't compile doctest|error in doctest",
+      "message": "Documentation example failed to compile/run",
+      "cause": "Code in doc comment has errors or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Add necessary imports",
+          "code": "/// ```\n/// use mycrate::prelude::*;\n/// let x = MyType::new();\n/// ```",
+          "when": "Missing use statements"
+        },
+        {
+          "approach": "Mark as no_run",
+          "code": "/// ```no_run\n/// expensive_operation();\n/// ```",
+          "when": "Code works but shouldn't run"
+        },
+        {
+          "approach": "Mark as ignore",
+          "code": "/// ```ignore\n/// platform_specific_code();\n/// ```",
+          "when": "Code may not compile everywhere"
+        },
+        {
+          "approach": "Hide setup code",
+          "code": "/// ```\n/// # fn main() -> Result<(), Error> {\n/// let result = try_something()?;\n/// # Ok(())\n/// # }\n/// ```",
+          "when": "Need error handling boilerplate"
+        }
+      ]
+    },
+    {
+      "id": "private_in_public",
+      "pattern": "private type.*public interface|leak.*private",
+      "message": "Private type exposed in public documentation",
+      "cause": "Public function uses private type in signature",
+      "solutions": [
+        {
+          "approach": "Make type public",
+          "code": "pub struct MyType;",
+          "when": "Type should be public"
+        },
+        {
+          "approach": "Use impl Trait",
+          "code": "pub fn foo() -> impl Iterator<Item = i32>",
+          "when": "Hide implementation detail"
+        },
+        {
+          "approach": "Use type alias",
+          "code": "pub type Result<T> = std::result::Result<T, MyError>;",
+          "when": "Need named public type"
+        }
+      ]
+    },
+    {
+      "id": "feature_gated",
+      "pattern": "unstable feature|requires.*nightly|#!\\[feature",
+      "message": "Documentation uses unstable features",
+      "cause": "Doc attributes or examples require nightly Rust",
+      "solutions": [
+        {
+          "approach": "Use cfg_attr for docs",
+          "code": "#![cfg_attr(docsrs, feature(doc_auto_cfg))]",
+          "when": "Feature needed only for docs.rs"
+        },
+        {
+          "approach": "Conditionally enable",
+          "code": "#[cfg_attr(doc, doc = \"Feature-gated docs\")]",
+          "when": "Docs differ from code"
+        },
+        {
+          "approach": "Use stable alternatives",
+          "code": "// Avoid doc_cfg, use manual feature docs",
+          "when": "Must support stable"
+        }
+      ]
+    },
+    {
+      "id": "circular_dependency",
+      "pattern": "circular dependency|recursive doc",
+      "message": "Circular reference in documentation",
+      "cause": "Doc links create reference cycle",
+      "solutions": [
+        {
+          "approach": "Break cycle",
+          "code": "/// See [TypeA] for details.\n// Don't link back from TypeA",
+          "when": "Mutual references"
+        },
+        {
+          "approach": "Use text instead",
+          "code": "/// Related: TypeB (in sibling module)",
+          "when": "Link not critical"
+        }
+      ]
+    },
+    {
+      "id": "empty_item",
+      "pattern": "empty documentation|no content",
+      "message": "Documentation comment is empty",
+      "cause": "Doc comment without any text",
+      "solutions": [
+        {
+          "approach": "Add description",
+          "code": "/// Performs the operation described by its name.",
+          "when": "Item needs description"
+        },
+        {
+          "approach": "Remove empty comment",
+          "code": "// Remove /// if not needed",
+          "when": "Doc comment not intended"
+        }
+      ]
+    },
+    {
+      "id": "cfg_doc_mismatch",
+      "pattern": "item.*cfg.*documented|missing from docs",
+      "message": "Cfg-gated items missing from docs",
+      "cause": "Items behind #[cfg(...)] not showing in docs",
+      "solutions": [
+        {
+          "approach": "Use doc_auto_cfg",
+          "code": "#![cfg_attr(docsrs, feature(doc_auto_cfg))]",
+          "when": "On docs.rs"
+        },
+        {
+          "approach": "Manual doc_cfg",
+          "code": "#[cfg_attr(docsrs, doc(cfg(feature = \"x\")))]\npub fn feature_x() {}",
+          "when": "Pre-1.77 Rust"
+        },
+        {
+          "approach": "Build with all features",
+          "code": "cargo doc --all-features",
+          "when": "Local doc generation"
+        }
+      ]
+    },
+    {
+      "id": "json_output_error",
+      "pattern": "json output.*error|--output-format json",
+      "message": "JSON documentation output failed",
+      "cause": "Using unstable JSON output format",
+      "solutions": [
+        {
+          "approach": "Use nightly",
+          "code": "cargo +nightly rustdoc -- -Z unstable-options --output-format json",
+          "when": "Need JSON output"
+        },
+        {
+          "approach": "Use stable HTML",
+          "code": "cargo doc --no-deps",
+          "when": "JSON not required"
+        }
+      ]
+    }
+  ]
+}

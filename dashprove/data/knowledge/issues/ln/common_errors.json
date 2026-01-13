@@ -1,0 +1,130 @@
+{
+  "tool": "ln",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "file_exists",
+      "pattern": "File exists|cannot create|already exists",
+      "message": "Link already exists",
+      "cause": "Target name already exists",
+      "solutions": [
+        {
+          "approach": "Force overwrite",
+          "code": "ln -sf source linkname  # Force symbolic\nln -f source linkname  # Force hard",
+          "when": "Replace existing"
+        },
+        {
+          "approach": "Remove first",
+          "code": "rm linkname && ln -s source linkname",
+          "when": "Manual"
+        },
+        {
+          "approach": "Backup",
+          "code": "ln -sb source linkname  # Create backup",
+          "when": "Keep old"
+        }
+      ]
+    },
+    {
+      "id": "hard_link_directory",
+      "pattern": "hard link.*directory|not allowed|is a directory",
+      "message": "Cannot hard link directory",
+      "cause": "Hard links to directories not allowed (except root)",
+      "solutions": [
+        {
+          "approach": "Use symbolic",
+          "code": "ln -s directory linkname",
+          "when": "Link to dir"
+        },
+        {
+          "approach": "Bind mount",
+          "code": "sudo mount --bind /source/dir /dest/dir",
+          "when": "Need hard-like"
+        }
+      ]
+    },
+    {
+      "id": "cross_device_link",
+      "pattern": "Invalid cross-device link|different.*filesystem",
+      "message": "Cannot hard link across filesystems",
+      "cause": "Hard links must be on same filesystem",
+      "solutions": [
+        {
+          "approach": "Use symbolic",
+          "code": "ln -s /other/fs/file linkname",
+          "when": "Cross filesystem"
+        },
+        {
+          "approach": "Check filesystems",
+          "code": "df source dest  # Shows filesystems",
+          "when": "Debug"
+        }
+      ]
+    },
+    {
+      "id": "broken_symlink",
+      "pattern": "dangling|broken.*symbolic|No such file",
+      "message": "Symbolic link is broken",
+      "cause": "Target doesn't exist or wrong path",
+      "solutions": [
+        {
+          "approach": "Check target",
+          "code": "ls -la linkname  # Shows target\nreadlink linkname  # Print target",
+          "when": "Debug"
+        },
+        {
+          "approach": "Use absolute path",
+          "code": "ln -s /full/path/to/source linkname",
+          "when": "Relative path wrong"
+        },
+        {
+          "approach": "Find broken links",
+          "code": "find . -xtype l  # Find broken symlinks",
+          "when": "Cleanup"
+        }
+      ]
+    },
+    {
+      "id": "relative_vs_absolute",
+      "pattern": "relative|absolute|path.*symlink",
+      "message": "Symlink path type confusion",
+      "cause": "Relative paths are relative to link location, not cwd",
+      "solutions": [
+        {
+          "approach": "Absolute path",
+          "code": "ln -s /absolute/path/to/target linkname",
+          "when": "Always works"
+        },
+        {
+          "approach": "Relative correct",
+          "code": "cd /where/link/will/be && ln -s ../relative/path linkname",
+          "when": "Relative from link"
+        },
+        {
+          "approach": "Resolve paths",
+          "code": "ln -s $(realpath target) linkname",
+          "when": "Convert to absolute"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot create",
+      "message": "Cannot create link",
+      "cause": "No write permission in target directory",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo ln -s source linkname",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check directory",
+          "code": "ls -ld directory/  # Check write perms",
+          "when": "Debug access"
+        }
+      ]
+    }
+  ]
+}

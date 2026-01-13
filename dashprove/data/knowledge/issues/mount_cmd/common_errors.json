@@ -1,0 +1,158 @@
+{
+  "tool": "mount",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "must be superuser|only root|Permission denied|not permitted",
+      "message": "Mount requires root privileges",
+      "cause": "Most mount operations require root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo mount /dev/sdb1 /mnt",
+          "when": "Need root"
+        },
+        {
+          "approach": "User mount in fstab",
+          "code": "# In /etc/fstab, add 'user' option:\n/dev/sdb1 /mnt/usb ext4 user,noauto 0 0",
+          "when": "Allow users to mount"
+        },
+        {
+          "approach": "Use udisks",
+          "code": "udisksctl mount -b /dev/sdb1",
+          "when": "Desktop systems"
+        }
+      ]
+    },
+    {
+      "id": "wrong_fs_type",
+      "pattern": "wrong fs type|bad superblock|bad option|unknown filesystem",
+      "message": "Cannot determine or use filesystem type",
+      "cause": "Filesystem unknown or corrupted",
+      "solutions": [
+        {
+          "approach": "Identify filesystem",
+          "code": "blkid /dev/sdb1\nfile -s /dev/sdb1",
+          "when": "Check filesystem"
+        },
+        {
+          "approach": "Specify type",
+          "code": "sudo mount -t ext4 /dev/sdb1 /mnt\nsudo mount -t ntfs-3g /dev/sdb1 /mnt",
+          "when": "Explicit type"
+        },
+        {
+          "approach": "Install filesystem support",
+          "code": "# NTFS:\nsudo apt install ntfs-3g\n# exFAT:\nsudo apt install exfat-fuse exfat-utils",
+          "when": "Missing support"
+        }
+      ]
+    },
+    {
+      "id": "already_mounted",
+      "pattern": "already mounted|busy|mount point.*busy",
+      "message": "Device or mount point already in use",
+      "cause": "Something already mounted there",
+      "solutions": [
+        {
+          "approach": "Check current mounts",
+          "code": "mount | grep /dev/sdb\nmount | grep /mnt",
+          "when": "See what's mounted"
+        },
+        {
+          "approach": "Unmount first",
+          "code": "sudo umount /mnt\nsudo umount /dev/sdb1",
+          "when": "Clear mount point"
+        },
+        {
+          "approach": "Different mount point",
+          "code": "sudo mkdir /mnt/newpoint\nsudo mount /dev/sdb1 /mnt/newpoint",
+          "when": "Use different location"
+        }
+      ]
+    },
+    {
+      "id": "mount_point_not_exist",
+      "pattern": "mount point.*does not exist|No such file or directory|not a directory",
+      "message": "Mount point doesn't exist",
+      "cause": "Target directory not created",
+      "solutions": [
+        {
+          "approach": "Create mount point",
+          "code": "sudo mkdir -p /mnt/mydir\nsudo mount /dev/sdb1 /mnt/mydir",
+          "when": "Create directory first"
+        }
+      ]
+    },
+    {
+      "id": "read_only",
+      "pattern": "read-only|Read-only file system|ro,|remount",
+      "message": "Filesystem mounted read-only",
+      "cause": "Mounted RO or filesystem errors",
+      "solutions": [
+        {
+          "approach": "Mount read-write",
+          "code": "sudo mount -o rw /dev/sdb1 /mnt",
+          "when": "Explicit RW"
+        },
+        {
+          "approach": "Remount RW",
+          "code": "sudo mount -o remount,rw /mnt",
+          "when": "Already mounted"
+        },
+        {
+          "approach": "Check filesystem",
+          "code": "sudo fsck /dev/sdb1  # Must be unmounted first",
+          "when": "FS errors"
+        },
+        {
+          "approach": "NTFS Windows shutdown",
+          "code": "# Windows must be fully shut down, not hibernated\nsudo ntfsfix /dev/sdb1",
+          "when": "NTFS from Windows"
+        }
+      ]
+    },
+    {
+      "id": "no_device",
+      "pattern": "special device.*does not exist|can't find|not.*block device",
+      "message": "Device doesn't exist",
+      "cause": "Wrong device name or device not connected",
+      "solutions": [
+        {
+          "approach": "List devices",
+          "code": "lsblk\nls /dev/sd*\nfdisk -l",
+          "when": "Find correct device"
+        },
+        {
+          "approach": "Check USB/disk",
+          "code": "dmesg | tail -20  # Recent device events",
+          "when": "Newly connected device"
+        },
+        {
+          "approach": "UUID mount",
+          "code": "blkid  # Get UUID\nsudo mount UUID=abcd-1234 /mnt",
+          "when": "Device name changes"
+        }
+      ]
+    },
+    {
+      "id": "loop_device",
+      "pattern": "loop|image|iso|.img",
+      "message": "Mounting image files",
+      "cause": "Need loop device for image files",
+      "solutions": [
+        {
+          "approach": "Mount ISO",
+          "code": "sudo mount -o loop image.iso /mnt",
+          "when": "ISO/image file"
+        },
+        {
+          "approach": "Mount with offset",
+          "code": "# For disk images with partitions:\nfdisk -l image.img  # Get offset\nsudo mount -o loop,offset=1048576 image.img /mnt",
+          "when": "Partition in image"
+        }
+      ]
+    }
+  ]
+}

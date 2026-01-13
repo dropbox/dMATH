@@ -1,0 +1,168 @@
+{
+  "tool": "nunjucks",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_variable",
+      "pattern": "undefined|null|is not defined|Cannot read propert",
+      "message": "Variable not defined in context",
+      "cause": "Variable referenced but not passed to render",
+      "solutions": [
+        {
+          "approach": "Pass all variables",
+          "code": "nunjucks.render('template.njk', { name: 'John', items: [] });",
+          "when": "Missing data"
+        },
+        {
+          "approach": "Use default filter",
+          "code": "{{ name | default('Guest') }}",
+          "when": "Provide fallback"
+        },
+        {
+          "approach": "Check with if",
+          "code": "{% if user %}{{ user.name }}{% endif %}",
+          "when": "Conditional rendering"
+        }
+      ]
+    },
+    {
+      "id": "template_not_found",
+      "pattern": "template not found|ENOENT|could not find|no such file",
+      "message": "Template file not found",
+      "cause": "Template path doesn't resolve correctly",
+      "solutions": [
+        {
+          "approach": "Configure environment",
+          "code": "const env = nunjucks.configure('views', {\n  autoescape: true,\n  noCache: dev\n});\nenv.render('page.njk', data);",
+          "when": "Set template root"
+        },
+        {
+          "approach": "Use absolute path",
+          "code": "nunjucks.configure(['/path/to/templates', '/other/path']);",
+          "when": "Multiple directories"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "{% include 'header.njk' %}  {# not header.html #}",
+          "when": "Wrong extension"
+        }
+      ]
+    },
+    {
+      "id": "filter_not_found",
+      "pattern": "filter.*not found|unknown filter|is not a function",
+      "message": "Custom filter not registered",
+      "cause": "Filter used in template but not added to environment",
+      "solutions": [
+        {
+          "approach": "Register custom filter",
+          "code": "const env = nunjucks.configure('views');\nenv.addFilter('shorten', (str, count) => str.slice(0, count));",
+          "when": "Custom filter"
+        },
+        {
+          "approach": "Async filter",
+          "code": "env.addFilter('fetch', async function(url, callback) {\n  const data = await fetchData(url);\n  callback(null, data);\n}, true);  // true = async",
+          "when": "Async operation"
+        },
+        {
+          "approach": "Check filter name",
+          "code": "{{ value | shorten(10) }}  {# must match registered name #}",
+          "when": "Name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "macro_error",
+      "pattern": "macro.*not defined|import.*error|cannot call",
+      "message": "Macro not accessible",
+      "cause": "Macro not imported or defined incorrectly",
+      "solutions": [
+        {
+          "approach": "Import macros correctly",
+          "code": "{% import 'macros.njk' as macros %}\n{{ macros.button('Click me') }}",
+          "when": "External macros"
+        },
+        {
+          "approach": "Define macro",
+          "code": "{% macro button(text, type='primary') %}\n  <button class=\"btn-{{ type }}\">{{ text }}</button>\n{% endmacro %}",
+          "when": "Define in file"
+        },
+        {
+          "approach": "Import with context",
+          "code": "{% from 'macros.njk' import button with context %}",
+          "when": "Need template context"
+        }
+      ]
+    },
+    {
+      "id": "inheritance_error",
+      "pattern": "extends.*error|block.*not found|parent.*undefined",
+      "message": "Template inheritance failed",
+      "cause": "Parent template not found or block names don't match",
+      "solutions": [
+        {
+          "approach": "Check extends path",
+          "code": "{% extends 'layouts/base.njk' %}\n{% block content %}\n  Page content here\n{% endblock %}",
+          "when": "Path issue"
+        },
+        {
+          "approach": "Define matching blocks",
+          "code": "{# base.njk #}\n<html>\n{% block head %}{% endblock %}\n{% block content %}{% endblock %}\n\n{# child.njk #}\n{% extends 'base.njk' %}\n{% block content %}Hello{% endblock %}",
+          "when": "Block mismatch"
+        },
+        {
+          "approach": "Use super()",
+          "code": "{% block head %}\n  {{ super() }}\n  <script src=\"extra.js\"></script>\n{% endblock %}",
+          "when": "Extend parent block"
+        }
+      ]
+    },
+    {
+      "id": "autoescaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML",
+      "message": "HTML content is escaped",
+      "cause": "Autoescape is enabled by default",
+      "solutions": [
+        {
+          "approach": "Use safe filter",
+          "code": "{{ rawHtml | safe }}",
+          "when": "Trusted HTML"
+        },
+        {
+          "approach": "Configure globally",
+          "code": "nunjucks.configure('views', { autoescape: false });  // careful!",
+          "when": "Disable escaping"
+        },
+        {
+          "approach": "Raw block",
+          "code": "{% raw %}\n  This {{ won't }} be processed\n{% endraw %}",
+          "when": "Literal template syntax"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "async.*not supported|Promise|await|callback",
+      "message": "Async operation not handled",
+      "cause": "Nunjucks requires explicit async configuration",
+      "solutions": [
+        {
+          "approach": "Use callback style",
+          "code": "nunjucks.render('template.njk', data, (err, res) => {\n  if (err) throw err;\n  console.log(res);\n});",
+          "when": "Async render"
+        },
+        {
+          "approach": "Async filter with callback",
+          "code": "env.addFilter('lookup', (id, callback) => {\n  db.find(id).then(data => callback(null, data));\n}, true);",
+          "when": "Async filter"
+        },
+        {
+          "approach": "Promisify render",
+          "code": "const { promisify } = require('util');\nconst renderAsync = promisify(nunjucks.render.bind(nunjucks));\nconst html = await renderAsync('template.njk', data);",
+          "when": "Promise-based"
+        }
+      ]
+    }
+  ]
+}

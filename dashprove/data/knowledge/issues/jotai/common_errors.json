@@ -1,0 +1,152 @@
+{
+  "tool": "jotai",
+  "category": "state_management",
+  "common_errors": [
+    {
+      "error": "ATOM_OUTSIDE_PROVIDER",
+      "pattern": "Provider.*not found|useAtom.*outside Provider|No atom state",
+      "severity": "high",
+      "causes": [
+        "Using useAtom outside Provider scope",
+        "Provider not at root level",
+        "Multiple stores conflicting",
+        "SSR without Provider"
+      ],
+      "solutions": [
+        "Wrap app in <Provider>",
+        "Move Provider higher in component tree",
+        "Use default store if Provider not needed",
+        "Configure Provider with initialValues for SSR"
+      ]
+    },
+    {
+      "error": "ATOM_NOT_REACTIVE",
+      "pattern": "atom.*not updating|useAtom.*stale|component.*not rerendering",
+      "severity": "high",
+      "causes": [
+        "Creating atom inside component",
+        "Not using useAtom hook",
+        "Atom reference changing",
+        "Derived atom misconfigured"
+      ],
+      "solutions": [
+        "Define atoms outside components",
+        "Use useAtom to read/write atoms",
+        "Ensure same atom reference",
+        "Check derived atom dependencies"
+      ]
+    },
+    {
+      "error": "INFINITE_LOOP",
+      "pattern": "Maximum.*exceeded|infinite loop|too many re-renders|Rendered.*times",
+      "severity": "critical",
+      "causes": [
+        "Setting atom in render",
+        "Atom depending on itself",
+        "Write function causing re-read",
+        "onMount triggering update loop"
+      ],
+      "solutions": [
+        "Move atom updates to event handlers or useEffect",
+        "Break circular atom dependencies",
+        "Use useAtomValue for read-only",
+        "Check onMount cleanup returns properly"
+      ]
+    },
+    {
+      "error": "ASYNC_ATOM_SUSPENDED",
+      "pattern": "Suspense.*boundary|suspended.*fallback|Promise.*rejected",
+      "severity": "medium",
+      "causes": [
+        "Async atom without Suspense",
+        "Missing error boundary",
+        "Async getter throwing",
+        "Loadable not used for error handling"
+      ],
+      "solutions": [
+        "Wrap in Suspense: <Suspense fallback={<Loading />}>",
+        "Use loadable() for manual loading state",
+        "Add ErrorBoundary for async errors",
+        "Use unwrap() for synchronous fallback"
+      ]
+    },
+    {
+      "error": "DERIVED_ATOM_NOT_UPDATING",
+      "pattern": "derived.*not updating|computed.*stale|dependency.*not tracked",
+      "severity": "medium",
+      "causes": [
+        "Dependency not read in getter",
+        "Async dependency not awaited",
+        "Conditional read breaking tracking",
+        "Using get outside getter"
+      ],
+      "solutions": [
+        "Read all dependencies: get(baseAtom)",
+        "Await async dependencies",
+        "Read dependencies unconditionally",
+        "Use atom(get => get(dep)) pattern"
+      ]
+    },
+    {
+      "error": "WRITE_NOT_WORKING",
+      "pattern": "write.*not.*working|set.*not updating|atom.*readonly",
+      "severity": "medium",
+      "causes": [
+        "Using derived atom without write",
+        "Write function not calling set",
+        "Wrong atom passed to set",
+        "Primitive atom used as write-only"
+      ],
+      "solutions": [
+        "Add write function: atom(get, set)",
+        "Call set(baseAtom, value) in write",
+        "Check atom configuration",
+        "Use useSetAtom for write-only"
+      ]
+    },
+    {
+      "error": "SSR_HYDRATION_MISMATCH",
+      "pattern": "hydration.*mismatch|server.*client.*different|Text content.*not match",
+      "severity": "medium",
+      "causes": [
+        "Initial atom values differ server/client",
+        "Browser-only values in atoms",
+        "Date/random in initial state",
+        "localStorage in atom initial"
+      ],
+      "solutions": [
+        "Use hydrateAtoms for SSR",
+        "Check typeof window before browser APIs",
+        "Use useHydrateAtoms hook",
+        "Pass initialValues to Provider"
+      ]
+    },
+    {
+      "error": "MEMORY_LEAK",
+      "pattern": "memory leak|atom.*not cleaned|subscription.*leak",
+      "severity": "medium",
+      "causes": [
+        "onMount not returning cleanup",
+        "Creating atoms dynamically without cleanup",
+        "Holding references to unmounted components",
+        "Subscriptions not disposed"
+      ],
+      "solutions": [
+        "Return cleanup from onMount: onMount: (set) => () => cleanup()",
+        "Use atomFamily for dynamic atoms",
+        "Clean up subscriptions in onMount cleanup",
+        "Use weak references where appropriate"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Define atoms at module level",
+    "Use atomFamily for parameterized atoms",
+    "Wrap async atoms in Suspense",
+    "Use useAtomValue/useSetAtom when appropriate",
+    "Use loadable() for manual loading states",
+    "Implement proper cleanup in onMount",
+    "Use focusAtom for selecting nested state"
+  ],
+  "related_tools": ["recoil", "zustand", "valtio", "mobx"]
+}

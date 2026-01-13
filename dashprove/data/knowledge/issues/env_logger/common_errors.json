@@ -1,0 +1,122 @@
+{
+  "tool": "env_logger",
+  "version": "0.11.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "init_called_twice",
+      "pattern": "already initialized|init.*called more than once|SetLoggerError",
+      "message": "Logger already initialized",
+      "cause": "env_logger::init() called multiple times",
+      "solutions": [
+        {
+          "approach": "Use try_init",
+          "code": "let _ = env_logger::try_init();",
+          "when": "May be initialized elsewhere"
+        },
+        {
+          "approach": "Init once in main",
+          "code": "fn main() {\n    env_logger::init();\n    // ...\n}",
+          "when": "Single init point"
+        },
+        {
+          "approach": "Use builder for tests",
+          "code": "let _ = env_logger::Builder::from_default_env().is_test(true).try_init();",
+          "when": "Test initialization"
+        }
+      ]
+    },
+    {
+      "id": "no_output",
+      "pattern": "logs not appearing|nothing logged|output missing",
+      "message": "Log output not appearing",
+      "cause": "RUST_LOG not set or level too high",
+      "solutions": [
+        {
+          "approach": "Set RUST_LOG",
+          "code": "RUST_LOG=debug cargo run",
+          "when": "Debug output needed"
+        },
+        {
+          "approach": "Set default level",
+          "code": "env_logger::Builder::from_default_env()\n    .filter_level(log::LevelFilter::Info)\n    .init();",
+          "when": "Default without RUST_LOG"
+        },
+        {
+          "approach": "Target specific crate",
+          "code": "RUST_LOG=my_crate=debug,other_crate=warn",
+          "when": "Filter by crate"
+        }
+      ]
+    },
+    {
+      "id": "filter_parse_error",
+      "pattern": "invalid filter directive|parse error|RUST_LOG.*invalid",
+      "message": "Cannot parse RUST_LOG value",
+      "cause": "Invalid syntax in filter directive",
+      "solutions": [
+        {
+          "approach": "Fix syntax",
+          "code": "RUST_LOG=crate_name=level,other_crate=level",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "RUST_LOG='my-crate=debug'  # quote hyphens",
+          "when": "Crate name has special chars"
+        },
+        {
+          "approach": "Use parse fallback",
+          "code": "env_logger::Builder::from_default_env()\n    .parse_default_env()\n    .init();",
+          "when": "Ignore invalid directives"
+        }
+      ]
+    },
+    {
+      "id": "test_output_missing",
+      "pattern": "test.*no output|cargo test.*no logs|test output missing",
+      "message": "Logs not appearing in tests",
+      "cause": "Tests capture output, or logger not initialized",
+      "solutions": [
+        {
+          "approach": "Use is_test mode",
+          "code": "let _ = env_logger::builder().is_test(true).try_init();",
+          "when": "Test logging setup"
+        },
+        {
+          "approach": "Show captured output",
+          "code": "cargo test -- --nocapture",
+          "when": "See all test output"
+        },
+        {
+          "approach": "Show only on failure",
+          "code": "cargo test -- --show-output",
+          "when": "Debug failing tests"
+        }
+      ]
+    },
+    {
+      "id": "timestamp_format",
+      "pattern": "timestamp.*format|time.*wrong|chrono.*feature",
+      "message": "Timestamp formatting issues",
+      "cause": "Missing chrono feature or invalid format string",
+      "solutions": [
+        {
+          "approach": "Disable timestamps",
+          "code": "env_logger::Builder::from_default_env()\n    .format_timestamp(None)\n    .init();",
+          "when": "Timestamps not needed"
+        },
+        {
+          "approach": "Use seconds",
+          "code": ".format_timestamp_secs()",
+          "when": "Second precision"
+        },
+        {
+          "approach": "Custom format",
+          "code": ".format(|buf, record| {\n    writeln!(buf, \"{} {}\", record.level(), record.args())\n})",
+          "when": "Custom output format"
+        }
+      ]
+    }
+  ]
+}

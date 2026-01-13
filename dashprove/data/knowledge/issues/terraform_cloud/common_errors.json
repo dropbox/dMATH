@@ -1,0 +1,191 @@
+{
+  "tool": "terraform_cloud",
+  "version": "2024.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "authentication_failed",
+      "pattern": "401|unauthorized|authentication|token",
+      "message": "Authentication failed",
+      "cause": "Invalid or expired API token",
+      "solutions": [
+        {
+          "approach": "Login to TFC",
+          "code": "terraform login",
+          "when": "Interactive login"
+        },
+        {
+          "approach": "Set token via env",
+          "code": "export TF_TOKEN_app_terraform_io=<token>\n# Or in ~/.terraformrc\ncredentials \"app.terraform.io\" {\n  token = \"<token>\"\n}",
+          "when": "Use API token"
+        },
+        {
+          "approach": "Create new token",
+          "code": "# In TFC UI: User Settings > Tokens > Create API token\n# Or use team/organization token for CI",
+          "when": "Token expired"
+        }
+      ]
+    },
+    {
+      "id": "workspace_not_found",
+      "pattern": "workspace .* not found|does not exist",
+      "message": "Workspace not found",
+      "cause": "Workspace doesn't exist or wrong name",
+      "solutions": [
+        {
+          "approach": "Check workspace name",
+          "code": "terraform {\n  cloud {\n    organization = \"my-org\"\n    workspaces {\n      name = \"my-workspace\"  # Exact name\n    }\n  }\n}",
+          "when": "Name may be wrong"
+        },
+        {
+          "approach": "Use tags",
+          "code": "terraform {\n  cloud {\n    organization = \"my-org\"\n    workspaces {\n      tags = [\"app:myapp\", \"env:prod\"]\n    }\n  }\n}",
+          "when": "Select by tags"
+        },
+        {
+          "approach": "Create workspace",
+          "code": "# In TFC UI: Workspaces > New Workspace\n# Or via API/Terraform",
+          "when": "Workspace doesn't exist"
+        }
+      ]
+    },
+    {
+      "id": "state_lock_error",
+      "pattern": "state lock|locked|another operation",
+      "message": "State is locked",
+      "cause": "Another run in progress or stale lock",
+      "solutions": [
+        {
+          "approach": "Wait for run",
+          "code": "# Check TFC UI for active runs\n# Wait for completion",
+          "when": "Another run in progress"
+        },
+        {
+          "approach": "Cancel run",
+          "code": "# In TFC UI: Runs > Cancel Run\n# Or via API",
+          "when": "Run stuck"
+        },
+        {
+          "approach": "Force unlock",
+          "code": "terraform force-unlock <lock-id>\n# Get lock ID from error message",
+          "when": "Lock is stale"
+        }
+      ]
+    },
+    {
+      "id": "remote_execution_error",
+      "pattern": "remote operations|execution mode|speculative",
+      "message": "Remote execution error",
+      "cause": "Execution mode mismatch or agent issue",
+      "solutions": [
+        {
+          "approach": "Set execution mode",
+          "code": "# In workspace settings:\n# Execution Mode: Remote, Local, or Agent",
+          "when": "Wrong execution mode"
+        },
+        {
+          "approach": "Use CLI-driven workflow",
+          "code": "# Enable local operations in workspace settings\n# Or use:\nterraform apply -auto-approve -no-remote",
+          "when": "Want local execution"
+        },
+        {
+          "approach": "Check agent status",
+          "code": "# In TFC UI: Settings > Agents\n# Ensure agent is running and connected",
+          "when": "Using agent execution"
+        }
+      ]
+    },
+    {
+      "id": "policy_failed",
+      "pattern": "policy|sentinel|OPA|hard-mandatory|soft-mandatory",
+      "message": "Policy check failed",
+      "cause": "Sentinel or OPA policy violation",
+      "solutions": [
+        {
+          "approach": "Check policy output",
+          "code": "# In TFC run UI, expand Policy Check\n# See which policies failed and why",
+          "when": "Understand violation"
+        },
+        {
+          "approach": "Override soft policy",
+          "code": "# Soft-mandatory policies can be overridden\n# In TFC UI: Override and continue",
+          "when": "Soft policy fail"
+        },
+        {
+          "approach": "Fix violation",
+          "code": "# Update Terraform code to comply\n# Common: cost limits, required tags, region restrictions",
+          "when": "Hard policy fail"
+        }
+      ]
+    },
+    {
+      "id": "variable_not_set",
+      "pattern": "variable .* not set|required variable",
+      "message": "Required variable not set",
+      "cause": "Workspace variable missing",
+      "solutions": [
+        {
+          "approach": "Set workspace variable",
+          "code": "# In TFC UI: Workspace > Variables\n# Add Terraform or Environment variable",
+          "when": "Variable missing"
+        },
+        {
+          "approach": "Use variable sets",
+          "code": "# Create Variable Set for shared variables\n# Assign to multiple workspaces",
+          "when": "Share across workspaces"
+        },
+        {
+          "approach": "Mark as sensitive",
+          "code": "# For secrets, enable Sensitive checkbox\n# Value will be write-only",
+          "when": "Sensitive value"
+        }
+      ]
+    },
+    {
+      "id": "vcs_connection_failed",
+      "pattern": "VCS|GitHub|GitLab|webhook|connection",
+      "message": "VCS connection failed",
+      "cause": "OAuth token expired or webhook misconfigured",
+      "solutions": [
+        {
+          "approach": "Reconnect VCS",
+          "code": "# In TFC UI: Settings > VCS Providers\n# Re-authorize OAuth connection",
+          "when": "Token expired"
+        },
+        {
+          "approach": "Check webhook",
+          "code": "# In GitHub/GitLab repo settings\n# Verify webhook exists and is active",
+          "when": "Webhook issue"
+        },
+        {
+          "approach": "Update branch",
+          "code": "# In workspace VCS settings\n# Verify branch name matches repo",
+          "when": "Branch mismatch"
+        }
+      ]
+    },
+    {
+      "id": "run_failed",
+      "pattern": "run failed|plan error|apply error",
+      "message": "Terraform run failed",
+      "cause": "Plan or apply error",
+      "solutions": [
+        {
+          "approach": "Check run logs",
+          "code": "# In TFC UI: Runs > Select run\n# View Plan and Apply logs",
+          "when": "Need error details"
+        },
+        {
+          "approach": "Run plan locally",
+          "code": "terraform plan -target=<resource>\n# Debug specific resources",
+          "when": "Debug locally"
+        },
+        {
+          "approach": "Start fresh run",
+          "code": "# In TFC UI: Actions > Start new run\n# Choose plan type: Plan only, Plan and apply",
+          "when": "Retry run"
+        }
+      ]
+    }
+  ]
+}

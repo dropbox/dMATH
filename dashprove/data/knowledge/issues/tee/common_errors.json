@@ -1,0 +1,135 @@
+{
+  "tool": "tee",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot open.*for writing",
+      "message": "Cannot write to file",
+      "cause": "Insufficient permissions for output file",
+      "solutions": [
+        {
+          "approach": "Sudo with tee",
+          "code": "echo 'data' | sudo tee /etc/config.conf",
+          "when": "Write protected file"
+        },
+        {
+          "approach": "Append with sudo",
+          "code": "echo 'line' | sudo tee -a /etc/hosts",
+          "when": "Append to protected"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la output_file",
+          "when": "Debug access"
+        }
+      ]
+    },
+    {
+      "id": "append_mode",
+      "pattern": "append|overwrite|add to|keep existing",
+      "message": "Want to append instead of overwrite",
+      "cause": "Default tee overwrites",
+      "solutions": [
+        {
+          "approach": "Append mode",
+          "code": "command | tee -a logfile.txt",
+          "when": "Add to file"
+        },
+        {
+          "approach": "Overwrite (default)",
+          "code": "command | tee logfile.txt",
+          "when": "Replace file"
+        }
+      ]
+    },
+    {
+      "id": "multiple_files",
+      "pattern": "multiple files|several outputs|many files",
+      "message": "Write to multiple files",
+      "cause": "Need to output to multiple destinations",
+      "solutions": [
+        {
+          "approach": "Multiple args",
+          "code": "command | tee file1.txt file2.txt file3.txt",
+          "when": "Multiple files"
+        },
+        {
+          "approach": "File and stdout",
+          "code": "command | tee output.log  # Also shows on screen",
+          "when": "Log and display"
+        },
+        {
+          "approach": "Process substitution",
+          "code": "command | tee >(gzip > file.gz) | other_command",
+          "when": "Process outputs"
+        }
+      ]
+    },
+    {
+      "id": "ignore_interrupt",
+      "pattern": "interrupt|SIGINT|Ctrl-C|ignore signals",
+      "message": "tee exits on interrupt",
+      "cause": "Signal handling",
+      "solutions": [
+        {
+          "approach": "Ignore interrupt",
+          "code": "command | tee -i output.log",
+          "when": "Continue on Ctrl-C"
+        },
+        {
+          "approach": "Trap signals",
+          "code": "trap '' INT; command | tee output.log",
+          "when": "Shell level"
+        }
+      ]
+    },
+    {
+      "id": "no_output",
+      "pattern": "no output|empty|not showing|silent",
+      "message": "Output not appearing",
+      "cause": "Buffering or redirect issues",
+      "solutions": [
+        {
+          "approach": "Unbuffer",
+          "code": "unbuffer command | tee output.log\nstdbuf -oL command | tee output.log",
+          "when": "Line buffered"
+        },
+        {
+          "approach": "Force flush",
+          "code": "script -q /dev/null command | tee output.log",
+          "when": "PTY needed"
+        },
+        {
+          "approach": "Check pipe",
+          "code": "command 2>&1 | tee output.log  # Include stderr",
+          "when": "Capture all"
+        }
+      ]
+    },
+    {
+      "id": "stderr_handling",
+      "pattern": "stderr|error output|both outputs",
+      "message": "Want to capture stderr too",
+      "cause": "tee only handles stdin by default",
+      "solutions": [
+        {
+          "approach": "Redirect stderr",
+          "code": "command 2>&1 | tee output.log",
+          "when": "Merge outputs"
+        },
+        {
+          "approach": "Separate files",
+          "code": "command 2> >(tee stderr.log) | tee stdout.log",
+          "when": "Separate logs"
+        },
+        {
+          "approach": "Both with bash",
+          "code": "command > >(tee stdout.log) 2> >(tee stderr.log >&2)",
+          "when": "Full control"
+        }
+      ]
+    }
+  ]
+}

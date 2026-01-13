@@ -1,0 +1,175 @@
+// USL Standard Library: Temporal Logic
+// Patterns for specifying system behavior over time
+// Compiles to TLA+ for model checking
+
+// =============================================================================
+// Core State Types
+// =============================================================================
+
+// System state at a point in time
+type State = {
+    time: Int,
+    active: Bool
+}
+
+// Trace: sequence of states
+type Trace = {
+    length: Int
+}
+
+// Process with state and enabled actions
+type Process = {
+    id: Int,
+    enabled: Bool,
+    in_critical: Bool
+}
+
+// Node in a computation graph
+type Node = {
+    id: Int,
+    ready: Bool
+}
+
+// =============================================================================
+// Safety Properties (Always)
+// Something bad never happens
+// =============================================================================
+
+// Type safety: values always within bounds
+temporal type_safety {
+    always(all_in_bounds == true)
+}
+
+// Mutual exclusion: at most one process in critical section
+temporal mutex {
+    always(critical_section_count <= 1)
+}
+
+// No deadlock: some action is always enabled
+temporal no_deadlock {
+    always(exists p: Process . p.enabled == true)
+}
+
+// Invariant preservation
+temporal invariant_preserved {
+    always(invariant_holds == true)
+}
+
+// Bounded resource usage
+temporal bounded_resources {
+    always(resource_count <= max_resources)
+}
+
+// No buffer overflow
+temporal no_overflow {
+    always(buffer_size <= buffer_capacity)
+}
+
+// =============================================================================
+// Liveness Properties (Eventually)
+// Something good eventually happens
+// =============================================================================
+
+// Termination: execution eventually completes
+temporal termination {
+    eventually(is_terminal == true)
+}
+
+// Progress: if a request is made, it's eventually served
+temporal request_eventually_served {
+    always(eventually(request_served == true))
+}
+
+// Fairness: every enabled action eventually executes
+temporal weak_fairness {
+    forall p: Process .
+        always(eventually(p.enabled == true))
+}
+
+// Eventual consistency
+temporal eventual_consistency {
+    eventually(all_replicas_consistent == true)
+}
+
+// =============================================================================
+// Leads-To Properties (~>)
+// If something happens, something else eventually follows
+// =============================================================================
+
+// Request-response: request leads to response
+temporal request_response {
+    request_made ~> response_received
+}
+
+// Checkpoint guarantee: modification leads to checkpoint
+temporal checkpoint_guarantee {
+    state_modified ~> checkpoint_reached
+}
+
+// Lock acquisition: waiting leads to holding
+temporal lock_acquired {
+    waiting_for_lock ~> holding_lock
+}
+
+// Message delivery: sent leads to delivered
+temporal message_delivered {
+    message_sent ~> message_received
+}
+
+// Recovery: failure leads to recovery
+temporal recovery_guarantee {
+    node_failed ~> node_recovered
+}
+
+// =============================================================================
+// DashFlow Execution Properties
+// =============================================================================
+
+// Graph execution makes progress
+temporal execution_progress {
+    always(eventually(progress_made == true))
+}
+
+// Checkpoints are reachable from any state
+temporal checkpoint_reachable {
+    always(eventually(at_checkpoint == true))
+}
+
+// Time travel safety: cursor always valid
+temporal cursor_valid {
+    always(valid_cursor == true)
+}
+
+// Event ordering: causal consistency
+temporal causal_consistency {
+    always(events_ordered == true)
+}
+
+// Fault tolerance: node failure doesn't halt system
+temporal fault_tolerant {
+    node_failure ~> system_recovered
+}
+
+// =============================================================================
+// Distributed System Properties
+// =============================================================================
+
+// Consensus: all nodes eventually agree
+temporal consensus {
+    eventually(all_agreed == true)
+}
+
+// Leader election: eventually exactly one leader
+temporal unique_leader {
+    eventually(exactly_one_leader == true)
+}
+
+// Consistent snapshots: snapshot captures consistent state
+temporal consistent_snapshot {
+    snapshot_taken ~> snapshot_consistent
+}
+
+// Total ordering: all messages seen in same order
+temporal total_order {
+    always(total_order_preserved == true)
+}

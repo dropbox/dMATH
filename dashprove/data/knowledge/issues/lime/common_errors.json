@@ -1,0 +1,120 @@
+{
+  "tool": "lime",
+  "version": "0.2.0.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "predict_fn_error",
+      "pattern": "(predict.*function|classifier_fn|probability)",
+      "message": "Prediction function format error",
+      "cause": "LIME expects specific prediction function signature",
+      "solutions": [
+        {
+          "approach": "Use predict_proba for classification",
+          "code": "explainer = LimeTabularExplainer(\n    training_data=X_train,\n    feature_names=feature_names,\n    class_names=['negative', 'positive'],\n    mode='classification'\n)\nexp = explainer.explain_instance(x, model.predict_proba)",
+          "when": "Classification task"
+        },
+        {
+          "approach": "Use predict for regression",
+          "code": "explainer = LimeTabularExplainer(\n    training_data=X_train,\n    feature_names=feature_names,\n    mode='regression'\n)\nexp = explainer.explain_instance(x, model.predict)",
+          "when": "Regression task"
+        },
+        {
+          "approach": "Wrap complex model",
+          "code": "def predict_fn(inputs):\n    # Handle any preprocessing\n    return model.predict_proba(inputs)\nexp = explainer.explain_instance(x, predict_fn)",
+          "when": "Model needs preprocessing"
+        }
+      ]
+    },
+    {
+      "id": "shape_mismatch",
+      "pattern": "(shape|dimension|array)",
+      "message": "Input shape mismatch",
+      "cause": "Instance shape doesn't match training data",
+      "solutions": [
+        {
+          "approach": "Flatten instance",
+          "code": "# Ensure 1D array for single instance\nexp = explainer.explain_instance(x.flatten(), model.predict_proba)",
+          "when": "Instance has wrong shape"
+        },
+        {
+          "approach": "Check training data shape",
+          "code": "print(f'Training shape: {X_train.shape}')\nprint(f'Instance shape: {x.shape}')\n# Should be (n_samples, n_features) and (n_features,)",
+          "when": "Debugging shape issues"
+        }
+      ]
+    },
+    {
+      "id": "categorical_encoding",
+      "pattern": "(categorical|one.*hot|encoding)",
+      "message": "Categorical feature handling error",
+      "cause": "Categorical features need proper specification",
+      "solutions": [
+        {
+          "approach": "Specify categorical features",
+          "code": "explainer = LimeTabularExplainer(\n    X_train,\n    feature_names=feature_names,\n    categorical_features=[0, 3, 5],  # Indices of categorical cols\n    categorical_names={\n        0: ['cat1', 'cat2'],\n        3: ['low', 'medium', 'high']\n    }\n)",
+          "when": "Have categorical features"
+        },
+        {
+          "approach": "Use discretizer",
+          "code": "explainer = LimeTabularExplainer(\n    X_train,\n    feature_names=feature_names,\n    discretize_continuous=True,\n    discretizer='quartile'\n)",
+          "when": "Want to discretize continuous"
+        }
+      ]
+    },
+    {
+      "id": "num_samples_error",
+      "pattern": "(num_samples|samples|perturbations)",
+      "message": "Insufficient samples for stable explanation",
+      "cause": "Too few perturbation samples",
+      "solutions": [
+        {
+          "approach": "Increase samples",
+          "code": "exp = explainer.explain_instance(\n    x, model.predict_proba,\n    num_samples=5000  # Default is 5000\n)",
+          "when": "Explanations are unstable"
+        },
+        {
+          "approach": "Reduce features",
+          "code": "exp = explainer.explain_instance(\n    x, model.predict_proba,\n    num_features=10  # Only explain top 10\n)",
+          "when": "Many features causing issues"
+        }
+      ]
+    },
+    {
+      "id": "image_explainer_error",
+      "pattern": "(LimeImageExplainer|segmentation|superpixel)",
+      "message": "Image explainer error",
+      "cause": "Image format or segmentation issue",
+      "solutions": [
+        {
+          "approach": "Check image format",
+          "code": "from lime.lime_image import LimeImageExplainer\nexplainer = LimeImageExplainer()\n# Image should be (H, W, C) with values in [0, 1] or [0, 255]\nexp = explainer.explain_instance(\n    image.astype('double'),\n    model.predict,\n    top_labels=5,\n    hide_color=0,\n    num_samples=1000\n)",
+          "when": "Using image explainer"
+        },
+        {
+          "approach": "Custom segmentation",
+          "code": "from skimage.segmentation import quickshift\nexplainer = LimeImageExplainer()\nexp = explainer.explain_instance(\n    image,\n    classifier_fn,\n    segmentation_fn=lambda x: quickshift(x, kernel_size=4, ratio=0.2)\n)",
+          "when": "Default segmentation poor"
+        }
+      ]
+    },
+    {
+      "id": "text_explainer_error",
+      "pattern": "(LimeTextExplainer|text|bow)",
+      "message": "Text explainer error",
+      "cause": "Text preprocessing or model compatibility issue",
+      "solutions": [
+        {
+          "approach": "Set up text explainer",
+          "code": "from lime.lime_text import LimeTextExplainer\nexplainer = LimeTextExplainer(class_names=['negative', 'positive'])\n\ndef predict_proba(texts):\n    # Texts is list of strings\n    vectorized = vectorizer.transform(texts)\n    return model.predict_proba(vectorized)\n\nexp = explainer.explain_instance(text, predict_proba)",
+          "when": "Using text explainer"
+        },
+        {
+          "approach": "Handle preprocessing",
+          "code": "def predict_proba(texts):\n    # Handle full pipeline\n    processed = [preprocess(t) for t in texts]\n    return model.predict_proba(processed)\nexp = explainer.explain_instance(text, predict_proba, num_features=10)",
+          "when": "Model has preprocessing"
+        }
+      ]
+    }
+  ]
+}

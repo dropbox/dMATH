@@ -1,0 +1,46 @@
+// Bisimulation specification for Claude Code implementations
+// Verifies that claude-code-rs behaves equivalently to claude-code
+
+bisimulation agent_parity {
+    oracle: "claude-code"
+    subject: "claude-code-rs"
+
+    // Properties that must be equivalent
+    equivalent on {
+        api_request_format,
+        tool_call_sequence,
+        final_output
+    }
+
+    // Allowed tolerances for non-deterministic aspects
+    tolerance {
+        timing: 10%,
+        semantic_similarity: 0.90
+    }
+}
+
+// Property: API requests have identical structure
+property api_format_matches {
+    forall request: ApiRequest .
+        request.oracle.endpoint == request.subject.endpoint and
+        request.oracle.method == request.subject.method and
+        request.oracle.body.model == request.subject.body.model and
+        request.oracle.body.tools == request.subject.body.tools
+}
+
+// Property: Tool calls occur in same order with same arguments
+property tool_sequence_matches {
+    forall trace: ExecutionTrace .
+        let oracle_tools = extract_tool_calls(trace.oracle) in
+        let subject_tools = extract_tool_calls(trace.subject) in
+        length(oracle_tools) == length(subject_tools) and
+        forall i: Int . 0 <= i < length(oracle_tools) =>
+            oracle_tools[i].name == subject_tools[i].name and
+            oracle_tools[i].arguments == subject_tools[i].arguments
+}
+
+// Property: Final output is semantically equivalent
+semantic_property output_equivalent {
+    forall trace: ExecutionTrace .
+        semantic_similarity(trace.oracle.output, trace.subject.output) >= 0.90
+}

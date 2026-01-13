@@ -1,0 +1,191 @@
+{
+  "tool": "ldd",
+  "version": "2.38",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_found",
+      "pattern": "not found|cannot find",
+      "message": "Shared library not found",
+      "cause": "Library not in search path",
+      "solutions": [
+        {
+          "approach": "Set library path",
+          "code": "export LD_LIBRARY_PATH=/custom/lib:$LD_LIBRARY_PATH\nldd ./program",
+          "when": "Library in custom location"
+        },
+        {
+          "approach": "Install library",
+          "code": "sudo apt install libfoo-dev",
+          "when": "Library not installed"
+        },
+        {
+          "approach": "Update ldconfig",
+          "code": "sudo ldconfig\n# Or add to /etc/ld.so.conf.d/",
+          "when": "Newly installed library"
+        },
+        {
+          "approach": "Find the library",
+          "code": "find /usr -name 'libfoo*' 2>/dev/null",
+          "when": "Locate existing library"
+        }
+      ]
+    },
+    {
+      "id": "not_a_dynamic_executable",
+      "pattern": "not a dynamic executable|statically linked",
+      "message": "Not a dynamic executable",
+      "cause": "Static binary or not an ELF executable",
+      "solutions": [
+        {
+          "approach": "Check file type",
+          "code": "file ./program",
+          "when": "Verify executable type"
+        },
+        {
+          "approach": "Static is OK",
+          "code": "# Static binaries don't need shared libraries\n# They include all code",
+          "when": "Intentionally static"
+        },
+        {
+          "approach": "Check architecture",
+          "code": "file ./program  # Should match system arch",
+          "when": "Cross-compiled binary"
+        }
+      ]
+    },
+    {
+      "id": "version_mismatch",
+      "pattern": "version.*not found|GLIBC.*not found",
+      "message": "Library version mismatch",
+      "cause": "Binary needs newer library version",
+      "solutions": [
+        {
+          "approach": "Check GLIBC version",
+          "code": "ldd --version\n/lib/x86_64-linux-gnu/libc.so.6  # Shows version",
+          "when": "Check system GLIBC"
+        },
+        {
+          "approach": "Rebuild on target",
+          "code": "# Build binary on same OS version as deployment target",
+          "when": "Forward compatibility issue"
+        },
+        {
+          "approach": "Use container",
+          "code": "docker run --rm -v $PWD:/app old_distro ldd /app/program",
+          "when": "Need older GLIBC"
+        }
+      ]
+    },
+    {
+      "id": "security_warning",
+      "pattern": "security|untrusted",
+      "message": "Security warning about ldd",
+      "cause": "ldd can execute code in the binary",
+      "solutions": [
+        {
+          "approach": "Use objdump instead",
+          "code": "objdump -p ./program | grep NEEDED",
+          "when": "Untrusted binary"
+        },
+        {
+          "approach": "Use readelf",
+          "code": "readelf -d ./program | grep NEEDED",
+          "when": "Safe alternative"
+        },
+        {
+          "approach": "Sandboxed ldd",
+          "code": "# Run in container or VM for untrusted binaries",
+          "when": "Need full ldd output safely"
+        }
+      ]
+    },
+    {
+      "id": "missing_interpreter",
+      "pattern": "ld-linux.*not found|interpreter",
+      "message": "Dynamic linker not found",
+      "cause": "Wrong or missing dynamic linker",
+      "solutions": [
+        {
+          "approach": "Check interpreter",
+          "code": "readelf -l ./program | grep interpreter",
+          "when": "See what's expected"
+        },
+        {
+          "approach": "Cross-compiled binary",
+          "code": "# May need sysroot from target system",
+          "when": "Different platform"
+        },
+        {
+          "approach": "Set interpreter path",
+          "code": "patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 ./program",
+          "when": "Fix interpreter path"
+        }
+      ]
+    },
+    {
+      "id": "circular_dependency",
+      "pattern": "circular|recursive",
+      "message": "Circular library dependency",
+      "cause": "Libraries depend on each other",
+      "solutions": [
+        {
+          "approach": "Check dependency chain",
+          "code": "ldd -v ./program  # Verbose shows dependency chain",
+          "when": "Debug dependencies"
+        },
+        {
+          "approach": "Use lddtree",
+          "code": "lddtree ./program  # Shows tree structure",
+          "when": "Better visualization"
+        }
+      ]
+    },
+    {
+      "id": "rpath_issues",
+      "pattern": "RPATH|RUNPATH",
+      "message": "RPATH/RUNPATH configuration issues",
+      "cause": "Binary has embedded library paths",
+      "solutions": [
+        {
+          "approach": "Check RPATH",
+          "code": "readelf -d ./program | grep -E 'RPATH|RUNPATH'",
+          "when": "See embedded paths"
+        },
+        {
+          "approach": "Modify RPATH",
+          "code": "patchelf --set-rpath '/custom/lib:$ORIGIN/../lib' ./program",
+          "when": "Need to change paths"
+        },
+        {
+          "approach": "Remove RPATH",
+          "code": "patchelf --remove-rpath ./program",
+          "when": "Want system paths only"
+        }
+      ]
+    },
+    {
+      "id": "symbol_undefined",
+      "pattern": "undefined symbol|undefined reference",
+      "message": "Undefined symbol error",
+      "cause": "Library found but missing symbol",
+      "solutions": [
+        {
+          "approach": "Check symbol in library",
+          "code": "nm -D /path/to/libfoo.so | grep symbol_name",
+          "when": "Verify symbol exists"
+        },
+        {
+          "approach": "Wrong library version",
+          "code": "# Install correct version of library",
+          "when": "API changed between versions"
+        },
+        {
+          "approach": "Symbol visibility",
+          "code": "# Library may not export symbol\n# Check with: objdump -T libfoo.so",
+          "when": "Symbol not exported"
+        }
+      ]
+    }
+  ]
+}

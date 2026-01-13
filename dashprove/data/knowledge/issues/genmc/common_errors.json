@@ -1,0 +1,186 @@
+{
+  "tool": "genmc",
+  "version": "0.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "data_race",
+      "pattern": "Data race",
+      "message": "Data race detected",
+      "cause": "Non-atomic concurrent memory access",
+      "solutions": [
+        {
+          "approach": "Use atomics",
+          "code": "atomic_int x;\natomic_store(&x, 1);",
+          "when": "Need atomic operations"
+        },
+        {
+          "approach": "Add synchronization",
+          "code": "pthread_mutex_lock(&m);",
+          "when": "Need mutual exclusion"
+        },
+        {
+          "approach": "Mark as intentional",
+          "code": "__VERIFIER_atomic_begin();\n// racy access\n__VERIFIER_atomic_end();",
+          "when": "Benign race"
+        }
+      ]
+    },
+    {
+      "id": "assertion_violation",
+      "pattern": "Assertion",
+      "message": "Assertion violation",
+      "cause": "assert() failed under some execution",
+      "solutions": [
+        {
+          "approach": "Examine execution",
+          "code": "genmc --print-error-trace program.c",
+          "when": "Need to understand failure"
+        },
+        {
+          "approach": "Check memory model",
+          "code": "genmc -mo=rc11 program.c",
+          "when": "Weak memory effects"
+        },
+        {
+          "approach": "Add barriers",
+          "code": "atomic_thread_fence(memory_order_seq_cst);",
+          "when": "Need ordering"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory error",
+      "message": "Memory safety violation",
+      "cause": "Invalid memory access",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "// Ensure array index in bounds",
+          "when": "Buffer overflow"
+        },
+        {
+          "approach": "Check null",
+          "code": "if (ptr != NULL) { ... }",
+          "when": "Null dereference"
+        },
+        {
+          "approach": "Check lifetime",
+          "code": "// Don't access freed memory",
+          "when": "Use after free"
+        }
+      ]
+    },
+    {
+      "id": "liveness_violation",
+      "pattern": "liveness",
+      "message": "Liveness violation",
+      "cause": "Program does not terminate or progress",
+      "solutions": [
+        {
+          "approach": "Check loops",
+          "code": "// Ensure loop termination",
+          "when": "Infinite loop"
+        },
+        {
+          "approach": "Check blocking",
+          "code": "// Ensure threads don't block forever",
+          "when": "Deadlock or livelock"
+        },
+        {
+          "approach": "Add fairness",
+          "code": "genmc -check-liveness -fair program.c",
+          "when": "Need fairness assumption"
+        }
+      ]
+    },
+    {
+      "id": "unsupported",
+      "pattern": "unsupported",
+      "message": "Unsupported construct",
+      "cause": "GenMC doesn't support this feature",
+      "solutions": [
+        {
+          "approach": "Check C11 atomics",
+          "code": "// Use C11 atomic operations",
+          "when": "Using non-standard atomics"
+        },
+        {
+          "approach": "Simplify code",
+          "code": "// Remove unsupported system calls",
+          "when": "Complex syscalls"
+        },
+        {
+          "approach": "Use stubs",
+          "code": "// Provide stub implementations",
+          "when": "Library functions unsupported"
+        }
+      ]
+    },
+    {
+      "id": "memory_model",
+      "pattern": "memory model",
+      "message": "Memory model issue",
+      "cause": "Memory model semantics problem",
+      "solutions": [
+        {
+          "approach": "Specify memory model",
+          "code": "genmc -mo=imm program.c  # or rc11, tso",
+          "when": "Wrong default model"
+        },
+        {
+          "approach": "Use SC atomics",
+          "code": "atomic_store_explicit(&x, 1, memory_order_seq_cst);",
+          "when": "Relaxed model causing issues"
+        }
+      ]
+    },
+    {
+      "id": "state_explosion",
+      "pattern": "exploration",
+      "message": "State space exploration issue",
+      "cause": "Too many executions to explore",
+      "solutions": [
+        {
+          "approach": "Use bounds",
+          "code": "genmc -unroll=5 program.c",
+          "when": "Loops cause explosion"
+        },
+        {
+          "approach": "Reduce threads",
+          "code": "// Fewer threads in test",
+          "when": "Many threads"
+        },
+        {
+          "approach": "Partial order reduction",
+          "code": "// GenMC uses optimal DPOR",
+          "when": "Already using DPOR"
+        }
+      ]
+    },
+    {
+      "id": "compile_error",
+      "pattern": "compile",
+      "message": "Compilation error",
+      "cause": "GenMC cannot compile the program",
+      "solutions": [
+        {
+          "approach": "Check Clang version",
+          "code": "# GenMC requires specific Clang version",
+          "when": "Clang compatibility"
+        },
+        {
+          "approach": "Include headers",
+          "code": "#include <stdatomic.h>\n#include <pthread.h>",
+          "when": "Missing headers"
+        },
+        {
+          "approach": "Fix syntax",
+          "code": "// Ensure valid C11 code",
+          "when": "Syntax error"
+        }
+      ]
+    }
+  ]
+}

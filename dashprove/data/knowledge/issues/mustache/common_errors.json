@@ -1,0 +1,145 @@
+{
+  "tool": "mustache",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_variable",
+      "pattern": "undefined|null|empty output|variable not rendered",
+      "message": "Variable not found in context",
+      "cause": "Variable name doesn't exist in data object or is nested incorrectly",
+      "solutions": [
+        {
+          "approach": "Check data structure",
+          "code": "// Template: {{user.name}}\n// Data must be: { user: { name: 'John' } }",
+          "when": "Nested path mismatch"
+        },
+        {
+          "approach": "Debug context",
+          "code": "console.log(JSON.stringify(view, null, 2));\nconst output = Mustache.render(template, view);",
+          "when": "Unexpected empty output"
+        },
+        {
+          "approach": "Use sections for optionals",
+          "code": "{{#user}}Hello {{name}}{{/user}}{{^user}}Guest{{/user}}",
+          "when": "Handle missing values"
+        }
+      ]
+    },
+    {
+      "id": "html_escaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML|XSS",
+      "message": "HTML content is escaped",
+      "cause": "Mustache escapes HTML by default using double braces",
+      "solutions": [
+        {
+          "approach": "Use triple braces",
+          "code": "{{{rawHtml}}} <!-- unescaped -->\n{{rawHtml}}   <!-- escaped -->",
+          "when": "Trusted HTML"
+        },
+        {
+          "approach": "Use ampersand syntax",
+          "code": "{{&rawHtml}} <!-- also unescaped -->",
+          "when": "Alternative syntax"
+        },
+        {
+          "approach": "Keep escaping",
+          "code": "{{userInput}} <!-- safe for untrusted content -->",
+          "when": "Security required"
+        }
+      ]
+    },
+    {
+      "id": "section_falsy",
+      "pattern": "section not rendered|false value|empty array|0 not showing",
+      "message": "Section not rendering for falsy values",
+      "cause": "Mustache sections don't render for falsy values (false, 0, '', [], null)",
+      "solutions": [
+        {
+          "approach": "Check for zero explicitly",
+          "code": "// In data: { count: 0, hasCount: true }\n{{#hasCount}}Count: {{count}}{{/hasCount}}",
+          "when": "Zero values"
+        },
+        {
+          "approach": "Use inverted section",
+          "code": "{{#items}}Has items{{/items}}\n{{^items}}No items{{/items}}",
+          "when": "Handle empty"
+        },
+        {
+          "approach": "Convert to string",
+          "code": "// Pre-process: { value: String(numericValue) }",
+          "when": "Numeric display"
+        }
+      ]
+    },
+    {
+      "id": "partial_not_found",
+      "pattern": "partial.*not.*found|undefined partial|missing partial",
+      "message": "Partial template not registered",
+      "cause": "Partial referenced but not passed to render function",
+      "solutions": [
+        {
+          "approach": "Pass partials object",
+          "code": "const partials = {\n  header: '<header>{{title}}</header>',\n  footer: '<footer>{{year}}</footer>'\n};\nMustache.render(template, data, partials);",
+          "when": "Inline partials"
+        },
+        {
+          "approach": "Load from files",
+          "code": "const partials = {};\nfs.readdirSync('./partials').forEach(f => {\n  partials[path.basename(f, '.mustache')] = fs.readFileSync(`./partials/${f}`, 'utf8');\n});",
+          "when": "File-based partials"
+        },
+        {
+          "approach": "Check partial syntax",
+          "code": "{{> header}}  <!-- partial reference -->\n{{> header }}  <!-- space matters in some versions -->",
+          "when": "Syntax issue"
+        }
+      ]
+    },
+    {
+      "id": "context_not_inherited",
+      "pattern": "parent context|outer variable|scope issue|cannot access",
+      "message": "Cannot access parent context in nested section",
+      "cause": "Sections change context; parent properties not directly accessible",
+      "solutions": [
+        {
+          "approach": "Use dot notation to current",
+          "code": "{{#items}}\n  {{.}}  <!-- current item -->\n{{/items}}",
+          "when": "Simple array"
+        },
+        {
+          "approach": "Include parent data in each item",
+          "code": "// Pre-process data:\nitems.forEach(item => item.parentTitle = data.title);",
+          "when": "Need parent values"
+        },
+        {
+          "approach": "Restructure template",
+          "code": "<!-- Instead of nested access, restructure: -->\n{{#wrapper}}\n  <h1>{{title}}</h1>\n  {{#items}}<li>{{name}}</li>{{/items}}\n{{/wrapper}}",
+          "when": "Template redesign"
+        }
+      ]
+    },
+    {
+      "id": "lambda_error",
+      "pattern": "function.*not called|lambda.*error|TypeError.*function",
+      "message": "Lambda function not working correctly",
+      "cause": "Mustache lambdas must follow specific signature and return string",
+      "solutions": [
+        {
+          "approach": "Correct lambda signature",
+          "code": "const view = {\n  wrapped: function() {\n    return function(text, render) {\n      return '<b>' + render(text) + '</b>';\n    };\n  }\n};\n// Template: {{#wrapped}}Hello{{/wrapped}}",
+          "when": "Section lambda"
+        },
+        {
+          "approach": "Simple value lambda",
+          "code": "const view = {\n  greeting: function() {\n    return 'Hello ' + this.name;\n  },\n  name: 'World'\n};\n// Template: {{greeting}}",
+          "when": "Value lambda"
+        },
+        {
+          "approach": "Debug lambda execution",
+          "code": "wrapped: function() {\n  return function(text, render) {\n    console.log('text:', text);\n    console.log('rendered:', render(text));\n    return render(text);\n  };\n}",
+          "when": "Debug"
+        }
+      ]
+    }
+  ]
+}

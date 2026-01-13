@@ -1,0 +1,158 @@
+{
+  "tool": "dd",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "wrong_device",
+      "pattern": "of=|if=|wrong.*device|destroyed",
+      "message": "Risk of overwriting wrong device",
+      "cause": "dd can destroy data with wrong output device",
+      "solutions": [
+        {
+          "approach": "Double-check device",
+          "code": "lsblk  # Verify device names\nfdisk -l  # List all disks\n# ALWAYS verify of= is correct!",
+          "when": "Before running dd"
+        },
+        {
+          "approach": "Triple check USB",
+          "code": "# For USB drives:\nlsblk -d  # List drives\n# Unplug USB, run again, compare\n# The disappeared device is your USB",
+          "when": "Writing to USB"
+        },
+        {
+          "approach": "Dry run",
+          "code": "# Use conv=notrunc,noerror and count=1 to test:\ndd if=/dev/zero of=/dev/sdX count=1 bs=1\n# Small test first",
+          "when": "Verify command"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot.*open|Operation not permitted",
+      "message": "Cannot access device or file",
+      "cause": "Need root for raw device access",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo dd if=image.iso of=/dev/sdb bs=4M status=progress",
+          "when": "Writing to device"
+        },
+        {
+          "approach": "Check file permissions",
+          "code": "ls -la /path/to/file",
+          "when": "File access issue"
+        }
+      ]
+    },
+    {
+      "id": "no_space",
+      "pattern": "No space left|out of space|write error",
+      "message": "Destination out of space",
+      "cause": "Output device/file too small",
+      "solutions": [
+        {
+          "approach": "Check sizes",
+          "code": "ls -lh input.img  # Source size\ndf -h /destination  # Available space",
+          "when": "Verify space"
+        },
+        {
+          "approach": "Compress",
+          "code": "dd if=/dev/sda bs=4M | gzip > disk.img.gz",
+          "when": "Compress output"
+        },
+        {
+          "approach": "Sparse image",
+          "code": "dd if=/dev/sda of=sparse.img bs=4M conv=sparse",
+          "when": "Skip zeros"
+        }
+      ]
+    },
+    {
+      "id": "slow_transfer",
+      "pattern": "slow|speed|bs=|block size",
+      "message": "Transfer is slow",
+      "cause": "Wrong block size",
+      "solutions": [
+        {
+          "approach": "Larger block size",
+          "code": "dd if=/dev/sda of=disk.img bs=4M status=progress\n# Common sizes: 512, 4K, 1M, 4M, 64M",
+          "when": "Speed up"
+        },
+        {
+          "approach": "Optimal for device",
+          "code": "# SSDs/fast storage: bs=4M or larger\n# Slow USB: bs=1M\n# Network: experiment with bs=64K to bs=1M",
+          "when": "Tune for device"
+        },
+        {
+          "approach": "Show progress",
+          "code": "dd if=in of=out bs=4M status=progress",
+          "when": "Monitor speed"
+        }
+      ]
+    },
+    {
+      "id": "sync_flush",
+      "pattern": "sync|flush|cache|incomplete",
+      "message": "Transfer may not be complete",
+      "cause": "Data in cache not flushed",
+      "solutions": [
+        {
+          "approach": "Sync at end",
+          "code": "dd if=in of=out bs=4M conv=fsync\n# Or run sync after:\ndd ...; sync",
+          "when": "Ensure complete"
+        },
+        {
+          "approach": "Direct I/O",
+          "code": "dd if=in of=out bs=4M oflag=direct\n# Bypasses cache",
+          "when": "Skip cache"
+        },
+        {
+          "approach": "For USB",
+          "code": "dd if=image.iso of=/dev/sdb bs=4M conv=fdatasync\nsync\nsudo eject /dev/sdb",
+          "when": "Safe USB write"
+        }
+      ]
+    },
+    {
+      "id": "partial_read",
+      "pattern": "partial read|short read|count|skip",
+      "message": "Read fewer bytes than expected",
+      "cause": "EOF reached or device smaller than expected",
+      "solutions": [
+        {
+          "approach": "Check input size",
+          "code": "blockdev --getsize64 /dev/sdb",
+          "when": "Device size"
+        },
+        {
+          "approach": "Limit count",
+          "code": "dd if=/dev/urandom of=random.bin bs=1M count=100\n# Creates exactly 100MB",
+          "when": "Specific size"
+        },
+        {
+          "approach": "Skip and seek",
+          "code": "dd if=file of=out bs=512 skip=2048\n# Skip first 2048 blocks\ndd if=in of=file bs=512 seek=2048\n# Start writing at block 2048",
+          "when": "Offset operations"
+        }
+      ]
+    },
+    {
+      "id": "error_handling",
+      "pattern": "error|read error|bad sector|conv=",
+      "message": "Handling read errors",
+      "cause": "Bad sectors or device errors",
+      "solutions": [
+        {
+          "approach": "Continue on error",
+          "code": "dd if=/dev/sda of=disk.img bs=4K conv=noerror,sync\n# noerror: continue on read error\n# sync: pad with zeros on error",
+          "when": "Failing disk"
+        },
+        {
+          "approach": "Use ddrescue",
+          "code": "ddrescue /dev/sda disk.img rescue.log\n# Better for recovery",
+          "when": "Data recovery"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "tool": "kafka",
+  "version": "3.7.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "broker_not_available",
+      "pattern": "LEADER_NOT_AVAILABLE|NOT_LEADER_FOR_PARTITION",
+      "message": "Leader not available for partition",
+      "cause": "Kafka broker is down, leader election in progress, or partition has no leader",
+      "solutions": [
+        {
+          "approach": "Check broker health",
+          "code": "kafka-broker-api-versions.sh --bootstrap-server localhost:9092",
+          "when": "Need to verify broker is running"
+        },
+        {
+          "approach": "Wait for leader election",
+          "code": "// Configure retries in producer\nprops.put(ProducerConfig.RETRIES_CONFIG, 3);\nprops.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);",
+          "when": "Transient issue during leader election"
+        },
+        {
+          "approach": "Check partition assignment",
+          "code": "kafka-topics.sh --describe --topic my-topic --bootstrap-server localhost:9092",
+          "when": "Need to verify partition has assigned leader"
+        }
+      ]
+    },
+    {
+      "id": "consumer_group_rebalance",
+      "pattern": "Rebalance|REBALANCE_IN_PROGRESS|CommitFailedException",
+      "message": "Consumer group rebalancing",
+      "cause": "Consumer group membership changed, causing partition reassignment",
+      "solutions": [
+        {
+          "approach": "Increase session timeout",
+          "code": "props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000);\nprops.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);",
+          "when": "Consumer processing takes too long"
+        },
+        {
+          "approach": "Use static membership",
+          "code": "props.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, \"consumer-1\");",
+          "when": "Consumer restarts frequently"
+        },
+        {
+          "approach": "Implement cooperative rebalancing",
+          "code": "props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, CooperativeStickyAssignor.class.getName());",
+          "when": "Want to minimize rebalance impact"
+        }
+      ]
+    },
+    {
+      "id": "message_too_large",
+      "pattern": "MESSAGE_TOO_LARGE|RecordTooLargeException",
+      "message": "Message exceeds maximum size",
+      "cause": "Producer message exceeds broker's max.message.bytes or producer's max.request.size",
+      "solutions": [
+        {
+          "approach": "Increase broker limit",
+          "code": "# server.properties\nmessage.max.bytes=10485760\n# topic-specific\nkafka-configs.sh --alter --topic my-topic --add-config max.message.bytes=10485760",
+          "when": "Broker limit too restrictive"
+        },
+        {
+          "approach": "Increase producer limit",
+          "code": "props.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 10485760);",
+          "when": "Producer limit too restrictive"
+        },
+        {
+          "approach": "Compress messages",
+          "code": "props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, \"lz4\");",
+          "when": "Messages are compressible"
+        },
+        {
+          "approach": "Split large messages",
+          "code": "// Implement chunking logic in application",
+          "when": "Cannot increase limits"
+        }
+      ]
+    },
+    {
+      "id": "offset_out_of_range",
+      "pattern": "OFFSET_OUT_OF_RANGE|OffsetOutOfRangeException",
+      "message": "Consumer offset is no longer valid",
+      "cause": "Consumer offset points to data that was deleted due to retention policy",
+      "solutions": [
+        {
+          "approach": "Reset to earliest",
+          "code": "props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, \"earliest\");",
+          "when": "Want to start from oldest available message"
+        },
+        {
+          "approach": "Reset to latest",
+          "code": "props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, \"latest\");",
+          "when": "Want to skip missed messages"
+        },
+        {
+          "approach": "Reset manually",
+          "code": "kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group my-group --reset-offsets --to-earliest --topic my-topic --execute",
+          "when": "Need explicit control over offset reset"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|UNKNOWN_SERVER_ERROR|NetworkException",
+      "message": "Cannot connect to Kafka broker",
+      "cause": "Broker is down, network issue, or incorrect bootstrap servers",
+      "solutions": [
+        {
+          "approach": "Verify bootstrap servers",
+          "code": "props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, \"broker1:9092,broker2:9092\");",
+          "when": "Bootstrap server configuration may be wrong"
+        },
+        {
+          "approach": "Check network connectivity",
+          "code": "nc -zv kafka-broker 9092",
+          "when": "Firewall or network issue suspected"
+        },
+        {
+          "approach": "Verify advertised listeners",
+          "code": "# server.properties\nadvertised.listeners=PLAINTEXT://external-hostname:9092",
+          "when": "Broker advertises wrong address"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failure",
+      "pattern": "SASL authentication failed|SaslAuthenticationException",
+      "message": "SASL authentication failed",
+      "cause": "Invalid credentials, wrong SASL mechanism, or misconfigured security",
+      "solutions": [
+        {
+          "approach": "Verify credentials",
+          "code": "props.put(SaslConfigs.SASL_JAAS_CONFIG, \"org.apache.kafka.common.security.plain.PlainLoginModule required username=\\\"user\\\" password=\\\"pass\\\";\");",
+          "when": "Credentials may be incorrect"
+        },
+        {
+          "approach": "Check SASL mechanism",
+          "code": "props.put(SaslConfigs.SASL_MECHANISM, \"SCRAM-SHA-256\");",
+          "when": "Client and broker mechanism mismatch"
+        },
+        {
+          "approach": "Enable debug logging",
+          "code": "export KAFKA_OPTS=\"-Djava.security.debug=gssloginconfig,configfile,configparser,logincontext\"",
+          "when": "Need more details about auth failure"
+        }
+      ]
+    },
+    {
+      "id": "serialization_error",
+      "pattern": "SerializationException|Failed to deserialize|Schema not found",
+      "message": "Message serialization/deserialization failed",
+      "cause": "Incompatible serializer/deserializer or schema registry issue",
+      "solutions": [
+        {
+          "approach": "Match serializers",
+          "code": "props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);\nprops.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);",
+          "when": "Producer and consumer use different serializers"
+        },
+        {
+          "approach": "Configure schema registry",
+          "code": "props.put(\"schema.registry.url\", \"http://schema-registry:8081\");",
+          "when": "Using Avro with schema registry"
+        },
+        {
+          "approach": "Handle poison pills",
+          "code": "// Implement ErrorHandlingDeserializer\nprops.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);",
+          "when": "Some messages have incompatible format"
+        }
+      ]
+    }
+  ]
+}

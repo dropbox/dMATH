@@ -1,0 +1,117 @@
+{
+  "tool": "which",
+  "version": "builtin",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "not found|no .* in|which:.*not found",
+      "message": "Command not found in PATH",
+      "cause": "Command not installed or not in PATH",
+      "solutions": [
+        {
+          "approach": "Check PATH",
+          "code": "echo $PATH\necho $PATH | tr ':' '\\n'",
+          "when": "Verify PATH"
+        },
+        {
+          "approach": "Find command",
+          "code": "sudo find / -name 'command' -type f 2>/dev/null\nlocate command",
+          "when": "Find binary"
+        },
+        {
+          "approach": "Install",
+          "code": "# Ubuntu: sudo apt install package\n# macOS: brew install package",
+          "when": "Not installed"
+        }
+      ]
+    },
+    {
+      "id": "alias_vs_binary",
+      "pattern": "alias|function|builtin|different.*result",
+      "message": "which shows binary but command behaves differently",
+      "cause": "Shell alias/function overriding binary",
+      "solutions": [
+        {
+          "approach": "Check all forms",
+          "code": "type command  # Shows all: alias, function, builtin, file\ntype -a command  # Show all matches",
+          "when": "Full check"
+        },
+        {
+          "approach": "Bypass alias",
+          "code": "\\command  # Bypass alias\ncommand command  # Bypass function/alias\n/full/path/to/command  # Use path directly",
+          "when": "Use binary"
+        },
+        {
+          "approach": "List aliases",
+          "code": "alias  # Show all aliases\nalias command  # Show specific alias",
+          "when": "Check aliases"
+        }
+      ]
+    },
+    {
+      "id": "multiple_versions",
+      "pattern": "multiple|wrong version|different.*version",
+      "message": "Multiple versions installed",
+      "cause": "Multiple binaries in PATH with same name",
+      "solutions": [
+        {
+          "approach": "Show all",
+          "code": "which -a command  # Show all matches in PATH\ntype -a command",
+          "when": "Find all"
+        },
+        {
+          "approach": "Check versions",
+          "code": "which python3\npython3 --version\n/usr/bin/python3 --version\n/usr/local/bin/python3 --version",
+          "when": "Compare versions"
+        },
+        {
+          "approach": "Reorder PATH",
+          "code": "export PATH=/preferred/path:$PATH",
+          "when": "Prefer version"
+        }
+      ]
+    },
+    {
+      "id": "builtin_commands",
+      "pattern": "builtin|shell builtin|cd|echo|pwd",
+      "message": "which fails for shell builtins",
+      "cause": "which only finds executables, not builtins",
+      "solutions": [
+        {
+          "approach": "Use type",
+          "code": "type cd  # Shows: cd is a shell builtin\ntype echo",
+          "when": "Check builtins"
+        },
+        {
+          "approach": "List builtins",
+          "code": "enable  # List shell builtins (bash)\nbuiltin  # zsh",
+          "when": "See all builtins"
+        }
+      ]
+    },
+    {
+      "id": "zsh_which",
+      "pattern": "zsh|reserved word|different output",
+      "message": "zsh which behaves differently",
+      "cause": "zsh has builtin which that differs from external",
+      "solutions": [
+        {
+          "approach": "Use external",
+          "code": "/usr/bin/which command  # Use external which",
+          "when": "Consistent behavior"
+        },
+        {
+          "approach": "Use whence",
+          "code": "whence -a command  # zsh native\nwhence -v command  # Verbose",
+          "when": "zsh native"
+        },
+        {
+          "approach": "Use type",
+          "code": "type command  # Works in both bash/zsh",
+          "when": "Portable"
+        }
+      ]
+    }
+  ]
+}

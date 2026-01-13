@@ -1,0 +1,166 @@
+{
+  "tool": "predator",
+  "version": "2023.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "error_detected",
+      "pattern": "error detected|UNSAFE",
+      "message": "Shape analysis found error",
+      "cause": "Predator detected memory/shape invariant violation",
+      "solutions": [
+        {
+          "approach": "View error trace",
+          "code": "predator --trace program.c",
+          "when": "Need to see violation"
+        },
+        {
+          "approach": "Check pointer operations",
+          "code": "// Review list/tree manipulations",
+          "when": "Shape corruption detected"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Predator found real memory bug",
+          "when": "Genuine shape error"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "memory leak|leaked memory",
+      "message": "Memory leak detected",
+      "cause": "Allocated memory not freed on some path",
+      "solutions": [
+        {
+          "approach": "Add free",
+          "code": "free(ptr); ptr = NULL;",
+          "when": "Missing deallocation"
+        },
+        {
+          "approach": "Track ownership",
+          "code": "// Ensure clear ownership semantics",
+          "when": "Ambiguous ownership"
+        },
+        {
+          "approach": "Use error paths",
+          "code": "if (error) { free(ptr); return; }",
+          "when": "Leak on error path"
+        }
+      ]
+    },
+    {
+      "id": "double_free",
+      "pattern": "double free|free.*already freed",
+      "message": "Double free detected",
+      "cause": "Same memory freed twice",
+      "solutions": [
+        {
+          "approach": "Null after free",
+          "code": "free(ptr); ptr = NULL;",
+          "when": "Prevent double free"
+        },
+        {
+          "approach": "Track state",
+          "code": "// Use flag to track allocation state",
+          "when": "Complex ownership"
+        }
+      ]
+    },
+    {
+      "id": "use_after_free",
+      "pattern": "use after free|accessing freed",
+      "message": "Use after free detected",
+      "cause": "Memory accessed after deallocation",
+      "solutions": [
+        {
+          "approach": "Reorder operations",
+          "code": "// Use data before free()",
+          "when": "Simple reordering fixes"
+        },
+        {
+          "approach": "Copy data",
+          "code": "local_copy = *ptr; free(ptr);",
+          "when": "Need data after free"
+        },
+        {
+          "approach": "Extend lifetime",
+          "code": "// Delay free until data not needed",
+          "when": "Lifetime too short"
+        }
+      ]
+    },
+    {
+      "id": "null_dereference",
+      "pattern": "null.*dereference|dereferencing NULL",
+      "message": "Null pointer dereference",
+      "cause": "Dereferencing pointer that may be NULL",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (ptr != NULL) { *ptr; }",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Check allocation",
+          "code": "ptr = malloc(size); if (!ptr) return;",
+          "when": "Malloc may fail"
+        }
+      ]
+    },
+    {
+      "id": "shape_unknown",
+      "pattern": "unknown shape|shape analysis failed",
+      "message": "Shape analysis inconclusive",
+      "cause": "Could not determine heap shape",
+      "solutions": [
+        {
+          "approach": "Simplify data structures",
+          "code": "// Use simpler list/tree patterns",
+          "when": "Complex shapes"
+        },
+        {
+          "approach": "Add annotations",
+          "code": "// Use Predator shape annotations",
+          "when": "Manual guidance needed"
+        }
+      ]
+    },
+    {
+      "id": "invalid_list",
+      "pattern": "invalid list|list invariant violated",
+      "message": "List invariant violation",
+      "cause": "Linked list shape corrupted",
+      "solutions": [
+        {
+          "approach": "Check list operations",
+          "code": "// Verify insert/delete maintain shape",
+          "when": "List manipulation bug"
+        },
+        {
+          "approach": "Initialize properly",
+          "code": "node->next = NULL;  // Clear on allocation",
+          "when": "Uninitialized pointers"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|TIMEOUT",
+      "message": "Analysis timed out",
+      "cause": "Shape fixpoint didn't converge",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "predator --timeout 600 program.c",
+          "when": "More time needed"
+        },
+        {
+          "approach": "Bound recursion",
+          "code": "// Limit recursive data structure depth",
+          "when": "Very deep structures"
+        }
+      ]
+    }
+  ]
+}

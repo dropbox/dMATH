@@ -1,0 +1,102 @@
+{
+  "tool": "ora",
+  "category": "terminal",
+  "common_errors": [
+    {
+      "id": "ora_v6_esm_only",
+      "pattern": "ERR_REQUIRE_ESM|not a function|ora is undefined",
+      "severity": "error",
+      "causes": [
+        "ora v6+ is ESM-only",
+        "Using require() instead of import",
+        "CommonJS project compatibility"
+      ],
+      "solutions": [
+        "v6+: import ora from 'ora'",
+        "Use v5.x for CommonJS: npm i ora@5",
+        "Or use dynamic import in CommonJS",
+        "Consider using cli-spinners + log-update for CJS"
+      ]
+    },
+    {
+      "id": "ora_spinner_not_showing",
+      "pattern": "spinner not visible|no animation|static text only",
+      "severity": "warning",
+      "causes": [
+        "Terminal doesn't support Unicode",
+        "Non-TTY environment (piped output)",
+        "isTTY check failing"
+      ],
+      "solutions": [
+        "ora shows static text in non-TTY by design",
+        "Use { isEnabled: true } to force spinner",
+        "Set spinner type: { spinner: 'line' } for ASCII",
+        "Check process.stdout.isTTY"
+      ]
+    },
+    {
+      "id": "ora_spinner_cleared",
+      "pattern": "spinner disappeared|text cleared|other output interfering",
+      "severity": "warning",
+      "causes": [
+        "console.log while spinner active",
+        "Other output overwriting spinner",
+        "Multiple spinners conflict"
+      ],
+      "solutions": [
+        "Don't console.log during spinner",
+        "Use spinner.info() or spinner.warn() instead",
+        "Stop spinner before other output",
+        "Use oraPromise() for cleaner async handling"
+      ]
+    },
+    {
+      "id": "ora_promise_error",
+      "pattern": "oraPromise.*error|spinner.*reject|unhandled rejection",
+      "severity": "error",
+      "causes": [
+        "Promise rejected during oraPromise",
+        "Error not handled properly",
+        "Spinner left in bad state"
+      ],
+      "solutions": [
+        "oraPromise auto-shows fail on reject",
+        "Provide failText option for custom message",
+        "Catch errors: oraPromise(p).catch(...)",
+        "Use try-catch with regular ora for more control"
+      ]
+    },
+    {
+      "id": "ora_ci_spinner",
+      "pattern": "spinner in CI|CI output messy|no TTY in CI",
+      "severity": "warning",
+      "causes": [
+        "CI environments usually non-TTY",
+        "Log output instead of spinner needed",
+        "ANSI codes in CI logs"
+      ],
+      "solutions": [
+        "ora automatically falls back to static in non-TTY",
+        "Use { discardStdin: false } if needed",
+        "Consider disabling in CI: ora({ isEnabled: !process.env.CI })",
+        "Use simple console.log in CI environments"
+      ]
+    },
+    {
+      "id": "ora_stream_issue",
+      "pattern": "spinner on wrong stream|stderr spinner|stream conflict",
+      "severity": "warning",
+      "causes": [
+        "Default is stdout, need stderr",
+        "Mixing stdout and spinner",
+        "Output redirection issues"
+      ],
+      "solutions": [
+        "Use { stream: process.stderr } option",
+        "Keep spinner on stderr, data on stdout",
+        "Allows piping: node script.js | other 2>&1",
+        "Use isEnabled: false when piping"
+      ]
+    }
+  ]
+}

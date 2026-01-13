@@ -1,0 +1,151 @@
+{
+  "id": "verus",
+  "name": "Verus",
+  "category": "rust_formal_verification",
+  "subcategory": "deductive_verifier",
+
+  "description": "Deductive verification tool for Rust with SMT-based proofs",
+  "long_description": "Verus is a tool for verifying the correctness of code written in Rust using SMT-based automated theorem proving. It extends Rust with specifications (preconditions, postconditions, invariants) and proof code that enables deductive verification. Verus targets systems software requiring mathematical correctness guarantees.",
+
+  "capabilities": [
+    "functional_correctness",
+    "memory_safety",
+    "arithmetic_properties",
+    "data_structure_invariants",
+    "termination_proofs",
+    "ghost_code",
+    "linear_types",
+    "quantifier_reasoning"
+  ],
+  "property_types": ["requires", "ensures", "invariant", "decreases", "proof"],
+  "input_languages": ["rust"],
+  "output_formats": ["proof", "counterexample", "smt_query"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/verus-lang/verus", "command": "git clone https://github.com/verus-lang/verus && cd verus && ./tools/get-z3.sh && source tools/activate && vargo build --release"}
+    ],
+    "dependencies": ["z3", "rust-nightly"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://verus-lang.github.io/verus/",
+    "tutorial": "https://verus-lang.github.io/verus/guide/",
+    "api_reference": "https://verus-lang.github.io/verus/verusdoc/",
+    "examples": "https://github.com/verus-lang/verus/tree/main/source/rust_verify/example"
+  },
+
+  "tactics": [
+    {
+      "name": "requires",
+      "description": "Specify function precondition",
+      "syntax": "requires(condition)",
+      "when_to_use": "To constrain valid function inputs",
+      "examples": ["fn foo(x: u32) requires x > 0 { ... }"]
+    },
+    {
+      "name": "ensures",
+      "description": "Specify function postcondition",
+      "syntax": "ensures(condition)",
+      "when_to_use": "To specify what function guarantees",
+      "examples": ["fn foo(x: u32) -> u32 ensures result > x { ... }"]
+    },
+    {
+      "name": "invariant",
+      "description": "Loop invariant",
+      "syntax": "invariant(condition)",
+      "when_to_use": "To help verify loops",
+      "examples": ["while i < n invariant i <= n { ... }"]
+    },
+    {
+      "name": "decreases",
+      "description": "Termination measure",
+      "syntax": "decreases(expression)",
+      "when_to_use": "To prove loop/recursion termination",
+      "examples": ["fn factorial(n: u32) decreases n { ... }"]
+    },
+    {
+      "name": "proof",
+      "description": "Ghost proof code block",
+      "syntax": "proof { ... }",
+      "when_to_use": "To add verification hints without runtime cost",
+      "examples": ["proof { assert(x * 2 == x + x); }"]
+    },
+    {
+      "name": "assert_by",
+      "description": "Assert with proof hint",
+      "syntax": "assert(P) by(tactic)",
+      "when_to_use": "When automatic proof needs guidance",
+      "examples": ["assert(P) by(bit_vector);", "assert(P) by(nonlinear_arith);"]
+    },
+    {
+      "name": "reveal",
+      "description": "Reveal opaque function definition",
+      "syntax": "reveal(function_name)",
+      "when_to_use": "When proof needs function body visible",
+      "examples": ["proof { reveal(my_opaque_fn); }"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "postcondition not satisfied",
+      "meaning": "Function doesn't guarantee its ensures clause",
+      "common_causes": ["Missing case in implementation", "Spec too strong", "Missing invariant"],
+      "fixes": ["Add missing case handling", "Weaken postcondition", "Add proof hints"]
+    },
+    {
+      "pattern": "precondition not satisfied",
+      "meaning": "Caller doesn't establish requires clause",
+      "common_causes": ["Missing check before call", "Caller spec too weak"],
+      "fixes": ["Add runtime check or assertion", "Strengthen caller's preconditions"]
+    },
+    {
+      "pattern": "cannot prove termination",
+      "meaning": "Verus can't verify loop/recursion terminates",
+      "common_causes": ["Missing decreases clause", "Non-obvious termination argument"],
+      "fixes": ["Add decreases clause", "Add proof of well-foundedness"]
+    },
+    {
+      "pattern": "assertion failed",
+      "meaning": "Intermediate assertion cannot be proven",
+      "common_causes": ["Missing lemma", "Need proof hints", "Actually false"],
+      "fixes": ["Add lemma call", "Use assert_by with tactic", "Check logic"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["theorem", "contract", "invariant"],
+    "cli_command": "dashprove verify --backend verus"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Handles large codebases with modular verification",
+    "memory_usage": "1-8GB typical"
+  },
+
+  "comparisons": {
+    "similar_tools": ["kani", "prusti", "creusot", "fstar"],
+    "advantages": [
+      "Full functional correctness proofs",
+      "Excellent for systems code (kernel, crypto)",
+      "Linear/affine type support",
+      "Modular verification scales well"
+    ],
+    "disadvantages": [
+      "Requires annotation effort",
+      "Nightly Rust dependency",
+      "Steeper learning curve than Kani"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.2024.12",
+    "last_updated": "2025-12-20",
+    "maintainer": "VMware Research / CMU",
+    "license": "MIT"
+  }
+}

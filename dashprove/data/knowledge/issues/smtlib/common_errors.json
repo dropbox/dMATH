@@ -1,0 +1,169 @@
+{
+  "tool": "smtlib",
+  "version": "2.6",
+  "last_updated": "2025-12-23",
+  "description": "SMT-LIB benchmark library for Satisfiability Modulo Theories solvers",
+  "errors": [
+    {
+      "id": "unknown_logic",
+      "pattern": "unknown logic|unsupported logic",
+      "message": "SMT solver doesn't support the specified logic",
+      "cause": "Logic declaration not recognized by solver",
+      "solutions": [
+        {
+          "approach": "Use standard logic name",
+          "code": "; Common logics:\n(set-logic QF_LIA)   ; Quantifier-free Linear Integer Arithmetic\n(set-logic QF_BV)    ; Quantifier-free Bitvectors\n(set-logic QF_UF)    ; Quantifier-free Uninterpreted Functions\n(set-logic ALL)      ; All supported theories",
+          "when": "Misspelled logic name"
+        },
+        {
+          "approach": "Check solver capabilities",
+          "code": "; Query solver capabilities\n(get-info :all-statistics)\n; Or check documentation for supported logics\n; Z3: QF_*, LIA, LRA, BV, FP, Arrays, etc.\n; CVC5: all standard + strings, sets, bags",
+          "when": "Solver doesn't support logic"
+        },
+        {
+          "approach": "Use subset logic",
+          "code": "; Use most specific logic for performance\n; QF_LIA instead of QF_LIRA if no reals\n; QF_BV instead of QF_ABV if no arrays\n(set-logic QF_AUFBV) ; Arrays + Uninterpreted + Bitvectors",
+          "when": "Need specific theory combination"
+        }
+      ]
+    },
+    {
+      "id": "sort_mismatch",
+      "pattern": "sort mismatch|type error|ill-sorted",
+      "message": "Sort/type mismatch in expression",
+      "cause": "Expression has wrong sort for context",
+      "solutions": [
+        {
+          "approach": "Check function signatures",
+          "code": "; Declare with correct sorts\n(declare-fun f (Int Int) Bool)\n(assert (f 1 2))   ; OK: returns Bool\n(assert (= (f 1 2) 3))  ; ERROR: Bool vs Int",
+          "when": "Function return type mismatch"
+        },
+        {
+          "approach": "Use correct literals",
+          "code": "; Sort-specific literals\n(assert (= x 5))      ; Int\n(assert (= y 5.0))    ; Real\n(assert (= z #b0101)) ; Bitvector\n(assert (= s \"hello\")) ; String",
+          "when": "Literal sort confusion"
+        },
+        {
+          "approach": "Check parametric sorts",
+          "code": "; Array sorts have parameters\n(declare-const a (Array Int Bool))\n(assert (select a 5))     ; Returns Bool\n(assert (= (store a 5 true) a)) ; OK",
+          "when": "Array element sort mismatch"
+        }
+      ]
+    },
+    {
+      "id": "quantifier_instantiation_timeout",
+      "pattern": "timeout.*quantifier|incomplete.*quantifier",
+      "message": "Solver timed out on quantified formula",
+      "cause": "Quantifier instantiation blowup or incompleteness",
+      "solutions": [
+        {
+          "approach": "Add triggers/patterns",
+          "code": "; Add patterns to guide instantiation\n(assert (forall ((x Int))\n  (! (=> (p x) (q (f x)))\n     :pattern ((f x)))))",
+          "when": "Solver instantiating too much"
+        },
+        {
+          "approach": "Use bounded quantification",
+          "code": "; Replace unbounded with bounded\n; Instead of: (forall ((x Int)) (p x))\n(assert (forall ((x Int))\n  (=> (and (<= 0 x) (< x 100)) (p x))))",
+          "when": "Infinite domain causing timeout"
+        },
+        {
+          "approach": "Try different solver/tactic",
+          "code": "; In Z3, try different tactics\n(check-sat-using (then simplify qe smt))\n; Or use mbqi (model-based quantifier instantiation)\n(set-option :smt.mbqi true)",
+          "when": "Default strategy failing"
+        }
+      ]
+    },
+    {
+      "id": "nonlinear_arithmetic",
+      "pattern": "nonlinear|unknown.*NLA|incomplete.*multiplication",
+      "message": "Solver cannot handle nonlinear arithmetic",
+      "cause": "Nonlinear integer/real arithmetic is undecidable",
+      "solutions": [
+        {
+          "approach": "Linearize if possible",
+          "code": "; Replace x*y with fresh variable\n(declare-const xy Int)\n(assert (= xy (* x y)))  ; May still timeout\n; Better: encode bounds separately\n(assert (and (<= 0 x) (<= x 10)))",
+          "when": "Nonlinear terms can be bounded"
+        },
+        {
+          "approach": "Use NRA-capable solver",
+          "code": "; Z3 NRA tactic\n(set-logic QF_NRA)  ; Nonlinear Real Arithmetic\n(check-sat-using qfnra-nlsat)\n; Or use NLSAT solver directly",
+          "when": "Need exact nonlinear solving"
+        },
+        {
+          "approach": "Use bitvector approximation",
+          "code": "; Approximate with fixed-width bitvectors\n(set-logic QF_BV)\n(declare-const x (_ BitVec 32))\n(assert (= (bvmul x x) #x00000064)) ; x*x = 100",
+          "when": "Bounded integer arithmetic"
+        }
+      ]
+    },
+    {
+      "id": "model_not_available",
+      "pattern": "model.*not available|cannot get model",
+      "message": "Cannot retrieve model after SAT result",
+      "cause": "Model production not enabled or result not SAT",
+      "solutions": [
+        {
+          "approach": "Enable model production",
+          "code": "(set-option :produce-models true)\n(check-sat)  ; Must be sat\n(get-model)  ; Now works",
+          "when": "Model option not set"
+        },
+        {
+          "approach": "Check result first",
+          "code": "; Model only available after sat\n(check-sat)\n; Returns: sat\n(get-value (x y z))  ; Get specific values\n(get-model)          ; Get full model",
+          "when": "Asking model after unsat"
+        },
+        {
+          "approach": "Handle don't-care values",
+          "code": "; Model may have arbitrary values for unconstrained vars\n(declare-const x Int)\n(declare-const y Int)\n(assert (> x 0))\n; y can be anything in model",
+          "when": "Unexpected model values"
+        }
+      ]
+    },
+    {
+      "id": "unsat_core_not_available",
+      "pattern": "unsat core.*not available|cannot get unsat core",
+      "message": "Cannot retrieve unsatisfiable core",
+      "cause": "Unsat core production not enabled or result not unsat",
+      "solutions": [
+        {
+          "approach": "Enable unsat cores",
+          "code": "(set-option :produce-unsat-cores true)\n(assert (! (> x 0) :named a1))\n(assert (! (< x 0) :named a2))\n(check-sat)  ; unsat\n(get-unsat-core)  ; Returns (a1 a2)",
+          "when": "Unsat core option not set"
+        },
+        {
+          "approach": "Name all assertions",
+          "code": "; Assertions must be named for unsat core\n(assert (! (p x) :named assertion1))\n(assert (! (q y) :named assertion2))\n; Unnamed assertions won't appear in core",
+          "when": "Assertions not named"
+        },
+        {
+          "approach": "Check result is unsat",
+          "code": "; Unsat core only available after unsat\n(check-sat)  ; Must return unsat\n(get-unsat-core)",
+          "when": "Result was sat or unknown"
+        }
+      ]
+    },
+    {
+      "id": "push_pop_imbalance",
+      "pattern": "pop.*without push|stack underflow",
+      "message": "Push/pop stack imbalance",
+      "cause": "More pops than pushes in assertion stack",
+      "solutions": [
+        {
+          "approach": "Balance push/pop",
+          "code": "(push)  ; Save state\n(assert (p x))\n(check-sat)\n(pop)   ; Restore - removes (p x)\n; Can also use (push n) and (pop n)",
+          "when": "Extra pop command"
+        },
+        {
+          "approach": "Use reset instead",
+          "code": "; Reset clears everything\n(reset)  ; Back to initial state\n; Or reset-assertions to keep declarations\n(reset-assertions)",
+          "when": "Want to start over"
+        },
+        {
+          "approach": "Track stack depth",
+          "code": "; Track manually or use numbered push/pop\n(push 1)\n(push 1)\n(pop 2)  ; Pop both levels at once",
+          "when": "Complex assertion management"
+        }
+      ]
+    }
+  ]
+}

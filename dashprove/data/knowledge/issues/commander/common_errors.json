@@ -1,0 +1,117 @@
+{
+  "tool": "commander",
+  "version": "12.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_required_option",
+      "pattern": "error: required option.*not specified|mandatory option",
+      "message": "Required option was not provided",
+      "cause": "Option marked with .requiredOption() was not passed on command line",
+      "solutions": [
+        {
+          "approach": "Pass the required option",
+          "code": "program --required-opt value",
+          "when": "Option is genuinely needed"
+        },
+        {
+          "approach": "Provide a default value",
+          "code": "program.option('-c, --config <path>', 'config file', './default.json')",
+          "when": "Option has sensible default"
+        },
+        {
+          "approach": "Use environment variable fallback",
+          "code": "program.option('-t, --token <token>', 'API token', process.env.API_TOKEN)",
+          "when": "Value available in environment"
+        }
+      ]
+    },
+    {
+      "id": "unknown_option",
+      "pattern": "error: unknown option|unrecognized option",
+      "message": "Option not defined in program",
+      "cause": "Typo in option name or option not registered with .option()",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "program --help",
+          "when": "Typo suspected"
+        },
+        {
+          "approach": "Allow unknown options",
+          "code": "program.allowUnknownOption()",
+          "when": "Passing through to subprocess"
+        },
+        {
+          "approach": "Register the option",
+          "code": "program.option('--new-option <value>', 'description')",
+          "when": "Option should be supported"
+        }
+      ]
+    },
+    {
+      "id": "missing_argument",
+      "pattern": "error: missing required argument|not enough arguments",
+      "message": "Command argument not provided",
+      "cause": "Positional argument defined with <arg> but not passed",
+      "solutions": [
+        {
+          "approach": "Provide the argument",
+          "code": "program command <argument>",
+          "when": "Argument is required"
+        },
+        {
+          "approach": "Make argument optional",
+          "code": "program.argument('[file]', 'optional file path')",
+          "when": "Argument has fallback behavior"
+        },
+        {
+          "approach": "Use default value",
+          "code": "program.argument('<file>', 'input file', 'stdin')",
+          "when": "Default makes sense"
+        }
+      ]
+    },
+    {
+      "id": "invalid_option_argument",
+      "pattern": "error: option.*argument missing|expects an argument",
+      "message": "Option requires an argument but none provided",
+      "cause": "Option defined with <value> but passed as flag only",
+      "solutions": [
+        {
+          "approach": "Provide option value",
+          "code": "program --port 3000",
+          "when": "Value is required"
+        },
+        {
+          "approach": "Make argument optional",
+          "code": "program.option('-v, --verbose [level]', 'verbosity', '1')",
+          "when": "Flag-only usage makes sense"
+        }
+      ]
+    },
+    {
+      "id": "subcommand_not_found",
+      "pattern": "error: unknown command|command.*not found",
+      "message": "Subcommand not registered",
+      "cause": "Command name not defined with .command()",
+      "solutions": [
+        {
+          "approach": "List available commands",
+          "code": "program --help",
+          "when": "Discover available subcommands"
+        },
+        {
+          "approach": "Add the command",
+          "code": "program.command('new-cmd').action(() => {})",
+          "when": "Command should exist"
+        },
+        {
+          "approach": "Handle unknown commands",
+          "code": "program.on('command:*', () => { console.error('Unknown command'); })",
+          "when": "Custom error handling needed"
+        }
+      ]
+    }
+  ]
+}

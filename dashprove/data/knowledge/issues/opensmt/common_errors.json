@@ -1,0 +1,171 @@
+{
+  "tool": "opensmt",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Solver timed out",
+      "cause": "OpenSMT could not solve within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "opensmt2 --time-limit 600 file.smt2",
+          "when": "Problem may be solvable with more time"
+        },
+        {
+          "approach": "Enable learning",
+          "code": "opensmt2 --produce-proofs 0 file.smt2",
+          "when": "Proof production slowing solver"
+        },
+        {
+          "approach": "Simplify the problem",
+          "code": "; Break into smaller assertions",
+          "when": "Problem too complex"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_logic",
+      "pattern": "unsupported logic",
+      "message": "Logic not supported",
+      "cause": "OpenSMT doesn't support the requested logic",
+      "solutions": [
+        {
+          "approach": "Use supported logic",
+          "code": "(set-logic QF_LRA)  ; or QF_LIA, QF_UF",
+          "when": "Logic not implemented"
+        },
+        {
+          "approach": "Check theory support",
+          "code": "; OpenSMT supports LRA, LIA, UF, arrays",
+          "when": "Need to verify theory support"
+        },
+        {
+          "approach": "Use different solver",
+          "code": "; Try Z3 or CVC5 for bitvectors",
+          "when": "Need bitvector support"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "parse error",
+      "message": "Parse error at line N",
+      "cause": "SMT-LIB syntax error",
+      "solutions": [
+        {
+          "approach": "Check SMT-LIB 2 syntax",
+          "code": "(declare-fun x () Int)",
+          "when": "Using SMT-LIB 1 syntax"
+        },
+        {
+          "approach": "Verify parentheses",
+          "code": "; Count opening and closing parens",
+          "when": "Unbalanced parentheses"
+        },
+        {
+          "approach": "Check reserved words",
+          "code": "; Avoid using keywords as identifiers",
+          "when": "Using reserved identifier"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "sort mismatch",
+      "message": "Sort mismatch in expression",
+      "cause": "Type incompatibility",
+      "solutions": [
+        {
+          "approach": "Check declarations",
+          "code": "(declare-fun f (Int) Bool)  ; parameter is Int",
+          "when": "Function argument type wrong"
+        },
+        {
+          "approach": "Verify arithmetic sorts",
+          "code": "; Use Int or Real consistently",
+          "when": "Mixed numeric sorts"
+        }
+      ]
+    },
+    {
+      "id": "interpolation_failure",
+      "pattern": "interpolation",
+      "message": "Interpolation failed",
+      "cause": "Cannot compute Craig interpolant",
+      "solutions": [
+        {
+          "approach": "Enable interpolation mode",
+          "code": "(set-option :produce-interpolants true)",
+          "when": "Interpolation not enabled"
+        },
+        {
+          "approach": "Check partitioning",
+          "code": "; Use (assert-a) and (assert-b) for partitions",
+          "when": "Wrong interpolation setup"
+        },
+        {
+          "approach": "Verify UNSAT",
+          "code": "; Interpolation only works on UNSAT problems",
+          "when": "Formula is satisfiable"
+        }
+      ]
+    },
+    {
+      "id": "proof_error",
+      "pattern": "proof production",
+      "message": "Proof production failed",
+      "cause": "Cannot generate proof",
+      "solutions": [
+        {
+          "approach": "Enable proof production",
+          "code": "(set-option :produce-proofs true)",
+          "when": "Proof production disabled"
+        },
+        {
+          "approach": "Check result",
+          "code": "; Proofs only available for UNSAT",
+          "when": "Result was SAT or unknown"
+        }
+      ]
+    },
+    {
+      "id": "incremental_error",
+      "pattern": "incremental",
+      "message": "Incremental solving error",
+      "cause": "Error in push/pop or assumptions",
+      "solutions": [
+        {
+          "approach": "Balance push/pop",
+          "code": "(push 1) ... (pop 1)",
+          "when": "Unbalanced push/pop"
+        },
+        {
+          "approach": "Check assertion levels",
+          "code": "; Assertions at popped levels are removed",
+          "when": "Assertions disappeared"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Memory exhausted",
+      "cause": "Problem requires too much memory",
+      "solutions": [
+        {
+          "approach": "Simplify problem",
+          "code": "; Reduce formula size",
+          "when": "Formula too large"
+        },
+        {
+          "approach": "Disable proofs",
+          "code": "(set-option :produce-proofs false)",
+          "when": "Proofs consuming memory"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "tool": "tcpdump",
+  "version": "4.99",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "You don't have permission to capture on that device|Operation not permitted",
+      "message": "Capture requires elevated permissions",
+      "cause": "Capturing raw packets requires CAP_NET_ADMIN/CAP_NET_RAW",
+      "solutions": [
+        {
+          "approach": "Run with sudo",
+          "code": "sudo tcpdump -i eth0",
+          "when": "Quick troubleshooting"
+        },
+        {
+          "approach": "Set capabilities on tcpdump",
+          "code": "sudo setcap cap_net_raw,cap_net_admin+eip $(command -v tcpdump)\\nexec sudo -u $USER -g $USER tcpdump -i eth0",
+          "when": "Allow non-root captures"
+        },
+        {
+          "approach": "Use capture group",
+          "code": "sudo groupadd -f pcap\\nsudo usermod -a -G pcap $USER\\nsudo chgrp pcap /usr/sbin/tcpdump && sudo chmod 750 /usr/sbin/tcpdump",
+          "when": "Shared system policy"
+        }
+      ]
+    },
+    {
+      "id": "no_device",
+      "pattern": "No suitable device found|No such device|SIOCGIF.*",
+      "message": "Interface not found or down",
+      "cause": "Wrong interface name or interface administratively down",
+      "solutions": [
+        {
+          "approach": "List interfaces",
+          "code": "tcpdump -D",
+          "when": "Confirm interface name"
+        },
+        {
+          "approach": "Bring interface up",
+          "code": "sudo ip link set eth0 up",
+          "when": "Interface was down"
+        },
+        {
+          "approach": "Use any pseudo-device",
+          "code": "sudo tcpdump -i any",
+          "when": "Need quick view across all interfaces"
+        }
+      ]
+    },
+    {
+      "id": "truncated_ip",
+      "pattern": "truncated-ip.*|length.*> snaplen",
+      "message": "Packets truncated in capture",
+      "cause": "Snap length too small for payload",
+      "solutions": [
+        {
+          "approach": "Capture full packets",
+          "code": "sudo tcpdump -s 0 -i eth0",
+          "when": "Need complete payloads"
+        },
+        {
+          "approach": "Increase snaplen for writes",
+          "code": "sudo tcpdump -s 262144 -w full.pcap",
+          "when": "High MTU or VLAN tagged traffic"
+        }
+      ]
+    },
+    {
+      "id": "kernel_drops",
+      "pattern": "packets dropped by kernel",
+      "message": "Kernel dropped packets before capture",
+      "cause": "Ring buffer overflow from high traffic or slow disk",
+      "solutions": [
+        {
+          "approach": "Increase buffer",
+          "code": "sudo tcpdump -B 4096 -i eth0",
+          "when": "High-throughput capture"
+        },
+        {
+          "approach": "Disable DNS resolution",
+          "code": "sudo tcpdump -n -i eth0",
+          "when": "Reduce CPU overhead"
+        },
+        {
+          "approach": "Capture to fast storage",
+          "code": "sudo tcpdump -w /tmp/cap.pcap",
+          "when": "Slow filesystem causing drops"
+        }
+      ]
+    },
+    {
+      "id": "filter_syntax",
+      "pattern": "syntax error|can't parse filter",
+      "message": "BPF filter expression invalid",
+      "cause": "Incorrect quoting or unsupported expression",
+      "solutions": [
+        {
+          "approach": "Quote filter correctly",
+          "code": "tcpdump -i eth0 'tcp port 443 and host 10.0.0.5'",
+          "when": "Shell was interpreting operators"
+        },
+        {
+          "approach": "Validate filter",
+          "code": "tcpdump -ddd 'port 53'",
+          "when": "Need to debug BPF program"
+        },
+        {
+          "approach": "Update libpcap",
+          "code": "sudo apt-get install --only-upgrade libpcap0.8",
+          "when": "Older libpcap missing newer syntax"
+        }
+      ]
+    }
+  ],
+  "debugging_commands": [
+    "tcpdump -D",
+    "tcpdump -ni any -c 5",
+    "tcpdump -i eth0 -vvv -s 0 'port 53'"
+  ],
+  "documentation_urls": [
+    "https://www.tcpdump.org/manpages/tcpdump.1.html",
+    "https://www.tcpdump.org/manpages/pcap-filter.7.html"
+  ]
+}

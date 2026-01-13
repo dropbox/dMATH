@@ -1,0 +1,60 @@
+{
+  "tool": "celery",
+  "category": "task_queue",
+  "errors": [
+    {
+      "pattern": "Received unregistered task",
+      "meaning": "Task not found by worker",
+      "causes": ["Task not imported", "Worker started before task defined", "Different codebase on worker"],
+      "solutions": ["Import task module in celery config", "Restart worker after adding tasks", "Ensure same code on worker and caller"]
+    },
+    {
+      "pattern": "Connection refused.*broker|Error connecting to broker",
+      "meaning": "Cannot connect to message broker",
+      "causes": ["Redis/RabbitMQ not running", "Wrong broker URL", "Firewall blocking connection"],
+      "solutions": ["Start broker service", "Check CELERY_BROKER_URL", "Verify network/firewall settings"]
+    },
+    {
+      "pattern": "Task.*raised unexpected.*kombu|Connection reset",
+      "meaning": "Broker connection lost during task",
+      "causes": ["Broker restarted", "Network issue", "Task took too long"],
+      "solutions": ["Add broker connection retry", "Check broker stability", "Use task acks_late for reliability"]
+    },
+    {
+      "pattern": "TimeLimitExceeded",
+      "meaning": "Task exceeded time limit",
+      "causes": ["Task took longer than soft/hard limit", "Infinite loop", "External service slow"],
+      "solutions": ["Increase time_limit/soft_time_limit", "Optimize task code", "Break into smaller tasks"]
+    },
+    {
+      "pattern": "WorkerLostError",
+      "meaning": "Worker process died unexpectedly",
+      "causes": ["OOM killed", "Segmentation fault", "Hard time limit exceeded"],
+      "solutions": ["Check system memory", "Review native dependencies", "Increase hard_time_limit"]
+    },
+    {
+      "pattern": "Retry.*exceeded",
+      "meaning": "Task retry limit reached",
+      "causes": ["Persistent failure", "External dependency down", "Bug in task code"],
+      "solutions": ["Check task logs for root cause", "Increase max_retries", "Fix underlying issue"]
+    },
+    {
+      "pattern": "pickle.*TypeError|cannot serialize",
+      "meaning": "Task argument serialization failed",
+      "causes": ["Passing non-serializable object", "Complex object as argument", "Wrong serializer"],
+      "solutions": ["Pass only serializable types", "Use JSON serializer", "Convert objects to dicts/primitives"]
+    },
+    {
+      "pattern": "prefork pool.*must have at least",
+      "meaning": "Invalid concurrency setting",
+      "causes": ["Concurrency set to 0", "Invalid configuration", "Pool type mismatch"],
+      "solutions": ["Set --concurrency >= 1", "Check celery worker config", "Use appropriate pool type"]
+    },
+    {
+      "pattern": "Task.*ignored|QueueNotFound",
+      "meaning": "Task sent to unknown queue",
+      "causes": ["Queue not configured", "Task routing wrong", "Worker not consuming queue"],
+      "solutions": ["Configure queue in CELERY_TASK_QUEUES", "Check task routing", "Start worker with -Q queue_name"]
+    }
+  ]
+}

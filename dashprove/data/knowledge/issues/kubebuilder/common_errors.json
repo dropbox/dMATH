@@ -1,0 +1,125 @@
+{
+  "tool": "kubebuilder",
+  "version": "4.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "go_version_too_low",
+      "pattern": "requires at least Go|unknown flag: --repo|unsupported go version",
+      "message": "Go toolchain not supported",
+      "cause": "kubebuilder init/build requires newer Go than installed",
+      "solutions": [
+        {
+          "approach": "Upgrade Go",
+          "code": "go install golang.org/dl/go1.21.5@latest && go1.21.5 download",
+          "when": "Go < 1.20"
+        },
+        {
+          "approach": "Set GOROOT/GOPATH",
+          "code": "go env GOROOT && go env GOPATH",
+          "when": "Go not on PATH"
+        }
+      ]
+    },
+    {
+      "id": "controller_gen_missing",
+      "pattern": "controller-gen: command not found|no such file or directory .*controller-gen",
+      "message": "controller-gen not installed",
+      "cause": "Required tool not downloaded before make generate/deploy",
+      "solutions": [
+        {
+          "approach": "Install tools",
+          "code": "make install-tools  # installs controller-gen and kustomize",
+          "when": "Fresh checkout"
+        },
+        {
+          "approach": "Manual install",
+          "code": "go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0",
+          "when": "Need specific version"
+        }
+      ]
+    },
+    {
+      "id": "kustomize_missing",
+      "pattern": "kustomize: command not found|failed to find kustomize",
+      "message": "kustomize not available",
+      "cause": "kustomize binary missing when generating or deploying manifests",
+      "solutions": [
+        {
+          "approach": "Install via make",
+          "code": "make kustomize",
+          "when": "Use project helper target"
+        },
+        {
+          "approach": "Install manually",
+          "code": "go install sigs.k8s.io/kustomize/kustomize/v5@v5.3.0",
+          "when": "Need pinned version"
+        }
+      ]
+    },
+    {
+      "id": "crd_not_found",
+      "pattern": "no matches for kind|could not find the requested resource",
+      "message": "CRD not installed in cluster",
+      "cause": "CRDs not applied before running manager or tests",
+      "solutions": [
+        {
+          "approach": "Install CRDs",
+          "code": "make install  # applies config/crd/bases",
+          "when": "Before running manager"
+        },
+        {
+          "approach": "Apply manually",
+          "code": "kubectl apply -f config/crd/bases",
+          "when": "Cluster access available"
+        },
+        {
+          "approach": "Enable envtest",
+          "code": "make test ENVTEST_KUBERNETES_VERSION=1.29",
+          "when": "Running controller tests"
+        }
+      ]
+    },
+    {
+      "id": "webhook_port_in_use",
+      "pattern": "bind: address already in use|webhook server failed to start|listen tcp :9443",
+      "message": "Webhook server failed to bind",
+      "cause": "Port 9443 occupied or certificates misconfigured",
+      "solutions": [
+        {
+          "approach": "Free port",
+          "code": "lsof -i :9443 && kill <pid>",
+          "when": "Another process using port"
+        },
+        {
+          "approach": "Change webhook port",
+          "code": "make run WEBHOOK_PORT=9444",
+          "when": "Need different port"
+        },
+        {
+          "approach": "Regenerate certs",
+          "code": "make deploy IMG=<image>  # regenerates webhook certs",
+          "when": "TLS cert invalid"
+        }
+      ]
+    },
+    {
+      "id": "module_path_invalid",
+      "pattern": "module path cannot be determined|invalid module path",
+      "message": "Module path invalid during init",
+      "cause": "Running kubebuilder init outside go module or using unsupported repo path",
+      "solutions": [
+        {
+          "approach": "Initialize module",
+          "code": "go mod init github.com/org/project",
+          "when": "No go.mod present"
+        },
+        {
+          "approach": "Provide repo flag",
+          "code": "kubebuilder init --domain example.com --repo github.com/org/project",
+          "when": "Automatic detection fails"
+        }
+      ]
+    }
+  ]
+}

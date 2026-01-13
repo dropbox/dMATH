@@ -1,0 +1,125 @@
+{
+  "id": "whisper",
+  "name": "OpenAI Whisper",
+  "category": "speech_recognition",
+  "subcategory": "asr",
+
+  "description": "General-purpose speech recognition model",
+  "long_description": "Whisper is OpenAI's general-purpose speech recognition model trained on 680,000 hours of multilingual data. It performs multilingual speech recognition, speech translation, and language identification. Known for robustness to accents, background noise, and technical language.",
+
+  "capabilities": [
+    "speech_to_text",
+    "multilingual_recognition",
+    "translation",
+    "language_identification",
+    "timestamp_generation",
+    "voice_activity_detection"
+  ],
+  "property_types": ["wer", "cer", "accuracy"],
+  "input_languages": ["python"],
+  "output_formats": ["text", "json", "vtt", "srt"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install openai-whisper"},
+      {"type": "pip_faster", "command": "pip install faster-whisper"},
+      {"type": "pip_transformers", "command": "pip install transformers"}
+    ],
+    "dependencies": ["torch", "ffmpeg"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/openai/whisper",
+    "tutorial": "https://github.com/openai/whisper#python-usage",
+    "api_reference": "https://github.com/openai/whisper/blob/main/whisper/transcribe.py",
+    "examples": "https://github.com/openai/whisper/tree/main/notebooks"
+  },
+
+  "tactics": [
+    {
+      "name": "transcribe",
+      "description": "Transcribe audio file",
+      "syntax": "model.transcribe(audio_path)",
+      "when_to_use": "For speech-to-text",
+      "examples": ["import whisper\n\nmodel = whisper.load_model('base')\nresult = model.transcribe('audio.mp3')\nprint(result['text'])"]
+    },
+    {
+      "name": "translate",
+      "description": "Translate to English",
+      "syntax": "model.transcribe(audio, task='translate')",
+      "when_to_use": "For speech translation",
+      "examples": ["result = model.transcribe(\n    'audio.mp3',\n    task='translate',\n    language='fr'\n)"]
+    },
+    {
+      "name": "timestamps",
+      "description": "Get word timestamps",
+      "syntax": "word_timestamps=True",
+      "when_to_use": "For alignment",
+      "examples": ["result = model.transcribe(\n    'audio.mp3',\n    word_timestamps=True\n)\nfor segment in result['segments']:\n    for word in segment['words']:\n        print(f\"{word['word']}: {word['start']:.2f}s\")"]
+    },
+    {
+      "name": "evaluate_wer",
+      "description": "Calculate Word Error Rate",
+      "syntax": "jiwer.wer(reference, hypothesis)",
+      "when_to_use": "For ASR evaluation",
+      "examples": ["import jiwer\n\nreference = 'the quick brown fox'\nhypothesis = result['text']\n\nwer = jiwer.wer(reference, hypothesis)\ncer = jiwer.cer(reference, hypothesis)\nprint(f'WER: {wer:.2%}, CER: {cer:.2%}')"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CUDA out of memory",
+      "meaning": "Model too large for GPU",
+      "common_causes": ["Large model size"],
+      "fixes": ["Use smaller model", "Use CPU", "Use faster-whisper"]
+    },
+    {
+      "pattern": "ffmpeg.*not found",
+      "meaning": "FFmpeg not installed",
+      "common_causes": ["Missing dependency"],
+      "fixes": ["Install ffmpeg: apt install ffmpeg / brew install ffmpeg"]
+    },
+    {
+      "pattern": "Audio.*too short",
+      "meaning": "Audio file invalid",
+      "common_causes": ["Corrupt file", "Empty audio"],
+      "fixes": ["Check audio file", "Minimum 0.1s required"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["wer", "cer", "accuracy"],
+    "cli_command": "dashprove verify --backend whisper"
+  },
+
+  "performance": {
+    "typical_runtime": "Real-time to 10x slower than real-time",
+    "scalability": "Good with batching",
+    "memory_usage": "1-10GB depending on model"
+  },
+
+  "comparisons": {
+    "similar_tools": ["kaldi", "wav2vec2", "nemo"],
+    "advantages": [
+      "Zero-shot multilingual",
+      "Robust to noise",
+      "No fine-tuning needed",
+      "Translation built-in",
+      "Easy to use"
+    ],
+    "disadvantages": [
+      "Large model sizes",
+      "Slower than specialized models",
+      "No streaming (base model)"
+    ]
+  },
+
+  "metadata": {
+    "version": "20231117",
+    "last_updated": "2025-12-22",
+    "maintainer": "OpenAI",
+    "license": "MIT"
+  }
+}

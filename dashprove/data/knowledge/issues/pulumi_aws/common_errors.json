@@ -1,0 +1,76 @@
+{
+  "tool": "pulumi_aws",
+  "category": "cloud_iac",
+  "common_errors": [
+    {
+      "pattern": "error creating .* BucketNotEmpty",
+      "meaning": "Cannot delete S3 bucket with contents",
+      "causes": ["Bucket contains objects", "Bucket has versioned objects", "Delete markers present"],
+      "solutions": ["Set forceDestroy: true on bucket", "Empty bucket first: aws s3 rm s3://bucket --recursive", "Delete all versions and markers"]
+    },
+    {
+      "pattern": "InvalidParameterValue.*CIDR",
+      "meaning": "Invalid CIDR block for VPC/subnet",
+      "causes": ["Overlapping CIDR ranges", "Invalid CIDR notation", "CIDR too large/small"],
+      "solutions": ["Use non-overlapping CIDRs", "Verify CIDR format (e.g., 10.0.0.0/16)", "Check VPC CIDR allows subnet size"]
+    },
+    {
+      "pattern": "DependencyViolation",
+      "meaning": "Cannot delete resource with dependencies",
+      "causes": ["Security group in use", "Subnet has instances", "ENI attached"],
+      "solutions": ["Delete dependent resources first", "Use dependsOn for ordering", "Check for orphaned ENIs"]
+    },
+    {
+      "pattern": "InvalidGroup\\.NotFound",
+      "meaning": "Security group doesn't exist",
+      "causes": ["SG deleted externally", "Wrong VPC", "Cross-region reference"],
+      "solutions": ["Refresh state: pulumi refresh", "Check VPC ID is correct", "Verify region matches"]
+    },
+    {
+      "pattern": "InvalidSubnetID\\.NotFound",
+      "meaning": "Subnet doesn't exist",
+      "causes": ["Subnet deleted", "Wrong availability zone", "Cross-region reference"],
+      "solutions": ["Check subnet exists in AWS console", "Verify AZ in correct region", "pulumi refresh to sync state"]
+    },
+    {
+      "pattern": "LimitExceeded",
+      "meaning": "AWS service quota exceeded",
+      "causes": ["Too many VPCs", "Too many EIPs", "Too many security groups"],
+      "solutions": ["Request limit increase via Service Quotas", "Delete unused resources", "Review account limits"]
+    },
+    {
+      "pattern": "MalformedPolicy",
+      "meaning": "Invalid IAM policy JSON",
+      "causes": ["Invalid JSON syntax", "Unknown action/resource", "Missing required field"],
+      "solutions": ["Validate policy with IAM policy simulator", "Check action names against AWS docs", "Use aws.iam.getPolicyDocument for type safety"]
+    },
+    {
+      "pattern": "EntityAlreadyExists",
+      "meaning": "IAM resource with same name exists",
+      "causes": ["Role/user/policy name collision", "Resource created outside Pulumi"],
+      "solutions": ["Import existing: pulumi import", "Use unique names", "Check for manual AWS console changes"]
+    },
+    {
+      "pattern": "InvalidAMIID",
+      "meaning": "AMI ID is invalid or not found",
+      "causes": ["AMI deprecated/removed", "Wrong region", "No access to AMI"],
+      "solutions": ["Find current AMI: aws ec2 describe-images", "Use aws.ec2.getAmi data source", "Check AMI permissions"]
+    },
+    {
+      "pattern": "InsufficientInstanceCapacity",
+      "meaning": "AWS cannot provision requested instance",
+      "causes": ["Instance type unavailable in AZ", "Spot capacity issues", "Regional capacity"],
+      "solutions": ["Try different availability zone", "Use on-demand instead of spot", "Choose different instance type"]
+    }
+  ],
+  "debugging_commands": [
+    "pulumi preview --diff",
+    "pulumi stack export",
+    "aws sts get-caller-identity",
+    "pulumi refresh"
+  ],
+  "documentation_urls": [
+    "https://www.pulumi.com/registry/packages/aws/",
+    "https://github.com/pulumi/pulumi-aws"
+  ]
+}

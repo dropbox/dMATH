@@ -1,0 +1,76 @@
+{
+  "tool": "nginx",
+  "category": "api_gateway",
+  "common_errors": [
+    {
+      "pattern": "nginx:.*configuration file.*test failed",
+      "meaning": "Invalid nginx configuration",
+      "causes": ["Syntax error in config", "Missing semicolon", "Unclosed brace"],
+      "solutions": ["Run nginx -t for detailed errors", "Check line number in error", "Validate with nginx -T to dump config"]
+    },
+    {
+      "pattern": "502 Bad Gateway|upstream.*connect.*failed",
+      "meaning": "Cannot connect to upstream server",
+      "causes": ["Backend down", "Wrong upstream address", "Firewall blocking"],
+      "solutions": ["Verify backend is running", "Check upstream server address/port", "Test connectivity: curl upstream:port"]
+    },
+    {
+      "pattern": "504 Gateway Time-out",
+      "meaning": "Upstream response too slow",
+      "causes": ["Backend slow", "proxy_read_timeout too low", "Network latency"],
+      "solutions": ["Increase proxy_read_timeout", "Optimize backend", "Check proxy_connect_timeout"]
+    },
+    {
+      "pattern": "413 Request Entity Too Large",
+      "meaning": "Request body exceeds limit",
+      "causes": ["client_max_body_size too small", "File upload too large"],
+      "solutions": ["Increase client_max_body_size 100M;", "Set in http, server, or location block"]
+    },
+    {
+      "pattern": "permission denied|open.*failed.*Permission",
+      "meaning": "File permission error",
+      "causes": ["nginx user cannot read files", "SELinux blocking", "Wrong file ownership"],
+      "solutions": ["chown -R nginx:nginx /path/to/files", "setsebool -P httpd_read_user_content 1", "Check user directive in nginx.conf"]
+    },
+    {
+      "pattern": "address already in use",
+      "meaning": "Port already bound",
+      "causes": ["Another nginx running", "Other service on port", "Previous instance not stopped"],
+      "solutions": ["Check: lsof -i :80", "Stop conflicting service", "nginx -s stop before restart"]
+    },
+    {
+      "pattern": "SSL.*error|certificate.*verify",
+      "meaning": "SSL/TLS configuration error",
+      "causes": ["Certificate file not found", "Key/cert mismatch", "Chain incomplete"],
+      "solutions": ["Verify ssl_certificate path exists", "Check key matches cert: openssl x509 -noout -modulus", "Include intermediate certs in chain"]
+    },
+    {
+      "pattern": "rewrite or internal redirection cycle",
+      "meaning": "Redirect loop in configuration",
+      "causes": ["Rewrite rules loop", "Location blocks conflict", "try_files misconfigured"],
+      "solutions": ["Review rewrite rules for cycles", "Use break or last flag appropriately", "Check location block precedence"]
+    },
+    {
+      "pattern": "unknown directive",
+      "meaning": "Directive not recognized",
+      "causes": ["Module not loaded", "Typo in directive", "Wrong nginx version"],
+      "solutions": ["Check nginx -V for compiled modules", "Verify directive spelling", "Load module: load_module modules/ngx_http_*.so;"]
+    },
+    {
+      "pattern": "host not found.*upstream",
+      "meaning": "DNS resolution failed for upstream",
+      "causes": ["Service name not resolvable", "DNS server unavailable", "resolver not configured"],
+      "solutions": ["Add resolver 127.0.0.1 or DNS IP", "Use IP instead of hostname", "Check /etc/resolv.conf"]
+    }
+  ],
+  "debugging_commands": [
+    "nginx -t",
+    "nginx -T",
+    "tail -f /var/log/nginx/error.log",
+    "nginx -s reload"
+  ],
+  "documentation_urls": [
+    "https://nginx.org/en/docs/",
+    "https://github.com/nginx/nginx"
+  ]
+}

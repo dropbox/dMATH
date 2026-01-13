@@ -1,0 +1,161 @@
+{
+  "tool": "lint_staged",
+  "version": "15.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_staged_files",
+      "pattern": "No staged files|Nothing to lint|skipped",
+      "message": "No staged files match patterns",
+      "cause": "No files in git staging area match lint-staged config",
+      "solutions": [
+        {
+          "approach": "Stage files first",
+          "code": "git add .\nnpx lint-staged",
+          "when": "Files not staged"
+        },
+        {
+          "approach": "Check config patterns",
+          "code": "// lint-staged.config.js\nmodule.exports = {\n  '*.{js,jsx,ts,tsx}': ['eslint --fix']\n};",
+          "when": "Pattern doesn't match"
+        }
+      ]
+    },
+    {
+      "id": "config_not_found",
+      "pattern": "No configuration|Could not find|lint-staged config",
+      "message": "lint-staged configuration not found",
+      "cause": "Missing lint-staged config file",
+      "solutions": [
+        {
+          "approach": "Create config file",
+          "code": "// lint-staged.config.js\nmodule.exports = {\n  '*.js': 'eslint --fix',\n  '*.{json,md}': 'prettier --write'\n};",
+          "when": "Use JS config"
+        },
+        {
+          "approach": "Use package.json",
+          "code": "// package.json\n\"lint-staged\": {\n  \"*.js\": \"eslint --fix\"\n}",
+          "when": "Inline config"
+        }
+      ]
+    },
+    {
+      "id": "command_failed",
+      "pattern": "Command failed|exited with code|task.*failed",
+      "message": "Lint-staged task command failed",
+      "cause": "Linter or formatter returned error",
+      "solutions": [
+        {
+          "approach": "Run command manually",
+          "code": "# Test command on specific file\neslint --fix src/file.js",
+          "when": "Debug failing command"
+        },
+        {
+          "approach": "Check command syntax",
+          "code": "// Commands receive staged files as arguments\nmodule.exports = {\n  '*.js': ['eslint --fix', 'prettier --write']\n};",
+          "when": "Fix command array"
+        },
+        {
+          "approach": "Allow warnings",
+          "code": "module.exports = {\n  '*.js': 'eslint --fix --max-warnings=0'\n};",
+          "when": "Strict mode needed"
+        }
+      ]
+    },
+    {
+      "id": "git_stash_error",
+      "pattern": "git stash|stash.*error|cannot apply",
+      "message": "Git stash operation failed",
+      "cause": "lint-staged's stash mechanism failed",
+      "solutions": [
+        {
+          "approach": "Clean working directory",
+          "code": "git stash\nnpx lint-staged\ngit stash pop",
+          "when": "Manual stash"
+        },
+        {
+          "approach": "Disable stash",
+          "code": "npx lint-staged --no-stash",
+          "when": "Skip stash mechanism"
+        },
+        {
+          "approach": "Check git status",
+          "code": "git status  # Ensure no conflicts",
+          "when": "Git state issues"
+        }
+      ]
+    },
+    {
+      "id": "concurrent_limit",
+      "pattern": "concurrent|parallel.*limit|ENOMEM",
+      "message": "Too many concurrent tasks",
+      "cause": "Running too many linters in parallel",
+      "solutions": [
+        {
+          "approach": "Limit concurrency",
+          "code": "npx lint-staged --concurrent 2",
+          "when": "Memory issues"
+        },
+        {
+          "approach": "Run sequential",
+          "code": "npx lint-staged --concurrent false",
+          "when": "Disable parallelism"
+        }
+      ]
+    },
+    {
+      "id": "glob_pattern_error",
+      "pattern": "Invalid glob|pattern.*error|micromatch",
+      "message": "Invalid glob pattern in configuration",
+      "cause": "Glob pattern syntax error",
+      "solutions": [
+        {
+          "approach": "Fix pattern syntax",
+          "code": "// Valid patterns:\n'*.js'           // JS files in root\n'**/*.js'        // JS files everywhere\n'src/**/*.ts'    // TS in src",
+          "when": "Pattern syntax"
+        },
+        {
+          "approach": "Use array for extensions",
+          "code": "module.exports = {\n  '*.{js,jsx,ts,tsx}': 'eslint --fix'\n};",
+          "when": "Multiple extensions"
+        }
+      ]
+    },
+    {
+      "id": "partial_stage_issue",
+      "pattern": "Partially staged|partially staged files|unstaged changes",
+      "message": "Partially staged file issues",
+      "cause": "File has both staged and unstaged changes",
+      "solutions": [
+        {
+          "approach": "Stage all changes",
+          "code": "git add -u  # Stage all modified files",
+          "when": "Stage everything"
+        },
+        {
+          "approach": "Use relative option",
+          "code": "module.exports = {\n  '*.js': 'eslint --fix'\n};  // Files are relative to git root",
+          "when": "Path issues"
+        }
+      ]
+    },
+    {
+      "id": "function_config_error",
+      "pattern": "function.*error|async.*config|promise",
+      "message": "Error in function-based configuration",
+      "cause": "JS config function threw error",
+      "solutions": [
+        {
+          "approach": "Check function syntax",
+          "code": "module.exports = {\n  '*.js': (files) => `eslint --fix ${files.join(' ')}`\n};",
+          "when": "Dynamic command"
+        },
+        {
+          "approach": "Use async properly",
+          "code": "module.exports = {\n  '*.js': async (files) => {\n    return `eslint ${files.join(' ')}`;\n  }\n};",
+          "when": "Async config"
+        }
+      ]
+    }
+  ]
+}

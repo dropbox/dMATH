@@ -1,0 +1,207 @@
+{
+  "tool": "fuzztest",
+  "version": "2024.12",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "fuzz_crash_found",
+      "pattern": "Fuzzing .* crashed|CRASH FOUND",
+      "message": "FuzzTest found crashing input",
+      "cause": "Function under test crashed with generated input",
+      "solutions": [
+        {
+          "approach": "Examine crash input",
+          "code": "// Check crash_* file in output directory\n// Contains minimal reproducer",
+          "when": "Need to debug crash"
+        },
+        {
+          "approach": "Add input validation",
+          "code": "void MyFunction(std::string_view input) {\n  if (input.empty()) return;  // Handle edge case\n  // ...\n}",
+          "when": "Missing edge case handling"
+        },
+        {
+          "approach": "Add regression test",
+          "code": "TEST(MyTest, RegressionForCrash) {\n  MyFunction(crashingInput);\n}",
+          "when": "Bug is fixed"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_timeout",
+      "pattern": "Fuzzing timed out|timeout exceeded",
+      "message": "Fuzz target timed out",
+      "cause": "Single input took too long to process",
+      "solutions": [
+        {
+          "approach": "Add timeout handling",
+          "code": "// Limit work per input\nif (input.size() > kMaxInputSize) return;",
+          "when": "Large inputs cause slowdown"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "--fuzz_test_timeout_per_input=10s",
+          "when": "Need more time per input"
+        },
+        {
+          "approach": "Fix algorithmic complexity",
+          "code": "// Check for O(n²) or worse algorithms\n// that cause timeout with large inputs",
+          "when": "Algorithm too slow"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_oom",
+      "pattern": "out of memory|OOM|malloc failed",
+      "message": "Fuzz target ran out of memory",
+      "cause": "Target allocated too much memory for input",
+      "solutions": [
+        {
+          "approach": "Limit input size",
+          "code": "void MyFuzz(const std::string& s) {\n  if (s.size() > 1024) return;  // Skip large\n  // ...\n}",
+          "when": "Input causes allocation"
+        },
+        {
+          "approach": "Set memory limit",
+          "code": "--fuzz_test_rss_limit_mb=1024",
+          "when": "Need memory control"
+        }
+      ]
+    },
+    {
+      "id": "no_coverage_increase",
+      "pattern": "No new coverage|coverage plateau",
+      "message": "Fuzzing not finding new coverage",
+      "cause": "Fuzzer has saturated discoverable code paths",
+      "solutions": [
+        {
+          "approach": "Add seed corpus",
+          "code": "FUZZ_TEST(MyTest, MyFunction)\n  .WithSeeds({\"valid_input\", \"edge_case\"});",
+          "when": "Need better starting points"
+        },
+        {
+          "approach": "Use domain",
+          "code": "auto StringDomain() {\n  return fuzztest::String()\n    .WithMinSize(1)\n    .WithMaxSize(100);\n}",
+          "when": "Input domain too broad"
+        },
+        {
+          "approach": "Consider complete",
+          "code": "// Coverage saturation may mean good coverage",
+          "when": "All paths covered"
+        }
+      ]
+    },
+    {
+      "id": "property_violation",
+      "pattern": "Property violated|assertion failed",
+      "message": "FuzzTest property violated",
+      "cause": "Property assertion failed for generated input",
+      "solutions": [
+        {
+          "approach": "Examine failing input",
+          "code": "// Check output for minimal failing case",
+          "when": "Need to debug"
+        },
+        {
+          "approach": "Strengthen precondition",
+          "code": "FUZZ_TEST(MyTest, MyFunction)\n  .WithDomains(\n    fuzztest::InRange(1, 100)  // Constrain input\n  );",
+          "when": "Property has preconditions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Property test found real bug",
+          "when": "Property is correct"
+        }
+      ]
+    },
+    {
+      "id": "domain_construction_error",
+      "pattern": "Domain.*error|Invalid domain",
+      "message": "Error constructing input domain",
+      "cause": "Domain specification is invalid or contradictory",
+      "solutions": [
+        {
+          "approach": "Fix domain constraints",
+          "code": "// Ensure min <= max\nfuzztest::InRange(0, 100)  // Not InRange(100, 0)",
+          "when": "Range error"
+        },
+        {
+          "approach": "Use valid domain",
+          "code": "// For strings\nfuzztest::String().WithMinSize(0).WithMaxSize(100);",
+          "when": "String domain"
+        }
+      ]
+    },
+    {
+      "id": "test_not_registered",
+      "pattern": "No.*fuzz tests.*found",
+      "message": "No fuzz tests found",
+      "cause": "FUZZ_TEST not registered properly",
+      "solutions": [
+        {
+          "approach": "Use FUZZ_TEST macro",
+          "code": "FUZZ_TEST(TestSuite, FunctionName)\n  .WithDomains(fuzztest::Arbitrary<std::string>());",
+          "when": "Missing registration"
+        },
+        {
+          "approach": "Link fuzztest library",
+          "code": "cc_test(\n  name = \"my_test\",\n  deps = [\"@com_google_fuzztest//fuzztest\"],\n)",
+          "when": "Missing dependency"
+        }
+      ]
+    },
+    {
+      "id": "corpus_parse_error",
+      "pattern": "Failed to parse corpus|corpus.*invalid",
+      "message": "Invalid corpus file",
+      "cause": "Seed corpus file format is incorrect",
+      "solutions": [
+        {
+          "approach": "Check file format",
+          "code": "// Corpus files should be raw binary\n// No special encoding needed",
+          "when": "File format wrong"
+        },
+        {
+          "approach": "Use WithSeeds instead",
+          "code": "FUZZ_TEST(Test, Func)\n  .WithSeeds({\"seed1\", \"seed2\"});",
+          "when": "Programmatic seeds easier"
+        }
+      ]
+    },
+    {
+      "id": "sanitizer_error",
+      "pattern": "ERROR:.*Sanitizer",
+      "message": "Sanitizer detected error during fuzzing",
+      "cause": "ASan/MSan/TSan/UBSan found error",
+      "solutions": [
+        {
+          "approach": "Fix sanitizer error",
+          "code": "// See specific sanitizer documentation\n// Fix the underlying bug",
+          "when": "Real bug found"
+        },
+        {
+          "approach": "Check crash report",
+          "code": "// FuzzTest saves crash input\n// Run with crash input to debug",
+          "when": "Need to reproduce"
+        }
+      ]
+    },
+    {
+      "id": "minimization_failed",
+      "pattern": "Failed to minimize|minimization.*error",
+      "message": "Could not minimize crashing input",
+      "cause": "Minimization algorithm couldn't reduce input",
+      "solutions": [
+        {
+          "approach": "Use full crash input",
+          "code": "// Use non-minimized input for debugging",
+          "when": "Minimization not critical"
+        },
+        {
+          "approach": "Manual minimization",
+          "code": "// Manually reduce input while preserving crash",
+          "when": "Need smaller reproducer"
+        }
+      ]
+    }
+  ]
+}

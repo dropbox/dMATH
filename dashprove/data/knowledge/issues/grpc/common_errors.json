@@ -1,0 +1,191 @@
+{
+  "tool": "grpc",
+  "category": "rpc_framework",
+  "common_errors": [
+    {
+      "error_pattern": "UNAVAILABLE.*failed to connect to all addresses",
+      "description": "gRPC client cannot establish connection to server",
+      "causes": [
+        "Server not running or wrong port",
+        "Firewall blocking connection",
+        "DNS resolution failure",
+        "TLS/SSL misconfiguration"
+      ],
+      "solutions": [
+        "Verify server is running: grpcurl -plaintext localhost:50051 list",
+        "Check server port matches client configuration",
+        "Verify firewall rules allow the port",
+        "Use plaintext for local testing: grpc.insecure_channel('localhost:50051')"
+      ]
+    },
+    {
+      "error_pattern": "DEADLINE_EXCEEDED",
+      "description": "RPC call did not complete within the specified deadline",
+      "causes": [
+        "Server processing too slow",
+        "Network latency exceeds deadline",
+        "Deadline set too short",
+        "Server blocked or deadlocked"
+      ],
+      "solutions": [
+        "Increase deadline in client options",
+        "Optimize server-side processing",
+        "Use streaming for large data transfers",
+        "Add server-side timeout handling",
+        "Profile server to find bottlenecks"
+      ]
+    },
+    {
+      "error_pattern": "UNIMPLEMENTED.*Method not found",
+      "description": "Client calling method not defined on server",
+      "causes": [
+        "Proto file mismatch between client and server",
+        "Method not implemented in server handler",
+        "Service name mismatch",
+        "Reflection not enabled for grpcurl"
+      ],
+      "solutions": [
+        "Regenerate code from same proto file",
+        "Verify service and method names match exactly",
+        "Enable reflection: grpc.reflection.register(server)",
+        "List available methods: grpcurl -plaintext localhost:50051 list"
+      ]
+    },
+    {
+      "error_pattern": "RESOURCE_EXHAUSTED.*grpc_message.*max.*size",
+      "description": "Message exceeds maximum allowed size",
+      "causes": [
+        "Sending message larger than default 4MB limit",
+        "Response data exceeds client max receive size",
+        "Streaming too many messages at once"
+      ],
+      "solutions": [
+        "Increase max message size in channel options",
+        "Use streaming RPC for large data",
+        "Implement pagination in API design",
+        "Set options: [('grpc.max_receive_message_length', 50*1024*1024)]"
+      ]
+    },
+    {
+      "error_pattern": "UNAUTHENTICATED.*credentials",
+      "description": "Client failed to provide valid authentication",
+      "causes": [
+        "Missing or invalid auth token",
+        "Token expired",
+        "Wrong credentials format",
+        "Metadata key naming incorrect"
+      ],
+      "solutions": [
+        "Add call credentials: metadata=[('authorization', 'Bearer token')]",
+        "Verify token hasn't expired",
+        "Check auth interceptor configuration",
+        "Use correct metadata key (lowercase)"
+      ]
+    },
+    {
+      "error_pattern": "PERMISSION_DENIED",
+      "description": "Client authenticated but not authorized for operation",
+      "causes": [
+        "User lacks required permissions",
+        "Role-based access control rejection",
+        "Resource ownership mismatch"
+      ],
+      "solutions": [
+        "Verify user has required role/permission",
+        "Check server-side authorization logic",
+        "Review access control policies"
+      ]
+    },
+    {
+      "error_pattern": "INTERNAL.*serialization",
+      "description": "Failed to serialize/deserialize protobuf message",
+      "causes": [
+        "Malformed protobuf message",
+        "Field type mismatch",
+        "Missing required fields (proto2)",
+        "Corrupted data"
+      ],
+      "solutions": [
+        "Validate message before sending",
+        "Check proto definition matches data",
+        "Use proto validation tools",
+        "Ensure consistent proto versions"
+      ]
+    },
+    {
+      "error_pattern": "CANCELLED.*context deadline exceeded",
+      "description": "RPC cancelled due to context cancellation",
+      "causes": [
+        "Client cancelled the request",
+        "Parent context was cancelled",
+        "HTTP/2 stream reset"
+      ],
+      "solutions": [
+        "Handle cancellation in server code",
+        "Propagate context properly",
+        "Use independent contexts for important operations"
+      ]
+    },
+    {
+      "error_pattern": "FAILED_PRECONDITION",
+      "description": "Operation rejected due to system state",
+      "causes": [
+        "Resource in wrong state for operation",
+        "Required precondition not met",
+        "Concurrent modification conflict"
+      ],
+      "solutions": [
+        "Check resource state before operation",
+        "Implement proper state machine logic",
+        "Use optimistic locking with version checks"
+      ]
+    },
+    {
+      "error_pattern": "stream.*RST_STREAM",
+      "description": "HTTP/2 stream was reset",
+      "causes": [
+        "Server overloaded",
+        "Connection timeout",
+        "Proxy/load balancer timeout",
+        "Keep-alive misconfiguration"
+      ],
+      "solutions": [
+        "Configure keep-alive settings",
+        "Set GRPC_ARG_KEEPALIVE_TIME_MS option",
+        "Check proxy/LB timeout settings",
+        "Implement retry logic with backoff"
+      ]
+    },
+    {
+      "error_pattern": "SSL_ERROR.*certificate",
+      "description": "TLS/SSL certificate validation failed",
+      "causes": [
+        "Self-signed certificate not trusted",
+        "Certificate expired",
+        "Hostname mismatch",
+        "Missing CA certificate"
+      ],
+      "solutions": [
+        "Add CA cert: grpc.ssl_channel_credentials(root_certs)",
+        "Verify certificate is valid and not expired",
+        "Check hostname matches certificate CN/SAN",
+        "For testing: grpc.insecure_channel (not for production)"
+      ]
+    },
+    {
+      "error_pattern": "UNKNOWN.*status.*code.*2",
+      "description": "Generic unknown error from server",
+      "causes": [
+        "Unhandled exception in server",
+        "Server crashed mid-request",
+        "Protocol error"
+      ],
+      "solutions": [
+        "Check server logs for stack trace",
+        "Add proper error handling in server",
+        "Return appropriate gRPC status codes",
+        "Use interceptors for error handling"
+      ]
+    }
+  ]
+}

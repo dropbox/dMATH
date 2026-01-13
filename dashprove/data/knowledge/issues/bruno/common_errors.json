@@ -1,0 +1,186 @@
+{
+  "tool": "bruno",
+  "version": "1.6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "collection_not_found",
+      "pattern": "Collection not found|Unable to load collection",
+      "message": "Collection file not found",
+      "cause": "Collection path invalid or not initialized",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "bru run --collection /path/to/collection",
+          "when": "Specify collection path"
+        },
+        {
+          "approach": "Initialize collection",
+          "code": "# Create bruno.json in collection root\n{\n  \"version\": \"1\",\n  \"name\": \"My API\",\n  \"type\": \"collection\"\n}",
+          "when": "No collection config"
+        },
+        {
+          "approach": "Check structure",
+          "code": "# Collection structure:\n# collection/\n#   bruno.json\n#   environments/\n#   requests/",
+          "when": "Wrong structure"
+        }
+      ]
+    },
+    {
+      "id": "environment_error",
+      "pattern": "Environment.*not found|undefined variable",
+      "message": "Environment not found or variable undefined",
+      "cause": "Environment file missing or variable not set",
+      "solutions": [
+        {
+          "approach": "Specify environment",
+          "code": "bru run requests/get-users.bru --env development",
+          "when": "Select environment"
+        },
+        {
+          "approach": "Create environment",
+          "code": "# environments/development.bru\nvars {\n  baseUrl: https://api.dev.example.com\n  apiKey: dev-key-123\n}",
+          "when": "Environment missing"
+        },
+        {
+          "approach": "Use secret variables",
+          "code": "# environments/development.bru\nvars:secret [\n  apiKey\n]",
+          "when": "Hide sensitive values"
+        }
+      ]
+    },
+    {
+      "id": "bru_syntax_error",
+      "pattern": "Parse error|Invalid bru syntax|Unexpected token",
+      "message": "Invalid .bru file syntax",
+      "cause": "Malformed Bruno request file",
+      "solutions": [
+        {
+          "approach": "Check request format",
+          "code": "meta {\n  name: Get Users\n  type: http\n  seq: 1\n}\n\nget {\n  url: {{baseUrl}}/users\n  body: none\n  auth: none\n}",
+          "when": "Basic request"
+        },
+        {
+          "approach": "Add headers",
+          "code": "headers {\n  Authorization: Bearer {{token}}\n  Content-Type: application/json\n}",
+          "when": "Headers section"
+        },
+        {
+          "approach": "Add body",
+          "code": "body:json {\n  {\n    \"name\": \"John\",\n    \"email\": \"john@test.com\"\n  }\n}",
+          "when": "JSON body"
+        }
+      ]
+    },
+    {
+      "id": "script_error",
+      "pattern": "Script error|pre-request|post-response|tests",
+      "message": "Script execution error",
+      "cause": "JavaScript error in pre/post scripts",
+      "solutions": [
+        {
+          "approach": "Pre-request script",
+          "code": "script:pre-request {\n  const timestamp = Date.now();\n  bru.setVar('timestamp', timestamp);\n}",
+          "when": "Setup before request"
+        },
+        {
+          "approach": "Post-response script",
+          "code": "script:post-response {\n  const data = res.getBody();\n  bru.setVar('userId', data.id);\n}",
+          "when": "Process response"
+        },
+        {
+          "approach": "Test assertions",
+          "code": "tests {\n  test('status is 200', function() {\n    expect(res.getStatus()).to.equal(200);\n  });\n}",
+          "when": "Add tests"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "auth|authentication|401|unauthorized",
+      "message": "Authentication configuration error",
+      "cause": "Auth not configured correctly",
+      "solutions": [
+        {
+          "approach": "Bearer token",
+          "code": "auth:bearer {\n  token: {{accessToken}}\n}",
+          "when": "Bearer auth"
+        },
+        {
+          "approach": "Basic auth",
+          "code": "auth:basic {\n  username: {{username}}\n  password: {{password}}\n}",
+          "when": "Basic auth"
+        },
+        {
+          "approach": "API key",
+          "code": "headers {\n  X-API-Key: {{apiKey}}\n}",
+          "when": "API key in header"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate|CERT|self-signed",
+      "message": "SSL certificate error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Disable verification",
+          "code": "# In bruno.json\n{\n  \"proxy\": {\n    \"enabled\": false\n  },\n  \"tlsInsecure\": true\n}",
+          "when": "Self-signed cert"
+        },
+        {
+          "approach": "Use client cert",
+          "code": "# Configure in collection settings\n# Client certificates section",
+          "when": "mTLS"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError|expect.*to|test failed",
+      "message": "Test assertion failed",
+      "cause": "Response doesn't match expectation",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "tests {\n  test('should return 200', function() {\n    expect(res.getStatus()).to.equal(200);\n  });\n}",
+          "when": "Status check"
+        },
+        {
+          "approach": "Check body",
+          "code": "tests {\n  test('has users', function() {\n    const body = res.getBody();\n    expect(body.users).to.be.an('array');\n    expect(body.users.length).to.be.greaterThan(0);\n  });\n}",
+          "when": "Body assertion"
+        },
+        {
+          "approach": "Check header",
+          "code": "tests {\n  test('content type', function() {\n    expect(res.getHeader('content-type')).to.contain('application/json');\n  });\n}",
+          "when": "Header check"
+        }
+      ]
+    },
+    {
+      "id": "runner_error",
+      "pattern": "bru run|runner|CLI",
+      "message": "CLI runner error",
+      "cause": "Issue running collection via CLI",
+      "solutions": [
+        {
+          "approach": "Run single request",
+          "code": "bru run requests/get-users.bru --env production",
+          "when": "Single request"
+        },
+        {
+          "approach": "Run folder",
+          "code": "bru run requests/ --env production",
+          "when": "Run all in folder"
+        },
+        {
+          "approach": "Run with output",
+          "code": "bru run requests/ --env production --output results.json",
+          "when": "Save results"
+        }
+      ]
+    }
+  ]
+}

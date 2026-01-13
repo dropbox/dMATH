@@ -1,0 +1,77 @@
+{
+  "tool": "atlas_hcl",
+  "category": "database_migration",
+  "common_errors": [
+    {
+      "pattern": "connecting to .* failed|dial .* connect: connection refused",
+      "meaning": "Cannot connect to database",
+      "causes": ["Database not running", "Wrong URL", "Network/firewall issue"],
+      "solutions": ["Verify database is running", "Check --url format matches database type", "Test connection: atlas schema inspect"]
+    },
+    {
+      "pattern": "schema.*not found|unknown schema",
+      "meaning": "Schema doesn't exist",
+      "causes": ["Schema not created", "Wrong schema name", "Different database"],
+      "solutions": ["Create schema manually", "Check schema name in HCL", "Use atlas schema apply --auto-approve"]
+    },
+    {
+      "pattern": "Error: data source.*requires a schema",
+      "meaning": "Schema not specified in URL",
+      "causes": ["Missing schema in connection", "Wrong URL format"],
+      "solutions": ["Add schema to URL: postgres://host/db?search_path=public", "Use --schema flag", "Specify in atlas.hcl"]
+    },
+    {
+      "pattern": "unexpected token|HCL parse error",
+      "meaning": "Invalid HCL syntax",
+      "causes": ["Syntax error in schema file", "Missing brace", "Invalid attribute"],
+      "solutions": ["Check HCL syntax", "Validate with atlas schema fmt", "Review atlas.hcl documentation"]
+    },
+    {
+      "pattern": "destructive change.*blocked|drop.*not allowed",
+      "meaning": "Destructive change blocked by lint",
+      "causes": ["Dropping column/table", "Data loss warning", "Lint policy blocking"],
+      "solutions": ["Use --auto-approve with caution", "Review and confirm changes manually", "Adjust lint rules in atlas.hcl"]
+    },
+    {
+      "pattern": "column.*already exists|table.*already exists",
+      "meaning": "Object already exists in database",
+      "causes": ["Drift between schema and DB", "Manual changes", "Migration already applied"],
+      "solutions": ["Run atlas schema diff to compare", "Use atlas schema inspect to get current state", "Apply missing changes only"]
+    },
+    {
+      "pattern": "foreign key constraint.*failed|constraint violation",
+      "meaning": "Foreign key error during migration",
+      "causes": ["Referenced data missing", "Wrong order of operations", "Constraint on existing data"],
+      "solutions": ["Ensure referenced data exists", "Review migration execution order", "May need data migration first"]
+    },
+    {
+      "pattern": "migration.*already applied|checksum mismatch",
+      "meaning": "Migration state inconsistent",
+      "causes": ["Migration modified after apply", "Different migration history", "Checksum changed"],
+      "solutions": ["Don't modify applied migrations", "Use atlas migrate hash --force", "Review migration history"]
+    },
+    {
+      "pattern": "version.*not found|missing migration",
+      "meaning": "Migration file missing or invalid",
+      "causes": ["File deleted", "Wrong directory", "Version gap"],
+      "solutions": ["Check migrations directory", "Verify atlas migrate status", "Regenerate with atlas migrate diff"]
+    },
+    {
+      "pattern": "unsupported driver|unknown database",
+      "meaning": "Database driver not supported",
+      "causes": ["Wrong URL scheme", "Driver not installed", "Unsupported database"],
+      "solutions": ["Check supported databases (postgres, mysql, sqlite, etc)", "Verify URL format", "Install required driver"]
+    }
+  ],
+  "debugging_commands": [
+    "atlas schema inspect -u 'postgres://...'",
+    "atlas schema diff",
+    "atlas migrate status --url 'postgres://...'",
+    "atlas schema fmt",
+    "atlas migrate lint"
+  ],
+  "documentation_urls": [
+    "https://atlasgo.io/docs",
+    "https://github.com/ariga/atlas"
+  ]
+}

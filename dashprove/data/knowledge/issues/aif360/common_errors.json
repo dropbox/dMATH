@@ -1,0 +1,128 @@
+{
+  "tool": "aif360",
+  "version": "0.6.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_protected_attribute",
+      "pattern": "Protected attribute .* not found",
+      "message": "Protected attribute not in dataset",
+      "cause": "BinaryLabelDataset requires protected attributes to be specified",
+      "solutions": [
+        {
+          "approach": "Specify protected attributes",
+          "code": "dataset = BinaryLabelDataset(\n    df=df,\n    label_names=['income'],\n    protected_attribute_names=['race', 'sex']\n)",
+          "when": "Creating dataset from dataframe"
+        },
+        {
+          "approach": "Check column names",
+          "code": "print(df.columns.tolist())",
+          "when": "Attribute name doesn't match"
+        }
+      ]
+    },
+    {
+      "id": "invalid_privileged_groups",
+      "pattern": "privileged_groups must be",
+      "message": "Invalid privileged groups specification",
+      "cause": "Privileged groups must match protected attribute values",
+      "solutions": [
+        {
+          "approach": "Fix group specification",
+          "code": "privileged_groups = [{'race': 1, 'sex': 1}]\nunprivileged_groups = [{'race': 0, 'sex': 0}]",
+          "when": "Using numeric encodings"
+        },
+        {
+          "approach": "Check attribute values",
+          "code": "print(dataset.protected_attribute_names)\nprint(dataset.privileged_protected_attributes)",
+          "when": "Unsure of correct values"
+        }
+      ]
+    },
+    {
+      "id": "metric_computation_error",
+      "pattern": "(Cannot compute|division by zero|metric undefined)",
+      "message": "Fairness metric cannot be computed",
+      "cause": "Insufficient data in privileged/unprivileged groups",
+      "solutions": [
+        {
+          "approach": "Check group sizes",
+          "code": "print(f\"Privileged: {dataset.privileged_protected_attributes}\")\nprint(f\"Samples per group: {np.bincount(dataset.protected_attributes.flatten())}\")",
+          "when": "Groups may be imbalanced"
+        },
+        {
+          "approach": "Use alternative metric",
+          "code": "# Use statistical_parity_difference instead of disparate_impact\nmetric = BinaryLabelDatasetMetric(dataset).statistical_parity_difference()",
+          "when": "Ratio metrics fail"
+        }
+      ]
+    },
+    {
+      "id": "transformer_not_fitted",
+      "pattern": "(not fitted|fit before transform)",
+      "message": "Preprocessing transformer not fitted",
+      "cause": "Must call fit() before transform()",
+      "solutions": [
+        {
+          "approach": "Fit then transform",
+          "code": "reweighing = Reweighing(unprivileged_groups, privileged_groups)\ntrain_repd = reweighing.fit_transform(train_dataset)",
+          "when": "Using fit_transform on training data"
+        },
+        {
+          "approach": "Use fitted transformer",
+          "code": "reweighing.fit(train_dataset)\ntest_repd = reweighing.transform(test_dataset)",
+          "when": "Transforming test data"
+        }
+      ]
+    },
+    {
+      "id": "incompatible_dataset",
+      "pattern": "(Dataset format|incompatible)",
+      "message": "Dataset format incompatible with algorithm",
+      "cause": "Some algorithms require specific dataset formats",
+      "solutions": [
+        {
+          "approach": "Convert to structured dataset",
+          "code": "from aif360.datasets import StandardDataset\ndataset = StandardDataset(\n    df, label_name='label',\n    favorable_classes=[1],\n    protected_attribute_names=['race'],\n    privileged_classes=[[1]]\n)",
+          "when": "Using standard dataset format"
+        },
+        {
+          "approach": "Use compatible wrapper",
+          "code": "# Wrap sklearn model for AIF360\nfrom aif360.sklearn.preprocessing import Reweighing",
+          "when": "Using sklearn integration"
+        }
+      ]
+    },
+    {
+      "id": "no_favorable_label",
+      "pattern": "(favorable_label|No favorable)",
+      "message": "Favorable label not specified or found",
+      "cause": "Binary classification requires favorable/unfavorable label specification",
+      "solutions": [
+        {
+          "approach": "Specify favorable label",
+          "code": "dataset = BinaryLabelDataset(\n    df=df,\n    label_names=['hired'],\n    favorable_label=1,\n    unfavorable_label=0,\n    protected_attribute_names=['gender']\n)",
+          "when": "Creating binary label dataset"
+        }
+      ]
+    },
+    {
+      "id": "mitigation_infeasible",
+      "pattern": "(infeasible|no solution found)",
+      "message": "Fairness mitigation algorithm cannot find solution",
+      "cause": "Constraints too strict or conflicting objectives",
+      "solutions": [
+        {
+          "approach": "Relax constraints",
+          "code": "# Increase epsilon for calibrated equalized odds\nceo = CalibratedEqOddsPostprocessing(\n    unprivileged_groups, privileged_groups,\n    cost_constraint='fnr', seed=42\n)",
+          "when": "Using post-processing"
+        },
+        {
+          "approach": "Try different algorithm",
+          "code": "# Try reweighing instead of adversarial debiasing\nRW = Reweighing(unprivileged_groups, privileged_groups)",
+          "when": "Current algorithm fails"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "tool": "chroot",
+  "version": "coreutils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|chroot: cannot change root",
+      "message": "Not authorized",
+      "cause": "Need root privileges",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo chroot /path/to/root",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "no_shell",
+      "pattern": "failed to run command|cannot run command|No such file",
+      "message": "Shell not found in chroot",
+      "cause": "Missing /bin/bash or /bin/sh in chroot",
+      "solutions": [
+        {
+          "approach": "Specify shell",
+          "code": "sudo chroot /path /bin/sh",
+          "when": "Different shell"
+        },
+        {
+          "approach": "Copy shell and libs",
+          "code": "# Copy shell into chroot:\nmkdir -p /path/bin\ncp /bin/bash /path/bin/\n# Copy required libraries:\nldd /bin/bash  # See deps\nmkdir -p /path/lib64\ncp /lib64/libc.so.6 /path/lib64/",
+          "when": "Setup minimal chroot"
+        },
+        {
+          "approach": "Use debootstrap",
+          "code": "sudo debootstrap stable /path/to/chroot",
+          "when": "Full Debian chroot"
+        }
+      ]
+    },
+    {
+      "id": "missing_libraries",
+      "pattern": "error while loading shared libraries|cannot open shared object",
+      "message": "Missing libraries",
+      "cause": "Dynamic libraries not in chroot",
+      "solutions": [
+        {
+          "approach": "Find dependencies",
+          "code": "ldd /bin/bash\nldd /path/to/program",
+          "when": "List required libs"
+        },
+        {
+          "approach": "Copy libraries",
+          "code": "# For each lib from ldd output:\nmkdir -p /chroot/lib64\ncp /lib64/libname.so /chroot/lib64/",
+          "when": "Manual copy"
+        },
+        {
+          "approach": "Static binary",
+          "code": "# Use statically linked binary:\nfile /path/to/binary  # Check if static",
+          "when": "Avoid lib issues"
+        }
+      ]
+    },
+    {
+      "id": "directory_not_found",
+      "pattern": "cannot change root directory|No such file or directory",
+      "message": "Chroot directory missing",
+      "cause": "Target directory doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create directory",
+          "code": "sudo mkdir -p /path/to/chroot",
+          "when": "Missing directory"
+        },
+        {
+          "approach": "Verify path",
+          "code": "ls -la /path/to/chroot",
+          "when": "Check exists"
+        }
+      ]
+    },
+    {
+      "id": "mount_proc_sys",
+      "pattern": "/proc|/sys|/dev|mount",
+      "message": "Special filesystems needed",
+      "cause": "Programs need /proc /sys /dev",
+      "solutions": [
+        {
+          "approach": "Mount special fs",
+          "code": "sudo mount -t proc none /chroot/proc\nsudo mount -t sysfs none /chroot/sys\nsudo mount -o bind /dev /chroot/dev\nsudo mount -o bind /dev/pts /chroot/dev/pts",
+          "when": "Full environment"
+        },
+        {
+          "approach": "Cleanup after",
+          "code": "sudo umount /chroot/dev/pts\nsudo umount /chroot/dev\nsudo umount /chroot/sys\nsudo umount /chroot/proc",
+          "when": "Exit chroot"
+        }
+      ]
+    }
+  ]
+}

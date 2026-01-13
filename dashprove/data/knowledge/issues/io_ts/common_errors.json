@@ -1,0 +1,145 @@
+{
+  "tool": "io_ts",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "decode_failure",
+      "pattern": "Left|decode failed|Invalid value|expected.*got",
+      "message": "Decoding returned Left (failure)",
+      "cause": "Input doesn't match codec schema",
+      "solutions": [
+        {
+          "approach": "Handle Either result",
+          "code": "import * as t from 'io-ts';\nimport { isRight, isLeft } from 'fp-ts/Either';\n\nconst User = t.type({ name: t.string, age: t.number });\nconst result = User.decode(data);\n\nif (isRight(result)) {\n  console.log(result.right.name);\n} else {\n  console.log('Invalid:', result.left);\n}",
+          "when": "Check result"
+        },
+        {
+          "approach": "Use fold for handling",
+          "code": "import { fold } from 'fp-ts/Either';\nimport { pipe } from 'fp-ts/function';\n\npipe(\n  User.decode(data),\n  fold(\n    (errors) => console.log('Errors:', errors),\n    (user) => console.log('Valid:', user)\n  )\n);",
+          "when": "FP-style"
+        },
+        {
+          "approach": "Format errors",
+          "code": "import { PathReporter } from 'io-ts/PathReporter';\n\nconst result = User.decode(data);\nif (isLeft(result)) {\n  console.log(PathReporter.report(result));\n  // ['Invalid value undefined at: name']\n}",
+          "when": "Readable errors"
+        }
+      ]
+    },
+    {
+      "id": "branded_type",
+      "pattern": "brand|Branded|Int|NonEmptyString|refinement",
+      "message": "Branded/refined type validation",
+      "cause": "Value doesn't meet brand constraints",
+      "solutions": [
+        {
+          "approach": "Use built-in brands",
+          "code": "import { Int, NonEmptyString } from 'io-ts-types';\n\nconst Age = Int;  // integer brand\nconst Name = NonEmptyString;  // non-empty string",
+          "when": "Common refinements"
+        },
+        {
+          "approach": "Create custom brand",
+          "code": "interface PositiveBrand {\n  readonly Positive: unique symbol;\n}\nconst Positive = t.brand(\n  t.number,\n  (n): n is t.Branded<number, PositiveBrand> => n > 0,\n  'Positive'\n);",
+          "when": "Custom constraint"
+        },
+        {
+          "approach": "Use refinement",
+          "code": "const PositiveInt = t.refinement(\n  t.number,\n  (n): n is number => Number.isInteger(n) && n > 0,\n  'PositiveInt'\n);",
+          "when": "Simple refinement"
+        }
+      ]
+    },
+    {
+      "id": "union_type",
+      "pattern": "union|sum type|discriminated|tagged",
+      "message": "Union type decoding fails",
+      "cause": "Value doesn't match any union member",
+      "solutions": [
+        {
+          "approach": "Simple union",
+          "code": "const StringOrNumber = t.union([t.string, t.number]);\nStringOrNumber.decode('hello');  // Right('hello')\nStringOrNumber.decode(42);        // Right(42)",
+          "when": "Basic union"
+        },
+        {
+          "approach": "Tagged union (recommended)",
+          "code": "const Circle = t.type({ type: t.literal('circle'), radius: t.number });\nconst Square = t.type({ type: t.literal('square'), side: t.number });\nconst Shape = t.union([Circle, Square]);\n\n// Decoding checks 'type' field first for better errors",
+          "when": "Discriminated union"
+        },
+        {
+          "approach": "Check union result",
+          "code": "const result = Shape.decode(data);\nif (isLeft(result)) {\n  // Shows which union members failed and why\n  console.log(PathReporter.report(result));\n}",
+          "when": "Debug union"
+        }
+      ]
+    },
+    {
+      "id": "optional_fields",
+      "pattern": "partial|optional|undefined|missing key",
+      "message": "Optional field handling",
+      "cause": "Field may or may not be present",
+      "solutions": [
+        {
+          "approach": "Use partial",
+          "code": "const User = t.intersection([\n  t.type({ name: t.string }),\n  t.partial({ email: t.string })\n]);\n// email is optional",
+          "when": "Some fields optional"
+        },
+        {
+          "approach": "Nullable field",
+          "code": "import { nullable } from 'io-ts-types';\nconst User = t.type({\n  name: t.string,\n  nickname: nullable(t.string)  // string | null\n});",
+          "when": "Allow null"
+        },
+        {
+          "approach": "Union with undefined",
+          "code": "const User = t.type({\n  name: t.string,\n  email: t.union([t.string, t.undefined])\n});",
+          "when": "Explicit undefined"
+        }
+      ]
+    },
+    {
+      "id": "intersection_error",
+      "pattern": "intersection|extend|And|merge",
+      "message": "Type intersection issues",
+      "cause": "Combining types with intersection",
+      "solutions": [
+        {
+          "approach": "Extend types",
+          "code": "const Person = t.type({ name: t.string });\nconst Employee = t.intersection([\n  Person,\n  t.type({ employeeId: t.string })\n]);",
+          "when": "Add fields"
+        },
+        {
+          "approach": "Use props helper",
+          "code": "const PersonProps = { name: t.string };\nconst Person = t.type(PersonProps);\nconst Employee = t.type({\n  ...PersonProps,\n  employeeId: t.string\n});",
+          "when": "Share props"
+        },
+        {
+          "approach": "Decode intersection",
+          "code": "const result = Employee.decode(data);\n// Both Person and extra fields must match",
+          "when": "Validate combined"
+        }
+      ]
+    },
+    {
+      "id": "type_extraction",
+      "pattern": "TypeOf|Static|type inference|infer",
+      "message": "TypeScript type extraction",
+      "cause": "Need TypeScript type from codec",
+      "solutions": [
+        {
+          "approach": "Use TypeOf",
+          "code": "const User = t.type({ name: t.string, age: t.number });\ntype User = t.TypeOf<typeof User>;\n// { name: string; age: number }",
+          "when": "Extract type"
+        },
+        {
+          "approach": "Output type",
+          "code": "type UserInput = t.InputOf<typeof User>;\ntype UserOutput = t.OutputOf<typeof User>;\n// Different if codec transforms values",
+          "when": "Input vs output"
+        },
+        {
+          "approach": "Use in function",
+          "code": "function processUser(user: t.TypeOf<typeof User>) {\n  console.log(user.name);\n}",
+          "when": "Function parameter"
+        }
+      ]
+    }
+  ]
+}

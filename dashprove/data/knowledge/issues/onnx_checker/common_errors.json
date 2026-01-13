@@ -1,0 +1,191 @@
+{
+  "tool": "onnx_checker",
+  "version": "1.15.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "invalid_model",
+      "pattern": "ValidationError|Invalid model|Model check failed",
+      "message": "ONNX model validation failed",
+      "cause": "Model doesn't conform to ONNX specification",
+      "solutions": [
+        {
+          "approach": "Check model validity",
+          "code": "import onnx\nmodel = onnx.load('model.onnx')\nonnx.checker.check_model(model)",
+          "when": "Validating model"
+        },
+        {
+          "approach": "Check with shape inference",
+          "code": "onnx.checker.check_model(model, full_check=True)",
+          "when": "Full validation"
+        },
+        {
+          "approach": "Export with opset",
+          "code": "torch.onnx.export(model, inputs, 'model.onnx', opset_version=17)",
+          "when": "Setting opset during export"
+        }
+      ]
+    },
+    {
+      "id": "shape_inference_error",
+      "pattern": "Shape inference|Cannot infer shape|Unknown dimension",
+      "message": "Shape inference failed",
+      "cause": "Cannot determine tensor shapes statically",
+      "solutions": [
+        {
+          "approach": "Run shape inference",
+          "code": "from onnx import shape_inference\nmodel = shape_inference.infer_shapes(model)",
+          "when": "Adding shape info"
+        },
+        {
+          "approach": "Fix dynamic shapes",
+          "code": "# Use fixed batch size during export\ntorch.onnx.export(model, dummy_input, 'model.onnx',\n    dynamic_axes=None)",
+          "when": "Static shapes needed"
+        },
+        {
+          "approach": "Specify dynamic axes",
+          "code": "torch.onnx.export(model, dummy_input, 'model.onnx',\n    dynamic_axes={'input': {0: 'batch'}, 'output': {0: 'batch'}})",
+          "when": "Dynamic batch size"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_op",
+      "pattern": "Unsupported op|Op.*not found|Unknown operator",
+      "message": "ONNX operator not supported",
+      "cause": "Model uses operator not in ONNX spec or wrong opset",
+      "solutions": [
+        {
+          "approach": "Increase opset version",
+          "code": "torch.onnx.export(model, inputs, 'model.onnx', opset_version=17)",
+          "when": "Op available in newer opset"
+        },
+        {
+          "approach": "Use custom op",
+          "code": "# Register custom symbolic for the op\n@torch.onnx.register_custom_op_symbolic('mylib::custom_op', symbolic_fn, 9)",
+          "when": "Custom operator"
+        },
+        {
+          "approach": "Rewrite model code",
+          "code": "# Replace unsupported op with supported equivalent",
+          "when": "Op can be replaced"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type.*error|Invalid tensor type|Type mismatch",
+      "message": "Tensor type error",
+      "cause": "Tensor has unsupported or mismatched data type",
+      "solutions": [
+        {
+          "approach": "Check input types",
+          "code": "for input in model.graph.input:\n    print(input.name, input.type)",
+          "when": "Inspecting types"
+        },
+        {
+          "approach": "Convert types",
+          "code": "# During export, ensure inputs are correct type\ndummy_input = dummy_input.float()  # or .half(), .int()",
+          "when": "Wrong input type"
+        },
+        {
+          "approach": "Add Cast node",
+          "code": "# Insert Cast op to convert between types",
+          "when": "Type conversion needed"
+        }
+      ]
+    },
+    {
+      "id": "graph_error",
+      "pattern": "Graph.*error|Invalid graph|Node.*error",
+      "message": "ONNX graph structure error",
+      "cause": "Graph has structural issues or invalid nodes",
+      "solutions": [
+        {
+          "approach": "Print graph",
+          "code": "print(onnx.helper.printable_graph(model.graph))",
+          "when": "Inspecting structure"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "import onnxsim\nmodel, check = onnxsim.simplify(model)",
+          "when": "Removing redundant nodes"
+        },
+        {
+          "approach": "Check node inputs/outputs",
+          "code": "for node in model.graph.node:\n    print(node.op_type, node.input, node.output)",
+          "when": "Finding problematic node"
+        }
+      ]
+    },
+    {
+      "id": "external_data_error",
+      "pattern": "External data|Cannot load weights|Data file not found",
+      "message": "External data loading failed",
+      "cause": "Model uses external data files that are missing",
+      "solutions": [
+        {
+          "approach": "Load with external data",
+          "code": "model = onnx.load('model.onnx', load_external_data=True)",
+          "when": "External data exists"
+        },
+        {
+          "approach": "Save with all data",
+          "code": "onnx.save_model(model, 'model.onnx', save_as_external_data=False)",
+          "when": "Embedding weights"
+        },
+        {
+          "approach": "Check data path",
+          "code": "# Ensure .onnx_data or .bin files are in same directory",
+          "when": "Files moved"
+        }
+      ]
+    },
+    {
+      "id": "version_error",
+      "pattern": "Version.*error|IR version|Opset.*mismatch",
+      "message": "ONNX version compatibility error",
+      "cause": "Model IR or opset version not compatible",
+      "solutions": [
+        {
+          "approach": "Check versions",
+          "code": "print(f'IR: {model.ir_version}')\nfor opset in model.opset_import:\n    print(f'{opset.domain}: {opset.version}')",
+          "when": "Checking compatibility"
+        },
+        {
+          "approach": "Convert version",
+          "code": "from onnx import version_converter\nmodel = version_converter.convert_version(model, 17)",
+          "when": "Upgrading opset"
+        },
+        {
+          "approach": "Update ONNX",
+          "code": "pip install --upgrade onnx",
+          "when": "ONNX package too old"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "ONNXRuntime.*error|Cannot run|Inference failed",
+      "message": "ONNX Runtime execution error",
+      "cause": "Model fails during inference",
+      "solutions": [
+        {
+          "approach": "Test with ONNX Runtime",
+          "code": "import onnxruntime as ort\nsess = ort.InferenceSession('model.onnx')\nresult = sess.run(None, {'input': data})",
+          "when": "Testing inference"
+        },
+        {
+          "approach": "Get input info",
+          "code": "for input in sess.get_inputs():\n    print(input.name, input.shape, input.type)",
+          "when": "Checking expected inputs"
+        },
+        {
+          "approach": "Use verbose mode",
+          "code": "sess_options = ort.SessionOptions()\nsess_options.log_severity_level = 0",
+          "when": "Debugging errors"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,326 @@
+{
+  "tool_id": "frama_c_rte",
+  "tool_name": "Frama-C RTE Plugin",
+  "tool_version": "28.0",
+  "category": "c_verification",
+  "error_patterns": [
+    {
+      "id": "rte_signed_overflow",
+      "pattern": "signed_overflow|overflow in.*signed|signed arithmetic overflow",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Potential signed integer overflow detected",
+      "common_causes": [
+        "Addition/multiplication without overflow check",
+        "Subtraction below INT_MIN",
+        "Shift by large amount",
+        "Accumulator without bounds"
+      ],
+      "solutions": [
+        "Use unsigned types if overflow is acceptable",
+        "Add preconditions to bound inputs",
+        "Check before arithmetic operations",
+        "Use INT_MAX/INT_MIN guards"
+      ],
+      "examples": [
+        {
+          "error": "signed_overflow: a + b may overflow",
+          "context": "int a, b; int sum = a + b;",
+          "fix": "requires a <= INT_MAX - b"
+        }
+      ],
+      "related_errors": ["rte_unsigned_overflow"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_unsigned_overflow",
+      "pattern": "unsigned_overflow|overflow in.*unsigned|unsigned arithmetic overflow",
+      "severity": "warning",
+      "category": "runtime_error",
+      "description": "Potential unsigned integer overflow/wraparound detected",
+      "common_causes": [
+        "Counter wrapping around",
+        "Subtraction resulting in underflow",
+        "Size calculation wraparound",
+        "Unintended wraparound semantics"
+      ],
+      "solutions": [
+        "Check if wraparound is intended",
+        "Add bounds checking",
+        "Use larger type if needed",
+        "Add requires clause for bounds"
+      ],
+      "examples": [
+        {
+          "error": "unsigned_overflow: size - 1 may underflow when size == 0",
+          "context": "unsigned size; for (i = 0; i < size - 1; i++)",
+          "fix": "requires size >= 1 or check size > 0"
+        }
+      ],
+      "related_errors": ["rte_signed_overflow"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_division_by_zero",
+      "pattern": "division_by_zero|divisor.*zero|div.*zero|mod.*zero",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Potential division by zero detected",
+      "common_causes": [
+        "Divisor not validated",
+        "Modulo with potentially zero divisor",
+        "Computed divisor may be zero",
+        "Loop counter as divisor"
+      ],
+      "solutions": [
+        "Add requires divisor != 0",
+        "Guard with if (divisor != 0)",
+        "Use subtype or assertion",
+        "Check before operation"
+      ],
+      "examples": [
+        {
+          "error": "division_by_zero: b may be zero",
+          "context": "int result = a / b;",
+          "fix": "requires b != 0 or if (b != 0) { result = a / b; }"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_mem_access",
+      "pattern": "mem_access|invalid.*pointer|null.*dereference|invalid memory access",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Potential invalid memory access detected",
+      "common_causes": [
+        "Null pointer dereference",
+        "Dangling pointer access",
+        "Uninitialized pointer",
+        "Out of bounds access"
+      ],
+      "solutions": [
+        "Add requires \\valid(ptr)",
+        "Check ptr != NULL",
+        "Initialize pointers properly",
+        "Use \\valid_read for read-only access"
+      ],
+      "examples": [
+        {
+          "error": "mem_access: ptr may be NULL",
+          "context": "int x = *ptr;",
+          "fix": "requires \\valid(ptr) or if (ptr != NULL)"
+        }
+      ],
+      "related_errors": ["rte_index_bound"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_index_bound",
+      "pattern": "index_bound|array.*bounds|index out of bounds",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Potential array index out of bounds detected",
+      "common_causes": [
+        "Index not validated against array size",
+        "Loop counter exceeds array bounds",
+        "Negative index",
+        "Off-by-one error"
+      ],
+      "solutions": [
+        "Add requires 0 <= i < n",
+        "Use \\valid(arr + (0..n-1))",
+        "Check bounds before access",
+        "Use loop invariant for index bounds"
+      ],
+      "examples": [
+        {
+          "error": "index_bound: i may be >= n",
+          "context": "arr[i] where arr has size n",
+          "fix": "requires 0 <= i < n"
+        }
+      ],
+      "related_errors": ["rte_mem_access"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_shift",
+      "pattern": "shift.*invalid|shift amount|shift_negative|shift_overflow",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Potential invalid shift operation detected",
+      "common_causes": [
+        "Shift amount >= bit width",
+        "Negative shift amount",
+        "Shift of negative value (left shift)",
+        "Implementation-defined behavior"
+      ],
+      "solutions": [
+        "Bound shift amount to [0, width-1]",
+        "Check shift amount is non-negative",
+        "Use unsigned for shift operand",
+        "Add preconditions on shift amount"
+      ],
+      "examples": [
+        {
+          "error": "shift: shift amount 32 exceeds 31 for 32-bit int",
+          "context": "1 << n where n might be >= 32",
+          "fix": "requires 0 <= n < 32"
+        }
+      ],
+      "related_errors": ["rte_signed_overflow"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_pointer_comparison",
+      "pattern": "pointer_compare|invalid.*pointer comparison|comparing unrelated pointers",
+      "severity": "warning",
+      "category": "runtime_error",
+      "description": "Potentially invalid pointer comparison detected",
+      "common_causes": [
+        "Comparing pointers from different allocations",
+        "Pointer arithmetic on different arrays",
+        "Null pointer in comparison",
+        "Dangling pointer comparison"
+      ],
+      "solutions": [
+        "Only compare pointers within same array",
+        "Use base address checks",
+        "Check both pointers valid first",
+        "Use \\base_addr ACSL function"
+      ],
+      "examples": [
+        {
+          "error": "pointer_compare: comparing pointers from different objects",
+          "context": "if (ptr1 < ptr2) where ptr1, ptr2 unrelated",
+          "fix": "Ensure pointers point to same array"
+        }
+      ],
+      "related_errors": ["rte_mem_access"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_signed_downcast",
+      "pattern": "signed_downcast|truncation|narrowing conversion",
+      "severity": "warning",
+      "category": "runtime_error",
+      "description": "Potential truncation in signed integer conversion",
+      "common_causes": [
+        "Casting long to int",
+        "Implicit narrowing conversion",
+        "Return type narrower than expression",
+        "Assignment to smaller type"
+      ],
+      "solutions": [
+        "Use explicit cast if truncation intended",
+        "Add range check before conversion",
+        "Use appropriate type",
+        "Add precondition on value range"
+      ],
+      "examples": [
+        {
+          "error": "signed_downcast: long to int may truncate",
+          "context": "int x = long_value;",
+          "fix": "requires INT_MIN <= long_value <= INT_MAX"
+        }
+      ],
+      "related_errors": ["rte_signed_overflow"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_float_to_int",
+      "pattern": "float_to_int|floating.*truncation|fp.*conversion",
+      "severity": "warning",
+      "category": "runtime_error",
+      "description": "Potential issue in floating-point to integer conversion",
+      "common_causes": [
+        "Float value exceeds integer range",
+        "NaN or infinity conversion",
+        "Precision loss",
+        "Unintended truncation"
+      ],
+      "solutions": [
+        "Check float is in integer range",
+        "Handle NaN/infinity cases",
+        "Use round/floor/ceil explicitly",
+        "Add range preconditions"
+      ],
+      "examples": [
+        {
+          "error": "float_to_int: value may exceed INT_MAX",
+          "context": "int x = (int)float_value;",
+          "fix": "requires float_value >= INT_MIN && float_value <= INT_MAX"
+        }
+      ],
+      "related_errors": ["rte_signed_downcast"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    },
+    {
+      "id": "rte_initialized",
+      "pattern": "initialized|uninitialized|init.*check",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Potential use of uninitialized variable",
+      "common_causes": [
+        "Variable used before assignment",
+        "Conditional initialization",
+        "Missing initialization in path",
+        "Out parameter not set"
+      ],
+      "solutions": [
+        "Initialize at declaration",
+        "Ensure all paths initialize",
+        "Use \\initialized ACSL predicate",
+        "Add assigns clause"
+      ],
+      "examples": [
+        {
+          "error": "initialized: x may be uninitialized",
+          "context": "int x; if (cond) x = 1; return x;",
+          "fix": "int x = 0; or ensure all paths initialize"
+        }
+      ],
+      "related_errors": ["rte_mem_access"],
+      "documentation_url": "https://frama-c.com/fc-plugins/rte.html"
+    }
+  ],
+  "general_tips": [
+    "RTE plugin generates ACSL assertions for runtime errors",
+    "Run with: frama-c -rte file.c to insert runtime checks",
+    "Use -rte-select to choose specific checks",
+    "Generated assertions can be proved with WP or EVA",
+    "RTE covers: overflow, division, memory, shifts, casts",
+    "Combine RTE with WP for complete absence-of-RTE proof",
+    "Use -rte-trivial to keep obviously true assertions"
+  ],
+  "common_workflows": [
+    {
+      "name": "Generate runtime assertions",
+      "steps": [
+        "frama-c -rte file.c -then -print",
+        "Review generated assertions",
+        "Prove with -wp or -eva"
+      ]
+    },
+    {
+      "name": "Prove absence of runtime errors",
+      "steps": [
+        "frama-c -rte -wp file.c",
+        "Review unproved assertions",
+        "Add ACSL annotations to discharge"
+      ]
+    },
+    {
+      "name": "Selective RTE checking",
+      "steps": [
+        "frama-c -rte-select signed_overflow,division_by_zero file.c",
+        "Focus on specific error classes"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "28.0": "Chromium release, improved performance",
+    "27.0": "Cobalt, better EVA integration"
+  }
+}

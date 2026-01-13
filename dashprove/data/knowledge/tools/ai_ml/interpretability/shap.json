@@ -1,0 +1,121 @@
+{
+  "id": "shap",
+  "name": "SHAP",
+  "category": "ai_ml_interpretability",
+  "subcategory": "feature_attribution",
+
+  "description": "SHapley Additive exPlanations for model interpretability",
+  "long_description": "SHAP (SHapley Additive exPlanations) is a game-theoretic approach to explain ML model predictions. It connects optimal credit allocation with local explanations using Shapley values, providing consistent and locally accurate feature attributions.",
+
+  "capabilities": [
+    "feature_importance",
+    "local_explanations",
+    "global_explanations",
+    "tree_explainer",
+    "deep_explainer",
+    "kernel_explainer"
+  ],
+  "property_types": ["explanation", "attribution"],
+  "input_languages": ["python"],
+  "output_formats": ["values", "plot", "html"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install shap"}
+    ],
+    "dependencies": ["numpy", "scipy"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://shap.readthedocs.io/",
+    "tutorial": "https://shap.readthedocs.io/en/latest/example_notebooks/",
+    "api_reference": "https://shap.readthedocs.io/en/latest/api.html",
+    "examples": "https://github.com/shap/shap/tree/master/notebooks"
+  },
+
+  "tactics": [
+    {
+      "name": "TreeExplainer",
+      "description": "Fast exact for tree models",
+      "syntax": "shap.TreeExplainer(model)",
+      "when_to_use": "For XGBoost, LightGBM, RandomForest",
+      "examples": ["explainer = shap.TreeExplainer(xgb_model)\nshap_values = explainer.shap_values(X)"]
+    },
+    {
+      "name": "DeepExplainer",
+      "description": "Deep SHAP for neural networks",
+      "syntax": "shap.DeepExplainer(model, background)",
+      "when_to_use": "For deep learning models",
+      "examples": ["explainer = shap.DeepExplainer(model, X_train[:100])"]
+    },
+    {
+      "name": "KernelExplainer",
+      "description": "Model-agnostic SHAP",
+      "syntax": "shap.KernelExplainer(model.predict, background)",
+      "when_to_use": "For any model",
+      "examples": ["explainer = shap.KernelExplainer(model.predict, X_train)"]
+    },
+    {
+      "name": "summary_plot",
+      "description": "Global feature importance",
+      "syntax": "shap.summary_plot(shap_values, X)",
+      "when_to_use": "To see overall feature impact",
+      "examples": ["shap.summary_plot(shap_values, X)"]
+    },
+    {
+      "name": "force_plot",
+      "description": "Single prediction explanation",
+      "syntax": "shap.force_plot(expected_value, shap_values[0], X[0])",
+      "when_to_use": "To explain individual predictions",
+      "examples": ["shap.force_plot(explainer.expected_value, shap_values[0], X.iloc[0])"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Additivity check failed",
+      "meaning": "SHAP values don't sum correctly",
+      "common_causes": ["Model-explainer mismatch", "Numerical issues"],
+      "fixes": ["Use correct explainer", "Increase background samples"]
+    },
+    {
+      "pattern": "Memory error",
+      "meaning": "Too much data for KernelExplainer",
+      "common_causes": ["Large dataset", "High-dimensional features"],
+      "fixes": ["Reduce background size", "Use TreeExplainer if possible"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["explanation", "attribution"],
+    "cli_command": "dashprove verify --backend shap"
+  },
+
+  "performance": {
+    "typical_runtime": "ms (tree) to hours (kernel)",
+    "scalability": "TreeExplainer scales well",
+    "memory_usage": "Variable"
+  },
+
+  "comparisons": {
+    "similar_tools": ["lime", "captum", "interpretml"],
+    "advantages": [
+      "Theoretically grounded",
+      "Consistent explanations",
+      "Beautiful visualizations"
+    ],
+    "disadvantages": [
+      "KernelExplainer slow",
+      "Deep SHAP approximation"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.44.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Scott Lundberg",
+    "license": "MIT"
+  }
+}

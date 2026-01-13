@@ -1,0 +1,186 @@
+{
+  "tool": "swift_snapshot_testing",
+  "version": "1.15.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "snapshot_mismatch",
+      "pattern": "Snapshot does not match reference",
+      "message": "Snapshot comparison failed",
+      "cause": "UI or data changed from recorded snapshot",
+      "solutions": [
+        {
+          "approach": "Record new snapshot",
+          "code": "isRecording = true  // Set in test, run once, then remove",
+          "when": "Change is intentional"
+        },
+        {
+          "approach": "Review diff",
+          "code": "// Check __Snapshots__ folder for diff images",
+          "when": "Need to verify what changed"
+        },
+        {
+          "approach": "Use assertSnapshot precision",
+          "code": "assertSnapshot(matching: view, as: .image(precision: 0.99))",
+          "when": "Minor rendering differences acceptable"
+        }
+      ]
+    },
+    {
+      "id": "no_reference_snapshot",
+      "pattern": "No reference was found",
+      "message": "Reference snapshot doesn't exist",
+      "cause": "First run of test or snapshot file deleted",
+      "solutions": [
+        {
+          "approach": "Record initial snapshot",
+          "code": "isRecording = true\nassertSnapshot(matching: view, as: .image)",
+          "when": "New test needs baseline"
+        },
+        {
+          "approach": "Check file location",
+          "code": "// Verify __Snapshots__/TestClassName/ exists",
+          "when": "Snapshot might be in wrong location"
+        },
+        {
+          "approach": "Set custom path",
+          "code": "assertSnapshot(matching: view, as: .image, snapshotDirectory: \"path/\")",
+          "when": "Using non-standard snapshot directory"
+        }
+      ]
+    },
+    {
+      "id": "image_strategy_error",
+      "pattern": "The image strategy requires a host app",
+      "message": "Cannot render view without host app",
+      "cause": "Testing view without UIApplication context",
+      "solutions": [
+        {
+          "approach": "Set explicit size",
+          "code": "assertSnapshot(matching: view, as: .image(size: CGSize(width: 375, height: 812)))",
+          "when": "View needs explicit dimensions"
+        },
+        {
+          "approach": "Use unit test target with host",
+          "code": "// In target settings, set Host Application",
+          "when": "Need full UIKit context"
+        },
+        {
+          "approach": "Wrap in UIViewController",
+          "code": "let vc = UIHostingController(rootView: swiftUIView)\nassertSnapshot(matching: vc, as: .image)",
+          "when": "Testing SwiftUI views"
+        }
+      ]
+    },
+    {
+      "id": "text_snapshot_diff",
+      "pattern": "Difference: .*",
+      "message": "Text snapshot differs",
+      "cause": "String or dump output changed",
+      "solutions": [
+        {
+          "approach": "Update expected text",
+          "code": "isRecording = true  // Re-record",
+          "when": "Output change is correct"
+        },
+        {
+          "approach": "Use custom dump",
+          "code": "assertSnapshot(matching: object, as: .dump)",
+          "when": "Testing data structures"
+        },
+        {
+          "approach": "Compare specific fields",
+          "code": "assertSnapshot(matching: object.description, as: .lines)",
+          "when": "Only care about certain output"
+        }
+      ]
+    },
+    {
+      "id": "device_mismatch",
+      "pattern": "Recorded on .* but running on",
+      "message": "Snapshot recorded on different device",
+      "cause": "Device configuration doesn't match recording",
+      "solutions": [
+        {
+          "approach": "Set explicit configuration",
+          "code": "assertSnapshot(\n    matching: vc,\n    as: .image(on: .iPhone13Pro)\n)",
+          "when": "Need consistent device config"
+        },
+        {
+          "approach": "Use named snapshots per device",
+          "code": "assertSnapshot(\n    matching: vc,\n    as: .image,\n    named: \"iPhone14\"\n)",
+          "when": "Testing multiple devices"
+        },
+        {
+          "approach": "Set in setUp",
+          "code": "override func setUp() {\n    diffTool = \"ksdiff\"\n    record = false\n}",
+          "when": "Need consistent test config"
+        }
+      ]
+    },
+    {
+      "id": "async_snapshot_error",
+      "pattern": "View has not finished rendering",
+      "message": "Async content not loaded",
+      "cause": "View contains async loading that didn't complete",
+      "solutions": [
+        {
+          "approach": "Wait for async content",
+          "code": "let expectation = XCTestExpectation()\nvc.onLoad = { expectation.fulfill() }\nwait(for: [expectation], timeout: 5)\nassertSnapshot(matching: vc, as: .image)",
+          "when": "View loads data asynchronously"
+        },
+        {
+          "approach": "Use mock data",
+          "code": "let view = MyView(viewModel: MockViewModel())",
+          "when": "Can inject preloaded data"
+        },
+        {
+          "approach": "Inject RunLoop delay",
+          "code": "RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))\nassertSnapshot(matching: view, as: .image)",
+          "when": "Short render delay needed"
+        }
+      ]
+    },
+    {
+      "id": "animation_in_progress",
+      "pattern": "Animation in progress",
+      "message": "View is animating during snapshot",
+      "cause": "Animation not completed before snapshot capture",
+      "solutions": [
+        {
+          "approach": "Disable animations",
+          "code": "UIView.setAnimationsEnabled(false)",
+          "when": "Animations not needed in test"
+        },
+        {
+          "approach": "Wait for animation completion",
+          "code": "CATransaction.setCompletionBlock {\n    assertSnapshot(matching: view, as: .image)\n}",
+          "when": "Need post-animation state"
+        },
+        {
+          "approach": "Skip to end of animation",
+          "code": "view.layer.removeAllAnimations()",
+          "when": "Want final state only"
+        }
+      ]
+    },
+    {
+      "id": "trait_collection_mismatch",
+      "pattern": "Trait collection differs",
+      "message": "Device traits don't match snapshot",
+      "cause": "Size class, dark mode, or accessibility traits differ",
+      "solutions": [
+        {
+          "approach": "Set explicit traits",
+          "code": "assertSnapshot(\n    matching: vc,\n    as: .image(traits: .init(userInterfaceStyle: .dark))\n)",
+          "when": "Need specific appearance"
+        },
+        {
+          "approach": "Test multiple trait combos",
+          "code": "for style in [.light, .dark] {\n    assertSnapshot(\n        matching: vc,\n        as: .image(traits: .init(userInterfaceStyle: style)),\n        named: \"\\(style)\"\n    )\n}",
+          "when": "Verifying all appearances"
+        }
+      ]
+    }
+  ]
+}

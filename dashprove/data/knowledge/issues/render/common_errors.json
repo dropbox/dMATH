@@ -1,0 +1,191 @@
+{
+  "tool": "render",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "build_error",
+      "pattern": "Build failed|exit code|npm ERR!|Command.*failed",
+      "message": "Build failed",
+      "cause": "Build command or dependencies error",
+      "solutions": [
+        {
+          "approach": "Check build command",
+          "code": "# In Render dashboard:\n# Build Command: npm install && npm run build\n# Start Command: npm start",
+          "when": "Wrong command"
+        },
+        {
+          "approach": "Check Node version",
+          "code": "# Set in Environment:\nNODE_VERSION=18",
+          "when": "Node version"
+        },
+        {
+          "approach": "Native dependencies",
+          "code": "# render.yaml:\nbuildCommand: apt-get update && apt-get install -y build-essential && npm install",
+          "when": "Need native deps"
+        }
+      ]
+    },
+    {
+      "id": "deploy_error",
+      "pattern": "deploy.*failed|deployment.*error|Service.*unavailable",
+      "message": "Deployment failed",
+      "cause": "Service configuration or startup error",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "# View logs in Render dashboard\n# Events tab shows deploy history",
+          "when": "See error"
+        },
+        {
+          "approach": "Health check path",
+          "code": "# Service Settings > Health Check Path\n# Set to your health endpoint: /health",
+          "when": "Health check failing"
+        },
+        {
+          "approach": "render.yaml",
+          "code": "services:\n  - type: web\n    name: my-app\n    env: node\n    buildCommand: npm install && npm run build\n    startCommand: npm start\n    healthCheckPath: /health",
+          "when": "Use IaC"
+        }
+      ]
+    },
+    {
+      "id": "env_error",
+      "pattern": "environment.*undefined|Missing.*variable|process.env",
+      "message": "Missing environment variable",
+      "cause": "Env var not set",
+      "solutions": [
+        {
+          "approach": "Add in dashboard",
+          "code": "# Service > Environment > Add Environment Variable\n# Key: API_KEY, Value: your-value",
+          "when": "Add variable"
+        },
+        {
+          "approach": "From file",
+          "code": "# Upload .env file in Environment section\n# Or use Secret Files",
+          "when": "Import from file"
+        },
+        {
+          "approach": "render.yaml",
+          "code": "services:\n  - type: web\n    name: my-app\n    envVars:\n      - key: API_KEY\n        sync: false  # Manual entry required",
+          "when": "IaC definition"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "DATABASE_URL.*not set|connection.*refused|postgres.*failed",
+      "message": "Database connection error",
+      "cause": "Database not provisioned or connected",
+      "solutions": [
+        {
+          "approach": "Create database",
+          "code": "# New > PostgreSQL\n# Copy Internal Database URL to service env",
+          "when": "No database"
+        },
+        {
+          "approach": "Link database",
+          "code": "# In render.yaml:\ndatabases:\n  - name: mydb\n    databaseName: mydb\n    user: myuser\n\nservices:\n  - type: web\n    envVars:\n      - key: DATABASE_URL\n        fromDatabase:\n          name: mydb\n          property: connectionString",
+          "when": "Link to service"
+        },
+        {
+          "approach": "External DB",
+          "code": "# Add DATABASE_URL as environment variable\n# pointing to external database",
+          "when": "External database"
+        }
+      ]
+    },
+    {
+      "id": "port_error",
+      "pattern": "PORT.*undefined|cannot bind|EADDRINUSE|10000",
+      "message": "Port configuration error",
+      "cause": "App not using Render-provided PORT",
+      "solutions": [
+        {
+          "approach": "Use PORT env",
+          "code": "const port = process.env.PORT || 10000;\napp.listen(port);",
+          "when": "Node.js"
+        },
+        {
+          "approach": "Python",
+          "code": "import os\nport = int(os.environ.get('PORT', 10000))\napp.run(host='0.0.0.0', port=port)",
+          "when": "Python"
+        },
+        {
+          "approach": "Default port",
+          "code": "# Render uses PORT=10000 by default\n# Your app must bind to this port",
+          "when": "Port info"
+        }
+      ]
+    },
+    {
+      "id": "static_site_error",
+      "pattern": "static.*error|404.*not found|publish directory",
+      "message": "Static site error",
+      "cause": "Wrong publish directory or build output",
+      "solutions": [
+        {
+          "approach": "Set publish dir",
+          "code": "# Build Command: npm run build\n# Publish Directory: dist (or build, out, public)",
+          "when": "Wrong directory"
+        },
+        {
+          "approach": "SPA routing",
+          "code": "# Rewrite Rules:\n/*  /index.html  200",
+          "when": "Client-side routing"
+        },
+        {
+          "approach": "Check build",
+          "code": "npm run build\nls dist/  # Verify output exists",
+          "when": "Test locally"
+        }
+      ]
+    },
+    {
+      "id": "cron_job_error",
+      "pattern": "cron.*failed|schedule.*error|job.*timeout",
+      "message": "Cron job error",
+      "cause": "Cron configuration or execution error",
+      "solutions": [
+        {
+          "approach": "Check schedule",
+          "code": "# Cron syntax: minute hour day month weekday\n# 0 * * * *  = Every hour\n# */5 * * * * = Every 5 minutes",
+          "when": "Schedule syntax"
+        },
+        {
+          "approach": "Check timeout",
+          "code": "# Free: 15 min timeout\n# Paid: varies by plan\n# Optimize job to complete faster",
+          "when": "Timeout issue"
+        },
+        {
+          "approach": "Check logs",
+          "code": "# View cron job logs in Render dashboard",
+          "when": "See error"
+        }
+      ]
+    },
+    {
+      "id": "disk_error",
+      "pattern": "disk.*full|no space|ENOSPC|persistent disk",
+      "message": "Disk space error",
+      "cause": "Disk full or not attached",
+      "solutions": [
+        {
+          "approach": "Add disk",
+          "code": "# Service > Disks > Add Disk\n# Mount Path: /data\n# Size: 1 GB",
+          "when": "No persistent disk"
+        },
+        {
+          "approach": "Increase size",
+          "code": "# Resize disk in Render dashboard\n# Or use render.yaml:\ndisk:\n  name: data\n  mountPath: /data\n  sizeGB: 10",
+          "when": "Disk full"
+        },
+        {
+          "approach": "Cleanup",
+          "code": "# SSH into service and clean up files\n# Or add cleanup to your app",
+          "when": "Temporary files"
+        }
+      ]
+    }
+  ]
+}

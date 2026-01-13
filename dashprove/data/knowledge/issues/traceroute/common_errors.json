@@ -1,0 +1,150 @@
+{
+  "tool": "traceroute",
+  "version": "2.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Operation not permitted|socket.*Permission denied|Can't.*socket|must be root",
+      "message": "Insufficient privileges",
+      "cause": "Raw socket access requires root",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo traceroute host",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "UDP mode",
+          "code": "traceroute -U host  # UDP mode, non-root",
+          "when": "Non-root user"
+        },
+        {
+          "approach": "TCP mode",
+          "code": "traceroute -T host  # TCP SYN",
+          "when": "UDP blocked"
+        }
+      ]
+    },
+    {
+      "id": "all_asterisks",
+      "pattern": "\\* \\* \\*|no reply|all timeouts",
+      "message": "No response from hop",
+      "cause": "Router/firewall blocking traceroute packets",
+      "solutions": [
+        {
+          "approach": "Try ICMP",
+          "code": "sudo traceroute -I host  # ICMP echo",
+          "when": "UDP blocked"
+        },
+        {
+          "approach": "Try TCP",
+          "code": "sudo traceroute -T -p 80 host  # TCP to port 80",
+          "when": "Firewall allows HTTP"
+        },
+        {
+          "approach": "Increase wait",
+          "code": "traceroute -w 5 host  # 5 second wait",
+          "when": "Slow routers"
+        },
+        {
+          "approach": "Use mtr",
+          "code": "mtr --report host  # Better tool",
+          "when": "Continuous monitoring"
+        }
+      ]
+    },
+    {
+      "id": "unknown_host",
+      "pattern": "unknown host|cannot resolve|Name or service not known",
+      "message": "DNS resolution failed",
+      "cause": "Invalid hostname or DNS unavailable",
+      "solutions": [
+        {
+          "approach": "Use IP",
+          "code": "traceroute 8.8.8.8",
+          "when": "Bypass DNS"
+        },
+        {
+          "approach": "Skip reverse DNS",
+          "code": "traceroute -n host  # No DNS lookups",
+          "when": "Faster output"
+        },
+        {
+          "approach": "Check DNS",
+          "code": "dig host\nnslookup host",
+          "when": "Verify resolution"
+        }
+      ]
+    },
+    {
+      "id": "max_hops_reached",
+      "pattern": "reached.*max|max hops exceeded|30 hops reached",
+      "message": "Max TTL reached without destination",
+      "cause": "Destination too far or unreachable",
+      "solutions": [
+        {
+          "approach": "Increase max",
+          "code": "traceroute -m 64 host  # Up to 64 hops",
+          "when": "Far destination"
+        },
+        {
+          "approach": "Start closer",
+          "code": "traceroute -f 15 host  # Start at TTL 15",
+          "when": "Skip known hops"
+        },
+        {
+          "approach": "Check path",
+          "code": "mtr -rw host  # Wide report format",
+          "when": "Detailed analysis"
+        }
+      ]
+    },
+    {
+      "id": "network_unreachable",
+      "pattern": "Network is unreachable|No route to host|!N|!H",
+      "message": "No network path exists",
+      "cause": "Routing issue or destination unreachable",
+      "solutions": [
+        {
+          "approach": "Check routing",
+          "code": "ip route get dest_ip\nroute -n",
+          "when": "Verify routes"
+        },
+        {
+          "approach": "Check gateway",
+          "code": "traceroute $(ip route | grep default | awk '{print $3}')",
+          "when": "Gateway first"
+        },
+        {
+          "approach": "Source interface",
+          "code": "traceroute -i eth0 host  # Specific interface",
+          "when": "Multi-homed"
+        }
+      ]
+    },
+    {
+      "id": "filtered_response",
+      "pattern": "!X|!A|!C|Administratively prohibited|filtered",
+      "message": "Administratively filtered",
+      "cause": "ACL or firewall blocking at hop",
+      "solutions": [
+        {
+          "approach": "Different protocol",
+          "code": "sudo traceroute -I host  # Try ICMP\nsudo traceroute -T -p 443 host  # Try HTTPS port",
+          "when": "Protocol blocked"
+        },
+        {
+          "approach": "Different source port",
+          "code": "traceroute -p 53 host  # UDP source port 53",
+          "when": "DNS allowed"
+        },
+        {
+          "approach": "Paris traceroute",
+          "code": "paris-traceroute host  # Load balancer aware",
+          "when": "ECMP routing"
+        }
+      ]
+    }
+  ]
+}

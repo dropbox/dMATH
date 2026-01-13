@@ -1,0 +1,133 @@
+{
+  "tool": "deepeval",
+  "version": "1.0.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_not_configured",
+      "pattern": "(model.*not configured|API.*key|OPENAI_API_KEY)",
+      "message": "LLM model not configured for evaluation",
+      "cause": "DeepEval metrics require LLM access for evaluation",
+      "solutions": [
+        {
+          "approach": "Set OpenAI key",
+          "code": "import os\nos.environ['OPENAI_API_KEY'] = 'your-api-key'\n# Or use local model\nfrom deepeval.models import GPTModel\nmodel = GPTModel(model='gpt-4')",
+          "when": "Using OpenAI"
+        },
+        {
+          "approach": "Use custom model",
+          "code": "from deepeval.models import DeepEvalBaseLLM\nclass CustomModel(DeepEvalBaseLLM):\n    def generate(self, prompt):\n        return your_model(prompt)\nmetric = AnswerRelevancyMetric(model=CustomModel())",
+          "when": "Using local/custom model"
+        }
+      ]
+    },
+    {
+      "id": "metric_threshold_error",
+      "pattern": "(threshold|score.*below|metric.*failed)",
+      "message": "Metric threshold not met",
+      "cause": "LLM output doesn't meet quality threshold",
+      "solutions": [
+        {
+          "approach": "Adjust threshold",
+          "code": "from deepeval.metrics import AnswerRelevancyMetric\nmetric = AnswerRelevancyMetric(threshold=0.5)  # Lower threshold",
+          "when": "Threshold too strict"
+        },
+        {
+          "approach": "Check scores",
+          "code": "from deepeval import evaluate\nresult = evaluate([test_case], [metric])\nprint(f'Score: {result.scores[0]}')\nprint(f'Reason: {result.reasons[0]}')",
+          "when": "Understanding failures"
+        }
+      ]
+    },
+    {
+      "id": "test_case_error",
+      "pattern": "(LLMTestCase|input.*required|actual_output)",
+      "message": "Test case configuration error",
+      "cause": "Required fields missing from test case",
+      "solutions": [
+        {
+          "approach": "Create proper test case",
+          "code": "from deepeval.test_case import LLMTestCase\ntest_case = LLMTestCase(\n    input='What is the capital of France?',\n    actual_output='Paris is the capital of France.',\n    expected_output='Paris',  # Optional\n    context=['France is a country in Europe.']  # For RAG\n)",
+          "when": "Setting up test case"
+        },
+        {
+          "approach": "Add retrieval context",
+          "code": "test_case = LLMTestCase(\n    input=query,\n    actual_output=llm_response,\n    retrieval_context=retrieved_docs  # List of strings\n)",
+          "when": "Evaluating RAG"
+        }
+      ]
+    },
+    {
+      "id": "hallucination_detection_error",
+      "pattern": "(hallucination|factual|grounding)",
+      "message": "Hallucination metric error",
+      "cause": "Context required for hallucination detection",
+      "solutions": [
+        {
+          "approach": "Provide context",
+          "code": "from deepeval.metrics import HallucinationMetric\nmetric = HallucinationMetric(threshold=0.3)\ntest_case = LLMTestCase(\n    input=question,\n    actual_output=response,\n    context=source_documents  # Required for hallucination check\n)",
+          "when": "Checking hallucinations"
+        },
+        {
+          "approach": "Use faithfulness metric",
+          "code": "from deepeval.metrics import FaithfulnessMetric\nmetric = FaithfulnessMetric(threshold=0.7)",
+          "when": "Alternative to hallucination"
+        }
+      ]
+    },
+    {
+      "id": "async_evaluation_error",
+      "pattern": "(async|await|concurrent)",
+      "message": "Async evaluation error",
+      "cause": "Async evaluation requires proper setup",
+      "solutions": [
+        {
+          "approach": "Run async evaluation",
+          "code": "import asyncio\nfrom deepeval import aevaluate\nresult = asyncio.run(aevaluate([test_case], [metric]))",
+          "when": "Using async API"
+        },
+        {
+          "approach": "Batch evaluation",
+          "code": "from deepeval import evaluate\nresults = evaluate(\n    test_cases,\n    metrics,\n    run_async=True  # Enable parallel\n)",
+          "when": "Evaluating multiple"
+        }
+      ]
+    },
+    {
+      "id": "pytest_integration_error",
+      "pattern": "(pytest|assert_test|decorator)",
+      "message": "Pytest integration error",
+      "cause": "Test decorator or assertion misconfigured",
+      "solutions": [
+        {
+          "approach": "Use pytest decorator",
+          "code": "import pytest\nfrom deepeval import assert_test\nfrom deepeval.test_case import LLMTestCase\n\n@pytest.mark.parametrize('test_case', test_cases)\ndef test_llm(test_case):\n    assert_test(test_case, [metric])",
+          "when": "Using pytest"
+        },
+        {
+          "approach": "Run with deepeval",
+          "code": "# Run from command line\n# deepeval test run test_file.py",
+          "when": "Using CLI"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_error",
+      "pattern": "(rate.*limit|429|too many requests)",
+      "message": "LLM API rate limit exceeded",
+      "cause": "Too many evaluation calls to LLM API",
+      "solutions": [
+        {
+          "approach": "Add delay",
+          "code": "import time\nfor test_case in test_cases:\n    result = evaluate([test_case], [metric])\n    time.sleep(1)  # Rate limit delay",
+          "when": "Hitting rate limits"
+        },
+        {
+          "approach": "Use caching",
+          "code": "from deepeval import evaluate\nresults = evaluate(\n    test_cases, metrics,\n    use_cache=True  # Cache evaluation results\n)",
+          "when": "Repeated evaluations"
+        }
+      ]
+    }
+  ]
+}

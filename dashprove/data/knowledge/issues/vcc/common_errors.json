@@ -1,0 +1,328 @@
+{
+  "tool_id": "vcc",
+  "tool_name": "VCC (Verified C Compiler)",
+  "tool_version": "2.3",
+  "category": "c_verification",
+  "error_patterns": [
+    {
+      "id": "vcc_precondition_failure",
+      "pattern": "precondition might not hold|requires clause might be violated|precondition failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC cannot prove a function's precondition holds at a call site",
+      "common_causes": [
+        "Caller doesn't establish required condition",
+        "Pointer validity not established",
+        "Type state not satisfied",
+        "Missing claims or invariants"
+      ],
+      "solutions": [
+        "Add assertions before the call",
+        "Ensure pointer validity with \\valid",
+        "Establish type state invariants",
+        "Use _(unwrap) and _(wrap) for ownership"
+      ],
+      "examples": [
+        {
+          "error": "precondition might not hold: requires(x > 0)",
+          "context": "Calling function with potentially non-positive x",
+          "fix": "assert(x > 0); call_function(x);"
+        }
+      ],
+      "related_errors": ["vcc_postcondition_failure"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_postcondition_failure",
+      "pattern": "postcondition might not hold|ensures clause might be violated|postcondition failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC cannot prove a function's postcondition is satisfied",
+      "common_causes": [
+        "Implementation doesn't satisfy specification",
+        "Missing loop invariant",
+        "Type state not properly updated",
+        "Ownership not transferred correctly"
+      ],
+      "solutions": [
+        "Fix the implementation",
+        "Add loop invariants",
+        "Use _(wrap) to establish type state",
+        "Verify ownership transfers"
+      ],
+      "examples": [
+        {
+          "error": "postcondition might not hold: ensures(result >= 0)",
+          "context": "Function may return negative",
+          "fix": "Ensure all return paths satisfy ensures"
+        }
+      ],
+      "related_errors": ["vcc_precondition_failure"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_loop_invariant_failure",
+      "pattern": "loop invariant might not hold|invariant not maintained|loop invariant failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC cannot prove the loop invariant is maintained",
+      "common_causes": [
+        "Invariant not established before loop",
+        "Loop body breaks invariant",
+        "Missing writes clause",
+        "Incorrect invariant"
+      ],
+      "solutions": [
+        "Verify invariant holds initially",
+        "Check all paths maintain invariant",
+        "Add _(writes) clause for modified objects",
+        "Strengthen or weaken invariant"
+      ],
+      "examples": [
+        {
+          "error": "loop invariant might not hold: invariant(i <= n)",
+          "context": "i incremented past n",
+          "fix": "Fix loop bound or strengthen invariant"
+        }
+      ],
+      "related_errors": ["vcc_postcondition_failure"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_assertion_failure",
+      "pattern": "assertion might not hold|assert might fail|assertion failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC cannot prove an assertion",
+      "common_causes": [
+        "Insufficient context for assertion",
+        "Logic error",
+        "Missing invariants or lemmas",
+        "Incorrect assumptions"
+      ],
+      "solutions": [
+        "Add preceding assertions to build context",
+        "Review logic leading to assertion",
+        "Add lemma functions",
+        "Check assumptions"
+      ],
+      "examples": [
+        {
+          "error": "assertion might not hold: assert(ptr != NULL)",
+          "context": "Pointer may be null",
+          "fix": "Add requires(ptr != NULL) or check before"
+        }
+      ],
+      "related_errors": ["vcc_precondition_failure"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_memory_safety",
+      "pattern": "memory access might fail|invalid pointer|buffer overrun|dereference failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC cannot prove memory access is safe",
+      "common_causes": [
+        "Null pointer dereference",
+        "Buffer overflow",
+        "Use after free",
+        "Uninitialized memory access"
+      ],
+      "solutions": [
+        "Add \\valid(ptr) preconditions",
+        "Use \\extent or \\domain for arrays",
+        "Maintain ownership invariants",
+        "Track allocation state"
+      ],
+      "examples": [
+        {
+          "error": "memory access might fail: *(arr + i)",
+          "context": "Array index not bounded",
+          "fix": "requires(i >= 0 && i < len && \\valid(arr + (0..len-1)))"
+        }
+      ],
+      "related_errors": ["vcc_assertion_failure"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_ownership_error",
+      "pattern": "ownership.*error|mutable.*not owned|wrapped object|ownership failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC detected an ownership/type-state violation",
+      "common_causes": [
+        "Writing to non-owned object",
+        "Double wrap or unwrap",
+        "Ownership not transferred",
+        "Concurrent access to wrapped object"
+      ],
+      "solutions": [
+        "Use _(unwrap) before modification",
+        "Use _(wrap) after modification",
+        "Transfer ownership with _(give_up_owner)",
+        "Ensure single owner at any time"
+      ],
+      "examples": [
+        {
+          "error": "mutable field access on object not owned by current thread",
+          "context": "Writing shared object without unwrap",
+          "fix": "_(unwrap obj); obj->field = value; _(wrap obj);"
+        }
+      ],
+      "related_errors": ["vcc_type_state_error"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_type_state_error",
+      "pattern": "type state.*violated|invariant.*violated|object.*not.*closed",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "VCC detected a type state invariant violation",
+      "common_causes": [
+        "Object invariant broken",
+        "State machine transition violated",
+        "Initialization incomplete",
+        "Destructor called on open object"
+      ],
+      "solutions": [
+        "Verify invariant holds after modifications",
+        "Follow state machine transitions",
+        "Complete initialization before wrap",
+        "Unwrap before destruction"
+      ],
+      "examples": [
+        {
+          "error": "type invariant might be violated: invariant(count >= 0)",
+          "context": "count may become negative",
+          "fix": "Guard decrement with count > 0 check"
+        }
+      ],
+      "related_errors": ["vcc_ownership_error"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_writes_clause",
+      "pattern": "writes clause.*violated|object not in writes|modifies clause failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Function modifies object not listed in writes clause",
+      "common_causes": [
+        "Missing object in writes clause",
+        "Transitive write through pointer",
+        "Global variable modification",
+        "Writes clause too restrictive"
+      ],
+      "solutions": [
+        "Add object to writes clause",
+        "Include all reachable modified objects",
+        "Use _(writes \\extent(arr)) for arrays",
+        "Check global modifications"
+      ],
+      "examples": [
+        {
+          "error": "writes clause violated: obj not in writes set",
+          "context": "Modifying unlisted object",
+          "fix": "_(writes obj) in function contract"
+        }
+      ],
+      "related_errors": ["vcc_postcondition_failure"],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_timeout",
+      "pattern": "timeout|prover.*timeout|verification.*timeout",
+      "severity": "warning",
+      "category": "resource_exhaustion",
+      "description": "VCC/Z3 prover timed out",
+      "common_causes": [
+        "Complex arithmetic",
+        "Many quantifiers",
+        "Large function",
+        "Insufficient hints"
+      ],
+      "solutions": [
+        "Add _(assert) hints to guide prover",
+        "Split function into smaller pieces",
+        "Add lemma functions",
+        "Increase timeout with /t:N"
+      ],
+      "examples": [
+        {
+          "error": "verification timeout after 30s",
+          "context": "Complex loop verification",
+          "fix": "vcc /t:120 file.c or add intermediate assertions"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://vcc.codeplex.com/"
+    },
+    {
+      "id": "vcc_parsing_error",
+      "pattern": "parse error|syntax error|unexpected token",
+      "severity": "error",
+      "category": "input_error",
+      "description": "VCC failed to parse the source file",
+      "common_causes": [
+        "C syntax error",
+        "VCC annotation syntax error",
+        "Missing include",
+        "Unsupported C feature"
+      ],
+      "solutions": [
+        "Fix C syntax errors",
+        "Check VCC annotation syntax",
+        "Include vcc.h",
+        "Use supported C subset"
+      ],
+      "examples": [
+        {
+          "error": "parse error: unexpected '_(' ",
+          "context": "VCC annotation error",
+          "fix": "Check _(annotation) syntax"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://vcc.codeplex.com/"
+    }
+  ],
+  "general_tips": [
+    "VCC uses ownership/type-state methodology for concurrent C verification",
+    "Objects must be wrapped (closed) for invariants to hold",
+    "Use _(unwrap) and _(wrap) for modifications",
+    "Write _(requires) and _(ensures) for function contracts",
+    "Use _(writes) to specify modified objects",
+    "Ghost code with _(ghost ...) helps verification without runtime cost",
+    "VCC integrates with Z3 SMT solver"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic function verification",
+      "steps": [
+        "Add _(requires) preconditions",
+        "Add _(ensures) postconditions",
+        "Add _(writes) clause",
+        "Run vcc file.c"
+      ]
+    },
+    {
+      "name": "Data structure verification",
+      "steps": [
+        "Define _(invariant) for struct",
+        "Use _(wrap)/_(unwrap) for modifications",
+        "Maintain ownership through calls"
+      ]
+    },
+    {
+      "name": "Loop verification",
+      "steps": [
+        "Add _(invariant) in loop",
+        "Specify _(writes) in loop",
+        "Verify termination"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "2.3": "Last official release, integrates with VS2012",
+    "Note": "VCC is no longer actively maintained; consider Frama-C or Verifast"
+  }
+}

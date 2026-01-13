@@ -1,0 +1,118 @@
+{
+  "tool": "libsodium",
+  "category": "crypto",
+  "common_errors": [
+    {
+      "pattern": "sodium_init|initialization failed|not initialized",
+      "meaning": "libsodium not initialized",
+      "causes": [
+        "sodium_init() not called",
+        "Called init from multiple threads simultaneously",
+        "System RNG unavailable"
+      ],
+      "solutions": [
+        "Call sodium_init() once at program start",
+        "Returns 0 on success, 1 if already initialized",
+        "Check return value: -1 means failure"
+      ]
+    },
+    {
+      "pattern": "crypto_secretbox_open.*failed|decryption failed|verification failed",
+      "meaning": "Authenticated decryption failed",
+      "causes": [
+        "Wrong key or nonce",
+        "Ciphertext tampered with",
+        "Nonce mismatch"
+      ],
+      "solutions": [
+        "Verify correct key used",
+        "Check nonce matches encryption nonce",
+        "Ensure ciphertext includes auth tag (automatic in secretbox)"
+      ]
+    },
+    {
+      "pattern": "crypto_sign_open.*invalid signature|signature verification failed",
+      "meaning": "Signature doesn't verify",
+      "causes": [
+        "Message modified after signing",
+        "Wrong public key",
+        "Signature truncated or corrupted"
+      ],
+      "solutions": [
+        "Verify message bytes are identical",
+        "Check public key matches signing key",
+        "Signature is 64 bytes for Ed25519"
+      ]
+    },
+    {
+      "pattern": "nonce size|invalid nonce length",
+      "meaning": "Nonce wrong size for algorithm",
+      "causes": [
+        "Using wrong constant for nonce size",
+        "Mixing XSalsa20 (24) with ChaCha20 (12)",
+        "Raw nonce bytes wrong length"
+      ],
+      "solutions": [
+        "crypto_secretbox: 24 bytes (crypto_secretbox_NONCEBYTES)",
+        "crypto_aead_chacha20poly1305: 8 or 12 bytes",
+        "Use randombytes_buf(nonce, sizeof nonce)"
+      ]
+    },
+    {
+      "pattern": "key size|invalid key length",
+      "meaning": "Key wrong size for algorithm",
+      "causes": [
+        "Using wrong constant",
+        "Truncated key",
+        "Key derivation output wrong size"
+      ],
+      "solutions": [
+        "crypto_secretbox: 32 bytes (crypto_secretbox_KEYBYTES)",
+        "Use crypto_kdf_derive_from_key for key derivation",
+        "Check algorithm *_KEYBYTES constant"
+      ]
+    },
+    {
+      "pattern": "out of memory|allocation failed|sodium_malloc",
+      "meaning": "Secure memory allocation failed",
+      "causes": [
+        "System out of memory",
+        "Too many secure allocations",
+        "mlock limit reached"
+      ],
+      "solutions": [
+        "sodium_malloc is for sensitive data, use sparingly",
+        "Free with sodium_free",
+        "Check ulimit -l for mlock limit"
+      ]
+    },
+    {
+      "pattern": "cannot load libsodium|library not found|sodium not found",
+      "meaning": "libsodium shared library not found",
+      "causes": [
+        "libsodium not installed",
+        "LD_LIBRARY_PATH not set",
+        "Wrong architecture"
+      ],
+      "solutions": [
+        "Linux: apt install libsodium-dev",
+        "macOS: brew install libsodium",
+        "Set LD_LIBRARY_PATH if non-standard location"
+      ]
+    },
+    {
+      "pattern": "crypto_pwhash.*failed|OOM|memory limit",
+      "meaning": "Password hashing failed",
+      "causes": [
+        "Memory limit too low for opslimit",
+        "Out of memory for Argon2",
+        "Invalid parameters"
+      ],
+      "solutions": [
+        "Use crypto_pwhash_MEMLIMIT_INTERACTIVE (64MB)",
+        "Or reduce memlimit parameter",
+        "Increase system memory if needed"
+      ]
+    }
+  ]
+}

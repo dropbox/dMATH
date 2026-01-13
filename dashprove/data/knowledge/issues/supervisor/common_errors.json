@@ -1,0 +1,123 @@
+{
+  "tool": "supervisor",
+  "category": "process_management",
+  "common_errors": [
+    {
+      "pattern": "supervisor: error: can't connect|refused connection",
+      "meaning": "Can't connect to supervisord daemon",
+      "causes": [
+        "supervisord not running",
+        "Wrong socket/port configuration",
+        "Permission denied on socket"
+      ],
+      "solutions": [
+        "Start supervisord: sudo supervisord -c /etc/supervisor/supervisord.conf",
+        "Check socket file exists: /var/run/supervisor.sock",
+        "Verify supervisord.conf socket settings",
+        "Check permissions on socket file"
+      ]
+    },
+    {
+      "pattern": "ERROR \\(spawn error\\)|no such file|ENOENT",
+      "meaning": "Supervisor can't spawn the process",
+      "causes": [
+        "Command path wrong",
+        "Script not executable",
+        "Missing interpreter"
+      ],
+      "solutions": [
+        "Use absolute paths in command: /usr/bin/node /app/server.js",
+        "Make script executable: chmod +x script.py",
+        "Check PATH in environment section",
+        "Add shebang: #!/usr/bin/env python"
+      ]
+    },
+    {
+      "pattern": "FATAL.*Exited too quickly|spawn error",
+      "meaning": "Process exits immediately after start",
+      "causes": [
+        "Application crashes on startup",
+        "Missing environment variables",
+        "Port already in use"
+      ],
+      "solutions": [
+        "Check stderr_logfile for error details",
+        "Set environment variables in [program:x] section",
+        "Run command manually to debug",
+        "Set startsecs=0 temporarily for debugging"
+      ]
+    },
+    {
+      "pattern": "ERROR \\(already started\\)|process already running",
+      "meaning": "Process already managed by supervisor",
+      "causes": [
+        "Duplicate start command",
+        "Process already in RUNNING state",
+        "Configuration reload needed"
+      ],
+      "solutions": [
+        "Check status: supervisorctl status",
+        "Stop first: supervisorctl stop program:name",
+        "Reload after config change: supervisorctl reread; supervisorctl update"
+      ]
+    },
+    {
+      "pattern": "ERROR \\(not running\\)|no process",
+      "meaning": "Trying to control non-existent process",
+      "causes": [
+        "Process name typo",
+        "Configuration not loaded",
+        "Process group vs program name confusion"
+      ],
+      "solutions": [
+        "List programs: supervisorctl status",
+        "Reread config: supervisorctl reread",
+        "Update running processes: supervisorctl update",
+        "Check [program:name] section exists"
+      ]
+    },
+    {
+      "pattern": "config error|Invalid configuration|parsing error",
+      "meaning": "supervisord.conf syntax error",
+      "causes": [
+        "Invalid INI syntax",
+        "Missing required field",
+        "Wrong value type"
+      ],
+      "solutions": [
+        "Validate config: supervisord -c config.conf -n (foreground test)",
+        "Check INI format: [section] header, key=value pairs",
+        "Required fields: command in [program:x] section"
+      ]
+    },
+    {
+      "pattern": "LOG.*rotation|too many log files",
+      "meaning": "Log management issues",
+      "causes": [
+        "Log rotation not configured",
+        "Log files growing unbounded",
+        "Disk space exhausted"
+      ],
+      "solutions": [
+        "Set in program config: stdout_logfile_maxbytes=10MB",
+        "Set backup count: stdout_logfile_backups=5",
+        "Use external logrotate for more control"
+      ]
+    },
+    {
+      "pattern": "Permission denied|EACCES",
+      "meaning": "Permission error",
+      "causes": [
+        "Running as wrong user",
+        "Socket file permissions",
+        "Log directory not writable"
+      ],
+      "solutions": [
+        "Set user= in program section",
+        "Check directory= ownership",
+        "Ensure log directory writable by user",
+        "Use chmod on supervisor socket: chmod=0700"
+      ]
+    }
+  ]
+}

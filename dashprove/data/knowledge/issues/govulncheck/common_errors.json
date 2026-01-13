@@ -1,0 +1,197 @@
+{
+  "tool": "govulncheck",
+  "version": "1.1.3",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "vuln_found",
+      "pattern": "Vulnerability #\\d+: GO-\\d+-\\d+",
+      "message": "Vulnerability found in dependency",
+      "cause": "Code uses package with known security vulnerability",
+      "solutions": [
+        {
+          "approach": "Update dependency",
+          "code": "go get -u example.com/vulnerable@latest\ngo mod tidy",
+          "when": "Fixed version available"
+        },
+        {
+          "approach": "Update to specific version",
+          "code": "go get example.com/vulnerable@v1.2.3  # Patched version\ngo mod tidy",
+          "when": "Need specific patched version"
+        },
+        {
+          "approach": "Replace with fork",
+          "code": "// go.mod\nreplace example.com/vulnerable => github.com/fork/patched v1.0.0",
+          "when": "No official patch available"
+        }
+      ]
+    },
+    {
+      "id": "vuln_in_call_stack",
+      "pattern": "Your code is affected",
+      "message": "Vulnerable code is called from your code",
+      "cause": "Vulnerability is in code path actually used by your application",
+      "solutions": [
+        {
+          "approach": "Examine call stack",
+          "code": "govulncheck -show verbose ./...",
+          "when": "Need to see how vulnerability is reached"
+        },
+        {
+          "approach": "Update immediately",
+          "code": "go get -u ./...\ngo mod tidy",
+          "when": "Vulnerability is exploitable"
+        },
+        {
+          "approach": "Work around vulnerable call",
+          "code": "// Avoid calling the vulnerable function\n// Use alternative API if available",
+          "when": "Can't update dependency"
+        }
+      ]
+    },
+    {
+      "id": "vuln_imported_not_called",
+      "pattern": "imported but not called",
+      "message": "Vulnerable package imported but vulnerable function not called",
+      "cause": "Package has vulnerability but your code doesn't use vulnerable parts",
+      "solutions": [
+        {
+          "approach": "Update anyway",
+          "code": "go get -u example.com/package@latest",
+          "when": "Want to be safe"
+        },
+        {
+          "approach": "Lower priority",
+          "code": "// Document that vulnerable code path is not used",
+          "when": "Update is breaking or risky"
+        },
+        {
+          "approach": "Remove unused import",
+          "code": "// If package is unused, remove it\ngo mod tidy",
+          "when": "Package not needed"
+        }
+      ]
+    },
+    {
+      "id": "stdlib_vuln",
+      "pattern": "stdlib.*vulnerability|GO-\\d+-\\d+.*stdlib",
+      "message": "Vulnerability in Go standard library",
+      "cause": "Go version has known security issue",
+      "solutions": [
+        {
+          "approach": "Update Go",
+          "code": "go install golang.org/dl/go1.23.4@latest\ngo1.23.4 download",
+          "when": "Patched Go version available"
+        },
+        {
+          "approach": "Use go directive",
+          "code": "// go.mod\ngo 1.23.4  // Require patched version",
+          "when": "Enforce minimum Go version"
+        }
+      ]
+    },
+    {
+      "id": "no_vulnerabilities",
+      "pattern": "No vulnerabilities found",
+      "message": "No known vulnerabilities",
+      "cause": "All dependencies are patched or not vulnerable",
+      "solutions": [
+        {
+          "approach": "Continue regular scanning",
+          "code": "# Run periodically or in CI\ngovulncheck ./...",
+          "when": "Maintaining clean state"
+        }
+      ]
+    },
+    {
+      "id": "govulncheck_failed",
+      "pattern": "failed to load packages",
+      "message": "Could not analyze packages",
+      "cause": "Build errors prevent vulnerability analysis",
+      "solutions": [
+        {
+          "approach": "Fix build first",
+          "code": "go build ./...\n# Then run govulncheck",
+          "when": "Code has compile errors"
+        },
+        {
+          "approach": "Run go mod tidy",
+          "code": "go mod tidy\ngovulncheck ./...",
+          "when": "Dependencies out of sync"
+        }
+      ]
+    },
+    {
+      "id": "govulncheck_binary_mode",
+      "pattern": "Scanning your binary",
+      "message": "Scanning compiled binary",
+      "cause": "Running govulncheck in binary mode",
+      "solutions": [
+        {
+          "approach": "Use source mode for more detail",
+          "code": "govulncheck ./...  # Source mode",
+          "when": "Have source code"
+        },
+        {
+          "approach": "Continue with binary mode",
+          "code": "govulncheck /path/to/binary",
+          "when": "Only have compiled binary"
+        }
+      ]
+    },
+    {
+      "id": "govulncheck_outdated_db",
+      "pattern": "vulnerability database.*may be outdated",
+      "message": "Vulnerability database may be outdated",
+      "cause": "Local vulnerability database cache is old",
+      "solutions": [
+        {
+          "approach": "Force database update",
+          "code": "govulncheck -db https://vuln.go.dev ./...",
+          "when": "Need latest data"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "rm -rf $HOME/.cache/govulncheck",
+          "when": "Cache may be corrupted"
+        }
+      ]
+    },
+    {
+      "id": "govulncheck_json_output",
+      "pattern": "json output",
+      "message": "JSON format output",
+      "cause": "Using -json flag for machine-readable output",
+      "solutions": [
+        {
+          "approach": "Parse JSON output",
+          "code": "govulncheck -json ./... | jq '.vulns[]'",
+          "when": "Processing in CI/CD"
+        },
+        {
+          "approach": "Use text for humans",
+          "code": "govulncheck ./...  # Default text output",
+          "when": "Reading manually"
+        }
+      ]
+    },
+    {
+      "id": "govulncheck_test_only",
+      "pattern": "only found in test code",
+      "message": "Vulnerability only in test dependencies",
+      "cause": "Vulnerable code only used in tests, not production",
+      "solutions": [
+        {
+          "approach": "Still update",
+          "code": "go get -u example.com/testdep@latest",
+          "when": "Tests could be attack vector"
+        },
+        {
+          "approach": "Lower priority",
+          "code": "// Test-only vulnerabilities are lower risk",
+          "when": "Test code isolated"
+        }
+      ]
+    }
+  ]
+}

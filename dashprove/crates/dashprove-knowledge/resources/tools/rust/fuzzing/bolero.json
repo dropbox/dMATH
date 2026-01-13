@@ -1,0 +1,132 @@
+{
+  "id": "bolero",
+  "name": "Bolero",
+  "category": "rust_fuzzing",
+  "subcategory": "unified_testing",
+
+  "description": "Unified framework for fuzzing, property testing, and concolic execution",
+  "long_description": "Bolero is a unified testing framework that combines fuzzing, property-based testing, and concolic execution. Write tests once and run them with LibFuzzer, AFL, Honggfuzz, or property-based testing. It provides a single API that abstracts over multiple backends.",
+
+  "capabilities": [
+    "unified_test_api",
+    "libfuzzer_backend",
+    "afl_backend",
+    "honggfuzz_backend",
+    "property_testing",
+    "structured_fuzzing",
+    "shrinking",
+    "replay_crashes"
+  ],
+  "property_types": ["fuzz_target", "property_based"],
+  "input_languages": ["rust"],
+  "output_formats": ["crash_artifact", "failing_input", "shrunk_test_case"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add bolero --dev"},
+      {"type": "source", "url": "https://github.com/camshaft/bolero"}
+    ],
+    "dependencies": ["rust-nightly (for fuzzing)", "libfuzzer/afl/honggfuzz (optional)"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://camshaft.github.io/bolero/",
+    "tutorial": "https://camshaft.github.io/bolero/getting-started.html",
+    "api_reference": "https://docs.rs/bolero/latest/bolero/",
+    "examples": "https://github.com/camshaft/bolero/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "check",
+      "description": "Define test with check! macro",
+      "syntax": "bolero::check!().for_each(|input| { ... })",
+      "when_to_use": "Writing unified test that can run as fuzz or property test",
+      "examples": ["bolero::check!().for_each(|input: &[u8]| { assert!(parse(input).is_ok() || parse(input).is_err()); });"]
+    },
+    {
+      "name": "generator",
+      "description": "Use typed generator",
+      "syntax": "bolero::check!().with_type::<T>().for_each(|input: &T| { ... })",
+      "when_to_use": "Structured input generation",
+      "examples": ["bolero::check!().with_type::<Vec<u32>>().for_each(|v| { assert!(sort(v).is_sorted()); });"]
+    },
+    {
+      "name": "fuzz",
+      "description": "Run with fuzzer backend",
+      "syntax": "cargo bolero fuzz TARGET --engine libfuzzer",
+      "when_to_use": "Coverage-guided fuzzing",
+      "examples": ["cargo bolero fuzz my_test --engine libfuzzer", "cargo bolero fuzz my_test --engine afl"]
+    },
+    {
+      "name": "test",
+      "description": "Run as property test",
+      "syntax": "cargo test",
+      "when_to_use": "Quick validation during development",
+      "examples": ["cargo test", "cargo test -- --nocapture"]
+    },
+    {
+      "name": "shrink",
+      "description": "Automatic shrinking",
+      "syntax": "Automatic when using generators",
+      "when_to_use": "Bolero automatically shrinks failing inputs",
+      "examples": ["// Shrinking happens automatically for typed generators"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "test failed with input",
+      "meaning": "Property test found failing input",
+      "common_causes": ["Edge case not handled", "Logic error"],
+      "fixes": ["Handle edge case", "Fix logic bug"]
+    },
+    {
+      "pattern": "shrunk to",
+      "meaning": "Failing input minimized",
+      "common_causes": ["Minimal reproducer found"],
+      "fixes": ["Use shrunk input for debugging"]
+    },
+    {
+      "pattern": "panicked at",
+      "meaning": "Fuzzer found panic",
+      "common_causes": ["Unhandled case", "Overflow"],
+      "fixes": ["Add error handling", "Use checked operations"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["fuzz_target", "property_based"],
+    "cli_command": "dashprove verify --backend bolero"
+  },
+
+  "performance": {
+    "typical_runtime": "Varies by backend (test: seconds, fuzz: hours)",
+    "scalability": "Inherits from underlying engine",
+    "memory_usage": "Varies by backend"
+  },
+
+  "comparisons": {
+    "similar_tools": ["proptest", "libfuzzer", "afl"],
+    "advantages": [
+      "Write once, run with any engine",
+      "Combines fuzzing and property testing",
+      "Good typed generator support",
+      "Automatic shrinking"
+    ],
+    "disadvantages": [
+      "Abstraction overhead",
+      "Less control than direct engine use",
+      "Newer, less battle-tested"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.10.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Cameron Bytheway",
+    "license": "Apache-2.0"
+  }
+}

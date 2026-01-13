@@ -1,0 +1,242 @@
+{
+  "tool": "rust-analyzer",
+  "version": "2025-01-01",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "proc_macro_not_expanded",
+      "pattern": "proc.macro not expanded|failed to build proc.macro|unresolved proc.macro",
+      "message": "Proc macro expansion failed",
+      "cause": "rust-analyzer couldn't build or run proc macro crate",
+      "solutions": [
+        {
+          "approach": "Enable proc macro support",
+          "code": "// In settings.json:\n\"rust-analyzer.procMacro.enable\": true",
+          "when": "Proc macros disabled"
+        },
+        {
+          "approach": "Build proc macro crate first",
+          "code": "cargo build -p proc-macro-crate",
+          "when": "Proc macro not compiled"
+        },
+        {
+          "approach": "Check proc macro server",
+          "code": "// In settings.json:\n\"rust-analyzer.procMacro.server\": \"/path/to/rust-analyzer\"",
+          "when": "Server path incorrect"
+        },
+        {
+          "approach": "Restart rust-analyzer",
+          "code": "// VSCode: Ctrl+Shift+P -> rust-analyzer: Restart server",
+          "when": "Server state corrupted"
+        }
+      ]
+    },
+    {
+      "id": "cargo_check_failed",
+      "pattern": "cargo check failed|cargo watcher failed",
+      "message": "Background cargo check failed",
+      "cause": "Project has compilation errors or configuration issues",
+      "solutions": [
+        {
+          "approach": "Fix compilation errors",
+          "code": "cargo check",
+          "when": "Project doesn't compile"
+        },
+        {
+          "approach": "Check Cargo.toml",
+          "code": "cargo metadata --format-version 1",
+          "when": "Manifest may be invalid"
+        },
+        {
+          "approach": "Use clippy instead",
+          "code": "\"rust-analyzer.check.command\": \"clippy\"",
+          "when": "Want clippy integration"
+        }
+      ]
+    },
+    {
+      "id": "unresolved_import",
+      "pattern": "unresolved import|cannot find .* in",
+      "message": "Import cannot be resolved",
+      "cause": "Module not found or feature not enabled",
+      "solutions": [
+        {
+          "approach": "Check feature flags",
+          "code": "\"rust-analyzer.cargo.features\": [\"feature1\", \"feature2\"]",
+          "when": "Import behind feature gate"
+        },
+        {
+          "approach": "Reload workspace",
+          "code": "// rust-analyzer: Reload workspace",
+          "when": "After adding new dependency"
+        },
+        {
+          "approach": "Check cfg attributes",
+          "code": "// May be cfg-gated code:\n\"rust-analyzer.cargo.cfgs\": {\"target_os\": \"linux\"}",
+          "when": "Platform-specific code"
+        }
+      ]
+    },
+    {
+      "id": "type_mismatch",
+      "pattern": "expected .* found|type mismatch|mismatched types",
+      "message": "Type mismatch detected",
+      "cause": "Actual type differs from expected type",
+      "solutions": [
+        {
+          "approach": "Use hover for types",
+          "code": "// Hover over variable to see inferred type",
+          "when": "Unsure of actual type"
+        },
+        {
+          "approach": "Add type annotation",
+          "code": "let x: ExpectedType = value;",
+          "when": "Inference is wrong"
+        },
+        {
+          "approach": "Use .into() or From",
+          "code": "let x: Target = source.into();",
+          "when": "Types are convertible"
+        }
+      ]
+    },
+    {
+      "id": "workspace_not_loaded",
+      "pattern": "workspace not loaded|failed to load workspace|rust-analyzer failed to discover workspace",
+      "message": "Workspace discovery failed",
+      "cause": "No Cargo.toml found or in wrong directory",
+      "solutions": [
+        {
+          "approach": "Open correct directory",
+          "code": "// Open folder containing Cargo.toml as workspace root",
+          "when": "Wrong folder opened"
+        },
+        {
+          "approach": "Set linked projects",
+          "code": "\"rust-analyzer.linkedProjects\": [\"./Cargo.toml\", \"./other/Cargo.toml\"]",
+          "when": "Non-standard project layout"
+        },
+        {
+          "approach": "Set workspace folder",
+          "code": "\"rust-analyzer.files.excludeDirs\": [\"target\", \"node_modules\"]",
+          "when": "Scanning too much"
+        }
+      ]
+    },
+    {
+      "id": "high_memory_usage",
+      "pattern": "out of memory|memory limit|rust-analyzer crashed",
+      "message": "rust-analyzer using too much memory",
+      "cause": "Large codebase or too many dependencies",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "\"rust-analyzer.server.extraEnv\": {\"RA_LRU_CAP\": \"256\"}",
+          "when": "Have sufficient RAM"
+        },
+        {
+          "approach": "Disable features",
+          "code": "\"rust-analyzer.inlayHints.enable\": false",
+          "when": "Need to reduce load"
+        },
+        {
+          "approach": "Exclude directories",
+          "code": "\"rust-analyzer.files.excludeDirs\": [\"vendor\", \"generated\"]",
+          "when": "Large vendored deps"
+        }
+      ]
+    },
+    {
+      "id": "slow_analysis",
+      "pattern": "analyzing|slow|indexing",
+      "message": "Analysis very slow",
+      "cause": "Large codebase or slow disk",
+      "solutions": [
+        {
+          "approach": "Wait for initial indexing",
+          "code": "// First load of large project takes time",
+          "when": "Just opened project"
+        },
+        {
+          "approach": "Enable caching",
+          "code": "\"rust-analyzer.cargo.buildScripts.enable\": false",
+          "when": "Build scripts slow things down"
+        },
+        {
+          "approach": "Use lru cache",
+          "code": "\"rust-analyzer.lru.capacity\": 128",
+          "when": "Memory-speed tradeoff"
+        }
+      ]
+    },
+    {
+      "id": "missing_std_library",
+      "pattern": "can't find crate for `std`|no std prelude",
+      "message": "Standard library not found",
+      "cause": "Toolchain not properly installed or no_std crate",
+      "solutions": [
+        {
+          "approach": "Install rust-src",
+          "code": "rustup component add rust-src",
+          "when": "Source not installed"
+        },
+        {
+          "approach": "Set sysroot",
+          "code": "\"rust-analyzer.cargo.sysroot\": \"discover\"",
+          "when": "Custom sysroot needed"
+        },
+        {
+          "approach": "Check toolchain",
+          "code": "rustup show",
+          "when": "Toolchain may be broken"
+        }
+      ]
+    },
+    {
+      "id": "macro_expansion_error",
+      "pattern": "error expanding macro|macro expansion failed|cannot expand",
+      "message": "Macro expansion error",
+      "cause": "Declarative macro has error or is too complex",
+      "solutions": [
+        {
+          "approach": "Simplify macro",
+          "code": "// Break complex macros into smaller pieces",
+          "when": "Macro too complex for r-a"
+        },
+        {
+          "approach": "Use cargo expand",
+          "code": "cargo expand --lib > expanded.rs",
+          "when": "Debug macro output"
+        },
+        {
+          "approach": "Check macro definition",
+          "code": "// Ensure macro rules are correct",
+          "when": "Macro may have bugs"
+        }
+      ]
+    },
+    {
+      "id": "flycheck_command_failed",
+      "pattern": "flycheck.*failed|check on save failed",
+      "message": "Check-on-save failed",
+      "cause": "cargo check/clippy command failed",
+      "solutions": [
+        {
+          "approach": "Fix underlying errors",
+          "code": "cargo check --all-targets",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Configure check command",
+          "code": "\"rust-analyzer.check.allTargets\": false",
+          "when": "Some targets don't build"
+        },
+        {
+          "approach": "Disable check on save",
+          "code": "\"rust-analyzer.checkOnSave\": false",
+          "when": "Prefer manual checking"
+        }
+      ]
+    }
+  ]
+}

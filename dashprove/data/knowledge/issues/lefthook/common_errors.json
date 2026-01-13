@@ -1,0 +1,166 @@
+{
+  "tool": "lefthook",
+  "version": "1.6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_installed",
+      "pattern": "lefthook.*not found|command not found|install lefthook",
+      "message": "Lefthook not installed",
+      "cause": "Lefthook binary not available",
+      "solutions": [
+        {
+          "approach": "Install via npm",
+          "code": "npm install lefthook --save-dev",
+          "when": "Node project"
+        },
+        {
+          "approach": "Install via brew",
+          "code": "brew install lefthook",
+          "when": "macOS"
+        },
+        {
+          "approach": "Install via go",
+          "code": "go install github.com/evilmartians/lefthook@latest",
+          "when": "Go available"
+        }
+      ]
+    },
+    {
+      "id": "config_not_found",
+      "pattern": "lefthook.yml.*not found|configuration.*missing|No config",
+      "message": "Lefthook configuration file not found",
+      "cause": "Missing lefthook.yml in project root",
+      "solutions": [
+        {
+          "approach": "Create config",
+          "code": "# lefthook.yml\npre-commit:\n  commands:\n    lint:\n      run: npm run lint",
+          "when": "New setup"
+        },
+        {
+          "approach": "Install hooks",
+          "code": "lefthook install",
+          "when": "Hooks not installed"
+        }
+      ]
+    },
+    {
+      "id": "command_failed",
+      "pattern": "command.*failed|exit code|hook failed",
+      "message": "Hook command failed",
+      "cause": "Command in hook returned non-zero exit code",
+      "solutions": [
+        {
+          "approach": "Run command directly",
+          "code": "# Test the command from lefthook.yml\nnpm run lint",
+          "when": "Debug command"
+        },
+        {
+          "approach": "Make optional",
+          "code": "pre-commit:\n  commands:\n    lint:\n      run: npm run lint\n      fail_text: \"Linting failed but continuing\"",
+          "when": "Allow failure"
+        },
+        {
+          "approach": "Skip hook",
+          "code": "LEFTHOOK=0 git commit -m \"message\"",
+          "when": "Emergency bypass"
+        }
+      ]
+    },
+    {
+      "id": "glob_no_match",
+      "pattern": "No files matched|glob.*empty|nothing to run",
+      "message": "No files match the glob pattern",
+      "cause": "Glob pattern doesn't match any staged files",
+      "solutions": [
+        {
+          "approach": "Check glob pattern",
+          "code": "pre-commit:\n  commands:\n    lint:\n      glob: \"*.{js,ts,jsx,tsx}\"\n      run: eslint {staged_files}",
+          "when": "Fix pattern"
+        },
+        {
+          "approach": "Use files placeholder",
+          "code": "pre-commit:\n  commands:\n    lint:\n      run: eslint {staged_files}",
+          "when": "All staged files"
+        }
+      ]
+    },
+    {
+      "id": "parallel_error",
+      "pattern": "parallel.*error|concurrent|ENOENT",
+      "message": "Parallel execution error",
+      "cause": "Commands conflict when running in parallel",
+      "solutions": [
+        {
+          "approach": "Disable parallel",
+          "code": "pre-commit:\n  parallel: false\n  commands:\n    lint:\n      run: npm run lint",
+          "when": "Run sequentially"
+        },
+        {
+          "approach": "Set piped mode",
+          "code": "pre-commit:\n  piped: true\n  commands:\n    lint:\n      run: npm run lint",
+          "when": "Output ordering"
+        }
+      ]
+    },
+    {
+      "id": "skip_not_working",
+      "pattern": "skip.*not|skipping.*failed|LEFTHOOK_EXCLUDE",
+      "message": "Skip configuration not working",
+      "cause": "Skip conditions not properly configured",
+      "solutions": [
+        {
+          "approach": "Environment skip",
+          "code": "LEFTHOOK=0 git commit -m \"message\"",
+          "when": "Disable all hooks"
+        },
+        {
+          "approach": "Skip specific hook",
+          "code": "LEFTHOOK_EXCLUDE=lint git commit -m \"message\"",
+          "when": "Skip one command"
+        },
+        {
+          "approach": "Config-based skip",
+          "code": "pre-commit:\n  commands:\n    lint:\n      skip:\n        - merge\n        - rebase",
+          "when": "Skip on git operations"
+        }
+      ]
+    },
+    {
+      "id": "local_config_error",
+      "pattern": "lefthook-local|local.*override|merge.*config",
+      "message": "Local config override error",
+      "cause": "lefthook-local.yml has issues",
+      "solutions": [
+        {
+          "approach": "Check local file",
+          "code": "# lefthook-local.yml extends lefthook.yml\npre-commit:\n  commands:\n    lint:\n      skip: true",
+          "when": "Personal overrides"
+        },
+        {
+          "approach": "Remove local config",
+          "code": "rm lefthook-local.yml",
+          "when": "Start fresh"
+        }
+      ]
+    },
+    {
+      "id": "scripts_error",
+      "pattern": "scripts.*error|script not found|bash.*error",
+      "message": "External script execution error",
+      "cause": "Script file not found or not executable",
+      "solutions": [
+        {
+          "approach": "Check script path",
+          "code": "pre-commit:\n  scripts:\n    \"lint.sh\":\n      runner: bash",
+          "when": "Script in .lefthook/"
+        },
+        {
+          "approach": "Make executable",
+          "code": "chmod +x .lefthook/pre-commit/lint.sh",
+          "when": "Permission issue"
+        }
+      ]
+    }
+  ]
+}

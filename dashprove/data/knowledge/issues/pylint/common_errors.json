@@ -1,0 +1,245 @@
+{
+  "tool": "pylint",
+  "version": "3.0.3",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "missing_docstring",
+      "pattern": "C0114|C0115|C0116|missing.*docstring",
+      "message": "Missing docstring (C0114/C0115/C0116)",
+      "cause": "Module, class, or function lacks documentation",
+      "solutions": [
+        {
+          "approach": "Add docstring",
+          "code": "def my_function(arg1: str, arg2: int) -> bool:\n    \"\"\"Check if arg1 contains arg2 occurrences.\n    \n    Args:\n        arg1: The string to check.\n        arg2: The expected count.\n        \n    Returns:\n        True if the count matches.\n    \"\"\"\n    return len(arg1) == arg2",
+          "when": "Public API"
+        },
+        {
+          "approach": "Disable for private",
+          "code": "def _internal_helper():  # pylint: disable=C0116\n    pass\n\n# Or in pylintrc:\n[MESSAGES CONTROL]\ndisable=missing-function-docstring",
+          "when": "Internal code"
+        }
+      ]
+    },
+    {
+      "id": "line_too_long",
+      "pattern": "C0301|line-too-long",
+      "message": "Line too long (C0301)",
+      "cause": "Line exceeds configured maximum length",
+      "solutions": [
+        {
+          "approach": "Break the line",
+          "code": "# Instead of:\nresult = some_very_long_function_name(argument1, argument2, argument3, argument4)\n\n# Use:\nresult = some_very_long_function_name(\n    argument1,\n    argument2,\n    argument3,\n    argument4,\n)",
+          "when": "Function calls"
+        },
+        {
+          "approach": "Use implicit concatenation",
+          "code": "# For long strings:\nmessage = (\n    \"This is a very long message that \"\n    \"spans multiple lines for readability\"\n)",
+          "when": "Long strings"
+        },
+        {
+          "approach": "Configure max length",
+          "code": "# In pyproject.toml:\n[tool.pylint.format]\nmax-line-length = 120\n\n# Or .pylintrc:\n[FORMAT]\nmax-line-length=120",
+          "when": "Want longer lines"
+        }
+      ]
+    },
+    {
+      "id": "invalid_name",
+      "pattern": "C0103|invalid-name|doesn't conform to.*naming",
+      "message": "Invalid name (C0103)",
+      "cause": "Name doesn't follow naming convention",
+      "solutions": [
+        {
+          "approach": "Fix naming",
+          "code": "# Variables and functions: snake_case\nmy_variable = 1\ndef my_function(): pass\n\n# Classes: PascalCase\nclass MyClass: pass\n\n# Constants: UPPER_SNAKE_CASE\nMAX_VALUE = 100",
+          "when": "Wrong convention"
+        },
+        {
+          "approach": "Configure regex",
+          "code": "# In pyproject.toml:\n[tool.pylint.basic]\nconst-rgx = \"([A-Z_][A-Z0-9_]*|__.*__)$\"\nvariable-rgx = \"[a-z_][a-z0-9_]{0,30}$\"",
+          "when": "Custom convention"
+        },
+        {
+          "approach": "Allow specific names",
+          "code": "# Common short names:\ngood-names = [\"i\", \"j\", \"k\", \"x\", \"y\", \"id\", \"db\", \"df\", \"_\"]",
+          "when": "Standard abbreviations"
+        }
+      ]
+    },
+    {
+      "id": "unused_import",
+      "pattern": "W0611|unused-import",
+      "message": "Unused import (W0611)",
+      "cause": "Imported module not used in code",
+      "solutions": [
+        {
+          "approach": "Remove import",
+          "code": "# Delete the unused import line\n# Before:\nimport os\nimport sys  # Not used\n\n# After:\nimport os",
+          "when": "Actually unused"
+        },
+        {
+          "approach": "Mark as type-only",
+          "code": "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from mymodule import SomeType  # Only for type hints",
+          "when": "Type hints only"
+        },
+        {
+          "approach": "Use __all__ for re-exports",
+          "code": "# If intentionally re-exporting:\nfrom module import something\n\n__all__ = ['something']  # Marks as public API",
+          "when": "Re-exporting from package"
+        }
+      ]
+    },
+    {
+      "id": "unused_variable",
+      "pattern": "W0612|unused-variable",
+      "message": "Unused variable (W0612)",
+      "cause": "Variable assigned but never used",
+      "solutions": [
+        {
+          "approach": "Remove or use variable",
+          "code": "# If not needed:\nresult = function()  # Remove if result unused\nfunction()  # Just call\n\n# Or use it:\nresult = function()\nlog.info(f\"Result: {result}\")",
+          "when": "Actually unused"
+        },
+        {
+          "approach": "Use underscore prefix",
+          "code": "# For intentionally unused (unpacking):\n_first, second, _third = get_tuple()\nfor _index, value in enumerate(items):\n    process(value)",
+          "when": "Unpacking but not using"
+        }
+      ]
+    },
+    {
+      "id": "redefined_outer",
+      "pattern": "W0621|redefined-outer-name",
+      "message": "Redefining outer scope variable (W0621)",
+      "cause": "Local variable shadows outer scope variable",
+      "solutions": [
+        {
+          "approach": "Rename variable",
+          "code": "items = [1, 2, 3]\n\ndef process():\n    # Instead of:\n    # items = []  # Shadows outer!\n    \n    # Use different name:\n    local_items = []\n    return local_items",
+          "when": "Unintentional shadow"
+        },
+        {
+          "approach": "Use nonlocal",
+          "code": "counter = 0\n\ndef increment():\n    nonlocal counter\n    counter += 1  # Intentionally modifying outer",
+          "when": "Intentional modification"
+        }
+      ]
+    },
+    {
+      "id": "too_many_arguments",
+      "pattern": "R0913|too-many-arguments",
+      "message": "Too many arguments (R0913)",
+      "cause": "Function has more than max allowed arguments",
+      "solutions": [
+        {
+          "approach": "Use dataclass",
+          "code": "from dataclasses import dataclass\n\n@dataclass\nclass Config:\n    host: str\n    port: int\n    timeout: int\n    retries: int\n\ndef connect(config: Config):\n    ...",
+          "when": "Related parameters"
+        },
+        {
+          "approach": "Use **kwargs",
+          "code": "from typing import TypedDict\n\nclass ConnectionOptions(TypedDict, total=False):\n    timeout: int\n    retries: int\n\ndef connect(host: str, port: int, **options: ConnectionOptions):\n    timeout = options.get('timeout', 30)",
+          "when": "Optional parameters"
+        },
+        {
+          "approach": "Configure limit",
+          "code": "# In pyproject.toml:\n[tool.pylint.design]\nmax-args = 10",
+          "when": "Higher limit needed"
+        }
+      ]
+    },
+    {
+      "id": "too_many_branches",
+      "pattern": "R0912|too-many-branches",
+      "message": "Too many branches (R0912)",
+      "cause": "Function has too many if/else branches",
+      "solutions": [
+        {
+          "approach": "Use dispatch dict",
+          "code": "# Instead of:\nif action == 'create':\n    create()\nelif action == 'update':\n    update()\nelif action == 'delete':\n    delete()\n\n# Use:\nactions = {\n    'create': create,\n    'update': update,\n    'delete': delete,\n}\nactions[action]()",
+          "when": "Dispatching on value"
+        },
+        {
+          "approach": "Use early returns",
+          "code": "def process(data):\n    if not data:\n        return None\n    if data.is_cached:\n        return data.cached_value\n    # Main processing...\n    return result",
+          "when": "Guard clauses"
+        },
+        {
+          "approach": "Extract methods",
+          "code": "def process(data):\n    if condition1:\n        return self._handle_case1(data)\n    if condition2:\n        return self._handle_case2(data)\n    return self._handle_default(data)",
+          "when": "Complex branches"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "E0401|import-error|Unable to import",
+      "message": "Import error (E0401)",
+      "cause": "Module cannot be found",
+      "solutions": [
+        {
+          "approach": "Install missing package",
+          "code": "pip install missing-package\n# Or add to requirements.txt",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Configure init-hook",
+          "code": "# In pyproject.toml:\n[tool.pylint.master]\ninit-hook = 'import sys; sys.path.append(\"./src\")'",
+          "when": "Custom source path"
+        },
+        {
+          "approach": "Ignore third-party",
+          "code": "# In pyproject.toml:\n[tool.pylint.messages_control]\nextension-pkg-allow-list = [\"pydantic\", \"cv2\"]\n\n# Or ignore specific imports:\n[tool.pylint.typecheck]\nignored-modules = [\"cv2\"]",
+          "when": "C-extension modules"
+        }
+      ]
+    },
+    {
+      "id": "no_member",
+      "pattern": "E1101|no-member|has no.*member",
+      "message": "No member (E1101)",
+      "cause": "Pylint can't find attribute on object",
+      "solutions": [
+        {
+          "approach": "Add type hints",
+          "code": "def process(data: MyClass) -> str:\n    return data.my_attribute  # Pylint knows about MyClass",
+          "when": "Type not inferred"
+        },
+        {
+          "approach": "Configure generated-members",
+          "code": "# In pyproject.toml:\n[tool.pylint.typecheck]\ngenerated-members = [\"torch.*\", \"numpy.*\", \"cv2.*\"]",
+          "when": "Dynamic attributes"
+        },
+        {
+          "approach": "Disable for dynamic objects",
+          "code": "result = dynamic_obj.method()  # pylint: disable=no-member",
+          "when": "Known false positive"
+        }
+      ]
+    },
+    {
+      "id": "broad_exception",
+      "pattern": "W0718|broad-exception-caught|Catching too general exception",
+      "message": "Catching too general exception (W0718)",
+      "cause": "Catching Exception or BaseException is too broad",
+      "solutions": [
+        {
+          "approach": "Catch specific exceptions",
+          "code": "# Instead of:\ntry:\n    result = operation()\nexcept Exception:\n    handle_error()\n\n# Use:\ntry:\n    result = operation()\nexcept (ValueError, TypeError) as e:\n    handle_error(e)",
+          "when": "Known exception types"
+        },
+        {
+          "approach": "Re-raise after logging",
+          "code": "try:\n    result = operation()\nexcept Exception:\n    logging.exception(\"Operation failed\")\n    raise  # Re-raise the exception",
+          "when": "Logging then re-raising"
+        },
+        {
+          "approach": "Use at top level only",
+          "code": "def main():\n    try:\n        run_application()\n    except Exception:\n        logging.exception(\"Unhandled exception\")\n        return 1\n    return 0",
+          "when": "Top-level error handler"
+        }
+      ]
+    }
+  ]
+}

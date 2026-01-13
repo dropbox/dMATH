@@ -1,0 +1,191 @@
+{
+  "tool": "onnxruntime",
+  "version": "1.17.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "invalid_model",
+      "pattern": "InvalidGraph|Invalid model",
+      "message": "ONNX model is invalid",
+      "cause": "Model has invalid graph structure or unsupported ops",
+      "solutions": [
+        {
+          "approach": "Validate with ONNX checker",
+          "code": "import onnx\nmodel = onnx.load('model.onnx')\nonnx.checker.check_model(model)",
+          "when": "Model might be corrupted"
+        },
+        {
+          "approach": "Check opset version",
+          "code": "onnx.version_converter.convert_version(model, target_version=17)",
+          "when": "Opset version incompatible"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "import onnxsim\nmodel, _ = onnxsim.simplify(model)",
+          "when": "Complex graph causing issues"
+        }
+      ]
+    },
+    {
+      "id": "provider_not_found",
+      "pattern": "Provider.*not found|EP.*unavailable",
+      "message": "Execution provider not available",
+      "cause": "CUDA/TensorRT provider not installed or configured",
+      "solutions": [
+        {
+          "approach": "Install GPU runtime",
+          "code": "pip install onnxruntime-gpu",
+          "when": "Need CUDA execution"
+        },
+        {
+          "approach": "List available providers",
+          "code": "import onnxruntime as ort\nprint(ort.get_available_providers())",
+          "when": "Check what's available"
+        },
+        {
+          "approach": "Fallback to CPU",
+          "code": "sess = ort.InferenceSession('model.onnx', providers=['CPUExecutionProvider'])",
+          "when": "GPU not required"
+        }
+      ]
+    },
+    {
+      "id": "input_mismatch",
+      "pattern": "Input.*mismatch|Unexpected input",
+      "message": "Model input doesn't match expected",
+      "cause": "Wrong input name, shape, or dtype",
+      "solutions": [
+        {
+          "approach": "Check input details",
+          "code": "for inp in sess.get_inputs():\n    print(f'{inp.name}: {inp.shape} {inp.type}')",
+          "when": "Need to see expected inputs"
+        },
+        {
+          "approach": "Match input name",
+          "code": "input_name = sess.get_inputs()[0].name\noutput = sess.run(None, {input_name: data})",
+          "when": "Input name mismatch"
+        },
+        {
+          "approach": "Cast input dtype",
+          "code": "data = data.astype(np.float32)",
+          "when": "Dtype mismatch"
+        }
+      ]
+    },
+    {
+      "id": "output_mismatch",
+      "pattern": "Output.*differs|Results.*not match",
+      "message": "ONNX output differs from source framework",
+      "cause": "Numerical differences or export issue",
+      "solutions": [
+        {
+          "approach": "Use larger tolerance",
+          "code": "np.testing.assert_allclose(onnx_out, torch_out, rtol=1e-3, atol=1e-5)",
+          "when": "Minor numerical differences"
+        },
+        {
+          "approach": "Debug op-by-op",
+          "code": "# Add intermediate outputs to model for debugging",
+          "when": "Need to find divergence point"
+        },
+        {
+          "approach": "Re-export with verbose",
+          "code": "torch.onnx.export(model, x, 'model.onnx', verbose=True)",
+          "when": "Export might be wrong"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_op",
+      "pattern": "Unsupported.*op|Op.*not registered",
+      "message": "Operation not supported by ONNX Runtime",
+      "cause": "Custom op or unsupported ONNX op",
+      "solutions": [
+        {
+          "approach": "Register custom op",
+          "code": "from onnxruntime_extensions import get_library_path\nopts = ort.SessionOptions()\nopts.register_custom_ops_library(get_library_path())",
+          "when": "Using custom ops"
+        },
+        {
+          "approach": "Convert to supported ops",
+          "code": "# Modify model to use supported operations",
+          "when": "Can rewrite model"
+        },
+        {
+          "approach": "Update ONNX Runtime",
+          "code": "pip install --upgrade onnxruntime",
+          "when": "Op supported in newer version"
+        }
+      ]
+    },
+    {
+      "id": "oom_error",
+      "pattern": "Out of memory|OOM|memory allocation failed",
+      "message": "Out of memory during inference",
+      "cause": "Model too large or batch too big",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "# Process in smaller batches",
+          "when": "Batch too large"
+        },
+        {
+          "approach": "Enable memory optimization",
+          "code": "opts = ort.SessionOptions()\nopts.enable_mem_pattern = True\nopts.enable_mem_reuse = True",
+          "when": "Need memory efficiency"
+        },
+        {
+          "approach": "Use streaming execution",
+          "code": "opts.add_session_config_entry('memory.enable_memory_arena_shrinkage', '1')",
+          "when": "Memory fragmentation"
+        }
+      ]
+    },
+    {
+      "id": "dynamic_shape_error",
+      "pattern": "Dynamic.*shape.*error|Shape.*inference.*failed",
+      "message": "Dynamic shape handling failed",
+      "cause": "Model exported without dynamic axes or shape inference issue",
+      "solutions": [
+        {
+          "approach": "Export with dynamic axes",
+          "code": "torch.onnx.export(\n    model, x, 'model.onnx',\n    dynamic_axes={'input': {0: 'batch'}, 'output': {0: 'batch'}}\n)",
+          "when": "Need dynamic batch size"
+        },
+        {
+          "approach": "Run shape inference",
+          "code": "import onnx\nfrom onnx import shape_inference\nmodel = shape_inference.infer_shapes(model)",
+          "when": "Shape info missing"
+        },
+        {
+          "approach": "Provide concrete shape",
+          "code": "# Reshape input to match expected static shape",
+          "when": "Model expects fixed shape"
+        }
+      ]
+    },
+    {
+      "id": "quantization_error",
+      "pattern": "Quantization.*error|INT8.*failed",
+      "message": "Model quantization failed",
+      "cause": "Calibration data issue or unsupported op for quantization",
+      "solutions": [
+        {
+          "approach": "Provide calibration data",
+          "code": "from onnxruntime.quantization import CalibrationDataReader\nquantize_static(model_path, output_path, calibration_reader)",
+          "when": "Missing calibration data"
+        },
+        {
+          "approach": "Use dynamic quantization",
+          "code": "from onnxruntime.quantization import quantize_dynamic\nquantize_dynamic(model_path, output_path)",
+          "when": "Calibration not available"
+        },
+        {
+          "approach": "Exclude problematic ops",
+          "code": "quantize_static(..., op_types_to_quantize=['Conv', 'MatMul'])",
+          "when": "Some ops don't quantize well"
+        }
+      ]
+    }
+  ]
+}

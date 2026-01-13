@@ -1,0 +1,102 @@
+{
+  "tool": "debug",
+  "category": "logging",
+  "common_errors": [
+    {
+      "id": "debug_no_output",
+      "pattern": "debug not showing|no output|debug silent",
+      "severity": "warning",
+      "causes": [
+        "DEBUG environment variable not set",
+        "Namespace not matching pattern",
+        "Using wrong namespace"
+      ],
+      "solutions": [
+        "Set DEBUG env var: DEBUG=* or DEBUG=myapp:*",
+        "Match namespace: DEBUG=myapp:server",
+        "Use wildcards: DEBUG=*,-express:*",
+        "Check DEBUG value: console.log(process.env.DEBUG)"
+      ]
+    },
+    {
+      "id": "debug_browser_setup",
+      "pattern": "debug in browser|localStorage.*debug|client-side debug",
+      "severity": "warning",
+      "causes": [
+        "Browser doesn't use process.env.DEBUG",
+        "localStorage needs to be set",
+        "Bundler stripping debug"
+      ],
+      "solutions": [
+        "Browser: localStorage.debug = '*'",
+        "Or: localStorage.debug = 'myapp:*'",
+        "Refresh page after setting localStorage",
+        "May need to reload with devtools open"
+      ]
+    },
+    {
+      "id": "debug_namespace_collision",
+      "pattern": "wrong namespace|unexpected output|multiple apps",
+      "severity": "warning",
+      "causes": [
+        "Multiple packages using same namespace",
+        "Generic namespace like 'app'",
+        "DEBUG=* shows everything"
+      ],
+      "solutions": [
+        "Use unique namespace: debug('myapp:module')",
+        "Namespace by component: 'myapp:server', 'myapp:db'",
+        "Filter unwanted: DEBUG=*,-unwanted:*",
+        "Check what namespaces exist with DEBUG=*"
+      ]
+    },
+    {
+      "id": "debug_extend_not_working",
+      "pattern": "extend.*not function|sub-namespace|child debugger",
+      "severity": "warning",
+      "causes": [
+        "Using extend() incorrectly",
+        "Older version without extend",
+        "Wrong method call"
+      ],
+      "solutions": [
+        "Create base: const log = debug('myapp')",
+        "Extend: const serverLog = log.extend('server')",
+        "Results in 'myapp:server' namespace",
+        "Or just create directly: debug('myapp:server')"
+      ]
+    },
+    {
+      "id": "debug_production_stripping",
+      "pattern": "debug in production|bundle size|strip debug",
+      "severity": "warning",
+      "causes": [
+        "debug included in production bundle",
+        "No automatic stripping",
+        "Overhead in production"
+      ],
+      "solutions": [
+        "Webpack: use debug/src/browser.js direct import",
+        "Use babel-plugin-transform-remove-debug",
+        "Or: if (process.env.NODE_ENV !== 'production') debug(...)",
+        "Consider lightweight alternative for production"
+      ]
+    },
+    {
+      "id": "debug_custom_formatter",
+      "pattern": "formatter not working|%O not showing|custom format",
+      "severity": "warning",
+      "causes": [
+        "Using unsupported formatter",
+        "Custom formatter not registered",
+        "Browser vs Node formatting differs"
+      ],
+      "solutions": [
+        "Node formatters: %O, %o, %d, %s, %j",
+        "Register custom: debug.formatters.x = (v) => v.toString()",
+        "Browser console handles %O differently",
+        "Use %O for pretty object, %o for inline"
+      ]
+    }
+  ]
+}

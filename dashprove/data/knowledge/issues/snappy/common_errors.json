@@ -1,0 +1,118 @@
+{
+  "tool": "snappy",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "INVALID_INPUT|invalid compressed data",
+      "meaning": "Data is not valid Snappy format",
+      "causes": [
+        "Data not compressed with Snappy",
+        "Data corrupted or truncated",
+        "Using wrong Snappy variant (raw vs framed)"
+      ],
+      "solutions": [
+        "Verify source used Snappy compression",
+        "Check for framing format vs raw Snappy",
+        "Ensure complete data before decompression"
+      ]
+    },
+    {
+      "pattern": "UncompressedLength.*invalid|corrupted size",
+      "meaning": "Snappy header indicates invalid size",
+      "causes": [
+        "Corrupted length field",
+        "Truncated data",
+        "Not Snappy data"
+      ],
+      "solutions": [
+        "Validate Snappy format before decompression",
+        "Use IsValidCompressedBuffer() first",
+        "Check data integrity"
+      ]
+    },
+    {
+      "pattern": "output buffer too small",
+      "meaning": "Provided buffer can't hold decompressed data",
+      "causes": [
+        "GetUncompressedLength() not called first",
+        "Buffer allocated smaller than needed",
+        "Size estimation incorrect"
+      ],
+      "solutions": [
+        "Call snappy.GetUncompressedLength() first",
+        "Allocate buffer of returned size",
+        "Use snappy.Uncompress() which auto-allocates"
+      ]
+    },
+    {
+      "pattern": "cannot load.*snappy|native module not found",
+      "meaning": "Snappy native binding unavailable",
+      "causes": [
+        "Native addon not compiled",
+        "Missing libsnappy system library",
+        "Build tools not available"
+      ],
+      "solutions": [
+        "npm install snappy (requires compiler)",
+        "Install libsnappy-dev on Linux",
+        "On macOS: brew install snappy",
+        "Use snappyjs (pure JS, slower) as fallback"
+      ]
+    },
+    {
+      "pattern": "Snappy.*streaming.*not supported",
+      "meaning": "Operation not supported in Snappy",
+      "causes": [
+        "Snappy doesn't have native streaming",
+        "Trying to use like gzip stream"
+      ],
+      "solutions": [
+        "Snappy is block-based, not streaming",
+        "Implement chunked compression manually",
+        "Or use Snappy framing format"
+      ]
+    },
+    {
+      "pattern": "copy offset.*invalid|corrupted block",
+      "meaning": "Internal Snappy decompression error",
+      "causes": [
+        "Data corrupted",
+        "Invalid back-reference in compressed data",
+        "Memory corruption"
+      ],
+      "solutions": [
+        "Re-obtain original data",
+        "Verify data integrity with checksum",
+        "Check for bit flips in storage/transfer"
+      ]
+    },
+    {
+      "pattern": "compress.*returned 0|empty output",
+      "meaning": "Compression produced no output",
+      "causes": [
+        "Empty input",
+        "Input already smaller than Snappy overhead",
+        "Error during compression"
+      ],
+      "solutions": [
+        "Check input is not empty",
+        "Snappy may expand small inputs",
+        "Use MaxCompressedLength() for buffer sizing"
+      ]
+    },
+    {
+      "pattern": "memory.*allocation.*failed",
+      "meaning": "Memory allocation error",
+      "causes": [
+        "System out of memory",
+        "Very large block to compress",
+        "Memory fragmentation"
+      ],
+      "solutions": [
+        "Split large data into smaller blocks",
+        "Snappy max block size is ~1.5GB",
+        "Check available system memory"
+      ]
+    }
+  ]
+}

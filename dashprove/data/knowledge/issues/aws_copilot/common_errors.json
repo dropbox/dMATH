@@ -1,0 +1,101 @@
+{
+  "tool": "aws_copilot",
+  "version": "1.36",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "credentials_region_missing",
+      "pattern": "Unable to locate credentials|could not find default region|UnrecognizedClient",
+      "message": "AWS credentials or region not configured",
+      "cause": "AWS CLI profile not set for Copilot commands",
+      "solutions": [
+        {
+          "approach": "Configure AWS CLI",
+          "code": "aws configure --profile copilot",
+          "when": "First time setup"
+        },
+        {
+          "approach": "Pass profile/region",
+          "code": "copilot init --profile copilot --app myapp --domain example.com --region us-east-1",
+          "when": "Multiple accounts"
+        }
+      ]
+    },
+    {
+      "id": "docker_build_failed",
+      "pattern": "BuildContextError|docker buildx error|no basic auth credentials",
+      "message": "Service build failed before deploy",
+      "cause": "Docker daemon not running or ECR login missing",
+      "solutions": [
+        {
+          "approach": "Start Docker",
+          "code": "sudo systemctl start docker",
+          "when": "Docker engine stopped"
+        },
+        {
+          "approach": "Login to ECR",
+          "code": "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account>.dkr.ecr.us-east-1.amazonaws.com",
+          "when": "Auth needed to push image"
+        }
+      ]
+    },
+    {
+      "id": "stack_rollback",
+      "pattern": "ROLLBACK_COMPLETE|ROLLBACK_IN_PROGRESS",
+      "message": "CloudFormation stack rolled back",
+      "cause": "Deploy failure due to IAM, VPC, or quota issues",
+      "solutions": [
+        {
+          "approach": "Inspect stack events",
+          "code": "aws cloudformation describe-stack-events --stack-name <svc-stack>",
+          "when": "Need root cause from CloudFormation"
+        },
+        {
+          "approach": "Delete failed stack",
+          "code": "copilot svc delete --name <svc> --env <env>",
+          "when": "Clean slate before redeploy"
+        }
+      ]
+    },
+    {
+      "id": "env_init_failed",
+      "pattern": "Failed to create environment|AccessDenied|AssumeRole",
+      "message": "Environment creation failed",
+      "cause": "Insufficient IAM permissions or STS role trust",
+      "solutions": [
+        {
+          "approach": "Grant IAM permissions",
+          "code": "# Ensure permissions for cloudformation, iam, ecr, ecs, elbv2, route53",
+          "when": "Role policy missing services"
+        },
+        {
+          "approach": "Update trust relationships",
+          "code": "# Allow deployment role to be assumed by current user/role",
+          "when": "STS assume-role blocked"
+        }
+      ]
+    },
+    {
+      "id": "domain_validation",
+      "pattern": "Could not validate the certificate|DNS validation failed",
+      "message": "Custom domain setup failed",
+      "cause": "Route53 records not created or wrong hosted zone",
+      "solutions": [
+        {
+          "approach": "Verify hosted zone",
+          "code": "aws route53 list-hosted-zones-by-name --dns-name example.com",
+          "when": "Ensure domain managed in correct account"
+        },
+        {
+          "approach": "Create validation records",
+          "code": "copilot env show -n test  # confirm domain settings",
+          "when": "Check that CNAME validation exists"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://aws.github.io/copilot-cli/",
+    "https://aws.github.io/copilot-cli/docs/commands/"
+  ]
+}

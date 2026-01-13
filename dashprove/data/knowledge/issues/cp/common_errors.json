@@ -1,0 +1,145 @@
+{
+  "tool": "cp",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "omitting_directory",
+      "pattern": "omitting directory|is a directory|not a regular file",
+      "message": "Cannot copy directory",
+      "cause": "Attempting to copy directory without -r",
+      "solutions": [
+        {
+          "approach": "Recursive copy",
+          "code": "cp -r source_dir/ dest_dir/",
+          "when": "Copy directory"
+        },
+        {
+          "approach": "Preserve attributes",
+          "code": "cp -a source_dir/ dest_dir/  # Archive mode",
+          "when": "Keep permissions"
+        },
+        {
+          "approach": "Copy contents",
+          "code": "cp -r source_dir/* dest_dir/  # Contents only",
+          "when": "Merge into existing"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot create|cannot open",
+      "message": "Permission denied",
+      "cause": "Cannot read source or write to destination",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo cp source dest",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la source\nls -la dest_directory/",
+          "when": "Debug access"
+        },
+        {
+          "approach": "Fix destination",
+          "code": "chmod u+w dest_directory/",
+          "when": "Dest not writable"
+        }
+      ]
+    },
+    {
+      "id": "overwrite_prompt",
+      "pattern": "overwrite|replace|already exists|interactive",
+      "message": "Overwrite confirmation issues",
+      "cause": "Interactive mode or aliased cp -i",
+      "solutions": [
+        {
+          "approach": "Force overwrite",
+          "code": "cp -f source dest  # Force\n\\cp source dest  # Bypass alias",
+          "when": "Skip prompts"
+        },
+        {
+          "approach": "No clobber",
+          "code": "cp -n source dest  # Never overwrite",
+          "when": "Keep existing"
+        },
+        {
+          "approach": "Update only",
+          "code": "cp -u source dest  # Only if source newer",
+          "when": "Conditional"
+        }
+      ]
+    },
+    {
+      "id": "no_space_left",
+      "pattern": "No space left|cannot write|disk full",
+      "message": "Destination disk full",
+      "cause": "Insufficient disk space",
+      "solutions": [
+        {
+          "approach": "Check space",
+          "code": "df -h dest_directory/",
+          "when": "Verify space"
+        },
+        {
+          "approach": "Free space",
+          "code": "du -sh dest_directory/* | sort -h  # Find large items",
+          "when": "Cleanup"
+        },
+        {
+          "approach": "Different dest",
+          "code": "cp source /mnt/external/",
+          "when": "Use other disk"
+        }
+      ]
+    },
+    {
+      "id": "preserve_attributes",
+      "pattern": "preserve|permissions|ownership|timestamps|losing",
+      "message": "Attributes not preserved",
+      "cause": "Default cp doesn't preserve all attributes",
+      "solutions": [
+        {
+          "approach": "Preserve all",
+          "code": "cp -a source dest  # Archive mode (best)\ncp -p source dest  # Preserve mode/ownership/timestamps",
+          "when": "Keep attributes"
+        },
+        {
+          "approach": "Specific attrs",
+          "code": "cp --preserve=mode,ownership,timestamps source dest",
+          "when": "Select attributes"
+        },
+        {
+          "approach": "Links too",
+          "code": "cp -d source dest  # Preserve symlinks\ncp -P source dest  # Never follow symlinks",
+          "when": "Handle links"
+        }
+      ]
+    },
+    {
+      "id": "symlink_handling",
+      "pattern": "symbolic link|symlink|link.*copy",
+      "message": "Symlink copied as regular file",
+      "cause": "cp follows symlinks by default",
+      "solutions": [
+        {
+          "approach": "Preserve links",
+          "code": "cp -d source dest  # Copy symlink as symlink\ncp -P source dest  # Never follow",
+          "when": "Keep as link"
+        },
+        {
+          "approach": "Follow links",
+          "code": "cp -L source dest  # Always follow symlinks",
+          "when": "Copy target"
+        },
+        {
+          "approach": "Archive mode",
+          "code": "cp -a source dest  # Handles links properly",
+          "when": "Full copy"
+        }
+      ]
+    }
+  ]
+}

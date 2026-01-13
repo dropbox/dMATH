@@ -1,0 +1,135 @@
+{
+  "tool": "du",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot read|cannot access",
+      "message": "Cannot read some directories",
+      "cause": "Insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo du -sh /var/*",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Suppress errors",
+          "code": "du -sh /var/* 2>/dev/null",
+          "when": "Ignore unreadable"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la directory/",
+          "when": "Debug access"
+        }
+      ]
+    },
+    {
+      "id": "human_readable",
+      "pattern": "blocks|1K-blocks|human readable|K|M|G",
+      "message": "Want human-readable sizes",
+      "cause": "Default shows blocks",
+      "solutions": [
+        {
+          "approach": "Human readable",
+          "code": "du -h directory  # Powers of 1024\ndu -h --si directory  # Powers of 1000",
+          "when": "Readable sizes"
+        },
+        {
+          "approach": "Summary",
+          "code": "du -sh directory  # Total only\ndu -sh *  # Each item summary",
+          "when": "Totals only"
+        }
+      ]
+    },
+    {
+      "id": "slow_large_directory",
+      "pattern": "slow|takes long|large|many files",
+      "message": "du is very slow",
+      "cause": "Counting many files",
+      "solutions": [
+        {
+          "approach": "Summary only",
+          "code": "du -sh directory  # Skip subdirectory listing",
+          "when": "Just total"
+        },
+        {
+          "approach": "Limit depth",
+          "code": "du -h --max-depth=1 directory\ndu -h -d 1 directory  # BSD",
+          "when": "One level"
+        },
+        {
+          "approach": "Use ncdu",
+          "code": "ncdu directory  # Interactive, faster",
+          "when": "Better tool"
+        }
+      ]
+    },
+    {
+      "id": "apparent_vs_disk",
+      "pattern": "apparent|actual|different.*size|sparse",
+      "message": "Size differs from ls",
+      "cause": "du shows disk usage, not file size",
+      "solutions": [
+        {
+          "approach": "Apparent size",
+          "code": "du --apparent-size -sh file  # File size, not blocks",
+          "when": "Byte count"
+        },
+        {
+          "approach": "Compare",
+          "code": "du -h file  # Disk usage\ndu --apparent-size -h file  # File size\nls -lh file  # ls shows apparent",
+          "when": "Both values"
+        },
+        {
+          "approach": "Block size",
+          "code": "du -B 1 file  # In bytes",
+          "when": "Exact bytes"
+        }
+      ]
+    },
+    {
+      "id": "exclude_patterns",
+      "pattern": "exclude|skip|ignore|filter",
+      "message": "Want to exclude certain files",
+      "cause": "Need to skip specific patterns",
+      "solutions": [
+        {
+          "approach": "Exclude pattern",
+          "code": "du -h --exclude='*.log' directory\ndu -h --exclude='node_modules' .",
+          "when": "Skip pattern"
+        },
+        {
+          "approach": "Multiple excludes",
+          "code": "du -h --exclude='*.log' --exclude='*.tmp' directory",
+          "when": "Multiple patterns"
+        },
+        {
+          "approach": "Exclude from file",
+          "code": "du -h --exclude-from=excludes.txt directory",
+          "when": "Many patterns"
+        }
+      ]
+    },
+    {
+      "id": "cross_filesystem",
+      "pattern": "cross|mount|different filesystem|nfs",
+      "message": "du counting across mount points",
+      "cause": "du follows into other filesystems",
+      "solutions": [
+        {
+          "approach": "Stay on filesystem",
+          "code": "du -shx /  # -x: don't cross filesystem boundaries",
+          "when": "Local FS only"
+        },
+        {
+          "approach": "Check mounts",
+          "code": "mount | grep ' / '\nfindmnt",
+          "when": "See mounts"
+        }
+      ]
+    }
+  ]
+}

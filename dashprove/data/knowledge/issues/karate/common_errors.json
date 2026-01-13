@@ -1,0 +1,191 @@
+{
+  "tool": "karate",
+  "version": "1.4.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "feature_not_found",
+      "pattern": "feature file not found|No scenarios|could not find",
+      "message": "Feature file not found",
+      "cause": "Feature path invalid or file missing",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "java -jar karate.jar src/test/java/features/users.feature",
+          "when": "Specify feature"
+        },
+        {
+          "approach": "Run from classpath",
+          "code": "// In Java runner\nResults results = Runner.path(\"classpath:features\").parallel(5);",
+          "when": "Using classpath"
+        },
+        {
+          "approach": "Check extension",
+          "code": "# Files must end in .feature",
+          "when": "Wrong extension"
+        }
+      ]
+    },
+    {
+      "id": "match_error",
+      "pattern": "match failed|actual:|expected:|reason:",
+      "message": "Match assertion failed",
+      "cause": "Response doesn't match expected pattern",
+      "solutions": [
+        {
+          "approach": "Use fuzzy matching",
+          "code": "* match response == { id: '#number', name: '#string', active: '#boolean' }",
+          "when": "Flexible match"
+        },
+        {
+          "approach": "Use contains",
+          "code": "* match response contains { name: 'John' }",
+          "when": "Partial match"
+        },
+        {
+          "approach": "Use schema",
+          "code": "* def schema = { id: '#number', items: '#[] #object' }\n* match response == schema",
+          "when": "Schema validation"
+        }
+      ]
+    },
+    {
+      "id": "javascript_error",
+      "pattern": "javascript evaluation failed|karate\\.eval|ReferenceError",
+      "message": "JavaScript evaluation error",
+      "cause": "Invalid JavaScript in embedded expression",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "* def result = karate.call('utils.feature')\n* def count = response.items.length",
+          "when": "JS syntax error"
+        },
+        {
+          "approach": "Use karate object",
+          "code": "* def uuid = karate.uuid()\n* def timestamp = karate.currentTimeMillis()",
+          "when": "Karate functions"
+        },
+        {
+          "approach": "Debug expression",
+          "code": "* karate.log('Debug:', myVariable)\n* print response",
+          "when": "Debug value"
+        }
+      ]
+    },
+    {
+      "id": "call_error",
+      "pattern": "call failed|feature .* not found|karate\\.call",
+      "message": "Feature call failed",
+      "cause": "Called feature not found or errored",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "* def result = call read('classpath:common/auth.feature')",
+          "when": "Call other feature"
+        },
+        {
+          "approach": "Pass arguments",
+          "code": "* def result = call read('auth.feature') { username: 'admin', password: 'secret' }",
+          "when": "With parameters"
+        },
+        {
+          "approach": "Use callonce",
+          "code": "* def authResult = callonce read('auth.feature')",
+          "when": "Cache result"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "karate-config|config not found|baseUrl|undefined",
+      "message": "Configuration error",
+      "cause": "karate-config.js missing or invalid",
+      "solutions": [
+        {
+          "approach": "Create config",
+          "code": "// karate-config.js\nfunction fn() {\n  var config = {\n    baseUrl: 'https://api.example.com'\n  };\n  return config;\n}",
+          "when": "Create config"
+        },
+        {
+          "approach": "Environment-specific",
+          "code": "function fn() {\n  var env = karate.env || 'dev';\n  var config = { baseUrl: '' };\n  if (env == 'dev') config.baseUrl = 'https://dev.api.com';\n  if (env == 'prod') config.baseUrl = 'https://api.com';\n  return config;\n}",
+          "when": "Multiple environments"
+        },
+        {
+          "approach": "Set env",
+          "code": "java -Dkarate.env=prod -jar karate.jar features/",
+          "when": "Select environment"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate|PKIX|handshake",
+      "message": "SSL/TLS error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Disable verification",
+          "code": "* configure ssl = { trustAll: true }",
+          "when": "Self-signed cert"
+        },
+        {
+          "approach": "In config",
+          "code": "// karate-config.js\nkarate.configure('ssl', { trustAll: true });",
+          "when": "Global setting"
+        },
+        {
+          "approach": "Custom keystore",
+          "code": "* configure ssl = { keyStore: 'classpath:keystore.p12', keyStorePassword: 'secret' }",
+          "when": "Client cert"
+        }
+      ]
+    },
+    {
+      "id": "parallel_error",
+      "pattern": "parallel|thread|concurrent|race condition",
+      "message": "Parallel execution error",
+      "cause": "Thread safety or shared state issue",
+      "solutions": [
+        {
+          "approach": "Use callonce",
+          "code": "Background:\n  * def authToken = callonce read('classpath:auth.feature')",
+          "when": "Shared setup"
+        },
+        {
+          "approach": "Thread-local vars",
+          "code": "* def uniqueId = 'user_' + karate.uuid()",
+          "when": "Unique per thread"
+        },
+        {
+          "approach": "Reduce parallelism",
+          "code": "Results results = Runner.path(\"classpath:features\").parallel(1);",
+          "when": "Serial execution"
+        }
+      ]
+    },
+    {
+      "id": "retry_error",
+      "pattern": "retry|polling|eventually|condition not met",
+      "message": "Retry/polling condition failed",
+      "cause": "Condition not met within retry limit",
+      "solutions": [
+        {
+          "approach": "Configure retry",
+          "code": "* configure retry = { count: 5, interval: 2000 }\n* def response = call read('check-status.feature')\n* retry until response.status == 'complete'",
+          "when": "Polling endpoint"
+        },
+        {
+          "approach": "Use waitFor",
+          "code": "* def result = karate.waitFor(conditionFn, 10000)",
+          "when": "Wait for condition"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "* configure connectTimeout = 30000\n* configure readTimeout = 30000",
+          "when": "Slow response"
+        }
+      ]
+    }
+  ]
+}

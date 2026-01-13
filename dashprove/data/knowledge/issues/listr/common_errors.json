@@ -1,0 +1,102 @@
+{
+  "tool": "listr",
+  "category": "terminal",
+  "common_errors": [
+    {
+      "id": "listr_vs_listr2",
+      "pattern": "listr deprecated|listr2 migration|which listr",
+      "severity": "warning",
+      "causes": [
+        "Original listr is unmaintained",
+        "listr2 is the active fork",
+        "API differences between versions"
+      ],
+      "solutions": [
+        "Use listr2 for new projects: npm i listr2",
+        "listr2 has similar API with improvements",
+        "Migration: mostly compatible, check changelog",
+        "listr2 is ESM-native in v6+"
+      ]
+    },
+    {
+      "id": "listr_task_not_function",
+      "pattern": "task is not a function|task must return|invalid task",
+      "severity": "error",
+      "causes": [
+        "Task definition missing required function",
+        "task property not returning Promise/Observable",
+        "Wrong task structure"
+      ],
+      "solutions": [
+        "Task must have task: (ctx, task) => Promise",
+        "Return Promise or Observable from task",
+        "Use async function: task: async () => {}",
+        "Check task object structure: { title, task }"
+      ]
+    },
+    {
+      "id": "listr_concurrent_error",
+      "pattern": "concurrent.*error|all tasks failed|partial failure",
+      "severity": "error",
+      "causes": [
+        "One task in concurrent group failing",
+        "Error handling in concurrent mode",
+        "exitOnError behavior with concurrent"
+      ],
+      "solutions": [
+        "Use { exitOnError: false } to continue on failure",
+        "Handle errors per-task with try-catch",
+        "Check ctx for partial results",
+        "Use concurrent: false to serialize tasks"
+      ]
+    },
+    {
+      "id": "listr_skip_not_working",
+      "pattern": "skip not called|task ran despite skip|skip condition wrong",
+      "severity": "warning",
+      "causes": [
+        "skip property should return boolean/string/Promise",
+        "skip checked at wrong time",
+        "enabled vs skip confusion"
+      ],
+      "solutions": [
+        "skip: (ctx) => ctx.shouldSkip returns boolean or skip reason",
+        "enabled: false removes task entirely (no output)",
+        "skip: 'reason' shows task as skipped with reason",
+        "skip is evaluated before task runs"
+      ]
+    },
+    {
+      "id": "listr_context_undefined",
+      "pattern": "ctx is undefined|context not available|Cannot read.*ctx",
+      "severity": "error",
+      "causes": [
+        "Not passing context to Listr",
+        "Accessing ctx before set by previous task",
+        "Destructuring undefined ctx"
+      ],
+      "solutions": [
+        "Pass initial context: new Listr(tasks, { ctx: {} })",
+        "Or: tasks.run({ initialValue: 1 })",
+        "Check ctx exists before accessing: ctx?.value",
+        "First task should initialize needed ctx properties"
+      ]
+    },
+    {
+      "id": "listr_output_lost",
+      "pattern": "task output not shown|console.log not visible|output cleared",
+      "severity": "warning",
+      "causes": [
+        "console.log clears in update renderer",
+        "Output replaced by spinner",
+        "Using wrong output method"
+      ],
+      "solutions": [
+        "Use task.output = 'message' for persistent output",
+        "listr2: task.output can be array for multiple lines",
+        "Use verbose renderer in CI: { renderer: 'verbose' }",
+        "Store in ctx and display after completion"
+      ]
+    }
+  ]
+}

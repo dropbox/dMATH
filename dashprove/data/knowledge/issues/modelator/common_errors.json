@@ -1,0 +1,145 @@
+{
+  "tool": "modelator",
+  "version": "0.4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "tla_parse_error",
+      "pattern": "TLA\\+ parse error|syntax error in TLA",
+      "message": "Failed to parse TLA+ specification",
+      "cause": "TLA+ specification has syntax errors",
+      "solutions": [
+        {
+          "approach": "Check operator definitions",
+          "code": "-- Ensure all operators are defined before use\nINIT == x = 0\nNEXT == x' = x + 1",
+          "when": "Undefined operator error"
+        },
+        {
+          "approach": "Verify module imports",
+          "code": "---- MODULE Example ----\nEXTENDS Integers, Sequences\n====",
+          "when": "Missing standard library functions"
+        },
+        {
+          "approach": "Check prime notation",
+          "code": "-- Use x' for next state, not x_next\nNEXT == x' = x + 1",
+          "when": "Next-state variable syntax error"
+        }
+      ]
+    },
+    {
+      "id": "trace_generation_timeout",
+      "pattern": "timeout.*trace generation|trace generation.*timeout",
+      "message": "Trace generation timed out",
+      "cause": "State space too large or spec has infinite behaviors",
+      "solutions": [
+        {
+          "approach": "Add state constraints",
+          "code": "-- Bound the state space\nStateConstraint == x < 100 /\\ Len(queue) < 10",
+          "when": "Unbounded state variables"
+        },
+        {
+          "approach": "Use symmetry reduction",
+          "code": "-- Permutation symmetry for processes\nSYMMETRY Permutations(Procs)",
+          "when": "Many symmetric processes"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "modelator trace --timeout 600 spec.tla",
+          "when": "Complex but finite state space"
+        }
+      ]
+    },
+    {
+      "id": "no_traces_found",
+      "pattern": "no traces found|empty trace set",
+      "message": "No execution traces generated",
+      "cause": "Initial state predicate may be unsatisfiable or too restrictive",
+      "solutions": [
+        {
+          "approach": "Check initial state",
+          "code": "-- Ensure INIT is satisfiable\nINIT == x \\in 1..10  -- not x = 1 /\\ x = 2",
+          "when": "Contradictory initial conditions"
+        },
+        {
+          "approach": "Verify liveness properties",
+          "code": "-- Check fairness constraints\nSpec == Init /\\ [][Next]_vars /\\ WF_vars(Next)",
+          "when": "Fairness constraints too strong"
+        },
+        {
+          "approach": "Relax action constraints",
+          "code": "-- Allow stuttering steps\nNext == Action1 \\/ Action2 \\/ UNCHANGED vars",
+          "when": "Actions never enabled"
+        }
+      ]
+    },
+    {
+      "id": "json_decode_error",
+      "pattern": "JSON decode error|invalid JSON trace",
+      "message": "Failed to decode trace as JSON",
+      "cause": "Trace output is not valid JSON format",
+      "solutions": [
+        {
+          "approach": "Check TLC output format",
+          "code": "modelator trace --format json spec.tla",
+          "when": "Wrong output format specified"
+        },
+        {
+          "approach": "Validate custom serialization",
+          "code": "-- Ensure custom TLA+ operators produce JSON-compatible output\nSerialize(x) == ToString(x)",
+          "when": "Custom serialization issues"
+        },
+        {
+          "approach": "Use modelator built-in types",
+          "code": "-- Stick to basic types: Int, String, Set, Seq, Record",
+          "when": "Complex custom types"
+        }
+      ]
+    },
+    {
+      "id": "rust_test_mismatch",
+      "pattern": "trace.*mismatch|execution.*differs",
+      "message": "Rust execution differs from TLA+ trace",
+      "cause": "Implementation behavior does not match specification",
+      "solutions": [
+        {
+          "approach": "Check state mapping",
+          "code": "impl ModelState for MySystem {\n    fn from_tla(state: &TlaState) -> Self {\n        // Ensure correct mapping\n    }\n}",
+          "when": "State representation differs"
+        },
+        {
+          "approach": "Verify action correspondence",
+          "code": "#[modelator::action]\nfn perform_action(&mut self, input: Input) {\n    // Must match TLA+ action semantics\n}",
+          "when": "Action implementation differs"
+        },
+        {
+          "approach": "Add step-by-step debugging",
+          "code": "modelator trace --verbose --step-debug spec.tla",
+          "when": "Need to identify divergence point"
+        }
+      ]
+    },
+    {
+      "id": "apalache_not_found",
+      "pattern": "Apalache.*not found|apalache command failed",
+      "message": "Apalache model checker not found",
+      "cause": "Apalache is not installed or not in PATH",
+      "solutions": [
+        {
+          "approach": "Install Apalache",
+          "code": "# Download and install Apalache\nwget https://github.com/informalsystems/apalache/releases/download/v0.44.0/apalache.tgz\ntar -xzf apalache.tgz\nexport PATH=$PATH:$(pwd)/apalache/bin",
+          "when": "Apalache not installed"
+        },
+        {
+          "approach": "Use TLC instead",
+          "code": "modelator trace --checker tlc spec.tla",
+          "when": "Don't need symbolic model checking"
+        },
+        {
+          "approach": "Check Java version",
+          "code": "java -version  # Apalache requires Java 17+",
+          "when": "Wrong Java version"
+        }
+      ]
+    }
+  ]
+}

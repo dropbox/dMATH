@@ -1,0 +1,168 @@
+{
+  "tool": "sed",
+  "version": "4.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unterminated_s_command",
+      "pattern": "unterminated.*command|expected.*command",
+      "message": "Unterminated 's' command",
+      "cause": "Missing delimiter in substitution",
+      "solutions": [
+        {
+          "approach": "Match delimiters",
+          "code": "sed 's/old/new/g'  # Three delimiters",
+          "when": "Missing closing /"
+        },
+        {
+          "approach": "Use different delimiter",
+          "code": "sed 's|/path/old|/path/new|g'",
+          "when": "Pattern contains /"
+        },
+        {
+          "approach": "Escape slashes",
+          "code": "sed 's/\\/path\\/old/\\/path\\/new/g'",
+          "when": "Must use / delimiter"
+        }
+      ]
+    },
+    {
+      "id": "invalid_command",
+      "pattern": "invalid command|char.*not expected",
+      "message": "Invalid command code",
+      "cause": "Unknown sed command or syntax error",
+      "solutions": [
+        {
+          "approach": "Check command syntax",
+          "code": "sed -e 's/...' -e 'd'  # Separate commands",
+          "when": "Multiple commands"
+        },
+        {
+          "approach": "Quote properly",
+          "code": "Use single quotes to prevent shell expansion",
+          "when": "Shell interfering"
+        },
+        {
+          "approach": "Use POSIX mode",
+          "code": "sed --posix 's/old/new/'",
+          "when": "Compatibility issues"
+        }
+      ]
+    },
+    {
+      "id": "no_previous_regex",
+      "pattern": "no previous regular expression|empty.*pattern",
+      "message": "No previous regular expression",
+      "cause": "Empty pattern references previous (which doesn't exist)",
+      "solutions": [
+        {
+          "approach": "Provide pattern",
+          "code": "sed 's/pattern/replace/'  # Not 's//replace/'",
+          "when": "Pattern required"
+        },
+        {
+          "approach": "Use previous correctly",
+          "code": "/pattern/s//replace/  # Search then substitute",
+          "when": "Want to reuse pattern"
+        },
+        {
+          "approach": "Chain with address",
+          "code": "sed '/pattern/{s//new/;}'",
+          "when": "Reference previous pattern"
+        }
+      ]
+    },
+    {
+      "id": "illegal_byte_sequence",
+      "pattern": "illegal byte sequence|Invalid.*encoding",
+      "message": "Illegal byte sequence",
+      "cause": "File encoding doesn't match locale",
+      "solutions": [
+        {
+          "approach": "Set locale",
+          "code": "LC_ALL=C sed 's/old/new/' file",
+          "when": "Binary-safe processing"
+        },
+        {
+          "approach": "Convert encoding",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file | sed ...",
+          "when": "Known encoding"
+        },
+        {
+          "approach": "Use perl",
+          "code": "perl -pe 's/old/new/' file",
+          "when": "Need Unicode support"
+        }
+      ]
+    },
+    {
+      "id": "inplace_no_backup",
+      "pattern": "in-place.*requires.*extension|bad.*flag.*in.*substitute",
+      "message": "In-place edit issue (macOS)",
+      "cause": "macOS sed requires extension with -i",
+      "solutions": [
+        {
+          "approach": "Use empty extension (macOS)",
+          "code": "sed -i '' 's/old/new/' file",
+          "when": "macOS, no backup"
+        },
+        {
+          "approach": "Use backup (GNU)",
+          "code": "sed -i.bak 's/old/new/' file",
+          "when": "GNU sed, create backup"
+        },
+        {
+          "approach": "Use gsed on macOS",
+          "code": "brew install gnu-sed && gsed -i 's/.../...' file",
+          "when": "GNU sed on macOS"
+        }
+      ]
+    },
+    {
+      "id": "extra_characters",
+      "pattern": "extra characters|unexpected.*end|after.*command",
+      "message": "Extra characters after command",
+      "cause": "Text after command where not allowed",
+      "solutions": [
+        {
+          "approach": "Separate commands",
+          "code": "sed -e 's/a/b/' -e 's/c/d/'",
+          "when": "Multiple substitutions"
+        },
+        {
+          "approach": "Use semicolons",
+          "code": "sed 's/a/b/; s/c/d/'",
+          "when": "Chain commands"
+        },
+        {
+          "approach": "Use braces",
+          "code": "sed '/pattern/{s/a/b/; s/c/d/}'",
+          "when": "Multiple commands on match"
+        }
+      ]
+    },
+    {
+      "id": "address_range",
+      "pattern": "unknown option|invalid.*address|expected.*address",
+      "message": "Invalid address range",
+      "cause": "Address specification syntax error",
+      "solutions": [
+        {
+          "approach": "Line range",
+          "code": "sed '10,20d'  # Delete lines 10-20",
+          "when": "Line numbers"
+        },
+        {
+          "approach": "Pattern range",
+          "code": "sed '/start/,/end/d'",
+          "when": "Between patterns"
+        },
+        {
+          "approach": "Last line",
+          "code": "sed '$d'  # Delete last line",
+          "when": "Reference end of file"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "map2check",
+  "version": "8.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "VERIFICATION FAILED|FALSE\\(reach\\)",
+      "message": "Property violation detected",
+      "cause": "Map2Check found reachable error state via LLVM symbolic execution",
+      "solutions": [
+        {
+          "approach": "View witness",
+          "code": "# Check output directory for violation-witness.graphml",
+          "when": "Need counterexample details"
+        },
+        {
+          "approach": "Examine trace",
+          "code": "map2check --witness-output trace.graphml program.c",
+          "when": "Need execution trace"
+        },
+        {
+          "approach": "Fix bug",
+          "code": "// Map2Check found genuine reachability bug",
+          "when": "Verification found real issue"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "UNKNOWN|TIMEOUT",
+      "message": "Verification inconclusive",
+      "cause": "Map2Check could not determine property within limits",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "map2check --timeout 900 program.c",
+          "when": "Analysis making progress"
+        },
+        {
+          "approach": "Use different strategy",
+          "code": "map2check --property memsafety program.c",
+          "when": "Trying different property"
+        },
+        {
+          "approach": "Simplify program",
+          "code": "// Reduce loop complexity or add __VERIFIER_assume",
+          "when": "State space too large"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "clang:.*error|compilation failed",
+      "message": "LLVM compilation failed",
+      "cause": "Source code could not be compiled to LLVM bitcode",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "clang -fsyntax-only -std=c11 program.c",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Include paths",
+          "code": "map2check --include-path /usr/include program.c",
+          "when": "Missing headers"
+        },
+        {
+          "approach": "Specify standard",
+          "code": "map2check --clang-args=-std=gnu99 program.c",
+          "when": "Need specific C dialect"
+        }
+      ]
+    },
+    {
+      "id": "klee_error",
+      "pattern": "KLEE:.*ERROR|klee.*failed",
+      "message": "KLEE symbolic execution error",
+      "cause": "Map2Check's KLEE backend encountered issue",
+      "solutions": [
+        {
+          "approach": "Increase memory",
+          "code": "map2check --max-memory 8192 program.c",
+          "when": "KLEE ran out of memory"
+        },
+        {
+          "approach": "Bound symbolic input",
+          "code": "// Add __VERIFIER_assume constraints",
+          "when": "Input space too large"
+        },
+        {
+          "approach": "Check KLEE support",
+          "code": "// Verify program uses supported LLVM features",
+          "when": "Unsupported operations"
+        }
+      ]
+    },
+    {
+      "id": "memory_safety_violation",
+      "pattern": "FALSE\\(valid-deref\\)|FALSE\\(valid-free\\)|FALSE\\(valid-memtrack\\)",
+      "message": "Memory safety violation found",
+      "cause": "Invalid dereference, free, or memory leak detected",
+      "solutions": [
+        {
+          "approach": "Fix invalid access",
+          "code": "// Check pointer bounds before dereference",
+          "when": "Invalid dereference"
+        },
+        {
+          "approach": "Fix double free",
+          "code": "// Set pointer to NULL after free",
+          "when": "Invalid free operation"
+        },
+        {
+          "approach": "Fix memory leak",
+          "code": "// Ensure all allocated memory is freed",
+          "when": "Memory not freed"
+        }
+      ]
+    },
+    {
+      "id": "overflow_detected",
+      "pattern": "FALSE\\(no-overflow\\)",
+      "message": "Integer overflow detected",
+      "cause": "Arithmetic operation can overflow",
+      "solutions": [
+        {
+          "approach": "Use larger type",
+          "code": "long long result = (long long)a + b;",
+          "when": "Operation exceeds type bounds"
+        },
+        {
+          "approach": "Add overflow check",
+          "code": "if (a > INT_MAX - b) { /* handle overflow */ }",
+          "when": "Need runtime protection"
+        },
+        {
+          "approach": "Use safe arithmetic",
+          "code": "#include <stdckdint.h> // C23 checked integer",
+          "when": "Using C23 features"
+        }
+      ]
+    }
+  ]
+}

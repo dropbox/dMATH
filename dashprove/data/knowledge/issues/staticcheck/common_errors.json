@@ -1,0 +1,218 @@
+{
+  "tool": "staticcheck",
+  "version": "2024.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "sa1000_invalid_regex",
+      "pattern": "SA1000",
+      "message": "Invalid regular expression",
+      "cause": "The regular expression passed to regexp.Compile or similar is invalid",
+      "solutions": [
+        {
+          "approach": "Fix regex syntax",
+          "code": "regexp.MustCompile(`[a-z]+`)  // Use raw strings",
+          "when": "Regex has escape issues"
+        },
+        {
+          "approach": "Use regexp.QuoteMeta for literals",
+          "code": "regexp.MustCompile(regexp.QuoteMeta(userInput))",
+          "when": "Need to match literal string"
+        }
+      ]
+    },
+    {
+      "id": "sa1004_invalid_time_format",
+      "pattern": "SA1004",
+      "message": "Invalid time format",
+      "cause": "time.Parse or time.Format called with invalid layout string",
+      "solutions": [
+        {
+          "approach": "Use reference time",
+          "code": "time.Parse(\"2006-01-02 15:04:05\", s)  // Use Go's reference time",
+          "when": "Using wrong format string"
+        },
+        {
+          "approach": "Use predefined constants",
+          "code": "time.Parse(time.RFC3339, s)",
+          "when": "Standard format exists"
+        }
+      ]
+    },
+    {
+      "id": "sa1006_printf_call",
+      "pattern": "SA1006",
+      "message": "Printf with dynamic first argument",
+      "cause": "fmt.Printf called with non-constant format string",
+      "solutions": [
+        {
+          "approach": "Use fmt.Print instead",
+          "code": "fmt.Print(dynamicString)  // Not Printf",
+          "when": "No formatting needed"
+        },
+        {
+          "approach": "Use %s with argument",
+          "code": "fmt.Printf(\"%s\", dynamicString)",
+          "when": "Dynamic string is data, not format"
+        }
+      ]
+    },
+    {
+      "id": "sa1012_nil_context",
+      "pattern": "SA1012",
+      "message": "Passing nil context",
+      "cause": "A nil Context was passed to a function",
+      "solutions": [
+        {
+          "approach": "Use context.Background()",
+          "code": "ctx := context.Background()",
+          "when": "No parent context available"
+        },
+        {
+          "approach": "Use context.TODO()",
+          "code": "ctx := context.TODO()",
+          "when": "Placeholder until proper context available"
+        }
+      ]
+    },
+    {
+      "id": "sa2000_sync_waitgroup_copy",
+      "pattern": "SA2000",
+      "message": "sync.WaitGroup is passed by value",
+      "cause": "WaitGroup passed by value instead of pointer (copies are useless)",
+      "solutions": [
+        {
+          "approach": "Pass pointer",
+          "code": "func worker(wg *sync.WaitGroup) { ... }",
+          "when": "WaitGroup shared across goroutines"
+        },
+        {
+          "approach": "Use closure capture",
+          "code": "go func() { defer wg.Done(); ... }()",
+          "when": "WaitGroup in same scope"
+        }
+      ]
+    },
+    {
+      "id": "sa2001_empty_critical_section",
+      "pattern": "SA2001",
+      "message": "Empty critical section",
+      "cause": "Lock acquired but no operations performed before unlock",
+      "solutions": [
+        {
+          "approach": "Add protected operations",
+          "code": "mu.Lock()\nsharedData = value  // Do something\nmu.Unlock()",
+          "when": "Critical section accidentally empty"
+        },
+        {
+          "approach": "Remove unnecessary lock",
+          "code": "// Remove lock/unlock if not needed",
+          "when": "Lock is unnecessary"
+        }
+      ]
+    },
+    {
+      "id": "sa4003_unsigned_comparison",
+      "pattern": "SA4003",
+      "message": "Unsigned integer comparison with zero",
+      "cause": "Comparison like x >= 0 on unsigned type (always true)",
+      "solutions": [
+        {
+          "approach": "Remove redundant check",
+          "code": "// x >= 0 is always true for uint",
+          "when": "Check is unnecessary"
+        },
+        {
+          "approach": "Check for underflow differently",
+          "code": "if x > 0 { x-- }  // Check before decrement",
+          "when": "Trying to prevent underflow"
+        }
+      ]
+    },
+    {
+      "id": "sa4006_unused_value",
+      "pattern": "SA4006",
+      "message": "Value assigned but never used",
+      "cause": "Variable assigned but overwritten or function returns without using it",
+      "solutions": [
+        {
+          "approach": "Use the value",
+          "code": "result := compute()\nreturn result  // Use the assigned value",
+          "when": "Value should be used"
+        },
+        {
+          "approach": "Use blank identifier",
+          "code": "_ = compute()  // Explicitly ignore",
+          "when": "Value intentionally unused"
+        }
+      ]
+    },
+    {
+      "id": "sa5000_nil_dereference",
+      "pattern": "SA5000",
+      "message": "Nil pointer dereference",
+      "cause": "Dereferencing a pointer that may be nil",
+      "solutions": [
+        {
+          "approach": "Add nil check",
+          "code": "if ptr != nil { use(ptr.field) }",
+          "when": "Pointer may be nil"
+        },
+        {
+          "approach": "Return early",
+          "code": "if ptr == nil { return nil, err }",
+          "when": "Nil indicates error condition"
+        }
+      ]
+    },
+    {
+      "id": "sa6000_slice_to_map",
+      "pattern": "SA6000",
+      "message": "Using RLock for modifying map",
+      "cause": "Using RLock when modifying a map (should use Lock)",
+      "solutions": [
+        {
+          "approach": "Use Lock for writes",
+          "code": "mu.Lock()\nm[key] = value\nmu.Unlock()",
+          "when": "Modifying map content"
+        },
+        {
+          "approach": "Use RLock only for reads",
+          "code": "mu.RLock()\nv := m[key]\nmu.RUnlock()",
+          "when": "Only reading from map"
+        }
+      ]
+    },
+    {
+      "id": "sa9003_empty_body",
+      "pattern": "SA9003",
+      "message": "Empty branch",
+      "cause": "if/else branch has empty body",
+      "solutions": [
+        {
+          "approach": "Add logic or remove",
+          "code": "if condition {\n    doSomething()\n}",
+          "when": "Logic was forgotten"
+        },
+        {
+          "approach": "Add comment explaining why",
+          "code": "if condition {\n    // Intentionally empty: handled elsewhere\n}",
+          "when": "Empty is intentional"
+        }
+      ]
+    },
+    {
+      "id": "st1000_package_comment",
+      "pattern": "ST1000",
+      "message": "Package comment not in correct form",
+      "cause": "Package documentation doesn't start with 'Package <name>'",
+      "solutions": [
+        {
+          "approach": "Fix package comment",
+          "code": "// Package foo provides utilities for...",
+          "when": "Package needs documentation"
+        }
+      ]
+    }
+  ]
+}

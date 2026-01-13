@@ -1,0 +1,87 @@
+{
+  "tool": "deluser",
+  "version": "debian",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "user_not_found",
+      "pattern": "user .* does not exist|The user .* does not exist",
+      "message": "User doesn't exist",
+      "cause": "Username not in system",
+      "solutions": [
+        {
+          "approach": "List users",
+          "code": "cat /etc/passwd | cut -d: -f1\ngetent passwd",
+          "when": "Find correct name"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|deluser: Only root may remove",
+      "message": "Not authorized",
+      "cause": "Need root privileges",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo deluser username",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "user_logged_in",
+      "pattern": "user is currently logged in|currently used by process",
+      "message": "User is logged in",
+      "cause": "Active processes running as user",
+      "solutions": [
+        {
+          "approach": "Kill processes",
+          "code": "sudo pkill -u username\nsudo deluser username",
+          "when": "Force logout first"
+        },
+        {
+          "approach": "Check sessions",
+          "code": "who | grep username\nps -u username",
+          "when": "See active sessions"
+        }
+      ]
+    },
+    {
+      "id": "remove_home_failed",
+      "pattern": "cannot remove home directory|Warning: The home directory",
+      "message": "Home removal failed",
+      "cause": "Home directory issues",
+      "solutions": [
+        {
+          "approach": "Keep home",
+          "code": "sudo deluser username",
+          "when": "Without --remove-home"
+        },
+        {
+          "approach": "Force remove",
+          "code": "sudo deluser --remove-home username",
+          "when": "Delete home too"
+        },
+        {
+          "approach": "Manual cleanup",
+          "code": "sudo userdel username\nsudo rm -rf /home/username",
+          "when": "Manual removal"
+        }
+      ]
+    },
+    {
+      "id": "deluser_not_found",
+      "pattern": "deluser: command not found",
+      "message": "deluser not installed",
+      "cause": "Not available (non-Debian systems)",
+      "solutions": [
+        {
+          "approach": "Use userdel",
+          "code": "sudo userdel username\nsudo userdel -r username  # With home",
+          "when": "Low-level alternative"
+        }
+      ]
+    }
+  ]
+}

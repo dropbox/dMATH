@@ -1,0 +1,135 @@
+{
+  "tool": "art",
+  "version": "1.16.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "classifier_not_wrapped",
+      "pattern": "(wrapper|ART classifier|not supported)",
+      "message": "Model must be wrapped in ART classifier",
+      "cause": "ART attacks require models wrapped in framework-specific classifiers",
+      "solutions": [
+        {
+          "approach": "Wrap PyTorch model",
+          "code": "from art.estimators.classification import PyTorchClassifier\nclassifier = PyTorchClassifier(\n    model=model, loss=loss_fn, optimizer=optimizer,\n    input_shape=(3, 224, 224), nb_classes=10\n)",
+          "when": "Using PyTorch model"
+        },
+        {
+          "approach": "Wrap TensorFlow model",
+          "code": "from art.estimators.classification import TensorFlowV2Classifier\nclassifier = TensorFlowV2Classifier(\n    model=model, nb_classes=10,\n    input_shape=(224, 224, 3), loss_object=loss_fn\n)",
+          "when": "Using TensorFlow model"
+        },
+        {
+          "approach": "Wrap sklearn model",
+          "code": "from art.estimators.classification import SklearnClassifier\nclassifier = SklearnClassifier(model=sklearn_model)",
+          "when": "Using sklearn model"
+        }
+      ]
+    },
+    {
+      "id": "gradient_not_available",
+      "pattern": "(gradient.*not available|no gradient)",
+      "message": "Gradients not available for attack",
+      "cause": "Gradient-based attacks require differentiable models",
+      "solutions": [
+        {
+          "approach": "Use black-box attack",
+          "code": "from art.attacks.evasion import HopSkipJump\nattack = HopSkipJump(classifier=classifier, targeted=False)",
+          "when": "Model is not differentiable"
+        },
+        {
+          "approach": "Enable gradients",
+          "code": "model.train()  # PyTorch: ensure gradient tracking\nfor param in model.parameters():\n    param.requires_grad = True",
+          "when": "Gradients disabled accidentally"
+        },
+        {
+          "approach": "Use score-based attack",
+          "code": "from art.attacks.evasion import ZooAttack\nattack = ZooAttack(classifier=classifier)",
+          "when": "Only have prediction scores"
+        }
+      ]
+    },
+    {
+      "id": "perturbation_too_large",
+      "pattern": "(epsilon|perturbation.*bound|clip)",
+      "message": "Adversarial perturbation exceeds bound",
+      "cause": "Generated adversarial example exceeds epsilon constraint",
+      "solutions": [
+        {
+          "approach": "Reduce epsilon",
+          "code": "attack = ProjectedGradientDescent(\n    classifier, eps=0.03, eps_step=0.01, max_iter=40\n)",
+          "when": "Want smaller perturbations"
+        },
+        {
+          "approach": "Enable clipping",
+          "code": "# ART clips by default, check data range\nx_adv = attack.generate(x=x_test, y=y_test)\nx_adv = np.clip(x_adv, 0, 1)  # Ensure valid range",
+          "when": "Perturbations going out of bounds"
+        }
+      ]
+    },
+    {
+      "id": "attack_failed",
+      "pattern": "(attack failed|no adversarial|success rate.*0)",
+      "message": "Attack could not generate adversarial examples",
+      "cause": "Model is robust or attack parameters too conservative",
+      "solutions": [
+        {
+          "approach": "Increase attack strength",
+          "code": "attack = PGD(classifier, eps=0.1, max_iter=100, eps_step=0.01)",
+          "when": "Model appears robust"
+        },
+        {
+          "approach": "Try different attack",
+          "code": "# Try CW attack for stronger adversarials\nfrom art.attacks.evasion import CarliniL2Method\nattack = CarliniL2Method(classifier, confidence=0.5, max_iter=100)",
+          "when": "PGD not effective"
+        },
+        {
+          "approach": "Use targeted attack",
+          "code": "attack = PGD(classifier, targeted=True)\nx_adv = attack.generate(x=x_test, y=target_labels)",
+          "when": "Untargeted attack failing"
+        }
+      ]
+    },
+    {
+      "id": "input_shape_mismatch",
+      "pattern": "(input.*shape|dimension.*mismatch)",
+      "message": "Input shape doesn't match classifier expectation",
+      "cause": "Data preprocessing may differ from training",
+      "solutions": [
+        {
+          "approach": "Check classifier shape",
+          "code": "print(f\"Expected: {classifier.input_shape}\")\nprint(f\"Got: {x_test.shape[1:]}\")",
+          "when": "Debugging shape issues"
+        },
+        {
+          "approach": "Add preprocessing",
+          "code": "classifier = PyTorchClassifier(\n    model=model, ...,\n    preprocessing=(mean, std)  # Normalization\n)",
+          "when": "Need input normalization"
+        },
+        {
+          "approach": "Transpose channels",
+          "code": "# Convert HWC to CHW for PyTorch\nx_test = np.transpose(x_test, (0, 3, 1, 2))",
+          "when": "Channel order wrong"
+        }
+      ]
+    },
+    {
+      "id": "defense_not_compatible",
+      "pattern": "(defense.*not compatible|preprocessor)",
+      "message": "Defense not compatible with model type",
+      "cause": "Some defenses only work with specific frameworks",
+      "solutions": [
+        {
+          "approach": "Check defense requirements",
+          "code": "# Adversarial training requires gradient access\nfrom art.defences.trainer import AdversarialTrainer\ntrainer = AdversarialTrainer(classifier, attack)",
+          "when": "Using adversarial training"
+        },
+        {
+          "approach": "Use input transformation",
+          "code": "from art.defences.preprocessor import JpegCompression\ndefense = JpegCompression(clip_values=(0, 1), quality=75)\nclassifier_defended = classifier.set_preprocessor(defense)",
+          "when": "Want input preprocessing defense"
+        }
+      ]
+    }
+  ]
+}

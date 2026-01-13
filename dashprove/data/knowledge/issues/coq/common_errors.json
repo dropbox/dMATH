@@ -1,0 +1,224 @@
+{
+  "tool": "coq",
+  "version": "8.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "type_error",
+      "pattern": "The term .* has type .* while it is expected to have type",
+      "message": "Type mismatch error",
+      "cause": "Expression has wrong type",
+      "solutions": [
+        {
+          "approach": "Check types",
+          "code": "Check expr.  (* See type *)",
+          "when": "Unclear what type is expected"
+        },
+        {
+          "approach": "Use conversion",
+          "code": "change expected_type.  (* or unfold, simpl *)",
+          "when": "Types are definitionally equal"
+        },
+        {
+          "approach": "Apply coercion",
+          "code": "(* May need explicit cast or coercion *)",
+          "when": "Types are related by coercion"
+        }
+      ]
+    },
+    {
+      "id": "cannot_find_term",
+      "pattern": "Cannot find a physical path bound to logical path",
+      "message": "Module not found",
+      "cause": "Required library not installed or not in path",
+      "solutions": [
+        {
+          "approach": "Install with opam",
+          "code": "opam install coq-library-name",
+          "when": "Library not installed"
+        },
+        {
+          "approach": "Add to _CoqProject",
+          "code": "-Q path LogicalName",
+          "when": "Library installed but not in path"
+        },
+        {
+          "approach": "Check Coq version",
+          "code": "opam show coq  # Check compatibility",
+          "when": "Library may be incompatible"
+        }
+      ]
+    },
+    {
+      "id": "no_applicable_tactic",
+      "pattern": "No applicable tactic",
+      "message": "Tactic cannot be applied",
+      "cause": "Tactic preconditions not met",
+      "solutions": [
+        {
+          "approach": "Check goal",
+          "code": "Show.  (* or Print Goal *)",
+          "when": "Need to see current goal"
+        },
+        {
+          "approach": "Prepare goal",
+          "code": "intros.  (* or destruct, inversion *)",
+          "when": "Goal needs preprocessing"
+        },
+        {
+          "approach": "Use different tactic",
+          "code": "(* try apply, exact, refine, etc. *)",
+          "when": "Wrong tactic for this goal"
+        }
+      ]
+    },
+    {
+      "id": "universe_inconsistency",
+      "pattern": "Universe inconsistency",
+      "message": "Universe inconsistency detected",
+      "cause": "Type universe levels form a cycle",
+      "solutions": [
+        {
+          "approach": "Use universe polymorphism",
+          "code": "Set Universe Polymorphism.",
+          "when": "Definition should be universe-polymorphic"
+        },
+        {
+          "approach": "Add universe constraints",
+          "code": "Definition foo@{u v | u < v} := ...",
+          "when": "Need explicit universe ordering"
+        },
+        {
+          "approach": "Use Type instead of Set",
+          "code": "(* Set is universe 0, Type is polymorphic *)",
+          "when": "Universe 0 is too restrictive"
+        }
+      ]
+    },
+    {
+      "id": "guard_condition",
+      "pattern": "Recursive definition .* is ill-formed",
+      "message": "Fixpoint guard condition violated",
+      "cause": "Recursive call not on structurally smaller argument",
+      "solutions": [
+        {
+          "approach": "Use {struct arg}",
+          "code": "Fixpoint f (x: T) {struct x} : R := ...",
+          "when": "Need to specify decreasing argument"
+        },
+        {
+          "approach": "Use well-founded recursion",
+          "code": "Function f (x: T) {measure size x} : R := ...",
+          "when": "Recursion not structural"
+        },
+        {
+          "approach": "Use Program Fixpoint",
+          "code": "Program Fixpoint f (x: T) {measure (size x)} : R := ...",
+          "when": "Want more automation for termination"
+        },
+        {
+          "approach": "Use Equations",
+          "code": "Equations f (x: T) : R by wf (size x) lt := ...",
+          "when": "Complex recursion patterns"
+        }
+      ]
+    },
+    {
+      "id": "cannot_unify",
+      "pattern": "Cannot unify",
+      "message": "Unification failure",
+      "cause": "Two terms cannot be made equal",
+      "solutions": [
+        {
+          "approach": "Unfold definitions",
+          "code": "unfold def1, def2.",
+          "when": "Definitions hiding structure"
+        },
+        {
+          "approach": "Use congruence",
+          "code": "congruence.",
+          "when": "Equality follows from congruence"
+        },
+        {
+          "approach": "Provide explicit arguments",
+          "code": "@function arg1 arg2  (* all args explicit *)",
+          "when": "Implicit arguments causing issues"
+        }
+      ]
+    },
+    {
+      "id": "omega_failed",
+      "pattern": "Omega can't solve",
+      "message": "omega/lia failed",
+      "cause": "Goal is not linear integer arithmetic or is false",
+      "solutions": [
+        {
+          "approach": "Simplify first",
+          "code": "simpl in *.  (* or ring_simplify *)",
+          "when": "Goal has reducible expressions"
+        },
+        {
+          "approach": "Use nia",
+          "code": "nia.  (* non-linear integer arithmetic *)",
+          "when": "Problem is non-linear"
+        },
+        {
+          "approach": "Add hypotheses",
+          "code": "assert (H: fact) by tactic.  (* then lia *)",
+          "when": "Missing key facts"
+        },
+        {
+          "approach": "Check goal is true",
+          "code": "(* Goal may actually be false *)",
+          "when": "Proof is impossible"
+        }
+      ]
+    },
+    {
+      "id": "auto_failed",
+      "pattern": "auto did not solve",
+      "message": "auto cannot solve goal",
+      "cause": "Goal not solvable with current hint database",
+      "solutions": [
+        {
+          "approach": "Add hints",
+          "code": "auto with my_hints.  (* or eauto *)",
+          "when": "Need additional hint databases"
+        },
+        {
+          "approach": "Increase depth",
+          "code": "auto 10.  (* increase search depth *)",
+          "when": "Solution requires more steps"
+        },
+        {
+          "approach": "Use specific lemmas",
+          "code": "auto using lemma1, lemma2.",
+          "when": "Know which lemmas are needed"
+        },
+        {
+          "approach": "Try different tactics",
+          "code": "intuition.  (* or firstorder, tauto *)",
+          "when": "Goal is propositional"
+        }
+      ]
+    },
+    {
+      "id": "admitted_detected",
+      "pattern": "Closed under the global context",
+      "message": "Proof uses Admitted",
+      "cause": "Proof has admitted (incomplete) parts",
+      "solutions": [
+        {
+          "approach": "Find admitted proofs",
+          "code": "Print Assumptions theorem_name.",
+          "when": "Want to see what's admitted"
+        },
+        {
+          "approach": "Complete the proof",
+          "code": "(* Replace Admitted with Qed *)",
+          "when": "Need complete verification"
+        }
+      ]
+    }
+  ]
+}

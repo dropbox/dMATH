@@ -1,0 +1,237 @@
+{
+  "tool": "nix",
+  "version": "2.18",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "hash_mismatch",
+      "pattern": "hash mismatch|sha256.*expected.*got",
+      "message": "Hash mismatch during fetch",
+      "cause": "Downloaded file doesn't match expected hash",
+      "solutions": [
+        {
+          "approach": "Update hash",
+          "code": "# Replace old hash with the 'got' hash from error\nsha256 = \"sha256-XXXXX...\";  # Use the 'got' value",
+          "when": "Source updated"
+        },
+        {
+          "approach": "Use lib.fakeSha256",
+          "code": "sha256 = lib.fakeSha256;  # Will fail with correct hash\n# Then copy the correct hash from error",
+          "when": "Finding initial hash"
+        },
+        {
+          "approach": "Use nix-prefetch",
+          "code": "nix-prefetch-url https://example.com/file.tar.gz\nnix-prefetch-github owner repo",
+          "when": "Pre-calculate hash"
+        }
+      ]
+    },
+    {
+      "id": "attribute_not_found",
+      "pattern": "attribute.*not found|does not exist|undefined variable",
+      "message": "Attribute or variable not found",
+      "cause": "Referencing non-existent attribute",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "# Attribute names are case-sensitive\n# pkgs.python3 not pkgs.Python3",
+          "when": "Typo"
+        },
+        {
+          "approach": "Search packages",
+          "code": "nix search nixpkgs python",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Check if exists",
+          "code": "nix repl\n:l <nixpkgs>\npkgs.python3 or null",
+          "when": "Debug in repl"
+        }
+      ]
+    },
+    {
+      "id": "infinite_recursion",
+      "pattern": "infinite recursion|evaluation.*aborted",
+      "message": "Infinite recursion detected",
+      "cause": "Circular dependency or self-reference",
+      "solutions": [
+        {
+          "approach": "Check overlays",
+          "code": "# In overlays, use prev/final correctly:\nself: super: {\n  myPkg = super.myPkg.override { ... };\n  # super = previous, NOT self\n}",
+          "when": "Overlay recursion"
+        },
+        {
+          "approach": "Break circular deps",
+          "code": "# Use callPackage instead of direct references\n# Or restructure to avoid self-reference",
+          "when": "Circular dependency"
+        },
+        {
+          "approach": "Debug with trace",
+          "code": "builtins.trace \"evaluating X\" expr",
+          "when": "Find recursion point"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot create.*store",
+      "message": "Permission denied accessing Nix store",
+      "cause": "Not in Nix build-users group or store permissions",
+      "solutions": [
+        {
+          "approach": "Multi-user install",
+          "code": "# Add user to build-users:\nsudo dseditgroup -o edit -a $USER -t user nixbld",
+          "when": "User permissions"
+        },
+        {
+          "approach": "Restart daemon",
+          "code": "sudo launchctl kickstart -k system/org.nixos.nix-daemon\n# Or on Linux:\nsudo systemctl restart nix-daemon",
+          "when": "Daemon issues"
+        },
+        {
+          "approach": "Fix store permissions",
+          "code": "sudo chown -R root:nixbld /nix/store",
+          "when": "Store corrupted"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "builder.*failed|build.*error|phase.*failed",
+      "message": "Build failed",
+      "cause": "Package failed to build",
+      "solutions": [
+        {
+          "approach": "View build log",
+          "code": "nix log /nix/store/xxxxx-pkgname\n# Or during build:\nnix build -L .#package",
+          "when": "See full log"
+        },
+        {
+          "approach": "Enter build environment",
+          "code": "nix develop\n# Or for debugging:\nnix build .#package --keep-failed\ncd /tmp/nix-build-*",
+          "when": "Debug interactively"
+        },
+        {
+          "approach": "Check dependencies",
+          "code": "nix-store -q --references /nix/store/xxxxx\n# Or:\nnix why-depends .#package .#dep",
+          "when": "Dependency issue"
+        }
+      ]
+    },
+    {
+      "id": "flake_locked",
+      "pattern": "locked.*not.*match|flake.*lock.*outdated",
+      "message": "Flake lock file issues",
+      "cause": "Lock file doesn't match flake inputs",
+      "solutions": [
+        {
+          "approach": "Update flake",
+          "code": "nix flake update\n# Or specific input:\nnix flake lock --update-input nixpkgs",
+          "when": "Update dependencies"
+        },
+        {
+          "approach": "Override input",
+          "code": "nix build .#package --override-input nixpkgs github:nixos/nixpkgs/nixos-unstable",
+          "when": "Temporary override"
+        },
+        {
+          "approach": "Recreate lock",
+          "code": "rm flake.lock && nix flake update",
+          "when": "Lock file corrupted"
+        }
+      ]
+    },
+    {
+      "id": "experimental_features",
+      "pattern": "experimental feature.*nix-command|flakes.*not enabled",
+      "message": "Experimental features not enabled",
+      "cause": "Using nix commands without enabling features",
+      "solutions": [
+        {
+          "approach": "Enable in config",
+          "code": "# ~/.config/nix/nix.conf:\nexperimental-features = nix-command flakes",
+          "when": "Permanent enable"
+        },
+        {
+          "approach": "Enable per command",
+          "code": "nix --extra-experimental-features 'nix-command flakes' build",
+          "when": "One-time use"
+        },
+        {
+          "approach": "System config (NixOS)",
+          "code": "nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];",
+          "when": "NixOS"
+        }
+      ]
+    },
+    {
+      "id": "impure_evaluation",
+      "pattern": "impure.*not allowed|access to.*denied",
+      "message": "Impure evaluation denied",
+      "cause": "Trying to access files outside Nix store",
+      "solutions": [
+        {
+          "approach": "Allow impure",
+          "code": "nix build --impure .#package",
+          "when": "Need external access"
+        },
+        {
+          "approach": "Use builtins.fetchurl",
+          "code": "src = builtins.fetchurl {\n  url = \"https://...\";\n  sha256 = \"...\";\n};",
+          "when": "External file"
+        },
+        {
+          "approach": "Copy to store first",
+          "code": "src = ./local-file;  # Will be copied to store",
+          "when": "Local file"
+        }
+      ]
+    },
+    {
+      "id": "gc_space",
+      "pattern": "out of.*space|No space left|store.*full",
+      "message": "Nix store out of space",
+      "cause": "Store has too many generations/packages",
+      "solutions": [
+        {
+          "approach": "Garbage collect",
+          "code": "nix-collect-garbage -d  # Delete old generations\nnix store gc           # With new commands",
+          "when": "Free space"
+        },
+        {
+          "approach": "Remove specific generations",
+          "code": "nix-env --list-generations\nnix-env --delete-generations 1 2 3",
+          "when": "Keep some generations"
+        },
+        {
+          "approach": "Optimize store",
+          "code": "nix store optimise  # Dedup via hard links",
+          "when": "Save space"
+        }
+      ]
+    },
+    {
+      "id": "missing_dependency",
+      "pattern": "missing.*input|required.*not found",
+      "message": "Missing build dependency",
+      "cause": "Package needs dependency not in inputs",
+      "solutions": [
+        {
+          "approach": "Add to buildInputs",
+          "code": "buildInputs = [ pkgs.openssl pkgs.zlib ];",
+          "when": "Runtime dependency"
+        },
+        {
+          "approach": "Add to nativeBuildInputs",
+          "code": "nativeBuildInputs = [ pkgs.pkg-config pkgs.cmake ];",
+          "when": "Build-time dependency"
+        },
+        {
+          "approach": "Search for package",
+          "code": "nix search nixpkgs 'lib.*ssl'",
+          "when": "Find right package"
+        }
+      ]
+    }
+  ]
+}

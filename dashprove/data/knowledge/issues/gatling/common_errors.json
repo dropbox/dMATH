@@ -1,0 +1,191 @@
+{
+  "tool": "gatling",
+  "version": "3.10.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "simulation_not_found",
+      "pattern": "No simulation class found|SimulationClass.*not found|ClassNotFoundException",
+      "message": "Simulation class not found",
+      "cause": "Class not in correct package or not extending Simulation",
+      "solutions": [
+        {
+          "approach": "Check package",
+          "code": "package computerdatabase\n\nimport io.gatling.core.Predef._\nimport io.gatling.http.Predef._\n\nclass BasicSimulation extends Simulation { }",
+          "when": "Wrong package structure"
+        },
+        {
+          "approach": "Verify class path",
+          "code": "// Class should be in src/test/scala/computerdatabase/",
+          "when": "File in wrong directory"
+        },
+        {
+          "approach": "Specify simulation",
+          "code": "gatling.sh -s computerdatabase.BasicSimulation",
+          "when": "Multiple simulations exist"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|ConnectException|j.n.ConnectException",
+      "message": "Cannot connect to target server",
+      "cause": "Target server not running or wrong URL",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl -I http://localhost:8080/api/health",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check base URL",
+          "code": "val httpProtocol = http\n  .baseUrl(\"http://correct-host:port\")\n  .acceptHeader(\"application/json\")",
+          "when": "Wrong URL configured"
+        },
+        {
+          "approach": "Add retry",
+          "code": "// Consider adding retry logic or checking connectivity first",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "Assertion failed|Global.*failed",
+      "message": "Performance assertion failed",
+      "cause": "Response time or success rate below threshold",
+      "solutions": [
+        {
+          "approach": "Review assertions",
+          "code": "setUp(\n  scn.inject(atOnceUsers(10))\n).protocols(httpProtocol)\n .assertions(\n   global.responseTime.max.lt(5000),  // Increase limit\n   global.successfulRequests.percent.gt(90)  // Lower threshold\n )",
+          "when": "Thresholds too strict"
+        },
+        {
+          "approach": "Profile bottlenecks",
+          "code": "// Check reports in target/gatling/results/",
+          "when": "Need to identify slow endpoints"
+        },
+        {
+          "approach": "Scale system",
+          "code": "// Add capacity or optimize slow endpoints",
+          "when": "System under-provisioned"
+        }
+      ]
+    },
+    {
+      "id": "feeder_error",
+      "pattern": "Feeder is empty|IllegalStateException.*Feeder|No more records",
+      "message": "Data feeder exhausted",
+      "cause": "More iterations than feeder records",
+      "solutions": [
+        {
+          "approach": "Circular feeder",
+          "code": "val feeder = csv(\"data.csv\").circular",
+          "when": "Need to reuse data"
+        },
+        {
+          "approach": "Random feeder",
+          "code": "val feeder = csv(\"data.csv\").random",
+          "when": "Random sampling needed"
+        },
+        {
+          "approach": "Add more data",
+          "code": "// Increase records in CSV/JSON feeder file",
+          "when": "Need unique values"
+        }
+      ]
+    },
+    {
+      "id": "body_parsing_error",
+      "pattern": "jsonPath.*failed|cssSelector.*failed|regex.*failed",
+      "message": "Response body extraction failed",
+      "cause": "Response doesn't match expected structure",
+      "solutions": [
+        {
+          "approach": "Debug response",
+          "code": ".check(\n  status.is(200),\n  bodyString.saveAs(\"debugBody\")\n)\n// Then: println(session(\"debugBody\").as[String])",
+          "when": "Need to see response"
+        },
+        {
+          "approach": "Fix path",
+          "code": ".check(\n  jsonPath(\"$.data.id\").saveAs(\"userId\"),\n  jsonPath(\"$.data.items[*].name\").findAll.saveAs(\"names\")\n)",
+          "when": "JSONPath wrong"
+        },
+        {
+          "approach": "Optional check",
+          "code": ".check(\n  jsonPath(\"$.optionalField\").optional.saveAs(\"maybeValue\")\n)",
+          "when": "Field may not exist"
+        }
+      ]
+    },
+    {
+      "id": "injection_error",
+      "pattern": "Injection profile.*invalid|rampUsers.*illegal|constantUsersPerSec",
+      "message": "Invalid injection profile",
+      "cause": "Injection parameters incorrect",
+      "solutions": [
+        {
+          "approach": "Fix ramp profile",
+          "code": "setUp(\n  scn.inject(\n    rampUsers(100).during(60),  // 100 users over 60 seconds\n  )\n)",
+          "when": "Ramp syntax wrong"
+        },
+        {
+          "approach": "Constant rate",
+          "code": "setUp(\n  scn.inject(\n    constantUsersPerSec(10).during(60)  // 10 users/sec for 60s\n  )\n)",
+          "when": "Need constant rate"
+        },
+        {
+          "approach": "Complex profile",
+          "code": "setUp(\n  scn.inject(\n    nothingFor(5),\n    atOnceUsers(10),\n    rampUsers(100).during(60),\n    constantUsersPerSec(20).during(120)\n  )\n)",
+          "when": "Need staged load"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "Compilation failed|not found: value|type mismatch",
+      "message": "Scala compilation error",
+      "cause": "Syntax error or missing import",
+      "solutions": [
+        {
+          "approach": "Add imports",
+          "code": "import io.gatling.core.Predef._\nimport io.gatling.http.Predef._\nimport scala.concurrent.duration._",
+          "when": "Missing imports"
+        },
+        {
+          "approach": "Fix chain",
+          "code": "val scn = scenario(\"Test\")\n  .exec(\n    http(\"request\")\n      .get(\"/api\")\n  )\n  .pause(1)",
+          "when": "Method chaining wrong"
+        },
+        {
+          "approach": "Check DSL",
+          "code": "// Gatling uses Scala DSL - check syntax at gatling.io/docs",
+          "when": "Unfamiliar with DSL"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Request timeout|TimeoutException|Read timed out",
+      "message": "Request timed out",
+      "cause": "Server response too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "val httpProtocol = http\n  .baseUrl(\"http://localhost:8080\")\n  .requestTimeout(60000)  // 60 seconds",
+          "when": "Requests legitimately slow"
+        },
+        {
+          "approach": "Investigate server",
+          "code": "// Profile server-side to find bottlenecks",
+          "when": "Server performance issue"
+        },
+        {
+          "approach": "Reduce load",
+          "code": "setUp(\n  scn.inject(rampUsers(50).during(60))  // Reduce from higher\n)",
+          "when": "Server overwhelmed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "lmql",
+  "version": "0.7.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_not_found",
+      "pattern": "Model not found|Cannot load model|ModelNotFoundError",
+      "message": "LMQL cannot find specified model",
+      "cause": "Model name incorrect or not available",
+      "solutions": [
+        {
+          "approach": "Use OpenAI model",
+          "code": "import lmql\n@lmql.query(model='openai/gpt-4')\nasync def query():\n    '''..'''",
+          "when": "Using OpenAI API"
+        },
+        {
+          "approach": "Use local model",
+          "code": "@lmql.query(model='local:llama.cpp:/path/to/model.gguf')",
+          "when": "Using local GGUF model"
+        },
+        {
+          "approach": "Use HuggingFace",
+          "code": "@lmql.query(model='hf:meta-llama/Llama-2-7b-hf')",
+          "when": "Using HuggingFace model"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "SyntaxError|LMQL syntax|Parse error",
+      "message": "LMQL query syntax is invalid",
+      "cause": "LMQL query has syntax errors",
+      "solutions": [
+        {
+          "approach": "Check constraint syntax",
+          "code": "'''lmql\n\"Answer: [ANSWER]\" where len(ANSWER) < 100\n'''",
+          "when": "Using constraints"
+        },
+        {
+          "approach": "Use proper placeholders",
+          "code": "'''lmql\n\"Name: [NAME]\" where NAME in [\"Alice\", \"Bob\"]\n'''",
+          "when": "Constraining to choices"
+        },
+        {
+          "approach": "Check string interpolation",
+          "code": "'''lmql\n\"{input}\\nAnswer: [ANSWER]\"\n'''",
+          "when": "Including variables"
+        }
+      ]
+    },
+    {
+      "id": "constraint_error",
+      "pattern": "Constraint.*failed|Cannot satisfy|Infeasible",
+      "message": "LMQL constraint cannot be satisfied",
+      "cause": "Constraints are too restrictive or contradictory",
+      "solutions": [
+        {
+          "approach": "Relax constraints",
+          "code": "where len(ANSWER) < 500  # Increase limit",
+          "when": "Length constraint too strict"
+        },
+        {
+          "approach": "Check constraint logic",
+          "code": "# Ensure constraints don't contradict each other",
+          "when": "Multiple constraints conflict"
+        },
+        {
+          "approach": "Use distribution constraint",
+          "code": "where ANSWER in set([\"A\", \"B\", \"C\"])",
+          "when": "Constraining to valid options"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "TypeError|Type constraint|Expected type",
+      "message": "Type constraint failed",
+      "cause": "Generated value doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Use type constraint",
+          "code": "where INT(ANSWER)",
+          "when": "Expecting integer"
+        },
+        {
+          "approach": "Use regex constraint",
+          "code": "where REGEX(ANSWER, r'\\d+')",
+          "when": "Expecting specific format"
+        },
+        {
+          "approach": "Parse after generation",
+          "code": "# Generate as string, validate/parse in Python",
+          "when": "Complex type validation"
+        }
+      ]
+    },
+    {
+      "id": "api_error",
+      "pattern": "API error|OpenAI.*error|Rate limit",
+      "message": "API call failed",
+      "cause": "Error from LLM API provider",
+      "solutions": [
+        {
+          "approach": "Set API key",
+          "code": "import os\nos.environ['OPENAI_API_KEY'] = 'sk-...'",
+          "when": "API key not set"
+        },
+        {
+          "approach": "Handle rate limits",
+          "code": "@lmql.query(model='openai/gpt-4', rate_limit=10)",
+          "when": "Being rate limited"
+        },
+        {
+          "approach": "Use local model",
+          "code": "@lmql.query(model='local:llama.cpp:/path/model.gguf')",
+          "when": "Avoiding API costs"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "async.*error|await|RuntimeWarning.*coroutine",
+      "message": "Async execution error",
+      "cause": "LMQL query not awaited properly",
+      "solutions": [
+        {
+          "approach": "Use async/await",
+          "code": "result = await query(input_text)",
+          "when": "In async context"
+        },
+        {
+          "approach": "Use asyncio.run",
+          "code": "import asyncio\nresult = asyncio.run(query(input_text))",
+          "when": "Running from sync code"
+        },
+        {
+          "approach": "Use lmql.run",
+          "code": "result = lmql.run(query, input_text)",
+          "when": "Synchronous wrapper"
+        }
+      ]
+    },
+    {
+      "id": "decoder_error",
+      "pattern": "Decoder error|Decoding failed|Token.*error",
+      "message": "Token decoding failed",
+      "cause": "Model produced invalid tokens or decoder error",
+      "solutions": [
+        {
+          "approach": "Check max_len",
+          "code": "@lmql.query(max_len=2048)",
+          "when": "Generation hit length limit"
+        },
+        {
+          "approach": "Use different decoder",
+          "code": "@lmql.query(decoder='argmax')",
+          "when": "Sampling decoder has issues"
+        },
+        {
+          "approach": "Adjust temperature",
+          "code": "@lmql.query(temperature=0.7)",
+          "when": "Low temperature causing issues"
+        }
+      ]
+    },
+    {
+      "id": "playground_error",
+      "pattern": "Playground.*error|WebSocket|Connection refused",
+      "message": "LMQL Playground connection error",
+      "cause": "Cannot connect to LMQL Playground server",
+      "solutions": [
+        {
+          "approach": "Start playground",
+          "code": "lmql playground",
+          "when": "Playground not running"
+        },
+        {
+          "approach": "Check port",
+          "code": "lmql playground --port 8080",
+          "when": "Default port in use"
+        },
+        {
+          "approach": "Use Python directly",
+          "code": "# Run queries in Python instead of playground",
+          "when": "Playground not needed"
+        }
+      ]
+    }
+  ]
+}

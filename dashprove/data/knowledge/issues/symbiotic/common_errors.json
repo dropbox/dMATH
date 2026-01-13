@@ -1,0 +1,163 @@
+{
+  "tool": "symbiotic",
+  "version": "8.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "error_found",
+      "pattern": "Error found|RESULT: false",
+      "message": "Property violation found",
+      "cause": "Symbiotic's instrumentation detected error",
+      "solutions": [
+        {
+          "approach": "View witness",
+          "code": "symbiotic --witness=witness.graphml program.c",
+          "when": "Need counterexample trace"
+        },
+        {
+          "approach": "Add preconditions",
+          "code": "__VERIFIER_assume(condition);",
+          "when": "Missing assumptions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Witness shows real bug",
+          "when": "Found genuine error"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "RESULT: unknown|UNKNOWN",
+      "message": "Verification inconclusive",
+      "cause": "Backend (KLEE) couldn't determine result",
+      "solutions": [
+        {
+          "approach": "Increase search depth",
+          "code": "symbiotic --search-depth=100 program.c",
+          "when": "Need deeper exploration"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "symbiotic --timeout=600 program.c",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Try different backend",
+          "code": "symbiotic --backend=nidhugg program.c",
+          "when": "KLEE struggling"
+        }
+      ]
+    },
+    {
+      "id": "instrumentation_failed",
+      "pattern": "instrumentation.*failed|slicing.*error",
+      "message": "Instrumentation or slicing failed",
+      "cause": "LLVM transformation step encountered error",
+      "solutions": [
+        {
+          "approach": "Disable slicing",
+          "code": "symbiotic --no-slicing program.c",
+          "when": "Slicing causing issues"
+        },
+        {
+          "approach": "Simplify code",
+          "code": "// Remove complex constructs",
+          "when": "Unsupported features"
+        },
+        {
+          "approach": "Use older LLVM",
+          "code": "symbiotic --llvm-version=11 program.c",
+          "when": "LLVM version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "Compilation failed|clang.*error",
+      "message": "Failed to compile to LLVM bitcode",
+      "cause": "Source doesn't compile with Clang",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "clang -c program.c",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Add includes",
+          "code": "symbiotic -I/path/headers program.c",
+          "when": "Missing headers"
+        },
+        {
+          "approach": "Use 32-bit",
+          "code": "symbiotic --32 program.c",
+          "when": "32-bit code required"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|timeout",
+      "message": "Analysis timed out",
+      "cause": "Exploration didn't complete in time",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "symbiotic --timeout=1800 program.c",
+          "when": "More time needed"
+        },
+        {
+          "approach": "Restrict search",
+          "code": "symbiotic --search-depth=20 program.c",
+          "when": "Bound exploration"
+        },
+        {
+          "approach": "Enable slicing",
+          "code": "symbiotic --slicing program.c  # Default",
+          "when": "Reduce program size"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory.*error|invalid.*memory|out of bounds",
+      "message": "Memory safety violation",
+      "cause": "Buffer overflow or invalid access detected",
+      "solutions": [
+        {
+          "approach": "View trace",
+          "code": "symbiotic --witness=witness.graphml program.c",
+          "when": "Need error location"
+        },
+        {
+          "approach": "Fix bounds",
+          "code": "if (i < size) { arr[i]; }",
+          "when": "Missing bounds check"
+        },
+        {
+          "approach": "Check allocation",
+          "code": "// Verify malloc size sufficient",
+          "when": "Heap overflow"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported|not supported",
+      "message": "Unsupported C feature",
+      "cause": "Code uses feature Symbiotic can't handle",
+      "solutions": [
+        {
+          "approach": "Abstract feature",
+          "code": "extern int __VERIFIER_nondet_int();",
+          "when": "Can stub feature"
+        },
+        {
+          "approach": "Check documentation",
+          "code": "# See github.com/staticafi/symbiotic",
+          "when": "May have workaround"
+        }
+      ]
+    }
+  ]
+}

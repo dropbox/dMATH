@@ -1,0 +1,112 @@
+{
+  "tool": "passport",
+  "version": "0.7.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "serialization_missing",
+      "pattern": "Failed to serialize user|serializeUser.*not configured|passport\\.initialize\\(\\).*required",
+      "message": "User serialization not configured",
+      "cause": "serializeUser/deserializeUser not defined",
+      "solutions": [
+        {
+          "approach": "Define serialization",
+          "code": "passport.serializeUser((user, done) => done(null, user.id));\npassport.deserializeUser((id, done) => User.findById(id).then(u => done(null, u)));",
+          "when": "Using sessions"
+        },
+        {
+          "approach": "Session middleware order",
+          "code": "app.use(session({ secret: 'key', ... }));\napp.use(passport.initialize());\napp.use(passport.session());",
+          "when": "Middleware order wrong"
+        }
+      ]
+    },
+    {
+      "id": "strategy_not_found",
+      "pattern": "Unknown authentication strategy|Strategy.*not registered|passport\\.use.*required",
+      "message": "Authentication strategy not registered",
+      "cause": "Strategy not configured before use",
+      "solutions": [
+        {
+          "approach": "Register strategy",
+          "code": "const LocalStrategy = require('passport-local').Strategy;\npassport.use(new LocalStrategy(async (username, password, done) => { ... }));",
+          "when": "Strategy not registered"
+        },
+        {
+          "approach": "Use named strategy",
+          "code": "passport.use('local-login', new LocalStrategy(...));\npassport.authenticate('local-login')(req, res, next);",
+          "when": "Multiple strategies"
+        },
+        {
+          "approach": "Check strategy name",
+          "code": "// authenticate('local') must match passport.use('local', ...)\n// or use default name from strategy",
+          "when": "Name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "req_user_undefined",
+      "pattern": "req\\.user.*undefined|user not attached|isAuthenticated.*false",
+      "message": "User not attached to request",
+      "cause": "Session not restored or middleware not applied",
+      "solutions": [
+        {
+          "approach": "Check middleware order",
+          "code": "// MUST be: session -> passport.initialize -> passport.session\napp.use(session({...}));\napp.use(passport.initialize());\napp.use(passport.session());",
+          "when": "Wrong middleware order"
+        },
+        {
+          "approach": "Check session config",
+          "code": "app.use(session({\n  secret: process.env.SESSION_SECRET,\n  resave: false,\n  saveUninitialized: false,\n  cookie: { secure: process.env.NODE_ENV === 'production' }\n}));",
+          "when": "Session not persisting"
+        },
+        {
+          "approach": "Verify deserialize",
+          "code": "passport.deserializeUser((id, done) => {\n  User.findById(id)\n    .then(user => done(null, user))\n    .catch(err => done(err));\n});",
+          "when": "Deserialization fails silently"
+        }
+      ]
+    },
+    {
+      "id": "oauth_callback_error",
+      "pattern": "OAuth.*callback|InternalOAuthError|TokenError|Failed to obtain",
+      "message": "OAuth callback failed",
+      "cause": "Callback URL mismatch or provider configuration error",
+      "solutions": [
+        {
+          "approach": "Verify callback URL",
+          "code": "// Must match EXACTLY what's registered with OAuth provider\ncallbackURL: 'https://myapp.com/auth/google/callback'",
+          "when": "URL mismatch"
+        },
+        {
+          "approach": "Check credentials",
+          "code": "new GoogleStrategy({\n  clientID: process.env.GOOGLE_CLIENT_ID,\n  clientSecret: process.env.GOOGLE_CLIENT_SECRET,\n  callbackURL: '/auth/google/callback'\n}, verify)",
+          "when": "Invalid credentials"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "app.get('/auth/callback', passport.authenticate('google', {\n  failureRedirect: '/login',\n  failureMessage: true\n}), (req, res) => res.redirect('/'));",
+          "when": "Error handling"
+        }
+      ]
+    },
+    {
+      "id": "session_regeneration",
+      "pattern": "session.*regenerate|CSRF|session fixation",
+      "message": "Session security issue",
+      "cause": "Session not regenerated after login",
+      "solutions": [
+        {
+          "approach": "Regenerate on login",
+          "code": "req.login(user, (err) => {\n  if (err) return next(err);\n  req.session.regenerate((err) => {\n    if (err) return next(err);\n    res.redirect('/');\n  });\n});",
+          "when": "Prevent session fixation"
+        },
+        {
+          "approach": "Use passport 0.6+ behavior",
+          "code": "// Passport 0.6+ regenerates session by default\n// If issues, use: passport.authenticate(..., { keepSessionInfo: true })",
+          "when": "Session data lost"
+        }
+      ]
+    }
+  ]
+}

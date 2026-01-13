@@ -1,0 +1,140 @@
+{
+  "tool": "xz",
+  "version": "5.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_xz_format",
+      "pattern": "not in the .xz format|File format not recognized|unknown file format",
+      "message": "File is not xz format",
+      "cause": "Wrong file format",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "file filename  # Identify actual format",
+          "when": "Verify type"
+        },
+        {
+          "approach": "Try lzma",
+          "code": "xz -d --format=lzma filename.lzma  # LZMA format",
+          "when": "Old format"
+        },
+        {
+          "approach": "Auto format",
+          "code": "xz -d --format=auto filename",
+          "when": "Detect format"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "Memory usage limit|not enough memory|Reduced.*memory",
+      "message": "Insufficient memory for decompression",
+      "cause": "File compressed with high memory settings",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "xz -d --memlimit=4G file.xz\nxz -d -M 4G file.xz",
+          "when": "More RAM available"
+        },
+        {
+          "approach": "No limit",
+          "code": "xz -d --memlimit=max file.xz",
+          "when": "Use all RAM"
+        },
+        {
+          "approach": "Check needed",
+          "code": "xz -l file.xz  # Shows memory needed",
+          "when": "See requirements"
+        }
+      ]
+    },
+    {
+      "id": "keep_original",
+      "pattern": "original|keep|preserve|delete",
+      "message": "Original file deleted",
+      "cause": "xz removes original by default",
+      "solutions": [
+        {
+          "approach": "Keep original",
+          "code": "xz -k filename  # Keep source\nxz --keep filename",
+          "when": "Preserve"
+        },
+        {
+          "approach": "To stdout",
+          "code": "xz -c filename > filename.xz",
+          "when": "Redirect"
+        }
+      ]
+    },
+    {
+      "id": "compression_preset",
+      "pattern": "preset|level|compression|memory|slow",
+      "message": "Adjust compression settings",
+      "cause": "Need different speed/size tradeoff",
+      "solutions": [
+        {
+          "approach": "Fast",
+          "code": "xz -0 filename  # Fastest, least compression\nxz -1 filename",
+          "when": "Speed priority"
+        },
+        {
+          "approach": "Best",
+          "code": "xz -9 filename  # Best but uses lots of memory\nxz -9e filename  # Extreme mode",
+          "when": "Size priority"
+        },
+        {
+          "approach": "Memory limit",
+          "code": "xz -6 --memlimit-compress=500M filename",
+          "when": "Limit RAM"
+        }
+      ]
+    },
+    {
+      "id": "slow_compression",
+      "pattern": "slow|taking long|progress|status",
+      "message": "Compression is very slow",
+      "cause": "High compression levels are CPU intensive",
+      "solutions": [
+        {
+          "approach": "Lower preset",
+          "code": "xz -3 filename  # Much faster than default -6",
+          "when": "Faster"
+        },
+        {
+          "approach": "Multithreaded",
+          "code": "xz -T 0 filename  # Use all CPU cores\nxz -T 4 filename  # Use 4 threads",
+          "when": "Parallel"
+        },
+        {
+          "approach": "Show progress",
+          "code": "pv filename | xz > filename.xz\nxz -v filename  # Verbose",
+          "when": "Monitor"
+        }
+      ]
+    },
+    {
+      "id": "integrity_check",
+      "pattern": "integrity|CRC|corrupt|verify",
+      "message": "Verify file integrity",
+      "cause": "Want to check if file is valid",
+      "solutions": [
+        {
+          "approach": "Test file",
+          "code": "xz -t file.xz  # Test integrity\nxz -tv file.xz  # Verbose test",
+          "when": "Check file"
+        },
+        {
+          "approach": "List info",
+          "code": "xz -l file.xz  # Show compression info",
+          "when": "File details"
+        },
+        {
+          "approach": "Verbose list",
+          "code": "xz -lv file.xz  # Detailed info",
+          "when": "Full details"
+        }
+      ]
+    }
+  ]
+}

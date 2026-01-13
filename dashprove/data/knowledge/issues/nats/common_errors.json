@@ -1,0 +1,167 @@
+{
+  "tool": "nats",
+  "category": "message_broker",
+  "common_errors": [
+    {
+      "error": "CONNECTION_REFUSED",
+      "pattern": "nats: no servers available|connect ECONNREFUSED|connection refused",
+      "severity": "critical",
+      "causes": [
+        "NATS server not running",
+        "Wrong connection URL",
+        "Firewall blocking port 4222",
+        "TLS required but not configured"
+      ],
+      "solutions": [
+        "Start NATS server: nats-server or docker run -p 4222:4222 nats",
+        "Verify URL format: nats://localhost:4222",
+        "Check firewall: ufw allow 4222",
+        "For TLS: nats://user:pass@host:4222 with proper certs"
+      ]
+    },
+    {
+      "error": "AUTHORIZATION_VIOLATION",
+      "pattern": "authorization violation|Authorization Violation|nats: authorization violation",
+      "severity": "high",
+      "causes": [
+        "Invalid username/password",
+        "Token authentication failure",
+        "NKey signature invalid",
+        "User not permitted for subject"
+      ],
+      "solutions": [
+        "Verify credentials in connection options",
+        "Check server config authorization block",
+        "For NKey: ensure key pair matches configured public key",
+        "Review user permissions: { publish: [\"foo.*\"], subscribe: [\"bar.>\"] }"
+      ]
+    },
+    {
+      "error": "PERMISSIONS_VIOLATION",
+      "pattern": "permissions violation|Permissions Violation.*subject",
+      "severity": "high",
+      "causes": [
+        "Publish to unauthorized subject",
+        "Subscribe to unauthorized subject",
+        "Queue group not permitted",
+        "Import/export configuration mismatch"
+      ],
+      "solutions": [
+        "Check user permissions in server config",
+        "Verify subject patterns: foo.* vs foo.>",
+        "Add queue permission: { allow_queue: [\"myqueue\"] }",
+        "Review account imports/exports configuration"
+      ]
+    },
+    {
+      "error": "SLOW_CONSUMER",
+      "pattern": "slow consumer|Slow Consumer Detected|maximum pending exceeded",
+      "severity": "high",
+      "causes": [
+        "Consumer not processing messages fast enough",
+        "Network congestion",
+        "Consumer blocking on I/O",
+        "Pending message limit exceeded"
+      ],
+      "solutions": [
+        "Increase pending limits: nc.subscribe(subject, { max: 100000 })",
+        "Use async message handlers",
+        "Scale consumers horizontally with queue groups",
+        "Monitor consumer lag: nats sub --queue myqueue subject"
+      ]
+    },
+    {
+      "error": "JETSTREAM_NOT_ENABLED",
+      "pattern": "JetStream not enabled|jetstream not enabled|nats: API error.*JetStream",
+      "severity": "high",
+      "causes": [
+        "JetStream not configured on server",
+        "Connecting to non-JetStream server",
+        "JetStream disabled in config"
+      ],
+      "solutions": [
+        "Enable JetStream: nats-server -js",
+        "Add to config: jetstream { store_dir: /data/nats }",
+        "Verify: nats account info",
+        "Check server startup logs for JetStream initialization"
+      ]
+    },
+    {
+      "error": "STREAM_NOT_FOUND",
+      "pattern": "stream not found|no stream matches subject",
+      "severity": "medium",
+      "causes": [
+        "Stream deleted or never created",
+        "Wrong stream name",
+        "Subject not bound to any stream",
+        "Account isolation preventing access"
+      ],
+      "solutions": [
+        "List streams: nats stream ls",
+        "Create stream: nats stream add MYSTREAM --subjects 'foo.*'",
+        "Check subject binding: nats stream info MYSTREAM",
+        "Verify account: nats account info"
+      ]
+    },
+    {
+      "error": "CONSUMER_NOT_FOUND",
+      "pattern": "consumer not found|no consumer found",
+      "severity": "medium",
+      "causes": [
+        "Consumer deleted or never created",
+        "Ephemeral consumer timed out",
+        "Wrong consumer name",
+        "Consumer on different stream"
+      ],
+      "solutions": [
+        "List consumers: nats consumer ls MYSTREAM",
+        "Create durable consumer: nats consumer add MYSTREAM MYCONSUMER",
+        "For ephemeral: increase InactiveThreshold",
+        "Check consumer info: nats consumer info MYSTREAM MYCONSUMER"
+      ]
+    },
+    {
+      "error": "MESSAGE_SIZE_EXCEEDED",
+      "pattern": "maximum payload exceeded|message size exceeds|max_payload",
+      "severity": "medium",
+      "causes": [
+        "Message larger than max_payload (default 1MB)",
+        "Headers pushing total over limit",
+        "Server configured with smaller limit"
+      ],
+      "solutions": [
+        "Increase max_payload in server config: max_payload: 8MB",
+        "Chunk large messages into smaller pieces",
+        "Use Object Store for large blobs",
+        "Compress message payloads"
+      ]
+    },
+    {
+      "error": "CLUSTER_QUORUM_LOST",
+      "pattern": "no quorum available|raft: no leader|cluster.*quorum",
+      "severity": "critical",
+      "causes": [
+        "Majority of cluster nodes down",
+        "Network partition",
+        "JetStream cluster misconfiguration",
+        "Storage corruption"
+      ],
+      "solutions": [
+        "Check cluster health: nats server report jetstream",
+        "Verify all nodes running and connected",
+        "Check for network partitions",
+        "Review JetStream R=N replication factor vs available nodes"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use durable consumers for reliable delivery",
+    "Implement proper error handling for slow consumers",
+    "Use queue groups for load balancing",
+    "Monitor with nats-top and Prometheus metrics",
+    "Set appropriate retention policies",
+    "Use TLS in production",
+    "Configure proper resource limits (memory, connections)"
+  ],
+  "related_tools": ["kafka", "rabbitmq", "redis", "pulsar"]
+}

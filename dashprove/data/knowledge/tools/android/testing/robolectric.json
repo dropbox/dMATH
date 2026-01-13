@@ -1,0 +1,172 @@
+{
+  "id": "robolectric",
+  "name": "Robolectric",
+  "category": "android_testing",
+  "subcategory": "unit_testing",
+
+  "description": "Android unit testing framework that runs on JVM without emulator",
+  "long_description": "Robolectric is a framework that allows running Android tests on the JVM without requiring an emulator or device. It provides a simulated Android environment using shadow classes that mimic Android SDK behavior. Robolectric enables fast test execution and TDD for Android code that depends on the framework.",
+
+  "capabilities": [
+    "jvm_android_testing",
+    "shadow_classes",
+    "activity_testing",
+    "resource_loading",
+    "intent_testing",
+    "sqlite_testing",
+    "content_provider_testing",
+    "service_testing"
+  ],
+  "property_types": ["unit_test", "shadow_assertion"],
+  "input_languages": ["kotlin", "java"],
+  "output_formats": ["junit_xml", "console"],
+
+  "installation": {
+    "methods": [
+      {"type": "gradle", "command": "testImplementation 'org.robolectric:robolectric:4.12.2'"}
+    ],
+    "dependencies": ["android_sdk", "junit"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://robolectric.org/",
+    "getting_started": "https://robolectric.org/getting-started/",
+    "api_reference": "https://robolectric.org/javadoc/latest/",
+    "examples": "https://github.com/robolectric/robolectric/tree/master/integration_tests"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_test",
+      "description": "Write a basic Robolectric test",
+      "syntax": "@RunWith(RobolectricTestRunner::class)",
+      "when_to_use": "Testing Android code without device",
+      "examples": ["@RunWith(RobolectricTestRunner::class)\nclass MyActivityTest {\n    @Test\n    fun testActivityCreation() {\n        val activity = Robolectric.buildActivity(MyActivity::class.java)\n            .create()\n            .get()\n        assertNotNull(activity)\n    }\n}"]
+    },
+    {
+      "name": "activity_controller",
+      "description": "Control Activity lifecycle",
+      "syntax": "Robolectric.buildActivity().create().start()...",
+      "when_to_use": "Testing Activity lifecycle",
+      "examples": ["val controller = Robolectric.buildActivity(MyActivity::class.java)\n    .create()\n    .start()\n    .resume()\nval activity = controller.get()"]
+    },
+    {
+      "name": "shadow_of",
+      "description": "Get shadow for Android class",
+      "syntax": "Shadows.shadowOf(androidObject)",
+      "when_to_use": "Accessing shadow-specific methods",
+      "examples": ["val shadowActivity = Shadows.shadowOf(activity)\nval nextIntent = shadowActivity.nextStartedActivity"]
+    },
+    {
+      "name": "configure_sdk",
+      "description": "Set Android SDK version for test",
+      "syntax": "@Config(sdk = [VERSION])",
+      "when_to_use": "Testing SDK-specific behavior",
+      "examples": ["@Config(sdk = [Build.VERSION_CODES.TIRAMISU])\n@Test\nfun testOnAndroid13() { ... }"]
+    },
+    {
+      "name": "test_resources",
+      "description": "Test with app resources",
+      "syntax": "RuntimeEnvironment.getApplication().resources",
+      "when_to_use": "Testing resource loading",
+      "examples": ["val context = RuntimeEnvironment.getApplication()\nval string = context.getString(R.string.app_name)"]
+    },
+    {
+      "name": "test_views",
+      "description": "Test View interactions",
+      "syntax": "activity.findViewById + click/setText",
+      "when_to_use": "Testing UI components",
+      "examples": ["val button = activity.findViewById<Button>(R.id.button)\nbutton.performClick()\nassertEquals(\"Clicked\", textView.text)"]
+    }
+  ],
+
+  "shadow_classes": [
+    {
+      "name": "ShadowActivity",
+      "description": "Shadow for Activity",
+      "examples": ["shadowOf(activity).nextStartedActivity", "shadowOf(activity).finishShouldBeCalled"]
+    },
+    {
+      "name": "ShadowApplication",
+      "description": "Shadow for Application",
+      "examples": ["shadowOf(app).nextStartedService", "shadowOf(app).peekNextStartedActivity"]
+    },
+    {
+      "name": "ShadowLooper",
+      "description": "Shadow for Looper/Handler",
+      "examples": ["ShadowLooper.idleMainLooper()", "shadowOf(looper).idle()"]
+    },
+    {
+      "name": "ShadowContentResolver",
+      "description": "Shadow for ContentResolver",
+      "examples": ["ShadowContentResolver.registerProviderAuthority()", "shadowOf(resolver).queryResults"]
+    },
+    {
+      "name": "ShadowAlertDialog",
+      "description": "Shadow for AlertDialog",
+      "examples": ["ShadowAlertDialog.getLatestDialog()", "shadowOf(dialog).message"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "NoSuchMethodError.*android",
+      "meaning": "Android method not available in Robolectric",
+      "common_causes": ["Using newer API than configured SDK", "Unshadowed native method"],
+      "fixes": ["Set @Config(sdk = [VERSION])", "Use shadow class", "Mock the method"]
+    },
+    {
+      "pattern": "InflateException",
+      "meaning": "Layout inflation failed",
+      "common_causes": ["Missing resource", "Custom view not configured", "Theme issue"],
+      "fixes": ["Check layout file", "Configure custom view shadows", "Set theme in @Config"]
+    },
+    {
+      "pattern": "UninitializedPropertyAccessException",
+      "meaning": "Lateinit property not initialized",
+      "common_causes": ["Test setup incomplete", "Activity not created"],
+      "fixes": ["Call lifecycle methods", "Check @Before setup"]
+    },
+    {
+      "pattern": "No manifest file found",
+      "meaning": "AndroidManifest.xml not found",
+      "common_causes": ["Wrong test source set", "Gradle config issue"],
+      "fixes": ["Check testOptions", "Verify manifest location"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["android_studio", "intellij"],
+    "ci_integration": ["github_actions", "gitlab_ci", "jenkins", "bitrise"]
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds per test (much faster than instrumented)",
+    "scalability": "Runs thousands of tests quickly",
+    "memory_usage": "Moderate (loads Android framework shadows)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["espresso", "mockk", "mockito", "androidx_test"],
+    "advantages": [
+      "No emulator needed - very fast",
+      "Runs in IDE like regular JUnit",
+      "Full Android framework simulation",
+      "Easy CI integration"
+    ],
+    "disadvantages": [
+      "Not 100% accurate to real Android",
+      "Some APIs not fully shadowed",
+      "Can hide device-specific bugs"
+    ]
+  },
+
+  "metadata": {
+    "version": "4.12.2",
+    "last_updated": "2025-12-22",
+    "maintainer": "Robolectric contributors",
+    "license": "MIT"
+  }
+}

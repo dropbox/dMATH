@@ -1,0 +1,110 @@
+{
+  "tool": "usermod",
+  "version": "coreutils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "user_not_found",
+      "pattern": "user '.*' does not exist|usermod: user '.*' does not exist",
+      "message": "User doesn't exist",
+      "cause": "Username not in system",
+      "solutions": [
+        {
+          "approach": "List users",
+          "code": "getent passwd | cut -d: -f1",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Create user first",
+          "code": "sudo useradd username",
+          "when": "New user needed"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|usermod: Permission denied",
+      "message": "Not authorized",
+      "cause": "Need root privileges",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo usermod -aG groupname username",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "user_logged_in",
+      "pattern": "user .* is currently used by process|usermod: user .* is currently logged in",
+      "message": "User is logged in",
+      "cause": "Active processes running as user",
+      "solutions": [
+        {
+          "approach": "Logout first",
+          "code": "# User must logout, or use:\nsudo pkill -u username",
+          "when": "For changes requiring logout"
+        },
+        {
+          "approach": "Group changes work",
+          "code": "sudo usermod -aG newgroup username\n# Group changes take effect on next login",
+          "when": "Adding to groups"
+        }
+      ]
+    },
+    {
+      "id": "group_not_found",
+      "pattern": "group '.*' does not exist|usermod: group '.*' does not exist",
+      "message": "Group doesn't exist",
+      "cause": "Specified group not found",
+      "solutions": [
+        {
+          "approach": "Create group first",
+          "code": "sudo groupadd groupname && sudo usermod -aG groupname username",
+          "when": "Need new group"
+        },
+        {
+          "approach": "List groups",
+          "code": "getent group | cut -d: -f1 | sort",
+          "when": "Find available groups"
+        }
+      ]
+    },
+    {
+      "id": "overwrite_groups",
+      "pattern": "lost all groups|not in group anymore",
+      "message": "Groups overwritten",
+      "cause": "Used -G without -a, removing other groups",
+      "solutions": [
+        {
+          "approach": "Always use -aG",
+          "code": "sudo usermod -aG newgroup username  # -a = append",
+          "when": "Add to groups"
+        },
+        {
+          "approach": "Restore groups",
+          "code": "# Check current groups:\nid username\n# Re-add:\nsudo usermod -aG group1,group2,group3 username",
+          "when": "Fix after accident"
+        }
+      ]
+    },
+    {
+      "id": "cannot_change_home",
+      "pattern": "cannot rename|cannot move home directory",
+      "message": "Home change failed",
+      "cause": "Home directory issues",
+      "solutions": [
+        {
+          "approach": "Move manually",
+          "code": "sudo usermod -d /new/home username\nsudo mv /old/home /new/home\nsudo chown -R username:username /new/home",
+          "when": "Two-step move"
+        },
+        {
+          "approach": "Move with usermod",
+          "code": "sudo usermod -d /new/home -m username",
+          "when": "-m moves contents"
+        }
+      ]
+    }
+  ]
+}

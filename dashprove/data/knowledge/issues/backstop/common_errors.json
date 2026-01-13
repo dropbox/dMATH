@@ -1,0 +1,186 @@
+{
+  "tool": "backstop",
+  "version": "6.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "reference_not_found",
+      "pattern": "Reference file not found|No reference images|backstop reference",
+      "message": "Reference screenshots not created",
+      "cause": "Need to create baseline reference images first",
+      "solutions": [
+        {
+          "approach": "Create references",
+          "code": "backstop reference",
+          "when": "First run or new scenarios"
+        },
+        {
+          "approach": "Approve test results",
+          "code": "backstop approve",
+          "when": "After intentional changes"
+        }
+      ]
+    },
+    {
+      "id": "selector_not_found",
+      "pattern": "Selector.*not found|Could not find element|waitForSelector",
+      "message": "CSS selector not found on page",
+      "cause": "Element doesn't exist or hasn't loaded",
+      "solutions": [
+        {
+          "approach": "Add wait time",
+          "code": "{\n  \"delay\": 3000,\n  \"selectors\": [\".my-element\"]\n}",
+          "when": "Element loads slowly"
+        },
+        {
+          "approach": "Use readySelector",
+          "code": "{\n  \"readySelector\": \".page-loaded\",\n  \"selectors\": [\".my-element\"]\n}",
+          "when": "Wait for specific element"
+        },
+        {
+          "approach": "Check selector",
+          "code": "// Verify selector in browser DevTools",
+          "when": "Selector may be wrong"
+        }
+      ]
+    },
+    {
+      "id": "viewport_mismatch",
+      "pattern": "Viewport.*mismatch|dimensions differ",
+      "message": "Viewport dimensions changed between runs",
+      "cause": "Different viewport configurations",
+      "solutions": [
+        {
+          "approach": "Set explicit viewports",
+          "code": "\"viewports\": [\n  { \"label\": \"phone\", \"width\": 375, \"height\": 812 },\n  { \"label\": \"desktop\", \"width\": 1920, \"height\": 1080 }\n]",
+          "when": "Need consistent sizes"
+        },
+        {
+          "approach": "Regenerate references",
+          "code": "backstop reference",
+          "when": "After viewport config change"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Timeout|exceeded.*ms|Navigation timeout",
+      "message": "Page load or action timed out",
+      "cause": "Page takes too long to load or stabilize",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "\"engineOptions\": {\n  \"timeout\": 60000\n}",
+          "when": "Slow pages"
+        },
+        {
+          "approach": "Add delay",
+          "code": "{\n  \"delay\": 5000,\n  \"postInteractionWait\": 2000\n}",
+          "when": "Need stabilization time"
+        },
+        {
+          "approach": "Wait for network",
+          "code": "{\n  \"readyEvent\": \"networkidle0\"\n}",
+          "when": "Async content loading"
+        }
+      ]
+    },
+    {
+      "id": "browser_launch_failed",
+      "pattern": "Failed to launch|Browser.*not found|Chromium",
+      "message": "Browser failed to launch",
+      "cause": "Chromium not available or launch options issue",
+      "solutions": [
+        {
+          "approach": "Use Docker",
+          "code": "backstop test --docker",
+          "when": "Running in CI or consistent env"
+        },
+        {
+          "approach": "Install deps",
+          "code": "npx puppeteer browsers install chrome",
+          "when": "Missing browser"
+        },
+        {
+          "approach": "Headless mode",
+          "code": "\"engineOptions\": {\n  \"args\": [\"--no-sandbox\"]\n}",
+          "when": "Running as root or in container"
+        }
+      ]
+    },
+    {
+      "id": "mismatched_pixels",
+      "pattern": "Mismatch.*%|pixels differ|diff image",
+      "message": "Visual differences detected",
+      "cause": "Page appearance changed from reference",
+      "solutions": [
+        {
+          "approach": "Review report",
+          "code": "backstop openReport",
+          "when": "Inspect differences"
+        },
+        {
+          "approach": "Adjust threshold",
+          "code": "{\n  \"misMatchThreshold\": 0.1\n}",
+          "when": "Allow small variations"
+        },
+        {
+          "approach": "Hide dynamic content",
+          "code": "{\n  \"hideSelectors\": [\".timestamp\", \".random-ad\"]\n}",
+          "when": "Dynamic content causing flakes"
+        },
+        {
+          "approach": "Approve changes",
+          "code": "backstop approve",
+          "when": "Intentional changes"
+        }
+      ]
+    },
+    {
+      "id": "config_not_found",
+      "pattern": "Config.*not found|backstop.json|Invalid configuration",
+      "message": "BackstopJS config file missing or invalid",
+      "cause": "backstop.json not found or has syntax errors",
+      "solutions": [
+        {
+          "approach": "Initialize config",
+          "code": "backstop init",
+          "when": "New project setup"
+        },
+        {
+          "approach": "Specify config path",
+          "code": "backstop test --config=./config/backstop.json",
+          "when": "Non-default location"
+        },
+        {
+          "approach": "Validate JSON",
+          "code": "cat backstop.json | python3 -m json.tool",
+          "when": "JSON syntax error"
+        }
+      ]
+    },
+    {
+      "id": "script_error",
+      "pattern": "Script error|onBefore|onReady",
+      "message": "Custom script failed to execute",
+      "cause": "Error in onBefore, onReady, or other Puppeteer scripts",
+      "solutions": [
+        {
+          "approach": "Debug script",
+          "code": "// Add console.log in script\nmodule.exports = async (page) => {\n  console.log('Script running');\n};",
+          "when": "Need to trace execution"
+        },
+        {
+          "approach": "Check async/await",
+          "code": "module.exports = async (page) => {\n  await page.waitForSelector('.element');\n};",
+          "when": "Missing await"
+        },
+        {
+          "approach": "Run in debug mode",
+          "code": "DEBUG=backstop* backstop test",
+          "when": "Need verbose output"
+        }
+      ]
+    }
+  ]
+}

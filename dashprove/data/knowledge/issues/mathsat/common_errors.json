@@ -1,0 +1,199 @@
+{
+  "tool": "mathsat",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT",
+      "message": "Solver timed out",
+      "cause": "MathSAT could not solve within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "mathsat -random_seed=42 -max_time=600 < file.smt2",
+          "when": "Problem may be solvable with more time"
+        },
+        {
+          "approach": "Try different theory solver",
+          "code": "mathsat -theory.lra.solver=simplex < file.smt2",
+          "when": "Different solver algorithm may help"
+        },
+        {
+          "approach": "Enable preprocessing",
+          "code": "mathsat -preprocessor.toplevel_propagation=true < file.smt2",
+          "when": "Preprocessing can simplify"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_logic",
+      "pattern": "unsupported",
+      "message": "Unsupported logic or theory combination",
+      "cause": "MathSAT doesn't support the requested logic",
+      "solutions": [
+        {
+          "approach": "Check supported logics",
+          "code": "; MathSAT supports QF_LRA, QF_LIA, QF_BV, etc.",
+          "when": "Using unsupported logic"
+        },
+        {
+          "approach": "Use supported subset",
+          "code": "(set-logic QF_LRA)",
+          "when": "Can restrict to supported logic"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "; Use Z3 or CVC5 for richer logic support",
+          "when": "Need unsupported features"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "syntax error",
+      "message": "Syntax error in input",
+      "cause": "SMT-LIB syntax error",
+      "solutions": [
+        {
+          "approach": "Check S-expression balance",
+          "code": "; Ensure matching parentheses",
+          "when": "Unbalanced parentheses"
+        },
+        {
+          "approach": "Check command syntax",
+          "code": "(assert (= x 5))  ; not (assert x = 5)",
+          "when": "Wrong SMT-LIB syntax"
+        },
+        {
+          "approach": "Verify sort annotations",
+          "code": "(declare-fun x () Int)",
+          "when": "Missing or wrong sort"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "type mismatch",
+      "message": "Type mismatch in expression",
+      "cause": "Incompatible types in expression",
+      "solutions": [
+        {
+          "approach": "Check arithmetic types",
+          "code": "; Don't mix Int and Real without conversion",
+          "when": "Mixed numeric types"
+        },
+        {
+          "approach": "Use type conversions",
+          "code": "(to_int x) or (to_real y)",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Check function signatures",
+          "code": "; Verify declared vs actual argument types",
+          "when": "Function applied incorrectly"
+        }
+      ]
+    },
+    {
+      "id": "non_linear",
+      "pattern": "non-linear",
+      "message": "Non-linear arithmetic not supported",
+      "cause": "Problem contains non-linear terms",
+      "solutions": [
+        {
+          "approach": "Linearize the problem",
+          "code": "; Replace x*y with auxiliary variables",
+          "when": "Can encode without non-linearity"
+        },
+        {
+          "approach": "Use Z3 nlsat",
+          "code": "; Switch to Z3 with (check-sat-using qfnra-nlsat)",
+          "when": "Need non-linear arithmetic"
+        },
+        {
+          "approach": "Bound variables",
+          "code": "(assert (and (<= 0 x) (<= x 100)))",
+          "when": "Bounded approximation acceptable"
+        }
+      ]
+    },
+    {
+      "id": "model_unavailable",
+      "pattern": "model not available",
+      "message": "Cannot get model",
+      "cause": "Model requested when not sat",
+      "solutions": [
+        {
+          "approach": "Check satisfiability first",
+          "code": "(check-sat)  ; must return sat",
+          "when": "Result was unsat or unknown"
+        },
+        {
+          "approach": "Enable model production",
+          "code": "(set-option :produce-models true)",
+          "when": "Model generation disabled"
+        }
+      ]
+    },
+    {
+      "id": "interpolation_error",
+      "pattern": "interpolant",
+      "message": "Interpolation failed",
+      "cause": "Cannot compute interpolant",
+      "solutions": [
+        {
+          "approach": "Enable interpolation",
+          "code": "mathsat -interpolation=true < file.smt2",
+          "when": "Interpolation not enabled"
+        },
+        {
+          "approach": "Check input format",
+          "code": "; Use named assertions for interpolation groups",
+          "when": "Wrong interpolation setup"
+        },
+        {
+          "approach": "Verify UNSAT",
+          "code": "; Interpolation requires UNSAT result",
+          "when": "Formula is satisfiable"
+        }
+      ]
+    },
+    {
+      "id": "allsat_limit",
+      "pattern": "allsat",
+      "message": "AllSAT enumeration limit",
+      "cause": "Too many satisfying assignments",
+      "solutions": [
+        {
+          "approach": "Set enumeration limit",
+          "code": "mathsat -allsat_max_models=1000",
+          "when": "Want bounded enumeration"
+        },
+        {
+          "approach": "Add constraints",
+          "code": "; Add blocking clauses to reduce solutions",
+          "when": "Can restrict solution space"
+        }
+      ]
+    },
+    {
+      "id": "optimization_error",
+      "pattern": "optimize",
+      "message": "Optimization error",
+      "cause": "Problem with MaxSMT/optimization",
+      "solutions": [
+        {
+          "approach": "Check objective syntax",
+          "code": "(maximize x) or (minimize y)",
+          "when": "Wrong optimization syntax"
+        },
+        {
+          "approach": "Check for unbounded",
+          "code": "; Ensure objective is bounded",
+          "when": "Objective has no optimum"
+        }
+      ]
+    }
+  ]
+}

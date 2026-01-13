@@ -1,0 +1,191 @@
+{
+  "tool": "fly_io",
+  "version": "0.2.18",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not authenticated|authentication.*failed|FLY_API_TOKEN|login required",
+      "message": "Authentication error",
+      "cause": "Not logged in or token invalid",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "fly auth login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Token auth",
+          "code": "export FLY_API_TOKEN=your-token\nfly deploy",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Check auth",
+          "code": "fly auth whoami",
+          "when": "Verify auth"
+        }
+      ]
+    },
+    {
+      "id": "deploy_error",
+      "pattern": "deploy.*failed|build.*error|Error.*deploying|Machine.*failed",
+      "message": "Deployment error",
+      "cause": "Build or deployment configuration error",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "fly logs",
+          "when": "See error"
+        },
+        {
+          "approach": "Check fly.toml",
+          "code": "# fly.toml:\napp = \"your-app\"\nprimary_region = \"iad\"\n\n[http_service]\n  internal_port = 8080\n  force_https = true",
+          "when": "Config issue"
+        },
+        {
+          "approach": "Local build",
+          "code": "fly deploy --local-only\n# Build locally before deploying",
+          "when": "Remote build failing"
+        }
+      ]
+    },
+    {
+      "id": "health_check_error",
+      "pattern": "health check.*failed|unhealthy|not passing.*checks",
+      "message": "Health check failed",
+      "cause": "App not responding to health checks",
+      "solutions": [
+        {
+          "approach": "Check endpoint",
+          "code": "# fly.toml:\n[[services.http_checks]]\n  interval = \"10s\"\n  timeout = \"2s\"\n  path = \"/health\"",
+          "when": "Wrong health path"
+        },
+        {
+          "approach": "Extend timeout",
+          "code": "[[services.http_checks]]\n  interval = \"15s\"\n  timeout = \"5s\"\n  grace_period = \"30s\"",
+          "when": "Slow startup"
+        },
+        {
+          "approach": "Check app",
+          "code": "fly ssh console\ncurl localhost:8080/health",
+          "when": "Debug in VM"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "OOM|out of memory|memory.*exceeded|killed",
+      "message": "Out of memory error",
+      "cause": "App exceeded memory limit",
+      "solutions": [
+        {
+          "approach": "Scale memory",
+          "code": "fly scale memory 512  # MB\nfly scale memory 1024",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Check usage",
+          "code": "fly status\nfly monitor",
+          "when": "Monitor resources"
+        },
+        {
+          "approach": "Optimize app",
+          "code": "# Profile and reduce memory usage\n# Use streaming, reduce caching",
+          "when": "Memory leak"
+        }
+      ]
+    },
+    {
+      "id": "volume_error",
+      "pattern": "volume.*not found|mount.*failed|no volumes|disk.*full",
+      "message": "Volume error",
+      "cause": "Volume not attached or full",
+      "solutions": [
+        {
+          "approach": "Create volume",
+          "code": "fly volumes create data --size 10 --region iad",
+          "when": "No volume"
+        },
+        {
+          "approach": "Mount volume",
+          "code": "# fly.toml:\n[mounts]\n  source = \"data\"\n  destination = \"/data\"",
+          "when": "Not mounted"
+        },
+        {
+          "approach": "Extend volume",
+          "code": "fly volumes extend <volume-id> --size 20",
+          "when": "Disk full"
+        }
+      ]
+    },
+    {
+      "id": "postgres_error",
+      "pattern": "postgres.*failed|DATABASE_URL.*not set|connection.*refused|PG",
+      "message": "Postgres database error",
+      "cause": "Database not provisioned or connection issue",
+      "solutions": [
+        {
+          "approach": "Create database",
+          "code": "fly postgres create",
+          "when": "No database"
+        },
+        {
+          "approach": "Attach to app",
+          "code": "fly postgres attach <postgres-app-name>",
+          "when": "Not attached"
+        },
+        {
+          "approach": "Check connection",
+          "code": "fly postgres connect -a <postgres-app-name>\n# Or check DATABASE_URL secret:\nfly secrets list",
+          "when": "Connection issue"
+        }
+      ]
+    },
+    {
+      "id": "secrets_error",
+      "pattern": "secret.*not found|environment.*undefined|Missing.*variable",
+      "message": "Missing secret/environment variable",
+      "cause": "Secret not set",
+      "solutions": [
+        {
+          "approach": "Set secret",
+          "code": "fly secrets set API_KEY=value",
+          "when": "Add secret"
+        },
+        {
+          "approach": "Import secrets",
+          "code": "fly secrets import < .env",
+          "when": "Import from file"
+        },
+        {
+          "approach": "List secrets",
+          "code": "fly secrets list",
+          "when": "Check secrets"
+        }
+      ]
+    },
+    {
+      "id": "scaling_error",
+      "pattern": "scale.*failed|no machines|region.*unavailable",
+      "message": "Scaling error",
+      "cause": "Cannot scale in requested region or configuration",
+      "solutions": [
+        {
+          "approach": "Scale count",
+          "code": "fly scale count 2 --region iad",
+          "when": "Scale replicas"
+        },
+        {
+          "approach": "Scale VM",
+          "code": "fly scale vm shared-cpu-2x\nfly scale vm dedicated-cpu-1x",
+          "when": "Change VM size"
+        },
+        {
+          "approach": "Check regions",
+          "code": "fly regions list\nfly regions add ord",
+          "when": "Add region"
+        }
+      ]
+    }
+  ]
+}

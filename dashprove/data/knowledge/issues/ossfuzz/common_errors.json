@@ -1,0 +1,191 @@
+{
+  "tool": "ossfuzz",
+  "version": "2024",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "build_failure",
+      "pattern": "Build failed|compilation.*error",
+      "message": "Fuzzer build failed",
+      "cause": "Compilation error, missing dependencies, or wrong compiler flags",
+      "solutions": [
+        {
+          "approach": "Test build locally",
+          "code": "python infra/helper.py build_fuzzers --sanitizer address project_name",
+          "when": "Debug build issues locally"
+        },
+        {
+          "approach": "Check Dockerfile",
+          "code": "# Ensure all dependencies in Dockerfile\nRUN apt-get install -y libfoo-dev",
+          "when": "Missing build dependency"
+        },
+        {
+          "approach": "Fix compiler flags",
+          "code": "export CFLAGS=\"$CFLAGS -Wno-error\"\nexport CXXFLAGS=\"$CXXFLAGS -Wno-error\"",
+          "when": "Warnings treated as errors"
+        }
+      ]
+    },
+    {
+      "id": "timeout_crash",
+      "pattern": "TIMEOUT|timeout_exceeded",
+      "message": "Fuzzer timeout exceeded",
+      "cause": "Input causes infinite loop or extremely slow processing",
+      "solutions": [
+        {
+          "approach": "Add timeout check",
+          "code": "// Check time periodically and exit early",
+          "when": "Can add timeout logic"
+        },
+        {
+          "approach": "Limit input size",
+          "code": "if (size > MAX_INPUT_SIZE) return 0;",
+          "when": "Large inputs cause slowness"
+        },
+        {
+          "approach": "Optimize hot path",
+          "code": "// Profile and optimize slow code paths",
+          "when": "Legitimate processing takes too long"
+        }
+      ]
+    },
+    {
+      "id": "oom_crash",
+      "pattern": "out-of-memory|OOM|AddressSanitizer.*allocator",
+      "message": "Out of memory during fuzzing",
+      "cause": "Input causes excessive memory allocation",
+      "solutions": [
+        {
+          "approach": "Limit allocation",
+          "code": "if (alloc_size > MAX_ALLOC) return 0;",
+          "when": "Input controls allocation size"
+        },
+        {
+          "approach": "Add memory limit check",
+          "code": "// Reject inputs that would allocate too much",
+          "when": "Can validate before allocation"
+        },
+        {
+          "approach": "Report as vulnerability",
+          "code": "// Uncontrolled resource consumption is a bug",
+          "when": "This is the bug being found"
+        }
+      ]
+    },
+    {
+      "id": "asan_crash",
+      "pattern": "AddressSanitizer.*heap-buffer-overflow|AddressSanitizer.*stack-buffer-overflow",
+      "message": "Buffer overflow detected",
+      "cause": "Memory corruption bug in target code",
+      "solutions": [
+        {
+          "approach": "Analyze crash",
+          "code": "# Review ASan output for allocation/free info",
+          "when": "Understanding the bug"
+        },
+        {
+          "approach": "Fix bounds check",
+          "code": "if (index >= size) return -1;",
+          "when": "Missing bounds validation"
+        },
+        {
+          "approach": "Reproduce locally",
+          "code": "python infra/helper.py reproduce project_name fuzzer_name testcase",
+          "when": "Need to debug locally"
+        }
+      ]
+    },
+    {
+      "id": "ubsan_crash",
+      "pattern": "UndefinedBehaviorSanitizer|runtime error",
+      "message": "Undefined behavior detected",
+      "cause": "Integer overflow, null dereference, or other UB",
+      "solutions": [
+        {
+          "approach": "Fix signed overflow",
+          "code": "// Use unsigned or check for overflow before operation",
+          "when": "Signed integer overflow"
+        },
+        {
+          "approach": "Add null check",
+          "code": "if (ptr == NULL) return -1;",
+          "when": "Null pointer dereference"
+        },
+        {
+          "approach": "Fix shift amount",
+          "code": "if (shift >= sizeof(val) * 8) return 0;",
+          "when": "Shift by too large amount"
+        }
+      ]
+    },
+    {
+      "id": "coverage_issue",
+      "pattern": "Coverage.*low|no new coverage",
+      "message": "Fuzzer not finding new coverage",
+      "cause": "Fuzzer stuck, bad seed corpus, or unreachable code",
+      "solutions": [
+        {
+          "approach": "Improve seed corpus",
+          "code": "# Add representative inputs to seed_corpus/",
+          "when": "Starting from empty corpus"
+        },
+        {
+          "approach": "Add dictionary",
+          "code": "# Create project.dict with relevant tokens",
+          "when": "Parser needs keywords"
+        },
+        {
+          "approach": "Use structure-aware fuzzing",
+          "code": "// Implement LLVMFuzzerCustomMutator",
+          "when": "Input has complex structure"
+        }
+      ]
+    },
+    {
+      "id": "harness_error",
+      "pattern": "Fuzzer.*error|LLVMFuzzerTestOneInput.*failed",
+      "message": "Fuzzing harness error",
+      "cause": "Harness crashes on valid inputs or has wrong signature",
+      "solutions": [
+        {
+          "approach": "Check signature",
+          "code": "extern \"C\" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)",
+          "when": "Wrong function signature"
+        },
+        {
+          "approach": "Handle empty input",
+          "code": "if (size == 0) return 0;",
+          "when": "Empty input crashes"
+        },
+        {
+          "approach": "Reset global state",
+          "code": "// Reset any global state between runs",
+          "when": "State accumulation causing issues"
+        }
+      ]
+    },
+    {
+      "id": "clusterfuzz_error",
+      "pattern": "ClusterFuzz.*error|testcase.*invalid",
+      "message": "ClusterFuzz integration error",
+      "cause": "Invalid project config or testcase handling",
+      "solutions": [
+        {
+          "approach": "Check project.yaml",
+          "code": "# Verify project.yaml configuration\nhomepage: https://project.org\nprimary_contact: maintainer@project.org",
+          "when": "Project config invalid"
+        },
+        {
+          "approach": "Update build script",
+          "code": "# Ensure build.sh uses correct fuzzer format",
+          "when": "Build script issues"
+        },
+        {
+          "approach": "Check file permissions",
+          "code": "chmod +x build.sh",
+          "when": "Script not executable"
+        }
+      ]
+    }
+  ]
+}

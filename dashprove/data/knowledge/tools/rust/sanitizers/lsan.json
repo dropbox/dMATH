@@ -1,0 +1,90 @@
+{
+  "id": "leaksanitizer",
+  "name": "LeakSanitizer (LSan)",
+  "category": "sanitizer",
+  "subcategory": "memory",
+
+  "description": "Detects memory leaks in Rust/C/C++ programs",
+  "long_description": "LeakSanitizer (LSan) is a memory leak detector. It runs at program exit and reports any heap memory that wasn't freed. Can be used standalone or integrated with AddressSanitizer.",
+
+  "capabilities": [
+    "leak_detection",
+    "allocation_tracking",
+    "stack_trace_reporting"
+  ],
+  "property_types": ["memory_safety"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["error_report", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "RUSTFLAGS='-Zsanitizer=leak' cargo +nightly run"}
+    ],
+    "dependencies": ["nightly_rust", "llvm"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/sanitizer.html",
+    "tutorial": "https://clang.llvm.org/docs/LeakSanitizer.html",
+    "api_reference": "https://clang.llvm.org/docs/LeakSanitizer.html",
+    "examples": "https://github.com/rust-lang/rust/tree/master/tests/ui/sanitize"
+  },
+
+  "tactics": [
+    {
+      "name": "basic",
+      "description": "Enable LSan",
+      "syntax": "RUSTFLAGS='-Zsanitizer=leak'",
+      "when_to_use": "For memory leak detection",
+      "examples": ["RUSTFLAGS='-Zsanitizer=leak' cargo +nightly test"]
+    },
+    {
+      "name": "with-asan",
+      "description": "Enable with ASan",
+      "syntax": "RUSTFLAGS='-Zsanitizer=address'",
+      "when_to_use": "LSan is included with ASan",
+      "examples": []
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "detected memory leaks",
+      "meaning": "Memory not freed before exit",
+      "common_causes": ["Box not dropped", "Circular Rc"],
+      "fixes": ["Drop allocations", "Use Weak for cycles"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["memory_safety"],
+    "cli_command": "dashprove verify --backend leaksanitizer"
+  },
+
+  "performance": {
+    "typical_runtime": "Minimal overhead",
+    "scalability": "Good",
+    "memory_usage": "Minimal increase"
+  },
+
+  "comparisons": {
+    "similar_tools": ["valgrind", "heaptrack"],
+    "advantages": [
+      "Low overhead",
+      "ASan integration"
+    ],
+    "disadvantages": [
+      "Exit-time only",
+      "Linux only"
+    ]
+  },
+
+  "metadata": {
+    "version": "via LLVM",
+    "last_updated": "2025-12-22",
+    "maintainer": "LLVM/Rust Team",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "tool": "passwd",
+  "version": "coreutils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "authentication_failure",
+      "pattern": "Authentication failure|passwd: Authentication token manipulation error",
+      "message": "Current password wrong",
+      "cause": "Incorrect current password entered",
+      "solutions": [
+        {
+          "approach": "Reset via root",
+          "code": "sudo passwd username",
+          "when": "Forgot current password"
+        },
+        {
+          "approach": "Check caps lock",
+          "code": "# Verify keyboard state and try again",
+          "when": "Possible typo"
+        }
+      ]
+    },
+    {
+      "id": "password_too_simple",
+      "pattern": "BAD PASSWORD|password.*too simple|too short|too similar|dictionary word",
+      "message": "Password rejected by policy",
+      "cause": "Password doesn't meet complexity requirements",
+      "solutions": [
+        {
+          "approach": "Use stronger password",
+          "code": "# Include: uppercase, lowercase, numbers, symbols\n# Minimum 8-12 characters typically",
+          "when": "Policy enforcement"
+        },
+        {
+          "approach": "Check policy",
+          "code": "cat /etc/security/pwquality.conf\ncat /etc/pam.d/common-password",
+          "when": "See requirements"
+        },
+        {
+          "approach": "Override as root",
+          "code": "sudo passwd --stdin username",
+          "when": "Emergency override"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Only root may|passwd: Permission denied",
+      "message": "Cannot change password",
+      "cause": "Not authorized to change this password",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo passwd username",
+          "when": "Admin changing others"
+        },
+        {
+          "approach": "Own password only",
+          "code": "passwd  # No username = change own",
+          "when": "User not admin"
+        }
+      ]
+    },
+    {
+      "id": "user_not_found",
+      "pattern": "user '.*' does not exist|Unknown user",
+      "message": "User doesn't exist",
+      "cause": "Username not in system",
+      "solutions": [
+        {
+          "approach": "List users",
+          "code": "cat /etc/passwd | cut -d: -f1\ngetent passwd",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Create user",
+          "code": "sudo useradd username",
+          "when": "New user needed"
+        }
+      ]
+    },
+    {
+      "id": "locked_account",
+      "pattern": "locked|Password locked|account.*locked",
+      "message": "Account is locked",
+      "cause": "Account disabled or locked due to failures",
+      "solutions": [
+        {
+          "approach": "Unlock account",
+          "code": "sudo passwd -u username",
+          "when": "Unlock needed"
+        },
+        {
+          "approach": "Check status",
+          "code": "sudo passwd -S username\n# L=locked, P=password set, NP=no password",
+          "when": "Diagnose"
+        },
+        {
+          "approach": "Clear fail count",
+          "code": "sudo pam_tally2 --user=username --reset",
+          "when": "Failed login lockout"
+        }
+      ]
+    },
+    {
+      "id": "password_expired",
+      "pattern": "password has expired|must change password|password.*expired",
+      "message": "Password expired",
+      "cause": "Password aging policy triggered",
+      "solutions": [
+        {
+          "approach": "Change now",
+          "code": "passwd  # Follow prompts",
+          "when": "Normal expiry"
+        },
+        {
+          "approach": "Check aging",
+          "code": "chage -l username",
+          "when": "See expiry details"
+        },
+        {
+          "approach": "Extend expiry",
+          "code": "sudo chage -M 90 username  # 90 days max age",
+          "when": "Admin adjustment"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "tool": "idris",
+  "version": "2.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "totality_failed",
+      "pattern": "Totality checking failed|possibly not total",
+      "message": "Function rejected by totality checker",
+      "cause": "Non-structural recursion or missing cases",
+      "solutions": [
+        {
+          "approach": "Use accessibility measures",
+          "code": "%hint\ntotal loop : (n : Nat) -> Nat\nloop Z = 0\nloop (S k) = loop k",
+          "when": "Show structural decrease"
+        },
+        {
+          "approach": "Mark partial when intentional",
+          "code": "%default total\npartial unsafeHead : List a -> a",
+          "when": "Partiality acceptable"
+        }
+      ]
+    },
+    {
+      "id": "with_block_scope",
+      "pattern": "Name not in scope in with block|cannot resolve name",
+      "message": "Binding lost inside with/where",
+      "cause": "With-block introduces new pattern names and hides outer scope",
+      "solutions": [
+        {
+          "approach": "Pattern bind inside with",
+          "code": "f x with (p x)\n  f x | (Yes prf) = ...",
+          "when": "Need access to with result"
+        },
+        {
+          "approach": "Move helper to where clause",
+          "code": "f x = helper x where helper : ...",
+          "when": "Shared logic reused"
+        }
+      ]
+    },
+    {
+      "id": "hole_stuck",
+      "pattern": "Holes:.*\\?\\w+|unsolved metavariables",
+      "message": "Compilation blocked by remaining holes",
+      "cause": "Refinement not completed or implicit arguments missing",
+      "solutions": [
+        {
+          "approach": "Use :t and :p to inspect goal",
+          "code": ":t ?goal\\n:p ?goal",
+          "when": "Need required type and context"
+        },
+        {
+          "approach": "Provide implicit arguments explicitly",
+          "code": "map _ _ @{dict}",
+          "when": "Instance search fails"
+        }
+      ]
+    },
+    {
+      "id": "interface_conflict",
+      "pattern": "Ambiguous elaboration for interface|Multiple implementations for",
+      "message": "Instance resolution cannot choose implementation",
+      "cause": "Overlapping instances or missing namespace qualification",
+      "solutions": [
+        {
+          "approach": "Qualify instance",
+          "code": "using (MyOrd) in foo",
+          "when": "Multiple Ord instances in scope"
+        },
+        {
+          "approach": "Make instance more specific",
+          "code": "implementation Eq (Vect n a) where ...",
+          "when": "Generic instance too broad"
+        }
+      ]
+    },
+    {
+      "id": "linear_resource_violation",
+      "pattern": "Linear name used non-linearly|resource is consumed twice",
+      "message": "Linear/unique value reused",
+      "cause": "Function duplicates value of type \"1\" or consumes after free",
+      "solutions": [
+        {
+          "approach": "Use multiplicity annotations",
+          "code": "f : (1 _ : File) -> IO ()",
+          "when": "Indicate linear consumption"
+        },
+        {
+          "approach": "Split or copy via primitives",
+          "code": "useFile : (1 f : File) -> IO (1 File)",
+          "when": "Need to transfer ownership"
+        }
+      ]
+    }
+  ]
+}

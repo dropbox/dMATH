@@ -1,0 +1,182 @@
+{
+  "id": "flaui",
+  "name": "FlaUI",
+  "category": "windows_testing",
+  "subcategory": "ui_automation",
+
+  "description": ".NET library for UI automation of Windows applications",
+  "long_description": "FlaUI is a .NET library for UI automation of Windows applications. It wraps the native UI Automation libraries from Microsoft and provides a clean, fluent API. FlaUI supports UIA2 and UIA3 automation frameworks, making it compatible with a wide range of Windows applications including WPF, WinForms, Win32, and UWP apps.",
+
+  "capabilities": [
+    "wpf_testing",
+    "winforms_testing",
+    "win32_testing",
+    "uwp_testing",
+    "uia2_support",
+    "uia3_support",
+    "element_inspection",
+    "pattern_support",
+    "event_handling"
+  ],
+  "property_types": ["element", "pattern", "property"],
+  "input_languages": ["csharp"],
+  "output_formats": ["test_result", "screenshots"],
+
+  "installation": {
+    "methods": [
+      {"type": "nuget", "command": "Install-Package FlaUI.Core"},
+      {"type": "nuget", "command": "Install-Package FlaUI.UIA3"}
+    ],
+    "dependencies": ["dotnet"],
+    "platforms": ["windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/FlaUI/FlaUI",
+    "wiki": "https://github.com/FlaUI/FlaUI/wiki",
+    "api_reference": "https://github.com/FlaUI/FlaUI/wiki/API-Overview",
+    "examples": "https://github.com/FlaUI/FlaUI/tree/master/src/FlaUI.Core.UITests"
+  },
+
+  "tactics": [
+    {
+      "name": "create_application",
+      "description": "Launch and attach to application",
+      "syntax": "Application.Launch() or Application.Attach()",
+      "when_to_use": "Start of test",
+      "examples": ["var app = Application.Launch(\"notepad.exe\");\nvar automation = new UIA3Automation();\nvar mainWindow = app.GetMainWindow(automation);"]
+    },
+    {
+      "name": "find_element",
+      "description": "Find UI element",
+      "syntax": "element.FindFirstDescendant(cf => cf...)",
+      "when_to_use": "Locating UI elements",
+      "examples": ["var button = window.FindFirstDescendant(cf => cf.ByAutomationId(\"submitBtn\"));", "var textBox = window.FindFirstDescendant(cf => cf.ByName(\"Email\").And(cf.ByControlType(ControlType.Edit)));"]
+    },
+    {
+      "name": "interact_element",
+      "description": "Interact with element",
+      "syntax": "element.AsButton().Invoke()",
+      "when_to_use": "Clicking, typing, selecting",
+      "examples": ["button.AsButton().Invoke();", "textBox.AsTextBox().Text = \"Hello\";", "comboBox.AsComboBox().Select(\"Option 1\");"]
+    },
+    {
+      "name": "wait_until",
+      "description": "Wait for condition",
+      "syntax": "Retry.WhileNull/WhileException",
+      "when_to_use": "Waiting for elements to appear",
+      "examples": ["var result = Retry.WhileNull(\n    () => window.FindFirstDescendant(cf => cf.ByAutomationId(\"result\")),\n    TimeSpan.FromSeconds(5));"]
+    },
+    {
+      "name": "capture_screenshot",
+      "description": "Capture element or screen",
+      "syntax": "Capture.Screen() / element.Capture()",
+      "when_to_use": "Debugging and reporting",
+      "examples": ["Capture.Screen().ToFile(\"screenshot.png\");", "element.Capture().ToFile(\"element.png\");"]
+    },
+    {
+      "name": "use_patterns",
+      "description": "Use UI Automation patterns",
+      "syntax": "element.Patterns.PatternName",
+      "when_to_use": "Advanced control interaction",
+      "examples": ["element.Patterns.Invoke.Pattern.Invoke();", "element.Patterns.Value.Pattern.SetValue(\"text\");", "element.Patterns.ScrollItem.Pattern.ScrollIntoView();"]
+    }
+  ],
+
+  "condition_factory": [
+    {
+      "name": "ByAutomationId",
+      "description": "Find by AutomationId",
+      "examples": ["cf.ByAutomationId(\"submitButton\")"]
+    },
+    {
+      "name": "ByName",
+      "description": "Find by Name property",
+      "examples": ["cf.ByName(\"Submit\")"]
+    },
+    {
+      "name": "ByClassName",
+      "description": "Find by ClassName",
+      "examples": ["cf.ByClassName(\"Button\")"]
+    },
+    {
+      "name": "ByControlType",
+      "description": "Find by control type",
+      "examples": ["cf.ByControlType(ControlType.Button)"]
+    },
+    {
+      "name": "And/Or",
+      "description": "Combine conditions",
+      "examples": ["cf.ByName(\"OK\").And(cf.ByControlType(ControlType.Button))"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Element is null",
+      "meaning": "FindFirst returned null - element not found",
+      "common_causes": ["Wrong locator", "Element not loaded", "Wrong window"],
+      "fixes": ["Use FlaUInspect to verify locator", "Add Retry.WhileNull", "Get correct window"]
+    },
+    {
+      "pattern": "Pattern not supported",
+      "meaning": "Element doesn't support requested pattern",
+      "common_causes": ["Using wrong pattern for control type"],
+      "fixes": ["Check supported patterns with element.Patterns", "Use correct pattern"]
+    },
+    {
+      "pattern": "ElementNotAvailable",
+      "meaning": "Element no longer available",
+      "common_causes": ["Element removed from UI", "Dialog closed"],
+      "fixes": ["Re-find element", "Check if window still exists"]
+    },
+    {
+      "pattern": "TimeoutException",
+      "meaning": "Retry timed out",
+      "common_causes": ["Element never appeared", "Slow application"],
+      "fixes": ["Increase timeout", "Check if element ever appears", "Verify app state"]
+    }
+  ],
+
+  "tools": {
+    "FlaUInspect": {
+      "description": "Visual tool to inspect UI elements",
+      "url": "https://github.com/FlaUI/FlaUInspect"
+    }
+  },
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["visual_studio", "rider"],
+    "ci_integration": ["azure_devops", "github_actions", "jenkins"]
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to seconds per operation",
+    "scalability": "Handles complex UIs well",
+    "memory_usage": "Low to moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["winappdriver", "white", "pywinauto"],
+    "advantages": [
+      "Modern .NET library",
+      "Fluent API",
+      "Both UIA2 and UIA3 support",
+      "Active development",
+      "FlaUInspect tool"
+    ],
+    "disadvantages": [
+      "Windows only",
+      ".NET only",
+      "Learning curve for UI Automation concepts"
+    ]
+  },
+
+  "metadata": {
+    "version": "4.0.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "FlaUI contributors",
+    "license": "MIT"
+  }
+}

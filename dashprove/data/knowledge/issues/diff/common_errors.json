@@ -1,0 +1,168 @@
+{
+  "tool": "diff",
+  "version": "3.10",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "binary_files_differ",
+      "pattern": "Binary files.*differ",
+      "message": "Binary files differ",
+      "cause": "Comparing binary files, not text",
+      "solutions": [
+        {
+          "approach": "Use text mode",
+          "code": "diff -a file1 file2",
+          "when": "Force text comparison"
+        },
+        {
+          "approach": "Use cmp",
+          "code": "cmp -l file1 file2",
+          "when": "Byte-level comparison"
+        },
+        {
+          "approach": "Use hexdump",
+          "code": "diff <(xxd file1) <(xxd file2)",
+          "when": "See byte differences"
+        }
+      ]
+    },
+    {
+      "id": "no_newline_at_eof",
+      "pattern": "No newline at end of file",
+      "message": "No newline at end of file",
+      "cause": "One file lacks trailing newline",
+      "solutions": [
+        {
+          "approach": "Add newline",
+          "code": "echo >> file  # Add newline",
+          "when": "Fix the file"
+        },
+        {
+          "approach": "Ignore whitespace",
+          "code": "diff -Z file1 file2",
+          "when": "Ignore trailing whitespace"
+        },
+        {
+          "approach": "Use git diff",
+          "code": "git diff --no-index file1 file2",
+          "when": "Better formatting"
+        }
+      ]
+    },
+    {
+      "id": "too_different",
+      "pattern": "recursive.*too different|unable to compare|memory exhausted",
+      "message": "Files too different to compare",
+      "cause": "Files too large or different for algorithm",
+      "solutions": [
+        {
+          "approach": "Use minimal",
+          "code": "diff --minimal file1 file2",
+          "when": "Force smaller diff"
+        },
+        {
+          "approach": "Split files",
+          "code": "Compare smaller sections",
+          "when": "Very large files"
+        },
+        {
+          "approach": "Use context",
+          "code": "diff -c file1 file2 | head -1000",
+          "when": "Preview differences"
+        }
+      ]
+    },
+    {
+      "id": "directory_vs_file",
+      "pattern": "File.*is a directory|not a regular file",
+      "message": "Comparing directory with file",
+      "cause": "Mixed file types in comparison",
+      "solutions": [
+        {
+          "approach": "Compare directories",
+          "code": "diff -r dir1 dir2",
+          "when": "Both are directories"
+        },
+        {
+          "approach": "Specify file in dir",
+          "code": "diff dir1/file file2",
+          "when": "Compare specific file"
+        },
+        {
+          "approach": "Check arguments",
+          "code": "ls -la file1 file2",
+          "when": "Verify what you're comparing"
+        }
+      ]
+    },
+    {
+      "id": "encoding_mismatch",
+      "pattern": "illegal byte|character.*invalid|encoding",
+      "message": "Character encoding mismatch",
+      "cause": "Files have different encodings",
+      "solutions": [
+        {
+          "approach": "Convert encoding",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file1 > file1_utf8",
+          "when": "Convert to same encoding"
+        },
+        {
+          "approach": "Set locale",
+          "code": "LC_ALL=C diff file1 file2",
+          "when": "Byte-level comparison"
+        },
+        {
+          "approach": "Check encodings",
+          "code": "file file1 file2",
+          "when": "Identify encoding"
+        }
+      ]
+    },
+    {
+      "id": "line_ending_differences",
+      "pattern": "^M|carriage return|CRLF|line ending",
+      "message": "Line ending differences (CRLF vs LF)",
+      "cause": "Windows vs Unix line endings",
+      "solutions": [
+        {
+          "approach": "Ignore line endings",
+          "code": "diff --strip-trailing-cr file1 file2",
+          "when": "Ignore CRLF vs LF"
+        },
+        {
+          "approach": "Convert line endings",
+          "code": "dos2unix file1 file2",
+          "when": "Normalize to Unix"
+        },
+        {
+          "approach": "Show control chars",
+          "code": "diff file1 file2 | cat -A",
+          "when": "See actual differences"
+        }
+      ]
+    },
+    {
+      "id": "whitespace_differences",
+      "pattern": "whitespace|indentation|spacing",
+      "message": "Only whitespace differences",
+      "cause": "Tabs vs spaces or trailing whitespace",
+      "solutions": [
+        {
+          "approach": "Ignore all whitespace",
+          "code": "diff -w file1 file2",
+          "when": "Whitespace irrelevant"
+        },
+        {
+          "approach": "Ignore space changes",
+          "code": "diff -b file1 file2",
+          "when": "Normalize whitespace"
+        },
+        {
+          "approach": "Ignore blank lines",
+          "code": "diff -B file1 file2",
+          "when": "Skip empty lines"
+        }
+      ]
+    }
+  ]
+}

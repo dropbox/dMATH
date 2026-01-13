@@ -1,0 +1,260 @@
+{
+  "tool": "openapi_generator",
+  "version": "7.2.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "invalid_spec",
+      "pattern": "not a valid OpenAPI|validation error|Failed to read",
+      "message": "Invalid OpenAPI specification",
+      "cause": "Input spec file has syntax or structural errors",
+      "solutions": [
+        {
+          "approach": "Validate spec first",
+          "code": "openapi-generator validate -i openapi.yaml",
+          "when": "Check validity"
+        },
+        {
+          "approach": "Use online validator",
+          "code": "# https://editor.swagger.io/\n# Paste spec and see errors highlighted",
+          "when": "Visual validation"
+        },
+        {
+          "approach": "Fix common issues",
+          "code": "# Check:\n# - Valid YAML/JSON syntax\n# - Required fields: openapi, info, paths\n# - Valid $ref pointers",
+          "when": "Finding errors"
+        }
+      ]
+    },
+    {
+      "id": "generator_not_found",
+      "pattern": "Unknown generator|Generator .* not found|no generator named",
+      "message": "Specified generator doesn't exist",
+      "cause": "Generator name misspelled or not available",
+      "solutions": [
+        {
+          "approach": "List available generators",
+          "code": "openapi-generator list",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Use correct name",
+          "code": "# Common generators:\n# typescript-axios, typescript-fetch\n# python, python-flask\n# go, go-server\n# java, spring, kotlin",
+          "when": "Choosing generator"
+        },
+        {
+          "approach": "Check version",
+          "code": "openapi-generator version\n# Some generators added in newer versions",
+          "when": "Generator missing"
+        }
+      ]
+    },
+    {
+      "id": "output_directory_error",
+      "pattern": "output directory|Cannot write|Permission denied|directory not found",
+      "message": "Cannot write to output directory",
+      "cause": "Output path doesn't exist or not writable",
+      "solutions": [
+        {
+          "approach": "Create output directory",
+          "code": "mkdir -p ./generated\nopenapi-generator generate -i spec.yaml -g typescript-axios -o ./generated",
+          "when": "Directory missing"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "chmod 755 ./generated\n# Or run with appropriate user",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Use absolute path",
+          "code": "openapi-generator generate -i spec.yaml -g python -o /full/path/to/output",
+          "when": "Path confusion"
+        }
+      ]
+    },
+    {
+      "id": "template_error",
+      "pattern": "Template.*error|Mustache|template not found|rendering failed",
+      "message": "Template rendering error",
+      "cause": "Custom template has errors or missing",
+      "solutions": [
+        {
+          "approach": "Check template syntax",
+          "code": "# Mustache templates use:\n# {{variableName}} - variable\n# {{#items}}...{{/items}} - iteration\n# {{^items}}...{{/items}} - inverted (if empty)",
+          "when": "Template syntax error"
+        },
+        {
+          "approach": "Use built-in templates first",
+          "code": "# Generate without -t to use defaults:\nopenapi-generator generate -i spec.yaml -g typescript-axios -o ./out",
+          "when": "Test without custom"
+        },
+        {
+          "approach": "Extract default templates",
+          "code": "openapi-generator author template -g typescript-axios -o ./templates",
+          "when": "See default templates"
+        }
+      ]
+    },
+    {
+      "id": "ref_resolution_error",
+      "pattern": "\\$ref.*not found|unresolved reference|Could not resolve",
+      "message": "Cannot resolve $ref pointer",
+      "cause": "$ref points to non-existent schema or file",
+      "solutions": [
+        {
+          "approach": "Check $ref path",
+          "code": "# Internal ref:\n$ref: '#/components/schemas/User'\n\n# External ref:\n$ref: './schemas/user.yaml#/User'",
+          "when": "Invalid reference"
+        },
+        {
+          "approach": "Bundle spec first",
+          "code": "npx @apidevtools/swagger-cli bundle spec.yaml -o bundled.yaml\nopenapi-generator generate -i bundled.yaml -g python -o ./out",
+          "when": "External refs"
+        },
+        {
+          "approach": "Check component exists",
+          "code": "components:\n  schemas:\n    User:  # This must exist if referenced\n      type: object",
+          "when": "Missing definition"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "not supported|unsupported.*feature|cannot handle",
+      "message": "OpenAPI feature not supported by generator",
+      "cause": "Using feature generator doesn't implement",
+      "solutions": [
+        {
+          "approach": "Check generator docs",
+          "code": "openapi-generator config-help -g typescript-axios\n# See supported features",
+          "when": "Find capabilities"
+        },
+        {
+          "approach": "Simplify spec",
+          "code": "# Avoid:\n# - anyOf/oneOf (use simpler structures)\n# - Circular references\n# - Very deep nesting",
+          "when": "Complex schema"
+        },
+        {
+          "approach": "Use different generator",
+          "code": "# Try similar generator with better support:\n# typescript-axios vs typescript-fetch\n# python vs python-flask",
+          "when": "Feature needed"
+        }
+      ]
+    },
+    {
+      "id": "naming_conflict",
+      "pattern": "naming conflict|duplicate|already exists|reserved word",
+      "message": "Generated name conflicts or is reserved",
+      "cause": "Schema/operation name clashes with language keywords",
+      "solutions": [
+        {
+          "approach": "Use modelNamePrefix",
+          "code": "openapi-generator generate -i spec.yaml -g python \\\n    --model-name-prefix Api",
+          "when": "Avoid conflicts"
+        },
+        {
+          "approach": "Map reserved words",
+          "code": "openapi-generator generate -i spec.yaml -g java \\\n    --reserved-words-mappings class=clazz",
+          "when": "Specific conflict"
+        },
+        {
+          "approach": "Rename in spec",
+          "code": "# Use x-model-name extension:\nUser:\n  x-model-name: UserModel\n  type: object",
+          "when": "Control naming"
+        }
+      ]
+    },
+    {
+      "id": "type_mapping_error",
+      "pattern": "unknown type|type mapping|cannot map.*type",
+      "message": "Cannot map OpenAPI type to target language",
+      "cause": "Type doesn't have mapping in generator",
+      "solutions": [
+        {
+          "approach": "Use type mappings",
+          "code": "openapi-generator generate -i spec.yaml -g typescript \\\n    --type-mappings DateTime=string",
+          "when": "Override type"
+        },
+        {
+          "approach": "Use import mappings",
+          "code": "openapi-generator generate -i spec.yaml -g java \\\n    --import-mappings DateTime=java.time.OffsetDateTime",
+          "when": "Use existing class"
+        },
+        {
+          "approach": "Check format",
+          "code": "# Use standard formats:\n# string: date, date-time, uuid, email\n# integer: int32, int64\n# number: float, double",
+          "when": "Non-standard format"
+        }
+      ]
+    },
+    {
+      "id": "config_file_error",
+      "pattern": "config.*error|invalid configuration|cannot parse config",
+      "message": "Configuration file has errors",
+      "cause": "Config JSON/YAML file malformed",
+      "solutions": [
+        {
+          "approach": "Validate config JSON",
+          "code": "python -m json.tool config.json  # Validates JSON",
+          "when": "JSON config"
+        },
+        {
+          "approach": "Check config schema",
+          "code": "openapi-generator config-help -g typescript-axios\n# Shows valid config options",
+          "when": "Unknown options"
+        },
+        {
+          "approach": "Use CLI options instead",
+          "code": "openapi-generator generate -i spec.yaml -g python \\\n    --additional-properties=packageName=myapi,packageVersion=1.0.0",
+          "when": "Simpler approach"
+        }
+      ]
+    },
+    {
+      "id": "circular_reference",
+      "pattern": "circular|recursive|infinite loop|stack overflow",
+      "message": "Circular reference in schema",
+      "cause": "Schema A references B which references A",
+      "solutions": [
+        {
+          "approach": "Use allOf to break cycle",
+          "code": "# Instead of direct reference:\nUser:\n  properties:\n    friend:\n      $ref: '#/components/schemas/User'  # Circular\n\n# Use nullable or optional:\n    friend:\n      allOf:\n        - $ref: '#/components/schemas/UserBase'\n      nullable: true",
+          "when": "Self-reference"
+        },
+        {
+          "approach": "Set max recursion depth",
+          "code": "openapi-generator generate -i spec.yaml -g python \\\n    --additional-properties=recursionLimit=5",
+          "when": "Generator supports"
+        },
+        {
+          "approach": "Restructure schema",
+          "code": "# Split into base and extended schemas\n# Use IDs instead of nested objects",
+          "when": "Design change possible"
+        }
+      ]
+    },
+    {
+      "id": "java_dependency_error",
+      "pattern": "Java.*not found|JAVA_HOME|Maven|Gradle.*failed",
+      "message": "Java runtime or build tool error",
+      "cause": "Java not installed or configured",
+      "solutions": [
+        {
+          "approach": "Install Java",
+          "code": "# macOS:\nbrew install openjdk@11\n\n# Ubuntu:\nsudo apt install openjdk-11-jdk",
+          "when": "Java missing"
+        },
+        {
+          "approach": "Set JAVA_HOME",
+          "code": "export JAVA_HOME=/usr/lib/jvm/java-11-openjdk\nexport PATH=$JAVA_HOME/bin:$PATH",
+          "when": "Path not set"
+        },
+        {
+          "approach": "Use Docker",
+          "code": "docker run --rm -v ${PWD}:/local \\\n    openapitools/openapi-generator-cli generate \\\n    -i /local/spec.yaml -g python -o /local/out",
+          "when": "Avoid Java install"
+        }
+      ]
+    }
+  ]
+}

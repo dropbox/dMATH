@@ -1,0 +1,237 @@
+{
+  "tool": "pyre",
+  "version": "0.9.19",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "incompatible_parameter_type",
+      "pattern": "Incompatible parameter type|Expected.*but got",
+      "message": "Incompatible parameter type",
+      "cause": "Function called with wrong argument type",
+      "solutions": [
+        {
+          "approach": "Fix argument type",
+          "code": "def greet(name: str) -> str:\n    return f\"Hello, {name}\"\n\n# Instead of:\ngreet(123)  # Error: Expected str, got int\n\n# Use:\ngreet(str(123))  # Convert to str\ngreet(\"Alice\")   # Correct type",
+          "when": "Wrong type passed"
+        },
+        {
+          "approach": "Use Union type",
+          "code": "from typing import Union\n\ndef process(value: Union[str, int]) -> str:\n    return str(value)\n\nprocess(\"hello\")  # OK\nprocess(42)        # OK",
+          "when": "Multiple types valid"
+        },
+        {
+          "approach": "Add overloads",
+          "code": "from typing import overload\n\n@overload\ndef parse(data: str) -> dict: ...\n@overload\ndef parse(data: bytes) -> dict: ...\n\ndef parse(data):\n    if isinstance(data, bytes):\n        data = data.decode()\n    return json.loads(data)",
+          "when": "Different return types"
+        }
+      ]
+    },
+    {
+      "id": "incompatible_return_type",
+      "pattern": "Incompatible return type|Expected.*to return",
+      "message": "Incompatible return type",
+      "cause": "Function returns different type than declared",
+      "solutions": [
+        {
+          "approach": "Fix return value",
+          "code": "def get_count() -> int:\n    # Instead of:\n    # return \"42\"  # Error: Expected int, got str\n    \n    # Use:\n    return 42  # Correct type",
+          "when": "Wrong return type"
+        },
+        {
+          "approach": "Fix return annotation",
+          "code": "from typing import Optional\n\n# If None is valid return:\ndef find_user(id: int) -> Optional[User]:\n    if id <= 0:\n        return None  # Now valid\n    return User(id)",
+          "when": "None is valid"
+        },
+        {
+          "approach": "Handle all paths",
+          "code": "def process(data: str) -> int:\n    if data.isdigit():\n        return int(data)\n    # Missing return!\n    raise ValueError(\"Not a number\")  # Or return default",
+          "when": "Missing return path"
+        }
+      ]
+    },
+    {
+      "id": "missing_attribute",
+      "pattern": "has no attribute|Undefined attribute",
+      "message": "Undefined attribute",
+      "cause": "Accessing attribute that doesn't exist on type",
+      "solutions": [
+        {
+          "approach": "Check attribute exists",
+          "code": "# If attribute might not exist:\nvalue = getattr(obj, 'attr', default_value)\n\n# Or use hasattr:\nif hasattr(obj, 'attr'):\n    value = obj.attr",
+          "when": "Dynamic attribute"
+        },
+        {
+          "approach": "Fix type annotation",
+          "code": "from typing import Any, TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from mymodule import ProperType\n\ndef process(obj: 'ProperType') -> None:\n    obj.expected_attr  # Now Pyre knows the type",
+          "when": "Type not inferred"
+        },
+        {
+          "approach": "Use Protocol",
+          "code": "from typing import Protocol\n\nclass HasName(Protocol):\n    name: str\n\ndef greet(obj: HasName) -> str:\n    return f\"Hello, {obj.name}\"",
+          "when": "Duck typing"
+        }
+      ]
+    },
+    {
+      "id": "missing_return_annotation",
+      "pattern": "Missing return annotation|Return type.*must be annotated",
+      "message": "Missing return annotation",
+      "cause": "Function lacks return type annotation",
+      "solutions": [
+        {
+          "approach": "Add return type",
+          "code": "# Instead of:\ndef process(data):\n    return data.upper()\n\n# Add annotation:\ndef process(data: str) -> str:\n    return data.upper()",
+          "when": "Missing annotation"
+        },
+        {
+          "approach": "Use None for no return",
+          "code": "def log_message(msg: str) -> None:\n    print(msg)\n    # No return statement needed",
+          "when": "Function doesn't return"
+        },
+        {
+          "approach": "Configure strict mode",
+          "code": "# In .pyre_configuration:\n{\n  \"source_directories\": [\".\"],\n  \"strict\": false  // Allows missing annotations\n}",
+          "when": "Gradual adoption"
+        }
+      ]
+    },
+    {
+      "id": "incompatible_variable_type",
+      "pattern": "Incompatible variable type|cannot be assigned",
+      "message": "Incompatible variable type",
+      "cause": "Variable reassigned with different type",
+      "solutions": [
+        {
+          "approach": "Use Union",
+          "code": "from typing import Union\n\n# If variable can be multiple types:\nvalue: Union[str, int] = \"hello\"\nvalue = 42  # Now valid",
+          "when": "Multiple types needed"
+        },
+        {
+          "approach": "Use Optional for None",
+          "code": "from typing import Optional\n\nresult: Optional[str] = None\nresult = \"found\"  # Valid",
+          "when": "Can be None"
+        },
+        {
+          "approach": "Use new variable",
+          "code": "# Instead of reusing:\ndata = get_raw_data()  # bytes\ndata = data.decode()   # str - type change!\n\n# Use different names:\nraw_data = get_raw_data()  # bytes\ntext_data = raw_data.decode()  # str",
+          "when": "Different semantics"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_attribute",
+      "pattern": "Uninitialized attribute|Attribute.*not initialized",
+      "message": "Attribute not initialized in __init__",
+      "cause": "Class attribute declared but not set in __init__",
+      "solutions": [
+        {
+          "approach": "Initialize in __init__",
+          "code": "class MyClass:\n    value: int  # Declaration\n    \n    def __init__(self) -> None:\n        self.value = 0  # Must initialize",
+          "when": "Simple initialization"
+        },
+        {
+          "approach": "Use Optional",
+          "code": "from typing import Optional\n\nclass MyClass:\n    # If can be None before initialization:\n    data: Optional[str] = None\n    \n    def set_data(self, data: str) -> None:\n        self.data = data",
+          "when": "Late initialization"
+        },
+        {
+          "approach": "Use dataclass",
+          "code": "from dataclasses import dataclass\n\n@dataclass\nclass MyClass:\n    value: int\n    name: str = \"default\"",
+          "when": "Simple data container"
+        }
+      ]
+    },
+    {
+      "id": "unsafe_cast",
+      "pattern": "Unsafe cast|cast.*not safe",
+      "message": "Unsafe cast operation",
+      "cause": "Using cast() where type is not actually compatible",
+      "solutions": [
+        {
+          "approach": "Use isinstance check",
+          "code": "from typing import cast\n\n# Instead of unsafe cast:\n# value = cast(int, unknown)  # Dangerous!\n\n# Use runtime check:\nif isinstance(unknown, int):\n    value: int = unknown  # Safe",
+          "when": "Runtime check possible"
+        },
+        {
+          "approach": "Use assert for narrowing",
+          "code": "def process(data: object) -> int:\n    assert isinstance(data, int)\n    return data * 2  # Pyre knows it's int",
+          "when": "Development assertion"
+        },
+        {
+          "approach": "Document unsafe cast",
+          "code": "from typing import cast\n\n# If cast is actually safe:\nvalue = cast(int, trusted_api_result)  # type: ignore[misc]\n# Add comment explaining why it's safe",
+          "when": "Known safe cast"
+        }
+      ]
+    },
+    {
+      "id": "pysa_taint",
+      "pattern": "Taint.*flows|User-controlled.*data|security.*issue",
+      "message": "Pysa taint analysis warning",
+      "cause": "Untrusted data flows to sensitive sink",
+      "solutions": [
+        {
+          "approach": "Sanitize input",
+          "code": "import html\n\ndef render_user_input(user_input: str) -> str:\n    # Sanitize before using in HTML\n    safe_input = html.escape(user_input)\n    return f\"<p>{safe_input}</p>\"",
+          "when": "XSS risk"
+        },
+        {
+          "approach": "Use parameterized queries",
+          "code": "def get_user(user_id: str) -> User:\n    # Instead of:\n    # cursor.execute(f\"SELECT * FROM users WHERE id = {user_id}\")\n    \n    # Use parameterized:\n    cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))\n    return cursor.fetchone()",
+          "when": "SQL injection risk"
+        },
+        {
+          "approach": "Add sanitizer annotation",
+          "code": "from pyre_extensions import safe_json_loads\n\n# Mark function as sanitizer:\ndef validate_and_parse(data: str) -> dict:\n    # Validation logic\n    return safe_json_loads(data)",
+          "when": "Custom sanitizer"
+        }
+      ]
+    },
+    {
+      "id": "configuration",
+      "pattern": "pyre_configuration|setup|initialize",
+      "message": "Pyre configuration",
+      "cause": "Need to set up Pyre configuration",
+      "solutions": [
+        {
+          "approach": "Initialize Pyre",
+          "code": "# Create .pyre_configuration:\n{\n  \"source_directories\": [\".\"],\n  \"search_path\": [\n    {\"site-package\": \"django\"}\n  ]\n}",
+          "when": "New project"
+        },
+        {
+          "approach": "Configure for Django/Flask",
+          "code": "{\n  \"source_directories\": [\".\"],\n  \"search_path\": [\n    {\"site-package\": \"django\"},\n    {\"site-package\": \"django-stubs\"}\n  ],\n  \"strict\": false\n}",
+          "when": "Web framework"
+        },
+        {
+          "approach": "Exclude directories",
+          "code": "{\n  \"source_directories\": [\"src\"],\n  \"exclude\": [\n    \".*/tests/.*\",\n    \".*/migrations/.*\"\n  ]\n}",
+          "when": "Exclude test/generated code"
+        }
+      ]
+    },
+    {
+      "id": "stubs_missing",
+      "pattern": "Could not find stubs|Missing stub|No type stub",
+      "message": "Missing type stubs for library",
+      "cause": "Third-party library lacks type stubs",
+      "solutions": [
+        {
+          "approach": "Install type stubs",
+          "code": "# Install from typeshed:\npip install types-requests\npip install types-PyYAML\npip install django-stubs",
+          "when": "Stubs available"
+        },
+        {
+          "approach": "Create local stub",
+          "code": "# Create stubs/mylib.pyi:\ndef some_function(arg: str) -> int: ...\n\nclass SomeClass:\n    def method(self) -> None: ...\n\n# Add to .pyre_configuration:\n\"search_path\": [\"stubs\"]",
+          "when": "No public stubs"
+        },
+        {
+          "approach": "Ignore library",
+          "code": "# In .pyre_configuration:\n{\n  \"ignore_all_errors\": [\n    \"path/to/untyped_library\"\n  ]\n}",
+          "when": "Low priority library"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "tool": "jest",
+  "version": "29.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_found",
+      "pattern": "Cannot find module|Module not found|Could not locate module|Unable to resolve",
+      "message": "Jest cannot resolve a module",
+      "cause": "Module not installed, path wrong, or moduleNameMapper needed",
+      "solutions": [
+        {
+          "approach": "Install missing package",
+          "code": "npm install missing-package",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Configure moduleNameMapper",
+          "code": "// jest.config.js\nmodule.exports = {\n  moduleNameMapper: {\n    '^@/(.*)$': '<rootDir>/src/$1',\n    '^components/(.*)$': '<rootDir>/src/components/$1'\n  }\n};",
+          "when": "Path alias not working"
+        },
+        {
+          "approach": "Configure moduleDirectories",
+          "code": "// jest.config.js\nmodule.exports = {\n  moduleDirectories: ['node_modules', 'src']\n};",
+          "when": "Custom module resolution"
+        },
+        {
+          "approach": "Mock static assets",
+          "code": "// jest.config.js\nmodule.exports = {\n  moduleNameMapper: {\n    '\\\\.(css|scss|sass)$': 'identity-obj-proxy',\n    '\\\\.(jpg|jpeg|png|svg)$': '<rootDir>/__mocks__/fileMock.js'\n  }\n};\n\n// __mocks__/fileMock.js\nmodule.exports = 'test-file-stub';",
+          "when": "Importing CSS/images"
+        }
+      ]
+    },
+    {
+      "id": "transform_error",
+      "pattern": "SyntaxError.*Unexpected token|Cannot use import|unexpected token 'export'|Transform",
+      "message": "Jest cannot parse file syntax",
+      "cause": "File needs transformation (JSX, TypeScript, ESM)",
+      "solutions": [
+        {
+          "approach": "Configure Babel",
+          "code": "npm install --save-dev @babel/preset-env @babel/preset-react\n\n// babel.config.js\nmodule.exports = {\n  presets: [\n    ['@babel/preset-env', { targets: { node: 'current' } }],\n    '@babel/preset-react'\n  ]\n};",
+          "when": "JSX or modern JS"
+        },
+        {
+          "approach": "Use ts-jest",
+          "code": "npm install --save-dev ts-jest\n\n// jest.config.js\nmodule.exports = {\n  preset: 'ts-jest',\n  testEnvironment: 'node'\n};",
+          "when": "TypeScript files"
+        },
+        {
+          "approach": "Configure transformIgnorePatterns",
+          "code": "// jest.config.js\nmodule.exports = {\n  transformIgnorePatterns: [\n    '/node_modules/(?!(pkg-to-transform|other-esm-pkg)/)',\n  ]\n};",
+          "when": "ESM package in node_modules"
+        },
+        {
+          "approach": "Use ESM mode",
+          "code": "// package.json\n{\n  \"type\": \"module\"\n}\n\n// jest.config.js\nexport default {\n  transform: {},\n  extensionsToTreatAsEsm: ['.ts', '.tsx']\n};\n\n// Run with\nnode --experimental-vm-modules node_modules/jest/bin/jest.js",
+          "when": "Using native ESM"
+        }
+      ]
+    },
+    {
+      "id": "mock_error",
+      "pattern": "mock|jest\\.fn|mockImplementation|mockReturnValue|toHaveBeenCalled",
+      "message": "Mock not working as expected",
+      "cause": "Mock not set up correctly or timing issue",
+      "solutions": [
+        {
+          "approach": "Mock module correctly",
+          "code": "// Mock must be before import or use jest.mock hoisting\njest.mock('./myModule');\n\nimport { myFunction } from './myModule';\n\ntest('uses mock', () => {\n  myFunction.mockReturnValue('mocked');\n  expect(myFunction()).toBe('mocked');\n});",
+          "when": "Module mock not applied"
+        },
+        {
+          "approach": "Use jest.spyOn",
+          "code": "import * as utils from './utils';\n\ntest('spy on method', () => {\n  const spy = jest.spyOn(utils, 'fetchData')\n    .mockResolvedValue({ data: 'test' });\n  \n  // ... test ...\n  \n  expect(spy).toHaveBeenCalled();\n  spy.mockRestore();  // Clean up\n});",
+          "when": "Spy on specific method"
+        },
+        {
+          "approach": "Reset mocks",
+          "code": "// jest.config.js or in test\nbeforeEach(() => {\n  jest.clearAllMocks();  // Clear call history\n  // Or\n  jest.resetAllMocks();  // Also reset return values\n  // Or\n  jest.restoreAllMocks();  // Restore original implementation\n});",
+          "when": "Mocks bleeding between tests"
+        },
+        {
+          "approach": "Mock ES modules",
+          "code": "// For ESM, use unstable_mockModule\njest.unstable_mockModule('./esm-module', () => ({\n  default: jest.fn(),\n  namedExport: jest.fn()\n}));\n\nconst { default: fn } = await import('./esm-module');",
+          "when": "ESM module mocking"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "async|await|Promise|timeout|did not call done|Exceeded timeout",
+      "message": "Async test not completing correctly",
+      "cause": "Promise not awaited, done() not called, or timeout",
+      "solutions": [
+        {
+          "approach": "Return promise or use async/await",
+          "code": "// Recommended: async/await\ntest('async test', async () => {\n  const data = await fetchData();\n  expect(data).toBeDefined();\n});\n\n// Or return promise\ntest('promise test', () => {\n  return fetchData().then(data => {\n    expect(data).toBeDefined();\n  });\n});",
+          "when": "Async test not waiting"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "// Per test\ntest('slow test', async () => {\n  // ...\n}, 10000);  // 10 seconds\n\n// Global\n// jest.config.js\nmodule.exports = {\n  testTimeout: 10000\n};",
+          "when": "Test needs more time"
+        },
+        {
+          "approach": "Use fake timers",
+          "code": "test('timers', () => {\n  jest.useFakeTimers();\n  \n  const callback = jest.fn();\n  setTimeout(callback, 1000);\n  \n  jest.advanceTimersByTime(1000);\n  expect(callback).toHaveBeenCalled();\n  \n  jest.useRealTimers();\n});",
+          "when": "Testing setTimeout/setInterval"
+        },
+        {
+          "approach": "Wait for assertions",
+          "code": "import { waitFor } from '@testing-library/react';\n\ntest('eventually passes', async () => {\n  await waitFor(() => {\n    expect(screen.getByText('loaded')).toBeInTheDocument();\n  });\n});",
+          "when": "Polling for condition"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_mismatch",
+      "pattern": "Snapshot.*differ|snapshot failed|toMatchSnapshot|received value",
+      "message": "Snapshot test failed",
+      "cause": "Component output changed or snapshot needs update",
+      "solutions": [
+        {
+          "approach": "Update snapshot",
+          "code": "# Update all snapshots\njest --updateSnapshot\n# Or shorthand\njest -u\n\n# Update specific\njest --updateSnapshot --testNamePattern \"my test\"",
+          "when": "Intentional change"
+        },
+        {
+          "approach": "Review diff",
+          "code": "# The diff shows what changed\n# - Lines removed (old snapshot)\n# + Lines added (new output)\n# Review if change is expected",
+          "when": "Need to verify change"
+        },
+        {
+          "approach": "Use inline snapshots",
+          "code": "test('inline', () => {\n  expect({ name: 'test' }).toMatchInlineSnapshot(`\n    Object {\n      \"name\": \"test\",\n    }\n  `);\n});",
+          "when": "Prefer inline"
+        },
+        {
+          "approach": "Mock dynamic values",
+          "code": "// Mock Date/random for consistent snapshots\nbeforeAll(() => {\n  jest.useFakeTimers();\n  jest.setSystemTime(new Date('2025-01-01'));\n});\n\n// Or use property matchers\nexpect(data).toMatchSnapshot({\n  createdAt: expect.any(Date),\n  id: expect.any(String)\n});",
+          "when": "Dynamic values in snapshot"
+        }
+      ]
+    },
+    {
+      "id": "coverage_error",
+      "pattern": "coverage|--coverage|threshold|branch|statement|function|uncovered",
+      "message": "Coverage threshold not met",
+      "cause": "Code coverage below configured threshold",
+      "solutions": [
+        {
+          "approach": "Check uncovered lines",
+          "code": "# Generate HTML report\njest --coverage\n\n# Open coverage/lcov-report/index.html\n# Red lines are uncovered",
+          "when": "Need to see what's uncovered"
+        },
+        {
+          "approach": "Configure thresholds",
+          "code": "// jest.config.js\nmodule.exports = {\n  coverageThreshold: {\n    global: {\n      branches: 80,\n      functions: 80,\n      lines: 80,\n      statements: 80\n    },\n    './src/critical/': {\n      branches: 100\n    }\n  }\n};",
+          "when": "Adjust thresholds"
+        },
+        {
+          "approach": "Exclude files",
+          "code": "// jest.config.js\nmodule.exports = {\n  collectCoverageFrom: [\n    'src/**/*.{js,jsx,ts,tsx}',\n    '!src/**/*.d.ts',\n    '!src/index.ts',\n    '!src/**/*.stories.{js,jsx,ts,tsx}'\n  ],\n  coveragePathIgnorePatterns: [\n    '/node_modules/',\n    '/test/'\n  ]\n};",
+          "when": "Exclude generated/test files"
+        }
+      ]
+    },
+    {
+      "id": "environment_error",
+      "pattern": "document is not defined|window is not defined|localStorage|testEnvironment|JSDOM",
+      "message": "DOM/Browser API not available",
+      "cause": "Using browser APIs with node environment",
+      "solutions": [
+        {
+          "approach": "Use jsdom environment",
+          "code": "// jest.config.js\nmodule.exports = {\n  testEnvironment: 'jsdom'\n};\n\n// Or per-file\n/** @jest-environment jsdom */",
+          "when": "Need browser APIs"
+        },
+        {
+          "approach": "Install jsdom",
+          "code": "npm install --save-dev jest-environment-jsdom\n\n// jest.config.js\nmodule.exports = {\n  testEnvironment: 'jest-environment-jsdom'\n};",
+          "when": "jsdom not installed"
+        },
+        {
+          "approach": "Mock browser globals",
+          "code": "// setupTests.js\nglobal.localStorage = {\n  getItem: jest.fn(),\n  setItem: jest.fn(),\n  clear: jest.fn()\n};\n\n// jest.config.js\nmodule.exports = {\n  setupFilesAfterEnv: ['<rootDir>/setupTests.js']\n};",
+          "when": "Partial mocking needed"
+        }
+      ]
+    },
+    {
+      "id": "watch_error",
+      "pattern": "watch|--watch|ENOSPC|inotify|no tests found",
+      "message": "Watch mode error",
+      "cause": "File watcher limit or no tests match",
+      "solutions": [
+        {
+          "approach": "Increase inotify limit",
+          "code": "# Linux - increase file watcher limit\necho fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf\nsudo sysctl -p",
+          "when": "ENOSPC error on Linux"
+        },
+        {
+          "approach": "Check test file pattern",
+          "code": "// jest.config.js\nmodule.exports = {\n  testMatch: [\n    '**/__tests__/**/*.[jt]s?(x)',\n    '**/?(*.)+(spec|test).[jt]s?(x)'\n  ],\n  // Or\n  testRegex: '(/__tests__/.*|(\\\\.|/)(test|spec))\\\\.[jt]sx?$'\n};",
+          "when": "Tests not being found"
+        },
+        {
+          "approach": "Use watchAll",
+          "code": "# Watch all files, not just changed\njest --watchAll\n\n# Or if not in git repo\njest --watchAll",
+          "when": "No git/hg changes detected"
+        }
+      ]
+    }
+  ]
+}

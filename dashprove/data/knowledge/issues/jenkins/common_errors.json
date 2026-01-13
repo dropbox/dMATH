@@ -1,0 +1,186 @@
+{
+  "tool": "jenkins",
+  "version": "2.440",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "pipeline_syntax_error",
+      "pattern": "WorkflowScript|groovy|syntax error|expecting",
+      "message": "Pipeline syntax error",
+      "cause": "Invalid Groovy/Pipeline syntax in Jenkinsfile",
+      "solutions": [
+        {
+          "approach": "Use Pipeline Syntax helper",
+          "code": "# Jenkins -> Pipeline job -> Pipeline Syntax\n# Snippet Generator helps build correct syntax",
+          "when": "Need correct syntax for steps"
+        },
+        {
+          "approach": "Replay and edit",
+          "code": "# Build -> Replay\n# Edit pipeline and test without committing",
+          "when": "Debugging pipeline changes"
+        },
+        {
+          "approach": "Check declarative syntax",
+          "code": "pipeline {\n    agent any\n    stages {\n        stage('Build') {\n            steps {\n                sh 'make'\n            }\n        }\n    }\n}",
+          "when": "Using declarative pipeline"
+        }
+      ]
+    },
+    {
+      "id": "agent_offline",
+      "pattern": "agent.*offline|node.*offline|pending|no available executor",
+      "message": "No agent available to run build",
+      "cause": "All agents offline, labels don't match, or executors busy",
+      "solutions": [
+        {
+          "approach": "Check agent status",
+          "code": "# Manage Jenkins -> Nodes\n# Look for offline agents",
+          "when": "Agent may be offline"
+        },
+        {
+          "approach": "Check labels",
+          "code": "agent {\n    label 'linux && docker'\n}\n# Ensure agent has these labels",
+          "when": "Label may not match any agent"
+        },
+        {
+          "approach": "Use any available agent",
+          "code": "agent any\n# Or: agent { label 'linux' }",
+          "when": "Don't need specific agent"
+        }
+      ]
+    },
+    {
+      "id": "credential_not_found",
+      "pattern": "credential.*not.*found|CredentialsUnavailableException|secret",
+      "message": "Credential not found or inaccessible",
+      "cause": "Credential doesn't exist, wrong ID, or scope issue",
+      "solutions": [
+        {
+          "approach": "Check credential ID",
+          "code": "withCredentials([usernamePassword(\n    credentialsId: 'my-cred-id',  // Exact ID\n    usernameVariable: 'USER',\n    passwordVariable: 'PASS'\n)]) {\n    sh 'login -u $USER -p $PASS'\n}",
+          "when": "Credential ID may be wrong"
+        },
+        {
+          "approach": "Check credential scope",
+          "code": "# Manage Jenkins -> Credentials\n# System scope: all jobs\n# Folder scope: jobs in that folder",
+          "when": "Credential may have wrong scope"
+        },
+        {
+          "approach": "Use environment directive",
+          "code": "environment {\n    MY_SECRET = credentials('my-secret-id')\n}\n// Access: $MY_SECRET or $MY_SECRET_USR/$MY_SECRET_PSW",
+          "when": "Using declarative pipeline"
+        }
+      ]
+    },
+    {
+      "id": "workspace_issue",
+      "pattern": "workspace|directory.*not.*found|file.*not.*found|permission denied",
+      "message": "Workspace or file access issue",
+      "cause": "Workspace not checked out, wrong directory, or permissions",
+      "solutions": [
+        {
+          "approach": "Explicit checkout",
+          "code": "stage('Checkout') {\n    steps {\n        checkout scm\n        // or: git branch: 'main', url: 'https://...'\n    }\n}",
+          "when": "Workspace may be empty"
+        },
+        {
+          "approach": "Use correct path",
+          "code": "dir('subdirectory') {\n    sh 'make'\n}\n// Or: pwd(), WORKSPACE env var",
+          "when": "Running in wrong directory"
+        },
+        {
+          "approach": "Clean workspace",
+          "code": "options {\n    cleanWs()  // Clean before build\n}\n// Or: deleteDir() in post section",
+          "when": "Stale files causing issues"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|Timeout|Aborted|took too long",
+      "message": "Build timeout",
+      "cause": "Step taking too long or stuck",
+      "solutions": [
+        {
+          "approach": "Set pipeline timeout",
+          "code": "options {\n    timeout(time: 1, unit: 'HOURS')\n}",
+          "when": "Need overall pipeline timeout"
+        },
+        {
+          "approach": "Set step timeout",
+          "code": "timeout(time: 10, unit: 'MINUTES') {\n    sh './slow-script.sh'\n}",
+          "when": "Specific step needs timeout"
+        },
+        {
+          "approach": "Handle timeout in script",
+          "code": "sh 'timeout 300 ./my-script.sh'",
+          "when": "Using shell timeout"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin|NoSuchMethodError|ClassNotFoundException|NoClassDefFoundError",
+      "message": "Plugin error or incompatibility",
+      "cause": "Missing plugin, version mismatch, or Java compatibility",
+      "solutions": [
+        {
+          "approach": "Update plugins",
+          "code": "# Manage Jenkins -> Plugin Manager -> Updates\n# Update all plugins",
+          "when": "Plugins may be outdated"
+        },
+        {
+          "approach": "Check compatibility",
+          "code": "# Some plugins require specific Jenkins versions\n# Check plugin wiki/documentation",
+          "when": "Plugin may be incompatible"
+        },
+        {
+          "approach": "Install missing plugin",
+          "code": "# Manage Jenkins -> Plugin Manager -> Available\n# Search and install required plugin",
+          "when": "Plugin not installed"
+        }
+      ]
+    },
+    {
+      "id": "scm_error",
+      "pattern": "SCM|git|clone|fetch|authentication.*failed",
+      "message": "Source control error",
+      "cause": "Authentication failure, branch not found, or network issue",
+      "solutions": [
+        {
+          "approach": "Configure SSH key",
+          "code": "checkout([$class: 'GitSCM',\n    branches: [[name: '*/main']],\n    userRemoteConfigs: [[\n        url: 'git@github.com:org/repo.git',\n        credentialsId: 'github-ssh-key'\n    ]]\n])",
+          "when": "Using SSH authentication"
+        },
+        {
+          "approach": "Use HTTPS with token",
+          "code": "withCredentials([string(credentialsId: 'github-token', variable: 'TOKEN')]) {\n    sh 'git clone https://${TOKEN}@github.com/org/repo.git'\n}",
+          "when": "Using HTTPS with token"
+        },
+        {
+          "approach": "Check branch name",
+          "code": "git branch: 'main',  // Not 'refs/heads/main'\n    url: 'https://...'",
+          "when": "Branch name may be wrong"
+        }
+      ]
+    },
+    {
+      "id": "parallel_failure",
+      "pattern": "parallel|FailFastException|parallel.*failed",
+      "message": "Parallel stage failure",
+      "cause": "One parallel branch failed and failFast enabled",
+      "solutions": [
+        {
+          "approach": "Disable failFast",
+          "code": "parallel failFast: false,\n    'branch1': { ... },\n    'branch2': { ... }",
+          "when": "Want all branches to complete"
+        },
+        {
+          "approach": "Handle failure per branch",
+          "code": "parallel(\n    'unit-tests': {\n        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {\n            sh 'make test'\n        }\n    }\n)",
+          "when": "Want to continue despite failure"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "tool": "base64",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_input",
+      "pattern": "invalid input|invalid character|illegal base64",
+      "message": "Invalid base64 data",
+      "cause": "Input contains non-base64 characters",
+      "solutions": [
+        {
+          "approach": "Ignore garbage",
+          "code": "base64 -d -i <<< 'SGVsbG8='  # -i ignores invalid",
+          "when": "Skip bad chars"
+        },
+        {
+          "approach": "Strip whitespace",
+          "code": "tr -d '\\n' | base64 -d",
+          "when": "Multi-line input"
+        },
+        {
+          "approach": "Validate first",
+          "code": "# Check valid base64: A-Za-z0-9+/=\n[[ $input =~ ^[A-Za-z0-9+/=]+$ ]]",
+          "when": "Verify before decode"
+        }
+      ]
+    },
+    {
+      "id": "padding_error",
+      "pattern": "padding|incomplete|truncated|=",
+      "message": "Incorrect padding",
+      "cause": "Base64 should end with 0-2 = padding chars",
+      "solutions": [
+        {
+          "approach": "Add missing padding",
+          "code": "# Add padding to make length multiple of 4\npadded=$(printf '%s' \"$input\" | awk '{gsub(/=+$/,\"\");l=length;printf \"%s%s\",$0,substr(\"==\",1,(4-l%4)%4)}')",
+          "when": "Padding stripped"
+        },
+        {
+          "approach": "URL-safe base64",
+          "code": "# URL-safe uses - and _ instead of + and /\ntr '+/' '-_' | base64 -d",
+          "when": "URL encoding"
+        }
+      ]
+    },
+    {
+      "id": "line_wrap",
+      "pattern": "newline|line.*wrap|76.*char",
+      "message": "Output contains line breaks",
+      "cause": "Default wraps at 76 characters",
+      "solutions": [
+        {
+          "approach": "No wrap",
+          "code": "base64 -w 0 file.bin  # GNU: no wrapping\nbase64 file.bin | tr -d '\\n'  # Alternative",
+          "when": "Single line output"
+        },
+        {
+          "approach": "Custom wrap",
+          "code": "base64 -w 64 file.bin  # Wrap at 64 chars",
+          "when": "Different width"
+        },
+        {
+          "approach": "macOS/BSD",
+          "code": "base64 -b 0 file.bin  # BSD uses -b for wrap",
+          "when": "macOS"
+        }
+      ]
+    },
+    {
+      "id": "binary_output",
+      "pattern": "binary|garbage|terminal|display",
+      "message": "Binary output corrupting terminal",
+      "cause": "Decoded binary sent to terminal",
+      "solutions": [
+        {
+          "approach": "Redirect output",
+          "code": "base64 -d encoded.txt > decoded.bin",
+          "when": "Save to file"
+        },
+        {
+          "approach": "Pipe to viewer",
+          "code": "base64 -d encoded.txt | hexdump -C | head",
+          "when": "View binary safely"
+        },
+        {
+          "approach": "Reset terminal",
+          "code": "reset  # If terminal is corrupted",
+          "when": "Fix terminal"
+        }
+      ]
+    },
+    {
+      "id": "encode_decode",
+      "pattern": "wrong direction|encode.*decode|backwards",
+      "message": "Encoded when should decode or vice versa",
+      "cause": "Forgot -d flag for decoding",
+      "solutions": [
+        {
+          "approach": "Encode (default)",
+          "code": "echo 'Hello' | base64      # SGVsbG8K",
+          "when": "Text to base64"
+        },
+        {
+          "approach": "Decode",
+          "code": "echo 'SGVsbG8K' | base64 -d  # Hello",
+          "when": "Base64 to text"
+        },
+        {
+          "approach": "Round-trip",
+          "code": "echo 'test' | base64 | base64 -d  # test",
+          "when": "Verify encoding"
+        }
+      ]
+    },
+    {
+      "id": "file_vs_string",
+      "pattern": "file not found|here-string|pipe",
+      "message": "Input source confusion",
+      "cause": "Treating filename as data or vice versa",
+      "solutions": [
+        {
+          "approach": "Encode file",
+          "code": "base64 myfile.bin > encoded.txt",
+          "when": "File input"
+        },
+        {
+          "approach": "Encode string",
+          "code": "echo -n 'my string' | base64  # -n avoids trailing newline",
+          "when": "String input"
+        },
+        {
+          "approach": "Decode to file",
+          "code": "base64 -d encoded.txt > decoded.bin",
+          "when": "File output"
+        }
+      ]
+    }
+  ]
+}

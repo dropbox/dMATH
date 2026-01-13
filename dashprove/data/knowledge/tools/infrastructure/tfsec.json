@@ -1,0 +1,117 @@
+{
+  "id": "tfsec",
+  "name": "tfsec",
+  "category": "security",
+  "subcategory": "terraform_security",
+
+  "description": "Security scanner for Terraform code",
+  "long_description": "tfsec is a static analysis security scanner for Terraform code. It scans for misconfigurations and security issues in Terraform files before deployment. It has checks for AWS, Azure, GCP, and general security practices. tfsec is now part of Trivy but remains available as a standalone tool.",
+
+  "capabilities": [
+    "terraform_scanning",
+    "module_scanning",
+    "custom_checks",
+    "severity_filtering",
+    "ignoring_findings",
+    "sarif_output",
+    "ci_integration",
+    "ide_integration"
+  ],
+  "property_types": ["security", "configuration"],
+  "input_languages": ["hcl", "terraform"],
+  "output_formats": ["text", "json", "sarif", "junit", "csv", "checkstyle"],
+
+  "installation": {
+    "methods": [
+      {"type": "brew", "command": "brew install tfsec", "platform": "macos"},
+      {"type": "go", "command": "go install github.com/aquasecurity/tfsec/cmd/tfsec@latest"},
+      {"type": "binary", "url": "https://github.com/aquasecurity/tfsec/releases"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://raw.githubusercontent.com/aquasecurity/tfsec/master/docs/index.md",
+    "tutorial": "https://raw.githubusercontent.com/aquasecurity/tfsec/master/docs/guides/quickstart.md",
+    "api_reference": "https://raw.githubusercontent.com/aquasecurity/tfsec/master/docs/guides/usage.md",
+    "examples": "https://raw.githubusercontent.com/aquasecurity/tfsec/master/docs/guides/usage.md"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_scan",
+      "description": "Scan current directory",
+      "syntax": "tfsec .",
+      "when_to_use": "Quick security scan",
+      "examples": ["tfsec . --format json"]
+    },
+    {
+      "name": "minimum_severity",
+      "description": "Filter by severity",
+      "syntax": "tfsec . --minimum-severity HIGH",
+      "when_to_use": "Focus on critical issues",
+      "examples": ["tfsec . --minimum-severity CRITICAL"]
+    },
+    {
+      "name": "exclude_checks",
+      "description": "Exclude specific checks",
+      "syntax": "tfsec . --exclude aws-s3-enable-bucket-encryption",
+      "when_to_use": "Known exceptions",
+      "examples": ["tfsec . --exclude aws-vpc-no-public-egress-sgr"]
+    },
+    {
+      "name": "soft_fail",
+      "description": "Don't fail CI on findings",
+      "syntax": "tfsec . --soft-fail",
+      "when_to_use": "Advisory mode in CI",
+      "examples": ["tfsec . --soft-fail --format sarif"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "\\[CRITICAL\\]",
+      "meaning": "Critical security issue found",
+      "common_causes": ["Public access", "No encryption", "Hardcoded secrets"],
+      "fixes": ["Follow remediation in output"]
+    },
+    {
+      "pattern": "\\[HIGH\\]",
+      "meaning": "High severity security issue",
+      "common_causes": ["Weak configuration", "Missing security controls"],
+      "fixes": ["Apply recommended fix"]
+    },
+    {
+      "pattern": "aws-s3-enable.*encryption",
+      "meaning": "S3 bucket not encrypted",
+      "common_causes": ["Missing encryption configuration"],
+      "fixes": ["Add server_side_encryption_configuration block"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security"],
+    "cli_command": "dashprove verify --backend tfsec"
+  },
+
+  "performance": {
+    "typical_runtime": "Very fast",
+    "scalability": "Excellent",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["checkov", "terrascan", "snyk_iac", "kics"],
+    "advantages": ["Fast", "Focused on Terraform", "Good defaults"],
+    "disadvantages": ["Now part of Trivy", "Terraform only"]
+  },
+
+  "metadata": {
+    "version": "1.28.4",
+    "last_updated": "2025-12-22",
+    "maintainer": "Aqua Security",
+    "license": "MIT"
+  }
+}

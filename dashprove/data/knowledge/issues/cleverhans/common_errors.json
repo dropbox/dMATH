@@ -1,0 +1,115 @@
+{
+  "tool": "cleverhans",
+  "version": "4.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "framework_mismatch",
+      "pattern": "(TensorFlow|PyTorch|JAX).*not available",
+      "message": "Required deep learning framework not installed",
+      "cause": "CleverHans supports multiple frameworks but requires one to be installed",
+      "solutions": [
+        {
+          "approach": "Install framework",
+          "code": "pip install cleverhans[tf2]  # or cleverhans[pytorch] or cleverhans[jax]",
+          "when": "Missing framework dependency"
+        },
+        {
+          "approach": "Use correct import",
+          "code": "from cleverhans.tf2.attacks import fast_gradient_method  # TF2\nfrom cleverhans.torch.attacks import fast_gradient_method  # PyTorch",
+          "when": "Wrong framework import"
+        }
+      ]
+    },
+    {
+      "id": "model_not_callable",
+      "pattern": "(model.*callable|logits.*function)",
+      "message": "Model must be callable returning logits",
+      "cause": "CleverHans expects model to return raw logits, not probabilities",
+      "solutions": [
+        {
+          "approach": "Wrap model for logits",
+          "code": "def model_fn(x):\n    return model(x)  # Ensure this returns logits, not softmax\n\nadv_x = fast_gradient_method(model_fn, x, eps, np.inf)",
+          "when": "Model returns probabilities"
+        },
+        {
+          "approach": "Remove softmax layer",
+          "code": "# In PyTorch\nclass LogitsModel(nn.Module):\n    def forward(self, x):\n        return self.base_model(x)  # No softmax",
+          "when": "Model has softmax output"
+        }
+      ]
+    },
+    {
+      "id": "gradient_computation_failed",
+      "pattern": "(gradient.*None|no gradient|backward.*failed)",
+      "message": "Failed to compute gradients for attack",
+      "cause": "Model or input not set up for gradient computation",
+      "solutions": [
+        {
+          "approach": "Enable gradients (PyTorch)",
+          "code": "model.train()  # or model.eval() with torch.enable_grad()\nx = x.requires_grad_(True)\nadv_x = fast_gradient_method(model, x, eps, np.inf)",
+          "when": "Using PyTorch"
+        },
+        {
+          "approach": "Enable gradients (TF2)",
+          "code": "with tf.GradientTape() as tape:\n    tape.watch(x)\n    adv_x = fast_gradient_method(model, x, eps, np.inf)",
+          "when": "Using TensorFlow 2"
+        }
+      ]
+    },
+    {
+      "id": "epsilon_too_large",
+      "pattern": "(clip|perturbation.*range|epsilon)",
+      "message": "Perturbation exceeds valid data range",
+      "cause": "Epsilon value too large for data normalization",
+      "solutions": [
+        {
+          "approach": "Scale epsilon to data range",
+          "code": "# For data normalized to [0,1]\neps = 8/255  # Common choice for images\nadv_x = fast_gradient_method(model, x, eps, np.inf, clip_min=0, clip_max=1)",
+          "when": "Data is normalized"
+        },
+        {
+          "approach": "Use appropriate norm",
+          "code": "# L2 norm for smoother perturbations\nadv_x = fast_gradient_method(model, x, eps=0.5, norm=2)",
+          "when": "Want L2 perturbation"
+        }
+      ]
+    },
+    {
+      "id": "targeted_attack_error",
+      "pattern": "(target.*label|y_target|targeted)",
+      "message": "Target labels required for targeted attack",
+      "cause": "Targeted attacks need target class specification",
+      "solutions": [
+        {
+          "approach": "Provide target labels",
+          "code": "y_target = tf.one_hot(target_class, num_classes)\nadv_x = projected_gradient_descent(\n    model, x, eps, eps_iter, nb_iter,\n    np.inf, y=y_target, targeted=True\n)",
+          "when": "Running targeted attack"
+        },
+        {
+          "approach": "Use untargeted",
+          "code": "adv_x = projected_gradient_descent(\n    model, x, eps, eps_iter, nb_iter, np.inf\n)  # No y or targeted parameter",
+          "when": "Don't need targeted attack"
+        }
+      ]
+    },
+    {
+      "id": "pgd_not_converging",
+      "pattern": "(iterations|convergence|PGD.*failed)",
+      "message": "PGD attack not converging",
+      "cause": "Step size or iteration count may be inappropriate",
+      "solutions": [
+        {
+          "approach": "Adjust parameters",
+          "code": "adv_x = projected_gradient_descent(\n    model, x, eps=0.3,\n    eps_iter=0.01,  # Smaller steps\n    nb_iter=100,    # More iterations\n    norm=np.inf\n)",
+          "when": "Attack not effective"
+        },
+        {
+          "approach": "Use random start",
+          "code": "adv_x = projected_gradient_descent(\n    model, x, eps, eps_iter, nb_iter, np.inf,\n    rand_init=True  # Random initialization\n)",
+          "when": "Want stronger attack"
+        }
+      ]
+    }
+  ]
+}

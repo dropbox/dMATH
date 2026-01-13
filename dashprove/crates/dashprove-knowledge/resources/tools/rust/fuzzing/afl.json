@@ -1,0 +1,132 @@
+{
+  "id": "afl",
+  "name": "American Fuzzy Lop (AFL.rs)",
+  "category": "rust_fuzzing",
+  "subcategory": "coverage_guided",
+
+  "description": "Coverage-guided fuzzer using AFL's genetic algorithm",
+  "long_description": "American Fuzzy Lop (AFL) is a coverage-guided fuzzer that uses a genetic algorithm to evolve inputs. AFL.rs is the Rust integration. AFL is known for its efficiency and has discovered thousands of vulnerabilities in real-world software. It supports persistent mode for high-throughput fuzzing.",
+
+  "capabilities": [
+    "coverage_guided_fuzzing",
+    "genetic_mutation",
+    "crash_detection",
+    "hang_detection",
+    "persistent_mode",
+    "parallel_fuzzing",
+    "dictionary_support",
+    "deterministic_mutations"
+  ],
+  "property_types": ["fuzz_target", "property_based"],
+  "input_languages": ["rust"],
+  "output_formats": ["crash_artifact", "corpus", "stats"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install afl"},
+      {"type": "source", "url": "https://github.com/rust-fuzz/afl.rs"}
+    ],
+    "dependencies": ["rust-nightly", "llvm", "afl-fuzz"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://rust-fuzz.github.io/book/afl.html",
+    "tutorial": "https://rust-fuzz.github.io/book/afl/tutorial.html",
+    "api_reference": "https://docs.rs/afl/latest/afl/",
+    "examples": "https://github.com/rust-fuzz/afl.rs/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "build",
+      "description": "Build instrumented binary",
+      "syntax": "cargo afl build",
+      "when_to_use": "Compiling target with AFL instrumentation",
+      "examples": ["cargo afl build", "cargo afl build --release"]
+    },
+    {
+      "name": "fuzz",
+      "description": "Run fuzzer",
+      "syntax": "cargo afl fuzz -i in -o out target/debug/fuzz_target",
+      "when_to_use": "Active fuzzing with corpus",
+      "examples": ["cargo afl fuzz -i seeds -o out target/debug/fuzz_target"]
+    },
+    {
+      "name": "parallel",
+      "description": "Parallel fuzzing",
+      "syntax": "cargo afl fuzz -M main ... && cargo afl fuzz -S secondary ...",
+      "when_to_use": "Multi-core fuzzing",
+      "examples": ["cargo afl fuzz -M main -i in -o out ./target", "cargo afl fuzz -S sec1 -i in -o out ./target"]
+    },
+    {
+      "name": "tmin",
+      "description": "Minimize test case",
+      "syntax": "cargo afl tmin -i crash -o min ./target",
+      "when_to_use": "Reducing crash to minimal reproducer",
+      "examples": ["cargo afl tmin -i crashes/id:000000 -o min ./target/debug/fuzz"]
+    },
+    {
+      "name": "persistent",
+      "description": "Enable persistent mode",
+      "syntax": "afl::fuzz!(|data: &[u8]| { ... });",
+      "when_to_use": "High-performance fuzzing without fork overhead",
+      "examples": ["afl::fuzz!(|data: &[u8]| { parse(data); });"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "crashes/id:",
+      "meaning": "Input causing program crash",
+      "common_causes": ["Memory corruption", "Assertion failure", "Panic"],
+      "fixes": ["Analyze crash input", "Add handling for edge case"]
+    },
+    {
+      "pattern": "hangs/id:",
+      "meaning": "Input causing infinite loop or timeout",
+      "common_causes": ["Algorithmic complexity", "Infinite loop"],
+      "fixes": ["Add timeout handling", "Fix loop termination"]
+    },
+    {
+      "pattern": "PROGRAM ABORT",
+      "meaning": "Target aborted execution",
+      "common_causes": ["Explicit abort()", "Fatal assertion"],
+      "fixes": ["Handle error gracefully", "Fix underlying bug"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["fuzz_target", "property_based"],
+    "cli_command": "dashprove verify --backend afl"
+  },
+
+  "performance": {
+    "typical_runtime": "Continuous (hours to days)",
+    "scalability": "Thousands of executions per second",
+    "memory_usage": "Low baseline, grows with corpus"
+  },
+
+  "comparisons": {
+    "similar_tools": ["libfuzzer", "honggfuzz", "bolero"],
+    "advantages": [
+      "Battle-tested genetic algorithm",
+      "Excellent parallel fuzzing support",
+      "Low memory overhead",
+      "Good deterministic mutation strategies"
+    ],
+    "disadvantages": [
+      "Fork-based (slower than in-process)",
+      "Requires separate instrumented build",
+      "More complex setup than cargo-fuzz"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.15.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Rust Fuzz Project",
+    "license": "Apache-2.0"
+  }
+}

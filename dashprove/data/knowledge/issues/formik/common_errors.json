@@ -1,0 +1,90 @@
+{
+  "tool": "formik",
+  "category": "form_validation",
+  "common_errors": [
+    {
+      "pattern": "useFormikContext.*must be used within a Formik component|Formik context is undefined",
+      "meaning": "Formik hooks used outside provider",
+      "causes": [
+        "Component not wrapped in <Formik>",
+        "Nested tree not under <Formik> due to conditional rendering",
+        "Multiple React roots losing context"
+      ],
+      "solutions": [
+        "Wrap form in <Formik initialValues={} onSubmit={}>",
+        "Move hook usage inside child of <Formik>",
+        "Ensure no React portal breaks context unintentionally"
+      ]
+    },
+    {
+      "pattern": "Field.*cannot read properties of undefined|value is undefined",
+      "meaning": "Field name not found in initialValues",
+      "causes": [
+        "initialValues missing nested path",
+        "Name typo or mismatch with validation schema",
+        "Dynamic fields not initialized"
+      ],
+      "solutions": [
+        "Seed initialValues with matching shape",
+        "Use lodash-style paths for nested fields: user.email",
+        "Provide default values when adding fields dynamically"
+      ]
+    },
+    {
+      "pattern": "ValidationSchema error|validation not running|schema not applied",
+      "meaning": "Yup/Zod schema not executed",
+      "causes": [
+        "validationSchema prop missing or not exported",
+        "Schema keys don't match form field names",
+        "Schema throws sync error not captured"
+      ],
+      "solutions": [
+        "Pass validationSchema or validate function to <Formik>",
+        "Align schema shape with initialValues keys",
+        "Wrap custom schema in try/catch and return errors object"
+      ]
+    },
+    {
+      "pattern": "setFieldValue is not a function|cannot destructure property 'setFieldValue'",
+      "meaning": "Formik helpers not available in component",
+      "causes": [
+        "Component not receiving Formik bag props",
+        "Using hooks inside non-React function",
+        "Mismatched Formik version between deps"
+      ],
+      "solutions": [
+        "Use hooks: const { setFieldValue } = useFormikContext()",
+        "Ensure component rendered under <Formik>",
+        "Check npm ls formik to deduplicate versions"
+      ]
+    },
+    {
+      "pattern": "onSubmit.*not firing|handleSubmit.*not called",
+      "meaning": "Submit handler blocked",
+      "causes": [
+        "Validation errors prevent submit",
+        "button type not submit",
+        "PreventDefault called before Formik handler"
+      ],
+      "solutions": [
+        "Use <Form> from formik or call handleSubmit manually",
+        "Ensure <button type=\"submit\"> exists",
+        "Inspect errors via formik.errors and fix failing fields"
+      ]
+    },
+    {
+      "pattern": "touched.*not updating|fields stay pristine",
+      "meaning": "Formik state not updated on blur/change",
+      "causes": [
+        "Custom inputs not calling onChange/onBlur from field props",
+        "Event handler swallowed before reaching Formik",
+        "Using value prop without field helpers"
+      ],
+      "solutions": [
+        "Spread field props: <input {...field} />",
+        "Forward onChange/onBlur to Formik handlers",
+        "For custom components, call formik.setFieldTouched/value manually"
+      ]
+    }
+  ]
+}

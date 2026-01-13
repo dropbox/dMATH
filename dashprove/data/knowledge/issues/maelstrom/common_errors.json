@@ -1,0 +1,227 @@
+{
+  "tool": "maelstrom",
+  "version": "0.2.3",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "linearizability_failure",
+      "pattern": "linearizability.*failed|history.*not.*linearizable",
+      "message": "Linearizability check failed",
+      "cause": "Operations cannot be ordered into a valid linearizable history",
+      "solutions": [
+        {
+          "approach": "Add synchronization",
+          "code": "// Ensure reads see latest writes\n// Use compare-and-swap for updates",
+          "when": "Missing synchronization"
+        },
+        {
+          "approach": "Check replication",
+          "code": "// Ensure all replicas see updates before acknowledging",
+          "when": "Replication lag"
+        },
+        {
+          "approach": "Use stronger consistency",
+          "code": "// Implement consensus protocol (Raft, Paxos)",
+          "when": "Need linearizable KV store"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timed.*out|no.*response|deadline.*exceeded",
+      "message": "Node response timed out",
+      "cause": "Node didn't respond within expected time",
+      "solutions": [
+        {
+          "approach": "Check message handling",
+          "code": "// Ensure node responds to all message types",
+          "when": "Missing message handler"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "maelstrom test --time-limit 60",
+          "when": "Operations legitimately slow"
+        },
+        {
+          "approach": "Check for deadlock",
+          "code": "// Ensure no circular waiting in message handlers",
+          "when": "Node is stuck"
+        }
+      ]
+    },
+    {
+      "id": "message_format_error",
+      "pattern": "invalid.*message|malformed.*json|parse.*error",
+      "message": "Message format error",
+      "cause": "Node sent or received malformed Maelstrom message",
+      "solutions": [
+        {
+          "approach": "Use correct message format",
+          "code": "{\n  \"src\": \"n1\",\n  \"dest\": \"n2\",\n  \"body\": {\n    \"type\": \"echo\",\n    \"msg_id\": 1,\n    \"echo\": \"hello\"\n  }\n}",
+          "when": "Message structure wrong"
+        },
+        {
+          "approach": "Include required fields",
+          "code": "// Always include: type, msg_id in requests\n// Include: in_reply_to in responses",
+          "when": "Missing required fields"
+        },
+        {
+          "approach": "Handle all message types",
+          "code": "// Implement handlers for: init, echo, read, write, cas, etc.",
+          "when": "Unknown message type"
+        }
+      ]
+    },
+    {
+      "id": "init_error",
+      "pattern": "init.*failed|initialization.*error|node.*not.*initialized",
+      "message": "Node initialization failed",
+      "cause": "Node didn't properly handle init message",
+      "solutions": [
+        {
+          "approach": "Handle init message",
+          "code": "// On receiving init:\n// 1. Store node_id\n// 2. Store node_ids (cluster members)\n// 3. Reply with init_ok",
+          "when": "Init handler missing"
+        },
+        {
+          "approach": "Reply correctly",
+          "code": "{\n  \"type\": \"init_ok\",\n  \"in_reply_to\": msg_id\n}",
+          "when": "Init response wrong"
+        }
+      ]
+    },
+    {
+      "id": "topology_error",
+      "pattern": "topology.*error|neighbor.*not.*found|routing.*failed",
+      "message": "Topology configuration error",
+      "cause": "Node couldn't determine or use network topology",
+      "solutions": [
+        {
+          "approach": "Handle topology message",
+          "code": "// Store topology from init or topology message\nthis.neighbors = msg.body.topology[this.node_id]",
+          "when": "Topology not stored"
+        },
+        {
+          "approach": "Use broadcast correctly",
+          "code": "// Send to all neighbors\nfor neighbor in self.neighbors:\n    send(neighbor, msg)",
+          "when": "Not using topology"
+        }
+      ]
+    },
+    {
+      "id": "broadcast_not_converged",
+      "pattern": "broadcast.*incomplete|not.*all.*nodes|missing.*messages",
+      "message": "Broadcast didn't reach all nodes",
+      "cause": "Some nodes didn't receive broadcast messages",
+      "solutions": [
+        {
+          "approach": "Use reliable broadcast",
+          "code": "// Implement epidemic/gossip protocol\n// Retry until acknowledged",
+          "when": "Messages getting lost"
+        },
+        {
+          "approach": "Track received messages",
+          "code": "// Store seen message IDs to avoid duplicates\n// Forward new messages to neighbors",
+          "when": "Deduplication needed"
+        },
+        {
+          "approach": "Handle network partitions",
+          "code": "// Retry failed sends\n// Queue messages during partition",
+          "when": "Network unreliable"
+        }
+      ]
+    },
+    {
+      "id": "counter_error",
+      "pattern": "counter.*error|increment.*lost|wrong.*value",
+      "message": "Counter operation error",
+      "cause": "Distributed counter has incorrect value",
+      "solutions": [
+        {
+          "approach": "Use CRDT counter",
+          "code": "// G-Counter: per-node counters, sum to read\n// PN-Counter: separate increment/decrement counters",
+          "when": "Need concurrent increments"
+        },
+        {
+          "approach": "Implement merge correctly",
+          "code": "// Merge: take max of each node's counter",
+          "when": "Counters diverging"
+        },
+        {
+          "approach": "Propagate updates",
+          "code": "// Gossip counter state to neighbors periodically",
+          "when": "Counters not converging"
+        }
+      ]
+    },
+    {
+      "id": "kv_store_error",
+      "pattern": "kv.*error|key.*not.*found|compare.*swap.*failed",
+      "message": "Key-value store operation error",
+      "cause": "Error in distributed key-value operations",
+      "solutions": [
+        {
+          "approach": "Handle key not found",
+          "code": "// Return error code 20 for missing key",
+          "when": "Reading non-existent key"
+        },
+        {
+          "approach": "Implement CAS correctly",
+          "code": "// Compare current value, update if match\n// Return error 22 if precondition failed",
+          "when": "CAS semantics wrong"
+        },
+        {
+          "approach": "Use seq-kv for coordination",
+          "code": "// seq-kv service provides linearizable KV\n// Send messages to 'seq-kv' node",
+          "when": "Need linearizable storage"
+        }
+      ]
+    },
+    {
+      "id": "unique_id_collision",
+      "pattern": "duplicate.*id|id.*collision|unique.*failed",
+      "message": "Generated ID not unique",
+      "cause": "Unique ID generation produced duplicates",
+      "solutions": [
+        {
+          "approach": "Include node ID",
+          "code": "// Format: {node_id}-{sequence_number}\nid = f\"{self.node_id}-{self.seq++}\"",
+          "when": "Need unique across nodes"
+        },
+        {
+          "approach": "Use UUID",
+          "code": "import uuid\nid = str(uuid.uuid4())",
+          "when": "Need globally unique"
+        },
+        {
+          "approach": "Use timestamp + node + seq",
+          "code": "// Combine: timestamp, node_id, sequence\nid = f\"{time()}-{node}-{seq++}\"",
+          "when": "Need sortable unique IDs"
+        }
+      ]
+    },
+    {
+      "id": "raft_error",
+      "pattern": "raft.*error|leader.*election|log.*replication",
+      "message": "Raft consensus error",
+      "cause": "Error in Raft protocol implementation",
+      "solutions": [
+        {
+          "approach": "Check term handling",
+          "code": "// Step down if see higher term\nif msg.term > self.term:\n    self.become_follower(msg.term)",
+          "when": "Term comparison wrong"
+        },
+        {
+          "approach": "Verify log matching",
+          "code": "// Check prevLogIndex and prevLogTerm before append",
+          "when": "Log consistency issue"
+        },
+        {
+          "approach": "Handle split votes",
+          "code": "// Use randomized election timeout\ntimeout = random.uniform(150, 300)",
+          "when": "Elections not completing"
+        }
+      ]
+    }
+  ]
+}

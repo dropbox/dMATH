@@ -1,0 +1,132 @@
+{
+  "tool": "wireshark",
+  "version": "4.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "capture_permission",
+      "pattern": "permission denied|couldn'?t run .*dumpcap|are you root",
+      "message": "Cannot start packet capture",
+      "cause": "User lacks CAP_NET_ADMIN or dumpcap privileges",
+      "solutions": [
+        {
+          "approach": "Run with elevated privileges",
+          "code": "sudo wireshark # or sudo tshark -i eth0",
+          "when": "Quick one-off capture"
+        },
+        {
+          "approach": "Grant dumpcap capabilities",
+          "code": "sudo setcap 'CAP_NET_RAW+eip CAP_NET_ADMIN+eip' $(command -v dumpcap)\\nsudo usermod -a -G wireshark $USER  # relogin required",
+          "when": "Permanent non-root captures"
+        },
+        {
+          "approach": "Install capture driver",
+          "code": "# Windows\\nInstall Npcap in WinPcap compatibility mode",
+          "when": "Npcap/WinPcap missing"
+        }
+      ]
+    },
+    {
+      "id": "no_interfaces",
+      "pattern": "no interfaces.*capture|There are no interfaces on which a capture can be done",
+      "message": "No capture interfaces available",
+      "cause": "Network interfaces are down or capture driver not installed",
+      "solutions": [
+        {
+          "approach": "List available interfaces",
+          "code": "tshark -D",
+          "when": "Verify interface visibility"
+        },
+        {
+          "approach": "Enable interface",
+          "code": "sudo ip link set eth0 up",
+          "when": "Interface administratively down"
+        },
+        {
+          "approach": "Reinstall capture driver",
+          "code": "# macOS\\nbrew install --cask wireshark --install-option=with-chmodbpf\\n# Windows\\nReinstall Npcap",
+          "when": "Driver missing or corrupted"
+        }
+      ]
+    },
+    {
+      "id": "dropped_packets",
+      "pattern": "packets dropped|dropped during capture",
+      "message": "Packets dropped during capture",
+      "cause": "Capture buffer too small or disk I/O bottleneck",
+      "solutions": [
+        {
+          "approach": "Increase capture buffer",
+          "code": "dumpcap -B 64 -i eth0 -w out.pcap",
+          "when": "High-throughput capture"
+        },
+        {
+          "approach": "Use ring buffer",
+          "code": "dumpcap -b filesize:100000 -b files:10 -i eth0 -w trace.pcap",
+          "when": "Long-running capture without filling disk"
+        },
+        {
+          "approach": "Capture without GUI",
+          "code": "tshark -i eth0 -f 'tcp port 443' -w headless.pcap",
+          "when": "Reduce GUI overhead"
+        }
+      ]
+    },
+    {
+      "id": "tls_decryption_failed",
+      "pattern": "decrypt.*TLS|Failed to parse.*secrets|Missing (SSL|TLS) keys",
+      "message": "TLS traffic not decrypted",
+      "cause": "Key log file or private key not provided or mismatched",
+      "solutions": [
+        {
+          "approach": "Use key log file",
+          "code": "export SSLKEYLOGFILE=$HOME/sslkeys.log\\nfirefox --profile default  # restart browser\\nwireshark -o tls.keylog_file:$SSLKEYLOGFILE",
+          "when": "Decrypting browser TLS"
+        },
+        {
+          "approach": "Load server private key",
+          "code": "Edit > Preferences > Protocols > TLS > (Pre)-Master-Secret log filename",
+          "when": "Server has RSA key without forward secrecy"
+        },
+        {
+          "approach": "Verify cipher support",
+          "code": "# Forward secrecy (ECDHE) requires key log file, not just private key",
+          "when": "ECDHE sessions not decrypting"
+        }
+      ]
+    },
+    {
+      "id": "bad_linktype",
+      "pattern": "malformed radiotap|unknown encapsulation|can't parse frame",
+      "message": "Frames decoded with wrong link-layer type",
+      "cause": "Interface not in monitor mode or wrong DLT set",
+      "solutions": [
+        {
+          "approach": "Enable monitor mode",
+          "code": "sudo iwconfig wlan0 mode monitor",
+          "when": "Capturing 802.11 frames"
+        },
+        {
+          "approach": "Force data link type",
+          "code": "tshark -i wlan0 -y IEEE802_11_RADIO",
+          "when": "Auto-detection picks wrong encapsulation"
+        },
+        {
+          "approach": "Capture from wired tap",
+          "code": "dumpcap -i eth0 -p -w wired.pcap",
+          "when": "Only need Ethernet frames"
+        }
+      ]
+    }
+  ],
+  "debugging_commands": [
+    "tshark -D",
+    "tshark -i <iface> -c 5",
+    "dumpcap -L",
+    "dumpcap -i <iface> -B 64 -w /tmp/test.pcapng"
+  ],
+  "documentation_urls": [
+    "https://www.wireshark.org/docs/",
+    "https://gitlab.com/wireshark/wireshark/-/wikis/CaptureSetup"
+  ]
+}

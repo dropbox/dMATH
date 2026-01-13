@@ -1,0 +1,140 @@
+{
+  "tool": "pest",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "grammar_error",
+      "pattern": "grammar error|expected.*found|rule.*not defined",
+      "message": "Grammar file has syntax error",
+      "cause": "Invalid PEG syntax in .pest file",
+      "solutions": [
+        {
+          "approach": "Check rule syntax",
+          "code": "// Rules: name = { pattern }\nident = { ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | \"_\")* }",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Use correct operators",
+          "code": "// ~ : sequence\n// | : ordered choice\n// * : zero or more\n// + : one or more\n// ? : optional\n// ! : negative lookahead\n// & : positive lookahead",
+          "when": "Wrong operator"
+        },
+        {
+          "approach": "Define all rules",
+          "code": "// Every referenced rule must be defined\nexpr = { term ~ ((\"+\" | \"-\") ~ term)* }\nterm = { factor ~ ((\"*\" | \"/\") ~ factor)* }\nfactor = { number | \"(\" ~ expr ~ \")\" }",
+          "when": "Undefined rule"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "expected.*at line|unexpected.*parsing|positives:.*negatives:",
+      "message": "Input doesn't match grammar",
+      "cause": "Input text violates grammar rules",
+      "solutions": [
+        {
+          "approach": "Check error location",
+          "code": "match MyParser::parse(Rule::main, input) {\n    Ok(pairs) => { ... }\n    Err(e) => {\n        println!(\"Error at: {:?}\", e.line_col());\n        println!(\"Expected: {:?}\", e.variant);\n    }\n}",
+          "when": "Debug parse error"
+        },
+        {
+          "approach": "Handle whitespace",
+          "code": "WHITESPACE = _{ \" \" | \"\\t\" | \"\\n\" | \"\\r\" }\n// Silent rule (_) auto-skips whitespace",
+          "when": "Whitespace issues"
+        },
+        {
+          "approach": "Add fallback rules",
+          "code": "// Add catch-all for better errors\nANY_CHAR = { ANY }",
+          "when": "Better error messages"
+        }
+      ]
+    },
+    {
+      "id": "left_recursion",
+      "pattern": "left recursion|rule.*is left-recursive|infinite loop",
+      "message": "Grammar has left recursion",
+      "cause": "PEG doesn't support left recursion",
+      "solutions": [
+        {
+          "approach": "Convert to iteration",
+          "code": "// BAD: expr = { expr ~ \"+\" ~ term | term }\n// GOOD: expr = { term ~ (\"+\" ~ term)* }",
+          "when": "Direct left recursion"
+        },
+        {
+          "approach": "Use precedence climbing",
+          "code": "expr = { prefix* ~ primary ~ postfix* ~ (infix ~ prefix* ~ primary ~ postfix*)* }\nprefix = { \"-\" | \"!\" }\npostfix = { \"++\" | \"--\" }\ninfix = { \"+\" | \"-\" | \"*\" | \"/\" }",
+          "when": "Expression grammar"
+        }
+      ]
+    },
+    {
+      "id": "derive_error",
+      "pattern": "derive.*Parser|pest_derive|grammar file not found",
+      "message": "Parser derivation failed",
+      "cause": "Grammar file path wrong or invalid",
+      "solutions": [
+        {
+          "approach": "Check file path",
+          "code": "#[derive(Parser)]\n#[grammar = \"src/grammar.pest\"]  // relative to Cargo.toml\nstruct MyParser;",
+          "when": "File not found"
+        },
+        {
+          "approach": "Use grammar_inline",
+          "code": "#[derive(Parser)]\n#[grammar_inline = r#\"\nmain = { \"hello\" }\n\"#]\nstruct MyParser;",
+          "when": "Inline grammar"
+        },
+        {
+          "approach": "Check Cargo.toml",
+          "code": "[dependencies]\npest = \"2\"\npest_derive = \"2\"",
+          "when": "Missing dependency"
+        }
+      ]
+    },
+    {
+      "id": "rule_not_generated",
+      "pattern": "Rule::.*not found|no variant.*in enum|cannot find.*Rule",
+      "message": "Rule enum variant missing",
+      "cause": "Rule name in code doesn't match grammar",
+      "solutions": [
+        {
+          "approach": "Match rule names",
+          "code": "// Grammar: my_rule = { ... }\n// Code: Rule::my_rule (snake_case)",
+          "when": "Name mismatch"
+        },
+        {
+          "approach": "Rebuild after grammar change",
+          "code": "cargo clean && cargo build",
+          "when": "Stale generated code"
+        },
+        {
+          "approach": "Check silent rules",
+          "code": "// Silent rules (_) don't generate Rule variants\nWHITESPACE = _{ \" \" }  // no Rule::WHITESPACE",
+          "when": "Silent rule"
+        }
+      ]
+    },
+    {
+      "id": "pair_traversal",
+      "pattern": "unwrap.*None|no inner pairs|pair.*empty",
+      "message": "Unexpected pair structure",
+      "cause": "Accessing pairs that don't exist",
+      "solutions": [
+        {
+          "approach": "Use into_inner safely",
+          "code": "for pair in pairs.into_inner() {\n    match pair.as_rule() {\n        Rule::ident => { ... }\n        Rule::number => { ... }\n        _ => {}\n    }\n}",
+          "when": "Iterating pairs"
+        },
+        {
+          "approach": "Debug pair structure",
+          "code": "fn print_pairs(pairs: Pairs<Rule>, indent: usize) {\n    for pair in pairs {\n        println!(\"{:indent$}{:?}: {}\", \"\", pair.as_rule(), pair.as_str());\n        print_pairs(pair.into_inner(), indent + 2);\n    }\n}",
+          "when": "Understand structure"
+        },
+        {
+          "approach": "Handle atomic rules",
+          "code": "// Atomic rules (@) don't create inner pairs\nident = @{ ASCII_ALPHA+ }  // pair.into_inner() is empty",
+          "when": "Atomic rule"
+        }
+      ]
+    }
+  ]
+}

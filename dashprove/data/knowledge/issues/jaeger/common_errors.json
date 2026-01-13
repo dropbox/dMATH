@@ -1,0 +1,158 @@
+{
+  "tool": "jaeger",
+  "version": "1.54.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "spans_not_showing",
+      "pattern": "no traces|spans.*not.*found|empty result",
+      "message": "Traces/spans not appearing in Jaeger",
+      "cause": "Spans not being sent, sampled out, or not reaching collector",
+      "solutions": [
+        {
+          "approach": "Check sampling",
+          "code": "# Client-side sampling may drop spans\n# Use sampler type: const with param: 1 for testing\nexport JAEGER_SAMPLER_TYPE=const\nexport JAEGER_SAMPLER_PARAM=1",
+          "when": "Sampling may be dropping traces"
+        },
+        {
+          "approach": "Verify collector reachable",
+          "code": "curl http://jaeger-collector:14268/api/traces",
+          "when": "Spans may not reach collector"
+        },
+        {
+          "approach": "Check agent",
+          "code": "# If using agent, verify it's running\ncurl http://jaeger-agent:5778/sampling?service=myservice",
+          "when": "Agent may be down"
+        }
+      ]
+    },
+    {
+      "id": "storage_error",
+      "pattern": "storage|elasticsearch|cassandra|badger|failed to write",
+      "message": "Storage backend error",
+      "cause": "Storage backend unreachable or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check Elasticsearch",
+          "code": "curl http://elasticsearch:9200/_cluster/health\n# Jaeger env:\nexport SPAN_STORAGE_TYPE=elasticsearch\nexport ES_SERVER_URLS=http://elasticsearch:9200",
+          "when": "Using Elasticsearch storage"
+        },
+        {
+          "approach": "Check Cassandra",
+          "code": "cqlsh -e 'describe keyspace jaeger_v1_dc1'\n# Jaeger env:\nexport SPAN_STORAGE_TYPE=cassandra\nexport CASSANDRA_SERVERS=cassandra:9042",
+          "when": "Using Cassandra storage"
+        },
+        {
+          "approach": "Use memory storage (dev)",
+          "code": "export SPAN_STORAGE_TYPE=memory",
+          "when": "Testing without persistent storage"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "connection refused|ECONNREFUSED|failed to connect",
+      "message": "Cannot connect to Jaeger component",
+      "cause": "Jaeger service not running or wrong address",
+      "solutions": [
+        {
+          "approach": "Check all-in-one ports",
+          "code": "# Jaeger all-in-one ports:\n# 5775/udp - agent zipkin thrift\n# 6831/udp - agent jaeger thrift\n# 6832/udp - agent jaeger binary thrift\n# 14268 - collector http\n# 16686 - query UI\ncurl http://localhost:16686",
+          "when": "Using all-in-one deployment"
+        },
+        {
+          "approach": "Verify component running",
+          "code": "docker ps | grep jaeger\nkubectl get pods -l app=jaeger",
+          "when": "Jaeger may not be running"
+        }
+      ]
+    },
+    {
+      "id": "high_latency",
+      "pattern": "slow|timeout|latency|performance",
+      "message": "Jaeger queries slow or timing out",
+      "cause": "Large dataset, missing indices, or storage performance",
+      "solutions": [
+        {
+          "approach": "Add time filter",
+          "code": "# Always specify time range in queries\n# Avoid 'Last 7 days' for large datasets",
+          "when": "Query scanning too much data"
+        },
+        {
+          "approach": "Check ES indices",
+          "code": "curl http://elasticsearch:9200/_cat/indices/jaeger-*?v",
+          "when": "Elasticsearch indices may be large"
+        },
+        {
+          "approach": "Configure rollover",
+          "code": "export ES_USE_ILM=true\nexport ES_ILM_POLICY_NAME=jaeger-ilm-policy",
+          "when": "Need index lifecycle management"
+        }
+      ]
+    },
+    {
+      "id": "orphaned_spans",
+      "pattern": "orphan|missing parent|broken trace",
+      "message": "Spans missing parent or incomplete trace",
+      "cause": "Parent span not propagated, dropped, or arrived late",
+      "solutions": [
+        {
+          "approach": "Check context propagation",
+          "code": "# Ensure trace context headers propagated:\n# traceparent (W3C), uber-trace-id (Jaeger)\n# x-b3-* (Zipkin)",
+          "when": "Context may not be propagated"
+        },
+        {
+          "approach": "Increase ingestion delay",
+          "code": "# Allow more time for spans to arrive\nexport QUERY_MAX_CLOCK_SKEW_ADJUSTMENT=30s",
+          "when": "Spans arriving out of order"
+        },
+        {
+          "approach": "Check sampling consistency",
+          "code": "# All services should use same sampling decision\n# Use header-based sampling propagation",
+          "when": "Inconsistent sampling"
+        }
+      ]
+    },
+    {
+      "id": "otel_compatibility",
+      "pattern": "OTLP|opentelemetry|format|protocol",
+      "message": "OpenTelemetry compatibility issue",
+      "cause": "Protocol mismatch or OTLP not enabled",
+      "solutions": [
+        {
+          "approach": "Enable OTLP receiver",
+          "code": "# Jaeger 1.35+ supports OTLP natively\n# Port 4317 (gRPC), 4318 (HTTP)\nexport COLLECTOR_OTLP_ENABLED=true",
+          "when": "Using OTLP protocol"
+        },
+        {
+          "approach": "Use OTel Collector",
+          "code": "# Deploy OpenTelemetry Collector\n# Configure jaeger exporter in collector",
+          "when": "Need protocol translation"
+        }
+      ]
+    },
+    {
+      "id": "service_not_appearing",
+      "pattern": "service.*not.*found|no services|service list empty",
+      "message": "Service not appearing in dropdown",
+      "cause": "Service name not set or no traces yet",
+      "solutions": [
+        {
+          "approach": "Set service name",
+          "code": "# Client must set service.name\nexport OTEL_SERVICE_NAME=my-service\n# Or in code:\ntracer_provider = TracerProvider(resource=Resource.create({\"service.name\": \"my-service\"}))",
+          "when": "Service name not configured"
+        },
+        {
+          "approach": "Generate test trace",
+          "code": "# Send test span to verify pipeline works",
+          "when": "No traces sent yet"
+        },
+        {
+          "approach": "Check storage TTL",
+          "code": "# Services only appear if traces exist\n# Check retention/TTL settings",
+          "when": "Old traces may have expired"
+        }
+      ]
+    }
+  ]
+}

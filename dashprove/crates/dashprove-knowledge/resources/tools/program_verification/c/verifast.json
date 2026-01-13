@@ -1,0 +1,106 @@
+{
+  "id": "verifast",
+  "name": "VeriFast",
+  "category": "program_verifier",
+  "subcategory": "c",
+
+  "description": "Separation logic verifier for C and Java",
+  "long_description": "VeriFast is a program verifier for C and Java based on separation logic. It uses symbolic execution guided by programmer-provided annotations. VeriFast excels at verifying pointer-manipulating programs and has been used to verify substantial real-world code including the Linux USB subsystem.",
+
+  "capabilities": [
+    "separation_logic",
+    "symbolic_execution",
+    "fractional_permissions",
+    "ghost_commands",
+    "lemma_functions"
+  ],
+  "property_types": ["contract", "predicate", "lemma"],
+  "input_languages": ["c", "java"],
+  "output_formats": ["verified/error", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "download", "command": "Download from https://github.com/verifast/verifast/releases"},
+      {"type": "source", "command": "git clone https://github.com/verifast/verifast && cd verifast && make"}
+    ],
+    "dependencies": ["ocaml", "z3"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/verifast/verifast",
+    "tutorial": "https://github.com/verifast/verifast/tree/master/tutorial",
+    "examples": "https://github.com/verifast/verifast/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "requires",
+      "description": "Precondition (separation logic)",
+      "syntax": "//@ requires predicate;",
+      "when_to_use": "To specify what heap the function expects",
+      "examples": ["//@ requires list(l, vs);"]
+    },
+    {
+      "name": "ensures",
+      "description": "Postcondition (separation logic)",
+      "syntax": "//@ ensures predicate;",
+      "when_to_use": "To specify what heap the function produces",
+      "examples": ["//@ ensures list(l, append(vs, {v}));"]
+    },
+    {
+      "name": "predicate",
+      "description": "Define heap predicate",
+      "syntax": "predicate name(args) = body;",
+      "when_to_use": "To abstract heap structures",
+      "examples": ["predicate list(node *p, list<int> vs);"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "No matching heap chunks",
+      "meaning": "Required heap permission missing",
+      "common_causes": ["Missing predicate", "Wrong fraction"],
+      "fixes": ["Open predicate", "Adjust fractions"]
+    },
+    {
+      "pattern": "Leak",
+      "meaning": "Heap resources not consumed",
+      "common_causes": ["Missing close", "Resource leak"],
+      "fixes": ["Close predicate", "Consume resources"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["contract", "separation_logic"],
+    "cli_command": "dashprove verify --backend verifast"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Good for pointer-heavy code",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["framac", "vcc", "viper"],
+    "advantages": [
+      "Separation logic",
+      "IDE with visualization",
+      "Fast verification"
+    ],
+    "disadvantages": [
+      "Annotation burden",
+      "Learning curve for separation logic"
+    ]
+  },
+
+  "metadata": {
+    "version": "21.04",
+    "last_updated": "2025-12-21",
+    "maintainer": "KU Leuven",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "tool": "xctest",
+  "version": "Swift 5.9+",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assertion_failure",
+      "pattern": "XCTAssert.*failed|assertion.*failed",
+      "message": "Test assertion failed",
+      "cause": "Expected value didn't match actual value",
+      "solutions": [
+        {
+          "approach": "Check assertion message",
+          "code": "XCTAssertEqual(actual, expected, \"Expected \\(expected), got \\(actual)\")",
+          "when": "Need better error messages"
+        },
+        {
+          "approach": "Use appropriate assertion",
+          "code": "XCTAssertEqual(a, b)  // not XCTAssertTrue(a == b)",
+          "when": "Wrong assertion type used"
+        },
+        {
+          "approach": "Check floating point comparison",
+          "code": "XCTAssertEqual(a, b, accuracy: 0.001)",
+          "when": "Comparing floating point numbers"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timed.*out|timeout|exceeded.*time",
+      "message": "Test timed out",
+      "cause": "Async operation didn't complete within allowed time",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "let expectation = expectation(description: \"async\")\nwait(for: [expectation], timeout: 30.0)",
+          "when": "Operation legitimately slow"
+        },
+        {
+          "approach": "Check expectation fulfillment",
+          "code": "expectation.fulfill()  // Ensure this is called",
+          "when": "Forgot to fulfill expectation"
+        },
+        {
+          "approach": "Use async/await",
+          "code": "func testAsync() async throws {\n    let result = await asyncOperation()\n    XCTAssertNotNil(result)\n}",
+          "when": "Can use Swift concurrency"
+        }
+      ]
+    },
+    {
+      "id": "async_expectation_not_fulfilled",
+      "pattern": "expectation.*not.*fulfilled|unfulfilled.*expectation",
+      "message": "XCTestExpectation was never fulfilled",
+      "cause": "Async callback that should fulfill expectation was never called",
+      "solutions": [
+        {
+          "approach": "Verify callback is called",
+          "code": "service.fetch { result in\n    // Ensure this closure is actually invoked\n    expectation.fulfill()\n}",
+          "when": "Callback not triggered"
+        },
+        {
+          "approach": "Check for errors",
+          "code": "service.fetch { result in\n    switch result {\n    case .success: break\n    case .failure(let e): XCTFail(\"Error: \\(e)\")\n    }\n    expectation.fulfill()\n}",
+          "when": "Error prevents fulfillment"
+        },
+        {
+          "approach": "Use inverted expectation",
+          "code": "expectation.isInverted = true  // Expect NOT to be called",
+          "when": "Testing callback shouldn't happen"
+        }
+      ]
+    },
+    {
+      "id": "test_crash",
+      "pattern": "crashed|signal.*received|EXC_BAD_ACCESS",
+      "message": "Test crashed with signal",
+      "cause": "Memory error, nil dereference, or other crash in test/code",
+      "solutions": [
+        {
+          "approach": "Check for nil/force unwrap",
+          "code": "guard let value = optional else {\n    XCTFail(\"Value was nil\")\n    return\n}",
+          "when": "Force unwrapping nil"
+        },
+        {
+          "approach": "Use address sanitizer",
+          "code": "# Enable ASan in scheme\n# Product > Scheme > Edit Scheme > Diagnostics > Address Sanitizer",
+          "when": "Memory corruption"
+        },
+        {
+          "approach": "Check array bounds",
+          "code": "guard index < array.count else { return }",
+          "when": "Index out of bounds"
+        }
+      ]
+    },
+    {
+      "id": "setup_failure",
+      "pattern": "setUp.*failed|initialization.*failed",
+      "message": "Test setup failed",
+      "cause": "setUpWithError() or setUp() threw an error or failed",
+      "solutions": [
+        {
+          "approach": "Check setUp implementation",
+          "code": "override func setUpWithError() throws {\n    try super.setUpWithError()\n    // Ensure all setup succeeds\n}",
+          "when": "Setup code has error"
+        },
+        {
+          "approach": "Handle optional dependencies",
+          "code": "sut = try XCTUnwrap(createSubject())",
+          "when": "Subject creation may fail"
+        }
+      ]
+    },
+    {
+      "id": "mock_not_called",
+      "pattern": "mock.*not.*called|expected.*call.*missing",
+      "message": "Expected mock method was not called",
+      "cause": "Code path didn't invoke the mocked dependency",
+      "solutions": [
+        {
+          "approach": "Verify mock injection",
+          "code": "sut = MyClass(dependency: mockDependency)  // Inject mock",
+          "when": "Real dependency used instead"
+        },
+        {
+          "approach": "Check code path",
+          "code": "// Ensure test triggers expected code path",
+          "when": "Different branch taken"
+        },
+        {
+          "approach": "Use protocol for mocking",
+          "code": "protocol Service { func fetch() }\nclass MockService: Service { }",
+          "when": "Need mockable interface"
+        }
+      ]
+    },
+    {
+      "id": "flaky_test",
+      "pattern": "intermittent|flaky|sometimes.*fails",
+      "message": "Test fails intermittently",
+      "cause": "Test has race condition, timing dependency, or external dependency",
+      "solutions": [
+        {
+          "approach": "Remove timing dependencies",
+          "code": "// Don't use: sleep(1)\n// Use expectations or mocked time",
+          "when": "Test uses sleep/delay"
+        },
+        {
+          "approach": "Mock external services",
+          "code": "let mockAPI = MockAPIClient()\n// Return controlled responses",
+          "when": "Depends on network"
+        },
+        {
+          "approach": "Fix race conditions",
+          "code": "// Ensure deterministic ordering\n// Use XCTestExpectation for async",
+          "when": "Order-dependent failures"
+        }
+      ]
+    },
+    {
+      "id": "ui_test_element_not_found",
+      "pattern": "element.*not.*found|unable.*find.*element|no.*matches",
+      "message": "UI test couldn't find element",
+      "cause": "Element not on screen, wrong identifier, or not yet loaded",
+      "solutions": [
+        {
+          "approach": "Wait for element",
+          "code": "let button = app.buttons[\"myButton\"]\nXCTAssertTrue(button.waitForExistence(timeout: 5))",
+          "when": "Element loads asynchronously"
+        },
+        {
+          "approach": "Check accessibility identifier",
+          "code": "// In source: button.accessibilityIdentifier = \"myButton\"\n// In test: app.buttons[\"myButton\"]",
+          "when": "Wrong identifier"
+        },
+        {
+          "approach": "Use element query",
+          "code": "app.buttons.matching(identifier: \"myButton\").firstMatch",
+          "when": "Multiple similar elements"
+        }
+      ]
+    },
+    {
+      "id": "order_dependent_failure",
+      "pattern": "order.*dependent|different.*order",
+      "message": "Test fails when run with other tests",
+      "cause": "Test depends on state from previous tests or specific run order",
+      "solutions": [
+        {
+          "approach": "Clean up in tearDown",
+          "code": "override func tearDown() {\n    UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)\n    super.tearDown()\n}",
+          "when": "Shared state persists"
+        },
+        {
+          "approach": "Reset in setUp",
+          "code": "override func setUp() {\n    super.setUp()\n    resetAllState()\n}",
+          "when": "Need clean state each test"
+        },
+        {
+          "approach": "Use unique test data",
+          "code": "let uniqueId = UUID().uuidString\n// Use unique identifiers for each test",
+          "when": "Tests share identifiers"
+        }
+      ]
+    },
+    {
+      "id": "performance_regression",
+      "pattern": "performance.*baseline|measure.*failed|slower.*than.*baseline",
+      "message": "Performance test exceeded baseline",
+      "cause": "Measured code runs slower than recorded baseline",
+      "solutions": [
+        {
+          "approach": "Update baseline",
+          "code": "// Run test, click baseline in Xcode to update",
+          "when": "Acceptable performance change"
+        },
+        {
+          "approach": "Investigate regression",
+          "code": "measure(metrics: [XCTClockMetric()]) {\n    // Profile the measured code\n}",
+          "when": "Unexpected slowdown"
+        },
+        {
+          "approach": "Adjust deviation threshold",
+          "code": "measureOptions.iterationCount = 10",
+          "when": "High variance in measurements"
+        }
+      ]
+    }
+  ]
+}

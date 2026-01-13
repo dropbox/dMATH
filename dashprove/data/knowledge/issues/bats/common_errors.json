@@ -1,0 +1,242 @@
+{
+  "tool": "bats",
+  "version": "1.10",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "test_failed",
+      "pattern": "not ok.*#",
+      "message": "Test assertion failed",
+      "cause": "Test condition evaluated to false",
+      "solutions": [
+        {
+          "approach": "Check command output",
+          "code": "@test \"check output\" {\n  run command\n  [ \"$status\" -eq 0 ]\n  [ \"$output\" = \"expected\" ]\n}",
+          "when": "Command output mismatch"
+        },
+        {
+          "approach": "Debug with echo",
+          "code": "@test \"debug\" {\n  run command\n  echo \"status: $status\" >&3\n  echo \"output: $output\" >&3\n  [ \"$status\" -eq 0 ]\n}",
+          "when": "Need to see values"
+        },
+        {
+          "approach": "Use bats-assert",
+          "code": "load 'test_helper/bats-support/load'\nload 'test_helper/bats-assert/load'\n\n@test \"example\" {\n  run command\n  assert_success\n  assert_output \"expected\"\n}",
+          "when": "Want better assertions"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error_test_file",
+      "pattern": "syntax error|unexpected.*token",
+      "message": "Syntax error in test file",
+      "cause": "Invalid bash syntax or bats syntax",
+      "solutions": [
+        {
+          "approach": "Check @test syntax",
+          "code": "@test \"description\" {\n  # body\n}",
+          "when": "Test definition wrong"
+        },
+        {
+          "approach": "Quote test name",
+          "code": "@test \"name with 'quotes'\" {\n  true\n}",
+          "when": "Special chars in name"
+        },
+        {
+          "approach": "Validate bash syntax",
+          "code": "bash -n test.bats",
+          "when": "Check for bash errors"
+        }
+      ]
+    },
+    {
+      "id": "setup_failed",
+      "pattern": "setup.*failed|before.*error",
+      "message": "Setup function failed",
+      "cause": "Error in setup() or setup_file()",
+      "solutions": [
+        {
+          "approach": "Debug setup",
+          "code": "setup() {\n  echo \"Setting up...\" >&3\n  # setup code\n}",
+          "when": "See what setup does"
+        },
+        {
+          "approach": "Check prerequisites",
+          "code": "setup() {\n  command -v required_cmd || skip \"required_cmd not found\"\n}",
+          "when": "Missing dependency"
+        },
+        {
+          "approach": "Handle cleanup",
+          "code": "setup() {\n  TEST_DIR=$(mktemp -d)\n}\nteardown() {\n  rm -rf \"$TEST_DIR\"\n}",
+          "when": "Need proper cleanup"
+        }
+      ]
+    },
+    {
+      "id": "run_not_capturing",
+      "pattern": "output.*empty|status.*wrong",
+      "message": "run not capturing output correctly",
+      "cause": "Misunderstanding run behavior",
+      "solutions": [
+        {
+          "approach": "Use run correctly",
+          "code": "@test \"example\" {\n  run my_command arg1 arg2\n  # $status has exit code\n  # $output has stdout+stderr\n  # $lines array has output lines\n}",
+          "when": "Basic run usage"
+        },
+        {
+          "approach": "Separate streams",
+          "code": "@test \"stderr\" {\n  run --separate-stderr command\n  # $stderr has stderr\n}",
+          "when": "Need stderr separate (bats 1.5+)"
+        },
+        {
+          "approach": "Keep empty lines",
+          "code": "run --keep-empty-lines command",
+          "when": "Empty lines matter"
+        }
+      ]
+    },
+    {
+      "id": "skip_not_working",
+      "pattern": "skip.*not recognized|skip syntax",
+      "message": "Skip directive not working",
+      "cause": "Incorrect skip syntax",
+      "solutions": [
+        {
+          "approach": "Conditional skip",
+          "code": "@test \"linux only\" {\n  [[ $(uname) == \"Linux\" ]] || skip \"Linux only\"\n  # test code\n}",
+          "when": "Platform-specific test"
+        },
+        {
+          "approach": "Skip in setup",
+          "code": "setup() {\n  [ -f /required/file ] || skip \"missing file\"\n}",
+          "when": "All tests need prerequisite"
+        },
+        {
+          "approach": "Skip early",
+          "code": "@test \"needs tool\" {\n  skip \"feature not implemented\"\n}",
+          "when": "Test not ready"
+        }
+      ]
+    },
+    {
+      "id": "load_failed",
+      "pattern": "load.*failed|helper.*not found",
+      "message": "Failed to load helper",
+      "cause": "Helper file not found or has errors",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "# Relative to test file:\nload 'test_helper'\n# Absolute:\nload '/path/to/helper'",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Install bats-support",
+          "code": "git submodule add https://github.com/bats-core/bats-support.git test/test_helper/bats-support\nload 'test_helper/bats-support/load'",
+          "when": "Using bats libraries"
+        },
+        {
+          "approach": "Use BATS_LIB_PATH",
+          "code": "export BATS_LIB_PATH=/usr/lib/bats\nbats load --library bats-support",
+          "when": "System-installed helpers"
+        }
+      ]
+    },
+    {
+      "id": "parallel_test_conflict",
+      "pattern": "parallel.*conflict|race condition",
+      "message": "Tests conflict when run in parallel",
+      "cause": "Tests sharing resources without isolation",
+      "solutions": [
+        {
+          "approach": "Use temp directories",
+          "code": "setup() {\n  TEST_DIR=$(mktemp -d)\n  cd \"$TEST_DIR\"\n}",
+          "when": "File conflicts"
+        },
+        {
+          "approach": "Use unique names",
+          "code": "setup() {\n  TEST_FILE=\"/tmp/test_$$_${BATS_TEST_NUMBER}\"\n}",
+          "when": "Need unique identifiers"
+        },
+        {
+          "approach": "Run serially",
+          "code": "bats --no-parallel test.bats",
+          "when": "Tests can't be isolated"
+        },
+        {
+          "approach": "File-level setup",
+          "code": "setup_file() {\n  # Runs once before all tests in file\n}\nteardown_file() {\n  # Runs once after all tests\n}",
+          "when": "Expensive shared setup"
+        }
+      ]
+    },
+    {
+      "id": "lines_array_empty",
+      "pattern": "lines.*empty|\\${lines\\[.*\\]}",
+      "message": "lines array empty or wrong",
+      "cause": "Output parsing issues",
+      "solutions": [
+        {
+          "approach": "Check run output",
+          "code": "@test \"check lines\" {\n  run printf 'line1\\nline2'\n  [ \"${#lines[@]}\" -eq 2 ]\n  [ \"${lines[0]}\" = \"line1\" ]\n}",
+          "when": "Verify line count"
+        },
+        {
+          "approach": "IFS issues",
+          "code": "# lines array splits on newlines only\n# trailing newlines may affect count",
+          "when": "Unexpected count"
+        },
+        {
+          "approach": "Use output for single line",
+          "code": "[ \"$output\" = \"single line\" ]",
+          "when": "Only one line expected"
+        }
+      ]
+    },
+    {
+      "id": "timeout_test",
+      "pattern": "timeout|test.*hung",
+      "message": "Test timed out or hung",
+      "cause": "Test waiting for input or infinite loop",
+      "solutions": [
+        {
+          "approach": "Use timeout",
+          "code": "@test \"with timeout\" {\n  run timeout 5 command\n  [ \"$status\" -eq 0 ]\n}",
+          "when": "Command may hang"
+        },
+        {
+          "approach": "Provide input",
+          "code": "run command <<< \"input\"",
+          "when": "Command needs stdin"
+        },
+        {
+          "approach": "Use bats timeout",
+          "code": "bats --timing test.bats",
+          "when": "Find slow tests"
+        }
+      ]
+    },
+    {
+      "id": "assert_not_found",
+      "pattern": "assert_.*not found|command not found.*assert",
+      "message": "assert_* commands not found",
+      "cause": "bats-assert not loaded",
+      "solutions": [
+        {
+          "approach": "Load bats-assert",
+          "code": "setup() {\n  load 'test_helper/bats-support/load'\n  load 'test_helper/bats-assert/load'\n}",
+          "when": "Want assertion helpers"
+        },
+        {
+          "approach": "Use basic assertions",
+          "code": "[ \"$status\" -eq 0 ]\n[ \"$output\" = \"expected\" ]",
+          "when": "Don't need bats-assert"
+        },
+        {
+          "approach": "Install helpers",
+          "code": "# In test directory:\ngit submodule add https://github.com/bats-core/bats-assert.git test_helper/bats-assert",
+          "when": "Need to install"
+        }
+      ]
+    }
+  ]
+}

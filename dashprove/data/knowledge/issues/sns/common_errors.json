@@ -1,0 +1,99 @@
+{
+  "tool": "sns",
+  "category": "aws_messaging",
+  "description": "Amazon Simple Notification Service - pub/sub messaging service",
+  "common_errors": [
+    {
+      "id": "access_denied",
+      "pattern": "AuthorizationError",
+      "regex": "(?i)authorization.*error|access.*denied|not.*authorized|sns.*permission",
+      "cause": "IAM policy missing SNS permissions",
+      "solution": "Add sns:Publish, sns:Subscribe permissions to IAM policy, check topic access policy",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "topic_not_found",
+      "pattern": "NotFound",
+      "regex": "(?i)topic.*not.*found|does.*not.*exist|invalid.*arn|resource.*not.*found",
+      "cause": "SNS topic does not exist",
+      "solution": "Verify topic ARN, check region, create topic if needed",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "invalid_parameter",
+      "pattern": "InvalidParameter",
+      "regex": "(?i)invalid.*parameter|validation.*error|invalid.*attribute|constraint.*violation",
+      "cause": "API parameter validation failed",
+      "solution": "Check parameter format and constraints, verify phone numbers in E.164 format, review message attributes",
+      "severity": "medium",
+      "category": "api"
+    },
+    {
+      "id": "endpoint_disabled",
+      "pattern": "EndpointDisabled",
+      "regex": "(?i)endpoint.*disabled|subscription.*disabled|platform.*endpoint",
+      "cause": "Mobile push endpoint disabled (device unregistered)",
+      "solution": "Re-register device token, handle endpoint disable events, implement token refresh logic",
+      "severity": "medium",
+      "category": "mobile"
+    },
+    {
+      "id": "throttling",
+      "pattern": "Throttled",
+      "regex": "(?i)throttl|rate.*exceeded|too.*many.*requests|limit.*exceeded",
+      "cause": "SNS API rate limits exceeded",
+      "solution": "Implement exponential backoff, batch publish operations, request quota increase",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "sms_limit",
+      "pattern": "SMS spending limit",
+      "regex": "(?i)sms.*limit|spending.*limit|monthly.*sms|sms.*quota",
+      "cause": "SMS spending limit reached for the month",
+      "solution": "Request spending limit increase via AWS Support, monitor SMS spending in AWS Console",
+      "severity": "high",
+      "category": "limits"
+    },
+    {
+      "id": "message_too_large",
+      "pattern": "InvalidParameter",
+      "regex": "(?i)message.*too.*large|payload.*exceeded|size.*limit|256.*kb",
+      "cause": "Message size exceeds 256 KB limit",
+      "solution": "Reduce message size, use message references pointing to S3, compress message payload",
+      "severity": "medium",
+      "category": "messages"
+    },
+    {
+      "id": "subscription_pending",
+      "pattern": "PendingConfirmation",
+      "regex": "(?i)pending.*confirmation|subscription.*not.*confirmed|confirm.*subscription",
+      "cause": "Email/HTTP subscription awaiting confirmation",
+      "solution": "User must click confirmation link in email, for HTTP verify endpoint handles SubscriptionConfirmation",
+      "severity": "low",
+      "category": "subscriptions"
+    },
+    {
+      "id": "kms_error",
+      "pattern": "KMS",
+      "regex": "(?i)kms.*error|encryption.*key|decrypt.*error|key.*access",
+      "cause": "KMS key access issue for encrypted topic",
+      "solution": "Grant SNS service principal permission to use KMS key, verify key policy",
+      "severity": "high",
+      "category": "security"
+    },
+    {
+      "id": "filter_policy",
+      "pattern": "FilterPolicy",
+      "regex": "(?i)filter.*policy|invalid.*filter|subscription.*filter|message.*attribute",
+      "cause": "Filter policy syntax error or attribute mismatch",
+      "solution": "Validate filter policy JSON syntax, ensure message attributes match filter criteria",
+      "severity": "medium",
+      "category": "subscriptions"
+    }
+  ],
+  "related_tools": ["aws_cli", "sqs", "lambda", "cloudwatch"],
+  "documentation_url": "https://docs.aws.amazon.com/sns/"
+}

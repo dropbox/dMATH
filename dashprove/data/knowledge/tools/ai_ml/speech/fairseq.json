@@ -1,0 +1,125 @@
+{
+  "id": "fairseq",
+  "name": "Fairseq",
+  "category": "speech_ml",
+  "subcategory": "sequence_modeling",
+
+  "description": "Meta's sequence-to-sequence toolkit",
+  "long_description": "Fairseq is a sequence modeling toolkit from Meta AI Research that provides reference implementations for speech recognition, translation, and text-to-speech. It includes wav2vec 2.0, HuBERT, Seamless models, and other state-of-the-art speech models.",
+
+  "capabilities": [
+    "speech_recognition",
+    "speech_synthesis",
+    "speech_translation",
+    "self_supervised_learning",
+    "wav2vec_pretraining",
+    "hubert_pretraining",
+    "sequence_to_sequence"
+  ],
+  "property_types": ["wer", "bleu", "mos"],
+  "input_languages": ["python"],
+  "output_formats": ["text", "audio"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install fairseq"},
+      {"type": "source", "command": "git clone https://github.com/facebookresearch/fairseq && pip install -e fairseq"}
+    ],
+    "dependencies": ["torch", "torchaudio", "hydra-core"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://fairseq.readthedocs.io/",
+    "tutorial": "https://fairseq.readthedocs.io/en/latest/getting_started.html",
+    "api_reference": "https://fairseq.readthedocs.io/en/latest/models.html",
+    "examples": "https://github.com/facebookresearch/fairseq/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "wav2vec_transcribe",
+      "description": "ASR with wav2vec 2.0",
+      "syntax": "Wav2Vec2Model.from_pretrained()",
+      "when_to_use": "For speech recognition",
+      "examples": ["import torch\nfrom fairseq.models.wav2vec import Wav2Vec2Model\n\nmodel = Wav2Vec2Model.from_pretrained('/path/to/model')\naudio, sr = torchaudio.load('audio.wav')\nwith torch.no_grad():\n    features = model.feature_extractor(audio)\n    output = model(features)"]
+    },
+    {
+      "name": "speech_translation",
+      "description": "Speech-to-text translation",
+      "syntax": "S2TTransformerModel",
+      "when_to_use": "For speech translation",
+      "examples": ["from fairseq.models.speech_to_text import S2TTransformerModel\n\nmodel = S2TTransformerModel.from_pretrained(\n    'path/to/checkpoint',\n    checkpoint_file='model.pt'\n)"]
+    },
+    {
+      "name": "finetune",
+      "description": "Fine-tune pre-trained model",
+      "syntax": "fairseq-train",
+      "when_to_use": "For domain adaptation",
+      "examples": ["fairseq-train /data/manifest \\\n  --task audio_finetuning \\\n  --arch wav2vec_ctc \\\n  --labels ltr \\\n  --max-epoch 100"]
+    },
+    {
+      "name": "hubert",
+      "description": "HuBERT speech representations",
+      "syntax": "HubertModel",
+      "when_to_use": "For speech feature extraction",
+      "examples": ["from fairseq.models.hubert import HubertModel\n\nmodel = HubertModel.from_pretrained('/path/to/hubert')\nfeatures = model.extract_features(audio)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "checkpoint.*not found",
+      "meaning": "Missing model checkpoint",
+      "common_causes": ["Wrong path", "Not downloaded"],
+      "fixes": ["Download checkpoint from HF/model zoo"]
+    },
+    {
+      "pattern": "hydra.*config",
+      "meaning": "Hydra configuration error",
+      "common_causes": ["Wrong config format"],
+      "fixes": ["Check hydra config syntax"]
+    },
+    {
+      "pattern": "sample_rate.*mismatch",
+      "meaning": "Audio sample rate wrong",
+      "common_causes": ["Model expects 16kHz"],
+      "fixes": ["Resample audio to expected rate"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["wer", "bleu"],
+    "cli_command": "dashprove verify --backend fairseq"
+  },
+
+  "performance": {
+    "typical_runtime": "Real-time on GPU",
+    "scalability": "Excellent with distributed training",
+    "memory_usage": "Model-dependent"
+  },
+
+  "comparisons": {
+    "similar_tools": ["transformers", "espnet", "nemo"],
+    "advantages": [
+      "State-of-the-art models",
+      "wav2vec/HuBERT",
+      "Active research",
+      "Good documentation",
+      "Multi-task support"
+    ],
+    "disadvantages": [
+      "Complex setup",
+      "Large models",
+      "Hydra learning curve"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.12.2",
+    "last_updated": "2025-12-22",
+    "maintainer": "Meta AI",
+    "license": "MIT"
+  }
+}

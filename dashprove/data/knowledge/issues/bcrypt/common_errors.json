@@ -1,0 +1,117 @@
+{
+  "tool": "bcrypt",
+  "version": "5.x (Node), varies (other)",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "native_build_failed",
+      "pattern": "node-gyp|Cannot find module.*bcrypt|prebuild-install|build failed",
+      "message": "Native module compilation failed",
+      "cause": "Missing build tools or incompatible Node.js version",
+      "solutions": [
+        {
+          "approach": "Install build tools",
+          "code": "# macOS: xcode-select --install\n# Ubuntu: apt install build-essential python3\n# Windows: npm install --global windows-build-tools",
+          "when": "Build tools missing"
+        },
+        {
+          "approach": "Use bcryptjs",
+          "code": "npm install bcryptjs\n// Pure JS, no native deps\nconst bcrypt = require('bcryptjs');",
+          "when": "Can't compile native"
+        },
+        {
+          "approach": "Rebuild for Node version",
+          "code": "npm rebuild bcrypt",
+          "when": "Node.js upgraded"
+        }
+      ]
+    },
+    {
+      "id": "invalid_hash",
+      "pattern": "Invalid hash|Not a valid BCrypt hash|data and hash.*arguments required",
+      "message": "Hash format is invalid",
+      "cause": "Comparing with non-bcrypt hash or corrupted data",
+      "solutions": [
+        {
+          "approach": "Check hash format",
+          "code": "// Valid bcrypt hash starts with $2a$, $2b$, or $2y$\nif (!hash.startsWith('$2')) throw new Error('Not bcrypt');",
+          "when": "Validating hash"
+        },
+        {
+          "approach": "Ensure hash stored correctly",
+          "code": "// Hash is 60 chars, ensure DB column is VARCHAR(60)+",
+          "when": "Truncated hash"
+        },
+        {
+          "approach": "Hash before compare",
+          "code": "const hash = await bcrypt.hash(password, 10);\nawait bcrypt.compare(password, hash);",
+          "when": "Comparing unhashed value"
+        }
+      ]
+    },
+    {
+      "id": "salt_rounds_error",
+      "pattern": "Invalid salt|salt rounds.*invalid|rounds must be",
+      "message": "Invalid salt rounds parameter",
+      "cause": "Salt rounds not a valid number",
+      "solutions": [
+        {
+          "approach": "Use valid rounds",
+          "code": "const hash = await bcrypt.hash(password, 10);  // 10-12 is common",
+          "when": "Standard hashing"
+        },
+        {
+          "approach": "Generate salt explicitly",
+          "code": "const salt = await bcrypt.genSalt(12);\nconst hash = await bcrypt.hash(password, salt);",
+          "when": "Custom salt control"
+        },
+        {
+          "approach": "Increase for security",
+          "code": "const rounds = 12;  // Higher = more secure but slower",
+          "when": "Upgrading security"
+        }
+      ]
+    },
+    {
+      "id": "timing_attack",
+      "pattern": "timing|constant time|compare.*vulnerable",
+      "message": "Potential timing attack vulnerability",
+      "cause": "Using string comparison instead of bcrypt.compare",
+      "solutions": [
+        {
+          "approach": "Use bcrypt.compare",
+          "code": "// WRONG: hash1 === hash2\n// RIGHT:\nconst isValid = await bcrypt.compare(password, storedHash);",
+          "when": "Comparing passwords"
+        },
+        {
+          "approach": "Never compare hashes directly",
+          "code": "// bcrypt.compare uses constant-time comparison internally",
+          "when": "Understanding security"
+        }
+      ]
+    },
+    {
+      "id": "sync_blocking",
+      "pattern": "event loop blocked|synchronous.*slow|hashSync.*performance",
+      "message": "Synchronous bcrypt blocking event loop",
+      "cause": "Using bcrypt.hashSync/compareSync in async context",
+      "solutions": [
+        {
+          "approach": "Use async methods",
+          "code": "const hash = await bcrypt.hash(password, 10);\nconst match = await bcrypt.compare(password, hash);",
+          "when": "Node.js server"
+        },
+        {
+          "approach": "Use worker threads",
+          "code": "// bcrypt uses thread pool internally for async methods",
+          "when": "High-load scenarios"
+        },
+        {
+          "approach": "Sync only at startup",
+          "code": "// hashSync OK for one-time initialization, not in request handlers",
+          "when": "CLI or scripts"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "tool": "raft",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "split_brain",
+      "pattern": "(split.*brain|multiple.*leaders|partition)",
+      "message": "Split brain - multiple leaders",
+      "cause": "Network partition allowing multiple leaders",
+      "solutions": [
+        {
+          "approach": "Check term",
+          "code": "// Higher term always wins\nif msg.term > current_term {\n    become_follower(msg.term);\n}\nif msg.term < current_term {\n    reject(msg);\n}",
+          "when": "Handling messages"
+        },
+        {
+          "approach": "Verify majority",
+          "code": "// Leader needs majority for commits\nlet replication_count = count_replicated(log_index);\nif replication_count > cluster_size / 2 {\n    commit(log_index);\n}",
+          "when": "Commit safety"
+        }
+      ]
+    },
+    {
+      "id": "log_inconsistency",
+      "pattern": "(log.*inconsist|conflict|diverge|truncate)",
+      "message": "Log inconsistency between leader and follower",
+      "cause": "Follower log diverged from leader",
+      "solutions": [
+        {
+          "approach": "Backup nextIndex",
+          "code": "// On AppendEntries rejection, backup\nif !response.success {\n    next_index[follower] = max(1, next_index[follower] - 1);\n    // Or use conflict_index hint from follower\n}",
+          "when": "Follower rejects"
+        },
+        {
+          "approach": "Truncate and replicate",
+          "code": "// Follower: truncate conflicting entries\nif prev_log_term != log[prev_log_index].term {\n    truncate_log_from(prev_log_index);\n}\nappend_entries(entries);",
+          "when": "Log conflict"
+        }
+      ]
+    },
+    {
+      "id": "election_timeout",
+      "pattern": "(election.*timeout|no.*heartbeat|candidate)",
+      "message": "Election timeout - no leader",
+      "cause": "Leader failed or network issues",
+      "solutions": [
+        {
+          "approach": "Randomize timeout",
+          "code": "// Use randomized election timeout\nlet timeout = rand::thread_rng()\n    .gen_range(min_election_timeout..max_election_timeout);\nset_election_timer(timeout);",
+          "when": "Preventing split vote"
+        },
+        {
+          "approach": "Check heartbeats",
+          "code": "// Leader sends heartbeats regularly\nloop {\n    broadcast_heartbeat();\n    sleep(heartbeat_interval).await;\n}",
+          "when": "Maintaining leadership"
+        }
+      ]
+    },
+    {
+      "id": "commit_index_stale",
+      "pattern": "(commit.*index|stale|not applied)",
+      "message": "Commit index not advancing",
+      "cause": "Entries not being committed",
+      "solutions": [
+        {
+          "approach": "Update commit index",
+          "code": "// Leader: find N where majority have replicated\nfor n in (commit_index + 1)..=last_log_index {\n    if log[n].term == current_term {\n        let count = match_index.values()\n            .filter(|&idx| *idx >= n)\n            .count();\n        if count > cluster_size / 2 {\n            commit_index = n;\n        }\n    }\n}",
+          "when": "Advancing commit"
+        },
+        {
+          "approach": "Only commit current term",
+          "code": "// Safety: only commit entries from current term\nif log[n].term != current_term {\n    // Wait for current term entry to commit previous\n}",
+          "when": "Commit safety"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_install_error",
+      "pattern": "(snapshot|install|state.*transfer)",
+      "message": "Snapshot installation error",
+      "cause": "Failed to install snapshot on follower",
+      "solutions": [
+        {
+          "approach": "Install snapshot",
+          "code": "// Replace log with snapshot\nif snapshot.last_included_index > commit_index {\n    install_snapshot(snapshot.data);\n    log.truncate_before(snapshot.last_included_index);\n    commit_index = snapshot.last_included_index;\n    last_applied = snapshot.last_included_index;\n}",
+          "when": "Follower far behind"
+        },
+        {
+          "approach": "Chunk large snapshot",
+          "code": "// Send snapshot in chunks\nfor chunk in snapshot.chunks(chunk_size) {\n    send_snapshot_chunk(follower, chunk, offset);\n    offset += chunk.len();\n}",
+          "when": "Large state"
+        }
+      ]
+    }
+  ]
+}

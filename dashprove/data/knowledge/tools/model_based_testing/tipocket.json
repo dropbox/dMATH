@@ -1,0 +1,124 @@
+{
+  "id": "tipocket",
+  "name": "TiPocket",
+  "category": "model_based_testing",
+  "subcategory": "database_testing",
+
+  "description": "Model-based testing framework for distributed databases, especially TiDB",
+  "long_description": "TiPocket is a model-based testing framework developed by PingCAP for testing distributed databases. It uses Elle for linearizability checking and integrates with TLA+ specifications. Originally designed for TiDB/TiKV, it can test any distributed database. Uses Jepsen-style fault injection with Go-based implementation.",
+
+  "capabilities": [
+    "linearizability_testing",
+    "snapshot_isolation_testing",
+    "chaos_testing",
+    "partition_testing",
+    "clock_skew_testing",
+    "workload_generation",
+    "elle_integration"
+  ],
+  "property_types": ["linearizability", "snapshot_isolation", "serializability"],
+  "input_languages": ["go", "yaml"],
+  "output_formats": ["json", "html", "edn"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "command": "git clone https://github.com/pingcap/tipocket && make build"},
+      {"type": "go", "command": "go get github.com/pingcap/tipocket"}
+    ],
+    "dependencies": ["go", "docker", "kubernetes"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/pingcap/tipocket",
+    "tutorial": "https://github.com/pingcap/tipocket/blob/master/doc/tutorial.md",
+    "examples": "https://github.com/pingcap/tipocket/tree/master/testcase"
+  },
+
+  "tactics": [
+    {
+      "name": "run_bank_test",
+      "description": "Run bank transfer consistency test",
+      "syntax": "tipocket bank --namespace test",
+      "when_to_use": "To test transactional consistency",
+      "examples": ["tipocket bank --namespace test --client 5 --time 10m"]
+    },
+    {
+      "name": "run_append_test",
+      "description": "Run append workload with Elle checking",
+      "syntax": "tipocket append --namespace test",
+      "when_to_use": "To test with Elle linearizability checking",
+      "examples": ["tipocket append --namespace test --request-count 1000"]
+    },
+    {
+      "name": "chaos_injection",
+      "description": "Inject faults during test",
+      "syntax": "tipocket --nemesis partition",
+      "when_to_use": "To test under failures",
+      "examples": ["tipocket bank --nemesis kill,partition,clock-skew --time 30m"]
+    },
+    {
+      "name": "elle_check",
+      "description": "Use Elle for consistency analysis",
+      "syntax": "tipocket --checker elle",
+      "when_to_use": "For rigorous linearizability checking",
+      "examples": ["tipocket append --checker elle --workload list-append"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "consistency violation",
+      "meaning": "Database violated consistency guarantee",
+      "common_causes": ["Bug in database", "Incorrect isolation level"],
+      "fixes": ["Report to database maintainers", "Check isolation configuration"]
+    },
+    {
+      "pattern": "lost update",
+      "meaning": "Update was lost during concurrent access",
+      "common_causes": ["Race condition", "Weak isolation"],
+      "fixes": ["Use stronger isolation", "Fix concurrency bug"]
+    },
+    {
+      "pattern": "stale read",
+      "meaning": "Read returned outdated value",
+      "common_causes": ["Snapshot isolation issue", "Replication lag"],
+      "fixes": ["Check snapshot configuration", "Review read consistency settings"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "usl_property_types": ["linearizability", "consistency"],
+    "cli_command": "tipocket"
+  },
+
+  "performance": {
+    "typical_runtime": "Minutes to hours",
+    "scalability": "Good with Kubernetes",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["jepsen", "elle", "go-elle"],
+    "advantages": [
+      "Go implementation (easier than Clojure)",
+      "Kubernetes-native",
+      "Elle integration",
+      "TiDB battle-tested",
+      "Active development"
+    ],
+    "disadvantages": [
+      "Kubernetes required",
+      "Primarily for TiDB",
+      "Less documentation than Jepsen"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "PingCAP",
+    "license": "Apache-2.0"
+  }
+}

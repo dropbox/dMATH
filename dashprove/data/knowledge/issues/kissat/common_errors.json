@@ -1,0 +1,257 @@
+{
+  "tool": "kissat",
+  "version": "4.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "parse_error",
+      "pattern": "parse error|invalid CNF|syntax error",
+      "message": "CNF file parsing error",
+      "cause": "Input file not valid DIMACS CNF format",
+      "solutions": [
+        {
+          "approach": "Check header format",
+          "code": "p cnf <num_variables> <num_clauses>",
+          "when": "Missing or wrong header"
+        },
+        {
+          "approach": "Ensure clauses end with 0",
+          "code": "1 -2 3 0\n-1 2 0",
+          "when": "Clause not terminated"
+        },
+        {
+          "approach": "Remove comments",
+          "code": "c This is a comment\n// Comments start with 'c'",
+          "when": "Invalid comment format"
+        },
+        {
+          "approach": "Validate variable range",
+          "code": "# Variables must be 1..n, not exceed header count",
+          "when": "Variable out of range"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "out of memory|memory limit|allocation failed",
+      "message": "Solver ran out of memory",
+      "cause": "Problem too large for available memory",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "kissat --memout=8GB input.cnf",
+          "when": "Have more RAM available"
+        },
+        {
+          "approach": "Simplify problem",
+          "code": "# Reduce problem size or use preprocessing",
+          "when": "Problem may be reducible"
+        },
+        {
+          "approach": "Use incremental solving",
+          "code": "# Split into sub-problems if possible",
+          "when": "Can decompose problem"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "# Memory-efficient solver like MiniSat",
+          "when": "Kissat too memory-hungry"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|time limit|killed",
+      "message": "Solver exceeded time limit",
+      "cause": "Problem not solved within time bound",
+      "solutions": [
+        {
+          "approach": "Increase time limit",
+          "code": "kissat --time=3600 input.cnf",
+          "when": "More time available"
+        },
+        {
+          "approach": "Use preprocessing",
+          "code": "kissat --eliminate=true --substitute=true input.cnf",
+          "when": "Preprocessing may help"
+        },
+        {
+          "approach": "Try different configuration",
+          "code": "kissat --sat --unsat  # Try SAT or UNSAT focused",
+          "when": "Default config not optimal"
+        },
+        {
+          "approach": "Use portfolio solver",
+          "code": "# Run multiple configurations in parallel",
+          "when": "Have parallel resources"
+        }
+      ]
+    },
+    {
+      "id": "proof_error",
+      "pattern": "proof.*error|DRAT.*invalid|certificate.*failed",
+      "message": "Proof/certificate generation error",
+      "cause": "DRAT proof generation or validation failed",
+      "solutions": [
+        {
+          "approach": "Generate DRAT proof",
+          "code": "kissat --proof=proof.drat input.cnf",
+          "when": "Need verifiable proof"
+        },
+        {
+          "approach": "Check proof with DRAT-trim",
+          "code": "drat-trim input.cnf proof.drat",
+          "when": "Validate proof"
+        },
+        {
+          "approach": "Use binary DRAT",
+          "code": "kissat --proof-binary=true --proof=proof.drat input.cnf",
+          "when": "Smaller proof file"
+        },
+        {
+          "approach": "Disable proof for speed",
+          "code": "kissat --no-proof input.cnf",
+          "when": "Don't need certificate"
+        }
+      ]
+    },
+    {
+      "id": "interrupted",
+      "pattern": "interrupted|SIGINT|caught signal",
+      "message": "Solver was interrupted",
+      "cause": "Received interrupt signal",
+      "solutions": [
+        {
+          "approach": "Save learned clauses",
+          "code": "kissat --learned=learned.cnf input.cnf",
+          "when": "Resume later"
+        },
+        {
+          "approach": "Use quiet mode in scripts",
+          "code": "kissat --quiet input.cnf",
+          "when": "Running in script"
+        },
+        {
+          "approach": "Handle SIGINT gracefully",
+          "code": "# Kissat handles SIGINT and reports partial result",
+          "when": "Interactive use"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "UNKNOWN|indeterminate|resource limit",
+      "message": "Solver returned unknown",
+      "cause": "Could not determine SAT/UNSAT within limits",
+      "solutions": [
+        {
+          "approach": "Increase resources",
+          "code": "kissat --time=7200 --memout=16GB input.cnf",
+          "when": "More resources available"
+        },
+        {
+          "approach": "Try different strategy",
+          "code": "kissat --stable=0  # Or --stable=2",
+          "when": "Change search strategy"
+        },
+        {
+          "approach": "Use portfolio approach",
+          "code": "# Try multiple solvers/configs",
+          "when": "Diversify search"
+        }
+      ]
+    },
+    {
+      "id": "model_extraction",
+      "pattern": "no model|model not available|satisfying assignment",
+      "message": "Cannot extract satisfying assignment",
+      "cause": "Model not available (UNSAT or not computed)",
+      "solutions": [
+        {
+          "approach": "Problem is UNSAT",
+          "code": "# No model exists for unsatisfiable formula",
+          "when": "Result was UNSAT"
+        },
+        {
+          "approach": "Enable model output",
+          "code": "kissat --witness=true input.cnf",
+          "when": "Need satisfying assignment"
+        },
+        {
+          "approach": "Parse output for model",
+          "code": "# Model printed as 'v' lines:\n# v 1 -2 3 0",
+          "when": "Parsing output"
+        }
+      ]
+    },
+    {
+      "id": "configuration_error",
+      "pattern": "invalid option|unknown option|configuration",
+      "message": "Invalid command line option",
+      "cause": "Unrecognized or invalid option specified",
+      "solutions": [
+        {
+          "approach": "Check available options",
+          "code": "kissat --help",
+          "when": "See all options"
+        },
+        {
+          "approach": "Check option spelling",
+          "code": "kissat --options  # List all options with values",
+          "when": "Typo in option name"
+        },
+        {
+          "approach": "Use configuration file",
+          "code": "kissat --config=myconfig.cfg input.cnf",
+          "when": "Many options to set"
+        }
+      ]
+    },
+    {
+      "id": "incremental_error",
+      "pattern": "incremental.*error|assume.*invalid",
+      "message": "Incremental solving error",
+      "cause": "Invalid use of assumption literals or incremental API",
+      "solutions": [
+        {
+          "approach": "Valid assumption literals",
+          "code": "# Assumptions must be existing variables",
+          "when": "Invalid assumption variable"
+        },
+        {
+          "approach": "Clear assumptions between calls",
+          "code": "kissat_solve(solver);\n// Call kissat_solve again for fresh assumptions",
+          "when": "Using API"
+        },
+        {
+          "approach": "Use failed assumptions API",
+          "code": "kissat_failed(solver, lit)  // Check which assumption failed",
+          "when": "Need UNSAT core"
+        }
+      ]
+    },
+    {
+      "id": "clause_length",
+      "pattern": "clause.*too long|large clause|literal limit",
+      "message": "Clause exceeds length limit",
+      "cause": "Single clause has too many literals",
+      "solutions": [
+        {
+          "approach": "Split large clauses",
+          "code": "# Introduce auxiliary variables to split\n# (a OR b OR c OR d) -> (a OR b OR x) AND (NOT x OR c OR d)",
+          "when": "Clauses too large"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "# Review CNF generation - large clauses usually indicate inefficient encoding",
+          "when": "Encoding issue"
+        },
+        {
+          "approach": "Use Tseitin transformation",
+          "code": "# Standard technique for breaking large clauses",
+          "when": "Need to reduce clause size"
+        }
+      ]
+    }
+  ]
+}

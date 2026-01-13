@@ -1,0 +1,145 @@
+{
+  "tool": "expr",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "expr:.*syntax error|non-integer|not a decimal",
+      "message": "Invalid expression syntax",
+      "cause": "Operators need spaces, special chars need escaping",
+      "solutions": [
+        {
+          "approach": "Spaces required",
+          "code": "expr 3 + 4    # Correct: 7\nexpr 3+4      # Wrong: literal '3+4'",
+          "when": "Basic arithmetic"
+        },
+        {
+          "approach": "Escape operators",
+          "code": "expr 3 \\* 4   # Multiply (escape *)\nexpr 3 '*' 4  # Or quote it",
+          "when": "Multiplication"
+        },
+        {
+          "approach": "Parentheses",
+          "code": "expr \\( 3 + 4 \\) \\* 2  # (3+4)*2 = 14",
+          "when": "Grouping"
+        }
+      ]
+    },
+    {
+      "id": "integer_only",
+      "pattern": "non-integer|decimal|floating",
+      "message": "expr only handles integers",
+      "cause": "expr doesn't support floating point",
+      "solutions": [
+        {
+          "approach": "Use bc",
+          "code": "echo 'scale=2; 22/7' | bc",
+          "when": "Need decimals"
+        },
+        {
+          "approach": "Use awk",
+          "code": "awk 'BEGIN {print 22/7}'",
+          "when": "Floating point"
+        },
+        {
+          "approach": "Integer division",
+          "code": "expr 22 / 7   # Result: 3 (integer)",
+          "when": "Integer OK"
+        }
+      ]
+    },
+    {
+      "id": "exit_status",
+      "pattern": "exit.*0|exit.*1|false.*true",
+      "message": "expr exit status confusion",
+      "cause": "Exit 0 means result is non-zero/non-empty; Exit 1 means zero/empty",
+      "solutions": [
+        {
+          "approach": "Understand exits",
+          "code": "expr 1 + 0; echo $?   # Result 1, exit 0\nexpr 0 + 0; echo $?   # Result 0, exit 1 (!)",
+          "when": "In conditionals"
+        },
+        {
+          "approach": "Comparison",
+          "code": "expr 5 \\> 3; echo $?  # 1 (true), exit 0\nexpr 3 \\> 5; echo $?  # 0 (false), exit 1",
+          "when": "Boolean result"
+        },
+        {
+          "approach": "Use (( )) instead",
+          "code": "if (( 5 > 3 )); then echo yes; fi",
+          "when": "bash arithmetic"
+        }
+      ]
+    },
+    {
+      "id": "string_operations",
+      "pattern": "substr|index|length|match",
+      "message": "String function issues",
+      "cause": "String syntax is specific",
+      "solutions": [
+        {
+          "approach": "Length",
+          "code": "expr length 'hello'  # 5",
+          "when": "String length"
+        },
+        {
+          "approach": "Substring",
+          "code": "expr substr 'hello' 2 3  # 'ell' (pos 2, len 3)",
+          "when": "Extract substring"
+        },
+        {
+          "approach": "Index",
+          "code": "expr index 'hello' 'lo'  # 3 (first match of l or o)",
+          "when": "Find character"
+        },
+        {
+          "approach": "Match/regex",
+          "code": "expr 'hello' : 'h.*o'  # 5 (length of match)\nexpr 'hello' : '\\(h.*\\)'  # 'hello' (captured group)",
+          "when": "Pattern matching"
+        }
+      ]
+    },
+    {
+      "id": "regex_escaping",
+      "pattern": "match|:.*pattern|regex",
+      "message": "Regex needs escaping",
+      "cause": "Shell and expr both process escapes",
+      "solutions": [
+        {
+          "approach": "Capture groups",
+          "code": "expr 'file.txt' : '\\(.*\\)\\.txt'  # 'file'",
+          "when": "Extract part"
+        },
+        {
+          "approach": "Simple match",
+          "code": "expr 'hello123' : '[a-z]*'  # 5 (length of letter run)",
+          "when": "Match length"
+        }
+      ]
+    },
+    {
+      "id": "modern_alternatives",
+      "pattern": "deprecated|alternative|bash",
+      "message": "expr is mostly obsolete",
+      "cause": "Modern shells have better built-ins",
+      "solutions": [
+        {
+          "approach": "bash arithmetic",
+          "code": "echo $((3 + 4))\nresult=$((a * b))",
+          "when": "Math in bash"
+        },
+        {
+          "approach": "bash string",
+          "code": "str='hello'\necho ${#str}        # length: 5\necho ${str:1:3}      # substring: ell",
+          "when": "Strings in bash"
+        },
+        {
+          "approach": "let command",
+          "code": "let 'result = 3 * 4'",
+          "when": "bash let"
+        }
+      ]
+    }
+  ]
+}

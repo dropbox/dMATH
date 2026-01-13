@@ -1,0 +1,140 @@
+{
+  "tool": "wc",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "line_count_off_by_one",
+      "pattern": "off by one|missing line|newline",
+      "message": "Line count seems wrong",
+      "cause": "File doesn't end with newline",
+      "solutions": [
+        {
+          "approach": "Check file",
+          "code": "tail -c 1 file.txt | xxd  # Check last char\ncat -A file.txt | tail -1  # Show non-printing",
+          "when": "Verify ending"
+        },
+        {
+          "approach": "Add newline",
+          "code": "echo '' >> file.txt  # Add final newline\nsed -i -e '$a\\' file.txt  # Add if missing",
+          "when": "Fix file"
+        },
+        {
+          "approach": "Count all",
+          "code": "grep -c '' file.txt  # Counts non-terminated too",
+          "when": "Include incomplete"
+        }
+      ]
+    },
+    {
+      "id": "unexpected_count",
+      "pattern": "wrong count|unexpected number|too many|too few",
+      "message": "Unexpected word/char count",
+      "cause": "Different definition of word/char",
+      "solutions": [
+        {
+          "approach": "Count specific",
+          "code": "wc -l file.txt  # Lines only\nwc -w file.txt  # Words only\nwc -c file.txt  # Bytes\nwc -m file.txt  # Characters (multibyte aware)",
+          "when": "Specific count"
+        },
+        {
+          "approach": "Check whitespace",
+          "code": "cat -A file.txt  # Show all whitespace",
+          "when": "Debug words"
+        },
+        {
+          "approach": "Alternative count",
+          "code": "awk '{print NF}' file.txt | head  # Words per line\nawk 'END{print NR}' file.txt  # Lines",
+          "when": "Different method"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot open",
+      "message": "Cannot read file",
+      "cause": "Insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo wc -l /var/log/secure",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la file.txt",
+          "when": "Verify access"
+        }
+      ]
+    },
+    {
+      "id": "binary_file",
+      "pattern": "binary|non-text|strange count",
+      "message": "Binary file counted",
+      "cause": "Binary file treated as text",
+      "solutions": [
+        {
+          "approach": "Byte count",
+          "code": "wc -c file.bin  # Bytes makes sense",
+          "when": "File size"
+        },
+        {
+          "approach": "Check type",
+          "code": "file filename  # Determine file type",
+          "when": "Verify format"
+        },
+        {
+          "approach": "Use stat",
+          "code": "stat -c %s file  # File size in bytes",
+          "when": "Size only"
+        }
+      ]
+    },
+    {
+      "id": "stdin_count",
+      "pattern": "stdin|pipe|no filename",
+      "message": "Counting from stdin",
+      "cause": "Input from pipe instead of file",
+      "solutions": [
+        {
+          "approach": "Pipe usage",
+          "code": "cat file.txt | wc -l  # Count from pipe\ncommand | wc -l  # Count command output",
+          "when": "Pipe input"
+        },
+        {
+          "approach": "Multiple files",
+          "code": "wc -l *.txt  # Shows per-file and total",
+          "when": "Many files"
+        },
+        {
+          "approach": "Total only",
+          "code": "cat *.txt | wc -l  # Combined total\nwc -l *.txt | tail -1  # Total line",
+          "when": "Sum only"
+        }
+      ]
+    },
+    {
+      "id": "unicode_chars",
+      "pattern": "unicode|multibyte|character count|UTF-8",
+      "message": "Character count for Unicode",
+      "cause": "Multibyte characters counted differently",
+      "solutions": [
+        {
+          "approach": "Use -m",
+          "code": "wc -m file.txt  # Count characters (multibyte aware)\nwc -c file.txt  # Count bytes",
+          "when": "UTF-8 files"
+        },
+        {
+          "approach": "Set locale",
+          "code": "LC_ALL=en_US.UTF-8 wc -m file.txt",
+          "when": "Locale issues"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "file file.txt  # Shows encoding\niconv -f UTF-8 -t UTF-8 file.txt > /dev/null && echo 'Valid UTF-8'",
+          "when": "Verify encoding"
+        }
+      ]
+    }
+  ]
+}

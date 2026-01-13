@@ -1,0 +1,184 @@
+{
+  "tool": "hasura",
+  "category": "graphql",
+  "common_errors": [
+    {
+      "error": "DATABASE_CONNECTION_FAILED",
+      "pattern": "connection.*refused|could not connect to server|ConnectionError|ECONNREFUSED",
+      "severity": "critical",
+      "causes": [
+        "Database not running",
+        "Wrong connection string",
+        "Firewall blocking connection",
+        "SSL configuration mismatch"
+      ],
+      "solutions": [
+        "Verify database URL: HASURA_GRAPHQL_DATABASE_URL",
+        "Check database is running: pg_isready -h host -p 5432",
+        "Verify SSL mode: ?sslmode=require or disable",
+        "Check firewall rules between Hasura and database"
+      ]
+    },
+    {
+      "error": "METADATA_INCONSISTENCY",
+      "pattern": "Metadata is inconsistent|inconsistent.*object|referenced.*does not exist",
+      "severity": "high",
+      "causes": [
+        "Database schema changed without metadata update",
+        "Missing tables or columns",
+        "Renamed database objects",
+        "Broken relationships"
+      ],
+      "solutions": [
+        "Reload metadata: hasura metadata reload",
+        "Apply migrations: hasura migrate apply",
+        "Clear inconsistent metadata: hasura metadata ic drop",
+        "Sync with database: hasura metadata diff"
+      ]
+    },
+    {
+      "error": "PERMISSION_DENIED",
+      "pattern": "permission denied|not allowed|check constraint.*failed|x-hasura-.*required",
+      "severity": "high",
+      "causes": [
+        "Row-level permissions blocking access",
+        "Missing x-hasura-* headers",
+        "Role not having permission for operation",
+        "Check constraint on insert/update"
+      ],
+      "solutions": [
+        "Review permissions in Hasura Console > Data > Table > Permissions",
+        "Add required headers: x-hasura-admin-secret, x-hasura-role",
+        "Update row permission rules",
+        "Check custom check constraints"
+      ]
+    },
+    {
+      "error": "JWT_VERIFICATION_FAILED",
+      "pattern": "JWT.*invalid|JWTExpired|Could not verify JWT|x-hasura-.*claims not found",
+      "severity": "high",
+      "causes": [
+        "Invalid JWT signature",
+        "Token expired",
+        "Missing Hasura claims namespace",
+        "Wrong JWT secret configuration"
+      ],
+      "solutions": [
+        "Verify HASURA_GRAPHQL_JWT_SECRET configuration",
+        "Check token expiration (exp claim)",
+        "Add Hasura claims: { 'https://hasura.io/jwt/claims': { 'x-hasura-role': 'user' } }",
+        "Use jwt.io to debug token"
+      ]
+    },
+    {
+      "error": "ADMIN_SECRET_REQUIRED",
+      "pattern": "admin secret.*required|x-hasura-admin-secret.*missing|Unauthorized",
+      "severity": "high",
+      "causes": [
+        "Request missing admin secret header",
+        "Wrong admin secret value",
+        "No valid authentication method"
+      ],
+      "solutions": [
+        "Add header: x-hasura-admin-secret: <secret>",
+        "Verify HASURA_GRAPHQL_ADMIN_SECRET matches",
+        "Use JWT or webhook auth for non-admin access",
+        "Check if unauthorized role enabled: HASURA_GRAPHQL_UNAUTHORIZED_ROLE"
+      ]
+    },
+    {
+      "error": "REMOTE_SCHEMA_ERROR",
+      "pattern": "Remote schema.*failed|remote schema.*unreachable|REMOTE_SCHEMA_ERROR",
+      "severity": "high",
+      "causes": [
+        "Remote GraphQL server down",
+        "Network connectivity issues",
+        "Remote schema introspection failed",
+        "Type conflicts with local schema"
+      ],
+      "solutions": [
+        "Verify remote endpoint is accessible",
+        "Check remote schema health",
+        "Review type conflicts: use type name customization",
+        "Add timeout configuration for remote schemas"
+      ]
+    },
+    {
+      "error": "ACTION_HANDLER_ERROR",
+      "pattern": "action handler.*error|webhook.*failed|action.*timeout",
+      "severity": "high",
+      "causes": [
+        "Action webhook endpoint failure",
+        "Handler returning invalid response",
+        "Timeout in action handler",
+        "Network issues to handler"
+      ],
+      "solutions": [
+        "Check action handler logs",
+        "Verify handler returns correct GraphQL response format",
+        "Increase action timeout",
+        "Test handler endpoint directly"
+      ]
+    },
+    {
+      "error": "EVENT_TRIGGER_FAILED",
+      "pattern": "event trigger.*failed|webhook.*error|event delivery.*failed",
+      "severity": "medium",
+      "causes": [
+        "Webhook endpoint down",
+        "Handler returning non-2xx status",
+        "Payload too large",
+        "Timeout exceeded"
+      ],
+      "solutions": [
+        "Check event logs in Console > Events > Logs",
+        "Verify webhook returns 200 status",
+        "Review retry configuration",
+        "Check webhook handler for errors"
+      ]
+    },
+    {
+      "error": "QUERY_DEPTH_EXCEEDED",
+      "pattern": "depth.*exceeded|query too deep",
+      "severity": "medium",
+      "causes": [
+        "Query exceeds configured depth limit",
+        "Deeply nested relationships",
+        "Circular relationship queries"
+      ],
+      "solutions": [
+        "Increase HASURA_GRAPHQL_MAX_QUERY_DEPTH",
+        "Flatten query structure",
+        "Use pagination for nested queries",
+        "Split into multiple queries"
+      ]
+    },
+    {
+      "error": "MIGRATION_FAILED",
+      "pattern": "migration.*failed|HasuraCLI.*error|already applied",
+      "severity": "high",
+      "causes": [
+        "SQL syntax error in migration",
+        "Conflicting migration files",
+        "Database state doesn't match metadata",
+        "Missing environment variables"
+      ],
+      "solutions": [
+        "Check migration SQL for errors",
+        "Review migration status: hasura migrate status",
+        "Squash migrations if needed: hasura migrate squash",
+        "Reset metadata: hasura metadata clear && hasura metadata apply"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use migrations for schema changes",
+    "Implement proper role-based permissions",
+    "Enable query depth and batch limits",
+    "Use JWTs for production authentication",
+    "Monitor event triggers and actions",
+    "Test permissions thoroughly",
+    "Use metadata export for version control"
+  ],
+  "related_tools": ["apollo_server", "prisma", "postgraphile", "graphql_tools"]
+}

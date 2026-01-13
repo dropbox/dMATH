@@ -1,0 +1,145 @@
+{
+  "tool": "tree_sitter",
+  "version": "0.22.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "grammar_conflict",
+      "pattern": "conflict|reduce/reduce|shift/reduce|ambiguous",
+      "message": "Grammar has conflicts",
+      "cause": "Multiple rules can match same input",
+      "solutions": [
+        {
+          "approach": "Add precedence",
+          "code": "prec.left(1, seq($.expr, '+', $.expr))\nprec.left(2, seq($.expr, '*', $.expr))  // higher precedence",
+          "when": "Operator precedence"
+        },
+        {
+          "approach": "Use conflicts array",
+          "code": "conflicts: $ => [\n  [$.type_identifier, $.expression],\n],",
+          "when": "Known ambiguity"
+        },
+        {
+          "approach": "Rewrite rules",
+          "code": "// Make grammar unambiguous by restructuring\n// E.g., distinguish statement vs expression context",
+          "when": "Grammar redesign needed"
+        }
+      ]
+    },
+    {
+      "id": "undefined_symbol",
+      "pattern": "undefined symbol|reference to undefined rule|\\$\\.\\w+ is not defined",
+      "message": "Referenced rule not defined",
+      "cause": "Rule name typo or missing rule definition",
+      "solutions": [
+        {
+          "approach": "Check rule names",
+          "code": "rules: {\n  program: $ => repeat($.statement),\n  statement: $ => choice($.if_statement, $.expression),\n  // statement referenced above must be defined\n}",
+          "when": "Typo in rule name"
+        },
+        {
+          "approach": "Define missing rules",
+          "code": "if_statement: $ => seq('if', $.expression, $.block),",
+          "when": "Rule not defined"
+        },
+        {
+          "approach": "Use inline rules",
+          "code": "// Use inline for simple patterns\n_statement_terminator: $ => choice(';', '\\n'),",
+          "when": "Helper rules"
+        }
+      ]
+    },
+    {
+      "id": "parsing_slow",
+      "pattern": "timeout|parsing.*slow|memory.*exceeded|stack overflow",
+      "message": "Parsing performance issue",
+      "cause": "Ambiguous grammar causing exponential backtracking",
+      "solutions": [
+        {
+          "approach": "Reduce ambiguity",
+          "code": "// More specific patterns first\nkeyword: $ => choice('if', 'else', 'while'),\nidentifier: $ => /[a-z_][a-z0-9_]*/,  // won't match keywords",
+          "when": "Ambiguous grammar"
+        },
+        {
+          "approach": "Use word boundaries",
+          "code": "keyword: $ => token(prec(1, choice('if', 'else'))),\nidentifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,",
+          "when": "Keyword vs identifier"
+        },
+        {
+          "approach": "Limit recursion",
+          "code": "// Consider iterative rules over recursive\nexpr: $ => seq($.term, repeat(seq('+', $.term)))",
+          "when": "Deep nesting"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "build failed|npm run generate|tree-sitter generate",
+      "message": "Grammar generation failed",
+      "cause": "Invalid grammar.js or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Install dependencies",
+          "code": "npm install\nnpm run build  # or: tree-sitter generate",
+          "when": "First build"
+        },
+        {
+          "approach": "Check grammar syntax",
+          "code": "// Ensure grammar.js exports valid grammar\nmodule.exports = grammar({\n  name: 'mylang',\n  rules: { source_file: $ => 'hello' }\n});",
+          "when": "Invalid grammar.js"
+        },
+        {
+          "approach": "Update tree-sitter-cli",
+          "code": "npm install -g tree-sitter-cli@latest",
+          "when": "CLI version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "query_error",
+      "pattern": "Query error|invalid query|pattern error|capture.*not found",
+      "message": "Tree-sitter query syntax error",
+      "cause": "Invalid query pattern or node type",
+      "solutions": [
+        {
+          "approach": "Check node types",
+          "code": "// Use tree-sitter parse to see actual node types\ntree-sitter parse example.code --quiet | head -50",
+          "when": "Wrong node type"
+        },
+        {
+          "approach": "Fix query syntax",
+          "code": "; Correct query syntax:\n(function_definition\n  name: (identifier) @function.name)\n\n; Not:\n(function_definition identifier @name)",
+          "when": "Query syntax error"
+        },
+        {
+          "approach": "Use wildcard",
+          "code": "; Match any node type\n(_ @node)",
+          "when": "Debug queries"
+        }
+      ]
+    },
+    {
+      "id": "binding_error",
+      "pattern": "language.*not found|cannot load language|binding.*failed",
+      "message": "Language binding not loaded",
+      "cause": "Native library not built or wrong path",
+      "solutions": [
+        {
+          "approach": "Build language",
+          "code": "cd tree-sitter-mylang\nnpx tree-sitter generate\nnpx tree-sitter build",
+          "when": "Language not built"
+        },
+        {
+          "approach": "Specify parser path",
+          "code": "// Node.js:\nconst Parser = require('tree-sitter');\nconst MyLang = require('./tree-sitter-mylang');\nparser.setLanguage(MyLang);",
+          "when": "Custom language path"
+        },
+        {
+          "approach": "Use prebuilt binding",
+          "code": "npm install tree-sitter-javascript\n// Languages available: javascript, python, rust, etc.",
+          "when": "Common language"
+        }
+      ]
+    }
+  ]
+}

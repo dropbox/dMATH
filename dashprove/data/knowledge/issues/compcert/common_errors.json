@@ -1,0 +1,65 @@
+{
+  "tool_id": "compcert",
+  "tool_name": "CompCert",
+  "description": "Formally verified C compiler developed in Coq, guaranteeing that compiled code behaves exactly as specified by source semantics",
+  "common_errors": [
+    {
+      "id": "undefined_behavior_in_source",
+      "pattern": "undefined behavior|CompCert does not guarantee|source has UB",
+      "category": "semantics",
+      "severity": "high",
+      "cause": "Source C code contains undefined behavior, which CompCert's guarantees don't cover - verification only applies to well-defined programs",
+      "solution": "Fix undefined behavior in source code. Use tools like Frama-C or CBMC to detect UB first. CompCert guarantees: defined behavior is preserved, not UB.",
+      "example": "// UB: signed overflow - CompCert may compile differently than expected\nint f(int x) { return x + 1; }  // overflow when x == INT_MAX",
+      "related_concepts": ["c_semantics", "undefined_behavior", "source_correctness"]
+    },
+    {
+      "id": "unsupported_c_feature",
+      "pattern": "unsupported feature|extension not supported|CompCert does not support",
+      "category": "compatibility",
+      "severity": "medium",
+      "cause": "Code uses C language features or GCC/Clang extensions not supported by CompCert's C dialect",
+      "solution": "Avoid unsupported features: VLAs, _Complex, some builtins. Rewrite using supported constructs. Check CompCert user manual for supported subset.",
+      "related_concepts": ["c_subset", "gcc_extensions", "language_compatibility"]
+    },
+    {
+      "id": "proof_failure_internal",
+      "pattern": "Coq proof failed|internal error|compiler invariant violated",
+      "category": "internal",
+      "severity": "critical",
+      "cause": "Internal compiler error indicating a potential bug in CompCert itself - extremely rare due to formal verification",
+      "solution": "Report to CompCert developers with minimal reproducer. This indicates a serious issue. Temporary workaround: simplify code to avoid triggering path.",
+      "related_concepts": ["compiler_bug", "trusted_computing_base", "coq_proof"]
+    },
+    {
+      "id": "linking_abi_mismatch",
+      "pattern": "ABI mismatch|linking failed|calling convention error",
+      "category": "interoperability",
+      "severity": "high",
+      "cause": "CompCert-compiled code linked with GCC/Clang-compiled code has ABI incompatibilities",
+      "solution": "Ensure consistent compiler flags. Use -fstruct-passing for struct passing convention. Compile interface code with same compiler. Verify struct layouts match.",
+      "related_concepts": ["abi_compatibility", "struct_passing", "mixed_compilation"]
+    },
+    {
+      "id": "performance_overhead",
+      "pattern": "slow generated code|missed optimization|performance regression",
+      "category": "performance",
+      "severity": "low",
+      "cause": "CompCert generates correct but potentially slower code than aggressive optimizing compilers",
+      "solution": "This is a tradeoff for verification. Use CompCert for critical code, regular compilers for performance-critical non-critical code. Profile before optimizing.",
+      "related_concepts": ["verification_overhead", "optimization_tradeoff", "performance_tuning"]
+    }
+  ],
+  "best_practices": [
+    "Eliminate undefined behavior in source before using CompCert",
+    "Verify source code with Frama-C's value analysis first",
+    "Use CompCert's clightgen for semantic analysis",
+    "Keep trusted computing base small - only unverified parts matter",
+    "Test on target architecture due to platform-specific semantics"
+  ],
+  "references": [
+    "https://compcert.org/",
+    "https://compcert.org/man/manual.html",
+    "https://dl.acm.org/doi/10.1145/1111320.1111042"
+  ]
+}

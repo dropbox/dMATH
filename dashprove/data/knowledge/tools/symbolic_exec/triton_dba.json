@@ -1,0 +1,145 @@
+{
+  "id": "triton_dba",
+  "name": "Triton DBA",
+  "category": "symbolic_execution",
+  "subcategory": "binary_analysis",
+  "description": "Dynamic binary analysis framework with symbolic execution and taint tracking",
+  "long_description": "Triton is a dynamic binary analysis framework from Quarkslab that provides SMT-based symbolic execution, taint analysis, and IR lifting for binaries. It exposes a Python API for building concolic analyzers, exploit generators, and reverse-engineering automation.",
+  "capabilities": [
+    "symbolic_execution",
+    "taint_analysis",
+    "path_constraint_generation",
+    "smt_solving",
+    "instruction_lifting",
+    "concolic_testing"
+  ],
+  "property_types": [
+    "security",
+    "reachability"
+  ],
+  "input_languages": [
+    "binary",
+    "python"
+  ],
+  "output_formats": [
+    "path_constraints",
+    "models",
+    "execution_trace"
+  ],
+  "installation": {
+    "methods": [
+      {
+        "type": "pip",
+        "command": "pip install triton"
+      },
+      {
+        "type": "source",
+        "url": "https://github.com/JonathanSalwan/Triton"
+      }
+    ],
+    "dependencies": [
+      "python",
+      "capstone",
+      "unicorn",
+      "z3"
+    ],
+    "platforms": [
+      "linux",
+      "macos"
+    ]
+  },
+  "documentation": {
+    "official": "https://triton.quarkslab.com/",
+    "tutorial": "https://triton.quarkslab.com/documentation/doxygen/",
+    "api_reference": "https://triton.quarkslab.com/documentation/doxygen/",
+    "examples": "https://github.com/JonathanSalwan/Triton/tree/master/src/examples/python"
+  },
+  "tactics": [
+    {
+      "name": "enable_symbolic_execution",
+      "description": "Mark registers/memory as symbolic",
+      "syntax": "ctx.symbolizeRegister(reg)",
+      "when_to_use": "Starting symbolic exploration from concrete state",
+      "examples": [
+        "ctx.symbolizeMemory(addr, 4)"
+      ]
+    },
+    {
+      "name": "taint_sources",
+      "description": "Seed taint to track user-controlled data",
+      "syntax": "ctx.taintMemory(addr)",
+      "when_to_use": "Analyzing data flow and exploitability",
+      "examples": [
+        "ctx.taintRegister(REG.RDI)"
+      ]
+    },
+    {
+      "name": "solve_constraints",
+      "description": "Solve collected path constraints",
+      "syntax": "ctx.getModel(ctx.getPathPredicate())",
+      "when_to_use": "Generating inputs that reach target state",
+      "examples": [
+        "model = ctx.getModel(expr)"
+      ]
+    }
+  ],
+  "error_patterns": [
+    {
+      "pattern": "Unsupported instruction",
+      "meaning": "Disassembler could not lift opcode",
+      "common_causes": [
+        "Unimplemented ISA extension"
+      ],
+      "fixes": [
+        "Update Triton",
+        "Fallback to concrete execution"
+      ]
+    },
+    {
+      "pattern": "Solver timeout",
+      "meaning": "SMT solving too expensive",
+      "common_causes": [
+        "Large path predicate",
+        "Many symbolic bytes"
+      ],
+      "fixes": [
+        "Add constraints",
+        "Reduce symbolic inputs",
+        "Use path pruning"
+      ]
+    }
+  ],
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": [
+      "reachability",
+      "security"
+    ],
+    "cli_command": "dashprove verify --backend triton_dba"
+  },
+  "performance": {
+    "typical_runtime": "Depends on explored paths; seconds to hours",
+    "scalability": "Path explosion without pruning",
+    "memory_usage": "Grows with number of path constraints"
+  },
+  "comparisons": {
+    "similar_tools": [
+      "angr",
+      "manticore"
+    ],
+    "advantages": [
+      "Flexible Python API",
+      "Strong taint engine"
+    ],
+    "disadvantages": [
+      "Limited Windows support",
+      "Manual exploration needed"
+    ]
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Quarkslab",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "tool": "go_vet",
+  "version": "go1.23",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "vet_printf",
+      "pattern": "Printf format %\\w arg .* wrong type",
+      "message": "Printf format argument type mismatch",
+      "cause": "Format specifier doesn't match argument type",
+      "solutions": [
+        {
+          "approach": "Fix format specifier",
+          "code": "fmt.Printf(\"%d\", intVal)     // int\nfmt.Printf(\"%s\", stringVal)  // string\nfmt.Printf(\"%v\", anyVal)     // any type",
+          "when": "Using wrong specifier"
+        },
+        {
+          "approach": "Use %v for generic",
+          "code": "fmt.Printf(\"%v\", value)",
+          "when": "Type may vary"
+        }
+      ]
+    },
+    {
+      "id": "vet_printf_arg_count",
+      "pattern": "Printf.*wrong number of args",
+      "message": "Printf argument count mismatch",
+      "cause": "Number of format specifiers doesn't match arguments",
+      "solutions": [
+        {
+          "approach": "Match specifiers to args",
+          "code": "fmt.Printf(\"a=%d b=%s\", a, b)  // 2 specifiers, 2 args",
+          "when": "Miscount"
+        },
+        {
+          "approach": "Use indexed arguments",
+          "code": "fmt.Printf(\"%[1]d %[1]d\", val)  // Reuse argument",
+          "when": "Same value used twice"
+        }
+      ]
+    },
+    {
+      "id": "vet_structtag",
+      "pattern": "struct field .* has malformed tag",
+      "message": "Malformed struct tag",
+      "cause": "Struct tag syntax is incorrect",
+      "solutions": [
+        {
+          "approach": "Fix tag syntax",
+          "code": "type User struct {\n    Name string `json:\"name\"`  // key:\"value\" format\n}",
+          "when": "Syntax error in tag"
+        },
+        {
+          "approach": "Use raw string",
+          "code": "type User struct {\n    Name string `json:\"name\" xml:\"name\"`  // backticks\n}",
+          "when": "Quote issues"
+        }
+      ]
+    },
+    {
+      "id": "vet_copylocks",
+      "pattern": "copies lock value",
+      "message": "Copying a lock value",
+      "cause": "sync.Mutex, sync.WaitGroup, etc. copied by value",
+      "solutions": [
+        {
+          "approach": "Use pointer",
+          "code": "func process(mu *sync.Mutex) { ... }",
+          "when": "Passing to function"
+        },
+        {
+          "approach": "Don't copy struct with lock",
+          "code": "type Safe struct {\n    mu sync.Mutex\n}\n// Pass *Safe, not Safe",
+          "when": "Lock embedded in struct"
+        }
+      ]
+    },
+    {
+      "id": "vet_loopclosure",
+      "pattern": "loop variable .* captured by func literal",
+      "message": "Loop variable captured by closure",
+      "cause": "Goroutine/closure captures loop variable that changes",
+      "solutions": [
+        {
+          "approach": "Pass as argument",
+          "code": "for _, v := range items {\n    go func(v Item) {\n        process(v)  // Use parameter\n    }(v)  // Pass value\n}",
+          "when": "Go < 1.22"
+        },
+        {
+          "approach": "Create local copy",
+          "code": "for _, v := range items {\n    v := v  // Shadow with local copy\n    go func() { process(v) }()\n}",
+          "when": "Alternative pattern"
+        },
+        {
+          "approach": "Use Go 1.22+",
+          "code": "// Go 1.22 changed loop variable semantics\n// Each iteration gets a new variable",
+          "when": "Can upgrade Go version"
+        }
+      ]
+    },
+    {
+      "id": "vet_unreachable",
+      "pattern": "unreachable code",
+      "message": "Code after return is unreachable",
+      "cause": "Code follows unconditional return, panic, or infinite loop",
+      "solutions": [
+        {
+          "approach": "Remove unreachable code",
+          "code": "func f() {\n    return\n    // Remove code here\n}",
+          "when": "Code is dead"
+        },
+        {
+          "approach": "Fix control flow",
+          "code": "func f() {\n    if condition {\n        return\n    }\n    // This code is now reachable\n}",
+          "when": "Return should be conditional"
+        }
+      ]
+    },
+    {
+      "id": "vet_unsafeptr",
+      "pattern": "possible misuse of unsafe.Pointer",
+      "message": "Suspicious unsafe.Pointer conversion",
+      "cause": "Converting unsafe.Pointer in ways that may violate safety rules",
+      "solutions": [
+        {
+          "approach": "Follow unsafe rules",
+          "code": "// Valid: *T1 -> unsafe.Pointer -> *T2\np := unsafe.Pointer(&x)\ny := *(*T2)(p)",
+          "when": "Types have same memory layout"
+        },
+        {
+          "approach": "Use unsafe.Add",
+          "code": "// Valid: pointer arithmetic\np := unsafe.Add(unsafe.Pointer(&arr[0]), offset)",
+          "when": "Need pointer arithmetic"
+        },
+        {
+          "approach": "Avoid intermediate uintptr",
+          "code": "// WRONG: uintptr may be stale\n// p := unsafe.Pointer(uintptr(p) + offset)\n// RIGHT:\np := unsafe.Add(p, offset)",
+          "when": "Doing pointer math"
+        }
+      ]
+    },
+    {
+      "id": "vet_nilness",
+      "pattern": "nil dereference|nil pointer",
+      "message": "Possible nil pointer dereference",
+      "cause": "Dereferencing pointer that may be nil",
+      "solutions": [
+        {
+          "approach": "Add nil check",
+          "code": "if ptr != nil {\n    value := *ptr\n}",
+          "when": "Pointer may be nil"
+        },
+        {
+          "approach": "Return early on nil",
+          "code": "if ptr == nil {\n    return defaultValue\n}",
+          "when": "nil is error condition"
+        }
+      ]
+    },
+    {
+      "id": "vet_assign",
+      "pattern": "self-assignment",
+      "message": "Variable assigned to itself",
+      "cause": "x = x is useless",
+      "solutions": [
+        {
+          "approach": "Remove self-assignment",
+          "code": "// Remove: x = x",
+          "when": "Assignment is useless"
+        },
+        {
+          "approach": "Fix typo",
+          "code": "y = x  // Did you mean different variable?",
+          "when": "Typo in variable name"
+        }
+      ]
+    },
+    {
+      "id": "vet_atomic",
+      "pattern": "direct assignment to atomic value",
+      "message": "Atomic value assigned directly",
+      "cause": "atomic.Value or *int64 for atomic assigned with = instead of atomic operations",
+      "solutions": [
+        {
+          "approach": "Use atomic operations",
+          "code": "atomic.StoreInt64(&counter, newValue)\natomic.AddInt64(&counter, 1)",
+          "when": "Using atomic int"
+        },
+        {
+          "approach": "Use atomic.Value.Store",
+          "code": "var v atomic.Value\nv.Store(newValue)  // Not v = newValue",
+          "when": "Using atomic.Value"
+        }
+      ]
+    },
+    {
+      "id": "vet_buildtag",
+      "pattern": "malformed.*build constraint",
+      "message": "Invalid build constraint",
+      "cause": "//go:build or // +build syntax is wrong",
+      "solutions": [
+        {
+          "approach": "Fix go:build syntax",
+          "code": "//go:build linux && amd64\n\npackage main",
+          "when": "Using new syntax"
+        },
+        {
+          "approach": "Ensure blank line",
+          "code": "//go:build linux\n\npackage main  // Blank line required before package",
+          "when": "Missing blank line"
+        }
+      ]
+    },
+    {
+      "id": "vet_tests",
+      "pattern": "wrong signature for .*(Test|Benchmark|Example)",
+      "message": "Test/Benchmark function has wrong signature",
+      "cause": "Test function doesn't match required signature",
+      "solutions": [
+        {
+          "approach": "Fix Test signature",
+          "code": "func TestFoo(t *testing.T) { ... }",
+          "when": "Test function"
+        },
+        {
+          "approach": "Fix Benchmark signature",
+          "code": "func BenchmarkBar(b *testing.B) {\n    for i := 0; i < b.N; i++ { ... }\n}",
+          "when": "Benchmark function"
+        },
+        {
+          "approach": "Fix Example signature",
+          "code": "func ExampleBaz() {\n    // Output: expected\n}",
+          "when": "Example function"
+        }
+      ]
+    }
+  ]
+}

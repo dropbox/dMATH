@@ -1,0 +1,117 @@
+{
+  "tool": "puppeteer",
+  "version": "22.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "navigation_timeout",
+      "pattern": "TimeoutError: Navigation timeout|page.goto.*timeout",
+      "message": "Navigation exceeded timeout",
+      "cause": "Slow page load, blocked requests, or waitUntil condition never met",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "await page.goto(url, { timeout: 60000, waitUntil: 'networkidle2' });",
+          "when": "Known slow page"
+        },
+        {
+          "approach": "Disable heavy resources",
+          "code": "await page.setRequestInterception(true);\npage.on('request', req => { if (['image','font'].includes(req.resourceType())) return req.abort(); req.continue(); });",
+          "when": "Bandwidth limited"
+        },
+        {
+          "approach": "Wait for specific selector",
+          "code": "await page.waitForSelector('#app-ready', { timeout: 30000 });",
+          "when": "SPA never becomes network idle"
+        }
+      ]
+    },
+    {
+      "id": "browser_launch_failed",
+      "pattern": "Failed to launch the browser process|executable doesn't exist|missing dependencies",
+      "message": "Chromium could not start",
+      "cause": "Chromium missing or OS dependencies not installed",
+      "solutions": [
+        {
+          "approach": "Use bundled Chromium",
+          "code": "npm install --force puppeteer",
+          "when": "Download failed previously"
+        },
+        {
+          "approach": "Point to system Chrome",
+          "code": "export PUPPETEER_EXECUTABLE_PATH=$(which chromium-browser)",
+          "when": "Use preinstalled browser"
+        },
+        {
+          "approach": "Install deps",
+          "code": "apt-get install -y libnss3 libatk1.0-0 libdrm-dev fonts-liberation",
+          "when": "Linux libraries missing"
+        }
+      ]
+    },
+    {
+      "id": "target_closed",
+      "pattern": "Protocol error \\(Target closed\\)|Execution context was destroyed|Cannot find context",
+      "message": "Page or context closed unexpectedly",
+      "cause": "Page crashed, navigation replaced context, or code used closed page",
+      "solutions": [
+        {
+          "approach": "Await navigation",
+          "code": "const [response] = await Promise.all([page.waitForNavigation(), page.click('#submit')]);",
+          "when": "Action triggers navigation"
+        },
+        {
+          "approach": "Handle page crashes",
+          "code": "page.on('error', err => console.error('page crash', err));",
+          "when": "OOM or browser crash suspected"
+        },
+        {
+          "approach": "Avoid reusing closed pages",
+          "code": "if (page.isClosed()) page = await browser.newPage();",
+          "when": "Page closed by test"
+        }
+      ]
+    },
+    {
+      "id": "selector_timeout",
+      "pattern": "waiting for selector.*failed|TimeoutError: waiting for selector",
+      "message": "Selector did not appear in time",
+      "cause": "Wrong selector or element rendered in different frame/shadow DOM",
+      "solutions": [
+        {
+          "approach": "Verify selector",
+          "code": "await page.evaluate(() => document.querySelector('#id'))",
+          "when": "Ensure selector matches"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "await page.waitForSelector('#id', { timeout: 30000 });",
+          "when": "Slow render"
+        },
+        {
+          "approach": "Handle frames",
+          "code": "const frame = page.frames().find(f => f.url().includes('iframe')); await frame.waitForSelector('#id');",
+          "when": "Element inside iframe"
+        }
+      ]
+    },
+    {
+      "id": "cert_error",
+      "pattern": "net::ERR_CERT_AUTHORITY_INVALID|SSL certificate error",
+      "message": "Requests blocked by TLS errors",
+      "cause": "Self-signed certificates without trust",
+      "solutions": [
+        {
+          "approach": "Ignore HTTPS errors (dev only)",
+          "code": "const browser = await puppeteer.launch({ ignoreHTTPSErrors: true });",
+          "when": "Testing non-production"
+        },
+        {
+          "approach": "Trust certificate",
+          "code": "Add CA to OS trust store or launch with --ignore-certificate-errors",
+          "when": "Need TLS validation bypass"
+        }
+      ]
+    }
+  ]
+}

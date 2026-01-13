@@ -1,0 +1,181 @@
+{
+  "tool": "happo",
+  "version": "9.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_api_key",
+      "pattern": "HAPPO_API_KEY.*missing|API key not|authentication.*failed",
+      "message": "Happo API credentials not configured",
+      "cause": "HAPPO_API_KEY or HAPPO_API_SECRET not set",
+      "solutions": [
+        {
+          "approach": "Set environment variables",
+          "code": "export HAPPO_API_KEY=your_key\nexport HAPPO_API_SECRET=your_secret",
+          "when": "Running locally"
+        },
+        {
+          "approach": "Configure in happo.js",
+          "code": "module.exports = {\n  apiKey: process.env.HAPPO_API_KEY,\n  apiSecret: process.env.HAPPO_API_SECRET\n};",
+          "when": "Using config file"
+        },
+        {
+          "approach": "Add to CI",
+          "code": "env:\n  HAPPO_API_KEY: ${{ secrets.HAPPO_API_KEY }}\n  HAPPO_API_SECRET: ${{ secrets.HAPPO_API_SECRET }}",
+          "when": "CI configuration"
+        }
+      ]
+    },
+    {
+      "id": "no_snapshots",
+      "pattern": "No snapshots|No examples found|Nothing to compare",
+      "message": "No snapshots were captured",
+      "cause": "No happo.screenshot calls or examples registered",
+      "solutions": [
+        {
+          "approach": "Add screenshot calls",
+          "code": "const happo = require('happo-cypress');\nhappo.screenshot('Component Name');",
+          "when": "Using Cypress"
+        },
+        {
+          "approach": "Check happo examples",
+          "code": "// happo-examples.js\nexport default () => [\n  { component: 'Button', variants: { default: <Button /> } }\n];",
+          "when": "Using happo-e2e"
+        },
+        {
+          "approach": "Verify config targets",
+          "code": "module.exports = {\n  targets: { chrome: { ... } },\n  include: '**/*-happo.{js,jsx}'\n};",
+          "when": "Files not matching pattern"
+        }
+      ]
+    },
+    {
+      "id": "diff_detected",
+      "pattern": "Diffs? detected|visual.*differences|Changed screenshots",
+      "message": "Visual differences found",
+      "cause": "Component appearance changed from baseline",
+      "solutions": [
+        {
+          "approach": "Review in dashboard",
+          "code": "# Visit happo.io dashboard to review",
+          "when": "Check if intentional"
+        },
+        {
+          "approach": "Accept changes",
+          "code": "happo approve",
+          "when": "Changes are intentional"
+        },
+        {
+          "approach": "Set threshold",
+          "code": "happo.screenshot('Name', { diffThreshold: 0.001 });",
+          "when": "Allow minor variations"
+        }
+      ]
+    },
+    {
+      "id": "target_error",
+      "pattern": "Target.*failed|Browser.*error|chrome.*firefox",
+      "message": "Browser target failed to render",
+      "cause": "Browser-specific rendering issue",
+      "solutions": [
+        {
+          "approach": "Check target config",
+          "code": "module.exports = {\n  targets: {\n    'chrome-desktop': { browserType: 'chrome', viewport: '1024x768' }\n  }\n};",
+          "when": "Invalid target config"
+        },
+        {
+          "approach": "Skip problematic target",
+          "code": "happo.screenshot('Name', { targets: ['chrome-desktop'] });",
+          "when": "Target-specific issues"
+        }
+      ]
+    },
+    {
+      "id": "render_timeout",
+      "pattern": "Render timeout|Timed out|took too long",
+      "message": "Component took too long to render",
+      "cause": "Component or async operations taking too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "happo.screenshot('Name', { renderTimeout: 30000 });",
+          "when": "Slow rendering component"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "happo.screenshot('Name', { waitForSelector: '.loaded' });",
+          "when": "Async content"
+        },
+        {
+          "approach": "Mock slow deps",
+          "code": "// Mock API calls or heavy computations",
+          "when": "External dependencies slow"
+        }
+      ]
+    },
+    {
+      "id": "storybook_integration",
+      "pattern": "Storybook.*error|Could not connect|storybook-happo",
+      "message": "Storybook integration failed",
+      "cause": "Storybook not running or plugin misconfigured",
+      "solutions": [
+        {
+          "approach": "Start Storybook first",
+          "code": "npm run storybook &\nhappo-ci",
+          "when": "Storybook not running"
+        },
+        {
+          "approach": "Configure port",
+          "code": "module.exports = {\n  storybook: { port: 6006 }\n};",
+          "when": "Non-default port"
+        },
+        {
+          "approach": "Check addon",
+          "code": "// .storybook/main.js\naddons: ['happo-plugin-storybook']",
+          "when": "Missing addon"
+        }
+      ]
+    },
+    {
+      "id": "baseline_missing",
+      "pattern": "No baseline|baseline.*not found|first run",
+      "message": "No baseline exists for comparison",
+      "cause": "First run or baseline branch not set",
+      "solutions": [
+        {
+          "approach": "Run on main first",
+          "code": "git checkout main && happo-ci",
+          "when": "Need to establish baseline"
+        },
+        {
+          "approach": "Set baseline SHA",
+          "code": "HAPPO_BASE_SHA=$(git rev-parse origin/main) happo-ci",
+          "when": "Specify baseline commit"
+        }
+      ]
+    },
+    {
+      "id": "chunk_upload_failed",
+      "pattern": "Chunk upload.*failed|Upload error|network.*error",
+      "message": "Failed to upload screenshot chunks",
+      "cause": "Network issues or large snapshots",
+      "solutions": [
+        {
+          "approach": "Retry",
+          "code": "happo-ci --retry 3",
+          "when": "Transient network issues"
+        },
+        {
+          "approach": "Reduce snapshot size",
+          "code": "// Use smaller viewports or reduce component complexity",
+          "when": "Snapshots too large"
+        },
+        {
+          "approach": "Check proxy settings",
+          "code": "# Ensure HTTPS_PROXY is correctly configured",
+          "when": "Behind corporate proxy"
+        }
+      ]
+    }
+  ]
+}

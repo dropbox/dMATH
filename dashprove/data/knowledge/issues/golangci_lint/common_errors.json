@@ -1,0 +1,248 @@
+{
+  "tool": "golangci_lint",
+  "version": "1.62.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "config_not_found",
+      "pattern": "Config file .* not found",
+      "message": "Configuration file not found",
+      "cause": "golangci-lint cannot find .golangci.yml or specified config",
+      "solutions": [
+        {
+          "approach": "Create config file",
+          "code": "# .golangci.yml\nlinters:\n  enable:\n    - staticcheck\n    - errcheck\n    - govet",
+          "when": "Project needs configuration"
+        },
+        {
+          "approach": "Use default configuration",
+          "code": "golangci-lint run  # Uses defaults without config",
+          "when": "Defaults are acceptable"
+        }
+      ]
+    },
+    {
+      "id": "typecheck_error",
+      "pattern": "typecheck.*could not import",
+      "message": "Type checking failed - could not import package",
+      "cause": "Missing dependencies or build errors prevent type checking",
+      "solutions": [
+        {
+          "approach": "Run go mod tidy",
+          "code": "go mod tidy && golangci-lint run",
+          "when": "Dependencies are missing"
+        },
+        {
+          "approach": "Build first",
+          "code": "go build ./... && golangci-lint run",
+          "when": "Code has build errors"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "golangci-lint cache clean && golangci-lint run",
+          "when": "Cache is corrupted"
+        }
+      ]
+    },
+    {
+      "id": "errcheck_ignored",
+      "pattern": "errcheck.*Error return value .* is not checked",
+      "message": "Error return value not checked",
+      "cause": "Function returns error but caller ignores it",
+      "solutions": [
+        {
+          "approach": "Handle the error",
+          "code": "if err := fn(); err != nil {\n    return err\n}",
+          "when": "Error should be propagated"
+        },
+        {
+          "approach": "Use blank identifier with comment",
+          "code": "_ = writer.Close()  // Ignore close error on read-only",
+          "when": "Error intentionally ignored"
+        },
+        {
+          "approach": "Exclude in config",
+          "code": "# .golangci.yml\nlinters-settings:\n  errcheck:\n    exclude-functions:\n      - (io.Closer).Close",
+          "when": "Pattern should be ignored globally"
+        }
+      ]
+    },
+    {
+      "id": "gocyclo_high",
+      "pattern": "gocyclo.*cyclomatic complexity \\d+ of func .* is high",
+      "message": "Cyclomatic complexity too high",
+      "cause": "Function has too many branches/loops",
+      "solutions": [
+        {
+          "approach": "Extract helper functions",
+          "code": "func processItem(item Item) error {\n    // Move logic to smaller functions\n}",
+          "when": "Function does multiple distinct tasks"
+        },
+        {
+          "approach": "Use switch instead of if-else chain",
+          "code": "switch item.Type {\ncase TypeA: ...\ncase TypeB: ...\n}",
+          "when": "Multiple type checks"
+        },
+        {
+          "approach": "Increase threshold",
+          "code": "# .golangci.yml\nlinters-settings:\n  gocyclo:\n    min-complexity: 15",
+          "when": "Complexity is acceptable for this codebase"
+        }
+      ]
+    },
+    {
+      "id": "govet_printf",
+      "pattern": "govet.*Printf format .* has arg .* of wrong type",
+      "message": "Printf format specifier wrong type",
+      "cause": "Format string doesn't match argument types",
+      "solutions": [
+        {
+          "approach": "Fix format specifier",
+          "code": "fmt.Printf(\"%d\", intValue)    // Use %d for int\nfmt.Printf(\"%s\", stringValue) // Use %s for string",
+          "when": "Wrong format specifier used"
+        },
+        {
+          "approach": "Use %v for generic",
+          "code": "fmt.Printf(\"%v\", anyValue)  // Works with any type",
+          "when": "Type varies or is complex"
+        }
+      ]
+    },
+    {
+      "id": "govet_structtag",
+      "pattern": "govet.*struct field .* tag .* not compatible",
+      "message": "Invalid struct tag",
+      "cause": "Struct tag has syntax error or incompatible format",
+      "solutions": [
+        {
+          "approach": "Fix tag syntax",
+          "code": "type User struct {\n    Name string `json:\"name\"`  // Use backticks, key:\"value\"\n}",
+          "when": "Tag syntax is wrong"
+        },
+        {
+          "approach": "Remove duplicate keys",
+          "code": "type User struct {\n    Name string `json:\"name\" xml:\"name\"`  // One per tag type\n}",
+          "when": "Same key used twice"
+        }
+      ]
+    },
+    {
+      "id": "ineffassign",
+      "pattern": "ineffassign.*ineffectual assignment",
+      "message": "Ineffectual assignment to variable",
+      "cause": "Variable assigned but never read after assignment",
+      "solutions": [
+        {
+          "approach": "Use the variable",
+          "code": "result := compute()\nreturn result  // Actually use it",
+          "when": "Assignment was needed"
+        },
+        {
+          "approach": "Remove assignment",
+          "code": "compute()  // Don't assign if not used",
+          "when": "Assignment was unnecessary"
+        }
+      ]
+    },
+    {
+      "id": "unused_param",
+      "pattern": "unparam.*parameter .* always receives",
+      "message": "Parameter always receives same value",
+      "cause": "Function parameter is always called with the same argument",
+      "solutions": [
+        {
+          "approach": "Remove parameter",
+          "code": "func process() { /* Use constant internally */ }",
+          "when": "Parameter truly not needed"
+        },
+        {
+          "approach": "Exclude interface methods",
+          "code": "# .golangci.yml\nlinters-settings:\n  unparam:\n    check-exported: false",
+          "when": "Method implements interface"
+        }
+      ]
+    },
+    {
+      "id": "gosimple_should_use",
+      "pattern": "S\\d+.*should use",
+      "message": "Code can be simplified",
+      "cause": "More idiomatic Go construct available",
+      "solutions": [
+        {
+          "approach": "Follow suggestion",
+          "code": "// S1000: Use for range instead of for i := 0; ...\nfor _, item := range items { }",
+          "when": "Simpler form is clearer"
+        },
+        {
+          "approach": "Use make for initialization",
+          "code": "// S1019: Use make([]T, len) instead of append\nslice := make([]int, 0, capacity)",
+          "when": "Pre-allocating capacity"
+        }
+      ]
+    },
+    {
+      "id": "dupl_duplicate_code",
+      "pattern": "dupl.*duplicate of",
+      "message": "Duplicate code detected",
+      "cause": "Similar code blocks exist in multiple places",
+      "solutions": [
+        {
+          "approach": "Extract common function",
+          "code": "func commonLogic(params) result {\n    // Shared implementation\n}",
+          "when": "Logic is truly duplicated"
+        },
+        {
+          "approach": "Increase threshold",
+          "code": "# .golangci.yml\nlinters-settings:\n  dupl:\n    threshold: 150",
+          "when": "Small duplications are acceptable"
+        },
+        {
+          "approach": "Use nolint directive",
+          "code": "//nolint:dupl // Similar but semantically different",
+          "when": "Duplication is intentional"
+        }
+      ]
+    },
+    {
+      "id": "timeout_exceeded",
+      "pattern": "deadline exceeded|context deadline exceeded",
+      "message": "Analysis timeout exceeded",
+      "cause": "Linting took too long (default 1 minute)",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "golangci-lint run --timeout=5m",
+          "when": "Codebase is large"
+        },
+        {
+          "approach": "Run on specific packages",
+          "code": "golangci-lint run ./pkg/...",
+          "when": "Only need to check specific code"
+        },
+        {
+          "approach": "Disable slow linters",
+          "code": "# .golangci.yml\nlinters:\n  disable:\n    - dupl\n    - goconst",
+          "when": "Some linters too slow"
+        }
+      ]
+    },
+    {
+      "id": "nolint_unused",
+      "pattern": "nolintlint.*directive .* is unused",
+      "message": "nolint directive is unused",
+      "cause": "nolint comment exists but no issue would be reported",
+      "solutions": [
+        {
+          "approach": "Remove nolint directive",
+          "code": "// Remove the unnecessary //nolint comment",
+          "when": "Issue was fixed"
+        },
+        {
+          "approach": "Be specific with linter name",
+          "code": "//nolint:errcheck  // Be specific, not //nolint",
+          "when": "nolint too broad"
+        }
+      ]
+    }
+  ]
+}

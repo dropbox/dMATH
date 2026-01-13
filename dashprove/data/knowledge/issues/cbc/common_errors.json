@@ -1,0 +1,122 @@
+{
+  "version": "2.10",
+  "errors": [
+    {
+      "id": "infeasible",
+      "pattern": "Infeasible problem|no feasible solution",
+      "message": "CBC detected the model has no feasible solution",
+      "cause": "Constraints or bounds cannot be satisfied simultaneously",
+      "solutions": [
+        {
+          "approach": "Check presolve output for conflicting rows",
+          "code": "cbc model.lp presolve on solve",
+          "when": "Need to see which constraints cause infeasibility"
+        },
+        {
+          "approach": "Loosen or remove tight bounds",
+          "code": "setParam infeasibility 1e-7",
+          "when": "Rounding errors create artificial conflicts"
+        },
+        {
+          "approach": "Use feasibility pump",
+          "code": "cbc model.lp branch printingOptions all firstfeasible",
+          "when": "Need a feasible starting point"
+        }
+      ]
+    },
+    {
+      "id": "unbounded",
+      "pattern": "Unbounded problem|is unbounded",
+      "message": "Objective can improve indefinitely",
+      "cause": "Missing bounds on variables or objective direction inconsistent",
+      "solutions": [
+        {
+          "approach": "Add sensible bounds to decision variables",
+          "code": "0 <= x <= 100000",
+          "when": "Variables currently free in objective direction"
+        },
+        {
+          "approach": "Enable dual presolve",
+          "code": "cbc model.lp presolve on solve",
+          "when": "Presolve can detect unbounded rays earlier"
+        },
+        {
+          "approach": "Switch objective sense or add penalties",
+          "code": "Maximize obj + penalty*slack",
+          "when": "Objective should be bounded by design"
+        }
+      ]
+    },
+    {
+      "id": "time_limit",
+      "pattern": "seconds was reached|Stopped on time",
+      "message": "Solver stopped due to time limit before optimality proof",
+      "cause": "Search space is large relative to allowed time",
+      "solutions": [
+        {
+          "approach": "Increase time limit or node limit",
+          "code": "cbc model.lp solve seconds 600",
+          "when": "More runtime is acceptable"
+        },
+        {
+          "approach": "Warm start with a heuristic solution",
+          "code": "mipstart 1 x 10 y 5",
+          "when": "Providing incumbents speeds convergence"
+        },
+        {
+          "approach": "Tighten tolerances only after feasibility",
+          "code": "setParam mipTol 1e-6",
+          "when": "Avoid spending time polishing early"
+        }
+      ]
+    },
+    {
+      "id": "numerical_instability",
+      "pattern": "numerical difficulties|matrix is singular",
+      "message": "Numerical issues encountered in LP relaxation",
+      "cause": "Poorly scaled coefficients or nearly dependent constraints",
+      "solutions": [
+        {
+          "approach": "Scale coefficients to similar magnitudes",
+          "code": "% express costs in thousands instead of units",
+          "when": "Large coefficient ranges cause instability"
+        },
+        {
+          "approach": "Tighten feasibility tolerances carefully",
+          "code": "setParam primalTolerance 1e-7",
+          "when": "Default tolerances too loose for dataset"
+        },
+        {
+          "approach": "Remove redundant constraints",
+          "code": "% eliminate linear dependencies before exporting LP",
+          "when": "Singular matrix arises from redundant rows"
+        }
+      ]
+    },
+    {
+      "id": "bad_solver_path",
+      "pattern": "cannot open file|No such file",
+      "message": "CBC failed to read input or write solution",
+      "cause": "Wrong working directory or missing LP/MPS file",
+      "solutions": [
+        {
+          "approach": "Use absolute file paths",
+          "code": "cbc /abs/path/model.lp solve",
+          "when": "Running solver from scripts"
+        },
+        {
+          "approach": "Check file permissions",
+          "code": "ls -l model.lp",
+          "when": "File exists but not readable"
+        },
+        {
+          "approach": "Export model again",
+          "code": "write model.lp",
+          "when": "File may be corrupt"
+        }
+      ]
+    }
+  ],
+  "tool": "cbc",
+  "last_updated": "2025-12-23"
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "gitlab_ci",
+  "version": "16.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "yaml_invalid",
+      "pattern": "yaml invalid|syntax error|.gitlab-ci.yml",
+      "message": "Invalid YAML syntax in .gitlab-ci.yml",
+      "cause": "YAML syntax error, invalid keyword, or schema violation",
+      "solutions": [
+        {
+          "approach": "Validate locally",
+          "code": "# Use GitLab CI Lint:\n# Project -> CI/CD -> Editor -> Validate\n# Or: curl --header 'PRIVATE-TOKEN: <token>' 'https://gitlab.com/api/v4/ci/lint' -d '{\"content\": \"...\"}'",
+          "when": "Need to check YAML validity"
+        },
+        {
+          "approach": "Check indentation",
+          "code": "# YAML is indentation-sensitive\n# Use 2 spaces, not tabs",
+          "when": "Indentation may be wrong"
+        },
+        {
+          "approach": "Escape special characters",
+          "code": "# Use quotes for special characters:\nscript:\n  - echo \"Value: $VAR\"",
+          "when": "Special characters causing issues"
+        }
+      ]
+    },
+    {
+      "id": "job_not_running",
+      "pattern": "job.*not.*running|skipped|pipeline.*not.*created",
+      "message": "Job or pipeline not running",
+      "cause": "Rules/only/except conditions not met, or no runner available",
+      "solutions": [
+        {
+          "approach": "Check rules",
+          "code": "job:\n  rules:\n    - if: $CI_PIPELINE_SOURCE == \"merge_request_event\"\n    - if: $CI_COMMIT_BRANCH == \"main\"",
+          "when": "Rules may not match"
+        },
+        {
+          "approach": "Check runner tags",
+          "code": "job:\n  tags:\n    - docker\n    - linux\n# Ensure runner with these tags is available",
+          "when": "No matching runner"
+        },
+        {
+          "approach": "Use when: always",
+          "code": "job:\n  when: always  # or manual, on_success, on_failure",
+          "when": "Want job to always run"
+        }
+      ]
+    },
+    {
+      "id": "artifact_not_found",
+      "pattern": "artifact.*not.*found|dependencies.*failed|job.*not.*found",
+      "message": "Artifacts from previous job not found",
+      "cause": "Job didn't produce artifacts, wrong dependencies, or artifacts expired",
+      "solutions": [
+        {
+          "approach": "Check artifacts definition",
+          "code": "build:\n  artifacts:\n    paths:\n      - build/\n    expire_in: 1 week",
+          "when": "Artifacts may not be defined"
+        },
+        {
+          "approach": "Specify dependencies",
+          "code": "test:\n  dependencies:\n    - build\n  # Or use needs: for DAG pipelines\n  needs:\n    - job: build\n      artifacts: true",
+          "when": "Need explicit dependency"
+        },
+        {
+          "approach": "Check artifact expiry",
+          "code": "# Artifacts may have expired\n# Check Project -> CI/CD -> Job artifacts",
+          "when": "Old artifacts may have expired"
+        }
+      ]
+    },
+    {
+      "id": "cache_not_working",
+      "pattern": "cache.*not.*found|cache.*miss|restoring cache",
+      "message": "Cache not being used",
+      "cause": "Cache key mismatch, different runner, or policy issue",
+      "solutions": [
+        {
+          "approach": "Use consistent key",
+          "code": "cache:\n  key:\n    files:\n      - package-lock.json\n  paths:\n    - node_modules/",
+          "when": "Key may vary between jobs"
+        },
+        {
+          "approach": "Check cache policy",
+          "code": "# pull: only download\n# push: only upload\n# pull-push: both (default)\ncache:\n  policy: pull-push",
+          "when": "Cache policy may prevent usage"
+        },
+        {
+          "approach": "Use fallback keys",
+          "code": "cache:\n  key: $CI_COMMIT_REF_SLUG\n  fallback_keys:\n    - main\n    - default",
+          "when": "Want to use cache from other branches"
+        }
+      ]
+    },
+    {
+      "id": "variable_not_set",
+      "pattern": "variable.*not.*set|undefined|empty",
+      "message": "CI/CD variable not set or empty",
+      "cause": "Variable not defined, wrong scope, or protected",
+      "solutions": [
+        {
+          "approach": "Define variable",
+          "code": "# In .gitlab-ci.yml:\nvariables:\n  MY_VAR: \"value\"\n# Or: Settings -> CI/CD -> Variables",
+          "when": "Variable not defined"
+        },
+        {
+          "approach": "Check protected status",
+          "code": "# Protected variables only available on protected branches\n# Uncheck 'Protected' if needed on all branches",
+          "when": "Running on non-protected branch"
+        },
+        {
+          "approach": "Check masked variables",
+          "code": "# Masked variables must be valid format\n# 8+ chars, no newlines, base64 chars only",
+          "when": "Masked variable not appearing"
+        }
+      ]
+    },
+    {
+      "id": "docker_error",
+      "pattern": "docker|container|image.*not.*found|permission denied",
+      "message": "Docker-related error",
+      "cause": "Image not found, Docker not available, or permission issue",
+      "solutions": [
+        {
+          "approach": "Use Docker-in-Docker",
+          "code": "build:\n  image: docker:24.0\n  services:\n    - docker:24.0-dind\n  variables:\n    DOCKER_TLS_CERTDIR: \"/certs\"",
+          "when": "Need Docker in CI job"
+        },
+        {
+          "approach": "Authenticate to registry",
+          "code": "before_script:\n  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY",
+          "when": "Private registry authentication"
+        },
+        {
+          "approach": "Use Kaniko",
+          "code": "build:\n  image:\n    name: gcr.io/kaniko-project/executor:v1.19.0\n    entrypoint: [\"\"]\n  script:\n    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile Dockerfile",
+          "when": "Cannot use Docker daemon"
+        }
+      ]
+    },
+    {
+      "id": "pipeline_failed",
+      "pattern": "pipeline.*failed|stage.*failed|job.*failed",
+      "message": "Pipeline or job failed",
+      "cause": "Script error, timeout, or resource issue",
+      "solutions": [
+        {
+          "approach": "Allow job to fail",
+          "code": "test:\n  allow_failure: true\n# Or with exit codes:\n  allow_failure:\n    exit_codes:\n      - 137  # OOM killed",
+          "when": "Failure is acceptable"
+        },
+        {
+          "approach": "Add retry",
+          "code": "test:\n  retry:\n    max: 2\n    when:\n      - runner_system_failure\n      - stuck_or_timeout_failure",
+          "when": "Transient failures expected"
+        },
+        {
+          "approach": "Set timeout",
+          "code": "test:\n  timeout: 1 hour 30 minutes",
+          "when": "Default timeout too short"
+        }
+      ]
+    },
+    {
+      "id": "merge_request_pipeline",
+      "pattern": "detached.*pipeline|merge request|source branch",
+      "message": "Merge request pipeline issue",
+      "cause": "MR pipelines vs branch pipelines confusion",
+      "solutions": [
+        {
+          "approach": "Configure MR pipelines",
+          "code": "workflow:\n  rules:\n    - if: $CI_PIPELINE_SOURCE == \"merge_request_event\"\n    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS\n      when: never\n    - if: $CI_COMMIT_BRANCH",
+          "when": "Want MR pipelines only"
+        },
+        {
+          "approach": "Prevent duplicate pipelines",
+          "code": "# Use workflow rules to prevent both branch and MR pipelines",
+          "when": "Getting duplicate pipelines"
+        }
+      ]
+    }
+  ]
+}

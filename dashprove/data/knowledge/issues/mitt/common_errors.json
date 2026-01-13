@@ -1,0 +1,86 @@
+{
+  "tool": "mitt",
+  "category": "events",
+  "common_errors": [
+    {
+      "id": "mitt_wildcard_handler",
+      "pattern": "all events handler|wildcard.*not working|global listener",
+      "severity": "warning",
+      "causes": [
+        "Using wrong wildcard syntax",
+        "Expecting EventEmitter-style API",
+        "Wildcard handler signature different"
+      ],
+      "solutions": [
+        "Use '*' for all events: emitter.on('*', handler)",
+        "Wildcard handler gets (type, event) not just (event)",
+        "handler = (type, e) => console.log(type, e)",
+        "Wildcard listener doesn't receive its own events"
+      ]
+    },
+    {
+      "id": "mitt_typescript_types",
+      "pattern": "TypeScript error|generic type|event type mismatch",
+      "severity": "error",
+      "causes": [
+        "Not providing event type map",
+        "Wrong generic parameter",
+        "Event payload type mismatch"
+      ],
+      "solutions": [
+        "Define types: type Events = { foo: string; bar: number }",
+        "Create emitter: mitt<Events>()",
+        "Now on('foo', (e: string) => {}) is typed",
+        "TypeScript will catch wrong event names"
+      ]
+    },
+    {
+      "id": "mitt_off_not_removing",
+      "pattern": "off not working|listener still called|can't remove",
+      "severity": "error",
+      "causes": [
+        "Different function reference",
+        "Using anonymous function",
+        "Handler was bound differently"
+      ],
+      "solutions": [
+        "Store handler reference: const handler = () => {}",
+        "Use same reference: on('event', handler); off('event', handler)",
+        "Anonymous functions can't be removed by reference",
+        "Or use emitter.all.clear() to remove all"
+      ]
+    },
+    {
+      "id": "mitt_no_once",
+      "pattern": "once not available|one-time listener|missing once",
+      "severity": "warning",
+      "causes": [
+        "mitt doesn't have built-in once()",
+        "Expecting EventEmitter API",
+        "Minimal by design"
+      ],
+      "solutions": [
+        "Implement once: const once = (e, h) => { const w = (...a) => { off(e, w); h(...a) }; on(e, w) }",
+        "Or remove in handler: on('event', function handler(e) { off('event', handler); ... })",
+        "Use mitt-extra for once support",
+        "Design keeps mitt minimal (~200 bytes)"
+      ]
+    },
+    {
+      "id": "mitt_all_map",
+      "pattern": "emitter\\.all|internal map|debug events",
+      "severity": "info",
+      "causes": [
+        "Accessing internal all Map",
+        "Debugging registered events",
+        "Clearing all handlers"
+      ],
+      "solutions": [
+        "emitter.all is a Map<string, Set<handler>>",
+        "Clear all: emitter.all.clear()",
+        "Get handlers: emitter.all.get('eventName')",
+        "Useful for debugging but don't rely on internals"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "id": "coyote",
+  "name": "Microsoft Coyote",
+  "category": "dotnet_concurrency_testing",
+  "subcategory": "systematic_testing",
+
+  "description": "Microsoft framework for testing concurrent C# code systematically",
+  "long_description": "Microsoft Coyote is a tool for building reliable asynchronous software. It provides systematic testing of concurrent C# code by controlling all sources of nondeterminism and systematically exploring interleavings. Coyote can find concurrency bugs like race conditions, deadlocks, and livelocks that are nearly impossible to find with traditional testing.",
+
+  "capabilities": [
+    "systematic_concurrency_testing",
+    "race_detection",
+    "deadlock_detection",
+    "livelock_detection",
+    "state_space_exploration",
+    "bug_reproduction",
+    "coverage_analysis",
+    "production_concurrency_control"
+  ],
+  "property_types": ["safety_property", "liveness_property", "assertion"],
+  "input_languages": ["csharp"],
+  "output_formats": ["text", "json", "xml", "trace_file"],
+
+  "installation": {
+    "methods": [
+      {"type": "nuget", "command": "Install-Package Microsoft.Coyote"},
+      {"type": "nuget", "command": "Install-Package Microsoft.Coyote.Test"},
+      {"type": "dotnet_tool", "command": "dotnet tool install -g Microsoft.Coyote.CLI"}
+    ],
+    "dependencies": ["dotnet"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://microsoft.github.io/coyote/",
+    "getting_started": "https://microsoft.github.io/coyote/get-started/install/",
+    "tutorials": "https://microsoft.github.io/coyote/tutorials/",
+    "examples": "https://github.com/microsoft/coyote/tree/main/Samples"
+  },
+
+  "programming_models": [
+    {
+      "name": "Tasks",
+      "description": "Test code using Task and async/await",
+      "examples": ["ControlledTask.Run()", "ControlledTask.Delay()"]
+    },
+    {
+      "name": "Actors",
+      "description": "Actor-based concurrency model",
+      "examples": ["StateMachine", "Actor", "Event"]
+    }
+  ],
+
+  "tactics": [
+    {
+      "name": "write_test",
+      "description": "Write a Coyote test",
+      "syntax": "[Test] public static async Task TestMethod()",
+      "when_to_use": "Testing concurrent code",
+      "examples": ["[Microsoft.Coyote.SystematicTesting.Test]\npublic static async Task TestConcurrentCounter()\n{\n    var counter = new ConcurrentCounter();\n    var t1 = Task.Run(() => counter.Increment());\n    var t2 = Task.Run(() => counter.Increment());\n    await Task.WhenAll(t1, t2);\n    Specification.Assert(counter.Value == 2, \"Counter should be 2\");\n}"]
+    },
+    {
+      "name": "run_coyote",
+      "description": "Run systematic testing",
+      "syntax": "coyote test assembly.dll",
+      "when_to_use": "Find concurrency bugs",
+      "examples": ["coyote test MyTests.dll --iterations 1000", "coyote test MyTests.dll --method TestConcurrentCounter"]
+    },
+    {
+      "name": "replay_bug",
+      "description": "Replay found bug",
+      "syntax": "coyote replay assembly.dll trace.schedule",
+      "when_to_use": "Debug a found bug",
+      "examples": ["coyote replay MyTests.dll Output/trace.schedule"]
+    },
+    {
+      "name": "specify_assertion",
+      "description": "Add specification assertions",
+      "syntax": "Specification.Assert(condition)",
+      "when_to_use": "Define correctness properties",
+      "examples": ["Specification.Assert(counter >= 0, \"Counter cannot be negative\");"]
+    },
+    {
+      "name": "inject_nondeterminism",
+      "description": "Explicitly model nondeterminism",
+      "syntax": "SchedulingPoint.Interleave()",
+      "when_to_use": "Force exploration at specific points",
+      "examples": ["SchedulingPoint.Interleave();  // Allow thread switch here"]
+    },
+    {
+      "name": "actor_model",
+      "description": "Use actor programming model",
+      "syntax": "class MyActor : StateMachine",
+      "when_to_use": "Building actor-based systems",
+      "examples": ["private class Server : StateMachine\n{\n    [Start]\n    [OnEventDoAction(typeof(Request), nameof(HandleRequest))]\n    private class Active : State { }\n    \n    private void HandleRequest(Event e) { ... }\n}"]
+    }
+  ],
+
+  "strategies": [
+    {
+      "name": "random",
+      "description": "Random scheduling exploration",
+      "flag": "--strategy random"
+    },
+    {
+      "name": "probabilistic",
+      "description": "Probabilistic priority-based exploration",
+      "flag": "--strategy probabilistic"
+    },
+    {
+      "name": "pct",
+      "description": "Probabilistic Concurrency Testing",
+      "flag": "--strategy pct"
+    },
+    {
+      "name": "fairpct",
+      "description": "Fair PCT with priority changes",
+      "flag": "--strategy fairpct"
+    },
+    {
+      "name": "dfs",
+      "description": "Depth-first search (exhaustive)",
+      "flag": "--strategy dfs"
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Assertion.*failed",
+      "meaning": "Specification violation found",
+      "common_causes": ["Race condition", "Missing synchronization", "Logic error"],
+      "fixes": ["Add locks", "Use atomic operations", "Fix algorithm"]
+    },
+    {
+      "pattern": "Deadlock detected",
+      "meaning": "Circular wait found",
+      "common_causes": ["Lock ordering violation", "Missing unlock"],
+      "fixes": ["Establish lock ordering", "Use timeout", "Restructure code"]
+    },
+    {
+      "pattern": "Livelock detected",
+      "meaning": "Infinite non-progress loop",
+      "common_causes": ["Retry loop without backoff", "Circular dependency"],
+      "fixes": ["Add backoff", "Break circular pattern"]
+    },
+    {
+      "pattern": "found.*bug",
+      "meaning": "Coyote found a concurrency bug",
+      "common_causes": ["Various concurrency issues"],
+      "fixes": ["Use coyote replay to debug", "Analyze trace file"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["visual_studio", "rider", "vscode"],
+    "ci_integration": ["azure_devops", "github_actions", "jenkins"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes per iteration",
+    "scalability": "Configurable iterations (default 1000)",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["chess", "loom", "jcstress", "shuttle"],
+    "advantages": [
+      "Systematic exploration (not random)",
+      "Reproducible bug reports",
+      "Production-ready actor framework",
+      "Microsoft backed and maintained",
+      "Works with existing async C# code"
+    ],
+    "disadvantages": [
+      "Requires code instrumentation",
+      "Some patterns need adaptation",
+      "Learning curve for actor model"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.7.11",
+    "last_updated": "2025-12-22",
+    "maintainer": "Microsoft Research",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "gauge",
+  "version": "1.6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "step_not_implemented",
+      "pattern": "Step implementation not found|Step .* is not implemented",
+      "message": "Step implementation missing",
+      "cause": "No implementation found for spec step",
+      "solutions": [
+        {
+          "approach": "Create step implementation",
+          "code": "// JavaScript\nstep('User logs in as <username>', async function(username) {\n    await login(username);\n});",
+          "when": "Using JavaScript"
+        },
+        {
+          "approach": "Python implementation",
+          "code": "# Python\n@step('User logs in as <username>')\ndef login_step(username):\n    login(username)",
+          "when": "Using Python"
+        },
+        {
+          "approach": "Generate stub",
+          "code": "gauge run --stub",
+          "when": "Generate stub implementations"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_step",
+      "pattern": "Duplicate step implementation|Found multiple implementations",
+      "message": "Multiple step implementations found",
+      "cause": "Same step pattern defined multiple times",
+      "solutions": [
+        {
+          "approach": "Remove duplicate",
+          "code": "// Keep only one implementation per step pattern",
+          "when": "True duplicate"
+        },
+        {
+          "approach": "Use different pattern",
+          "code": "step('Login as admin <username>')\nstep('Login as user <username>')",
+          "when": "Need different implementations"
+        },
+        {
+          "approach": "Check all step files",
+          "code": "gauge list --steps",
+          "when": "Finding duplicates"
+        }
+      ]
+    },
+    {
+      "id": "plugin_not_installed",
+      "pattern": "Plugin .* is not installed|Failed to load plugin",
+      "message": "Required plugin not installed",
+      "cause": "Gauge plugin missing",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "gauge install js\ngauge install python\ngauge install html-report",
+          "when": "Need specific runner"
+        },
+        {
+          "approach": "Update plugin",
+          "code": "gauge update js\ngauge update --all",
+          "when": "Plugin outdated"
+        },
+        {
+          "approach": "Check installed",
+          "code": "gauge plugin list",
+          "when": "Verify installation"
+        }
+      ]
+    },
+    {
+      "id": "table_parsing_error",
+      "pattern": "Table parsing failed|Unable to resolve table",
+      "message": "Data table error",
+      "cause": "Invalid table format in spec",
+      "solutions": [
+        {
+          "approach": "Fix table format",
+          "code": "* Create users\n  |name |email          |\n  |alice|alice@test.com |\n  |bob  |bob@test.com   |",
+          "when": "Malformed table"
+        },
+        {
+          "approach": "Access table data",
+          "code": "step('Create users <table>', async function(table) {\n    for (let row of table.rows) {\n        console.log(row.cells[0]);\n    }\n});",
+          "when": "Using table in step"
+        },
+        {
+          "approach": "Use column headers",
+          "code": "for (let row of table.rows) {\n    console.log(row.getCell('name'));\n}",
+          "when": "Access by column name"
+        }
+      ]
+    },
+    {
+      "id": "context_error",
+      "pattern": "DataStore|gauge.dataStore|Context not available",
+      "message": "Data store access error",
+      "cause": "Incorrect data store usage or scope",
+      "solutions": [
+        {
+          "approach": "Scenario scope",
+          "code": "const { DataStore } = require('gauge-js');\nDataStore.scenarioStore.put('key', value);\nconst val = DataStore.scenarioStore.get('key');",
+          "when": "Share within scenario"
+        },
+        {
+          "approach": "Spec scope",
+          "code": "DataStore.specStore.put('key', value);",
+          "when": "Share within spec"
+        },
+        {
+          "approach": "Suite scope",
+          "code": "DataStore.suiteStore.put('key', value);",
+          "when": "Share across specs"
+        }
+      ]
+    },
+    {
+      "id": "hook_error",
+      "pattern": "Before|After|hook failed|Hook execution error",
+      "message": "Hook execution failed",
+      "cause": "Before/after hook threw error",
+      "solutions": [
+        {
+          "approach": "Add error handling",
+          "code": "beforeScenario(async function() {\n    try {\n        await setup();\n    } catch(e) {\n        console.error(e);\n        throw e;\n    }\n});",
+          "when": "Debug hook"
+        },
+        {
+          "approach": "Tagged hooks",
+          "code": "beforeScenario(async function() {\n    // Runs before all\n}, { tags: ['@smoke'] });",
+          "when": "Conditional hook"
+        },
+        {
+          "approach": "Cleanup in afterScenario",
+          "code": "afterScenario(async function() {\n    await cleanup();\n});",
+          "when": "Cleanup needed"
+        }
+      ]
+    },
+    {
+      "id": "parameter_error",
+      "pattern": "Parameter .* not found|Unable to resolve parameter",
+      "message": "Step parameter not resolved",
+      "cause": "Parameter in step not matched",
+      "solutions": [
+        {
+          "approach": "Use correct syntax",
+          "code": "// In spec: * Login as \"admin\"\n// In step: step('Login as <role>', (role) => {})",
+          "when": "Dynamic parameter"
+        },
+        {
+          "approach": "Static parameter",
+          "code": "step('Login as \"admin\"', () => {\n    // Matches exact string\n});",
+          "when": "Fixed value"
+        },
+        {
+          "approach": "File parameter",
+          "code": "// <file:data/users.csv> for file reference",
+          "when": "External data"
+        }
+      ]
+    },
+    {
+      "id": "environment_error",
+      "pattern": "environment|env folder|GAUGE_PROJECT_ROOT",
+      "message": "Environment configuration error",
+      "cause": "Environment not found or misconfigured",
+      "solutions": [
+        {
+          "approach": "Create env file",
+          "code": "# env/default/default.properties\nbase_url = https://example.com\ntimeout = 10000",
+          "when": "Need configuration"
+        },
+        {
+          "approach": "Use environment",
+          "code": "gauge run specs/ --env=staging",
+          "when": "Multiple environments"
+        },
+        {
+          "approach": "Access in code",
+          "code": "const baseUrl = process.env.base_url;",
+          "when": "Use env value"
+        }
+      ]
+    }
+  ]
+}

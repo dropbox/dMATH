@@ -1,0 +1,78 @@
+{
+  "tool": "kubeflow",
+  "category": "ml_ops",
+  "common_errors": [
+    {
+      "pattern": "pods.*CrashLoopBackOff",
+      "meaning": "Kubeflow component pod failing to start",
+      "causes": ["Resource limits too low", "Image pull failures", "Missing secrets/configmaps", "PVC not bound"],
+      "solutions": ["Check pod logs: kubectl logs -n kubeflow <pod>", "Increase resource limits in deployment", "Verify image exists and is accessible", "Check PVC status: kubectl get pvc -n kubeflow"]
+    },
+    {
+      "pattern": "no healthy upstream",
+      "meaning": "Istio service mesh routing failure",
+      "causes": ["Backend service not running", "Istio sidecar injection failed", "Service selector mismatch"],
+      "solutions": ["Verify backend pods are running", "Check Istio sidecar: kubectl describe pod", "Validate service selectors match pod labels"]
+    },
+    {
+      "pattern": "PERMISSION_DENIED.*iam.serviceAccounts.actAs",
+      "meaning": "GCP service account permission missing",
+      "causes": ["Workload identity not configured", "Missing IAM binding", "Service account doesn't exist"],
+      "solutions": ["Configure workload identity for KSA", "Grant iam.serviceAccounts.actAs permission", "Verify GSA exists and is bound to KSA"]
+    },
+    {
+      "pattern": "failed to create pipeline",
+      "meaning": "Pipeline compilation or submission error",
+      "causes": ["Invalid pipeline YAML", "Component image not found", "Resource quota exceeded"],
+      "solutions": ["Validate pipeline YAML syntax", "Ensure component images are accessible", "Check namespace resource quotas"]
+    },
+    {
+      "pattern": "Artifact.*not found",
+      "meaning": "Pipeline artifact storage issue",
+      "causes": ["MinIO/S3 not configured", "Bucket doesn't exist", "Credentials expired"],
+      "solutions": ["Configure artifact storage in Kubeflow", "Create required buckets", "Refresh storage credentials"]
+    },
+    {
+      "pattern": "ml-pipeline-ui.*503",
+      "meaning": "Pipeline UI service unavailable",
+      "causes": ["ml-pipeline-ui pod not running", "Istio gateway misconfigured", "Resource exhaustion"],
+      "solutions": ["Check ml-pipeline-ui pod status", "Verify Istio gateway configuration", "Scale up cluster resources"]
+    },
+    {
+      "pattern": "katib.*experiment.*failed",
+      "meaning": "Hyperparameter tuning experiment failure",
+      "causes": ["Trial template invalid", "Metrics collector misconfigured", "Resource limits hit"],
+      "solutions": ["Validate trial template YAML", "Check metrics collector sidecar", "Increase experiment resource limits"]
+    },
+    {
+      "pattern": "KFServing.*IngressNotConfigured",
+      "meaning": "Model serving ingress not set up",
+      "causes": ["Istio not installed", "KNative serving missing", "Ingress gateway not configured"],
+      "solutions": ["Install Istio with KNative integration", "Deploy KNative serving", "Configure ingress gateway"]
+    },
+    {
+      "pattern": "notebook.*failed to start",
+      "meaning": "Jupyter notebook server won't start",
+      "causes": ["PVC provisioning failed", "Image pull error", "RBAC permissions missing"],
+      "solutions": ["Check PVC status for notebook", "Verify notebook image is accessible", "Grant required RBAC permissions"]
+    },
+    {
+      "pattern": "pipeline run.*timeout",
+      "meaning": "Pipeline execution exceeded time limit",
+      "causes": ["Step taking too long", "Deadlock in DAG", "Resource starvation"],
+      "solutions": ["Increase pipeline/step timeout", "Check for circular dependencies", "Scale cluster resources"]
+    }
+  ],
+  "debugging_commands": [
+    "kubectl get pods -n kubeflow",
+    "kubectl logs -n kubeflow -l app=ml-pipeline",
+    "kubectl describe pod -n kubeflow <pod-name>",
+    "kubectl get pvc -n kubeflow",
+    "kubectl get experiments -n kubeflow",
+    "kubectl get inferenceservices -n kubeflow"
+  ],
+  "documentation_urls": [
+    "https://www.kubeflow.org/docs/",
+    "https://github.com/kubeflow/kubeflow"
+  ]
+}

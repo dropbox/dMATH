@@ -1,0 +1,106 @@
+{
+  "id": "esbmc",
+  "name": "ESBMC",
+  "category": "model_checker",
+  "subcategory": "bounded",
+
+  "description": "Efficient SMT-based bounded model checker for C/C++",
+  "long_description": "ESBMC (Efficient SMT-Based Bounded Model Checker) is a context-bounded model checker for C/C++ programs. It uses SMT solvers to verify memory safety, arithmetic overflow, and user-specified assertions. ESBMC supports multiple SMT backends including Z3, Boolector, and Yices.",
+
+  "capabilities": [
+    "bounded_model_checking",
+    "memory_safety",
+    "overflow_detection",
+    "k_induction",
+    "incremental_bmc"
+  ],
+  "property_types": ["safety", "assertions", "memory_safety", "overflow"],
+  "input_languages": ["c", "cpp"],
+  "output_formats": ["verification_result", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "command": "git clone https://github.com/esbmc/esbmc && cd esbmc && mkdir build && cd build && cmake .. && make"},
+      {"type": "docker", "command": "docker pull esbmc/esbmc"}
+    ],
+    "dependencies": ["cmake", "clang", "z3"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://esbmc.org/",
+    "manual": "https://ssvlab.github.io/esbmc/",
+    "api_reference": "https://github.com/esbmc/esbmc/wiki"
+  },
+
+  "tactics": [
+    {
+      "name": "bmc",
+      "description": "Standard bounded model checking",
+      "syntax": "esbmc --unwind 10 program.c",
+      "when_to_use": "For bounded verification",
+      "examples": ["esbmc --unwind 10 --no-unwinding-assertions program.c"]
+    },
+    {
+      "name": "k_induction",
+      "description": "K-induction for unbounded verification",
+      "syntax": "esbmc --k-induction program.c",
+      "when_to_use": "For complete verification",
+      "examples": ["esbmc --k-induction --unlimited-k-steps program.c"]
+    },
+    {
+      "name": "incremental",
+      "description": "Incremental BMC",
+      "syntax": "esbmc --incremental-bmc program.c",
+      "when_to_use": "For iterative deepening",
+      "examples": ["esbmc --incremental-bmc --max-k-step 100 program.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "VERIFICATION FAILED",
+      "meaning": "Property violation found",
+      "common_causes": ["Bug in program", "Assertion failure"],
+      "fixes": ["Analyze counterexample"]
+    },
+    {
+      "pattern": "VERIFICATION UNKNOWN",
+      "meaning": "Could not determine result",
+      "common_causes": ["Insufficient unwind bound"],
+      "fixes": ["Increase unwind bound"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["safety", "assertion", "memory_safety"],
+    "cli_command": "dashprove verify --backend esbmc"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "SV-COMP competitive",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cbmc", "cpachecker", "divine"],
+    "advantages": [
+      "Multiple SMT backends",
+      "K-induction support",
+      "Active development"
+    ],
+    "disadvantages": [
+      "Bounded by default",
+      "Complex options"
+    ]
+  },
+
+  "metadata": {
+    "version": "7.4",
+    "last_updated": "2025-12-21",
+    "maintainer": "ESBMC team",
+    "license": "Apache-2.0"
+  }
+}

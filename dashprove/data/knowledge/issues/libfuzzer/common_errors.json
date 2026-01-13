@@ -1,0 +1,145 @@
+{
+  "tool": "libfuzzer",
+  "version": "18.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "no_coverage",
+      "pattern": "INFO: Loaded .* modules\nINFO:.*cov: 0|LLVMFuzzerTestOneInput not found",
+      "message": "Fuzzer is running without coverage feedback",
+      "cause": "Target built without sanitizer coverage or missing entrypoint",
+      "solutions": [
+        {
+          "approach": "Compile with sanitizer coverage",
+          "code": "clang++ -fsanitize=fuzzer,address -g target.cc -o fuzz_target",
+          "when": "Building fuzzer binary"
+        },
+        {
+          "approach": "Export correct entrypoint signature",
+          "code": "extern \"C\" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) { return 0; }",
+          "when": "Entrypoint missing or mangled"
+        },
+        {
+          "approach": "Disable conflicting sanitizers",
+          "code": "CFLAGS='-fsanitize=fuzzer,address'\nCXXFLAGS='-fsanitize=fuzzer,address'",
+          "when": "Custom build systems overriding flags"
+        }
+      ]
+    },
+    {
+      "id": "hangs_timeouts",
+      "pattern": "ALARM: working on the last Unit.*seconds ago|timeout after",
+      "message": "Fuzzer stuck on long-running inputs",
+      "cause": "Default timeout exceeded due to blocking I/O or expensive paths",
+      "solutions": [
+        {
+          "approach": "Raise or lower timeout explicitly",
+          "code": "./fuzz_target -timeout=10 -runs=0 corpus",
+          "when": "Need deterministic timeout"
+        },
+        {
+          "approach": "Mock external dependencies",
+          "code": "setenv(\"NO_NET\", \"1\", 1); use_in_memory_fs();",
+          "when": "Target waits on network/disk"
+        },
+        {
+          "approach": "Use -jobs/-workers for stability",
+          "code": "./fuzz_target -jobs=0 -workers=1 corpus",
+          "when": "Parallel fuzzing hides timeouts"
+        }
+      ]
+    },
+    {
+      "id": "corpus_not_growing",
+      "pattern": "NEW PO.*\\n.*cov:.*(\\n)?\\s*\\(no change\\)|corp: *0 inputs",
+      "message": "Coverage and corpus do not improve",
+      "cause": "Seed corpus is weak or input validation rejects mutations",
+      "solutions": [
+        {
+          "approach": "Seed with structured examples",
+          "code": "mkdir corpus && cp samples/* corpus/",
+          "when": "Input format expects schema"
+        },
+        {
+          "approach": "Provide dictionary",
+          "code": "./fuzz_target -dict=format.dict corpus",
+          "when": "Grammar has keywords or magic values"
+        },
+        {
+          "approach": "Add value profile/ctx coverage",
+          "code": "CFLAGS+=' -fsanitize-coverage=trace-cmp,trace-div,trace-gep'",
+          "when": "Comparisons guard new branches"
+        }
+      ]
+    },
+    {
+      "id": "crash_not_reproduced",
+      "pattern": "CRASH.*but appears to be flaky|ERROR: AddressSanitizer:.*(intermittent)",
+      "message": "Reported crash is flaky",
+      "cause": "Non-deterministic behavior, missing -seed reproduction, or data races",
+      "solutions": [
+        {
+          "approach": "Replay with fixed seed",
+          "code": "./fuzz_target -timeout=10 -seed=12345 crash-abc",
+          "when": "Need deterministic repro"
+        },
+        {
+          "approach": "Disable randomization",
+          "code": "setenv(\"TZ\", \"UTC\", 1); unsetenv(\"ASAN_OPTIONS\");",
+          "when": "Target uses system time or ASLR"
+        },
+        {
+          "approach": "Use single worker during triage",
+          "code": "./fuzz_target -jobs=0 -workers=1 crash-abc",
+          "when": "Parallelism hides crash"
+        }
+      ]
+    },
+    {
+      "id": "odr_violation",
+      "pattern": "ERROR: libFuzzer: fuzz target overwrites its const input|UBSAN:.*odr-violation",
+      "message": "Target mutates input buffer or violates one-definition rule",
+      "cause": "LLVMFuzzerTestOneInput writes to data buffer or links multiple definitions",
+      "solutions": [
+        {
+          "approach": "Copy input before mutation",
+          "code": "std::string buf(reinterpret_cast<const char*>(data), size); mutate(buf);",
+          "when": "Parser mutates buffer"
+        },
+        {
+          "approach": "Deduplicate symbols",
+          "code": "check build for duplicate LLVMFuzzerInitialize/OneInput definitions",
+          "when": "Multiple fuzz targets linked"
+        },
+        {
+          "approach": "Compile with -fno-sanitize-coverage-allowlist for shared libs",
+          "code": "CFLAGS+=' -fno-sanitize-coverage-allowlist'",
+          "when": "Shared libraries filtered out wrongly"
+        }
+      ]
+    },
+    {
+      "id": "merge_failures",
+      "pattern": "MERGE-OUT.*failed|corpus merge error|Bad file in merge corpus",
+      "message": "Corpus merging cannot complete",
+      "cause": "Corrupted inputs or incompatible flags between corpora",
+      "solutions": [
+        {
+          "approach": "Re-run merge with clean directory",
+          "code": "rm -rf merge && mkdir merge && ./fuzz_target -merge=1 -merge_control_file=control merge old new",
+          "when": "Merge directory reused"
+        },
+        {
+          "approach": "Sanitize crashing inputs separately",
+          "code": "./fuzz_target -runs=1 crash-corpus && mv crash-corpus good/",
+          "when": "Crash files present in corpus"
+        },
+        {
+          "approach": "Align sanitizer flags",
+          "code": "Ensure corpora built with same sanitizer set (ASan/UBSan) before merging",
+          "when": "Combining corpora from different builds"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "tool": "clap",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_required_arg",
+      "pattern": "error: the following required arguments were not provided",
+      "message": "Required argument not provided",
+      "cause": "Argument marked with required=true or without default was not passed",
+      "solutions": [
+        {
+          "approach": "Pass the required argument",
+          "code": "program --config config.toml",
+          "when": "Argument is genuinely needed"
+        },
+        {
+          "approach": "Add default value",
+          "code": "#[arg(default_value = \"default.toml\")]\nconfig: String,",
+          "when": "Sensible default exists"
+        },
+        {
+          "approach": "Make optional",
+          "code": "#[arg(short, long)]\nconfig: Option<String>,",
+          "when": "Argument is optional"
+        }
+      ]
+    },
+    {
+      "id": "invalid_value",
+      "pattern": "error: invalid value.*for|isn't a valid value",
+      "message": "Argument value doesn't match expected type or constraints",
+      "cause": "String where number expected, or value not in allowed set",
+      "solutions": [
+        {
+          "approach": "Check value type",
+          "code": "program --port 3000",
+          "when": "Numeric arg passed as string"
+        },
+        {
+          "approach": "Use ValueEnum",
+          "code": "#[derive(ValueEnum, Clone)]\nenum Format { Json, Yaml, Toml }",
+          "when": "Value must be from predefined set"
+        },
+        {
+          "approach": "Add custom parser",
+          "code": "#[arg(value_parser = parse_duration)]\ntimeout: Duration,",
+          "when": "Complex type parsing needed"
+        }
+      ]
+    },
+    {
+      "id": "unknown_argument",
+      "pattern": "error: unexpected argument|Found argument.*which wasn't expected",
+      "message": "Unrecognized argument or flag",
+      "cause": "Argument not defined in Args struct or Command",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "program --help",
+          "when": "Typo in flag name"
+        },
+        {
+          "approach": "Allow external subcommands",
+          "code": "#[command(allow_external_subcommands = true)]",
+          "when": "Passing to subprocess"
+        },
+        {
+          "approach": "Add trailing var args",
+          "code": "#[arg(trailing_var_arg = true)]\nextra: Vec<String>,",
+          "when": "Need passthrough args"
+        }
+      ]
+    },
+    {
+      "id": "conflicting_args",
+      "pattern": "error: the argument.*cannot be used with|conflicts with",
+      "message": "Mutually exclusive arguments used together",
+      "cause": "Arguments marked with conflicts_with used simultaneously",
+      "solutions": [
+        {
+          "approach": "Use one or the other",
+          "code": "Use --json OR --yaml, not both",
+          "when": "Options are exclusive"
+        },
+        {
+          "approach": "Use argument groups",
+          "code": "#[group(required = true, multiple = false)]\nstruct OutputFormat { json: bool, yaml: bool }",
+          "when": "Exactly one option required"
+        }
+      ]
+    },
+    {
+      "id": "subcommand_required",
+      "pattern": "error: a subcommand is required|SUBCOMMAND.*is required",
+      "message": "Command requires a subcommand",
+      "cause": "SubcommandRequired set but no subcommand provided",
+      "solutions": [
+        {
+          "approach": "Provide subcommand",
+          "code": "program subcommand [args]",
+          "when": "Subcommand is needed"
+        },
+        {
+          "approach": "Add default subcommand",
+          "code": "#[command(subcommand_required = false)]",
+          "when": "Root command has behavior"
+        },
+        {
+          "approach": "List available subcommands",
+          "code": "program --help",
+          "when": "Discovering commands"
+        }
+      ]
+    },
+    {
+      "id": "derive_parse_error",
+      "pattern": "cannot derive.*Parser|expected.*found|the trait.*is not implemented",
+      "message": "Derive macro compilation error",
+      "cause": "Type doesn't implement required traits for parsing",
+      "solutions": [
+        {
+          "approach": "Add required derives",
+          "code": "#[derive(Parser, Debug)]\nstruct Args { ... }",
+          "when": "Missing Parser derive"
+        },
+        {
+          "approach": "Implement FromStr",
+          "code": "impl FromStr for MyType { ... }",
+          "when": "Custom type needs parsing"
+        },
+        {
+          "approach": "Use value_parser",
+          "code": "#[arg(value_parser = clap::value_parser!(u16).range(1..=65535))]",
+          "when": "Need constrained parsing"
+        }
+      ]
+    }
+  ]
+}

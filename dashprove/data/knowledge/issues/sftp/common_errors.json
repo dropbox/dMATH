@@ -1,0 +1,148 @@
+{
+  "tool": "sftp",
+  "version": "OpenSSH",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|publickey|authentication failed",
+      "message": "SSH authentication failed",
+      "cause": "Key or password authentication issue",
+      "solutions": [
+        {
+          "approach": "Specify key",
+          "code": "sftp -i ~/.ssh/my_key user@host",
+          "when": "Non-default key"
+        },
+        {
+          "approach": "Debug connection",
+          "code": "sftp -v user@host  # -vvv for more detail",
+          "when": "Debug auth"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "chmod 600 ~/.ssh/id_rsa\nchmod 700 ~/.ssh",
+          "when": "Key file permissions"
+        }
+      ]
+    },
+    {
+      "id": "connection_closed",
+      "pattern": "Connection closed|Connection reset|Broken pipe",
+      "message": "Connection dropped",
+      "cause": "Network issue, timeout, or server config",
+      "solutions": [
+        {
+          "approach": "Keep alive",
+          "code": "sftp -o ServerAliveInterval=60 user@host",
+          "when": "Timeout issues"
+        },
+        {
+          "approach": "Batch mode",
+          "code": "sftp -b commands.txt user@host",
+          "when": "Automated transfers"
+        }
+      ]
+    },
+    {
+      "id": "subsystem_error",
+      "pattern": "subsystem.*not.*found|sftp.*subsystem|Request for subsystem",
+      "message": "SFTP subsystem not available",
+      "cause": "Server doesn't have SFTP enabled",
+      "solutions": [
+        {
+          "approach": "Check server config",
+          "code": "# On server: /etc/ssh/sshd_config\n# Ensure: Subsystem sftp /usr/lib/openssh/sftp-server",
+          "when": "Admin access"
+        },
+        {
+          "approach": "Use scp instead",
+          "code": "scp file user@host:/path/",
+          "when": "SFTP unavailable"
+        },
+        {
+          "approach": "Specify subsystem",
+          "code": "sftp -s /usr/libexec/sftp-server user@host",
+          "when": "Non-standard path"
+        }
+      ]
+    },
+    {
+      "id": "command_syntax",
+      "pattern": "Invalid command|unknown|usage:|Couldn't",
+      "message": "SFTP command error",
+      "cause": "Wrong command syntax in SFTP session",
+      "solutions": [
+        {
+          "approach": "Common commands",
+          "code": "# sftp session commands:\nls              # List remote\nlls             # List local\ncd path         # Change remote dir\nlcd path        # Change local dir\nget file        # Download\nput file        # Upload\nmget *.txt      # Multiple download\nmput *.txt      # Multiple upload\nrmdir dir       # Remove directory\nrm file         # Remove file\nbye/exit/quit   # Exit session",
+          "when": "Command reference"
+        },
+        {
+          "approach": "Help",
+          "code": "# In sftp session:\nhelp",
+          "when": "See all commands"
+        }
+      ]
+    },
+    {
+      "id": "batch_mode",
+      "pattern": "batch|script|automated|non-interactive",
+      "message": "Running SFTP non-interactively",
+      "cause": "Need automated transfers",
+      "solutions": [
+        {
+          "approach": "Batch file",
+          "code": "# commands.txt:\ncd /remote/dir\nlcd /local/dir\nget *.log\nput *.csv\nbye\n\nsftp -b commands.txt user@host",
+          "when": "Script file"
+        },
+        {
+          "approach": "Here-doc",
+          "code": "sftp user@host <<EOF\nget /remote/file.txt\nput /local/file.txt\nbye\nEOF",
+          "when": "Inline commands"
+        },
+        {
+          "approach": "Single command",
+          "code": "echo 'get /path/file' | sftp user@host",
+          "when": "One command"
+        }
+      ]
+    },
+    {
+      "id": "file_not_found",
+      "pattern": "Couldn't stat|No such file|not found",
+      "message": "File or directory not found",
+      "cause": "Path doesn't exist or permission issue",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "# In sftp:\nls /path/to/\npwd  # Current remote dir\nlpwd  # Current local dir",
+          "when": "Verify paths"
+        },
+        {
+          "approach": "Absolute paths",
+          "code": "get /full/path/to/file\nput /full/local/path/file /full/remote/path/",
+          "when": "Use full paths"
+        }
+      ]
+    },
+    {
+      "id": "transfer_mode",
+      "pattern": "binary|ascii|corrupt|different size",
+      "message": "File corrupted after transfer",
+      "cause": "SFTP is always binary, but might have encoding issues",
+      "solutions": [
+        {
+          "approach": "SFTP is binary",
+          "code": "# SFTP always transfers in binary mode\n# Unlike FTP, no ascii/binary distinction",
+          "when": "Understanding"
+        },
+        {
+          "approach": "Verify transfer",
+          "code": "# Compare checksums:\nsha256sum localfile\n# On remote:\nsha256sum remotefile",
+          "when": "Check integrity"
+        }
+      ]
+    }
+  ]
+}

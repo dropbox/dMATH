@@ -1,0 +1,171 @@
+{
+  "tool": "cargo_mutants",
+  "version": "24.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missed_mutant",
+      "pattern": "MISSED|Mutant survived|not caught",
+      "message": "Mutation not caught by tests",
+      "cause": "Test suite doesn't cover this behavior",
+      "solutions": [
+        {
+          "approach": "Add test for case",
+          "code": "#[test]\nfn test_edge_case() {\n    assert_eq!(func(0), expected_value);\n}",
+          "when": "Missing test coverage"
+        },
+        {
+          "approach": "Improve assertions",
+          "code": "// Test both positive and negative cases\nassert!(result > 0);\nassert!(result < 100);",
+          "when": "Assertions not specific enough"
+        },
+        {
+          "approach": "Skip mutation",
+          "code": "// In Cargo.toml: [package.metadata.cargo-mutants]\nskip = [\"src/generated.rs\"]",
+          "when": "Code is generated/untestable"
+        }
+      ]
+    },
+    {
+      "id": "caught_mutant",
+      "pattern": "CAUGHT|killed by",
+      "message": "Mutation was detected by tests",
+      "cause": "Tests successfully caught the mutant",
+      "solutions": [
+        {
+          "approach": "Good coverage",
+          "code": "// This indicates good test coverage for this code",
+          "when": "Expected behavior"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|timed out",
+      "message": "Mutant caused test to hang",
+      "cause": "Mutation created infinite loop or deadlock",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "cargo mutants --timeout 300",
+          "when": "Tests are slow"
+        },
+        {
+          "approach": "Skip slow function",
+          "code": "// #[mutants::skip] on functions that cause timeouts",
+          "when": "Function mutation always hangs"
+        },
+        {
+          "approach": "Treat as caught",
+          "code": "// Timeout often indicates mutation was detected",
+          "when": "Hang means test would fail"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "UNVIABLE|Failed to build|compilation error",
+      "message": "Mutant didn't compile",
+      "cause": "Mutation created invalid code (type error, etc.)",
+      "solutions": [
+        {
+          "approach": "Expected behavior",
+          "code": "// Unviable mutants are fine - compiler caught the bug",
+          "when": "Type system caught it"
+        },
+        {
+          "approach": "Ignore unviable",
+          "code": "cargo mutants --json | jq '.outcomes[] | select(.outcome != \"Unviable\")'",
+          "when": "Only care about viable"
+        }
+      ]
+    },
+    {
+      "id": "no_mutants",
+      "pattern": "No mutants|0 mutants generated",
+      "message": "No mutations were generated",
+      "cause": "Code doesn't have mutable operations",
+      "solutions": [
+        {
+          "approach": "Check source filter",
+          "code": "cargo mutants --file src/main.rs",
+          "when": "Files being filtered out"
+        },
+        {
+          "approach": "Check function filter",
+          "code": "cargo mutants --function my_function",
+          "when": "Functions being filtered"
+        },
+        {
+          "approach": "Review code",
+          "code": "// Code may be purely declarative with no logic to mutate",
+          "when": "Code has no operations"
+        }
+      ]
+    },
+    {
+      "id": "slow_execution",
+      "pattern": "still running|ETA",
+      "message": "Mutation testing taking too long",
+      "cause": "Large codebase or slow tests",
+      "solutions": [
+        {
+          "approach": "Use parallelism",
+          "code": "cargo mutants -j 8",
+          "when": "Have multiple cores"
+        },
+        {
+          "approach": "Filter scope",
+          "code": "cargo mutants --file src/critical.rs",
+          "when": "Only test critical code"
+        },
+        {
+          "approach": "Use incremental",
+          "code": "cargo mutants --in-diff origin/main",
+          "when": "Only test changed code"
+        }
+      ]
+    },
+    {
+      "id": "workspace_error",
+      "pattern": "workspace|multiple packages",
+      "message": "Workspace configuration issue",
+      "cause": "Running on workspace root instead of package",
+      "solutions": [
+        {
+          "approach": "Specify package",
+          "code": "cargo mutants -p my-crate",
+          "when": "Workspace has multiple crates"
+        },
+        {
+          "approach": "Run from package",
+          "code": "cd crates/my-crate && cargo mutants",
+          "when": "Want to test one package"
+        }
+      ]
+    },
+    {
+      "id": "baseline_fail",
+      "pattern": "baseline|clean build failed|tests failed without mutation",
+      "message": "Tests fail without any mutation",
+      "cause": "Test suite has existing failures",
+      "solutions": [
+        {
+          "approach": "Fix tests first",
+          "code": "cargo test",
+          "when": "Tests are broken"
+        },
+        {
+          "approach": "Check environment",
+          "code": "// Ensure test dependencies are available",
+          "when": "Environment issue"
+        },
+        {
+          "approach": "Skip flaky tests",
+          "code": "#[ignore]  // Skip flaky test during mutation",
+          "when": "Test is flaky"
+        }
+      ]
+    }
+  ]
+}

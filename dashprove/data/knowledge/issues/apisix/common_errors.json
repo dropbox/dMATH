@@ -1,0 +1,76 @@
+{
+  "tool": "apisix",
+  "category": "api_gateway",
+  "common_errors": [
+    {
+      "pattern": "failed to connect to etcd|etcd cluster.*unreachable",
+      "meaning": "Cannot connect to etcd backend",
+      "causes": ["etcd not running", "Wrong etcd address", "Network/firewall issue"],
+      "solutions": ["Verify etcd is running: etcdctl endpoint health", "Check deployment/etcd.host in config.yaml", "Ensure network connectivity to etcd"]
+    },
+    {
+      "pattern": "404 Route Not Found",
+      "meaning": "No matching route for request",
+      "causes": ["Route not created", "Host/URI mismatch", "Route disabled"],
+      "solutions": ["Create route via Admin API", "Check hosts and uri in route config", "Verify route status is enabled (status: 1)"]
+    },
+    {
+      "pattern": "502 Bad Gateway|upstream.*connect.*refused",
+      "meaning": "Cannot reach upstream service",
+      "causes": ["Upstream down", "Wrong upstream address", "Health check failing"],
+      "solutions": ["Verify upstream service is running", "Check upstream nodes configuration", "Review health check settings"]
+    },
+    {
+      "pattern": "plugin.*not found|unknown plugin",
+      "meaning": "Plugin not available",
+      "causes": ["Plugin not enabled in config", "Plugin name typo", "Plugin not installed"],
+      "solutions": ["Add plugin to plugins list in config.yaml", "Verify plugin name against documentation", "Install external plugin if needed"]
+    },
+    {
+      "pattern": "Admin API.*401|invalid admin key",
+      "meaning": "Admin API authentication failed",
+      "causes": ["Wrong admin key", "Key not configured", "RBAC denying access"],
+      "solutions": ["Check X-API-KEY header value", "Verify admin_key in config.yaml", "Review deployment/admin.admin_key_required"]
+    },
+    {
+      "pattern": "schema validation failed|invalid configuration",
+      "meaning": "Route/service config invalid",
+      "causes": ["Missing required field", "Wrong field type", "Invalid plugin config"],
+      "solutions": ["Check required fields in API docs", "Validate JSON schema", "Review plugin schema requirements"]
+    },
+    {
+      "pattern": "SSL.*error|certificate.*failed",
+      "meaning": "TLS configuration issue",
+      "causes": ["Certificate not found", "Key mismatch", "SNI mismatch"],
+      "solutions": ["Upload SSL cert via Admin API", "Verify cert/key match", "Check snis field matches request host"]
+    },
+    {
+      "pattern": "request body too large",
+      "meaning": "Request exceeds size limit",
+      "causes": ["client_max_body_size too low", "Default nginx limit"],
+      "solutions": ["Set client_max_body_size in config.yaml", "Configure in nginx_config section"]
+    },
+    {
+      "pattern": "rate limit exceeded|too many requests",
+      "meaning": "Rate limiting triggered",
+      "causes": ["limit-req plugin active", "limit-count exceeded", "limit-conn reached"],
+      "solutions": ["Adjust rate limit plugin settings", "Increase count/time_window", "Check key_type for correct limiting"]
+    },
+    {
+      "pattern": "service discovery.*failed|dns.*failed",
+      "meaning": "Service discovery not working",
+      "causes": ["DNS resolver misconfigured", "Consul/Nacos unreachable", "Service not registered"],
+      "solutions": ["Check discovery configuration", "Verify service registry connectivity", "Ensure service is registered correctly"]
+    }
+  ],
+  "debugging_commands": [
+    "curl http://127.0.0.1:9180/apisix/admin/routes -H 'X-API-KEY: <key>'",
+    "apisix healthcheck",
+    "tail -f /usr/local/apisix/logs/error.log",
+    "etcdctl get /apisix --prefix"
+  ],
+  "documentation_urls": [
+    "https://apisix.apache.org/docs/",
+    "https://github.com/apache/apisix"
+  ]
+}

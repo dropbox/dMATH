@@ -1,0 +1,184 @@
+{
+  "tool": "eventstoredb",
+  "category": "event_sourcing",
+  "common_errors": [
+    {
+      "error": "CONNECTION_FAILED",
+      "pattern": "Connection.*failed|UNAVAILABLE|connect ECONNREFUSED",
+      "severity": "critical",
+      "causes": [
+        "EventStoreDB not running",
+        "Wrong connection string",
+        "TLS certificate issues",
+        "Port not accessible"
+      ],
+      "solutions": [
+        "Start EventStoreDB: docker run -p 2113:2113 -p 1113:1113 eventstore/eventstore",
+        "Check connection string: esdb://localhost:2113?tls=false",
+        "For TLS: configure valid certificates",
+        "Verify ports 2113 (HTTP/gRPC) and 1113 (TCP) are open"
+      ]
+    },
+    {
+      "error": "STREAM_NOT_FOUND",
+      "pattern": "stream.*not found|StreamNotFound|STREAM_NOT_FOUND",
+      "severity": "medium",
+      "causes": [
+        "Stream never created",
+        "Stream deleted",
+        "Typo in stream name",
+        "Wrong tenant/scope"
+      ],
+      "solutions": [
+        "Create stream by appending first event",
+        "Check stream exists: GET /streams/{stream}",
+        "Verify stream name case sensitivity",
+        "Use $all stream for reading all events"
+      ]
+    },
+    {
+      "error": "WRONG_EXPECTED_VERSION",
+      "pattern": "WrongExpectedVersion|expected version.*actual|OptimisticConcurrency",
+      "severity": "high",
+      "causes": [
+        "Concurrent write to same stream",
+        "Expected version doesn't match actual",
+        "Stream modified between read and write",
+        "Incorrect version tracking"
+      ],
+      "solutions": [
+        "Use ExpectedVersion.Any for non-critical writes",
+        "Implement retry with re-read for optimistic concurrency",
+        "Use ExpectedVersion.StreamExists for existence check",
+        "Track stream revision and include in write"
+      ]
+    },
+    {
+      "error": "SUBSCRIPTION_DROPPED",
+      "pattern": "Subscription.*dropped|SubscriptionDropped|subscription.*error",
+      "severity": "high",
+      "causes": [
+        "Server restarting",
+        "Network interruption",
+        "Subscription timeout",
+        "Too slow consumer"
+      ],
+      "solutions": [
+        "Implement reconnection logic",
+        "Use persistent subscriptions for reliability",
+        "Handle SubscriptionDropped event",
+        "Increase buffer size for slow consumers"
+      ]
+    },
+    {
+      "error": "PERSISTENT_SUBSCRIPTION_EXISTS",
+      "pattern": "already exists|PersistentSubscriptionExists|subscription.*exists",
+      "severity": "medium",
+      "causes": [
+        "Subscription already created",
+        "Previous creation succeeded but error not handled",
+        "Multiple services creating same subscription"
+      ],
+      "solutions": [
+        "Use create-or-update pattern",
+        "Handle AlreadyExists error gracefully",
+        "Check existence before creating",
+        "Use unique subscription group names"
+      ]
+    },
+    {
+      "error": "TOO_SLOW",
+      "pattern": "too slow|consumer.*slow|buffer.*full|backpressure",
+      "severity": "high",
+      "causes": [
+        "Consumer processing too slowly",
+        "Not acknowledging events",
+        "Checkpoint falling behind",
+        "Processing blocking I/O"
+      ],
+      "solutions": [
+        "Acknowledge events promptly",
+        "Process events asynchronously",
+        "Use batching for database writes",
+        "Scale consumers horizontally"
+      ]
+    },
+    {
+      "error": "PROJECTION_FAULTED",
+      "pattern": "Projection.*faulted|projection.*error|$projections.*failed",
+      "severity": "high",
+      "causes": [
+        "JavaScript error in projection",
+        "Invalid event data",
+        "Projection accessing undefined",
+        "Infinite loop in projection"
+      ],
+      "solutions": [
+        "Check projection logs in UI",
+        "Add error handling in projection code",
+        "Reset faulted projection: esdb projection reset",
+        "Test projection with sample events"
+      ]
+    },
+    {
+      "error": "AUTHENTICATION_ERROR",
+      "pattern": "AccessDenied|authentication.*failed|401 Unauthorized",
+      "severity": "high",
+      "causes": [
+        "Wrong credentials",
+        "User doesn't exist",
+        "ACL denying access",
+        "Token expired"
+      ],
+      "solutions": [
+        "Verify username/password: admin/changeit (default)",
+        "Check user ACLs on stream",
+        "Create user with appropriate permissions",
+        "Use connection string auth: esdb://user:pass@host:2113"
+      ]
+    },
+    {
+      "error": "MAX_APPEND_SIZE_EXCEEDED",
+      "pattern": "maximum append size|MaximumAppendSizeExceeded|event too large",
+      "severity": "medium",
+      "causes": [
+        "Single event too large",
+        "Batch exceeds maximum size",
+        "Binary data not encoded properly"
+      ],
+      "solutions": [
+        "Reduce event size (store references, not data)",
+        "Chunk large events",
+        "Configure MaxAppendSize on server",
+        "Compress large payloads"
+      ]
+    },
+    {
+      "error": "CLUSTER_NOT_READY",
+      "pattern": "cluster.*not ready|no leader|NotLeader|election in progress",
+      "severity": "critical",
+      "causes": [
+        "Cluster election in progress",
+        "Not enough nodes available",
+        "Network partition",
+        "Nodes out of sync"
+      ],
+      "solutions": [
+        "Wait for election to complete",
+        "Check cluster health: GET /gossip",
+        "Verify all nodes can communicate",
+        "Implement connection retry with backoff"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use optimistic concurrency for aggregate consistency",
+    "Implement idempotent event handlers",
+    "Use persistent subscriptions for reliability",
+    "Store event metadata (correlation IDs, timestamps)",
+    "Design small, focused events",
+    "Implement proper error handling for subscriptions",
+    "Use projections for read models"
+  ],
+  "related_tools": ["axon", "marten", "eventuous", "kafka"]
+}

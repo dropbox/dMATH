@@ -1,0 +1,107 @@
+{
+  "id": "asan",
+  "name": "AddressSanitizer (ASAN)",
+  "category": "rust_sanitizers",
+  "subcategory": "memory",
+
+  "description": "Fast memory error detector for buffer overflows and use-after-free",
+  "long_description": "AddressSanitizer (ASAN) is a fast memory error detector that finds out-of-bounds accesses, use-after-free, use-after-return, use-after-scope, and double-free bugs. It's integrated into LLVM and can be used with Rust via the -Zsanitizer=address flag.",
+
+  "capabilities": [
+    "buffer_overflow",
+    "heap_use_after_free",
+    "stack_use_after_return",
+    "use_after_scope",
+    "double_free",
+    "memory_leaks",
+    "global_buffer_overflow"
+  ],
+  "property_types": ["runtime_check"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["diagnostic", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "rustup +nightly component add rust-src llvm-tools-preview"}
+    ],
+    "dependencies": ["rust-nightly", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://clang.llvm.org/docs/AddressSanitizer.html",
+    "tutorial": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html",
+    "api_reference": "https://github.com/google/sanitizers/wiki/AddressSanitizer",
+    "examples": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#addresssanitizer"
+  },
+
+  "tactics": [
+    {
+      "name": "enable",
+      "description": "Enable ASAN for Rust",
+      "syntax": "RUSTFLAGS=\"-Zsanitizer=address\" cargo +nightly run/test",
+      "when_to_use": "For comprehensive memory checking",
+      "examples": ["RUSTFLAGS=\"-Zsanitizer=address\" cargo +nightly test"]
+    },
+    {
+      "name": "detect_leaks",
+      "description": "Enable leak detection",
+      "syntax": "ASAN_OPTIONS=detect_leaks=1",
+      "when_to_use": "To find memory leaks",
+      "examples": ["ASAN_OPTIONS=detect_leaks=1 ./my_program"]
+    },
+    {
+      "name": "halt_on_error",
+      "description": "Stop on first error",
+      "syntax": "ASAN_OPTIONS=halt_on_error=1",
+      "when_to_use": "To debug first error in detail",
+      "examples": ["ASAN_OPTIONS=halt_on_error=1 ./my_program"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "heap-buffer-overflow",
+      "meaning": "Reading/writing past end of heap allocation",
+      "common_causes": ["Incorrect size calculation", "Off-by-one error"],
+      "fixes": ["Check allocation sizes", "Validate indices"]
+    },
+    {
+      "pattern": "heap-use-after-free",
+      "meaning": "Accessing memory after it was freed",
+      "common_causes": ["Dangling pointer", "Use after drop"],
+      "fixes": ["Fix lifetime issues", "Clear pointers after free"]
+    },
+    {
+      "pattern": "stack-buffer-overflow",
+      "meaning": "Writing past end of stack buffer",
+      "common_causes": ["Array overflow", "Unsafe pointer math"],
+      "fixes": ["Check buffer sizes", "Use safe alternatives"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["runtime_check"],
+    "cli_command": "dashprove verify --backend asan"
+  },
+
+  "performance": {
+    "typical_runtime": "2x slowdown",
+    "scalability": "Works on any size program",
+    "memory_usage": "2-3x increase"
+  },
+
+  "comparisons": {
+    "similar_tools": ["miri", "valgrind", "msan"],
+    "advantages": ["Fast (2x vs 20x for valgrind)", "Low false positive rate", "Good stack traces"],
+    "disadvantages": ["Requires recompilation", "No data race detection", "Some overhead"]
+  },
+
+  "metadata": {
+    "version": "LLVM 17+",
+    "last_updated": "2025-12-20",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0"
+  }
+}

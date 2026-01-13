@@ -1,0 +1,145 @@
+{
+  "tool": "ejs",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_variable",
+      "pattern": "is not defined|ReferenceError|Cannot read propert.*undefined",
+      "message": "Variable not defined in template context",
+      "cause": "Template uses variable not passed to render function",
+      "solutions": [
+        {
+          "approach": "Pass all needed variables",
+          "code": "ejs.render(template, { name: 'John', items: [] });",
+          "when": "Missing data"
+        },
+        {
+          "approach": "Use locals object",
+          "code": "<% if (locals.name) { %><%= name %><% } %>",
+          "when": "Optional variables"
+        },
+        {
+          "approach": "Set default in template",
+          "code": "<% const name = typeof name !== 'undefined' ? name : 'Guest'; %>",
+          "when": "Provide defaults"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "SyntaxError|Unexpected token|unexpected identifier",
+      "message": "Invalid JavaScript in template",
+      "cause": "EJS executes JavaScript and syntax is invalid",
+      "solutions": [
+        {
+          "approach": "Check tag delimiters",
+          "code": "<% // code %>\n<%= output %>\n<%- unescaped %>",
+          "when": "Wrong delimiter type"
+        },
+        {
+          "approach": "Close scriptlet tags",
+          "code": "<% if (x) { %>\n  content\n<% } %> <!-- not <% if (x) { content } %>  -->",
+          "when": "Unclosed tags"
+        },
+        {
+          "approach": "Check semicolons",
+          "code": "<% let x = 1; %>\n<% const arr = [1, 2, 3]; %>",
+          "when": "Missing semicolons"
+        }
+      ]
+    },
+    {
+      "id": "include_not_found",
+      "pattern": "Could not find.*include|ENOENT.*include|Include.*not found",
+      "message": "Included file not found",
+      "cause": "Include path doesn't resolve to existing file",
+      "solutions": [
+        {
+          "approach": "Set views directory",
+          "code": "ejs.render(template, data, { views: ['/path/to/views'] });",
+          "when": "Custom views path"
+        },
+        {
+          "approach": "Use relative path from template",
+          "code": "<%- include('./partials/header') %>",
+          "when": "Relative include"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "<%- include('header') %> <!-- looks for header.ejs -->\n<%- include('header.html') %> <!-- explicit extension -->",
+          "when": "Extension mismatch"
+        }
+      ]
+    },
+    {
+      "id": "html_escaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML|rendered as text",
+      "message": "HTML content is escaped",
+      "cause": "Using <%= which escapes HTML, instead of <%-",
+      "solutions": [
+        {
+          "approach": "Use unescaped output",
+          "code": "<%- rawHtml %> <!-- not <%= rawHtml %> -->",
+          "when": "Trusted HTML"
+        },
+        {
+          "approach": "Keep escaping for user content",
+          "code": "<%= userInput %> <!-- safe, prevents XSS -->",
+          "when": "Untrusted content"
+        },
+        {
+          "approach": "Escape in JavaScript",
+          "code": "const escaped = ejs.render('<%= x %>', { x: '<script>' });\n// outputs: &lt;script&gt;",
+          "when": "Manual escaping"
+        }
+      ]
+    },
+    {
+      "id": "async_render_error",
+      "pattern": "async.*not.*supported|Promise|await.*ejs|callback",
+      "message": "Async operations in template not handled",
+      "cause": "EJS doesn't support async/await in templates by default",
+      "solutions": [
+        {
+          "approach": "Enable async mode",
+          "code": "const html = await ejs.render(template, data, { async: true });",
+          "when": "Need async in template"
+        },
+        {
+          "approach": "Pre-fetch data",
+          "code": "const items = await fetchItems();\nconst html = ejs.render(template, { items });",
+          "when": "Fetch before render"
+        },
+        {
+          "approach": "Use renderFile with callback",
+          "code": "ejs.renderFile('template.ejs', data, (err, html) => {\n  if (err) throw err;\n  console.log(html);\n});",
+          "when": "File-based rendering"
+        }
+      ]
+    },
+    {
+      "id": "cache_stale",
+      "pattern": "old template|changes not reflected|cached|stale content",
+      "message": "Template changes not appearing",
+      "cause": "EJS caches compiled templates in production",
+      "solutions": [
+        {
+          "approach": "Disable cache in development",
+          "code": "app.set('view cache', false);\n// or\nejs.render(template, data, { cache: false });",
+          "when": "Development mode"
+        },
+        {
+          "approach": "Clear cache manually",
+          "code": "ejs.clearCache();",
+          "when": "Force refresh"
+        },
+        {
+          "approach": "Enable cache for production",
+          "code": "if (process.env.NODE_ENV === 'production') {\n  app.set('view cache', true);\n}",
+          "when": "Production optimization"
+        }
+      ]
+    }
+  ]
+}

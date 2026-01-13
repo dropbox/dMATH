@@ -1,0 +1,99 @@
+{
+  "tool": "ecs",
+  "category": "aws_containers",
+  "description": "Amazon Elastic Container Service - container orchestration service",
+  "common_errors": [
+    {
+      "id": "task_stopped",
+      "pattern": "STOPPED",
+      "regex": "(?i)task.*stopped|essential.*container.*exited|container.*exit.*code|OutOfMemoryError",
+      "cause": "ECS task stopped unexpectedly",
+      "solution": "Check CloudWatch logs for container, verify memory/CPU limits, review exit code in stopped task details",
+      "severity": "high",
+      "category": "runtime"
+    },
+    {
+      "id": "image_pull_failed",
+      "pattern": "CannotPullContainerError",
+      "regex": "(?i)cannot.*pull.*container|image.*not.*found|pull.*rate.*limit|ecr.*auth|repository.*not.*found",
+      "cause": "Failed to pull container image from registry",
+      "solution": "Check ECR repository exists, verify task execution role has ecr:GetAuthorizationToken, check Docker Hub rate limits",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "service_unhealthy",
+      "pattern": "unhealthy",
+      "regex": "(?i)unhealthy|health.*check.*failed|target.*group.*unhealthy|elb.*health.*check",
+      "cause": "ECS service health checks failing",
+      "solution": "Review health check path/port in target group, increase health check grace period, verify container responds to health endpoint",
+      "severity": "high",
+      "category": "health"
+    },
+    {
+      "id": "resource_exhaustion",
+      "pattern": "RESOURCE",
+      "regex": "(?i)resource.*unavailable|no.*container.*instances|insufficient.*memory|insufficient.*cpu|no.*placement",
+      "cause": "Insufficient resources to place tasks",
+      "solution": "Add EC2 instances to cluster, use capacity providers with auto-scaling, reduce task resource requirements",
+      "severity": "high",
+      "category": "capacity"
+    },
+    {
+      "id": "iam_permission",
+      "pattern": "AccessDenied",
+      "regex": "(?i)access.*denied|not.*authorized|iam.*error|execution.*role|task.*role",
+      "cause": "IAM permissions insufficient for task execution or task role",
+      "solution": "Attach AmazonECSTaskExecutionRolePolicy to execution role, add required permissions to task role",
+      "severity": "high",
+      "category": "iam"
+    },
+    {
+      "id": "network_error",
+      "pattern": "NetworkError",
+      "regex": "(?i)network.*error|eni.*attachment|vpc.*endpoint|subnet.*no.*available.*ip|nat.*gateway",
+      "cause": "Network configuration issues preventing task connectivity",
+      "solution": "Verify VPC endpoints for ECR/S3/CloudWatch, check NAT gateway for Fargate, ensure subnet has available IPs",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "service_discovery",
+      "pattern": "service discovery",
+      "regex": "(?i)service.*discovery|cloud.*map|namespace.*not.*found|srv.*record|dns.*resolution",
+      "cause": "Service discovery registration or DNS resolution failed",
+      "solution": "Verify Cloud Map namespace exists, check VPC DNS settings, review service discovery configuration",
+      "severity": "medium",
+      "category": "networking"
+    },
+    {
+      "id": "secrets_error",
+      "pattern": "SecretError",
+      "regex": "(?i)secrets.*manager|ssm.*parameter|unable.*to.*retrieve.*secret|resourceinitializationerror",
+      "cause": "Failed to retrieve secrets or SSM parameters",
+      "solution": "Add secretsmanager:GetSecretValue or ssm:GetParameters to execution role, verify secret ARN is correct",
+      "severity": "high",
+      "category": "secrets"
+    },
+    {
+      "id": "capacity_provider",
+      "pattern": "capacity provider",
+      "regex": "(?i)capacity.*provider|asg.*capacity|managed.*scaling|capacity.*provider.*strategy",
+      "cause": "Capacity provider strategy cannot be satisfied",
+      "solution": "Verify ASG capacity provider is attached, check managed scaling settings, review placement strategy",
+      "severity": "medium",
+      "category": "capacity"
+    },
+    {
+      "id": "deployment_failed",
+      "pattern": "deployment failed",
+      "regex": "(?i)deployment.*failed|rollback|minimum.*healthy.*percent|circuit.*breaker",
+      "cause": "Service deployment failed to reach steady state",
+      "solution": "Review deployment configuration, enable circuit breaker for auto-rollback, check task failure reasons",
+      "severity": "high",
+      "category": "deployment"
+    }
+  ],
+  "related_tools": ["aws_cli", "ecr", "cloudwatch", "docker"],
+  "documentation_url": "https://docs.aws.amazon.com/ecs/"
+}

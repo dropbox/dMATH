@@ -1,0 +1,267 @@
+{
+  "tool": "xcuitest",
+  "version": "15.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "element_not_found",
+      "pattern": "No matches found|Element.*not found|does not exist|timed out",
+      "message": "UI element not found",
+      "cause": "Element not in view hierarchy or wrong query",
+      "solutions": [
+        {
+          "approach": "Add accessibility identifier",
+          "code": "view.accessibilityIdentifier = \"myButton\"\n// Then: app.buttons[\"myButton\"]",
+          "when": "Element hard to identify"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "let button = app.buttons[\"submit\"]\nXCTAssertTrue(button.waitForExistence(timeout: 5))",
+          "when": "Element loads asynchronously"
+        },
+        {
+          "approach": "Debug element tree",
+          "code": "print(app.debugDescription)",
+          "when": "Understanding hierarchy"
+        },
+        {
+          "approach": "Use correct element type",
+          "code": "app.staticTexts[\"label\"]  // Not app.buttons",
+          "when": "Wrong element type"
+        }
+      ]
+    },
+    {
+      "id": "tap_failed",
+      "pattern": "Failed to tap|not hittable|cannot interact",
+      "message": "Cannot tap element",
+      "cause": "Element exists but isn't tappable",
+      "solutions": [
+        {
+          "approach": "Check element is hittable",
+          "code": "XCTAssertTrue(button.isHittable)\nbutton.tap()",
+          "when": "Element may be covered"
+        },
+        {
+          "approach": "Scroll element into view",
+          "code": "app.scrollViews.firstMatch.swipeUp()\nbutton.tap()",
+          "when": "Element off-screen"
+        },
+        {
+          "approach": "Use coordinate tap",
+          "code": "button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()",
+          "when": "Direct tap fails"
+        },
+        {
+          "approach": "Dismiss keyboard/overlay",
+          "code": "app.keyboards.buttons[\"Return\"].tap()",
+          "when": "Keyboard covering element"
+        }
+      ]
+    },
+    {
+      "id": "simulator_error",
+      "pattern": "Simulator.*error|device not found|unable to launch",
+      "message": "Simulator launch/communication error",
+      "cause": "Simulator not running or communication issue",
+      "solutions": [
+        {
+          "approach": "Reset simulator",
+          "code": "xcrun simctl shutdown all && xcrun simctl erase all",
+          "when": "Simulator corrupted"
+        },
+        {
+          "approach": "Boot specific simulator",
+          "code": "xcrun simctl boot \"iPhone 15 Pro\"",
+          "when": "Simulator not running"
+        },
+        {
+          "approach": "Clean derived data",
+          "code": "rm -rf ~/Library/Developer/Xcode/DerivedData",
+          "when": "Stale build artifacts"
+        },
+        {
+          "approach": "Use different simulator",
+          "code": "xcodebuild test -destination 'platform=iOS Simulator,name=iPhone 15'",
+          "when": "Specific device issue"
+        }
+      ]
+    },
+    {
+      "id": "app_launch_failed",
+      "pattern": "Failed to launch|app.*crashed|terminated unexpectedly",
+      "message": "App failed to launch",
+      "cause": "App crashed on launch or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check launch arguments",
+          "code": "let app = XCUIApplication()\napp.launchArguments = [\"--uitesting\"]\napp.launch()",
+          "when": "App needs test mode"
+        },
+        {
+          "approach": "Check bundle identifier",
+          "code": "let app = XCUIApplication(bundleIdentifier: \"com.example.app\")",
+          "when": "Wrong bundle ID"
+        },
+        {
+          "approach": "Build app first",
+          "code": "xcodebuild build-for-testing ...",
+          "when": "App not built"
+        },
+        {
+          "approach": "Check app logs",
+          "code": "xcrun simctl spawn booted log stream --predicate 'process == \"MyApp\"'",
+          "when": "Debug crash"
+        }
+      ]
+    },
+    {
+      "id": "state_not_reset",
+      "pattern": "state.*persisted|data.*from previous|not clean state",
+      "message": "App state not reset between tests",
+      "cause": "Previous test data affecting current test",
+      "solutions": [
+        {
+          "approach": "Reset in setUp",
+          "code": "override func setUp() {\n    continueAfterFailure = false\n    app.launchArguments = [\"--reset-data\"]\n    app.launch()\n}",
+          "when": "Tests need clean state"
+        },
+        {
+          "approach": "Uninstall app",
+          "code": "xcrun simctl uninstall booted com.example.app",
+          "when": "Full reset needed"
+        },
+        {
+          "approach": "Use delete app method",
+          "code": "XCUIDevice.shared.press(.home)\n// Delete app icon",
+          "when": "Between test runs"
+        }
+      ]
+    },
+    {
+      "id": "text_input_failed",
+      "pattern": "cannot type|keyboard.*missing|typeText.*failed",
+      "message": "Text input failed",
+      "cause": "Keyboard not appearing or field not focused",
+      "solutions": [
+        {
+          "approach": "Tap field first",
+          "code": "let textField = app.textFields[\"email\"]\ntextField.tap()\ntextField.typeText(\"test@example.com\")",
+          "when": "Field not focused"
+        },
+        {
+          "approach": "Use hardware keyboard",
+          "code": "// Disable \"Connect Hardware Keyboard\" in simulator",
+          "when": "Software keyboard needed"
+        },
+        {
+          "approach": "Clear existing text",
+          "code": "textField.tap()\ntextField.press(forDuration: 1.2)\napp.menuItems[\"Select All\"].tap()\ntextField.typeText(newText)",
+          "when": "Replace existing text"
+        }
+      ]
+    },
+    {
+      "id": "alerts_dialogs",
+      "pattern": "alert.*not handled|system dialog|permission.*denied",
+      "message": "System alert not handled",
+      "cause": "System dialog (permissions, etc.) blocking test",
+      "solutions": [
+        {
+          "approach": "Add UI interruption handler",
+          "code": "addUIInterruptionMonitor(withDescription: \"Permissions\") { alert in\n    alert.buttons[\"Allow\"].tap()\n    return true\n}\napp.tap()  // Trigger handler",
+          "when": "System permission dialogs"
+        },
+        {
+          "approach": "Reset permissions",
+          "code": "xcrun simctl privacy booted reset all com.example.app",
+          "when": "Permissions already granted"
+        },
+        {
+          "approach": "Handle springboard alerts",
+          "code": "let springboard = XCUIApplication(bundleIdentifier: \"com.apple.springboard\")\nspringboard.buttons[\"Allow\"].tap()",
+          "when": "System-level alert"
+        }
+      ]
+    },
+    {
+      "id": "flaky_test",
+      "pattern": "intermittent|flaky|sometimes fails|race condition",
+      "message": "Test fails intermittently",
+      "cause": "Timing issues or non-deterministic behavior",
+      "solutions": [
+        {
+          "approach": "Use explicit waits",
+          "code": "let predicate = NSPredicate(format: \"exists == true\")\nexpectation(for: predicate, evaluatedWith: element)\nwaitForExpectations(timeout: 10)",
+          "when": "Timing issues"
+        },
+        {
+          "approach": "Increase timeouts",
+          "code": "element.waitForExistence(timeout: 10)",
+          "when": "Slow animations/network"
+        },
+        {
+          "approach": "Disable animations",
+          "code": "app.launchArguments.append(\"--disable-animations\")\n// In app: UIView.setAnimationsEnabled(false)",
+          "when": "Animation timing issues"
+        },
+        {
+          "approach": "Run tests sequentially",
+          "code": "xcodebuild test -parallel-testing-enabled NO",
+          "when": "Parallel test interference"
+        }
+      ]
+    },
+    {
+      "id": "screenshot_failure",
+      "pattern": "screenshot.*failed|cannot capture|attachment.*error",
+      "message": "Screenshot capture failed",
+      "cause": "Cannot capture screen during test",
+      "solutions": [
+        {
+          "approach": "Add screenshot on failure",
+          "code": "override func tearDown() {\n    let screenshot = XCUIScreen.main.screenshot()\n    let attachment = XCTAttachment(screenshot: screenshot)\n    add(attachment)\n}",
+          "when": "Capture failure state"
+        },
+        {
+          "approach": "Enable automatic screenshots",
+          "code": "// Edit scheme -> Test -> Options -> Screenshots",
+          "when": "Want all screenshots"
+        },
+        {
+          "approach": "Use lifetime attachment",
+          "code": "attachment.lifetime = .keepAlways",
+          "when": "Keep successful screenshots too"
+        }
+      ]
+    },
+    {
+      "id": "query_ambiguous",
+      "pattern": "multiple matches|ambiguous|more than one",
+      "message": "Element query matches multiple elements",
+      "cause": "Query not specific enough",
+      "solutions": [
+        {
+          "approach": "Use unique identifier",
+          "code": "app.buttons[\"uniqueId\"].tap()",
+          "when": "Add accessibility ID"
+        },
+        {
+          "approach": "Use element index",
+          "code": "app.buttons.element(boundBy: 0).tap()",
+          "when": "Select first match"
+        },
+        {
+          "approach": "Refine query",
+          "code": "app.tables.cells.containing(.staticText, identifier: \"Title\").buttons.firstMatch.tap()",
+          "when": "More specific query"
+        },
+        {
+          "approach": "Use firstMatch",
+          "code": "app.buttons[\"Submit\"].firstMatch.tap()",
+          "when": "Any match acceptable"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "tool": "javadoc",
+  "version": "21+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_comment",
+      "pattern": "no comment|missing documentation comment|undocumented",
+      "message": "Public API element not documented",
+      "cause": "Missing Javadoc comment on public member",
+      "solutions": [
+        {
+          "approach": "Add Javadoc",
+          "code": "/**\n * Brief description.\n * @param name parameter description\n * @return return value description\n */\npublic String method(String name) {}",
+          "when": "Element needs documentation"
+        },
+        {
+          "approach": "Use -quiet flag",
+          "code": "javadoc -quiet ...",
+          "when": "Suppress warnings"
+        },
+        {
+          "approach": "Inherit docs",
+          "code": "/** {@inheritDoc} */\n@Override\npublic void method() {}",
+          "when": "Overriding documented method"
+        }
+      ]
+    },
+    {
+      "id": "bad_param",
+      "pattern": "@param.*not found|no @param|missing @param",
+      "message": "Parameter documentation missing or wrong",
+      "cause": "@param tag doesn't match actual parameters",
+      "solutions": [
+        {
+          "approach": "Add missing @param",
+          "code": "/**\n * @param name the user name\n * @param age the user age\n */",
+          "when": "Missing param docs"
+        },
+        {
+          "approach": "Fix param name",
+          "code": "// Ensure @param name matches actual parameter name",
+          "when": "Param name typo"
+        },
+        {
+          "approach": "Remove obsolete @param",
+          "code": "// Remove @param for deleted parameters",
+          "when": "Parameter removed"
+        }
+      ]
+    },
+    {
+      "id": "bad_return",
+      "pattern": "@return.*void|missing @return|@return for void",
+      "message": "Return value documentation issue",
+      "cause": "@return on void method or missing @return on non-void",
+      "solutions": [
+        {
+          "approach": "Add @return",
+          "code": "/**\n * @return the computed result\n */\npublic int compute() {}",
+          "when": "Non-void needs @return"
+        },
+        {
+          "approach": "Remove @return",
+          "code": "// Remove @return from void methods",
+          "when": "Void method has @return"
+        }
+      ]
+    },
+    {
+      "id": "bad_throws",
+      "pattern": "@throws.*not thrown|undeclared @throws|exception not declared",
+      "message": "Exception documentation doesn't match throws clause",
+      "cause": "@throws documents exception not in throws clause",
+      "solutions": [
+        {
+          "approach": "Add to throws clause",
+          "code": "public void method() throws IOException {}",
+          "when": "Checked exception not declared"
+        },
+        {
+          "approach": "Document runtime exceptions",
+          "code": "/**\n * @throws NullPointerException if param is null\n */",
+          "when": "Documenting unchecked exception"
+        },
+        {
+          "approach": "Remove obsolete @throws",
+          "code": "// Remove @throws for exceptions no longer thrown",
+          "when": "Exception removed"
+        }
+      ]
+    },
+    {
+      "id": "unknown_tag",
+      "pattern": "unknown tag|tag.*not recognized|invalid tag",
+      "message": "Unrecognized Javadoc tag",
+      "cause": "Using custom or misspelled tag",
+      "solutions": [
+        {
+          "approach": "Use standard tags",
+          "code": "// @param, @return, @throws, @see, @since, @deprecated",
+          "when": "Wrong tag name"
+        },
+        {
+          "approach": "Register custom tags",
+          "code": "javadoc -tag todo:a:\"TODO:\"",
+          "when": "Need custom tag"
+        },
+        {
+          "approach": "Fix typo",
+          "code": "// @retrun -> @return",
+          "when": "Tag misspelled"
+        }
+      ]
+    },
+    {
+      "id": "reference_not_found",
+      "pattern": "reference not found|cannot find symbol|unresolved link",
+      "message": "Cross-reference target not found",
+      "cause": "{@link} or @see target doesn't exist",
+      "solutions": [
+        {
+          "approach": "Use full path",
+          "code": "/** @see com.example.OtherClass#method() */",
+          "when": "Class not imported"
+        },
+        {
+          "approach": "Import the class",
+          "code": "import com.example.OtherClass;",
+          "when": "Can use simple name"
+        },
+        {
+          "approach": "Check method signature",
+          "code": "{@link #method(String, int)} // include param types",
+          "when": "Overloaded method"
+        }
+      ]
+    },
+    {
+      "id": "html_error",
+      "pattern": "malformed HTML|self-closing element|invalid HTML",
+      "message": "Invalid HTML in Javadoc",
+      "cause": "HTML5 vs XHTML differences",
+      "solutions": [
+        {
+          "approach": "Use HTML5 style",
+          "code": "<br> instead of <br/>",
+          "when": "Self-closing tags"
+        },
+        {
+          "approach": "Close all tags",
+          "code": "<p>Paragraph text</p>",
+          "when": "Unclosed tags"
+        },
+        {
+          "approach": "Use code tag",
+          "code": "{@code List<String>} instead of List&lt;String&gt;",
+          "when": "Generics in docs"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "module.*not found|cannot find module|package.*not visible",
+      "message": "Module/package visibility issue",
+      "cause": "Trying to document non-exported package",
+      "solutions": [
+        {
+          "approach": "Export package",
+          "code": "// In module-info.java:\nexports com.example.api;",
+          "when": "Package not exported"
+        },
+        {
+          "approach": "Use --add-modules",
+          "code": "javadoc --add-modules com.example ...",
+          "when": "Module not resolved"
+        },
+        {
+          "approach": "Document without modules",
+          "code": "javadoc -sourcepath src ...",
+          "when": "Non-modular project"
+        }
+      ]
+    },
+    {
+      "id": "encoding_error",
+      "pattern": "unmappable character|encoding.*error|UTF-8.*error",
+      "message": "Character encoding error",
+      "cause": "Source file encoding doesn't match expected",
+      "solutions": [
+        {
+          "approach": "Set encoding",
+          "code": "javadoc -encoding UTF-8 ...",
+          "when": "Non-ASCII characters"
+        },
+        {
+          "approach": "Set docencoding",
+          "code": "javadoc -docencoding UTF-8 ...",
+          "when": "Output encoding issue"
+        },
+        {
+          "approach": "Convert source files",
+          "code": "native2ascii -encoding UTF-8 ...",
+          "when": "Legacy encoding"
+        }
+      ]
+    },
+    {
+      "id": "snippet_error",
+      "pattern": "@snippet.*error|snippet region not found|invalid snippet",
+      "message": "Code snippet error (Java 18+)",
+      "cause": "Snippet tag syntax or reference error",
+      "solutions": [
+        {
+          "approach": "Use inline snippet",
+          "code": "/** {@snippet :\n * int x = 1;  // @highlight\n * } */",
+          "when": "Simple code example"
+        },
+        {
+          "approach": "Define region",
+          "code": "// @start region=example\ncode();\n// @end region=example",
+          "when": "External snippet"
+        },
+        {
+          "approach": "Use @code instead",
+          "code": "/** {@code example code} */",
+          "when": "Pre-Java 18"
+        }
+      ]
+    }
+  ]
+}

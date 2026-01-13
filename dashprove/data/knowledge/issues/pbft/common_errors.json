@@ -1,0 +1,97 @@
+{
+  "tool": "pbft",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "view_change_stuck",
+      "pattern": "(view.*change|new.*view|stuck)",
+      "message": "View change not completing",
+      "cause": "Not enough replicas agreeing on view change",
+      "solutions": [
+        {
+          "approach": "Collect view changes",
+          "code": "// Need 2f+1 view-change messages\nlet vc_msgs = collect_view_changes(new_view);\nif vc_msgs.len() >= 2 * f + 1 {\n    let new_view_msg = compute_new_view(vc_msgs);\n    broadcast(new_view_msg);\n}",
+          "when": "Processing view change"
+        },
+        {
+          "approach": "Check timeouts",
+          "code": "// Increase timeout for slow network\nconfig.view_change_timeout = Duration::from_secs(30);\nconfig.checkpoint_period = 100;",
+          "when": "Frequent view changes"
+        }
+      ]
+    },
+    {
+      "id": "sequence_number_gap",
+      "pattern": "(sequence|gap|missing|n=)",
+      "message": "Gap in sequence numbers",
+      "cause": "Missing messages in sequence",
+      "solutions": [
+        {
+          "approach": "Request retransmission",
+          "code": "// Request missing pre-prepare/prepare from primary\nlet missing = find_gaps(low_watermark, high_watermark);\nfor n in missing {\n    send_request_missing(primary, n);\n}",
+          "when": "Gaps detected"
+        },
+        {
+          "approach": "State transfer",
+          "code": "// If too far behind, do state transfer\nif my_checkpoint < min_stable_checkpoint {\n    request_state_transfer(recent_checkpoint);\n}",
+          "when": "Replica far behind"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_mismatch",
+      "pattern": "(checkpoint|stable|digest.*mismatch)",
+      "message": "Checkpoint digest mismatch",
+      "cause": "Replicas have divergent state",
+      "solutions": [
+        {
+          "approach": "Verify checkpoint",
+          "code": "// Compare checkpoint digests\nlet my_digest = compute_state_digest();\nlet matching = checkpoint_msgs.iter()\n    .filter(|c| c.digest == my_digest)\n    .count();\nif matching < 2 * f + 1 {\n    // My state may be wrong - recover\n}",
+          "when": "Validating checkpoint"
+        },
+        {
+          "approach": "Recover state",
+          "code": "// Get correct state from honest replicas\nlet correct_state = request_state_from_replicas();\napply_state(correct_state);\nresume_from_checkpoint();",
+          "when": "State corruption"
+        }
+      ]
+    },
+    {
+      "id": "primary_faulty",
+      "pattern": "(primary|faulty|byzantine|malicious)",
+      "message": "Primary behaving incorrectly",
+      "cause": "Primary not following protocol",
+      "solutions": [
+        {
+          "approach": "Trigger view change",
+          "code": "// Detect faulty primary\nif !valid_preprepare(msg) || timeout_expired() {\n    broadcast_view_change(current_view + 1);\n}",
+          "when": "Primary misbehaving"
+        },
+        {
+          "approach": "Validate pre-prepare",
+          "code": "// Check pre-prepare validity\nassert!(msg.view == current_view);\nassert!(msg.n >= low_watermark && msg.n <= high_watermark);\nassert!(!already_accepted(msg.view, msg.n));",
+          "when": "Receiving pre-prepare"
+        }
+      ]
+    },
+    {
+      "id": "watermark_violation",
+      "pattern": "(watermark|h|H|window)",
+      "message": "Watermark bounds violated",
+      "cause": "Sequence number outside valid window",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "// Sequence must be in [h, H]\nlet h = stable_checkpoint;\nlet H = h + 2 * checkpoint_period;\nif n < h || n > H {\n    // Reject message\n}",
+          "when": "Validating sequence"
+        },
+        {
+          "approach": "Advance watermarks",
+          "code": "// After stable checkpoint, advance low watermark\nfn on_stable_checkpoint(seq: u64) {\n    low_watermark = seq;\n    garbage_collect(seq);\n}",
+          "when": "Checkpoint complete"
+        }
+      ]
+    }
+  ]
+}

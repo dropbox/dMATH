@@ -1,0 +1,168 @@
+{
+  "tool": "odin",
+  "version": "dev-2024-02",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "expected type|mismatched types",
+      "message": "Type mismatch",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Use explicit cast",
+          "code": "x := cast(i32)my_f64",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Use auto_cast",
+          "code": "x := auto_cast my_value",
+          "when": "Safe auto conversion"
+        },
+        {
+          "approach": "Use transmute",
+          "code": "bytes := transmute([4]u8)my_i32",
+          "when": "Bit-level reinterpret"
+        }
+      ]
+    },
+    {
+      "id": "nil_pointer",
+      "pattern": "nil pointer|dereferencing nil",
+      "message": "Nil pointer dereference",
+      "cause": "Attempted to dereference nil pointer",
+      "solutions": [
+        {
+          "approach": "Check for nil",
+          "code": "if ptr != nil {\n    value := ptr^\n}",
+          "when": "Pointer may be nil"
+        },
+        {
+          "approach": "Use or_else",
+          "code": "value := ptr^ or_else default_value",
+          "when": "Have default value"
+        },
+        {
+          "approach": "Use optional returns",
+          "code": "result, ok := map[key]\nif ok { ... }",
+          "when": "Checking map access"
+        }
+      ]
+    },
+    {
+      "id": "bounds_check",
+      "pattern": "index.*out of bounds|slice bounds",
+      "message": "Array bounds check failed",
+      "cause": "Array or slice index exceeds valid range",
+      "solutions": [
+        {
+          "approach": "Check bounds first",
+          "code": "if idx < len(arr) {\n    val := arr[idx]\n}",
+          "when": "Index may be invalid"
+        },
+        {
+          "approach": "Use safe access",
+          "code": "val, ok := arr[idx]  // Returns ok=false if invalid",
+          "when": "Want optional result"
+        },
+        {
+          "approach": "Disable bounds checking",
+          "code": "#no_bounds_check {\n    // careful code here\n}",
+          "when": "Performance critical (careful!)"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "memory leak|allocation.*not freed",
+      "message": "Memory leak detected",
+      "cause": "Allocated memory not freed",
+      "solutions": [
+        {
+          "approach": "Use defer",
+          "code": "data := make([]u8, 1000)\ndefer delete(data)",
+          "when": "Scope-based cleanup"
+        },
+        {
+          "approach": "Use temp allocator",
+          "code": "context.allocator = context.temp_allocator\n// allocations automatically freed",
+          "when": "Temporary allocations"
+        },
+        {
+          "approach": "Track allocations",
+          "code": "tracking_allocator := mem.Tracking_Allocator{}\nmem.tracking_allocator_init(&tracking_allocator)",
+          "when": "Debugging leaks"
+        }
+      ]
+    },
+    {
+      "id": "undefined_identifier",
+      "pattern": "undeclared identifier|undefined",
+      "message": "Identifier not declared",
+      "cause": "Variable or procedure not defined or imported",
+      "solutions": [
+        {
+          "approach": "Import package",
+          "code": "import \"core:fmt\"\nimport \"core:strings\"",
+          "when": "Using core library"
+        },
+        {
+          "approach": "Define before use",
+          "code": "// Odin requires definition before use",
+          "when": "Order issue"
+        },
+        {
+          "approach": "Check package path",
+          "code": "import my_pkg \"path/to/package\"",
+          "when": "Custom package"
+        }
+      ]
+    },
+    {
+      "id": "procedure_error",
+      "pattern": "procedure.*error|return.*mismatch",
+      "message": "Procedure definition error",
+      "cause": "Procedure signature or return doesn't match",
+      "solutions": [
+        {
+          "approach": "Check return type",
+          "code": "proc_name :: proc() -> (result: i32, ok: bool) { ... }",
+          "when": "Multiple returns"
+        },
+        {
+          "approach": "Use named returns",
+          "code": "proc() -> (result: i32) {\n    result = 42\n    return\n}",
+          "when": "Named return values"
+        },
+        {
+          "approach": "Add explicit return",
+          "code": "return value, true",
+          "when": "Missing return value"
+        }
+      ]
+    },
+    {
+      "id": "context_error",
+      "pattern": "context.*invalid|allocator.*nil",
+      "message": "Invalid context",
+      "cause": "Context or allocator not properly set",
+      "solutions": [
+        {
+          "approach": "Set allocator",
+          "code": "context.allocator = my_allocator",
+          "when": "Custom allocator needed"
+        },
+        {
+          "approach": "Use default context",
+          "code": "runtime.default_context()",
+          "when": "No context available"
+        },
+        {
+          "approach": "Pass context explicitly",
+          "code": "my_proc(ctx: runtime.Context) { ... }",
+          "when": "Context not implicit"
+        }
+      ]
+    }
+  ]
+}

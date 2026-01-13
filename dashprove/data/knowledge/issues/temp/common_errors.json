@@ -1,0 +1,86 @@
+{
+  "tool": "temp",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "temp_cleanup_manual",
+      "pattern": "temp files remaining|cleanup not automatic|manual cleanup needed",
+      "severity": "warning",
+      "causes": [
+        "Automatic cleanup not enabled",
+        "Process exited abnormally",
+        "cleanup() not called"
+      ],
+      "solutions": [
+        "Enable auto-cleanup: temp.track()",
+        "Manual cleanup: temp.cleanupSync()",
+        "Call at exit: process.on('exit', temp.cleanupSync)",
+        "track() returns temp module for chaining"
+      ]
+    },
+    {
+      "id": "temp_path_vs_open",
+      "pattern": "path vs open|file not created|just need name",
+      "severity": "info",
+      "causes": [
+        "Confusion between path() and open()",
+        "Need filename without creating file",
+        "Different use cases"
+      ],
+      "solutions": [
+        "temp.path() returns path without creating file",
+        "temp.open() creates file and returns { path, fd }",
+        "temp.openSync() is synchronous version",
+        "Use path() for passing to external tools"
+      ]
+    },
+    {
+      "id": "temp_mkdir_error",
+      "pattern": "mkdir failed|directory not created|EEXIST",
+      "severity": "error",
+      "causes": [
+        "Directory already exists",
+        "Permission issues",
+        "Invalid path"
+      ],
+      "solutions": [
+        "temp.mkdir() creates unique directory",
+        "Use { dir: '/base/path' } for custom location",
+        "Check permissions on temp directory",
+        "Prefix option: { prefix: 'myapp-' }"
+      ]
+    },
+    {
+      "id": "temp_affixes",
+      "pattern": "prefix suffix|affixes option|naming temp files",
+      "severity": "info",
+      "causes": [
+        "Want custom temp file naming",
+        "Need specific extension",
+        "Identifying temp files"
+      ],
+      "solutions": [
+        "Use affixes: { prefix: 'myapp-', suffix: '.txt' }",
+        "Or use object: temp.path({ suffix: '.log' })",
+        "prefix and suffix added to random name",
+        "Good for debugging: identify app's temp files"
+      ]
+    },
+    {
+      "id": "temp_fd_leak",
+      "pattern": "too many open files|EMFILE|fd not closed",
+      "severity": "error",
+      "causes": [
+        "File descriptors not closed",
+        "Using open() without closing fd",
+        "Leaking file handles"
+      ],
+      "solutions": [
+        "Always close fd: fs.closeSync(fd)",
+        "Or use temp.createWriteStream() which handles fd",
+        "track() helps cleanup on exit but not fd",
+        "Consider using path() if fd not needed"
+      ]
+    }
+  ]
+}

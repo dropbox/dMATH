@@ -1,0 +1,173 @@
+{
+  "tool": "certora",
+  "version": "7.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "rule_violation",
+      "pattern": "Rule .* violated",
+      "message": "Certora found a rule violation with counterexample",
+      "cause": "The smart contract behavior violates the specified CVL rule",
+      "solutions": [
+        {
+          "approach": "Analyze counterexample",
+          "code": "// Check the call trace in Certora's web UI to understand the violating path",
+          "when": "Need to understand why the rule failed"
+        },
+        {
+          "approach": "Strengthen invariant",
+          "code": "invariant totalSupply() == sum(balances) { preserved { ... } }",
+          "when": "Invariant needs additional preservation conditions"
+        },
+        {
+          "approach": "Fix contract logic",
+          "code": "// The spec is correct - fix the Solidity implementation",
+          "when": "Contract has a genuine bug"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout reached|Out of time",
+      "message": "Verification timed out",
+      "cause": "State space too large or complex arithmetic",
+      "solutions": [
+        {
+          "approach": "Use --rule_sanity",
+          "code": "certoraRun ... --rule_sanity basic",
+          "when": "Check if rules are vacuously true first"
+        },
+        {
+          "approach": "Summarize complex functions",
+          "code": "methods { complexFn() => NONDET }",
+          "when": "Function has complex loops or recursion"
+        },
+        {
+          "approach": "Use --loop_iter",
+          "code": "certoraRun ... --loop_iter 3",
+          "when": "Loops need bounding"
+        },
+        {
+          "approach": "Split verification",
+          "code": "// Verify one rule at a time with --rule",
+          "when": "Running all rules together is too expensive"
+        }
+      ]
+    },
+    {
+      "id": "vacuous_rule",
+      "pattern": "rule .* is vacuous",
+      "message": "Rule is vacuously true (never triggered)",
+      "cause": "Preconditions are unsatisfiable or filter out all states",
+      "solutions": [
+        {
+          "approach": "Check require statements",
+          "code": "// Ensure require(cond) in rule is satisfiable",
+          "when": "Preconditions may be contradictory"
+        },
+        {
+          "approach": "Verify assumptions",
+          "code": "// Use --rule_sanity to detect vacuity",
+          "when": "Filter conditions may be too restrictive"
+        },
+        {
+          "approach": "Add satisfiability check",
+          "code": "satisfy canReachState() { ... }",
+          "when": "Want to prove state is reachable"
+        }
+      ]
+    },
+    {
+      "id": "linking_error",
+      "pattern": "Could not link|Unresolved external",
+      "message": "Contract linking failed",
+      "cause": "External contract reference not provided to verifier",
+      "solutions": [
+        {
+          "approach": "Add contract to verify command",
+          "code": "certoraRun Main.sol Token.sol --verify Main:spec.spec",
+          "when": "External contract source is available"
+        },
+        {
+          "approach": "Use dispatcher",
+          "code": "methods { extCall(address) => DISPATCHER(true) }",
+          "when": "External contract is unknown at verification time"
+        },
+        {
+          "approach": "Create mock",
+          "code": "contract MockToken { ... }",
+          "when": "Need simplified behavior for external dependency"
+        }
+      ]
+    },
+    {
+      "id": "havoc_assumption",
+      "pattern": "havoced|storage was havoced",
+      "message": "Storage was havoced (set to arbitrary values)",
+      "cause": "External call or unlinked contract modified storage unpredictably",
+      "solutions": [
+        {
+          "approach": "Add preserve block",
+          "code": "invariant myInvariant { preserved with (env e) { require e.msg.sender != externalContract; } }",
+          "when": "Invariant should be preserved except for specific calls"
+        },
+        {
+          "approach": "Link external contract",
+          "code": "using Token as token",
+          "when": "External contract behavior is known"
+        },
+        {
+          "approach": "Use requireInvariant",
+          "code": "requireInvariant otherInvariant();",
+          "when": "Havoc breaks dependent invariant"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "CVL syntax error|Parse error in spec",
+      "message": "CVL specification syntax error",
+      "cause": "Invalid CVL syntax in specification file",
+      "solutions": [
+        {
+          "approach": "Check CVL version",
+          "code": "// Ensure using correct CVL 2.0 syntax",
+          "when": "Migrating from older CVL version"
+        },
+        {
+          "approach": "Validate method signature",
+          "code": "methods { function foo(uint256) external returns (bool); }",
+          "when": "Method declaration doesn't match contract"
+        },
+        {
+          "approach": "Check rule syntax",
+          "code": "rule myRule(env e, uint256 x) { ... }",
+          "when": "Rule declaration is malformed"
+        }
+      ]
+    },
+    {
+      "id": "invariant_induction_fail",
+      "pattern": "invariant .* failed in induction step",
+      "message": "Invariant preservation failed",
+      "cause": "Some function breaks the invariant",
+      "solutions": [
+        {
+          "approach": "Add preserved block",
+          "code": "invariant foo() { preserved specificFn(args) with (env e) { require precondition; } }",
+          "when": "Specific function needs extra preconditions"
+        },
+        {
+          "approach": "Strengthen invariant",
+          "code": "// Make invariant more precise to be inductive",
+          "when": "Invariant is too weak"
+        },
+        {
+          "approach": "Use requireInvariant",
+          "code": "requireInvariant helperInvariant();",
+          "when": "Need another invariant to prove this one"
+        }
+      ]
+    }
+  ]
+}

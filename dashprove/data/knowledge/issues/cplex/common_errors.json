@@ -1,0 +1,122 @@
+{
+  "version": "22.1",
+  "errors": [
+    {
+      "id": "no_license",
+      "pattern": "CPLEX Error  3003|No license",
+      "message": "License missing or cannot be checked out",
+      "cause": "ILOG_LICENSE_FILE/CPLEX_STUDIO_BINARIES not set or token server unavailable",
+      "solutions": [
+        {
+          "approach": "Set license environment variable",
+          "code": "export ILOG_LICENSE_FILE=/path/to/access.ilm",
+          "when": "Using local license file"
+        },
+        {
+          "approach": "Check network token server",
+          "code": "lmborrow -status",
+          "when": "Floating license should provide tokens"
+        },
+        {
+          "approach": "Install CPLEX runtime",
+          "code": "sudo apt install cplex-runtime",
+          "when": "Bindings installed but runtime missing"
+        }
+      ]
+    },
+    {
+      "id": "infeasible",
+      "pattern": "CPLEX Error  5004|no feasible solution",
+      "message": "CPLEX proved the model infeasible",
+      "cause": "Constraints conflict or bounds inconsistent",
+      "solutions": [
+        {
+          "approach": "Generate IIS",
+          "code": "cplex> display iis",
+          "when": "Find minimal inconsistent subset"
+        },
+        {
+          "approach": "Relax constraints",
+          "code": "cplex> feasopt",
+          "when": "Allow small violations to diagnose issues"
+        },
+        {
+          "approach": "Verify data bounds",
+          "code": "% ensure demand <= capacity",
+          "when": "Input mistakes often drive infeasibility"
+        }
+      ]
+    },
+    {
+      "id": "unbounded",
+      "pattern": "CPLEX Error  5002|unbounded",
+      "message": "Objective is unbounded",
+      "cause": "Missing bounds or wrong objective sense",
+      "solutions": [
+        {
+          "approach": "Add variable bounds",
+          "code": "0 <= x <= 1e6",
+          "when": "Variables are currently free"
+        },
+        {
+          "approach": "Use presolve reports",
+          "code": "cplex> display problem",
+          "when": "Confirm correct objective sense and constraints"
+        },
+        {
+          "approach": "Switch to feasibility mode",
+          "code": "cplex> change objective 0",
+          "when": "Need to check feasibility without objective"
+        }
+      ]
+    },
+    {
+      "id": "numerical_difficulties",
+      "pattern": "numerical difficulties",
+      "message": "CPLEX detected instability during optimization",
+      "cause": "Ill-conditioned model, poorly scaled coefficients",
+      "solutions": [
+        {
+          "approach": "Enable scaling and numerical emphasis",
+          "code": "cplex> set simplex scaling auto",
+          "when": "Coefficients vary widely"
+        },
+        {
+          "approach": "Tighten tolerances gradually",
+          "code": "cplex> set mip tolerances integrality 1e-7",
+          "when": "Default tolerances too loose"
+        },
+        {
+          "approach": "Reformulate to avoid big-M constants",
+          "code": "% replace big-M with indicator constraints",
+          "when": "Large constants cause instability"
+        }
+      ]
+    },
+    {
+      "id": "time_limit",
+      "pattern": "CPLEX Error  1016|time limit exceeded",
+      "message": "Solver stopped due to user-specified time limit",
+      "cause": "Optimization not finished within allotted time",
+      "solutions": [
+        {
+          "approach": "Increase time or relax MIP gap",
+          "code": "cplex> set timelimit 600\ncplex> set mip tolerances mipgap 0.02",
+          "when": "More time or larger gap acceptable"
+        },
+        {
+          "approach": "Supply a starting solution",
+          "code": "cplex> read start.sol",
+          "when": "Warm start accelerates B&B"
+        },
+        {
+          "approach": "Tighten presolve/heuristics",
+          "code": "cplex> set mip strategy heuristiceffort 1",
+          "when": "Need feasible solution quickly"
+        }
+      ]
+    }
+  ],
+  "tool": "cplex",
+  "last_updated": "2025-12-23"
+}

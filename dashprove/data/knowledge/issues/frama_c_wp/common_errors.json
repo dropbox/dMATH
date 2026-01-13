@@ -1,0 +1,211 @@
+{
+  "tool": "frama_c_wp",
+  "version": "28.1 (Nickel)",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unknown_verdict",
+      "pattern": "Unknown|Goal .* is unknown",
+      "message": "Goal not proven",
+      "cause": "WP/SMT solver couldn't prove or disprove goal",
+      "solutions": [
+        {
+          "approach": "Add lemmas",
+          "code": "/*@ lemma helper: \\forall int x; P(x) ==> Q(x); */",
+          "when": "Need intermediate facts"
+        },
+        {
+          "approach": "Try Coq",
+          "code": "frama-c -wp -wp-prover coq program.c",
+          "when": "Interactive proof needed"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "frama-c -wp -wp-timeout 120 program.c",
+          "when": "Solver needs more time"
+        },
+        {
+          "approach": "Simplify spec",
+          "code": "// Break complex property into parts",
+          "when": "Specification too complex"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout|TIMEOUT|prover timeout",
+      "message": "SMT solver timed out",
+      "cause": "Goal too complex for solver in time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "frama-c -wp -wp-timeout 300 program.c",
+          "when": "Solver is progressing"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "frama-c -wp -wp-prover alt-ergo,cvc4,z3 program.c",
+          "when": "One solver may succeed"
+        },
+        {
+          "approach": "Add assertions",
+          "code": "/*@ assert intermediate_property; */",
+          "when": "Break proof into steps"
+        },
+        {
+          "approach": "Use Coq",
+          "code": "frama-c -wp -wp-prover coq -wp-script coq_proofs/ program.c",
+          "when": "Manual proof required"
+        }
+      ]
+    },
+    {
+      "id": "invalid_verdict",
+      "pattern": "Invalid|INVALID|counterexample",
+      "message": "Property disproven",
+      "cause": "Solver found counterexample to specification",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "frama-c -wp -wp-print program.c",
+          "when": "Need to see failing case"
+        },
+        {
+          "approach": "Strengthen precondition",
+          "code": "/*@ requires additional_constraint; */",
+          "when": "Missing precondition"
+        },
+        {
+          "approach": "Weaken postcondition",
+          "code": "/*@ ensures weaker_property; */",
+          "when": "Postcondition too strong"
+        },
+        {
+          "approach": "Fix code",
+          "code": "// Code doesn't satisfy spec - fix bug",
+          "when": "Implementation is wrong"
+        }
+      ]
+    },
+    {
+      "id": "missing_assigns",
+      "pattern": "assigns.*not proven|frame condition",
+      "message": "Frame condition not proven",
+      "cause": "assigns clause doesn't cover all modifications",
+      "solutions": [
+        {
+          "approach": "Complete assigns",
+          "code": "/*@ assigns *p, \\result; */",
+          "when": "Missing assignments"
+        },
+        {
+          "approach": "Use from clause",
+          "code": "/*@ assigns *p \\from x, y; */",
+          "when": "Need dependency info"
+        },
+        {
+          "approach": "Check for side effects",
+          "code": "// Review called functions",
+          "when": "Callee modifies memory"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_failed",
+      "pattern": "loop invariant.*not proven|preservation failed",
+      "message": "Loop invariant not maintained",
+      "cause": "Invariant doesn't hold after loop iteration",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "/*@ loop invariant stronger_property; */",
+          "when": "Invariant too weak"
+        },
+        {
+          "approach": "Add loop assigns",
+          "code": "/*@ loop assigns i, arr[0..n-1]; */",
+          "when": "Missing loop assigns"
+        },
+        {
+          "approach": "Check off-by-one",
+          "code": "// Verify loop bounds",
+          "when": "Boundary condition error"
+        },
+        {
+          "approach": "Add variant",
+          "code": "/*@ loop variant n - i; */",
+          "when": "Missing termination measure"
+        }
+      ]
+    },
+    {
+      "id": "memory_model",
+      "pattern": "\\\\valid.*not proven|memory safety",
+      "message": "Memory validity not proven",
+      "cause": "Cannot prove pointer is valid",
+      "solutions": [
+        {
+          "approach": "Add valid precondition",
+          "code": "/*@ requires \\valid(p); */",
+          "when": "Pointer validity assumed"
+        },
+        {
+          "approach": "Use valid_range",
+          "code": "/*@ requires \\valid(p+(0..n-1)); */",
+          "when": "Array access"
+        },
+        {
+          "approach": "Check allocation",
+          "code": "// Ensure allocation before access",
+          "when": "Accessing unallocated"
+        }
+      ]
+    },
+    {
+      "id": "separation_failed",
+      "pattern": "\\\\separated.*not proven|aliasing",
+      "message": "Separation not proven",
+      "cause": "Cannot prove pointers don't alias",
+      "solutions": [
+        {
+          "approach": "Add separation",
+          "code": "/*@ requires \\separated(p, q); */",
+          "when": "Need non-aliasing"
+        },
+        {
+          "approach": "Use restrict",
+          "code": "void f(int * restrict p, int * restrict q);",
+          "when": "C99 restrict applicable"
+        },
+        {
+          "approach": "Check memory model",
+          "code": "frama-c -wp -wp-model Typed+Cast program.c",
+          "when": "Need different memory model"
+        }
+      ]
+    },
+    {
+      "id": "axiomatic_error",
+      "pattern": "axiomatic.*error|logic function",
+      "message": "Logic definition error",
+      "cause": "Axiomatic definition issue",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "/*@ axiomatic Name { logic int f(int x); } */",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Add axioms",
+          "code": "/*@ axiom ax1: \\forall int x; f(x) == x + 1; */",
+          "when": "Missing axioms"
+        },
+        {
+          "approach": "Check consistency",
+          "code": "// Ensure axioms don't contradict",
+          "when": "Inconsistent axioms"
+        }
+      ]
+    }
+  ]
+}

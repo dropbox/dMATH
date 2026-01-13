@@ -1,0 +1,132 @@
+{
+  "id": "libfuzzer",
+  "name": "LibFuzzer (cargo-fuzz)",
+  "category": "rust_fuzzing",
+  "subcategory": "coverage_guided",
+
+  "description": "Coverage-guided fuzzer using LLVM's LibFuzzer engine",
+  "long_description": "LibFuzzer is an in-process, coverage-guided fuzzing engine. cargo-fuzz is the Rust integration that makes it easy to fuzz Rust code. It generates random inputs and uses code coverage to guide the fuzzer towards unexplored paths, finding crashes, panics, and assertion failures.",
+
+  "capabilities": [
+    "coverage_guided_fuzzing",
+    "crash_detection",
+    "panic_detection",
+    "assertion_failure_detection",
+    "corpus_minimization",
+    "crash_minimization",
+    "dictionary_support",
+    "parallel_fuzzing"
+  ],
+  "property_types": ["fuzz_target", "property_based"],
+  "input_languages": ["rust"],
+  "output_formats": ["crash_artifact", "corpus", "coverage_report"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install cargo-fuzz"},
+      {"type": "source", "url": "https://github.com/rust-fuzz/cargo-fuzz"}
+    ],
+    "dependencies": ["rust-nightly", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://rust-fuzz.github.io/book/cargo-fuzz.html",
+    "tutorial": "https://rust-fuzz.github.io/book/cargo-fuzz/tutorial.html",
+    "api_reference": "https://docs.rs/libfuzzer-sys/latest/libfuzzer_sys/",
+    "examples": "https://github.com/rust-fuzz/cargo-fuzz/tree/main/example"
+  },
+
+  "tactics": [
+    {
+      "name": "init",
+      "description": "Initialize fuzz project",
+      "syntax": "cargo fuzz init",
+      "when_to_use": "Setting up fuzzing for a new project",
+      "examples": ["cargo fuzz init", "cargo fuzz add my_target"]
+    },
+    {
+      "name": "run",
+      "description": "Run fuzzer",
+      "syntax": "cargo +nightly fuzz run TARGET",
+      "when_to_use": "Active fuzzing",
+      "examples": ["cargo +nightly fuzz run fuzz_parser", "cargo +nightly fuzz run fuzz_parser -- -max_len=1024"]
+    },
+    {
+      "name": "tmin",
+      "description": "Minimize crash input",
+      "syntax": "cargo fuzz tmin TARGET CRASH_FILE",
+      "when_to_use": "Reducing crash artifact to minimal reproducer",
+      "examples": ["cargo +nightly fuzz tmin fuzz_parser crash-abc123"]
+    },
+    {
+      "name": "cmin",
+      "description": "Minimize corpus",
+      "syntax": "cargo fuzz cmin TARGET",
+      "when_to_use": "Reducing corpus size while maintaining coverage",
+      "examples": ["cargo +nightly fuzz cmin fuzz_parser"]
+    },
+    {
+      "name": "coverage",
+      "description": "Generate coverage report",
+      "syntax": "cargo fuzz coverage TARGET",
+      "when_to_use": "Understanding code coverage from fuzzing",
+      "examples": ["cargo +nightly fuzz coverage fuzz_parser"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "thread 'main' panicked at",
+      "meaning": "Fuzzer found an input causing panic",
+      "common_causes": ["Unhandled edge case", "Invalid input parsing", "Integer overflow"],
+      "fixes": ["Handle edge case", "Add input validation", "Use checked arithmetic"]
+    },
+    {
+      "pattern": "AddressSanitizer: heap-buffer-overflow",
+      "meaning": "Memory safety violation detected",
+      "common_causes": ["Buffer overflow in unsafe code", "Incorrect pointer arithmetic"],
+      "fixes": ["Fix unsafe code", "Add bounds checks"]
+    },
+    {
+      "pattern": "slow-unit-",
+      "meaning": "Input causing slow execution",
+      "common_causes": ["Algorithmic complexity attack", "Pathological input"],
+      "fixes": ["Add timeout", "Limit input size", "Optimize algorithm"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["fuzz_target", "property_based"],
+    "cli_command": "dashprove verify --backend libfuzzer"
+  },
+
+  "performance": {
+    "typical_runtime": "Continuous (hours to days)",
+    "scalability": "Millions of executions per second",
+    "memory_usage": "Moderate, depends on corpus size"
+  },
+
+  "comparisons": {
+    "similar_tools": ["afl", "honggfuzz", "bolero"],
+    "advantages": [
+      "Fast in-process fuzzing",
+      "Good LLVM integration",
+      "Corpus/crash minimization built-in",
+      "Good Rust ecosystem support"
+    ],
+    "disadvantages": [
+      "Requires nightly Rust",
+      "Linux/macOS only",
+      "Single-threaded by default"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.12.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Rust Fuzz Project",
+    "license": "MIT/Apache-2.0"
+  }
+}

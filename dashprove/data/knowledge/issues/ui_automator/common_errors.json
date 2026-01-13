@@ -1,0 +1,196 @@
+{
+  "tool": "ui_automator",
+  "version": "2.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "ui_object_not_found",
+      "pattern": "UiObjectNotFoundException|could not find|Object not found",
+      "message": "UI element not found on screen",
+      "cause": "Selector couldn't match any visible element",
+      "solutions": [
+        {
+          "approach": "Wait for element",
+          "code": "val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())\ndevice.wait(Until.findObject(By.res(\"com.example:id/button\")), 5000)",
+          "when": "Element loading asynchronously"
+        },
+        {
+          "approach": "Use resource-id selector",
+          "code": "val button = device.findObject(UiSelector().resourceId(\"com.example:id/button\"))",
+          "when": "View has ID"
+        },
+        {
+          "approach": "Use text selector",
+          "code": "val button = device.findObject(UiSelector().text(\"Submit\"))",
+          "when": "Finding by visible text"
+        },
+        {
+          "approach": "Use UI Automator Viewer",
+          "code": "// Launch: uiautomatorviewer from Android SDK tools\n// Inspect actual UI hierarchy",
+          "when": "Debugging selectors"
+        },
+        {
+          "approach": "Combine selectors",
+          "code": "device.findObject(UiSelector()\n    .className(\"android.widget.Button\")\n    .textContains(\"Submit\"))",
+          "when": "Need more specific match"
+        }
+      ]
+    },
+    {
+      "id": "stale_object_exception",
+      "pattern": "StaleObjectException|object is stale",
+      "message": "UI element reference became invalid",
+      "cause": "Screen changed after element was found",
+      "solutions": [
+        {
+          "approach": "Re-find element before action",
+          "code": "// Don't cache: val button = device.findObject(...)\n// Instead, find fresh each time:\ndevice.findObject(selector).click()",
+          "when": "Dynamic UI"
+        },
+        {
+          "approach": "Use wait conditions",
+          "code": "device.wait(Until.findObject(selector), timeout)?.click()\n    ?: throw AssertionError(\"Element not found\")",
+          "when": "Wait then act"
+        }
+      ]
+    },
+    {
+      "id": "perform_action_timeout",
+      "pattern": "timeout|Timeout.*performing|took too long",
+      "message": "Action timed out",
+      "cause": "Element didn't respond within timeout period",
+      "solutions": [
+        {
+          "approach": "Increase wait timeout",
+          "code": "device.wait(Until.findObject(By.res(\"id\")), 10000)  // 10 seconds",
+          "when": "Slow loading"
+        },
+        {
+          "approach": "Use idle sync",
+          "code": "device.waitForIdle(5000)  // Wait for animations",
+          "when": "Animations running"
+        },
+        {
+          "approach": "Wait for window update",
+          "code": "device.waitForWindowUpdate(\"com.example.app\", 5000)",
+          "when": "Screen transition"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "SecurityException|permission denied|not allowed to",
+      "message": "Permission denied for UI Automator operation",
+      "cause": "App lacks required permissions for automation",
+      "solutions": [
+        {
+          "approach": "Grant shell permissions",
+          "code": "adb shell pm grant com.example.test android.permission.WRITE_SECURE_SETTINGS",
+          "when": "Need system permissions"
+        },
+        {
+          "approach": "Use INJECT_EVENTS permission",
+          "code": "<!-- In test AndroidManifest.xml -->\n<uses-permission android:name=\"android.permission.INJECT_EVENTS\"/>",
+          "when": "Injecting touch events"
+        },
+        {
+          "approach": "Run as shell user",
+          "code": "adb shell am instrument -w -e debug false com.example.test/androidx.test.runner.AndroidJUnitRunner",
+          "when": "Running via ADB"
+        }
+      ]
+    },
+    {
+      "id": "scroll_not_scrollable",
+      "pattern": "Scrolling is not possible|cannot scroll|scroll failed",
+      "message": "Element is not scrollable",
+      "cause": "UiScrollable can't find scrollable container",
+      "solutions": [
+        {
+          "approach": "Specify scrollable container",
+          "code": "val scrollable = UiScrollable(UiSelector().scrollable(true))\nscrollable.scrollTextIntoView(\"Target\")",
+          "when": "Default not found"
+        },
+        {
+          "approach": "Use RecyclerView selector",
+          "code": "val scrollable = UiScrollable(UiSelector()\n    .className(\"androidx.recyclerview.widget.RecyclerView\"))\nscrollable.setAsVerticalList()\nscrollable.scrollTextIntoView(\"Item\")",
+          "when": "RecyclerView"
+        },
+        {
+          "approach": "Use swipe instead",
+          "code": "device.swipe(500, 1500, 500, 500, 10)  // Swipe up",
+          "when": "Custom scroll needed"
+        }
+      ]
+    },
+    {
+      "id": "input_not_injected",
+      "pattern": "Failed to inject text|setText failed|input not accepted",
+      "message": "Text input failed",
+      "cause": "Can't type text into element",
+      "solutions": [
+        {
+          "approach": "Clear field first",
+          "code": "val field = device.findObject(selector)\nfield.clearTextField()\nfield.setText(\"new text\")",
+          "when": "Existing text blocking"
+        },
+        {
+          "approach": "Click to focus first",
+          "code": "device.findObject(selector).click()\ndevice.wait(Until.findObject(selector), 1000)\n    ?.setText(\"text\")",
+          "when": "Field needs focus"
+        },
+        {
+          "approach": "Use keyboard input",
+          "code": "device.findObject(selector).click()\ndevice.executeShellCommand(\"input text 'hello'\")",
+          "when": "setText not working"
+        }
+      ]
+    },
+    {
+      "id": "device_not_connected",
+      "pattern": "No devices.*connected|device not found|adb.*offline",
+      "message": "No device/emulator connected",
+      "cause": "ADB can't find target device",
+      "solutions": [
+        {
+          "approach": "Check ADB status",
+          "code": "adb devices  # Should show device as 'device' not 'offline'",
+          "when": "First check"
+        },
+        {
+          "approach": "Restart ADB",
+          "code": "adb kill-server && adb start-server",
+          "when": "ADB stuck"
+        },
+        {
+          "approach": "Reconnect device",
+          "code": "adb disconnect && adb connect <device-ip>:5555",
+          "when": "Network device"
+        }
+      ]
+    },
+    {
+      "id": "gesture_failed",
+      "pattern": "Gesture.*failed|drag.*failed|swipe.*incomplete",
+      "message": "Gesture action failed",
+      "cause": "Swipe/drag operation didn't complete successfully",
+      "solutions": [
+        {
+          "approach": "Adjust swipe speed",
+          "code": "// Slower swipe (more steps = slower)\ndevice.swipe(startX, startY, endX, endY, 50)  // 50 steps",
+          "when": "Too fast"
+        },
+        {
+          "approach": "Use drag for precision",
+          "code": "device.drag(startX, startY, endX, endY, 40)",
+          "when": "Need precise movement"
+        },
+        {
+          "approach": "Wait between gestures",
+          "code": "device.swipe(...)\ndevice.waitForIdle()\ndevice.swipe(...)  // Second gesture",
+          "when": "Chained gestures"
+        }
+      ]
+    }
+  ]
+}

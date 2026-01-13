@@ -1,0 +1,122 @@
+{
+  "version": "2024.1",
+  "errors": [
+    {
+      "id": "unsat",
+      "pattern": "UNSATISFIABLE",
+      "message": "Chuffed proved the FlatZinc model has no solution",
+      "cause": "Constraints conflict or data is inconsistent",
+      "solutions": [
+        {
+          "approach": "Relax or disable optional constraints",
+          "code": "% drop symmetry or side constraints temporarily",
+          "when": "Need to find the conflicting rule"
+        },
+        {
+          "approach": "Switch to satisfy mode first",
+          "code": "solve satisfy;",
+          "when": "Objective function may remove feasibility"
+        },
+        {
+          "approach": "Inspect intermediate assignments",
+          "code": "output [\"x=\" ++ show(x) ++ \"\n\"];",
+          "when": "Need to verify data assumptions"
+        }
+      ]
+    },
+    {
+      "id": "restart_limit",
+      "pattern": "restart limit reached|fail limit reached",
+      "message": "Search stopped due to restart/failure limits",
+      "cause": "Search parameters too aggressive for instance size",
+      "solutions": [
+        {
+          "approach": "Increase restart and failure limits",
+          "code": "chuffed --restart-scale 1.5 --fzn-time-limit 600 model.fzn",
+          "when": "Allow deeper exploration"
+        },
+        {
+          "approach": "Use randomization to escape heavy tails",
+          "code": "chuffed --rnd-seed 42 model.fzn",
+          "when": "Search stuck in same part of tree"
+        },
+        {
+          "approach": "Provide stronger propagation",
+          "code": "include \"globals.mzn\"; constraint all_different(x);",
+          "when": "Weak constraints leave large search space"
+        }
+      ]
+    },
+    {
+      "id": "domain_wipeout",
+      "pattern": "failure: domain wipeout|propagation failed",
+      "message": "Propagation removed all values from a variable domain",
+      "cause": "Combination of constraints leaves no legal value for a variable",
+      "solutions": [
+        {
+          "approach": "Tighten data ranges",
+          "code": "var 0..max_capacity: load;",
+          "when": "Implicit domains become negative or too wide"
+        },
+        {
+          "approach": "Break composite constraints",
+          "code": "constraint x + y <= limit; constraint x >= 0; constraint y >= 0;",
+          "when": "Single dense constraint causes wipeout"
+        },
+        {
+          "approach": "Use reification guards",
+          "code": "constraint (b = (x >= 5));",
+          "when": "Guard constraints that may not always apply"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_global",
+      "pattern": "constraint .* not supported",
+      "message": "FlatZinc global not implemented by Chuffed build",
+      "cause": "Model uses a global constraint outside Chuffed support set",
+      "solutions": [
+        {
+          "approach": "Reformulate using supported primitives",
+          "code": "% replace regular with explicit transition constraints",
+          "when": "Unsupported automaton or scheduling constraint"
+        },
+        {
+          "approach": "Switch solver backend",
+          "code": "minizinc --solver gecode model.mzn",
+          "when": "Other solver supports the needed global"
+        },
+        {
+          "approach": "Upgrade to latest MiniZinc/Chuffed",
+          "code": "brew upgrade minizinc",
+          "when": "Older build missing new globals"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "Out of memory",
+      "message": "Solver ran out of memory during search",
+      "cause": "Very large search tree or model size exceeds available RAM",
+      "solutions": [
+        {
+          "approach": "Tighten propagation early",
+          "code": "constraint cumulative(starts, durations, resources, limit);",
+          "when": "Scheduling without cumulative explodes memory"
+        },
+        {
+          "approach": "Limit search time and memory use",
+          "code": "chuffed --fzn-time-limit 300 --fzn-mem-limit 4096 model.fzn",
+          "when": "Need to keep resource usage bounded"
+        },
+        {
+          "approach": "Reduce variable count",
+          "code": "% aggregate identical tasks instead of modeling each individually",
+          "when": "Model size itself is too large"
+        }
+      ]
+    }
+  ],
+  "tool": "chuffed",
+  "last_updated": "2025-12-23"
+}

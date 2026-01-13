@@ -1,0 +1,111 @@
+{
+  "tool": "git_lfs",
+  "version": "3.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "lfs_not_installed",
+      "pattern": "Git LFS is not installed|external filter 'git-lfs filter-process' failed",
+      "message": "LFS filter missing",
+      "cause": "git-lfs binary not installed or hooks not set up",
+      "solutions": [
+        {
+          "approach": "Install and init",
+          "code": "brew install git-lfs  # or apt install git-lfs\\ngit lfs install",
+          "when": "New machine"
+        },
+        {
+          "approach": "Reinstall hooks",
+          "code": "git lfs install --force",
+          "when": "Hooks corrupted"
+        }
+      ]
+    },
+    {
+      "id": "object_missing",
+      "pattern": "smudge filter lfs failed|Object does not exist on the server|missing Git LFS object",
+      "message": "LFS pointer cannot be downloaded",
+      "cause": "Object not fetched or removed from remote",
+      "solutions": [
+        {
+          "approach": "Fetch all LFS objects",
+          "code": "git lfs fetch --all\\ngit lfs checkout",
+          "when": "Fresh clone missing objects"
+        },
+        {
+          "approach": "Verify remote availability",
+          "code": "git lfs ls-files --all",
+          "when": "Ensure pointers still on remote"
+        },
+        {
+          "approach": "Disable smudge temporarily",
+          "code": "GIT_LFS_SKIP_SMUDGE=1 git checkout .\\ngit lfs pull",
+          "when": "Need checkout without downloads"
+        }
+      ]
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "exceeds Git LFS file size limit|repository is over its data quota",
+      "message": "Push rejected due to LFS quota",
+      "cause": "Remote storage quota exceeded or file too large",
+      "solutions": [
+        {
+          "approach": "Prune unused objects",
+          "code": "git lfs prune",
+          "when": "Clean local LFS cache"
+        },
+        {
+          "approach": "Reduce file size or split",
+          "code": "# Compress assets or store externally",
+          "when": "Single file exceeds limit"
+        },
+        {
+          "approach": "Increase quota",
+          "code": "# Purchase additional LFS storage on hosting provider",
+          "when": "Team needs more bandwidth/storage"
+        }
+      ]
+    },
+    {
+      "id": "not_tracked",
+      "pattern": "Encountered .* file\\(s\\) that should have been pointers|Smudge error .* matches LFS pattern",
+      "message": "Large files committed without LFS tracking",
+      "cause": ".gitattributes missing or incorrect",
+      "solutions": [
+        {
+          "approach": "Track patterns",
+          "code": "git lfs track '*.bin' '*.mp4'\\ngit add .gitattributes",
+          "when": "Need to store binaries as pointers"
+        },
+        {
+          "approach": "Clean and recommit",
+          "code": "git rm --cached <file>\\ngit add <file>\\ngit commit --amend --no-edit",
+          "when": "File already committed without LFS"
+        }
+      ]
+    },
+    {
+      "id": "auth_failed",
+      "pattern": "batch response: Authentication required|Authorization error|Access denied",
+      "message": "Cannot authenticate to LFS server",
+      "cause": "Missing credentials or expired token for LFS endpoints",
+      "solutions": [
+        {
+          "approach": "Use HTTPS credentials",
+          "code": "git config credential.helper store\\n# then push to prompt and save",
+          "when": "Token not cached"
+        },
+        {
+          "approach": "Use SSH for LFS",
+          "code": "git config lfs.url $(git remote get-url origin | sed 's#^git@#ssh://git@#')",
+          "when": "Prefer SSH over HTTPS"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://git-lfs.com/",
+    "https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs.1.ronn"
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "gdb",
+  "version": "15.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_debugging_symbols",
+      "pattern": "no debugging symbols|Reading symbols.*no debugging",
+      "message": "No debugging symbols found",
+      "cause": "Binary compiled without -g flag",
+      "solutions": [
+        {
+          "approach": "Recompile with -g",
+          "code": "gcc -g -O0 source.c -o program",
+          "when": "Have source code"
+        },
+        {
+          "approach": "Use separate debug info",
+          "code": "objcopy --only-keep-debug prog prog.debug\ngdb -s prog.debug prog",
+          "when": "Debug info in separate file"
+        },
+        {
+          "approach": "Debug anyway",
+          "code": "Can still debug at assembly level: disassemble, stepi, nexti",
+          "when": "No source available"
+        }
+      ]
+    },
+    {
+      "id": "cannot_access_memory",
+      "pattern": "Cannot access memory at address",
+      "message": "Cannot access memory at address",
+      "cause": "Invalid pointer or memory not mapped",
+      "solutions": [
+        {
+          "approach": "Check pointer value",
+          "code": "print ptr",
+          "when": "See what pointer contains"
+        },
+        {
+          "approach": "Check memory map",
+          "code": "info proc mappings",
+          "when": "See valid memory regions"
+        },
+        {
+          "approach": "Backtrace",
+          "code": "bt  (backtrace to see how you got here)",
+          "when": "Find crash origin"
+        }
+      ]
+    },
+    {
+      "id": "program_exited",
+      "pattern": "program.*exited|process.*exited|not running",
+      "message": "Program not running",
+      "cause": "Trying to debug after program terminated",
+      "solutions": [
+        {
+          "approach": "Restart program",
+          "code": "run  (or  r)",
+          "when": "Start fresh execution"
+        },
+        {
+          "approach": "Use core dump",
+          "code": "gdb program core",
+          "when": "Analyze crash post-mortem"
+        },
+        {
+          "approach": "Set breakpoint and run",
+          "code": "break main\nrun",
+          "when": "Stop at start"
+        }
+      ]
+    },
+    {
+      "id": "no_symbol_table",
+      "pattern": "No symbol table|No symbol.*in current context",
+      "message": "No symbol in current context",
+      "cause": "Variable not in scope or optimized away",
+      "solutions": [
+        {
+          "approach": "Check scope",
+          "code": "info locals  (show local variables)",
+          "when": "Find available symbols"
+        },
+        {
+          "approach": "Compile with -O0",
+          "code": "gcc -g -O0 source.c",
+          "when": "Disable optimizations"
+        },
+        {
+          "approach": "Move to correct frame",
+          "code": "frame N  (switch to frame N)",
+          "when": "Variable in different stack frame"
+        }
+      ]
+    },
+    {
+      "id": "breakpoint_pending",
+      "pattern": "pending|Make breakpoint pending",
+      "message": "Breakpoint pending on future shared library load",
+      "cause": "Breakpoint set in code not yet loaded",
+      "solutions": [
+        {
+          "approach": "Accept pending",
+          "code": "Type 'y' to make breakpoint pending",
+          "when": "Library will be loaded later"
+        },
+        {
+          "approach": "Set shlib events",
+          "code": "set stop-on-solib-events 1",
+          "when": "Debug library loading"
+        },
+        {
+          "approach": "Check library path",
+          "code": "info sharedlibrary",
+          "when": "Verify library loaded"
+        }
+      ]
+    },
+    {
+      "id": "file_not_found",
+      "pattern": "No such file or directory|cannot open.*file",
+      "message": "Source file not found",
+      "cause": "Source moved or compiled on different machine",
+      "solutions": [
+        {
+          "approach": "Set substitute-path",
+          "code": "set substitute-path /old/path /new/path",
+          "when": "Source in different location"
+        },
+        {
+          "approach": "Set directory",
+          "code": "directory /path/to/sources",
+          "when": "Add source search path"
+        },
+        {
+          "approach": "Show compilation dir",
+          "code": "info source",
+          "when": "See where GDB looks"
+        }
+      ]
+    },
+    {
+      "id": "ptrace_error",
+      "pattern": "ptrace.*Operation not permitted|Unable to attach",
+      "message": "Cannot attach to process",
+      "cause": "ptrace restricted or insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo gdb -p PID",
+          "when": "Need root for attach"
+        },
+        {
+          "approach": "Enable ptrace (Linux)",
+          "code": "echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope",
+          "when": "ptrace_scope restricting"
+        },
+        {
+          "approach": "Run gdb first",
+          "code": "gdb program then run",
+          "when": "Start process under GDB"
+        }
+      ]
+    }
+  ]
+}

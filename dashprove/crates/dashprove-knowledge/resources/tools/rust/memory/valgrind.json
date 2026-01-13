@@ -1,0 +1,114 @@
+{
+  "id": "valgrind",
+  "name": "Valgrind",
+  "category": "memory_tool",
+  "subcategory": "debugging",
+
+  "description": "Memory debugging and profiling instrumentation framework",
+  "long_description": "Valgrind is an instrumentation framework for building dynamic analysis tools. It includes Memcheck (memory error detector), Cachegrind (cache profiler), Callgrind (call-graph profiler), Helgrind (thread error detector), and DRD (data race detector). Memcheck is the most widely used tool.",
+
+  "capabilities": [
+    "memory_leak_detection",
+    "use_after_free_detection",
+    "uninitialized_read_detection",
+    "cache_profiling",
+    "thread_error_detection"
+  ],
+  "property_types": ["memory_safety", "race_freedom"],
+  "input_languages": ["binary"],
+  "output_formats": ["error_report", "xml", "callgrind"],
+
+  "installation": {
+    "methods": [
+      {"type": "apt", "command": "apt install valgrind"},
+      {"type": "brew", "command": "brew install valgrind"},
+      {"type": "source", "command": "git clone https://sourceware.org/git/valgrind.git && cd valgrind && ./autogen.sh && ./configure && make"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://valgrind.org/",
+    "manual": "https://valgrind.org/docs/manual/manual.html",
+    "quick_start": "https://valgrind.org/docs/manual/quick-start.html"
+  },
+
+  "tactics": [
+    {
+      "name": "memcheck",
+      "description": "Memory error detection",
+      "syntax": "valgrind --tool=memcheck program",
+      "when_to_use": "For memory safety checking",
+      "examples": ["valgrind --leak-check=full ./target/debug/myprogram"]
+    },
+    {
+      "name": "helgrind",
+      "description": "Thread error detection",
+      "syntax": "valgrind --tool=helgrind program",
+      "when_to_use": "For data race detection",
+      "examples": ["valgrind --tool=helgrind ./target/debug/myprogram"]
+    },
+    {
+      "name": "callgrind",
+      "description": "Call graph profiling",
+      "syntax": "valgrind --tool=callgrind program",
+      "when_to_use": "For performance profiling",
+      "examples": ["valgrind --tool=callgrind ./target/release/myprogram"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Invalid read",
+      "meaning": "Reading from invalid memory",
+      "common_causes": ["Use after free", "Buffer overflow"],
+      "fixes": ["Check pointer lifetime", "Add bounds checks"]
+    },
+    {
+      "pattern": "Conditional jump .* depends on uninitialised value",
+      "meaning": "Using uninitialized memory",
+      "common_causes": ["Uninitialized variable"],
+      "fixes": ["Initialize before use"]
+    },
+    {
+      "pattern": "definitely lost",
+      "meaning": "Memory leak",
+      "common_causes": ["Missing free/drop"],
+      "fixes": ["Add proper cleanup"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["memory_safety"],
+    "cli_command": "dashprove verify --backend valgrind"
+  },
+
+  "performance": {
+    "typical_runtime": "10-50x slower than native",
+    "scalability": "Works on large programs",
+    "memory_usage": "Significantly higher"
+  },
+
+  "comparisons": {
+    "similar_tools": ["asan", "msan", "miri"],
+    "advantages": [
+      "No recompilation needed",
+      "Multiple tools in one",
+      "Mature and well-tested"
+    ],
+    "disadvantages": [
+      "Significant slowdown",
+      "Linux/macOS only",
+      "Less precise than compile-time tools"
+    ]
+  },
+
+  "metadata": {
+    "version": "3.22.0",
+    "last_updated": "2025-12-21",
+    "maintainer": "Valgrind developers",
+    "license": "GPL-2.0"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "locate",
+  "version": "mlocate",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "database_not_found",
+      "pattern": "can not stat|database.*does not exist|no database",
+      "message": "Locate database missing",
+      "cause": "Database not created or updatedb never run",
+      "solutions": [
+        {
+          "approach": "Create database",
+          "code": "sudo updatedb",
+          "when": "First time"
+        },
+        {
+          "approach": "macOS",
+          "code": "sudo /usr/libexec/locate.updatedb\n# Or enable weekly update:\nsudo launchctl load -w /System/Library/LaunchDaemons/com.apple.locate.plist",
+          "when": "macOS"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la /var/lib/mlocate/mlocate.db\nls -la /var/db/locate.database",
+          "when": "Verify DB"
+        }
+      ]
+    },
+    {
+      "id": "stale_database",
+      "pattern": "not found|outdated|new file.*not showing",
+      "message": "File not in database yet",
+      "cause": "Database not updated since file created",
+      "solutions": [
+        {
+          "approach": "Update database",
+          "code": "sudo updatedb",
+          "when": "Refresh"
+        },
+        {
+          "approach": "Use find",
+          "code": "find / -name 'filename' 2>/dev/null",
+          "when": "Real-time search"
+        },
+        {
+          "approach": "Schedule updates",
+          "code": "# Add to cron:\n0 * * * * /usr/bin/updatedb",
+          "when": "Auto update"
+        }
+      ]
+    },
+    {
+      "id": "permission_issues",
+      "pattern": "Permission denied|hidden.*files|not showing",
+      "message": "Some files not in results",
+      "cause": "Database doesn't include files user can't read",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo locate filename",
+          "when": "See all files"
+        },
+        {
+          "approach": "Check config",
+          "code": "cat /etc/updatedb.conf\n# PRUNEPATHS lists excluded directories",
+          "when": "Check exclusions"
+        }
+      ]
+    },
+    {
+      "id": "too_many_results",
+      "pattern": "too many|hundreds|limit results",
+      "message": "Too many results returned",
+      "cause": "Broad search pattern",
+      "solutions": [
+        {
+          "approach": "Limit count",
+          "code": "locate -l 10 pattern  # First 10 results",
+          "when": "Limit output"
+        },
+        {
+          "approach": "More specific",
+          "code": "locate -i '*specific*pattern*'",
+          "when": "Narrow search"
+        },
+        {
+          "approach": "Filter results",
+          "code": "locate pattern | grep -E '/specific/path'",
+          "when": "Post-filter"
+        }
+      ]
+    },
+    {
+      "id": "pattern_matching",
+      "pattern": "pattern|regex|wildcard|glob",
+      "message": "Pattern not matching as expected",
+      "cause": "Default matching behavior",
+      "solutions": [
+        {
+          "approach": "Basic name",
+          "code": "locate -b 'filename'  # Basename only, not path",
+          "when": "Match name only"
+        },
+        {
+          "approach": "Case insensitive",
+          "code": "locate -i pattern",
+          "when": "Ignore case"
+        },
+        {
+          "approach": "Regex",
+          "code": "locate -r 'pattern.*\\.txt$'  # Regex match",
+          "when": "Complex pattern"
+        },
+        {
+          "approach": "Count only",
+          "code": "locate -c pattern  # Count matches",
+          "when": "Just count"
+        }
+      ]
+    },
+    {
+      "id": "excluded_directories",
+      "pattern": "excluded|not indexed|PRUNEPATHS",
+      "message": "Directory not being indexed",
+      "cause": "Directory in PRUNEPATHS exclusion list",
+      "solutions": [
+        {
+          "approach": "Check config",
+          "code": "cat /etc/updatedb.conf | grep PRUNEPATHS",
+          "when": "View exclusions"
+        },
+        {
+          "approach": "Edit config",
+          "code": "sudo vi /etc/updatedb.conf\n# Remove path from PRUNEPATHS",
+          "when": "Include path"
+        },
+        {
+          "approach": "Use find",
+          "code": "find /excluded/path -name 'pattern'",
+          "when": "Search excluded"
+        }
+      ]
+    }
+  ]
+}

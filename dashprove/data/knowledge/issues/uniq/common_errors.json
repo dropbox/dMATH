@@ -1,0 +1,135 @@
+{
+  "tool": "uniq",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "duplicates_not_removed",
+      "pattern": "duplicates.*not removed|still.*duplicates|not working",
+      "message": "Duplicates not being removed",
+      "cause": "Input not sorted - uniq only removes adjacent duplicates",
+      "solutions": [
+        {
+          "approach": "Sort first",
+          "code": "sort file.txt | uniq",
+          "when": "Standard usage"
+        },
+        {
+          "approach": "Sort unique",
+          "code": "sort -u file.txt  # Combined, faster",
+          "when": "Simpler"
+        },
+        {
+          "approach": "Keep unsorted",
+          "code": "awk '!seen[$0]++' file.txt  # Preserves order",
+          "when": "Order matters"
+        }
+      ]
+    },
+    {
+      "id": "whitespace_differences",
+      "pattern": "whitespace|trailing.*space|invisible.*characters",
+      "message": "Lines differ by invisible characters",
+      "cause": "Trailing spaces or different whitespace",
+      "solutions": [
+        {
+          "approach": "Show whitespace",
+          "code": "cat -A file.txt | sort | uniq",
+          "when": "Debug differences"
+        },
+        {
+          "approach": "Trim whitespace",
+          "code": "sed 's/[[:space:]]*$//' file.txt | sort | uniq",
+          "when": "Remove trailing"
+        },
+        {
+          "approach": "Normalize",
+          "code": "tr -s ' ' < file.txt | sort | uniq",
+          "when": "Collapse spaces"
+        }
+      ]
+    },
+    {
+      "id": "case_sensitivity",
+      "pattern": "case.*sensitive|uppercase|lowercase",
+      "message": "Case differences causing duplicates",
+      "cause": "Uniq is case-sensitive by default",
+      "solutions": [
+        {
+          "approach": "Ignore case",
+          "code": "sort -f file.txt | uniq -i",
+          "when": "Case insensitive"
+        },
+        {
+          "approach": "Lowercase all",
+          "code": "tr '[:upper:]' '[:lower:]' < file.txt | sort | uniq",
+          "when": "Normalize case"
+        }
+      ]
+    },
+    {
+      "id": "field_comparison",
+      "pattern": "field|column|skip.*fields",
+      "message": "Want to compare specific fields",
+      "cause": "Need to skip leading fields",
+      "solutions": [
+        {
+          "approach": "Skip fields",
+          "code": "uniq -f 2 file.txt  # Skip first 2 fields",
+          "when": "Skip columns"
+        },
+        {
+          "approach": "Skip chars",
+          "code": "uniq -s 10 file.txt  # Skip first 10 chars",
+          "when": "Skip prefix"
+        },
+        {
+          "approach": "Check width",
+          "code": "uniq -w 20 file.txt  # Compare first 20 chars only",
+          "when": "Limit comparison"
+        }
+      ]
+    },
+    {
+      "id": "count_duplicates",
+      "pattern": "count|how many|frequency",
+      "message": "Want to count occurrences",
+      "cause": "Need duplicate counts",
+      "solutions": [
+        {
+          "approach": "Count prefix",
+          "code": "sort file.txt | uniq -c  # Count prefixed",
+          "when": "Show counts"
+        },
+        {
+          "approach": "Sort by count",
+          "code": "sort file.txt | uniq -c | sort -rn",
+          "when": "Most frequent first"
+        },
+        {
+          "approach": "Only duplicates",
+          "code": "sort file.txt | uniq -d  # Show only duplicated lines\nsort file.txt | uniq -D  # Show all duplicates",
+          "when": "Find duplicates"
+        }
+      ]
+    },
+    {
+      "id": "only_unique",
+      "pattern": "only unique|no duplicates|single occurrence",
+      "message": "Show only non-duplicated lines",
+      "cause": "Want lines appearing exactly once",
+      "solutions": [
+        {
+          "approach": "Unique only",
+          "code": "sort file.txt | uniq -u",
+          "when": "Single occurrence"
+        },
+        {
+          "approach": "Filter by count",
+          "code": "sort file.txt | uniq -c | awk '$1==1 {$1=\"\"; print}'",
+          "when": "More control"
+        }
+      ]
+    }
+  ]
+}

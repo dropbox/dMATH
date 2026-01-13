@@ -1,0 +1,95 @@
+{
+  "id": "cryptominisat",
+  "name": "CryptoMiniSat",
+  "category": "sat_solver",
+  "subcategory": "xor_aware",
+
+  "description": "SAT solver with native XOR constraint handling for cryptographic applications",
+  "long_description": "CryptoMiniSat is a SAT solver that natively supports XOR constraints, making it particularly effective for cryptographic problems. It uses Gaussian elimination to handle XOR clauses efficiently, which would otherwise require exponential explosion when encoded as CNF.",
+
+  "capabilities": [
+    "sat_solving",
+    "xor_constraints",
+    "gaussian_elimination",
+    "model_generation",
+    "unsat_core",
+    "incremental_solving"
+  ],
+  "property_types": ["cnf", "xor_cnf", "formula"],
+  "input_languages": ["dimacs", "xor_dimacs"],
+  "output_formats": ["sat/unsat", "model", "proof"],
+
+  "installation": {
+    "methods": [
+      {"type": "apt", "command": "apt install cryptominisat"},
+      {"type": "source", "command": "git clone https://github.com/msoos/cryptominisat && cd cryptominisat && mkdir build && cd build && cmake .. && make"},
+      {"type": "pip", "command": "pip install pycryptosat"}
+    ],
+    "dependencies": ["cmake", "boost"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/msoos/cryptominisat",
+    "api_reference": "https://www.msoos.org/cryptominisat5/",
+    "examples": "https://github.com/msoos/cryptominisat/tree/master/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "default",
+      "description": "Standard solving with Gaussian elimination",
+      "syntax": "cryptominisat5 formula.cnf",
+      "when_to_use": "General problems with XOR constraints",
+      "examples": ["cryptominisat5 input.cnf"]
+    },
+    {
+      "name": "no_gauss",
+      "description": "Disable Gaussian elimination",
+      "syntax": "cryptominisat5 --nogauss formula.cnf",
+      "when_to_use": "When XOR handling adds overhead",
+      "examples": ["cryptominisat5 --nogauss input.cnf"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "INDETERMINATE",
+      "meaning": "Solver interrupted",
+      "common_causes": ["Timeout", "Memory exhaustion"],
+      "fixes": ["Increase limits"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["constraint"],
+    "cli_command": "dashprove verify --backend cryptominisat"
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to hours",
+    "scalability": "Excellent for cryptographic instances",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["minisat", "cadical", "glucose"],
+    "advantages": [
+      "Native XOR support",
+      "Gaussian elimination",
+      "Good Python bindings"
+    ],
+    "disadvantages": [
+      "Overhead for non-XOR problems",
+      "More complex than pure CDCL solvers"
+    ]
+  },
+
+  "metadata": {
+    "version": "5.11.4",
+    "last_updated": "2025-12-21",
+    "maintainer": "Mate Soos",
+    "license": "MIT"
+  }
+}

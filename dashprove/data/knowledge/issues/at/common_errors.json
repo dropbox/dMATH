@@ -1,0 +1,145 @@
+{
+  "tool": "at",
+  "version": "at 3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "daemon_not_running",
+      "pattern": "Cannot connect|atd.*not running|no atd|refused",
+      "message": "at daemon not running",
+      "cause": "atd service not started",
+      "solutions": [
+        {
+          "approach": "Start daemon",
+          "code": "sudo systemctl start atd\nsudo systemctl enable atd",
+          "when": "systemd systems"
+        },
+        {
+          "approach": "macOS",
+          "code": "sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.atrun.plist",
+          "when": "macOS"
+        },
+        {
+          "approach": "Check status",
+          "code": "systemctl status atd\nps aux | grep atd",
+          "when": "Verify running"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "You do not have permission|not allowed|denied",
+      "message": "User not allowed to use at",
+      "cause": "/etc/at.allow or /etc/at.deny restricts access",
+      "solutions": [
+        {
+          "approach": "Check allow file",
+          "code": "cat /etc/at.allow  # If exists, must be listed",
+          "when": "Whitelist mode"
+        },
+        {
+          "approach": "Check deny file",
+          "code": "cat /etc/at.deny  # User must NOT be listed",
+          "when": "Blacklist mode"
+        },
+        {
+          "approach": "Add to allow",
+          "code": "echo 'username' | sudo tee -a /etc/at.allow",
+          "when": "Grant access"
+        }
+      ]
+    },
+    {
+      "id": "invalid_time",
+      "pattern": "Garbled time|syntax error|Cannot find|time spec",
+      "message": "Invalid time specification",
+      "cause": "Time format not recognized",
+      "solutions": [
+        {
+          "approach": "Simple formats",
+          "code": "at now + 5 minutes\nat now + 1 hour\nat 10:30\nat noon\nat midnight\nat teatime  # 4pm",
+          "when": "Relative time"
+        },
+        {
+          "approach": "Specific date/time",
+          "code": "at 2:30 PM tomorrow\nat 10:00 AM Dec 25\nat 10:00 AM 12/25/2024",
+          "when": "Absolute time"
+        },
+        {
+          "approach": "24-hour format",
+          "code": "at 14:30\nat 14:30 2024-12-25",
+          "when": "Military time"
+        }
+      ]
+    },
+    {
+      "id": "job_not_found",
+      "pattern": "Cannot find jobid|No such job|nonexistent",
+      "message": "Job does not exist",
+      "cause": "Job already executed or removed",
+      "solutions": [
+        {
+          "approach": "List jobs",
+          "code": "atq  # List pending jobs",
+          "when": "See what's scheduled"
+        },
+        {
+          "approach": "Remove job",
+          "code": "atrm JOBID  # Remove by job number",
+          "when": "Cancel job"
+        },
+        {
+          "approach": "View job contents",
+          "code": "at -c JOBID  # Show what job will run",
+          "when": "Inspect job"
+        }
+      ]
+    },
+    {
+      "id": "mail_issues",
+      "pattern": "mail.*not sent|no output|MTA",
+      "message": "Output not being mailed",
+      "cause": "No MTA configured or no output",
+      "solutions": [
+        {
+          "approach": "Redirect output",
+          "code": "at now + 1 hour <<EOF\ncommand > /tmp/output.log 2>&1\nEOF",
+          "when": "Capture output"
+        },
+        {
+          "approach": "Suppress mail",
+          "code": "at -M now + 1 hour  # -M suppresses mail",
+          "when": "No email wanted"
+        },
+        {
+          "approach": "Install MTA",
+          "code": "sudo apt install postfix  # Or sendmail",
+          "when": "Want email output"
+        }
+      ]
+    },
+    {
+      "id": "past_time",
+      "pattern": "too late|time is past|cannot schedule",
+      "message": "Specified time is in the past",
+      "cause": "Requested time has already passed",
+      "solutions": [
+        {
+          "approach": "Tomorrow",
+          "code": "at 10:00 AM tomorrow",
+          "when": "Same time tomorrow"
+        },
+        {
+          "approach": "Explicit date",
+          "code": "at 10:00 AM 2024-12-26",
+          "when": "Specific date"
+        },
+        {
+          "approach": "Relative time",
+          "code": "at now + 1 minute",
+          "when": "From now"
+        }
+      ]
+    }
+  ]
+}

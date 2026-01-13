@@ -1,0 +1,270 @@
+{
+  "tool": "symbiyosys",
+  "version": "0.25",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "solver_timeout",
+      "pattern": "TIMEOUT|solver.*timeout|BMC.*timed.*out",
+      "message": "Solver timed out during verification",
+      "cause": "Problem too complex for solver within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "[options]\ntimeout 3600  # 1 hour instead of default",
+          "when": "Solver making progress"
+        },
+        {
+          "approach": "Reduce depth",
+          "code": "[options]\ndepth 20  # Reduce from higher value\nbmc",
+          "when": "Deep property check"
+        },
+        {
+          "approach": "Use faster solver",
+          "code": "[engines]\nsmtbmc boolector  # Often faster than z3\n# or\nsmtbmc yices",
+          "when": "Z3 too slow"
+        },
+        {
+          "approach": "Simplify design",
+          "code": "// Add assumptions to constrain state space\nalways @(*) begin\n  assume(input_valid);\n  assume(data < MAX_VALUE);\nend",
+          "when": "State space too large"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "FAIL|Assert.*failed|property.*violated|counter.*example",
+      "message": "Property verification failed",
+      "cause": "Design violates specified property",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "# Run with trace output\nsby -f design.sby\n# View waveform\ngtkwave design/engine_0/trace.vcd",
+          "when": "Need to understand failure"
+        },
+        {
+          "approach": "Add cover statements",
+          "code": "// Add cover to check reachability\nalways @(posedge clk) begin\n  cover(state == INTERESTING_STATE);\nend",
+          "when": "Understanding state space"
+        },
+        {
+          "approach": "Fix design or spec",
+          "code": "// Either fix the design:\nassign valid_output = (state == DONE) && !error;\n// Or fix the property:\nassert property (@(posedge clk)\n  req |-> ##[1:5] ack);  // Allow 1-5 cycles",
+          "when": "Bug found"
+        }
+      ]
+    },
+    {
+      "id": "unreachable_cover",
+      "pattern": "cover.*unreachable|cover.*FAIL|trace.*not.*found",
+      "message": "Cover statement is unreachable",
+      "cause": "State space constraints prevent reaching covered state",
+      "solutions": [
+        {
+          "approach": "Check constraints",
+          "code": "// Review assumptions - may be over-constrained\n// Comment out assumptions one at a time:\n// assume(constraint1);\nassume(constraint2);  // Keep this one\n\n// Then run cover",
+          "when": "Over-constrained assumptions"
+        },
+        {
+          "approach": "Increase BMC depth",
+          "code": "[options]\nmode cover\ndepth 50  # May need more cycles to reach state",
+          "when": "State needs many cycles"
+        },
+        {
+          "approach": "Use prove mode",
+          "code": "[options]\nmode prove\n# Prove can sometimes find unreachable faster",
+          "when": "BMC too slow for cover"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax.*error|parse.*error|unexpected.*token",
+      "message": "SystemVerilog/Verilog syntax error",
+      "cause": "Invalid HDL syntax",
+      "solutions": [
+        {
+          "approach": "Check SystemVerilog support",
+          "code": "[options]\nread -sv  # Enable SystemVerilog mode\n\n[script]\nread -sv design.sv  # Read as SystemVerilog",
+          "when": "Using SV features"
+        },
+        {
+          "approach": "Fix syntax",
+          "code": "// Common issues:\n// Missing semicolon:\nwire [7:0] data;  // Not: wire [7:0] data\n\n// Wrong always block:\nalways_ff @(posedge clk)  // Not: always @(posedge clk)\n\n// Missing endmodule:\nendmodule  // Don't forget this",
+          "when": "Syntax mistake"
+        },
+        {
+          "approach": "Use Yosys preprocessing",
+          "code": "[script]\nread_verilog -sv -formal design.sv\nprep -top mytop",
+          "when": "Complex preprocessing"
+        }
+      ]
+    },
+    {
+      "id": "induction_failed",
+      "pattern": "induction.*fail|basecase.*pass.*induction.*fail|k-induction.*failed",
+      "message": "K-induction proof failed",
+      "cause": "Inductive step doesn't hold - need stronger invariant",
+      "solutions": [
+        {
+          "approach": "Try longer BMC first",
+          "code": "[options]\nmode bmc\ndepth 100  # Check if assertion actually holds",
+          "when": "Not sure if real bug"
+        },
+        {
+          "approach": "Add helper assertions",
+          "code": "// Add invariants to strengthen induction\nalways @(posedge clk) begin\n  assert(counter <= MAX_COUNT);     // Helper\n  assert(state != INVALID_STATE);   // Helper\n  assert(main_property);            // Main goal\nend",
+          "when": "Induction too weak"
+        },
+        {
+          "approach": "Increase induction depth",
+          "code": "[options]\nmode prove\ndepth 10  # k=10 induction",
+          "when": "Need stronger k"
+        },
+        {
+          "approach": "Use temporal induction",
+          "code": "[engines]\nsmtbmc --stbv z3  # Symbolic traces\n# or use abc with pdr\nabc pdr",
+          "when": "Simple induction fails"
+        }
+      ]
+    },
+    {
+      "id": "missing_clock",
+      "pattern": "no.*clock|clock.*not.*found|missing.*clock.*edge",
+      "message": "Clock signal not detected",
+      "cause": "Clock signal not properly specified or connected",
+      "solutions": [
+        {
+          "approach": "Specify clock in SBY file",
+          "code": "[options]\nmode bmc\n\n[script]\nread -formal design.sv\nprep -top mytop\n\n[engines]\nsmtbmc\n\n# Ensure clock is driven",
+          "when": "Clock not auto-detected"
+        },
+        {
+          "approach": "Add formal clock driver",
+          "code": "`ifdef FORMAL\nreg formal_clk = 0;\nalways @($global_clock) formal_clk <= !formal_clk;\nwire clk = formal_clk;\n`else\n// Normal clock input\n`endif",
+          "when": "Need formal clock"
+        },
+        {
+          "approach": "Use clk2fflogic",
+          "code": "[script]\nread -formal design.sv\nprep -top mytop\nclk2fflogic  # Convert to pure logic",
+          "when": "Multi-clock design"
+        }
+      ]
+    },
+    {
+      "id": "reset_issue",
+      "pattern": "reset.*issue|initial.*state|X.*propagation",
+      "message": "Reset or initialization issue",
+      "cause": "Design not properly reset or initialized",
+      "solutions": [
+        {
+          "approach": "Add reset assumption",
+          "code": "`ifdef FORMAL\ninitial assume(reset);\nalways @(posedge clk)\n  if ($past(reset)) assume(!reset);\n`endif",
+          "when": "Need explicit reset"
+        },
+        {
+          "approach": "Initialize registers",
+          "code": "// Use initial blocks in formal\nreg [7:0] counter = 0;  // Initialize\n// Or:\ninitial counter = 0;",
+          "when": "Uninitialized state"
+        },
+        {
+          "approach": "Constrain initial state",
+          "code": "`ifdef FORMAL\ninitial begin\n  assume(state == IDLE);\n  assume(counter == 0);\n  assume(!valid);\nend\n`endif",
+          "when": "Complex initial state"
+        }
+      ]
+    },
+    {
+      "id": "engine_error",
+      "pattern": "engine.*error|solver.*crash|smtbmc.*failed",
+      "message": "Verification engine error",
+      "cause": "Solver crashed or encountered internal error",
+      "solutions": [
+        {
+          "approach": "Try different solver",
+          "code": "[engines]\nsmtbmc boolector  # Instead of z3\n# or\nsmtbmc yices\n# or\nabc bmc3",
+          "when": "Solver crashes"
+        },
+        {
+          "approach": "Simplify problem",
+          "code": "// Reduce design size\n// Remove unused logic\n// Bound data widths",
+          "when": "Problem too complex"
+        },
+        {
+          "approach": "Update solvers",
+          "code": "# Update SymbiYosys and solvers\npip install --upgrade yosys-mau\n# Or build from source",
+          "when": "Solver bugs"
+        }
+      ]
+    },
+    {
+      "id": "memory_explosion",
+      "pattern": "out.*of.*memory|memory.*exhausted|OOM",
+      "message": "Verification ran out of memory",
+      "cause": "State space explosion or solver memory issue",
+      "solutions": [
+        {
+          "approach": "Use bounded verification",
+          "code": "[options]\nmode bmc\ndepth 30  # Limit depth",
+          "when": "Prove mode too expensive"
+        },
+        {
+          "approach": "Abstract memory",
+          "code": "// Instead of:\nreg [7:0] mem [0:1023];\n// Use:\nreg [7:0] mem_abstract;  // Abstract to single value\nassume(forall i: mem[i] == mem_abstract);",
+          "when": "Large arrays"
+        },
+        {
+          "approach": "Use PDR engine",
+          "code": "[engines]\nabc pdr  # Property-directed reachability\n# Often more memory efficient",
+          "when": "BMC uses too much memory"
+        }
+      ]
+    },
+    {
+      "id": "liveness_check",
+      "pattern": "liveness|eventually|fairness.*assumption",
+      "message": "Liveness property verification issue",
+      "cause": "Checking liveness requires special handling",
+      "solutions": [
+        {
+          "approach": "Use cover for reachability",
+          "code": "// Instead of assert eventually:\ncover property (@(posedge clk)\n  req |-> ##[1:$] ack);",
+          "when": "Checking eventuality"
+        },
+        {
+          "approach": "Add fairness constraints",
+          "code": "`ifdef FORMAL\n// Assume fair scheduling\nalways @(posedge clk)\n  assume(s_eventually !wait);\n`endif",
+          "when": "Liveness under fairness"
+        },
+        {
+          "approach": "Convert to safety",
+          "code": "// Bound the eventuality:\nassert property (@(posedge clk)\n  req |-> ##[1:100] ack);  // Must happen within 100 cycles",
+          "when": "Can bound time"
+        }
+      ]
+    },
+    {
+      "id": "formal_ifdef_missing",
+      "pattern": "FORMAL.*not.*defined|ifdef.*FORMAL|formal.*property.*ignored",
+      "message": "FORMAL define not set",
+      "cause": "Formal properties guarded by `ifdef FORMAL` not activated",
+      "solutions": [
+        {
+          "approach": "Add FORMAL define",
+          "code": "[script]\nread -formal -DFORMAL design.sv\nprep -top mytop",
+          "when": "Properties not included"
+        },
+        {
+          "approach": "Use unconditional properties",
+          "code": "// For simulation-safe assertions:\nassert property (@(posedge clk) valid |-> data != 0);\n// Works in both sim and formal",
+          "when": "Want to share with sim"
+        },
+        {
+          "approach": "Check file structure",
+          "code": "`ifdef FORMAL\n// Formal-only properties\nalways @(posedge clk) begin\n  assert(...);\n  cover(...);\nend\n`endif",
+          "when": "Wrong ifdef nesting"
+        }
+      ]
+    }
+  ]
+}

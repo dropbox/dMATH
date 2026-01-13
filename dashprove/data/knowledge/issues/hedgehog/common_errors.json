@@ -1,0 +1,181 @@
+{
+  "tool": "hedgehog",
+  "version": "0.13.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "falsified",
+      "pattern": "Falsified|Property.*failed|Counterexample found",
+      "message": "Property test found a counterexample",
+      "cause": "Generated input violates the property - intended behavior",
+      "solutions": [
+        {
+          "approach": "Examine shrunk counterexample",
+          "code": "// Hedgehog shows minimal failing case\n// > 42\n// This is the shrunk failing input",
+          "when": "Understanding the failure"
+        },
+        {
+          "approach": "Fix implementation",
+          "code": "// The counterexample reveals a bug in your code",
+          "when": "Implementation is wrong"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "Property.check <| property {\n    let! x = Gen.int (Range.linear 1 100)\n    where (x > 0)\n    return myFunc x > 0\n}",
+          "when": "Property needs constraint"
+        }
+      ]
+    },
+    {
+      "id": "gave_up",
+      "pattern": "Gave up|Too many discards|Could not satisfy",
+      "message": "Property gave up due to too many discards",
+      "cause": "Precondition filters too many generated values",
+      "solutions": [
+        {
+          "approach": "Use better generator",
+          "code": "// Instead of filtering negatives:\nlet! x = Gen.int (Range.linear 1 100)  // Generate positive directly",
+          "when": "Can generate valid values directly"
+        },
+        {
+          "approach": "Increase discard limit",
+          "code": "Property.checkWith (PropertyConfig.defaultConfig |> PropertyConfig.withDiscardLimit 1000) prop",
+          "when": "Need more attempts"
+        },
+        {
+          "approach": "Relax precondition",
+          "code": "// Make 'where' condition less strict",
+          "when": "Precondition too restrictive"
+        }
+      ]
+    },
+    {
+      "id": "generator_error",
+      "pattern": "Generator.*error|Range.*error|Invalid generator",
+      "message": "Generator configuration error",
+      "cause": "Invalid range or generator combination",
+      "solutions": [
+        {
+          "approach": "Check range bounds",
+          "code": "Gen.int (Range.linear 0 100)  // min <= max required",
+          "when": "Invalid range"
+        },
+        {
+          "approach": "Use correct range type",
+          "code": "Range.linear 0 100  // Linear shrinking toward origin\nRange.constant 0 100  // No shrinking\nRange.exponential 0 1000  // Exponential distribution",
+          "when": "Choosing range type"
+        },
+        {
+          "approach": "Compose generators",
+          "code": "gen {\n    let! x = Gen.int (Range.linear 0 10)\n    let! y = Gen.string (Range.linear 0 x) Gen.alpha\n    return (x, y)\n}",
+          "when": "Dependent generation"
+        }
+      ]
+    },
+    {
+      "id": "shrink_error",
+      "pattern": "Shrink.*error|Cannot shrink|Shrinking loop",
+      "message": "Shrinking failed or looped",
+      "cause": "Custom shrinker produces invalid sequence",
+      "solutions": [
+        {
+          "approach": "Use built-in shrinking",
+          "code": "// Hedgehog shrinks automatically based on generator",
+          "when": "Using Gen combinators"
+        },
+        {
+          "approach": "Define proper shrinker",
+          "code": "Gen.shrink (fun x -> seq { if x > 0 then x - 1 }) gen",
+          "when": "Custom shrinking needed"
+        },
+        {
+          "approach": "Disable shrinking",
+          "code": "Gen.noShrink myGen",
+          "when": "Shrinking not needed"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "Async.*error|Task.*property|async property",
+      "message": "Async property test error",
+      "cause": "Async property not handled correctly",
+      "solutions": [
+        {
+          "approach": "Use async property",
+          "code": "Property.checkAsync <| property {\n    let! x = Gen.int (Range.linear 1 100)\n    let! result = myAsyncFunc x |> Async.RunSynchronously\n    return result > 0\n}",
+          "when": "Testing async code"
+        },
+        {
+          "approach": "Convert to sync",
+          "code": "let result = Async.RunSynchronously (myAsync x)",
+          "when": "Simple async call"
+        }
+      ]
+    },
+    {
+      "id": "recheck_error",
+      "pattern": "Recheck.*error|Cannot reproduce|Size mismatch",
+      "message": "Cannot reproduce previous failure",
+      "cause": "Generator or property changed since failure was recorded",
+      "solutions": [
+        {
+          "approach": "Use recheck",
+          "code": "Property.recheck size seed prop",
+          "when": "Reproducing failure"
+        },
+        {
+          "approach": "Save seed from output",
+          "code": "// Hedgehog prints: Recheck with size 42 and seed {...}",
+          "when": "Recording failure"
+        },
+        {
+          "approach": "Ensure determinism",
+          "code": "// Don't use random in property, only generators",
+          "when": "Property uses randomness"
+        }
+      ]
+    },
+    {
+      "id": "xunit_integration",
+      "pattern": "xUnit.*error|Hedgehog.Xunit|Property attribute",
+      "message": "Hedgehog xUnit integration error",
+      "cause": "Hedgehog.Xunit package not configured correctly",
+      "solutions": [
+        {
+          "approach": "Add package",
+          "code": "dotnet add package Hedgehog.Xunit",
+          "when": "Package missing"
+        },
+        {
+          "approach": "Use Property attribute",
+          "code": "[<Property>]\nlet ``my property`` () =\n    property {\n        let! x = Gen.int (Range.linear 0 100)\n        return x >= 0\n    }",
+          "when": "F# with xUnit"
+        },
+        {
+          "approach": "Use C# attribute",
+          "code": "[Property]\npublic Property MyProperty() => ...",
+          "when": "C# with xUnit"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type.*error|Cannot infer|Gen<'a>",
+      "message": "Type inference or generation error",
+      "cause": "F# type system cannot infer generator types",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "let! (x: int) = Gen.int (Range.linear 0 100)",
+          "when": "Type cannot be inferred"
+        },
+        {
+          "approach": "Specify generator type",
+          "code": "Gen.int (Range.linear 0 100) : Gen<int>",
+          "when": "Disambiguating generator"
+        }
+      ]
+    }
+  ]
+}

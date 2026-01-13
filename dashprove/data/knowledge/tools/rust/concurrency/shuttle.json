@@ -1,0 +1,116 @@
+{
+  "id": "shuttle",
+  "name": "Shuttle",
+  "category": "rust_concurrency",
+  "subcategory": "randomized_testing",
+
+  "description": "Randomized concurrency testing for Rust",
+  "long_description": "Shuttle is a library for testing concurrent Rust code using randomized scheduling. Unlike exhaustive tools like Loom, Shuttle uses randomized exploration to find bugs quickly in larger concurrent systems. Developed by AWS, it's particularly effective for async code and larger state spaces.",
+
+  "capabilities": [
+    "randomized_scheduling",
+    "async_testing",
+    "thread_testing",
+    "deadlock_detection",
+    "race_detection",
+    "large_state_space"
+  ],
+  "property_types": ["concurrency_test", "assertion"],
+  "input_languages": ["rust"],
+  "output_formats": ["diagnostic", "trace", "schedule"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add shuttle --dev"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://docs.rs/shuttle",
+    "tutorial": "https://github.com/awslabs/shuttle#getting-started",
+    "api_reference": "https://docs.rs/shuttle/latest/shuttle/",
+    "examples": "https://github.com/awslabs/shuttle/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "check_random",
+      "description": "Run with random scheduling",
+      "syntax": "shuttle::check_random(|| { ... }, iterations)",
+      "when_to_use": "For quick randomized testing",
+      "examples": ["shuttle::check_random(|| test_fn(), 1000);"]
+    },
+    {
+      "name": "check_dfs",
+      "description": "Run with depth-first search",
+      "syntax": "shuttle::check_dfs(|| { ... })",
+      "when_to_use": "For exhaustive search of small state space",
+      "examples": ["shuttle::check_dfs(|| test_fn());"]
+    },
+    {
+      "name": "check_pct",
+      "description": "Probabilistic concurrency testing",
+      "syntax": "shuttle::check_pct(|| { ... }, iterations, depth)",
+      "when_to_use": "For probabilistic bug finding",
+      "examples": ["shuttle::check_pct(|| test_fn(), 1000, 3);"]
+    },
+    {
+      "name": "replay",
+      "description": "Replay specific schedule",
+      "syntax": "shuttle::replay(schedule, || { ... })",
+      "when_to_use": "To reproduce a found bug",
+      "examples": ["shuttle::replay(failing_schedule, || test_fn());"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "found failing schedule",
+      "meaning": "Bug found with specific interleaving",
+      "common_causes": ["Race condition", "Missing synchronization"],
+      "fixes": ["Use replay to debug", "Add synchronization"]
+    },
+    {
+      "pattern": "deadlock detected",
+      "meaning": "All threads blocked",
+      "common_causes": ["Lock cycle", "Channel deadlock"],
+      "fixes": ["Check lock ordering", "Review channel usage"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["concurrency_test"],
+    "cli_command": "dashprove verify --backend shuttle"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Better than Loom for large state spaces",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["loom", "tsan", "cdschecker"],
+    "advantages": [
+      "Handles larger state spaces",
+      "Good async support",
+      "Reproducible schedules",
+      "Flexible strategies"
+    ],
+    "disadvantages": [
+      "May miss bugs (randomized)",
+      "Requires test adaptation",
+      "Not exhaustive"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.7.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Amazon Web Services",
+    "license": "Apache-2.0"
+  }
+}

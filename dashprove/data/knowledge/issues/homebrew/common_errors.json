@@ -1,0 +1,250 @@
+{
+  "tool": "homebrew",
+  "version": "4.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "formula_not_found",
+      "pattern": "No formulae found|Error: No available formula",
+      "message": "Formula not found",
+      "cause": "Package doesn't exist or name is wrong",
+      "solutions": [
+        {
+          "approach": "Search for formula",
+          "code": "brew search python\nbrew search /regex/",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Add tap",
+          "code": "brew tap homebrew/cask\nbrew tap user/repo\nbrew install user/repo/formula",
+          "when": "Formula in tap"
+        },
+        {
+          "approach": "Update Homebrew",
+          "code": "brew update",
+          "when": "Formula might be new"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot create|Error: Failure",
+      "message": "Permission denied",
+      "cause": "Homebrew directory permissions issue",
+      "solutions": [
+        {
+          "approach": "Fix permissions",
+          "code": "sudo chown -R $(whoami) /usr/local/Homebrew\nsudo chown -R $(whoami) /usr/local/var/homebrew",
+          "when": "Intel Mac"
+        },
+        {
+          "approach": "Fix for Apple Silicon",
+          "code": "sudo chown -R $(whoami) /opt/homebrew\nsudo chmod -R u+w /opt/homebrew",
+          "when": "M1/M2 Mac"
+        },
+        {
+          "approach": "Never use sudo brew",
+          "code": "# NEVER run: sudo brew install\n# Homebrew is designed to run without sudo",
+          "when": "Used sudo accidentally"
+        }
+      ]
+    },
+    {
+      "id": "broken_symlinks",
+      "pattern": "Error: Could not symlink|Link.*already exists",
+      "message": "Cannot create symlink",
+      "cause": "Conflicting file or broken link exists",
+      "solutions": [
+        {
+          "approach": "Force link",
+          "code": "brew link --overwrite package",
+          "when": "Override existing"
+        },
+        {
+          "approach": "Check what's there",
+          "code": "ls -la /usr/local/bin/conflicting-file",
+          "when": "Investigate conflict"
+        },
+        {
+          "approach": "Remove and reinstall",
+          "code": "brew unlink package\nbrew link package",
+          "when": "Fix broken links"
+        }
+      ]
+    },
+    {
+      "id": "dependency_conflict",
+      "pattern": "cannot install.*dependency|conflicts with",
+      "message": "Dependency conflict",
+      "cause": "Two packages need incompatible versions",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "brew deps --tree package",
+          "when": "See dependency tree"
+        },
+        {
+          "approach": "Use versioned formula",
+          "code": "brew install python@3.10  # Specific version",
+          "when": "Need specific version"
+        },
+        {
+          "approach": "Unlink conflicting",
+          "code": "brew unlink conflicting-package\nbrew install wanted-package",
+          "when": "Temporary solution"
+        }
+      ]
+    },
+    {
+      "id": "outdated_xcode",
+      "pattern": "Xcode.*outdated|CLT.*outdated|Command Line Tools",
+      "message": "Xcode or CLT outdated",
+      "cause": "macOS developer tools need update",
+      "solutions": [
+        {
+          "approach": "Update CLT",
+          "code": "xcode-select --install\n# Or remove and reinstall:\nsudo rm -rf /Library/Developer/CommandLineTools\nxcode-select --install",
+          "when": "CLT outdated"
+        },
+        {
+          "approach": "Update Xcode",
+          "code": "# Update via App Store\n# Then:\nsudo xcode-select -s /Applications/Xcode.app",
+          "when": "Full Xcode installed"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "Build failed|Error: An exception occurred",
+      "message": "Package build failed",
+      "cause": "Compilation error during install",
+      "solutions": [
+        {
+          "approach": "View logs",
+          "code": "brew install -v package  # Verbose\ncat ~/Library/Logs/Homebrew/package/*",
+          "when": "See full error"
+        },
+        {
+          "approach": "Install bottle instead",
+          "code": "brew install --build-from-source=false package",
+          "when": "Prefer binary"
+        },
+        {
+          "approach": "Report issue",
+          "code": "brew report\n# Opens GitHub issue with diagnostic info",
+          "when": "Genuine bug"
+        }
+      ]
+    },
+    {
+      "id": "stale_lockfiles",
+      "pattern": "lock.*exists|Another process",
+      "message": "Stale lock file exists",
+      "cause": "Previous brew process didn't clean up",
+      "solutions": [
+        {
+          "approach": "Remove lock files",
+          "code": "rm -rf $(brew --prefix)/var/homebrew/locks/*",
+          "when": "Safe to remove"
+        },
+        {
+          "approach": "Wait for other process",
+          "code": "ps aux | grep brew",
+          "when": "Another brew running"
+        }
+      ]
+    },
+    {
+      "id": "shallow_clone",
+      "pattern": "shallow clone|fetch.*depth",
+      "message": "Shallow clone issue",
+      "cause": "Homebrew repo is shallow cloned",
+      "solutions": [
+        {
+          "approach": "Unshallow",
+          "code": "git -C $(brew --repository) fetch --unshallow",
+          "when": "Need full history"
+        },
+        {
+          "approach": "Update normally",
+          "code": "brew update  # Usually sufficient",
+          "when": "Standard update"
+        }
+      ]
+    },
+    {
+      "id": "cask_quarantine",
+      "pattern": "quarantine|damaged.*can't be opened|unidentified developer",
+      "message": "App quarantined by macOS",
+      "cause": "Gatekeeper blocking unsigned app",
+      "solutions": [
+        {
+          "approach": "Remove quarantine",
+          "code": "xattr -dr com.apple.quarantine /Applications/App.app",
+          "when": "Trust the app"
+        },
+        {
+          "approach": "Install without quarantine",
+          "code": "brew install --cask --no-quarantine app",
+          "when": "During install"
+        },
+        {
+          "approach": "Allow in Security",
+          "code": "# System Preferences > Security & Privacy > General\n# Click 'Open Anyway'",
+          "when": "GUI option"
+        }
+      ]
+    },
+    {
+      "id": "services_not_starting",
+      "pattern": "service.*not start|launchctl.*error",
+      "message": "Service not starting",
+      "cause": "Launchd service issue",
+      "solutions": [
+        {
+          "approach": "Check service status",
+          "code": "brew services list\nbrew services info service-name",
+          "when": "See what's running"
+        },
+        {
+          "approach": "Restart service",
+          "code": "brew services restart service-name",
+          "when": "Service stuck"
+        },
+        {
+          "approach": "Check logs",
+          "code": "tail -f ~/Library/Logs/Homebrew/service-name/*\n# Or:\nlog show --predicate 'subsystem == \"com.example.service\"'",
+          "when": "Debug startup"
+        },
+        {
+          "approach": "Manually load",
+          "code": "brew services run service-name  # Don't auto-start",
+          "when": "One-time run"
+        }
+      ]
+    },
+    {
+      "id": "rosetta_issues",
+      "pattern": "Rosetta|x86_64.*arm64|architecture",
+      "message": "Architecture mismatch (Intel/ARM)",
+      "cause": "Running x86 Homebrew on ARM or vice versa",
+      "solutions": [
+        {
+          "approach": "Check architecture",
+          "code": "arch  # arm64 or x86_64\nwhich brew\nfile $(which brew)",
+          "when": "Verify brew architecture"
+        },
+        {
+          "approach": "Use correct Homebrew",
+          "code": "# ARM: /opt/homebrew/bin/brew\n# Intel: /usr/local/bin/brew\n# Add correct one to PATH first",
+          "when": "Both installed"
+        },
+        {
+          "approach": "Force architecture",
+          "code": "arch -x86_64 /usr/local/bin/brew install package\narch -arm64 /opt/homebrew/bin/brew install package",
+          "when": "Specific arch needed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "recoil",
+  "version": "0.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_root",
+      "pattern": "RecoilRoot|This component must be used inside.*RecoilRoot|useRecoilState.*outside.*RecoilRoot",
+      "message": "Recoil hooks used outside RecoilRoot",
+      "cause": "Component using Recoil hooks not wrapped in RecoilRoot provider",
+      "solutions": [
+        {
+          "approach": "Wrap app",
+          "code": "import { RecoilRoot } from 'recoil';\n\nfunction App() {\n  return <RecoilRoot><MyComponent /></RecoilRoot>;\n}",
+          "when": "Missing root provider"
+        },
+        {
+          "approach": "Check component tree",
+          "code": "// RecoilRoot must be ancestor of hook usage\n<RecoilRoot>\n  <Router>\n    <Routes />  {/* Hooks work here */}\n  </Router>\n</RecoilRoot>",
+          "when": "Provider placement issue"
+        },
+        {
+          "approach": "Multiple roots",
+          "code": "<RecoilRoot override={false}>\n  {/* Nested roots share state */}\n</RecoilRoot>",
+          "when": "Micro-frontends"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_key",
+      "pattern": "Duplicate atom key|atom.*already exists|key.*already registered",
+      "message": "Duplicate atom/selector key",
+      "cause": "Two atoms or selectors defined with same key string",
+      "solutions": [
+        {
+          "approach": "Use unique keys",
+          "code": "const userAtom = atom({\n  key: 'user/currentUser',  // Namespace keys\n  default: null\n});",
+          "when": "Key collision"
+        },
+        {
+          "approach": "Enable duplicate check",
+          "code": "// In development, warnings appear in console\n// Check all atom({key: '...'}) are unique",
+          "when": "Debug duplicates"
+        },
+        {
+          "approach": "Dynamic keys",
+          "code": "const itemFamily = atomFamily({\n  key: 'item',\n  default: (id) => null\n});",
+          "when": "Multiple similar atoms"
+        }
+      ]
+    },
+    {
+      "id": "selector_infinite_loop",
+      "pattern": "Maximum update depth|Too many re-renders|Infinite loop.*selector",
+      "message": "Selector causing infinite re-renders",
+      "cause": "Selector depends on value it sets or creates new object references",
+      "solutions": [
+        {
+          "approach": "Stable references",
+          "code": "const filteredSelector = selector({\n  key: 'filtered',\n  get: ({get}) => {\n    const items = get(itemsAtom);\n    return items.filter(x => x.active);  // Same ref if items same\n  }\n});",
+          "when": "Reference instability"
+        },
+        {
+          "approach": "Avoid self-dependency",
+          "code": "// BAD: selector that reads and writes same atom\n// GOOD: Use separate read/write atoms",
+          "when": "Circular dependency"
+        },
+        {
+          "approach": "Use selectorFamily",
+          "code": "const itemSelector = selectorFamily({\n  key: 'item',\n  get: (id) => ({get}) => get(itemsAtom)[id]\n});",
+          "when": "Parameterized selectors"
+        }
+      ]
+    },
+    {
+      "id": "async_selector_suspend",
+      "pattern": "Suspense|A component suspended|Promise.*rejected.*selector",
+      "message": "Async selector suspense handling",
+      "cause": "Async selector needs Suspense boundary or error boundary",
+      "solutions": [
+        {
+          "approach": "Add Suspense",
+          "code": "<Suspense fallback={<Loading />}>\n  <ComponentUsingAsyncSelector />\n</Suspense>",
+          "when": "Async selector suspends"
+        },
+        {
+          "approach": "Use loadable",
+          "code": "const loadable = useRecoilValueLoadable(asyncSelector);\nif (loadable.state === 'loading') return <Spinner />;\nif (loadable.state === 'hasError') return <Error />;\nreturn <Data value={loadable.contents} />;",
+          "when": "Handle loading states manually"
+        },
+        {
+          "approach": "Add ErrorBoundary",
+          "code": "<ErrorBoundary fallback={<Error />}>\n  <Suspense fallback={<Loading />}>\n    <AsyncComponent />\n  </Suspense>\n</ErrorBoundary>",
+          "when": "Handle errors"
+        }
+      ]
+    },
+    {
+      "id": "stale_selector",
+      "pattern": "Selector.*stale|inconsistent state|selector not updating",
+      "message": "Selector returning stale values",
+      "cause": "Selector dependencies not correctly tracked or caching issue",
+      "solutions": [
+        {
+          "approach": "Declare all deps",
+          "code": "const computed = selector({\n  key: 'computed',\n  get: ({get}) => {\n    const a = get(atomA);  // Must call get() for deps\n    const b = get(atomB);\n    return a + b;\n  }\n});",
+          "when": "Missing dependency"
+        },
+        {
+          "approach": "Force refresh",
+          "code": "const refresher = atom({\n  key: 'refresher',\n  default: 0\n});\n// Depend on refresher to invalidate",
+          "when": "Need manual invalidation"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "useRecoilRefresher_UNSTABLE(mySelector);",
+          "when": "Clear selector cache"
+        }
+      ]
+    },
+    {
+      "id": "atom_effects_error",
+      "pattern": "effect.*error|atom effect.*failed|setSelf.*outside|onSet.*error",
+      "message": "Atom effects error",
+      "cause": "Error in atom effect initialization or persistence",
+      "solutions": [
+        {
+          "approach": "Handle errors",
+          "code": "const persistAtom = atom({\n  key: 'persist',\n  default: null,\n  effects: [\n    ({setSelf, onSet}) => {\n      try {\n        const saved = localStorage.getItem('key');\n        if (saved) setSelf(JSON.parse(saved));\n      } catch (e) {\n        console.error('Failed to load', e);\n      }\n    }\n  ]\n});",
+          "when": "Storage access fails"
+        },
+        {
+          "approach": "Async effect",
+          "code": "effects: [\n  ({setSelf, trigger}) => {\n    if (trigger === 'get') {\n      setSelf(fetchInitialValue());  // Can be promise\n    }\n  }\n]",
+          "when": "Async initialization"
+        },
+        {
+          "approach": "Cleanup",
+          "code": "effects: [\n  ({onSet}) => {\n    const handler = onSet((newValue) => save(newValue));\n    return () => handler();  // Cleanup\n  }\n]",
+          "when": "Unsubscribe on unmount"
+        }
+      ]
+    }
+  ]
+}

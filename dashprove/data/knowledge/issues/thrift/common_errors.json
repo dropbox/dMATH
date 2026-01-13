@@ -1,0 +1,118 @@
+{
+  "tool": "thrift",
+  "category": "serialization",
+  "common_errors": [
+    {
+      "pattern": "TProtocolException: Unknown type",
+      "meaning": "Protocol decoding error",
+      "causes": [
+        "Client/server using different protocols",
+        "Binary vs compact vs JSON mismatch",
+        "Data corruption"
+      ],
+      "solutions": [
+        "Ensure client and server use same protocol (TBinaryProtocol, TCompactProtocol)",
+        "Check protocol configuration on both ends",
+        "Verify no proxy is modifying data"
+      ]
+    },
+    {
+      "pattern": "TTransportException: Could not read|Frame size",
+      "meaning": "Transport layer read error",
+      "causes": [
+        "Connection closed unexpectedly",
+        "Frame size exceeds max",
+        "Framed vs unframed transport mismatch"
+      ],
+      "solutions": [
+        "Match transport types: TFramedTransport needs framing on both ends",
+        "Increase max frame size if legitimate: TFramedTransport(maxLength=X)",
+        "Handle connection errors gracefully"
+      ]
+    },
+    {
+      "pattern": "Required field .* is not set",
+      "meaning": "Missing required field in struct",
+      "causes": [
+        "Field marked required but not populated",
+        "Old client sending to new server",
+        "Serialization skipped field"
+      ],
+      "solutions": [
+        "Set required fields before sending",
+        "Use optional instead of required for evolvability",
+        "Add default values for required fields"
+      ]
+    },
+    {
+      "pattern": "TApplicationException: Unknown method",
+      "meaning": "RPC method not found on server",
+      "causes": [
+        "Method name mismatch (case-sensitive)",
+        "Client using newer interface version",
+        "Service not registered on server"
+      ],
+      "solutions": [
+        "Verify method name matches server definition",
+        "Regenerate client code from current IDL",
+        "Check service registration on server"
+      ]
+    },
+    {
+      "pattern": "TException: Bad version|Protocol mismatch",
+      "meaning": "Thrift protocol version mismatch",
+      "causes": [
+        "Strict mode vs non-strict mode",
+        "Version bits don't match expected",
+        "Binary data misinterpreted"
+      ],
+      "solutions": [
+        "Set strict_read/strict_write consistently",
+        "Use same Thrift library version",
+        "Check for proxy/gateway protocol transformation"
+      ]
+    },
+    {
+      "pattern": "Type mismatch|Cannot cast|Wrong type",
+      "meaning": "Type conversion error",
+      "causes": [
+        "Field type changed in IDL",
+        "Reading wrong field ID",
+        "List<X> vs Set<X> mismatch"
+      ],
+      "solutions": [
+        "Regenerate code after IDL changes",
+        "Keep field IDs stable (don't reuse)",
+        "Use struct evolution best practices"
+      ]
+    },
+    {
+      "pattern": "thrift compiler.*error|IDL parse error",
+      "meaning": "Thrift IDL compilation error",
+      "causes": [
+        "Syntax error in .thrift file",
+        "Missing include",
+        "Undefined type reference"
+      ],
+      "solutions": [
+        "Check IDL syntax: struct, service keywords",
+        "Add include for referenced files",
+        "Define types before use"
+      ]
+    },
+    {
+      "pattern": "Connection refused|TSocket|timeout",
+      "meaning": "Transport connection error",
+      "causes": [
+        "Server not running",
+        "Wrong host/port",
+        "Firewall blocking connection"
+      ],
+      "solutions": [
+        "Verify server is listening on expected port",
+        "Check host and port configuration",
+        "Set appropriate timeout: TSocket(host, port, timeout)"
+      ]
+    }
+  ]
+}

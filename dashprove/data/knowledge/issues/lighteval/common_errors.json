@@ -1,0 +1,191 @@
+{
+  "tool": "lighteval",
+  "version": "0.4.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "task_not_found",
+      "pattern": "Task .* not found",
+      "message": "Evaluation task not found",
+      "cause": "Invalid task name or task not registered",
+      "solutions": [
+        {
+          "approach": "List available tasks",
+          "code": "lighteval tasks",
+          "when": "Need to find correct task name"
+        },
+        {
+          "approach": "Use correct task format",
+          "code": "lighteval --tasks 'leaderboard|hellaswag|5'",
+          "when": "Task format incorrect"
+        },
+        {
+          "approach": "Register custom task",
+          "code": "# Add task to tasks/custom_tasks.py",
+          "when": "Using custom evaluation task"
+        }
+      ]
+    },
+    {
+      "id": "model_load_error",
+      "pattern": "Error loading model",
+      "message": "Cannot load model for evaluation",
+      "cause": "Invalid model path, missing dependencies, or OOM",
+      "solutions": [
+        {
+          "approach": "Check model path",
+          "code": "lighteval --model_args pretrained=org/model_name",
+          "when": "Model path incorrect"
+        },
+        {
+          "approach": "Use device map",
+          "code": "lighteval --model_args pretrained=model,device_map=auto",
+          "when": "Model too large for single GPU"
+        },
+        {
+          "approach": "Reduce precision",
+          "code": "lighteval --model_args pretrained=model,dtype=bfloat16",
+          "when": "Memory constraints"
+        }
+      ]
+    },
+    {
+      "id": "cuda_oom",
+      "pattern": "CUDA out of memory",
+      "message": "GPU out of memory during evaluation",
+      "cause": "Batch size too large or model too big",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "lighteval --batch_size 1",
+          "when": "Batch too large"
+        },
+        {
+          "approach": "Use 8-bit quantization",
+          "code": "lighteval --model_args pretrained=model,load_in_8bit=True",
+          "when": "Model too large"
+        },
+        {
+          "approach": "Enable gradient checkpointing",
+          "code": "lighteval --model_args pretrained=model,use_gradient_checkpointing=True",
+          "when": "Need to reduce activation memory"
+        }
+      ]
+    },
+    {
+      "id": "metric_computation_error",
+      "pattern": "Error computing metric",
+      "message": "Metric computation failed",
+      "cause": "Invalid predictions or metric configuration",
+      "solutions": [
+        {
+          "approach": "Check metric compatibility",
+          "code": "# Ensure metric matches task type (generative vs multiple choice)",
+          "when": "Wrong metric for task"
+        },
+        {
+          "approach": "Debug with verbose",
+          "code": "lighteval --debug",
+          "when": "Need detailed error info"
+        },
+        {
+          "approach": "Check prediction format",
+          "code": "# Log predictions to verify format",
+          "when": "Predictions malformed"
+        }
+      ]
+    },
+    {
+      "id": "tokenization_error",
+      "pattern": "Tokenization error",
+      "message": "Failed to tokenize input",
+      "cause": "Tokenizer incompatible with input or missing special tokens",
+      "solutions": [
+        {
+          "approach": "Set padding token",
+          "code": "lighteval --model_args pretrained=model,add_special_tokens=False",
+          "when": "Special token handling issue"
+        },
+        {
+          "approach": "Use correct tokenizer",
+          "code": "lighteval --model_args pretrained=model,tokenizer=specific_tokenizer",
+          "when": "Need different tokenizer"
+        },
+        {
+          "approach": "Handle long sequences",
+          "code": "lighteval --model_args pretrained=model,max_length=2048",
+          "when": "Input exceeds context length"
+        }
+      ]
+    },
+    {
+      "id": "dataset_download_error",
+      "pattern": "Dataset download failed",
+      "message": "Cannot download evaluation dataset",
+      "cause": "Network issue or dataset not accessible",
+      "solutions": [
+        {
+          "approach": "Set HF token",
+          "code": "export HF_TOKEN=your_token",
+          "when": "Private dataset requires auth"
+        },
+        {
+          "approach": "Use cache",
+          "code": "export HF_DATASETS_CACHE=/path/to/cache",
+          "when": "Re-downloading after failure"
+        },
+        {
+          "approach": "Use local dataset",
+          "code": "lighteval --tasks custom|/path/to/data|5",
+          "when": "Have local copy of data"
+        }
+      ]
+    },
+    {
+      "id": "generation_config_error",
+      "pattern": "Generation config error",
+      "message": "Invalid generation configuration",
+      "cause": "Incompatible generation parameters",
+      "solutions": [
+        {
+          "approach": "Set generation params",
+          "code": "lighteval --generation_parameters max_new_tokens=256,temperature=0.0",
+          "when": "Need specific generation config"
+        },
+        {
+          "approach": "Disable sampling",
+          "code": "lighteval --generation_parameters do_sample=False",
+          "when": "Want deterministic output"
+        },
+        {
+          "approach": "Set stopping criteria",
+          "code": "lighteval --generation_parameters stop_sequences='\\n'",
+          "when": "Need to stop at specific token"
+        }
+      ]
+    },
+    {
+      "id": "output_save_error",
+      "pattern": "Error saving results",
+      "message": "Cannot save evaluation results",
+      "cause": "Permission denied or disk full",
+      "solutions": [
+        {
+          "approach": "Specify output directory",
+          "code": "lighteval --output_dir /writable/path/",
+          "when": "Default path not writable"
+        },
+        {
+          "approach": "Check disk space",
+          "code": "df -h",
+          "when": "Disk may be full"
+        },
+        {
+          "approach": "Use JSON output",
+          "code": "lighteval --output_format json",
+          "when": "Need specific output format"
+        }
+      ]
+    }
+  ]
+}

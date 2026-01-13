@@ -1,0 +1,191 @@
+{
+  "tool": "p_language",
+  "version": "2.1.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "Syntax error|Unexpected token",
+      "message": "P program syntax error",
+      "cause": "Invalid P language syntax",
+      "solutions": [
+        {
+          "approach": "Check machine declaration",
+          "code": "machine MyMachine {\n    start state Init {\n        entry { ... }\n    }\n}",
+          "when": "Machine declaration wrong"
+        },
+        {
+          "approach": "Verify event syntax",
+          "code": "event eRequest: (payload: int);",
+          "when": "Event declaration issue"
+        },
+        {
+          "approach": "Check state transitions",
+          "code": "on eRequest do { send target, eResponse; }",
+          "when": "Transition syntax wrong"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type error|type mismatch",
+      "message": "P type checking failed",
+      "cause": "Incompatible types in expression or assignment",
+      "solutions": [
+        {
+          "approach": "Match event payload types",
+          "code": "event eData: (value: int);\n// Use: send target, eData, (value = 42,);",
+          "when": "Payload type mismatch"
+        },
+        {
+          "approach": "Use correct collection types",
+          "code": "var myMap: map[int, string];",
+          "when": "Collection type issue"
+        },
+        {
+          "approach": "Cast types explicitly",
+          "code": "var x: int = (int)payload.field;",
+          "when": "Need type conversion"
+        }
+      ]
+    },
+    {
+      "id": "deadlock_detected",
+      "pattern": "Deadlock detected|no progress",
+      "message": "P model checker found deadlock",
+      "cause": "State machine waiting for event that won't arrive",
+      "solutions": [
+        {
+          "approach": "Add timeout handler",
+          "code": "state Waiting {\n    on default do { goto ErrorState; }\n}",
+          "when": "Need to handle missing events"
+        },
+        {
+          "approach": "Check event routing",
+          "code": "// Verify send targets are correct\nsend correctMachine, eEvent;",
+          "when": "Event sent to wrong machine"
+        },
+        {
+          "approach": "Add liveness monitor",
+          "code": "spec LivenessMonitor observes eProgress {\n    hot state WaitingForProgress { on eProgress goto Done; }\n}",
+          "when": "Need to detect stuck states"
+        }
+      ]
+    },
+    {
+      "id": "assertion_violation",
+      "pattern": "Assertion violation|assert failed",
+      "message": "P assertion failed during model checking",
+      "cause": "Invariant violated in some execution path",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "pc compile && pc check -tc",
+          "when": "Need to see failing trace"
+        },
+        {
+          "approach": "Add state invariants",
+          "code": "state Safe {\n    entry { assert balance >= 0; }\n}",
+          "when": "Strengthen invariants"
+        },
+        {
+          "approach": "Fix state machine logic",
+          "code": "// Ensure preconditions before assert",
+          "when": "Logic bug in machine"
+        }
+      ]
+    },
+    {
+      "id": "unhandled_event",
+      "pattern": "Unhandled event|event.*dropped",
+      "message": "Event not handled in current state",
+      "cause": "State doesn't have handler for received event",
+      "solutions": [
+        {
+          "approach": "Add event handler",
+          "code": "state MyState {\n    on eUnhandled do { ... }\n}",
+          "when": "Need to handle specific event"
+        },
+        {
+          "approach": "Defer event",
+          "code": "state Busy {\n    defer eRequest;\n}",
+          "when": "Handle event in next state"
+        },
+        {
+          "approach": "Ignore event",
+          "code": "state Done {\n    ignore eRequest;\n}",
+          "when": "Event should be silently dropped"
+        }
+      ]
+    },
+    {
+      "id": "model_checking_timeout",
+      "pattern": "Timeout|exploration.*exceeded",
+      "message": "Model checking timed out",
+      "cause": "State space too large to explore exhaustively",
+      "solutions": [
+        {
+          "approach": "Add bounds",
+          "code": "// Limit data values\nassert x < 100;",
+          "when": "Unbounded data causing explosion"
+        },
+        {
+          "approach": "Use abstraction",
+          "code": "// Replace concrete values with abstract tokens",
+          "when": "Need to reduce state space"
+        },
+        {
+          "approach": "Increase depth bound",
+          "code": "pc check -s 100000",
+          "when": "Need deeper exploration"
+        }
+      ]
+    },
+    {
+      "id": "foreign_function_error",
+      "pattern": "Foreign function.*error|FFI.*failed",
+      "message": "Foreign function integration failed",
+      "cause": "C#/Java implementation doesn't match P declaration",
+      "solutions": [
+        {
+          "approach": "Match signature",
+          "code": "// P: foreign fun MyFunc(x: int): bool;\n// C#: public static bool MyFunc(int x) { ... }",
+          "when": "Signature mismatch"
+        },
+        {
+          "approach": "Handle exceptions",
+          "code": "// Wrap foreign calls in try-catch",
+          "when": "Foreign code throws"
+        },
+        {
+          "approach": "Check type mapping",
+          "code": "// P int -> C# int\n// P string -> C# string",
+          "when": "Type conversion issue"
+        }
+      ]
+    },
+    {
+      "id": "code_generation_error",
+      "pattern": "Code generation.*error|compile.*failed",
+      "message": "P to C#/Java compilation failed",
+      "cause": "Unsupported feature or code gen bug",
+      "solutions": [
+        {
+          "approach": "Check P version",
+          "code": "pc --version",
+          "when": "Feature might be new"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "// Avoid complex nested types",
+          "when": "Complex types causing issues"
+        },
+        {
+          "approach": "File bug report",
+          "code": "# Report at github.com/p-org/P",
+          "when": "Likely compiler bug"
+        }
+      ]
+    }
+  ]
+}

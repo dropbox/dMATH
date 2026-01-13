@@ -1,0 +1,115 @@
+{
+  "id": "schemathesis",
+  "name": "Schemathesis",
+  "category": "testing",
+  "subcategory": "api_testing",
+
+  "description": "Property-based testing for OpenAPI and GraphQL APIs",
+  "long_description": "Schemathesis is an API testing tool that uses property-based testing to find bugs in web applications. Given an OpenAPI or GraphQL schema, it automatically generates test cases and checks for crashes, assertion errors, and schema violations. It integrates with pytest and can run in stateful mode to test complex API workflows.",
+
+  "capabilities": [
+    "property_based_testing",
+    "openapi_support",
+    "graphql_support",
+    "stateful_testing",
+    "schema_validation",
+    "crash_detection",
+    "response_validation",
+    "hypothesis_integration"
+  ],
+  "property_types": ["api_correctness", "schema_compliance", "robustness"],
+  "input_languages": ["python"],
+  "output_formats": ["test_results", "junit_xml", "vcr_cassettes"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install schemathesis"}
+    ],
+    "dependencies": ["hypothesis"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://schemathesis.readthedocs.io/",
+    "tutorial": "https://schemathesis.readthedocs.io/en/stable/getting-started.html",
+    "api_reference": "https://schemathesis.readthedocs.io/en/stable/api.html",
+    "examples": "https://github.com/schemathesis/schemathesis/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "cli_basic",
+      "description": "Run basic schema-based testing",
+      "syntax": "st run https://api.example.com/openapi.json",
+      "when_to_use": "Quick API testing against schema",
+      "examples": ["st run http://localhost:8000/openapi.json --checks all"]
+    },
+    {
+      "name": "pytest_integration",
+      "description": "Use with pytest",
+      "syntax": "@schema.parametrize() def test_api(case): case.call_and_validate()",
+      "when_to_use": "Integrating into existing test suite",
+      "examples": ["schema = schemathesis.from_uri('http://localhost:8000/openapi.json')"]
+    },
+    {
+      "name": "stateful_testing",
+      "description": "Test stateful API workflows",
+      "syntax": "st run --stateful=links URL",
+      "when_to_use": "Testing CRUD workflows and state machines",
+      "examples": ["st run http://localhost:8000/openapi.json --stateful=links --hypothesis-max-examples=500"]
+    },
+    {
+      "name": "auth_header",
+      "description": "Run with authentication",
+      "syntax": "st run URL -H 'Authorization: Bearer TOKEN'",
+      "when_to_use": "Testing authenticated endpoints",
+      "examples": ["st run http://localhost:8000/openapi.json -H 'Authorization: Bearer $(cat token.txt)'"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "5xx Server Error",
+      "meaning": "API crashed or raised unhandled exception",
+      "common_causes": ["Unhandled edge case", "Missing validation"],
+      "fixes": ["Add input validation", "Handle edge cases", "Add error handling"]
+    },
+    {
+      "pattern": "Response validation failed",
+      "meaning": "Response doesn't match schema",
+      "common_causes": ["Schema mismatch", "Missing fields", "Wrong types"],
+      "fixes": ["Fix response format", "Update schema"]
+    },
+    {
+      "pattern": "DeadlineExceeded",
+      "meaning": "Test took too long",
+      "common_causes": ["Slow endpoint", "Complexity explosion"],
+      "fixes": ["Increase timeout", "Optimize endpoint", "Reduce examples"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["api_correctness", "schema_compliance"],
+    "cli_command": "dashprove verify --backend schemathesis"
+  },
+
+  "performance": {
+    "typical_runtime": "Moderate; depends on schema complexity and example count",
+    "scalability": "Good; can parallelize with workers",
+    "memory_usage": "Low to moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["dredd", "postman", "restassured", "pact"],
+    "advantages": ["Property-based", "Automatic test generation", "Stateful testing", "Schema-driven"],
+    "disadvantages": ["Python-centric", "Requires valid schema"]
+  },
+
+  "metadata": {
+    "version": "3.25",
+    "last_updated": "2025-12-22",
+    "maintainer": "Schemathesis team",
+    "license": "MIT"
+  }
+}

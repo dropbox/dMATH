@@ -1,0 +1,115 @@
+{
+  "tool": "su",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "authentication_failure",
+      "pattern": "Authentication failure|su: Authentication failure|incorrect password",
+      "message": "Wrong password",
+      "cause": "Incorrect target user password",
+      "solutions": [
+        {
+          "approach": "Correct password",
+          "code": "# su requires TARGET user's password\nsu - username  # Enter username's password\nsu -           # Enter root's password",
+          "when": "Use right password"
+        },
+        {
+          "approach": "Use sudo instead",
+          "code": "sudo -u username command\nsudo -i  # Root with your password",
+          "when": "If sudo configured"
+        }
+      ]
+    },
+    {
+      "id": "no_root_password",
+      "pattern": "Authentication failure|su: Authentication failure",
+      "message": "Root password not set",
+      "cause": "Ubuntu/Debian disable root password by default",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo -i  # Root shell using your password",
+          "when": "Recommended"
+        },
+        {
+          "approach": "Set root password",
+          "code": "sudo passwd root  # Set root password",
+          "when": "Enable root login"
+        }
+      ]
+    },
+    {
+      "id": "shell_not_changed",
+      "pattern": "still same user|environment not changed",
+      "message": "Environment not reset",
+      "cause": "Need login shell flag",
+      "solutions": [
+        {
+          "approach": "Login shell",
+          "code": "su - username  # Dash = login shell\nsu -l username  # Same as above",
+          "when": "Full environment"
+        },
+        {
+          "approach": "Difference",
+          "code": "su username    # Only changes user, keeps env\nsu - username  # Full login, fresh env",
+          "when": "Understand flags"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot set groups",
+      "message": "Cannot switch user",
+      "cause": "System restrictions",
+      "solutions": [
+        {
+          "approach": "Check PAM",
+          "code": "cat /etc/pam.d/su\n# Look for pam_wheel.so - restricts su to wheel group",
+          "when": "PAM restriction"
+        },
+        {
+          "approach": "Add to wheel",
+          "code": "sudo usermod -aG wheel username",
+          "when": "Join wheel group"
+        }
+      ]
+    },
+    {
+      "id": "user_not_found",
+      "pattern": "Unknown id|user .* does not exist|No such user",
+      "message": "User doesn't exist",
+      "cause": "Target user not in system",
+      "solutions": [
+        {
+          "approach": "List users",
+          "code": "getent passwd | cut -d: -f1",
+          "when": "Find correct name"
+        }
+      ]
+    },
+    {
+      "id": "shell_issue",
+      "pattern": "cannot execute|This account is currently not available",
+      "message": "Shell problem",
+      "cause": "User has /sbin/nologin or /bin/false shell",
+      "solutions": [
+        {
+          "approach": "Specify shell",
+          "code": "su -s /bin/bash username",
+          "when": "Override shell"
+        },
+        {
+          "approach": "Check shell",
+          "code": "getent passwd username | cut -d: -f7",
+          "when": "See user's shell"
+        },
+        {
+          "approach": "Change shell",
+          "code": "sudo chsh -s /bin/bash username",
+          "when": "Permanent fix"
+        }
+      ]
+    }
+  ]
+}

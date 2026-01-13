@@ -1,0 +1,66 @@
+{
+  "tool": "coredumpctl",
+  "category": "debugging",
+  "common_errors": [
+    {
+      "error_pattern": "No coredumps found",
+      "cause": "No coredumps stored, or filtered criteria too restrictive",
+      "solution": "Remove filters, or check coredump collection: sysctl kernel.core_pattern",
+      "severity": "info"
+    },
+    {
+      "error_pattern": "Access denied",
+      "cause": "Cannot access coredumps (not root, or coredump contains sensitive data)",
+      "solution": "Use sudo: sudo coredumpctl list. Or adjust /etc/systemd/coredump.conf permissions.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "Failed to get D-Bus connection",
+      "cause": "systemd-coredump service not available",
+      "solution": "Ensure systemd-coredump is installed and kernel.core_pattern points to it.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "No executable found",
+      "cause": "Cannot find original binary for coredump analysis",
+      "solution": "Specify path: coredumpctl debug --debugger-arguments=\"-c /path/to/core\"",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "Failed to retrieve coredump",
+      "cause": "Coredump file missing or corrupted in journal",
+      "solution": "Coredump may have been vacuumed. Check journal retention settings.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "Coredump was truncated",
+      "cause": "Coredump exceeds ProcessSizeMax limit",
+      "solution": "Increase limit in /etc/systemd/coredump.conf: ProcessSizeMax=2G",
+      "severity": "warning"
+    },
+    {
+      "error_pattern": "gdb not found",
+      "cause": "GNU debugger not installed",
+      "solution": "Install gdb: apt install gdb / yum install gdb",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "No matching executable.*stripped",
+      "cause": "Binary is stripped, limiting debug usefulness",
+      "solution": "Install debug symbols: apt install <pkg>-dbgsym. Or rebuild with -g.",
+      "severity": "warning"
+    },
+    {
+      "error_pattern": "Storage is external",
+      "cause": "Coredumps stored externally, not in journal",
+      "solution": "Check /var/lib/systemd/coredump/ for files, or change Storage= in coredump.conf",
+      "severity": "info"
+    },
+    {
+      "error_pattern": "Match invalid",
+      "cause": "Invalid filter expression",
+      "solution": "Check filter syntax. Use: PID=123, COMM=myapp, _EXE=/usr/bin/myapp",
+      "severity": "error"
+    }
+  ]
+}

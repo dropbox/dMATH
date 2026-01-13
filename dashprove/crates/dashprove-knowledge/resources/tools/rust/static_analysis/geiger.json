@@ -1,0 +1,117 @@
+{
+  "id": "geiger",
+  "name": "cargo-geiger",
+  "category": "rust_static_analysis",
+  "subcategory": "safety_audit",
+
+  "description": "Detects unsafe Rust code in crate and dependencies",
+  "long_description": "cargo-geiger counts the usage of unsafe Rust code in a crate and all its dependencies. It helps identify potentially dangerous code that needs extra scrutiny. Named after the Geiger counter, it measures 'radiation' levels of unsafe code.",
+
+  "capabilities": [
+    "unsafe_detection",
+    "dependency_scanning",
+    "unsafe_counting",
+    "function_level_analysis",
+    "forbid_unsafe_checking",
+    "tree_output",
+    "json_output"
+  ],
+  "property_types": ["safety_audit", "unsafe_detection"],
+  "input_languages": ["rust"],
+  "output_formats": ["text", "json", "tree"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install cargo-geiger"},
+      {"type": "source", "url": "https://github.com/rust-secure-code/cargo-geiger"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/rust-secure-code/cargo-geiger",
+    "tutorial": "https://github.com/rust-secure-code/cargo-geiger#usage",
+    "api_reference": "https://docs.rs/cargo-geiger/latest/cargo_geiger/",
+    "examples": "https://github.com/rust-secure-code/cargo-geiger#example-output"
+  },
+
+  "tactics": [
+    {
+      "name": "scan",
+      "description": "Scan for unsafe code",
+      "syntax": "cargo geiger",
+      "when_to_use": "Security audit of dependencies",
+      "examples": ["cargo geiger", "cargo geiger --all-features"]
+    },
+    {
+      "name": "forbid_only",
+      "description": "Show only #![forbid(unsafe_code)] status",
+      "syntax": "cargo geiger --forbid-only",
+      "when_to_use": "Checking for safe-only crates",
+      "examples": ["cargo geiger --forbid-only"]
+    },
+    {
+      "name": "output_format",
+      "description": "JSON output for CI",
+      "syntax": "cargo geiger --output-format json",
+      "when_to_use": "CI integration",
+      "examples": ["cargo geiger --output-format json > geiger.json"]
+    },
+    {
+      "name": "include_tests",
+      "description": "Include test code in analysis",
+      "syntax": "cargo geiger --include-tests",
+      "when_to_use": "Full analysis including tests",
+      "examples": ["cargo geiger --include-tests"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Functions  Expressions  Impls  Traits  Methods",
+      "meaning": "Unsafe usage statistics",
+      "common_causes": ["Unsafe code present"],
+      "fixes": ["Review unsafe code necessity"]
+    },
+    {
+      "pattern": "☢",
+      "meaning": "Contains unsafe code",
+      "common_causes": ["Direct unsafe usage"],
+      "fixes": ["Audit unsafe blocks"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["safety_audit"],
+    "cli_command": "dashprove verify --backend geiger"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Depends on dependency count",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cargo-audit", "cargo-crev", "rudra"],
+    "advantages": [
+      "Clear unsafe statistics",
+      "Dependency tree view",
+      "Easy to understand output",
+      "JSON export"
+    ],
+    "disadvantages": [
+      "Doesn't analyze unsafe correctness",
+      "Just counts, doesn't verify"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.11.6",
+    "last_updated": "2025-12-20",
+    "maintainer": "Rust Secure Code WG",
+    "license": "MIT/Apache-2.0"
+  }
+}

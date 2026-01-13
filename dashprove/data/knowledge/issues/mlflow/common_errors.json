@@ -1,0 +1,196 @@
+{
+  "tool": "mlflow",
+  "version": "2.10.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "tracking_uri_error",
+      "pattern": "MLFLOW_TRACKING_URI|Cannot connect|Tracking server",
+      "message": "Cannot connect to MLflow tracking server",
+      "cause": "Tracking URI not set or server not running",
+      "solutions": [
+        {
+          "approach": "Set tracking URI",
+          "code": "import mlflow\nmlflow.set_tracking_uri('http://localhost:5000')",
+          "when": "Using remote server"
+        },
+        {
+          "approach": "Use local file store",
+          "code": "mlflow.set_tracking_uri('file:///path/to/mlruns')",
+          "when": "Local storage"
+        },
+        {
+          "approach": "Start server",
+          "code": "mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns",
+          "when": "Server not running"
+        }
+      ]
+    },
+    {
+      "id": "experiment_error",
+      "pattern": "Experiment.*not found|RESOURCE_DOES_NOT_EXIST|Cannot find experiment",
+      "message": "MLflow experiment not found",
+      "cause": "Experiment doesn't exist or was deleted",
+      "solutions": [
+        {
+          "approach": "Create experiment",
+          "code": "mlflow.create_experiment('my_experiment')",
+          "when": "New experiment needed"
+        },
+        {
+          "approach": "Set experiment",
+          "code": "mlflow.set_experiment('my_experiment')  # Creates if not exists",
+          "when": "Using existing or new"
+        },
+        {
+          "approach": "List experiments",
+          "code": "mlflow.search_experiments()",
+          "when": "Finding experiment name"
+        }
+      ]
+    },
+    {
+      "id": "artifact_error",
+      "pattern": "Artifact.*error|Cannot log artifact|File not found",
+      "message": "Artifact logging failed",
+      "cause": "File doesn't exist or artifact storage inaccessible",
+      "solutions": [
+        {
+          "approach": "Log file",
+          "code": "mlflow.log_artifact('path/to/file.txt')",
+          "when": "Logging single file"
+        },
+        {
+          "approach": "Log directory",
+          "code": "mlflow.log_artifacts('path/to/dir', artifact_path='outputs')",
+          "when": "Logging directory"
+        },
+        {
+          "approach": "Check artifact URI",
+          "code": "run = mlflow.active_run()\nprint(run.info.artifact_uri)",
+          "when": "Verifying storage location"
+        }
+      ]
+    },
+    {
+      "id": "model_logging_error",
+      "pattern": "Model.*error|Cannot log model|Unsupported flavor",
+      "message": "Model logging failed",
+      "cause": "Model format not supported or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Log sklearn model",
+          "code": "mlflow.sklearn.log_model(model, 'model')",
+          "when": "scikit-learn model"
+        },
+        {
+          "approach": "Log PyTorch model",
+          "code": "mlflow.pytorch.log_model(model, 'model')",
+          "when": "PyTorch model"
+        },
+        {
+          "approach": "Log generic model",
+          "code": "mlflow.pyfunc.log_model('model', python_model=MyModel())",
+          "when": "Custom model wrapper"
+        },
+        {
+          "approach": "Install flavor package",
+          "code": "pip install mlflow[extras]",
+          "when": "Missing dependencies"
+        }
+      ]
+    },
+    {
+      "id": "run_context_error",
+      "pattern": "No active run|Run.*ended|start_run required",
+      "message": "No active MLflow run",
+      "cause": "Trying to log without an active run context",
+      "solutions": [
+        {
+          "approach": "Use context manager",
+          "code": "with mlflow.start_run():\n    mlflow.log_param('lr', 0.01)\n    mlflow.log_metric('accuracy', 0.95)",
+          "when": "Starting new run"
+        },
+        {
+          "approach": "Check active run",
+          "code": "if mlflow.active_run() is None:\n    mlflow.start_run()",
+          "when": "Conditional start"
+        },
+        {
+          "approach": "Resume run",
+          "code": "mlflow.start_run(run_id='abc123')",
+          "when": "Continuing previous run"
+        }
+      ]
+    },
+    {
+      "id": "autolog_error",
+      "pattern": "autolog.*error|Cannot enable autolog|Integration.*failed",
+      "message": "MLflow autolog failed",
+      "cause": "Framework not supported or version mismatch",
+      "solutions": [
+        {
+          "approach": "Enable autolog",
+          "code": "mlflow.autolog()  # Generic autolog\nmlflow.sklearn.autolog()  # Framework-specific",
+          "when": "Setting up autolog"
+        },
+        {
+          "approach": "Check version compatibility",
+          "code": "# Ensure mlflow version supports framework version",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Disable problematic features",
+          "code": "mlflow.sklearn.autolog(log_models=False, log_input_examples=False)",
+          "when": "Some features fail"
+        }
+      ]
+    },
+    {
+      "id": "registry_error",
+      "pattern": "Model Registry|Cannot register|Version.*error",
+      "message": "Model registry error",
+      "cause": "Model registry not configured or model not found",
+      "solutions": [
+        {
+          "approach": "Register model",
+          "code": "mlflow.register_model('runs:/run_id/model', 'ModelName')",
+          "when": "Registering from run"
+        },
+        {
+          "approach": "Set registry URI",
+          "code": "mlflow.set_registry_uri('sqlite:///mlflow.db')",
+          "when": "Using database registry"
+        },
+        {
+          "approach": "Transition stage",
+          "code": "from mlflow import MlflowClient\nclient = MlflowClient()\nclient.transition_model_version_stage('Model', 1, 'Production')",
+          "when": "Promoting model"
+        }
+      ]
+    },
+    {
+      "id": "s3_error",
+      "pattern": "S3.*error|boto.*error|AWS.*credentials",
+      "message": "S3 artifact storage error",
+      "cause": "AWS credentials not configured or bucket inaccessible",
+      "solutions": [
+        {
+          "approach": "Set AWS credentials",
+          "code": "export AWS_ACCESS_KEY_ID=...\nexport AWS_SECRET_ACCESS_KEY=...",
+          "when": "Credentials not set"
+        },
+        {
+          "approach": "Configure artifact location",
+          "code": "mlflow.create_experiment('exp', artifact_location='s3://bucket/path')",
+          "when": "Using S3 storage"
+        },
+        {
+          "approach": "Check bucket permissions",
+          "code": "# Ensure IAM role has s3:PutObject, s3:GetObject permissions",
+          "when": "Permission denied"
+        }
+      ]
+    }
+  ]
+}

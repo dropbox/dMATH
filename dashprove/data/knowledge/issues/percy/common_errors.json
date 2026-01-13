@@ -1,0 +1,166 @@
+{
+  "tool": "percy",
+  "version": "1.28.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_token",
+      "pattern": "PERCY_TOKEN.*not set|Missing Percy token|authentication failed",
+      "message": "Percy token not configured",
+      "cause": "PERCY_TOKEN environment variable not set or invalid",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "export PERCY_TOKEN=your_token_here",
+          "when": "Running locally"
+        },
+        {
+          "approach": "Add to CI secrets",
+          "code": "# In GitHub Actions:\nenv:\n  PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}",
+          "when": "Running in CI"
+        },
+        {
+          "approach": "Check token validity",
+          "code": "# Verify token at percy.io dashboard",
+          "when": "Token may have expired"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_timeout",
+      "pattern": "Snapshot.*timeout|Timed out waiting",
+      "message": "Snapshot capture timed out",
+      "cause": "Page took too long to render or stabilize",
+      "solutions": [
+        {
+          "approach": "Wait for network idle",
+          "code": "await percySnapshot(page, 'Name', { waitForTimeout: 5000 });",
+          "when": "Page has async content"
+        },
+        {
+          "approach": "Disable animations",
+          "code": "await percySnapshot(page, 'Name', { percyCSS: '* { animation: none !important; }' });",
+          "when": "Animations causing instability"
+        },
+        {
+          "approach": "Wait for selector",
+          "code": "await page.waitForSelector('.content-loaded');\nawait percySnapshot(page, 'Name');",
+          "when": "Content loads asynchronously"
+        }
+      ]
+    },
+    {
+      "id": "dom_snapshot_failed",
+      "pattern": "Failed to capture DOM|Serialization error",
+      "message": "DOM serialization failed",
+      "cause": "Page contains elements Percy cannot serialize",
+      "solutions": [
+        {
+          "approach": "Exclude problematic elements",
+          "code": "await percySnapshot(page, 'Name', {\n  domTransformation: (dom) => {\n    dom.querySelectorAll('canvas').forEach(el => el.remove());\n    return dom;\n  }\n});",
+          "when": "Canvas or complex elements"
+        },
+        {
+          "approach": "Use CSS to hide",
+          "code": "await percySnapshot(page, 'Name', {\n  percyCSS: '.problematic-element { display: none; }'\n});",
+          "when": "Can hide with CSS"
+        }
+      ]
+    },
+    {
+      "id": "baseline_not_found",
+      "pattern": "No baseline|First build|baseline screenshots",
+      "message": "No baseline images exist for comparison",
+      "cause": "First run or branch has no approved baseline",
+      "solutions": [
+        {
+          "approach": "Approve in dashboard",
+          "code": "# Visit Percy dashboard and approve the snapshots",
+          "when": "First run on new project"
+        },
+        {
+          "approach": "Set baseline branch",
+          "code": "percy exec --branch main -- npm test",
+          "when": "Need specific baseline branch"
+        }
+      ]
+    },
+    {
+      "id": "asset_discovery_failed",
+      "pattern": "Asset discovery.*failed|Could not fetch|resource not found",
+      "message": "Percy could not fetch page assets",
+      "cause": "CSS, fonts, or images not accessible",
+      "solutions": [
+        {
+          "approach": "Use allowed hostnames",
+          "code": "# percy.yml\nversion: 2\nsnapshot:\n  allowed-hostnames:\n    - cdn.example.com",
+          "when": "Assets on external CDN"
+        },
+        {
+          "approach": "Wait for assets",
+          "code": "await percySnapshot(page, 'Name', { enableJavaScript: true });",
+          "when": "Assets load via JS"
+        },
+        {
+          "approach": "Check network access",
+          "code": "# Ensure CI can access asset URLs",
+          "when": "Running in restricted network"
+        }
+      ]
+    },
+    {
+      "id": "width_configuration",
+      "pattern": "Invalid width|widths must be",
+      "message": "Invalid viewport widths configured",
+      "cause": "Width values out of range or invalid format",
+      "solutions": [
+        {
+          "approach": "Use valid widths",
+          "code": "await percySnapshot(page, 'Name', { widths: [375, 768, 1280] });",
+          "when": "Per-snapshot widths"
+        },
+        {
+          "approach": "Configure in percy.yml",
+          "code": "version: 2\nsnapshot:\n  widths: [375, 768, 1280]",
+          "when": "Global width configuration"
+        }
+      ]
+    },
+    {
+      "id": "concurrent_limit",
+      "pattern": "concurrent.*limit|Too many snapshots|rate limit",
+      "message": "Too many concurrent snapshots",
+      "cause": "Exceeded Percy's concurrency limits",
+      "solutions": [
+        {
+          "approach": "Use queue",
+          "code": "# Run tests serially or in smaller batches",
+          "when": "Many parallel tests"
+        },
+        {
+          "approach": "Configure concurrency",
+          "code": "percy exec --parallel-total 4 -- npm test",
+          "when": "Need to limit concurrent snapshots"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "Build failed|build.*error|finalize failed",
+      "message": "Percy build failed to complete",
+      "cause": "Build was interrupted or had errors",
+      "solutions": [
+        {
+          "approach": "Check finalize",
+          "code": "percy exec -- npm test\n# Ensure percy exec completes",
+          "when": "Build not finalized"
+        },
+        {
+          "approach": "Retry build",
+          "code": "percy exec --partial -- npm test",
+          "when": "Allow partial builds"
+        }
+      ]
+    }
+  ]
+}

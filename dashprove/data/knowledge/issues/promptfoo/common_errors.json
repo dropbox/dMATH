@@ -1,0 +1,196 @@
+{
+  "tool": "promptfoo",
+  "version": "0.80.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "api_key_missing",
+      "pattern": "OPENAI_API_KEY|ANTHROPIC_API_KEY|API key not found",
+      "message": "API key not configured for provider",
+      "cause": "Required API key environment variable is not set",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "export OPENAI_API_KEY=sk-...\nexport ANTHROPIC_API_KEY=sk-ant-...",
+          "when": "Using cloud API providers"
+        },
+        {
+          "approach": "Use .env file",
+          "code": "# .env\nOPENAI_API_KEY=sk-...",
+          "when": "Want to persist keys across sessions"
+        },
+        {
+          "approach": "Use local model",
+          "code": "providers:\n  - ollama:llama2",
+          "when": "Want to avoid API costs"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "Assertion failed|FAIL.*expected",
+      "message": "Test assertion did not pass",
+      "cause": "Model output did not match expected criteria",
+      "solutions": [
+        {
+          "approach": "Review assertion type",
+          "code": "assert:\n  - type: contains\n    value: expected_text",
+          "when": "Exact match is too strict"
+        },
+        {
+          "approach": "Use semantic similarity",
+          "code": "assert:\n  - type: similar\n    value: expected_meaning\n    threshold: 0.8",
+          "when": "Exact text match not needed"
+        },
+        {
+          "approach": "Use LLM-as-judge",
+          "code": "assert:\n  - type: llm-rubric\n    value: Output should be helpful and accurate",
+          "when": "Complex evaluation criteria"
+        },
+        {
+          "approach": "Debug with verbose output",
+          "code": "promptfoo eval --verbose",
+          "when": "Need to see actual model outputs"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit",
+      "pattern": "rate limit|429|Too Many Requests",
+      "message": "API rate limit exceeded",
+      "cause": "Too many requests sent to the API provider",
+      "solutions": [
+        {
+          "approach": "Add delay between requests",
+          "code": "defaultTest:\n  options:\n    delay: 1000  # ms between requests",
+          "when": "Running many evaluations"
+        },
+        {
+          "approach": "Reduce concurrency",
+          "code": "promptfoo eval --max-concurrency 2",
+          "when": "Parallel requests hitting limits"
+        },
+        {
+          "approach": "Use caching",
+          "code": "promptfoo eval --cache",
+          "when": "Re-running same prompts"
+        }
+      ]
+    },
+    {
+      "id": "yaml_parse_error",
+      "pattern": "YAMLException|YAML parsing error|Invalid YAML",
+      "message": "Configuration file has YAML syntax errors",
+      "cause": "Invalid YAML syntax in promptfooconfig.yaml",
+      "solutions": [
+        {
+          "approach": "Validate YAML syntax",
+          "code": "python -c \"import yaml; yaml.safe_load(open('promptfooconfig.yaml'))\"",
+          "when": "Checking for syntax errors"
+        },
+        {
+          "approach": "Quote special characters",
+          "code": "prompt: \"What is {{query}}?\"  # Quote strings with special chars",
+          "when": "Using colons, brackets in values"
+        },
+        {
+          "approach": "Use proper indentation",
+          "code": "# Use 2 spaces, not tabs\nprompts:\n  - prompt1.txt",
+          "when": "Indentation is inconsistent"
+        }
+      ]
+    },
+    {
+      "id": "template_error",
+      "pattern": "Template error|undefined variable|{{.*}} not found",
+      "message": "Prompt template variable not defined",
+      "cause": "Variable in prompt template not provided in test case",
+      "solutions": [
+        {
+          "approach": "Add missing variable",
+          "code": "tests:\n  - vars:\n      query: \"What is AI?\"",
+          "when": "Test case missing required variable"
+        },
+        {
+          "approach": "Use default values",
+          "code": "prompts:\n  - \"Answer: {{query | default('No query')}}\"",
+          "when": "Variable should have fallback"
+        },
+        {
+          "approach": "Check variable name spelling",
+          "code": "# Ensure {{query}} matches vars.query exactly",
+          "when": "Typo in variable name"
+        }
+      ]
+    },
+    {
+      "id": "provider_error",
+      "pattern": "Provider error|Unknown provider|Invalid provider",
+      "message": "Provider configuration is invalid",
+      "cause": "Provider name or configuration is incorrect",
+      "solutions": [
+        {
+          "approach": "Check provider syntax",
+          "code": "providers:\n  - openai:gpt-4\n  - anthropic:claude-3-opus",
+          "when": "Using standard provider format"
+        },
+        {
+          "approach": "Use provider config",
+          "code": "providers:\n  - id: openai:gpt-4\n    config:\n      temperature: 0.7",
+          "when": "Need custom provider settings"
+        },
+        {
+          "approach": "Check supported providers",
+          "code": "promptfoo providers",
+          "when": "Unsure of available providers"
+        }
+      ]
+    },
+    {
+      "id": "output_format_error",
+      "pattern": "JSON parse error|Invalid JSON|Expected JSON",
+      "message": "Model output not in expected format",
+      "cause": "Model returned malformed output when JSON was expected",
+      "solutions": [
+        {
+          "approach": "Use JSON assertion type",
+          "code": "assert:\n  - type: is-json",
+          "when": "Want to validate JSON structure"
+        },
+        {
+          "approach": "Add format instructions",
+          "code": "prompt: \"Respond only with valid JSON: {{query}}\"",
+          "when": "Model not following format"
+        },
+        {
+          "approach": "Use transform",
+          "code": "transform: output.match(/\\{[\\s\\S]*\\}/)?.[0] || output",
+          "when": "Need to extract JSON from text"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|ETIMEDOUT|Request timeout",
+      "message": "API request timed out",
+      "cause": "Provider took too long to respond",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "providers:\n  - id: openai:gpt-4\n    config:\n      timeout: 120000  # ms",
+          "when": "Complex prompts need more time"
+        },
+        {
+          "approach": "Reduce prompt complexity",
+          "code": "# Simplify prompt or reduce context length",
+          "when": "Prompt is very long"
+        },
+        {
+          "approach": "Check provider status",
+          "code": "# Check status.openai.com or provider status page",
+          "when": "Provider may be experiencing issues"
+        }
+      ]
+    }
+  ]
+}

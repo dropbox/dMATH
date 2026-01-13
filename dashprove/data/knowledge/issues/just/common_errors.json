@@ -1,0 +1,171 @@
+{
+  "tool": "just",
+  "version": "1.25.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "justfile_not_found",
+      "pattern": "No justfile|justfile.*not found|Could not find",
+      "message": "Justfile not found",
+      "cause": "No justfile in current or parent directories",
+      "solutions": [
+        {
+          "approach": "Create justfile",
+          "code": "# justfile\ndefault:\n    @just --list\n\nbuild:\n    cargo build --release",
+          "when": "New project"
+        },
+        {
+          "approach": "Specify justfile",
+          "code": "just --justfile path/to/justfile recipe",
+          "when": "Non-standard location"
+        }
+      ]
+    },
+    {
+      "id": "recipe_not_found",
+      "pattern": "Unknown recipe|Recipe.*not found|No such recipe",
+      "message": "Recipe not found in justfile",
+      "cause": "Specified recipe name doesn't exist",
+      "solutions": [
+        {
+          "approach": "List recipes",
+          "code": "just --list",
+          "when": "Find available recipes"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "# Recipe names are case-sensitive",
+          "when": "Typo in recipe name"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "Syntax error|Parse error|expected.*found",
+      "message": "Justfile syntax error",
+      "cause": "Invalid syntax in justfile",
+      "solutions": [
+        {
+          "approach": "Check indentation",
+          "code": "# Recipes use indentation (spaces or tabs)\nbuild:\n    echo 'building'",
+          "when": "Indentation issue"
+        },
+        {
+          "approach": "Format file",
+          "code": "just --fmt --unstable",
+          "when": "Auto-format"
+        },
+        {
+          "approach": "Check syntax",
+          "code": "just --fmt --check",
+          "when": "Validate syntax"
+        }
+      ]
+    },
+    {
+      "id": "variable_not_found",
+      "pattern": "Variable.*not found|undefined variable|{{.*}}",
+      "message": "Variable not defined",
+      "cause": "Referenced variable doesn't exist",
+      "solutions": [
+        {
+          "approach": "Define variable",
+          "code": "# justfile\nversion := \"1.0.0\"\n\nbuild:\n    echo {{version}}",
+          "when": "Add variable"
+        },
+        {
+          "approach": "Use environment variable",
+          "code": "build:\n    echo $HOME\n    echo {{env_var('HOME')}}",
+          "when": "Use env var"
+        },
+        {
+          "approach": "Pass as argument",
+          "code": "build version:\n    echo {{version}}\n# just build 1.0.0",
+          "when": "Recipe argument"
+        }
+      ]
+    },
+    {
+      "id": "command_failed",
+      "pattern": "Recipe.*failed|exit code|command failed",
+      "message": "Recipe command failed",
+      "cause": "Command in recipe returned non-zero exit code",
+      "solutions": [
+        {
+          "approach": "Ignore errors",
+          "code": "build:\n    -command-that-might-fail\n    next-command",
+          "when": "Continue on failure"
+        },
+        {
+          "approach": "Check command",
+          "code": "# Run command directly to debug\n# just --verbose recipe",
+          "when": "Debug recipe"
+        },
+        {
+          "approach": "Use set options",
+          "code": "set positional-arguments\nset shell := [\"bash\", \"-uc\"]",
+          "when": "Shell configuration"
+        }
+      ]
+    },
+    {
+      "id": "dependency_cycle",
+      "pattern": "Dependency cycle|circular.*dependency|depends on itself",
+      "message": "Circular dependency detected",
+      "cause": "Recipe dependencies form a cycle",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "# Recipe dependencies should not form cycles\nbuild: compile test\ncompile:\n    ...\ntest:\n    ...",
+          "when": "Remove cycle"
+        }
+      ]
+    },
+    {
+      "id": "shell_error",
+      "pattern": "shell.*error|sh:.*not found|bash.*error",
+      "message": "Shell execution error",
+      "cause": "Shell command syntax or availability issue",
+      "solutions": [
+        {
+          "approach": "Set shell",
+          "code": "set shell := [\"bash\", \"-uc\"]",
+          "when": "Use specific shell"
+        },
+        {
+          "approach": "Use shebang",
+          "code": "build:\n    #!/usr/bin/env bash\n    set -euo pipefail\n    echo 'building'",
+          "when": "Multiline script"
+        },
+        {
+          "approach": "Windows shell",
+          "code": "set windows-shell := [\"powershell.exe\", \"-NoLogo\", \"-Command\"]",
+          "when": "Windows support"
+        }
+      ]
+    },
+    {
+      "id": "dotenv_error",
+      "pattern": "dotenv.*error|.env.*not found|load_dotenv",
+      "message": "Dotenv loading error",
+      "cause": ".env file not found or has errors",
+      "solutions": [
+        {
+          "approach": "Enable dotenv",
+          "code": "set dotenv-load\n\nbuild:\n    echo $MY_VAR",
+          "when": "Load .env automatically"
+        },
+        {
+          "approach": "Specify env file",
+          "code": "set dotenv-filename := \".env.local\"",
+          "when": "Non-standard name"
+        },
+        {
+          "approach": "Make optional",
+          "code": "set dotenv-load := false",
+          "when": ".env not required"
+        }
+      ]
+    }
+  ]
+}

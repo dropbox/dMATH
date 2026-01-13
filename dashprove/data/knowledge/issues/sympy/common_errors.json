@@ -1,0 +1,168 @@
+{
+  "tool": "sympy",
+  "version": "1.12",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sympify_error",
+      "pattern": "SympifyError|cannot sympify",
+      "message": "Cannot convert to symbolic expression",
+      "cause": "Input cannot be converted to SymPy object",
+      "solutions": [
+        {
+          "approach": "Use explicit symbols",
+          "code": "from sympy import symbols\nx, y = symbols('x y')\nexpr = x**2 + y",
+          "when": "Creating symbolic expressions"
+        },
+        {
+          "approach": "Parse string",
+          "code": "from sympy import sympify\nexpr = sympify('x**2 + 1')",
+          "when": "Converting string"
+        },
+        {
+          "approach": "Use S for numbers",
+          "code": "from sympy import S\nhalf = S(1)/2  # Exact fraction, not 0.5",
+          "when": "Exact arithmetic needed"
+        }
+      ]
+    },
+    {
+      "id": "solve_error",
+      "pattern": "NotImplementedError.*solve|Cannot solve",
+      "message": "Cannot solve equation",
+      "cause": "Equation type not supported by solve",
+      "solutions": [
+        {
+          "approach": "Use numerical solver",
+          "code": "from sympy import nsolve\nsolution = nsolve(equation, x, initial_guess)",
+          "when": "Symbolic solution not available"
+        },
+        {
+          "approach": "Try different method",
+          "code": "from sympy import solveset, S\nsolutions = solveset(eq, x, domain=S.Reals)",
+          "when": "solve() fails"
+        },
+        {
+          "approach": "Simplify first",
+          "code": "from sympy import simplify, expand\neq_simplified = simplify(expand(equation))",
+          "when": "Equation too complex"
+        }
+      ]
+    },
+    {
+      "id": "integration_error",
+      "pattern": "Integral.*could not be computed|cannot integrate",
+      "message": "Integration failed",
+      "cause": "No closed-form antiderivative exists or found",
+      "solutions": [
+        {
+          "approach": "Use numerical integration",
+          "code": "from sympy import N\nresult = N(Integral(f, (x, a, b)))",
+          "when": "Need numerical result"
+        },
+        {
+          "approach": "Try manual techniques",
+          "code": "from sympy import integrate, meijerg\nresult = integrate(f, x, meijerg=True)",
+          "when": "Special function might work"
+        },
+        {
+          "approach": "Use series expansion",
+          "code": "from sympy import series\napprox = series(f, x, n=10).integrate(x)",
+          "when": "Approximate solution acceptable"
+        }
+      ]
+    },
+    {
+      "id": "assumption_error",
+      "pattern": "assumptions.*contradictory|Cannot determine|PolynomialError",
+      "message": "Symbol assumption error",
+      "cause": "Missing or contradictory assumptions on symbols",
+      "solutions": [
+        {
+          "approach": "Add assumptions",
+          "code": "x = Symbol('x', real=True, positive=True)",
+          "when": "Need specific domain"
+        },
+        {
+          "approach": "Use refine",
+          "code": "from sympy import refine, Q\nresult = refine(expr, Q.positive(x))",
+          "when": "Add assumptions to existing expr"
+        },
+        {
+          "approach": "Specify domain in solve",
+          "code": "from sympy import solveset, S\nsols = solveset(eq, x, domain=S.Reals)",
+          "when": "Solving equations"
+        }
+      ]
+    },
+    {
+      "id": "simplify_slow",
+      "pattern": "simplify.*timeout|too slow|memory",
+      "message": "Simplification too slow",
+      "cause": "Expression too complex for full simplification",
+      "solutions": [
+        {
+          "approach": "Use targeted simplification",
+          "code": "from sympy import trigsimp, powsimp, radsimp\nresult = trigsimp(expr)  # Only trig",
+          "when": "Know what type of simplification"
+        },
+        {
+          "approach": "Set timeout/ratio",
+          "code": "from sympy import simplify\nresult = simplify(expr, ratio=1.5)",
+          "when": "Limit expansion"
+        },
+        {
+          "approach": "Factor or expand first",
+          "code": "from sympy import factor, expand\nresult = factor(expand(expr))",
+          "when": "Algebraic expression"
+        }
+      ]
+    },
+    {
+      "id": "matrix_error",
+      "pattern": "Matrix.*not square|determinant.*non-square",
+      "message": "Matrix operation error",
+      "cause": "Matrix shape incompatible with operation",
+      "solutions": [
+        {
+          "approach": "Check dimensions",
+          "code": "print(f'Shape: {M.shape}')",
+          "when": "Debug shape issues"
+        },
+        {
+          "approach": "Use appropriate method",
+          "code": "M.pinv()  # Pseudo-inverse for non-square\nM.T  # Transpose",
+          "when": "Non-square matrix"
+        },
+        {
+          "approach": "Use nullspace/columnspace",
+          "code": "null = M.nullspace()\ncol = M.columnspace()",
+          "when": "Analyzing matrix properties"
+        }
+      ]
+    },
+    {
+      "id": "latex_error",
+      "pattern": "LaTeX.*error|printing.*failed",
+      "message": "LaTeX rendering error",
+      "cause": "Expression cannot be rendered to LaTeX",
+      "solutions": [
+        {
+          "approach": "Use init_printing",
+          "code": "from sympy import init_printing\ninit_printing(use_unicode=True)",
+          "when": "Setup printing"
+        },
+        {
+          "approach": "Manual latex",
+          "code": "from sympy import latex\nlatex_str = latex(expr)",
+          "when": "Get LaTeX string"
+        },
+        {
+          "approach": "Use preview",
+          "code": "from sympy import preview\npreview(expr, output='png')",
+          "when": "Generate image"
+        }
+      ]
+    }
+  ]
+}

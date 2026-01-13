@@ -1,0 +1,119 @@
+{
+  "id": "zap",
+  "name": "OWASP ZAP",
+  "category": "security",
+  "subcategory": "web_security_scanner",
+
+  "description": "Open-source web application security scanner for finding vulnerabilities",
+  "long_description": "OWASP ZAP (Zed Attack Proxy) is the world's most widely used web app scanner. It can automatically find security vulnerabilities in web applications during development and testing. It includes active and passive scanning, fuzzing, WebSocket testing, and scripting capabilities. It's suitable for both manual penetration testing and automated CI/CD security testing.",
+
+  "capabilities": [
+    "active_scanning",
+    "passive_scanning",
+    "fuzzing",
+    "spider_crawling",
+    "websocket_testing",
+    "api_scanning",
+    "authentication_testing",
+    "ajax_spider",
+    "scripting",
+    "ci_integration"
+  ],
+  "property_types": ["security", "vulnerability_detection"],
+  "input_languages": ["http", "openapi", "graphql"],
+  "output_formats": ["html", "xml", "json", "markdown", "sarif"],
+
+  "installation": {
+    "methods": [
+      {"type": "download", "url": "https://www.zaproxy.org/download/"},
+      {"type": "docker", "command": "docker pull ghcr.io/zaproxy/zaproxy:stable"},
+      {"type": "homebrew", "command": "brew install --cask owasp-zap", "platform": "macos"}
+    ],
+    "dependencies": ["java>=11"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://www.zaproxy.org/docs/",
+    "tutorial": "https://www.zaproxy.org/getting-started/",
+    "api_reference": "https://www.zaproxy.org/docs/api/",
+    "examples": "https://github.com/zaproxy/zaproxy/tree/main/docker/scripts"
+  },
+
+  "tactics": [
+    {
+      "name": "baseline_scan",
+      "description": "Quick passive scan",
+      "syntax": "zap-baseline.py -t https://target.com",
+      "when_to_use": "CI/CD quick check",
+      "examples": ["docker run ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://api.example.com"]
+    },
+    {
+      "name": "full_scan",
+      "description": "Full active scan",
+      "syntax": "zap-full-scan.py -t https://target.com",
+      "when_to_use": "Comprehensive security testing",
+      "examples": ["docker run ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py -t https://staging.example.com -r report.html"]
+    },
+    {
+      "name": "api_scan",
+      "description": "Scan API from OpenAPI spec",
+      "syntax": "zap-api-scan.py -t openapi.json -f openapi",
+      "when_to_use": "API security testing",
+      "examples": ["docker run ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py -t https://api.example.com/openapi.json -f openapi"]
+    },
+    {
+      "name": "authenticated_scan",
+      "description": "Scan with authentication",
+      "syntax": "Configure authentication context in ZAP",
+      "when_to_use": "Testing authenticated areas",
+      "examples": ["Use automation framework with authentication configuration"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "WARN-NEW.*XSS",
+      "meaning": "Cross-site scripting vulnerability found",
+      "common_causes": ["Unescaped output", "Missing CSP"],
+      "fixes": ["Escape output", "Implement CSP", "Use framework auto-escaping"]
+    },
+    {
+      "pattern": "WARN-NEW.*SQL Injection",
+      "meaning": "SQL injection vulnerability",
+      "common_causes": ["String concatenation in queries"],
+      "fixes": ["Use parameterized queries", "Use ORM properly"]
+    },
+    {
+      "pattern": "WARN-NEW.*CSRF",
+      "meaning": "Cross-site request forgery possible",
+      "common_causes": ["Missing CSRF tokens"],
+      "fixes": ["Implement CSRF protection", "Use SameSite cookies"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security"],
+    "cli_command": "dashprove verify --backend zap"
+  },
+
+  "performance": {
+    "typical_runtime": "Varies; baseline fast, full scan slow",
+    "scalability": "Can distribute scanning",
+    "memory_usage": "Moderate to high"
+  },
+
+  "comparisons": {
+    "similar_tools": ["burp_suite", "nikto", "nuclei", "wapiti"],
+    "advantages": ["Free and open source", "Active community", "CI integration", "Comprehensive"],
+    "disadvantages": ["Can be slow", "False positives require tuning"]
+  },
+
+  "metadata": {
+    "version": "2.15.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "OWASP Foundation",
+    "license": "Apache-2.0"
+  }
+}

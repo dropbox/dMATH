@@ -1,0 +1,140 @@
+{
+  "tool": "iostat",
+  "version": "12.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "command not found|not found|not installed",
+      "message": "iostat not available",
+      "cause": "sysstat package not installed",
+      "solutions": [
+        {
+          "approach": "Install sysstat",
+          "code": "# Ubuntu/Debian\nsudo apt install sysstat\n# RHEL/CentOS\nsudo yum install sysstat\n# macOS\nbrew install sysstat",
+          "when": "Install package"
+        },
+        {
+          "approach": "macOS alternative",
+          "code": "# macOS has built-in iostat\niostat -c 5  # 5 samples",
+          "when": "macOS"
+        }
+      ]
+    },
+    {
+      "id": "first_report_misleading",
+      "pattern": "first.*average|since boot|cumulative|misleading",
+      "message": "First report shows average since boot",
+      "cause": "First iostat output is cumulative average",
+      "solutions": [
+        {
+          "approach": "Skip first",
+          "code": "iostat 1 2 | tail -n +$(($(iostat | wc -l)+1))\n# Or use -y flag",
+          "when": "Skip first"
+        },
+        {
+          "approach": "Use -y flag",
+          "code": "iostat -y 1 5  # Skip first report (recent sysstat)",
+          "when": "Recent version"
+        },
+        {
+          "approach": "Multiple samples",
+          "code": "iostat 2 3  # 3 samples, 2 sec apart (ignore first)",
+          "when": "Get intervals"
+        }
+      ]
+    },
+    {
+      "id": "specific_device",
+      "pattern": "specific device|one disk|single drive",
+      "message": "Show only specific device",
+      "cause": "Want to filter to one device",
+      "solutions": [
+        {
+          "approach": "Specify device",
+          "code": "iostat -d sda  # Only sda\niostat -d sda sdb  # Multiple devices",
+          "when": "Filter device"
+        },
+        {
+          "approach": "Pattern match",
+          "code": "iostat -d sd*  # All sd devices\niostat -d nvme*  # All NVMe",
+          "when": "Glob pattern"
+        },
+        {
+          "approach": "Extended stats",
+          "code": "iostat -xd sda 1  # Extended stats for sda",
+          "when": "Detailed"
+        }
+      ]
+    },
+    {
+      "id": "human_readable",
+      "pattern": "human readable|MB|GB|sectors|blocks",
+      "message": "Output in human-readable units",
+      "cause": "Default shows sectors/blocks",
+      "solutions": [
+        {
+          "approach": "Megabytes",
+          "code": "iostat -m  # In megabytes",
+          "when": "MB units"
+        },
+        {
+          "approach": "Kilobytes",
+          "code": "iostat -k  # In kilobytes",
+          "when": "KB units"
+        },
+        {
+          "approach": "Human",
+          "code": "iostat -h  # Human readable (recent versions)",
+          "when": "Auto units"
+        }
+      ]
+    },
+    {
+      "id": "extended_stats",
+      "pattern": "extended|detailed|await|svctm|utilization",
+      "message": "Need more detailed statistics",
+      "cause": "Default output is basic",
+      "solutions": [
+        {
+          "approach": "Extended",
+          "code": "iostat -x 1  # Extended stats\niostat -xd 1  # Extended, devices only",
+          "when": "Full stats"
+        },
+        {
+          "approach": "Key metrics",
+          "code": "# r/s, w/s: reads/writes per second\n# await: average wait time (ms)\n# %util: device utilization",
+          "when": "Understand output"
+        },
+        {
+          "approach": "CPU + disk",
+          "code": "iostat -c -d -x 1  # CPU and extended disk",
+          "when": "Both"
+        }
+      ]
+    },
+    {
+      "id": "continuous_monitoring",
+      "pattern": "continuous|watch|interval|repeated",
+      "message": "Monitor continuously",
+      "cause": "Need ongoing monitoring",
+      "solutions": [
+        {
+          "approach": "Interval",
+          "code": "iostat 2  # Every 2 seconds indefinitely\niostat 2 10  # 10 iterations, 2 sec apart",
+          "when": "Repeated"
+        },
+        {
+          "approach": "Timestamps",
+          "code": "iostat -t 1  # Include timestamps",
+          "when": "With time"
+        },
+        {
+          "approach": "To file",
+          "code": "iostat -x 5 >> iostat.log &  # Background logging",
+          "when": "Log to file"
+        }
+      ]
+    }
+  ]
+}

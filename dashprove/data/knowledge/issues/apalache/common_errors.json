@@ -1,0 +1,181 @@
+{
+  "tool": "apalache",
+  "version": "0.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_error",
+      "pattern": "type error",
+      "message": "Type checking failed",
+      "cause": "TLA+ expression has type mismatch",
+      "solutions": [
+        {
+          "approach": "Add type annotations",
+          "code": "\\* @type: Int;\nCONSTANT N",
+          "when": "Type inference failed"
+        },
+        {
+          "approach": "Check operator types",
+          "code": "\\* @type: (Int, Int) => Int;\nAdd(x, y) == x + y",
+          "when": "Operator signature unclear"
+        },
+        {
+          "approach": "Use explicit typing",
+          "code": "\\* @type: Set(Int);\nMySet == {1, 2, 3}",
+          "when": "Collection type ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_construct",
+      "pattern": "unsupported",
+      "message": "Unsupported TLA+ construct",
+      "cause": "Apalache doesn't support this TLA+ feature",
+      "solutions": [
+        {
+          "approach": "Avoid unbounded quantifiers",
+          "code": "\\E x \\in S: P(x)  \\ Not: \\E x: P(x)",
+          "when": "Using unbounded existential"
+        },
+        {
+          "approach": "Use finite sets",
+          "code": "\\* Apalache requires bounded model checking",
+          "when": "Infinite domain"
+        },
+        {
+          "approach": "Rewrite recursion",
+          "code": "\\* Use fold operators instead of recursive functions",
+          "when": "Recursive definitions"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "parse error",
+      "message": "TLA+ parse error",
+      "cause": "Invalid TLA+ syntax",
+      "solutions": [
+        {
+          "approach": "Check module structure",
+          "code": "---- MODULE Name ----\nEXTENDS Integers\n...\n====",
+          "when": "Module structure wrong"
+        },
+        {
+          "approach": "Verify operators",
+          "code": "\\* Use /\\ not && for conjunction",
+          "when": "Using wrong operators"
+        },
+        {
+          "approach": "Check EXTENDS",
+          "code": "EXTENDS Integers, Sequences, FiniteSets",
+          "when": "Missing standard modules"
+        }
+      ]
+    },
+    {
+      "id": "smt_timeout",
+      "pattern": "timeout",
+      "message": "SMT solver timed out",
+      "cause": "Constraints too complex",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "apalache-mc check --timeout=3600 spec.tla",
+          "when": "May succeed with more time"
+        },
+        {
+          "approach": "Reduce state space",
+          "code": "\\* Use smaller constants: N == 2 instead of N == 10",
+          "when": "Constants too large"
+        },
+        {
+          "approach": "Simplify invariants",
+          "code": "\\* Break complex invariant into smaller parts",
+          "when": "Invariant too complex"
+        }
+      ]
+    },
+    {
+      "id": "counterexample",
+      "pattern": "counterexample found",
+      "message": "Invariant violation found",
+      "cause": "Model violates specified invariant",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "\\* Check counterexample.tla in output",
+          "when": "Understanding violation"
+        },
+        {
+          "approach": "Strengthen preconditions",
+          "code": "\\* Add constraints to Init or Next",
+          "when": "Invariant too weak"
+        },
+        {
+          "approach": "Fix specification",
+          "code": "\\* Bug in Next action",
+          "when": "Specification incorrect"
+        }
+      ]
+    },
+    {
+      "id": "assignment_error",
+      "pattern": "assignment",
+      "message": "Invalid variable assignment",
+      "cause": "Variable update issues",
+      "solutions": [
+        {
+          "approach": "Check primed variables",
+          "code": "x' = x + 1  \\ Not: x = x + 1",
+          "when": "Missing prime on next-state var"
+        },
+        {
+          "approach": "Ensure all vars updated",
+          "code": "UNCHANGED <<var1, var2>>",
+          "when": "Variables not mentioned"
+        },
+        {
+          "approach": "Check action format",
+          "code": "Next == Action1 \\/ Action2",
+          "when": "Wrong action structure"
+        }
+      ]
+    },
+    {
+      "id": "z3_error",
+      "pattern": "Z3 error",
+      "message": "Z3 solver error",
+      "cause": "SMT encoding issue",
+      "solutions": [
+        {
+          "approach": "Update Z3",
+          "code": "# Use compatible Z3 version",
+          "when": "Z3 version mismatch"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "apalache-mc check --debug spec.tla",
+          "when": "Debug SMT encoding"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "configuration",
+      "message": "Configuration error",
+      "cause": "Missing or invalid configuration",
+      "solutions": [
+        {
+          "approach": "Add config file",
+          "code": "INIT Init\nNEXT Next\nINVARIANT Inv",
+          "when": "Missing spec.cfg"
+        },
+        {
+          "approach": "Command line config",
+          "code": "apalache-mc check --init=Init --next=Next --inv=Inv spec.tla",
+          "when": "Specify via CLI"
+        }
+      ]
+    }
+  ]
+}

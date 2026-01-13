@@ -1,0 +1,181 @@
+{
+  "tool": "flagsmith",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "api_key_error",
+      "pattern": "Invalid API Key|401|authentication failed",
+      "message": "Invalid environment key",
+      "cause": "Wrong or missing environment key",
+      "solutions": [
+        {
+          "approach": "Use environment key",
+          "code": "import flagsmith from 'flagsmith';\n\nflagsmith.init({\n  environmentID: 'YOUR_ENVIRONMENT_KEY'  // Not API key\n});",
+          "when": "Using wrong key"
+        },
+        {
+          "approach": "Find environment key",
+          "code": "# Dashboard > Environment > Settings > Keys\n# Use the Environment ID (starts with env_)",
+          "when": "Key not found"
+        },
+        {
+          "approach": "Server-side vs client-side",
+          "code": "// Server-side: use Server-side Environment Key\n// Client-side: use Client-side Environment Key\n// They're different keys!",
+          "when": "Wrong key type"
+        }
+      ]
+    },
+    {
+      "id": "flags_not_loading",
+      "pattern": "flags.*not loading|empty flags|undefined",
+      "message": "Flags not loading",
+      "cause": "SDK not initialized or async issues",
+      "solutions": [
+        {
+          "approach": "Wait for initialization",
+          "code": "flagsmith.init({\n  environmentID: 'KEY',\n  onChange: (oldFlags, params) => {\n    // Flags loaded\n    console.log(flagsmith.getAllFlags());\n  }\n});",
+          "when": "Async initialization"
+        },
+        {
+          "approach": "Use promise",
+          "code": "await flagsmith.init({ environmentID: 'KEY' });\nconst flags = flagsmith.getAllFlags();",
+          "when": "Using async/await"
+        },
+        {
+          "approach": "Check defaults",
+          "code": "flagsmith.init({\n  environmentID: 'KEY',\n  defaultFlags: {\n    my_feature: { enabled: false, value: 'default' }\n  }\n});",
+          "when": "Need fallback values"
+        }
+      ]
+    },
+    {
+      "id": "identity_not_working",
+      "pattern": "identity.*not working|user segments",
+      "message": "Identity/segments not working",
+      "cause": "Identity not set or traits missing",
+      "solutions": [
+        {
+          "approach": "Identify user",
+          "code": "await flagsmith.identify('user-123');\n// Or with traits:\nawait flagsmith.identify('user-123', {\n  plan: 'premium',\n  company: 'acme'\n});",
+          "when": "User not identified"
+        },
+        {
+          "approach": "Set traits",
+          "code": "await flagsmith.setTrait('plan', 'enterprise');\nawait flagsmith.setTraits({ plan: 'enterprise', seats: 100 });",
+          "when": "Update traits"
+        },
+        {
+          "approach": "Clear identity",
+          "code": "flagsmith.logout();  // Clear identity on user logout",
+          "when": "User logs out"
+        }
+      ]
+    },
+    {
+      "id": "segment_override_not_applied",
+      "pattern": "segment.*not applying|override.*not working",
+      "message": "Segment override not being applied",
+      "cause": "Segment rules not matching identity",
+      "solutions": [
+        {
+          "approach": "Check segment rules",
+          "code": "# Dashboard > Segments > Your Segment\n# Verify rules match the traits you're sending",
+          "when": "Rules not matching"
+        },
+        {
+          "approach": "Check trait types",
+          "code": "// Ensure trait types match segment rules\n// 'age' as string '25' won't match numeric rule > 18\nawait flagsmith.setTrait('age', 25);  // Number",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Debug with API",
+          "code": "# Check what Flagsmith sees:\ncurl -H 'X-Environment-Key: KEY' \\\n  'https://edge.api.flagsmith.com/api/v1/identities/?identifier=user-123'",
+          "when": "Debug identity"
+        }
+      ]
+    },
+    {
+      "id": "caching_issues",
+      "pattern": "cached|stale|not updating",
+      "message": "Flags not updating in real-time",
+      "cause": "SDK caching flag values",
+      "solutions": [
+        {
+          "approach": "Refresh flags",
+          "code": "await flagsmith.getFlags();  // Force refresh",
+          "when": "Need latest values"
+        },
+        {
+          "approach": "Configure caching",
+          "code": "flagsmith.init({\n  environmentID: 'KEY',\n  cacheFlags: false,  // Disable caching\n  // Or set cache TTL:\n  cacheOptions: { ttl: 60 }  // 60 seconds\n});",
+          "when": "Control caching"
+        },
+        {
+          "approach": "Use realtime",
+          "code": "flagsmith.init({\n  environmentID: 'KEY',\n  enableAnalytics: true,\n  realtime: true  // SSE updates\n});",
+          "when": "Need realtime updates"
+        }
+      ]
+    },
+    {
+      "id": "remote_config_missing",
+      "pattern": "remote config.*null|value.*undefined",
+      "message": "Remote config value missing",
+      "cause": "Feature has no value or wrong type",
+      "solutions": [
+        {
+          "approach": "Check feature value",
+          "code": "const feature = flagsmith.getValue('feature-key');\nconst enabled = flagsmith.hasFeature('feature-key');\n// getValue returns the value, hasFeature returns boolean",
+          "when": "Using wrong method"
+        },
+        {
+          "approach": "Handle missing values",
+          "code": "const value = flagsmith.getValue('feature-key') || 'default';",
+          "when": "Need fallback"
+        },
+        {
+          "approach": "Parse JSON values",
+          "code": "const config = JSON.parse(flagsmith.getValue('json-config') || '{}');",
+          "when": "JSON remote config"
+        }
+      ]
+    },
+    {
+      "id": "analytics_not_sending",
+      "pattern": "analytics.*not.*sending|tracking",
+      "message": "Analytics not being sent",
+      "cause": "Analytics not enabled or batching",
+      "solutions": [
+        {
+          "approach": "Enable analytics",
+          "code": "flagsmith.init({\n  environmentID: 'KEY',\n  enableAnalytics: true\n});",
+          "when": "Analytics disabled"
+        },
+        {
+          "approach": "Flush analytics",
+          "code": "await flagsmith.log();  // Force send analytics",
+          "when": "Before page unload"
+        }
+      ]
+    },
+    {
+      "id": "self_hosted_connection",
+      "pattern": "self.*hosted|on.*premise|API URL",
+      "message": "Cannot connect to self-hosted instance",
+      "cause": "API URL not configured for self-hosted",
+      "solutions": [
+        {
+          "approach": "Configure API URL",
+          "code": "flagsmith.init({\n  environmentID: 'KEY',\n  api: 'https://your-flagsmith.example.com/api/v1/'\n});",
+          "when": "Self-hosted Flagsmith"
+        },
+        {
+          "approach": "Check health endpoint",
+          "code": "curl https://your-flagsmith.example.com/health",
+          "when": "Verify server running"
+        }
+      ]
+    }
+  ]
+}

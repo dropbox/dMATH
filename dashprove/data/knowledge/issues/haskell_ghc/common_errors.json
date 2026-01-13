@@ -1,0 +1,168 @@
+{
+  "tool": "haskell_ghc",
+  "version": "9.8.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "Couldn't match.*type|Expected.*Actual",
+      "message": "Type mismatch",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Add type signature",
+          "code": "f :: Int -> Bool\nf x = x > 0",
+          "when": "Type inference failed"
+        },
+        {
+          "approach": "Use conversion function",
+          "code": "fromIntegral :: (Integral a, Num b) => a -> b\nshow :: Show a => a -> String",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Check monad types",
+          "code": "-- IO String vs String are different types",
+          "when": "Mixing pure and monadic code"
+        }
+      ]
+    },
+    {
+      "id": "not_in_scope",
+      "pattern": "Not in scope|Variable not in scope",
+      "message": "Identifier not in scope",
+      "cause": "Variable, function, or type not defined or imported",
+      "solutions": [
+        {
+          "approach": "Import module",
+          "code": "import Data.List (sort)\nimport qualified Data.Map as M",
+          "when": "Function in another module"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "-- Haskell is case-sensitive",
+          "when": "Typo in identifier"
+        },
+        {
+          "approach": "Enable extension",
+          "code": "{-# LANGUAGE OverloadedStrings #-}",
+          "when": "Need language extension"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_type",
+      "pattern": "Ambiguous type variable|Could not deduce",
+      "message": "Ambiguous type variable",
+      "cause": "Type variable can't be inferred from context",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "read \"42\" :: Int  -- Specify result type",
+          "when": "Result type ambiguous"
+        },
+        {
+          "approach": "Use TypeApplications",
+          "code": "{-# LANGUAGE TypeApplications #-}\nread @Int \"42\"",
+          "when": "Prefer inline type application"
+        },
+        {
+          "approach": "Use default",
+          "code": "default (Int, Double)  -- Module-level default",
+          "when": "Want numeric defaults"
+        }
+      ]
+    },
+    {
+      "id": "non_exhaustive_patterns",
+      "pattern": "Non-exhaustive patterns|Pattern match.*are non-exhaustive",
+      "message": "Non-exhaustive pattern match",
+      "cause": "Pattern match doesn't cover all cases",
+      "solutions": [
+        {
+          "approach": "Add missing patterns",
+          "code": "case mx of Just x -> x; Nothing -> default",
+          "when": "Missing constructor case"
+        },
+        {
+          "approach": "Enable warnings",
+          "code": "{-# OPTIONS_GHC -Wincomplete-patterns #-}",
+          "when": "Want compile-time warning"
+        },
+        {
+          "approach": "Use total functions",
+          "code": "maybe default id mx  -- Instead of fromJust",
+          "when": "Handling Maybe/Either"
+        }
+      ]
+    },
+    {
+      "id": "infinite_type",
+      "pattern": "Occurs check|cannot construct the infinite type",
+      "message": "Infinite type error",
+      "cause": "Type would be infinitely recursive",
+      "solutions": [
+        {
+          "approach": "Check function application",
+          "code": "-- f x x vs f (x x) are different",
+          "when": "Wrong parenthesization"
+        },
+        {
+          "approach": "Use newtype wrapper",
+          "code": "newtype Fix f = Fix (f (Fix f))",
+          "when": "Need recursive type"
+        },
+        {
+          "approach": "Review recursion",
+          "code": "-- Check self-application",
+          "when": "Accidental self-reference"
+        }
+      ]
+    },
+    {
+      "id": "no_instance",
+      "pattern": "No instance for|Could not deduce.*from the context",
+      "message": "Missing typeclass instance",
+      "cause": "Type lacks required typeclass instance",
+      "solutions": [
+        {
+          "approach": "Derive instance",
+          "code": "data T = T deriving (Show, Eq, Ord)",
+          "when": "Standard typeclass derivable"
+        },
+        {
+          "approach": "Add instance manually",
+          "code": "instance Show T where show _ = \"T\"",
+          "when": "Custom instance needed"
+        },
+        {
+          "approach": "Add constraint",
+          "code": "f :: Show a => a -> String",
+          "when": "Function needs constraint"
+        }
+      ]
+    },
+    {
+      "id": "cabal_dependency_error",
+      "pattern": "Could not resolve dependencies|cabal:.*failed",
+      "message": "Cabal dependency error",
+      "cause": "Package dependency conflict or missing",
+      "solutions": [
+        {
+          "approach": "Update package index",
+          "code": "cabal update",
+          "when": "Package index outdated"
+        },
+        {
+          "approach": "Use specific version",
+          "code": "build-depends: base >=4.14 && <5, text ^>=2.0",
+          "when": "Version conflict"
+        },
+        {
+          "approach": "Use cabal freeze",
+          "code": "cabal freeze  -- Lock dependency versions",
+          "when": "Want reproducible build"
+        }
+      ]
+    }
+  ]
+}

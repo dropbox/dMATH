@@ -1,0 +1,158 @@
+{
+  "version": "2.8",
+  "errors": [
+    {
+      "id": "type_error",
+      "pattern": "type error|type-inst error",
+      "message": "Type mismatch in declaration or constraint",
+      "cause": "Expression mixes incompatible types (int vs float, var vs par)",
+      "solutions": [
+        {
+          "approach": "Align variable and parameter types",
+          "code": "array[int] of var int: x; % avoid mixing par int with var float",
+          "when": "Array elements or indices use different types"
+        },
+        {
+          "approach": "Cast explicitly when mixing numeric kinds",
+          "code": "constraint int2float(capacity) >= weight;",
+          "when": "Need float arithmetic with int variables"
+        },
+        {
+          "approach": "Mark decision variables with var",
+          "code": "var int: y;  % not just \"int\"",
+          "when": "Forgot var keyword on optimized variable"
+        }
+      ]
+    },
+    {
+      "id": "undefined_identifier",
+      "pattern": "undefined identifier|not declared",
+      "message": "Name used before it was declared",
+      "cause": "Variable, set, or predicate referenced without a definition or include",
+      "solutions": [
+        {
+          "approach": "Declare parameters before use",
+          "code": "int: n; array[1..n] of int: weights;",
+          "when": "Index sets depend on parameters"
+        },
+        {
+          "approach": "Add missing include files",
+          "code": "include \"globals.mzn\";",
+          "when": "Using global constraint without importing library"
+        },
+        {
+          "approach": "Check name spelling and casing",
+          "code": "% use weights not weight",
+          "when": "Typo in identifier"
+        }
+      ]
+    },
+    {
+      "id": "no_solver",
+      "pattern": "could not find solver|No solver specified",
+      "message": "MiniZinc cannot select or launch a solver",
+      "cause": "Solver not installed, not configured, or not passed with --solver",
+      "solutions": [
+        {
+          "approach": "Select an installed solver explicitly",
+          "code": "minizinc --solver gecode model.mzn",
+          "when": "Default solver not configured"
+        },
+        {
+          "approach": "Install the solver backend",
+          "code": "sudo apt install minizinc gecode-minizinc",
+          "when": "Missing solver binaries"
+        },
+        {
+          "approach": "Update solver configuration",
+          "code": "minizinc --solver-data",
+          "when": "MiniZinc cannot find global solver registry"
+        }
+      ]
+    },
+    {
+      "id": "unsat",
+      "pattern": "UNSATISFIABLE",
+      "message": "Model has no feasible solutions",
+      "cause": "Constraints conflict or data is inconsistent",
+      "solutions": [
+        {
+          "approach": "Relax hard constraints incrementally",
+          "code": "% comment out or soften balance constraints to locate conflict",
+          "when": "Need to isolate conflicting rule"
+        },
+        {
+          "approach": "Use satisfy mode to debug",
+          "code": "solve satisfy;",
+          "when": "Objective forces infeasibility"
+        },
+        {
+          "approach": "Ask solver for unsat core (if supported)",
+          "code": "minizinc --fzn-flags \"--fzn-flag-line --verbose\" model.mzn",
+          "when": "Need to identify minimal conflicting set"
+        }
+      ]
+    },
+    {
+      "id": "unbounded",
+      "pattern": "UNBOUNDED",
+      "message": "Objective can grow without limit",
+      "cause": "Optimization goal lacks upper/lower bounds",
+      "solutions": [
+        {
+          "approach": "Add bounding constraints",
+          "code": "constraint profit <= 10_000;",
+          "when": "Objective variable has no cap"
+        },
+        {
+          "approach": "Switch to satisfy to test feasibility",
+          "code": "solve satisfy;",
+          "when": "Only need any feasible assignment"
+        },
+        {
+          "approach": "Change objective sense or add penalties",
+          "code": "solve minimize -profit;  % or add regularization",
+          "when": "Maximization drives objective upward without restriction"
+        }
+      ]
+    },
+    {
+      "id": "missing_output",
+      "pattern": "No output item",
+      "message": "Nothing printed for solutions",
+      "cause": "Output section omitted relevant variables or uses wrong names",
+      "solutions": [
+        {
+          "approach": "Add explicit output block",
+          "code": "output [\"x=\" ++ show(x) ++ \"\n\"];",
+          "when": "Need to inspect decision variables"
+        },
+        {
+          "approach": "Match output names to declarations",
+          "code": "% use x not xs if variable is named x",
+          "when": "Printed identifier does not exist"
+        }
+      ]
+    },
+    {
+      "id": "redefinition",
+      "pattern": "already defined|redeclared",
+      "message": "Symbol declared more than once",
+      "cause": "Multiple declarations for the same variable, set, or predicate",
+      "solutions": [
+        {
+          "approach": "Consolidate to a single declaration",
+          "code": "var int: capacity; % remove duplicate declaration elsewhere",
+          "when": "Same name introduced twice"
+        },
+        {
+          "approach": "Rename helper predicates",
+          "code": "predicate feasible1(...) = ...;",
+          "when": "Two predicates share the same name"
+        }
+      ]
+    }
+  ],
+  "tool": "minizinc",
+  "last_updated": "2025-12-23"
+}

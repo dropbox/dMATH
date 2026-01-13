@@ -1,0 +1,192 @@
+{
+  "tool": "coqui_tts",
+  "version": "0.22.0",
+  "last_updated": "2025-12-22",
+  "description": "Deep learning toolkit for Text-to-Speech synthesis",
+  "errors": [
+    {
+      "id": "model_not_found",
+      "pattern": "Model.*not found|Invalid model name",
+      "message": "TTS model not found",
+      "cause": "Model name incorrect or not downloaded",
+      "solutions": [
+        {
+          "approach": "List available models",
+          "code": "tts --list_models",
+          "when": "Need to find valid model name"
+        },
+        {
+          "approach": "Download model explicitly",
+          "code": "from TTS.api import TTS\ntts = TTS(model_name='tts_models/en/ljspeech/tacotron2-DDC', progress_bar=True)",
+          "when": "First time using model"
+        },
+        {
+          "approach": "Use local model path",
+          "code": "tts = TTS(model_path='/path/to/model.pth', config_path='/path/to/config.json')",
+          "when": "Using custom/local model"
+        }
+      ]
+    },
+    {
+      "id": "vocoder_mismatch",
+      "pattern": "Vocoder.*incompatible|mel.*dimension.*mismatch",
+      "message": "Vocoder not compatible with TTS model",
+      "cause": "TTS and vocoder trained with different mel configurations",
+      "solutions": [
+        {
+          "approach": "Use matched vocoder",
+          "code": "# Use vocoder trained with same TTS model\ntts = TTS(model_name='tts_models/en/ljspeech/tacotron2-DDC')\n# This auto-selects compatible vocoder",
+          "when": "Using pretrained models"
+        },
+        {
+          "approach": "Check mel dimensions",
+          "code": "# Ensure n_mels matches: tts config.audio.num_mels == vocoder config.audio.num_mels",
+          "when": "Custom model/vocoder combination"
+        },
+        {
+          "approach": "Retrain vocoder",
+          "code": "# Train vocoder on same mel config as TTS model",
+          "when": "Need custom vocoder"
+        }
+      ]
+    },
+    {
+      "id": "cuda_memory_error",
+      "pattern": "CUDA out of memory|RuntimeError.*allocate",
+      "message": "GPU out of memory during synthesis",
+      "cause": "Long text or large model exceeds GPU memory",
+      "solutions": [
+        {
+          "approach": "Split long text",
+          "code": "# TTS automatically splits at sentence boundaries\n# For very long texts, split manually:\nsentences = text.split('. ')\nfor sent in sentences:\n    tts.tts_to_file(sent, file_path=f'output_{i}.wav')",
+          "when": "Text is very long"
+        },
+        {
+          "approach": "Use CPU",
+          "code": "tts = TTS(model_name='...', gpu=False)",
+          "when": "GPU too small"
+        },
+        {
+          "approach": "Use lighter model",
+          "code": "# Use FastPitch instead of VITS\ntts = TTS(model_name='tts_models/en/ljspeech/fast_pitch')",
+          "when": "Need lower memory footprint"
+        }
+      ]
+    },
+    {
+      "id": "audio_quality_poor",
+      "pattern": "robotic|artifacts|clicking",
+      "message": "Generated audio has quality issues",
+      "cause": "Model limitations or parameter issues",
+      "solutions": [
+        {
+          "approach": "Use VITS model",
+          "code": "tts = TTS(model_name='tts_models/en/vctk/vits')  # Higher quality",
+          "when": "Quality is critical"
+        },
+        {
+          "approach": "Adjust speaking rate",
+          "code": "tts.tts_to_file(text, file_path='out.wav', speed=0.9)  # Slightly slower",
+          "when": "Speech sounds rushed"
+        },
+        {
+          "approach": "Use HiFi-GAN vocoder",
+          "code": "# HiFi-GAN produces higher quality than Griffin-Lim",
+          "when": "Using mel-spectrogram TTS"
+        }
+      ]
+    },
+    {
+      "id": "speaker_embedding_error",
+      "pattern": "Speaker.*not found|speaker_idx.*invalid",
+      "message": "Invalid speaker ID for multi-speaker model",
+      "cause": "Speaker ID not in model's speaker list",
+      "solutions": [
+        {
+          "approach": "List available speakers",
+          "code": "print(tts.speakers)  # Get list of speaker names",
+          "when": "Don't know valid speakers"
+        },
+        {
+          "approach": "Use speaker name",
+          "code": "tts.tts_to_file(text, speaker='p225', file_path='out.wav')",
+          "when": "Multi-speaker VITS/YourTTS"
+        },
+        {
+          "approach": "Clone voice",
+          "code": "tts.tts_with_vc_to_file(text, speaker_wav='reference.wav', file_path='out.wav')",
+          "when": "Voice cloning model"
+        }
+      ]
+    },
+    {
+      "id": "language_not_supported",
+      "pattern": "Language.*not supported|Invalid language",
+      "message": "Language not supported by model",
+      "cause": "Model only supports specific languages",
+      "solutions": [
+        {
+          "approach": "Check model language",
+          "code": "print(tts.languages)  # List supported languages",
+          "when": "Verify language support"
+        },
+        {
+          "approach": "Use multilingual model",
+          "code": "tts = TTS(model_name='tts_models/multilingual/multi-dataset/your_tts')",
+          "when": "Need multiple languages"
+        },
+        {
+          "approach": "Find language-specific model",
+          "code": "tts --list_models | grep 'your_language'",
+          "when": "Need specific language"
+        }
+      ]
+    },
+    {
+      "id": "phoneme_error",
+      "pattern": "Phonemization.*failed|espeak.*error",
+      "message": "Text to phoneme conversion failed",
+      "cause": "Missing espeak-ng or phonemizer issues",
+      "solutions": [
+        {
+          "approach": "Install espeak-ng",
+          "code": "# Ubuntu: apt install espeak-ng\n# macOS: brew install espeak-ng\n# Windows: download from GitHub releases",
+          "when": "espeak-ng not installed"
+        },
+        {
+          "approach": "Use character-based model",
+          "code": "# Some models work directly with characters, not phonemes",
+          "when": "Can't install espeak-ng"
+        },
+        {
+          "approach": "Check phonemizer backend",
+          "code": "from phonemizer.backend import EspeakBackend\nEspeakBackend.version()  # Verify espeak works",
+          "when": "Debug phonemization"
+        }
+      ]
+    },
+    {
+      "id": "training_divergence",
+      "pattern": "loss.*nan|training.*diverged",
+      "message": "Training loss became NaN",
+      "cause": "Learning rate too high or data issues",
+      "solutions": [
+        {
+          "approach": "Reduce learning rate",
+          "code": "# In config.json: \"lr\": 0.0001",
+          "when": "Loss explodes early"
+        },
+        {
+          "approach": "Check audio normalization",
+          "code": "# Ensure audio is normalized to [-1, 1]\n# Check sample rate matches config",
+          "when": "Data preprocessing issue"
+        },
+        {
+          "approach": "Gradient clipping",
+          "code": "# In config.json: \"grad_clip\": 1.0",
+          "when": "Gradient explosion"
+        }
+      ]
+    }
+  ]
+}

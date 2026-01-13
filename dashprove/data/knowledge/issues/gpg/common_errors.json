@@ -1,0 +1,168 @@
+{
+  "tool": "gpg",
+  "version": "2.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_secret_key",
+      "pattern": "no secret key|secret key not available|No secret key",
+      "message": "Secret key not available",
+      "cause": "Private key missing or not imported",
+      "solutions": [
+        {
+          "approach": "List keys",
+          "code": "gpg --list-secret-keys\ngpg -K",
+          "when": "Check available"
+        },
+        {
+          "approach": "Import key",
+          "code": "gpg --import private-key.asc",
+          "when": "Import private"
+        },
+        {
+          "approach": "Generate key",
+          "code": "gpg --full-generate-key",
+          "when": "Create new"
+        }
+      ]
+    },
+    {
+      "id": "public_key_not_found",
+      "pattern": "public key not found|No public key|encryption failed.*No public key",
+      "message": "Recipient's public key not found",
+      "cause": "Public key not imported",
+      "solutions": [
+        {
+          "approach": "Import key",
+          "code": "gpg --import public-key.asc\ngpg --recv-keys KEYID",
+          "when": "Import"
+        },
+        {
+          "approach": "Search keyserver",
+          "code": "gpg --search-keys email@example.com\ngpg --keyserver keys.openpgp.org --recv-keys KEYID",
+          "when": "From server"
+        },
+        {
+          "approach": "List keys",
+          "code": "gpg --list-keys",
+          "when": "Check imported"
+        }
+      ]
+    },
+    {
+      "id": "passphrase_failed",
+      "pattern": "Bad passphrase|passphrase.*incorrect|decryption failed",
+      "message": "Wrong passphrase",
+      "cause": "Incorrect passphrase for private key",
+      "solutions": [
+        {
+          "approach": "Retry",
+          "code": "gpg -d file.gpg  # Prompts again",
+          "when": "Try again"
+        },
+        {
+          "approach": "Change passphrase",
+          "code": "gpg --edit-key KEYID\n> passwd\n> save",
+          "when": "If known"
+        },
+        {
+          "approach": "Agent issue",
+          "code": "gpgconf --kill gpg-agent\ngpg -d file.gpg",
+          "when": "Cached wrong"
+        }
+      ]
+    },
+    {
+      "id": "agent_not_running",
+      "pattern": "agent.*not.*running|can't connect.*agent|gpg-agent",
+      "message": "GPG agent not running",
+      "cause": "gpg-agent not started",
+      "solutions": [
+        {
+          "approach": "Start agent",
+          "code": "gpg-agent --daemon\ngpgconf --launch gpg-agent",
+          "when": "Start it"
+        },
+        {
+          "approach": "Check config",
+          "code": "# In ~/.gnupg/gpg.conf:\nuse-agent\n# In ~/.gnupg/gpg-agent.conf:\ndefault-cache-ttl 3600",
+          "when": "Configure"
+        },
+        {
+          "approach": "Restart",
+          "code": "gpgconf --kill all\ngpgconf --launch gpg-agent",
+          "when": "Reset"
+        }
+      ]
+    },
+    {
+      "id": "key_expired",
+      "pattern": "key.*expired|expired|subkey.*expired",
+      "message": "Key has expired",
+      "cause": "GPG key passed expiration date",
+      "solutions": [
+        {
+          "approach": "Extend expiry",
+          "code": "gpg --edit-key KEYID\n> expire\n> key 1  # Select subkey\n> expire\n> save",
+          "when": "Your key"
+        },
+        {
+          "approach": "Update key",
+          "code": "gpg --refresh-keys KEYID",
+          "when": "Others key"
+        },
+        {
+          "approach": "Check expiry",
+          "code": "gpg --list-keys --with-colons | grep expire",
+          "when": "View dates"
+        }
+      ]
+    },
+    {
+      "id": "trust_issue",
+      "pattern": "not trusted|trust.*signature|ultimate trust|no trusted",
+      "message": "Key not trusted",
+      "cause": "Key validity not established",
+      "solutions": [
+        {
+          "approach": "Set trust",
+          "code": "gpg --edit-key KEYID\n> trust\n> 5  # Ultimate trust (your key)\n> quit",
+          "when": "Trust key"
+        },
+        {
+          "approach": "Sign key",
+          "code": "gpg --lsign-key KEYID  # Local signature",
+          "when": "Verify identity"
+        },
+        {
+          "approach": "Always trust",
+          "code": "gpg --encrypt --trust-model always -r recipient file",
+          "when": "Skip check"
+        }
+      ]
+    },
+    {
+      "id": "armor_binary",
+      "pattern": "armor|binary|ASCII|--armor|unexpected armor",
+      "message": "Format mismatch (ASCII vs binary)",
+      "cause": "Wrong format for operation",
+      "solutions": [
+        {
+          "approach": "ASCII output",
+          "code": "gpg --armor --encrypt file  # ASCII armored\ngpg -a -e file",
+          "when": "Text format"
+        },
+        {
+          "approach": "Detect format",
+          "code": "file encrypted.gpg  # Shows format\nhead encrypted.gpg  # ASCII starts with -----BEGIN",
+          "when": "Check format"
+        },
+        {
+          "approach": "Convert",
+          "code": "gpg --enarmor < binary.gpg > armored.asc\ngpg --dearmor < armored.asc > binary.gpg",
+          "when": "Convert"
+        }
+      ]
+    }
+  ]
+}

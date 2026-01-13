@@ -1,0 +1,201 @@
+{
+  "tool": "klee",
+  "version": "3.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "memory_error",
+      "pattern": "KLEE: ERROR: memory error",
+      "message": "Memory error detected at address",
+      "cause": "Invalid memory access (out-of-bounds, use-after-free, null dereference)",
+      "solutions": [
+        {
+          "approach": "Check array bounds",
+          "code": "if (index < size) { arr[index]; }",
+          "when": "Array index may exceed bounds"
+        },
+        {
+          "approach": "Validate pointers before use",
+          "code": "if (ptr != NULL) { *ptr; }",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Review memory lifetime",
+          "code": "// Ensure memory isn't freed before access",
+          "when": "Use-after-free detected"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failure",
+      "pattern": "KLEE: ERROR: .* assertion .* failed",
+      "message": "Assertion failed in explored path",
+      "cause": "An assert() or klee_assert() condition was false on some input",
+      "solutions": [
+        {
+          "approach": "Examine test case",
+          "code": "ktest-tool --write-ints klee-last/test*.ktest",
+          "when": "Need to understand failing inputs"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "klee_assume(condition);",
+          "when": "Assertion assumes certain inputs"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Assertion caught real bug - fix logic",
+          "when": "Assertion is correct and code is wrong"
+        }
+      ]
+    },
+    {
+      "id": "solver_timeout",
+      "pattern": "KLEE: WARNING: solver timeout",
+      "message": "SMT solver query timed out",
+      "cause": "Constraint solving for current path took too long",
+      "solutions": [
+        {
+          "approach": "Increase solver timeout",
+          "code": "klee --solver-timeout=300 program.bc",
+          "when": "Query is complex but solvable"
+        },
+        {
+          "approach": "Simplify symbolic inputs",
+          "code": "klee_assume(x < 1000);  // Reduce input range",
+          "when": "Large input space causing complex constraints"
+        },
+        {
+          "approach": "Use different solver",
+          "code": "klee --solver-backend=stp program.bc",
+          "when": "Z3 struggling with specific constraint type"
+        }
+      ]
+    },
+    {
+      "id": "external_call",
+      "pattern": "KLEE: ERROR: unable to call external function",
+      "message": "Cannot handle call to external function",
+      "cause": "KLEE cannot symbolically execute uninstrumented code (system calls, libraries)",
+      "solutions": [
+        {
+          "approach": "Use POSIX runtime",
+          "code": "klee --posix-runtime program.bc",
+          "when": "Using standard POSIX functions"
+        },
+        {
+          "approach": "Link uclibc",
+          "code": "klee --libc=uclibc program.bc",
+          "when": "Using C library functions"
+        },
+        {
+          "approach": "Provide model",
+          "code": "__attribute__((used)) void model_external() { /* mock */ }",
+          "when": "Need custom behavior for external function"
+        },
+        {
+          "approach": "Make concrete",
+          "code": "klee --external-calls=concrete program.bc",
+          "when": "External function results don't affect safety"
+        }
+      ]
+    },
+    {
+      "id": "halt_state",
+      "pattern": "KLEE: halting execution",
+      "message": "Halting: exceeded memory/time limit",
+      "cause": "KLEE resource limits exceeded during exploration",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "klee --max-memory=8192 program.bc",
+          "when": "Many states consuming memory"
+        },
+        {
+          "approach": "Set instruction limit",
+          "code": "klee --max-instructions=100000000 program.bc",
+          "when": "Need more exploration time"
+        },
+        {
+          "approach": "Focus search",
+          "code": "klee --search=dfs program.bc",
+          "when": "BFS creating too many active states"
+        },
+        {
+          "approach": "Prune states",
+          "code": "klee --max-sym-array-size=256 program.bc",
+          "when": "Large symbolic arrays causing explosion"
+        }
+      ]
+    },
+    {
+      "id": "division_by_zero",
+      "pattern": "KLEE: ERROR: .* divide by zero",
+      "message": "Division by zero on explored path",
+      "cause": "Denominator can be zero for some symbolic inputs",
+      "solutions": [
+        {
+          "approach": "Guard division",
+          "code": "if (divisor != 0) { result = x / divisor; }",
+          "when": "Division should be conditional"
+        },
+        {
+          "approach": "Add assumption",
+          "code": "klee_assume(divisor != 0);",
+          "when": "Caller guarantees non-zero"
+        },
+        {
+          "approach": "Handle edge case",
+          "code": "result = divisor ? (x / divisor) : default_value;",
+          "when": "Zero divisor needs default handling"
+        }
+      ]
+    },
+    {
+      "id": "overshift",
+      "pattern": "KLEE: ERROR: .* overshift error",
+      "message": "Shift amount exceeds bit width",
+      "cause": "Shift operation with amount >= type bit width is undefined",
+      "solutions": [
+        {
+          "approach": "Mask shift amount",
+          "code": "result = x << (shift_amt & 31);  // For 32-bit",
+          "when": "Wrapping behavior is acceptable"
+        },
+        {
+          "approach": "Validate shift amount",
+          "code": "if (shift_amt < 32) { x << shift_amt; }",
+          "when": "Overshift should be prevented"
+        },
+        {
+          "approach": "Add assumption",
+          "code": "klee_assume(shift_amt < sizeof(x) * 8);",
+          "when": "Caller guarantees valid shift"
+        }
+      ]
+    },
+    {
+      "id": "concretization_warning",
+      "pattern": "KLEE: WARNING: concretizing",
+      "message": "KLEE made symbolic value concrete",
+      "cause": "Operation required concrete value, KLEE picked specific value",
+      "solutions": [
+        {
+          "approach": "Review concretized operations",
+          "code": "// Check if concretization affects coverage",
+          "when": "May miss paths with other values"
+        },
+        {
+          "approach": "Use prefer-cex",
+          "code": "klee_prefer_cex(obj, condition);",
+          "when": "Want specific concrete value preference"
+        },
+        {
+          "approach": "Restructure code",
+          "code": "// Avoid ops that require concrete symbolic (memcpy size, etc.)",
+          "when": "Critical to maintain symbolic nature"
+        }
+      ]
+    }
+  ]
+}

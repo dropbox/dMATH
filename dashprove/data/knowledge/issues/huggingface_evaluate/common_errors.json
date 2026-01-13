@@ -1,0 +1,191 @@
+{
+  "tool": "huggingface_evaluate",
+  "version": "0.4.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "metric_not_found",
+      "pattern": "FileNotFoundError.*metrics",
+      "message": "Metric not found",
+      "cause": "Metric name invalid or not installed",
+      "solutions": [
+        {
+          "approach": "Check metric name",
+          "code": "import evaluate\nmetric = evaluate.load('accuracy')  # Use exact name",
+          "when": "Typo in metric name"
+        },
+        {
+          "approach": "List available metrics",
+          "code": "evaluate.list_evaluation_modules(module_type='metric')",
+          "when": "Need to find correct name"
+        },
+        {
+          "approach": "Load from Hub",
+          "code": "metric = evaluate.load('org/metric_name', trust_remote_code=True)",
+          "when": "Using custom metric from Hub"
+        }
+      ]
+    },
+    {
+      "id": "input_mismatch",
+      "pattern": "ValueError.*predictions.*references",
+      "message": "Predictions and references shape mismatch",
+      "cause": "Input arrays have different lengths or shapes",
+      "solutions": [
+        {
+          "approach": "Check array lengths",
+          "code": "assert len(predictions) == len(references)",
+          "when": "Arrays have different lengths"
+        },
+        {
+          "approach": "Flatten nested arrays",
+          "code": "predictions = [p for batch in preds for p in batch]",
+          "when": "Nested batch structure"
+        },
+        {
+          "approach": "Handle multi-label format",
+          "code": "metric.compute(predictions=preds, references=refs, average='weighted')",
+          "when": "Multi-label classification"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "TypeError.*expected.*got",
+      "message": "Input type mismatch",
+      "cause": "Wrong data type for metric inputs",
+      "solutions": [
+        {
+          "approach": "Convert to list",
+          "code": "metric.compute(predictions=preds.tolist(), references=refs.tolist())",
+          "when": "Using numpy arrays"
+        },
+        {
+          "approach": "Convert strings to ids",
+          "code": "# For text metrics, ensure correct format\nmetric.compute(predictions=['text1'], references=[['text1', 'text2']])",
+          "when": "Using text metrics"
+        },
+        {
+          "approach": "Cast to correct dtype",
+          "code": "predictions = [int(p) for p in predictions]",
+          "when": "Float instead of int"
+        }
+      ]
+    },
+    {
+      "id": "combination_error",
+      "pattern": "CombinedEvaluations.*error",
+      "message": "Cannot combine evaluations",
+      "cause": "Incompatible metrics in combine() call",
+      "solutions": [
+        {
+          "approach": "Use compatible metrics",
+          "code": "clf_metrics = evaluate.combine(['accuracy', 'f1', 'precision', 'recall'])",
+          "when": "Combining classification metrics"
+        },
+        {
+          "approach": "Run metrics separately",
+          "code": "results = {}\nfor name in ['bleu', 'rouge']:\n    results[name] = evaluate.load(name).compute(...)",
+          "when": "Metrics have different interfaces"
+        },
+        {
+          "approach": "Specify metric configs",
+          "code": "f1 = evaluate.load('f1', config_name='multilabel')",
+          "when": "Need specific metric variant"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "MemoryError|OutOfMemoryError",
+      "message": "Out of memory computing metric",
+      "cause": "Dataset too large to fit in memory",
+      "solutions": [
+        {
+          "approach": "Use add_batch",
+          "code": "metric = evaluate.load('accuracy')\nfor batch in dataloader:\n    metric.add_batch(predictions=batch_preds, references=batch_refs)\nresult = metric.compute()",
+          "when": "Process data incrementally"
+        },
+        {
+          "approach": "Sample for evaluation",
+          "code": "sample_idx = random.sample(range(len(data)), 10000)\nmetric.compute(predictions=[preds[i] for i in sample_idx], ...)",
+          "when": "Full evaluation not needed"
+        },
+        {
+          "approach": "Use distributed evaluation",
+          "code": "metric = evaluate.load('accuracy', num_process=4, process_id=0)",
+          "when": "Have multiple processes"
+        }
+      ]
+    },
+    {
+      "id": "bleu_tokenization_error",
+      "pattern": "BLEU.*tokenization",
+      "message": "BLEU tokenization error",
+      "cause": "Invalid tokenization or empty references",
+      "solutions": [
+        {
+          "approach": "Check reference format",
+          "code": "# References should be list of lists\nbleu.compute(predictions=['hello world'], references=[['hello world', 'hi world']])",
+          "when": "Reference format wrong"
+        },
+        {
+          "approach": "Handle empty strings",
+          "code": "predictions = [p if p else 'empty' for p in predictions]",
+          "when": "Empty predictions causing issues"
+        },
+        {
+          "approach": "Specify tokenizer",
+          "code": "sacrebleu = evaluate.load('sacrebleu')\nresult = sacrebleu.compute(predictions=preds, references=refs, tokenize='13a')",
+          "when": "Need specific tokenization"
+        }
+      ]
+    },
+    {
+      "id": "rouge_error",
+      "pattern": "ROUGE.*error",
+      "message": "ROUGE computation error",
+      "cause": "Invalid text format or missing rouge dependency",
+      "solutions": [
+        {
+          "approach": "Install rouge_score",
+          "code": "pip install rouge_score",
+          "when": "Missing dependency"
+        },
+        {
+          "approach": "Use correct format",
+          "code": "rouge.compute(predictions=['summary'], references=['reference'])",
+          "when": "Not list of strings"
+        },
+        {
+          "approach": "Specify rouge types",
+          "code": "rouge.compute(predictions=preds, references=refs, rouge_types=['rouge1', 'rougeL'])",
+          "when": "Need specific ROUGE variants"
+        }
+      ]
+    },
+    {
+      "id": "distributed_sync_error",
+      "pattern": "DistributedEvaluation.*sync",
+      "message": "Distributed evaluation sync failed",
+      "cause": "Processes out of sync or communication failure",
+      "solutions": [
+        {
+          "approach": "Ensure all processes participate",
+          "code": "# All processes must call compute()\nif is_main_process:\n    result = metric.compute()\nelse:\n    metric.compute()  # Still need to call",
+          "when": "Some processes skipping compute"
+        },
+        {
+          "approach": "Set timeout",
+          "code": "metric = evaluate.load('accuracy', timeout=300)",
+          "when": "Processes taking too long"
+        },
+        {
+          "approach": "Debug with single process",
+          "code": "metric = evaluate.load('accuracy', num_process=1)",
+          "when": "Need to isolate issue"
+        }
+      ]
+    }
+  ]
+}

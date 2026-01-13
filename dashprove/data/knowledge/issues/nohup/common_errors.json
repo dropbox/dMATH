@@ -1,0 +1,135 @@
+{
+  "tool": "nohup",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "nohup:.*Permission denied|cannot create|failed to run",
+      "message": "Cannot create output file or run command",
+      "cause": "No write permission for nohup.out or command not executable",
+      "solutions": [
+        {
+          "approach": "Specify output file",
+          "code": "nohup command > /tmp/output.log 2>&1 &",
+          "when": "Redirect to writable location"
+        },
+        {
+          "approach": "Check executable",
+          "code": "chmod +x script.sh\nwhich command",
+          "when": "Command not executable"
+        },
+        {
+          "approach": "Use full path",
+          "code": "nohup /path/to/command &",
+          "when": "PATH issue"
+        }
+      ]
+    },
+    {
+      "id": "appending_nohup_out",
+      "pattern": "appending output to|nohup.out",
+      "message": "Output going to nohup.out",
+      "cause": "Default behavior when stdout not redirected",
+      "solutions": [
+        {
+          "approach": "Custom log file",
+          "code": "nohup command > my_output.log 2>&1 &",
+          "when": "Specific log location"
+        },
+        {
+          "approach": "Discard output",
+          "code": "nohup command > /dev/null 2>&1 &",
+          "when": "No output needed"
+        },
+        {
+          "approach": "Separate streams",
+          "code": "nohup command > stdout.log 2> stderr.log &",
+          "when": "Split output"
+        }
+      ]
+    },
+    {
+      "id": "still_terminates",
+      "pattern": "killed|terminated|signal|SIGHUP",
+      "message": "Process still terminates on logout",
+      "cause": "Process not properly backgrounded or shell config issues",
+      "solutions": [
+        {
+          "approach": "Proper background",
+          "code": "nohup command &\ndisown  # Optional: remove from job table",
+          "when": "Full detach"
+        },
+        {
+          "approach": "Use screen/tmux",
+          "code": "screen -dmS mysession command\ntmux new -d 'command'",
+          "when": "Better session management"
+        },
+        {
+          "approach": "Use systemd",
+          "code": "systemd-run --user command  # Modern approach",
+          "when": "systemd available"
+        }
+      ]
+    },
+    {
+      "id": "no_such_file",
+      "pattern": "nohup:.*No such file|cannot run|not found",
+      "message": "Command not found",
+      "cause": "Command doesn't exist or PATH not available",
+      "solutions": [
+        {
+          "approach": "Full path",
+          "code": "nohup /usr/local/bin/mycommand &",
+          "when": "PATH differs in nohup"
+        },
+        {
+          "approach": "Shell wrapper",
+          "code": "nohup bash -c 'source ~/.bashrc && mycommand' &",
+          "when": "Need environment"
+        }
+      ]
+    },
+    {
+      "id": "ignoring_input",
+      "pattern": "ignoring input",
+      "message": "nohup redirecting stdin",
+      "cause": "Normal behavior - stdin comes from /dev/null",
+      "solutions": [
+        {
+          "approach": "Not an error",
+          "code": "# This message is informational, not an error\n# nohup detaches from terminal input",
+          "when": "Understanding message"
+        },
+        {
+          "approach": "Provide input via file",
+          "code": "nohup command < input.txt > output.log 2>&1 &",
+          "when": "Need input"
+        }
+      ]
+    },
+    {
+      "id": "job_control",
+      "pattern": "fg|bg|jobs|job.*not found",
+      "message": "Cannot control nohup process",
+      "cause": "Process detached from job control",
+      "solutions": [
+        {
+          "approach": "Find process",
+          "code": "ps aux | grep command\npgrep -f command",
+          "when": "Locate process"
+        },
+        {
+          "approach": "Kill process",
+          "code": "kill $(pgrep -f command)",
+          "when": "Stop process"
+        },
+        {
+          "approach": "Use PID file",
+          "code": "nohup command & echo $! > /tmp/cmd.pid\nkill $(cat /tmp/cmd.pid)",
+          "when": "Track PID"
+        }
+      ]
+    }
+  ]
+}

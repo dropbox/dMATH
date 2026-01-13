@@ -1,0 +1,168 @@
+{
+  "tool": "grafana",
+  "version": "10.4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "datasource_connection_failed",
+      "pattern": "datasource.*failed|connection refused|timeout|network error",
+      "message": "Cannot connect to data source",
+      "cause": "Data source unreachable, wrong credentials, or network issue",
+      "solutions": [
+        {
+          "approach": "Test data source",
+          "code": "# In Grafana UI: Configuration -> Data Sources -> Test\n# Or check from Grafana server:\ncurl http://prometheus:9090/api/v1/query?query=up",
+          "when": "Need to verify connectivity"
+        },
+        {
+          "approach": "Check data source URL",
+          "code": "# Use container/pod name if in same network\n# prometheus:9090 not localhost:9090",
+          "when": "URL may be wrong for Grafana's network context"
+        },
+        {
+          "approach": "Check credentials",
+          "code": "# Verify auth settings in Data Source configuration",
+          "when": "Data source requires authentication"
+        }
+      ]
+    },
+    {
+      "id": "no_data",
+      "pattern": "No data|null|no values",
+      "message": "Panel shows no data",
+      "cause": "Query returns empty, time range mismatch, or wrong data source",
+      "solutions": [
+        {
+          "approach": "Check time range",
+          "code": "# Ensure dashboard time range covers when data exists\n# Check if data exists: Query Inspector -> Data",
+          "when": "Time range may not have data"
+        },
+        {
+          "approach": "Verify query in data source",
+          "code": "# Run same query directly in Prometheus/InfluxDB\n# Check for typos in metric names or labels",
+          "when": "Query may be incorrect"
+        },
+        {
+          "approach": "Check data source selection",
+          "code": "# Panel may be using wrong data source\n# Edit panel -> Data source dropdown",
+          "when": "Panel using wrong data source"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "401|403|unauthorized|forbidden|login failed",
+      "message": "Authentication or authorization failed",
+      "cause": "Invalid credentials, session expired, or insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Check credentials",
+          "code": "# Default admin/admin on first login\n# Reset password:\ngrafana-cli admin reset-admin-password newpassword",
+          "when": "Cannot log in"
+        },
+        {
+          "approach": "Check user permissions",
+          "code": "# In Grafana: Configuration -> Users\n# Ensure user has appropriate role (Admin/Editor/Viewer)",
+          "when": "User lacks permissions"
+        },
+        {
+          "approach": "Check OAuth/LDAP config",
+          "code": "# grafana.ini\n[auth.ldap]\nenabled = true\nconfig_file = /etc/grafana/ldap.toml",
+          "when": "External auth not working"
+        }
+      ]
+    },
+    {
+      "id": "dashboard_not_saving",
+      "pattern": "cannot save|permission denied|provisioned dashboard",
+      "message": "Cannot save dashboard",
+      "cause": "Dashboard is provisioned, no edit permission, or database issue",
+      "solutions": [
+        {
+          "approach": "Check if provisioned",
+          "code": "# Provisioned dashboards cannot be saved via UI\n# Edit the JSON file in /etc/grafana/provisioning/dashboards/",
+          "when": "Dashboard is provisioned"
+        },
+        {
+          "approach": "Save as copy",
+          "code": "# Dashboard Settings -> Save As...\n# Save with different name/folder",
+          "when": "Need to modify provisioned dashboard"
+        },
+        {
+          "approach": "Check database",
+          "code": "# grafana.ini\n[database]\ntype = sqlite3\npath = /var/lib/grafana/grafana.db\n# Check file permissions",
+          "when": "Database may be read-only"
+        }
+      ]
+    },
+    {
+      "id": "alert_not_firing",
+      "pattern": "alert.*pending|no data|alert not evaluated",
+      "message": "Alert not firing as expected",
+      "cause": "Condition not met, evaluation error, or alert paused",
+      "solutions": [
+        {
+          "approach": "Check alert state",
+          "code": "# In Grafana: Alerting -> Alert rules\n# Check state: Normal, Pending, Firing, Error",
+          "when": "Need to see alert status"
+        },
+        {
+          "approach": "Preview alert query",
+          "code": "# Edit alert rule -> Preview\n# Verify query returns expected values",
+          "when": "Condition may not be met"
+        },
+        {
+          "approach": "Check contact points",
+          "code": "# Alerting -> Contact points -> Test\n# Verify notification channel working",
+          "when": "Alert fires but no notification"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin.*error|failed to load|plugin not found",
+      "message": "Plugin failed to load",
+      "cause": "Plugin not installed, incompatible version, or corrupted",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "grafana-cli plugins install grafana-piechart-panel",
+          "when": "Plugin not installed"
+        },
+        {
+          "approach": "Update plugin",
+          "code": "grafana-cli plugins update grafana-piechart-panel",
+          "when": "Plugin version incompatible"
+        },
+        {
+          "approach": "Allow unsigned plugins",
+          "code": "# grafana.ini (development only!)\n[plugins]\nallow_loading_unsigned_plugins = my-plugin",
+          "when": "Plugin is unsigned"
+        }
+      ]
+    },
+    {
+      "id": "template_variable_error",
+      "pattern": "variable.*error|template|\\$__",
+      "message": "Template variable error",
+      "cause": "Variable query failed or syntax error",
+      "solutions": [
+        {
+          "approach": "Check variable query",
+          "code": "# Dashboard Settings -> Variables\n# Run query preview to see results",
+          "when": "Variable not populating"
+        },
+        {
+          "approach": "Fix variable syntax",
+          "code": "# Use ${var} or $var syntax\n# For multi-value: ${var:pipe} or ${var:csv}",
+          "when": "Variable syntax incorrect"
+        },
+        {
+          "approach": "Check data source",
+          "code": "# Variable may use different data source than panels",
+          "when": "Variable data source wrong"
+        }
+      ]
+    }
+  ]
+}

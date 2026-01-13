@@ -1,0 +1,191 @@
+{
+  "tool": "cargo-audit",
+  "version": "0.20.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "vulnerability_found",
+      "pattern": "RUSTSEC-\\d{4}-\\d{4}|Vulnerability found|CVE-\\d{4}-\\d+",
+      "message": "Security vulnerability in dependency",
+      "cause": "Crate version has known security vulnerability in RustSec database",
+      "solutions": [
+        {
+          "approach": "Update to patched version",
+          "code": "cargo update -p vulnerable-crate",
+          "when": "Patched version exists"
+        },
+        {
+          "approach": "Update Cargo.lock only",
+          "code": "cargo update vulnerable-crate --precise 1.2.3",
+          "when": "Need specific patched version"
+        },
+        {
+          "approach": "Replace dependency",
+          "code": "# Find alternative crate without vulnerabilities",
+          "when": "No patch available"
+        }
+      ]
+    },
+    {
+      "id": "unmaintained_crate",
+      "pattern": "unmaintained|informational.*unmaintained",
+      "message": "Dependency is unmaintained",
+      "cause": "Crate has informational advisory indicating no maintenance",
+      "solutions": [
+        {
+          "approach": "Find maintained fork or alternative",
+          "code": "# Check crates.io for alternatives",
+          "when": "Active alternative exists"
+        },
+        {
+          "approach": "Ignore informational",
+          "code": "cargo audit --ignore RUSTSEC-XXXX-XXXX",
+          "when": "Risk is acceptable"
+        },
+        {
+          "approach": "Add to audit.toml ignore list",
+          "code": "[advisories]\nignore = [\"RUSTSEC-XXXX-XXXX\"]",
+          "when": "Permanent ignore needed"
+        }
+      ]
+    },
+    {
+      "id": "unsound_code",
+      "pattern": "unsound|memory safety|undefined behavior",
+      "message": "Dependency has unsound code",
+      "cause": "Crate has soundness issue that could cause undefined behavior",
+      "solutions": [
+        {
+          "approach": "Update immediately",
+          "code": "cargo update -p unsound-crate",
+          "when": "Patched version exists"
+        },
+        {
+          "approach": "Remove dependency",
+          "code": "# Replace with alternative without UB",
+          "when": "Patch not available"
+        },
+        {
+          "approach": "Evaluate impact",
+          "code": "# Check if your usage triggers the unsound code path",
+          "when": "Considering temporary ignore"
+        }
+      ]
+    },
+    {
+      "id": "lock_file_missing",
+      "pattern": "Cargo.lock.*not found|no Cargo.lock",
+      "message": "No Cargo.lock file found",
+      "cause": "cargo-audit needs Cargo.lock to audit exact versions",
+      "solutions": [
+        {
+          "approach": "Generate lock file",
+          "code": "cargo generate-lockfile",
+          "when": "No lock file exists"
+        },
+        {
+          "approach": "Build project first",
+          "code": "cargo build",
+          "when": "New project"
+        },
+        {
+          "approach": "Commit lock file",
+          "code": "git add Cargo.lock",
+          "when": "Binary/application project"
+        }
+      ]
+    },
+    {
+      "id": "database_stale",
+      "pattern": "database.*stale|advisory-db.*old|updating.*database",
+      "message": "Advisory database out of date",
+      "cause": "Local RustSec database not recently updated",
+      "solutions": [
+        {
+          "approach": "Fetch latest database",
+          "code": "cargo audit fetch",
+          "when": "Manual update"
+        },
+        {
+          "approach": "Auto-update on audit",
+          "code": "cargo audit --update",
+          "when": "Always want latest"
+        },
+        {
+          "approach": "Set database location",
+          "code": "cargo audit --db /path/to/advisory-db",
+          "when": "Using local mirror"
+        }
+      ]
+    },
+    {
+      "id": "yanked_crate",
+      "pattern": "yanked|crate.*has been yanked",
+      "message": "Using yanked crate version",
+      "cause": "Crate version was removed from crates.io",
+      "solutions": [
+        {
+          "approach": "Update crate",
+          "code": "cargo update -p yanked-crate",
+          "when": "Newer version available"
+        },
+        {
+          "approach": "Pin specific version",
+          "code": "crate = \"=1.2.4\"  # Non-yanked version",
+          "when": "Need older version"
+        },
+        {
+          "approach": "Ignore yanked warnings",
+          "code": "cargo audit --ignore-yanked",
+          "when": "Yanked version is acceptable"
+        }
+      ]
+    },
+    {
+      "id": "deny_failure",
+      "pattern": "error\\[E|deny triggered|audit failed",
+      "message": "Audit failed with errors",
+      "cause": "Vulnerabilities found and deny mode is active",
+      "solutions": [
+        {
+          "approach": "Fix all vulnerabilities",
+          "code": "cargo audit fix",
+          "when": "Auto-fix is safe"
+        },
+        {
+          "approach": "Use warning mode",
+          "code": "cargo audit --deny-warnings=false",
+          "when": "Only warning wanted"
+        },
+        {
+          "approach": "Fix manually per crate",
+          "code": "cargo update -p crate1 -p crate2",
+          "when": "Selective updates"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_advisories",
+      "pattern": "duplicate|same vulnerability.*multiple",
+      "message": "Same vulnerability in multiple versions",
+      "cause": "Dependency tree has multiple versions of vulnerable crate",
+      "solutions": [
+        {
+          "approach": "Update all instances",
+          "code": "cargo update",
+          "when": "Can update all"
+        },
+        {
+          "approach": "Check dependency tree",
+          "code": "cargo tree -p vulnerable-crate",
+          "when": "Find which deps bring it in"
+        },
+        {
+          "approach": "Override version",
+          "code": "[patch.crates-io]\nvuln-crate = { version = \"1.2.3\" }",
+          "when": "Force single version"
+        }
+      ]
+    }
+  ]
+}

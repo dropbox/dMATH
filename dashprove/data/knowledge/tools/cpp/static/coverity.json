@@ -1,0 +1,135 @@
+{
+  "id": "coverity",
+  "name": "Coverity",
+  "category": "static_analysis",
+  "subcategory": "cpp_commercial",
+
+  "description": "Enterprise static analysis tool for finding critical defects and security vulnerabilities",
+  "long_description": "Coverity is an enterprise-grade static analysis tool by Synopsys that finds critical defects and security vulnerabilities in C, C++, Java, C#, JavaScript, and other languages. It's known for low false positive rates and deep interprocedural analysis. Coverity Scan provides free analysis for open source projects. It identifies issues like buffer overflows, resource leaks, and injection vulnerabilities.",
+
+  "capabilities": [
+    "interprocedural_analysis",
+    "security_vulnerability_detection",
+    "concurrency_defect_detection",
+    "resource_leak_detection",
+    "api_misuse_detection",
+    "taint_analysis",
+    "compliance_checking",
+    "defect_management"
+  ],
+  "property_types": ["correctness", "security", "concurrency", "resource_safety"],
+  "input_languages": ["c", "cpp", "java", "csharp", "javascript", "python", "go", "ruby", "php"],
+  "output_formats": ["web_dashboard", "json", "pdf", "csv"],
+
+  "installation": {
+    "methods": [
+      {"type": "enterprise", "url": "https://www.synopsys.com/software-integrity/security-testing/static-analysis-sast.html"},
+      {"type": "scan", "url": "https://scan.coverity.com/", "note": "Free for open source"}
+    ],
+    "dependencies": ["cov-build wrapper"],
+    "platforms": ["linux", "macos", "windows"],
+    "license": "commercial"
+  },
+
+  "documentation": {
+    "official": "https://community.synopsys.com/s/article/Coverity-Documentation",
+    "tutorial": "https://scan.coverity.com/documentation",
+    "api_reference": "https://community.synopsys.com/s/",
+    "examples": "https://scan.coverity.com/projects"
+  },
+
+  "tactics": [
+    {
+      "name": "capture_build",
+      "description": "Capture build for analysis",
+      "syntax": "cov-build --dir cov-int make",
+      "when_to_use": "First step - capturing compilation",
+      "examples": ["cov-build --dir cov-int cmake --build . --clean-first"]
+    },
+    {
+      "name": "analyze",
+      "description": "Run analysis on captured build",
+      "syntax": "cov-analyze --dir cov-int",
+      "when_to_use": "After build capture",
+      "examples": ["cov-analyze --dir cov-int --all --security"]
+    },
+    {
+      "name": "commit_defects",
+      "description": "Upload results to server",
+      "syntax": "cov-commit-defects --dir cov-int --url <server>",
+      "when_to_use": "Sharing results with team",
+      "examples": ["cov-commit-defects --dir cov-int --stream myproject --host coverity.example.com"]
+    },
+    {
+      "name": "scan_upload",
+      "description": "Submit to Coverity Scan (open source)",
+      "syntax": "tar czf project.tgz cov-int && curl upload",
+      "when_to_use": "Open source projects using Coverity Scan",
+      "examples": ["tar czf analysis.tgz cov-int && curl --form token=... --form file=@analysis.tgz"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "RESOURCE_LEAK",
+      "meaning": "Allocated resource not freed on all paths",
+      "common_causes": ["Missing cleanup", "Early return"],
+      "fixes": ["Add deallocation", "Use RAII"]
+    },
+    {
+      "pattern": "BUFFER_SIZE",
+      "meaning": "Buffer overflow or underflow",
+      "common_causes": ["Wrong size", "Missing bounds check"],
+      "fixes": ["Fix size calculation", "Add bounds checking"]
+    },
+    {
+      "pattern": "FORWARD_NULL",
+      "meaning": "Null pointer dereference after check",
+      "common_causes": ["Incorrect logic", "Wrong branch"],
+      "fixes": ["Fix control flow logic"]
+    },
+    {
+      "pattern": "USE_AFTER_FREE",
+      "meaning": "Memory used after being freed",
+      "common_causes": ["Dangling pointer"],
+      "fixes": ["Set pointer to null", "Use smart pointers"]
+    },
+    {
+      "pattern": "TAINTED_*",
+      "meaning": "Untrusted data used unsafely",
+      "common_causes": ["Missing input validation"],
+      "fixes": ["Validate and sanitize input"]
+    },
+    {
+      "pattern": "DEADCODE",
+      "meaning": "Unreachable code detected",
+      "common_causes": ["Logic error", "Refactoring remnant"],
+      "fixes": ["Remove dead code or fix logic"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["correctness", "security"],
+    "cli_command": "dashprove verify --backend coverity"
+  },
+
+  "performance": {
+    "typical_runtime": "Slow; deep interprocedural analysis",
+    "scalability": "Excellent; designed for large codebases",
+    "memory_usage": "High for large projects"
+  },
+
+  "comparisons": {
+    "similar_tools": ["pvs-studio", "klocwork", "fortify", "checkmarx"],
+    "advantages": ["Low false positive rate", "Deep analysis", "Enterprise support", "Free for open source"],
+    "disadvantages": ["Expensive commercial license", "Slow for large projects", "Complex setup"]
+  },
+
+  "metadata": {
+    "version": "2024.3",
+    "last_updated": "2025-12-22",
+    "maintainer": "Synopsys",
+    "license": "Commercial (free for OSS via Coverity Scan)"
+  }
+}

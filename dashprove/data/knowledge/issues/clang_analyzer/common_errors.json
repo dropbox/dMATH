@@ -1,0 +1,223 @@
+{
+  "tool": "clang_analyzer",
+  "version": "clang 18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "core_null_dereference",
+      "pattern": "core.NullDereference|Dereference of null pointer",
+      "message": "Null pointer dereference",
+      "cause": "Pointer may be null when dereferenced",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (ptr != nullptr) {\n    ptr->member = value;\n}",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Use assert for contracts",
+          "code": "assert(ptr != nullptr && \"precondition violation\");\nptr->member = value;",
+          "when": "Null indicates bug"
+        }
+      ]
+    },
+    {
+      "id": "core_uninitialized_branch",
+      "pattern": "core.UndefinedBinaryOperatorResult|Branch condition evaluates to.*garbage",
+      "message": "Branch condition uses uninitialized value",
+      "cause": "Control flow depends on uninitialized variable",
+      "solutions": [
+        {
+          "approach": "Initialize variable",
+          "code": "int flag = 0;\nif (condition) flag = 1;\nif (flag) { ... }",
+          "when": "Flag variable"
+        },
+        {
+          "approach": "Use braced initialization",
+          "code": "bool initialized{};\n// initialized is now false",
+          "when": "C++ default init"
+        }
+      ]
+    },
+    {
+      "id": "core_divide_zero",
+      "pattern": "core.DivideZero|Division by zero",
+      "message": "Division by zero",
+      "cause": "Divisor may be zero",
+      "solutions": [
+        {
+          "approach": "Check divisor",
+          "code": "if (divisor != 0) {\n    result = dividend / divisor;\n}",
+          "when": "Divisor may be zero"
+        },
+        {
+          "approach": "Assert precondition",
+          "code": "assert(divisor != 0);\nreturn dividend / divisor;",
+          "when": "Zero is caller error"
+        }
+      ]
+    },
+    {
+      "id": "malloc_leak",
+      "pattern": "unix.Malloc.*leak|Potential leak of memory",
+      "message": "Memory leak detected",
+      "cause": "Allocated memory not freed on some path",
+      "solutions": [
+        {
+          "approach": "Free on all paths",
+          "code": "char* buf = malloc(size);\nif (error) {\n    free(buf);  // Don't forget!\n    return;\n}",
+          "when": "Early return path"
+        },
+        {
+          "approach": "Use RAII",
+          "code": "auto buf = std::make_unique<char[]>(size);",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "malloc_use_after_free",
+      "pattern": "unix.Malloc.*Use-after-free",
+      "message": "Use after free detected",
+      "cause": "Memory accessed after being freed",
+      "solutions": [
+        {
+          "approach": "Set to null after free",
+          "code": "free(ptr);\nptr = NULL;  // Prevent use",
+          "when": "Pointer may be reused"
+        },
+        {
+          "approach": "Review lifetime",
+          "code": "// Ensure pointer not stored beyond free scope",
+          "when": "Dangling pointer stored"
+        }
+      ]
+    },
+    {
+      "id": "dead_stores",
+      "pattern": "deadcode.DeadStores|Value stored to .* is never read",
+      "message": "Dead store - value never read",
+      "cause": "Variable assigned but never used before reassignment or scope end",
+      "solutions": [
+        {
+          "approach": "Remove dead assignment",
+          "code": "// Remove: x = 0;  // Never used",
+          "when": "Assignment is unnecessary"
+        },
+        {
+          "approach": "Fix logic",
+          "code": "// If value should be used, add the missing usage",
+          "when": "Logic error"
+        }
+      ]
+    },
+    {
+      "id": "array_bound",
+      "pattern": "alpha.security.ArrayBound|Out of bound memory access",
+      "message": "Array out of bounds access",
+      "cause": "Array index may exceed bounds",
+      "solutions": [
+        {
+          "approach": "Add bounds check",
+          "code": "if (index < array_size) {\n    array[index] = value;\n}",
+          "when": "Index from user input"
+        },
+        {
+          "approach": "Fix off-by-one",
+          "code": "for (int i = 0; i < size; i++)  // Not i <= size",
+          "when": "Loop bounds wrong"
+        }
+      ]
+    },
+    {
+      "id": "security_insecure_api",
+      "pattern": "security.insecureAPI|Call to .* is insecure",
+      "message": "Insecure API usage",
+      "cause": "Using deprecated/dangerous function (gets, strcpy, etc.)",
+      "solutions": [
+        {
+          "approach": "Use safer alternative",
+          "code": "// Instead of strcpy:\nstrncpy(dest, src, dest_size - 1);\ndest[dest_size - 1] = '\\0';",
+          "when": "String copy"
+        },
+        {
+          "approach": "Use fgets instead of gets",
+          "code": "fgets(buf, sizeof(buf), stdin);",
+          "when": "Reading user input"
+        }
+      ]
+    },
+    {
+      "id": "osx_cocoa_retain",
+      "pattern": "osx.cocoa.RetainCount|Object.*over-released",
+      "message": "Retain count error (Objective-C)",
+      "cause": "Object released too many times",
+      "solutions": [
+        {
+          "approach": "Use ARC",
+          "code": "// Enable ARC: -fobjc-arc",
+          "when": "Can use ARC"
+        },
+        {
+          "approach": "Match retain/release",
+          "code": "// Each retain/copy needs matching release",
+          "when": "Manual memory management"
+        }
+      ]
+    },
+    {
+      "id": "cplusplus_newdelete",
+      "pattern": "cplusplus.NewDelete.*delete",
+      "message": "Mismatched new/delete",
+      "cause": "new[] with delete, or new with delete[]",
+      "solutions": [
+        {
+          "approach": "Match allocation type",
+          "code": "// new -> delete\n// new[] -> delete[]",
+          "when": "Wrong delete form"
+        },
+        {
+          "approach": "Use smart pointers",
+          "code": "auto arr = std::make_unique<int[]>(10);",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "valist_unterminated",
+      "pattern": "valist.Unterminated|va_list .* not closed",
+      "message": "va_list not terminated with va_end",
+      "cause": "va_start called without matching va_end",
+      "solutions": [
+        {
+          "approach": "Add va_end",
+          "code": "va_list args;\nva_start(args, last_param);\n// ... use args ...\nva_end(args);  // Required",
+          "when": "Using varargs"
+        },
+        {
+          "approach": "Use variadic templates",
+          "code": "template<typename... Args>\nvoid func(Args... args) { }",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "logic_dead_code",
+      "pattern": "alpha.deadcode.UnreachableCode|This statement is never executed",
+      "message": "Unreachable code",
+      "cause": "Code can never be executed",
+      "solutions": [
+        {
+          "approach": "Remove dead code",
+          "code": "// Delete unreachable statements",
+          "when": "Code is truly dead"
+        },
+        {
+          "approach": "Fix control flow",
+          "code": "// Check if return/break is misplaced",
+          "when": "Logic error"
+        }
+      ]
+    }
+  ]
+}

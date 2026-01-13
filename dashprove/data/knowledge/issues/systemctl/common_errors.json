@@ -1,0 +1,166 @@
+{
+  "tool": "systemctl",
+  "version": "systemd",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Access denied|Permission denied|Interactive authentication required",
+      "message": "Need root privileges",
+      "cause": "Service management requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo systemctl start servicename\nsudo systemctl enable servicename",
+          "when": "Standard method"
+        },
+        {
+          "approach": "User units",
+          "code": "systemctl --user start servicename\n# For user-level services in ~/.config/systemd/user/",
+          "when": "User services"
+        }
+      ]
+    },
+    {
+      "id": "service_not_found",
+      "pattern": "Unit .* not found|No such file or directory|Unit .* could not be found",
+      "message": "Service not found",
+      "cause": "Service unit doesn't exist",
+      "solutions": [
+        {
+          "approach": "List services",
+          "code": "systemctl list-unit-files | grep servicename\nsystemctl list-units --type=service",
+          "when": "Find service"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "# Service names often end in .service\nsystemctl status nginx.service\nsystemctl status nginx  # .service is optional",
+          "when": "Name format"
+        },
+        {
+          "approach": "Install package",
+          "code": "sudo apt install servicename\nsudo yum install servicename",
+          "when": "Service not installed"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_start",
+      "pattern": "Failed to start|Job for .* failed|failed with result",
+      "message": "Service failed to start",
+      "cause": "Service has errors",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "systemctl status servicename\nsystemctl status servicename -l  # Full logs",
+          "when": "See error details"
+        },
+        {
+          "approach": "Check logs",
+          "code": "journalctl -u servicename -n 50\njournalctl -u servicename -f  # Follow",
+          "when": "View logs"
+        },
+        {
+          "approach": "Check config",
+          "code": "# Config file often at:\n/etc/servicename/config\n/etc/default/servicename\n# Test config:\nnginx -t\napachectl configtest",
+          "when": "Configuration error"
+        }
+      ]
+    },
+    {
+      "id": "masked_service",
+      "pattern": "Unit .* is masked|Cannot unmask|Failed to unmask",
+      "message": "Service is masked",
+      "cause": "Service intentionally disabled",
+      "solutions": [
+        {
+          "approach": "Unmask service",
+          "code": "sudo systemctl unmask servicename\nsudo systemctl start servicename",
+          "when": "Enable masked service"
+        },
+        {
+          "approach": "Check mask",
+          "code": "systemctl is-enabled servicename\n# masked = cannot start",
+          "when": "Check state"
+        }
+      ]
+    },
+    {
+      "id": "dependency_failed",
+      "pattern": "dependency failed|Dependency|requires|After=",
+      "message": "Dependency failed",
+      "cause": "Required service not running",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "systemctl list-dependencies servicename\nsystemctl list-dependencies servicename --all",
+          "when": "View deps"
+        },
+        {
+          "approach": "Start dependency",
+          "code": "sudo systemctl start dependency.service\nsudo systemctl start servicename",
+          "when": "Start required service"
+        }
+      ]
+    },
+    {
+      "id": "reload_daemon",
+      "pattern": "daemon-reload|Warning:.*changed on disk",
+      "message": "Unit file changed",
+      "cause": "Unit file modified but not reloaded",
+      "solutions": [
+        {
+          "approach": "Reload daemon",
+          "code": "sudo systemctl daemon-reload\nsudo systemctl restart servicename",
+          "when": "After editing unit"
+        }
+      ]
+    },
+    {
+      "id": "common_commands",
+      "pattern": "how to|commands|reference",
+      "message": "Common commands",
+      "cause": "Reference needed",
+      "solutions": [
+        {
+          "approach": "Service management",
+          "code": "systemctl start servicename    # Start\nsystemctl stop servicename     # Stop\nsystemctl restart servicename  # Restart\nsystemctl reload servicename   # Reload config\nsystemctl status servicename   # Check status",
+          "when": "Control service"
+        },
+        {
+          "approach": "Enable/disable",
+          "code": "systemctl enable servicename   # Start on boot\nsystemctl disable servicename  # Don't start on boot\nsystemctl is-enabled servicename",
+          "when": "Boot behavior"
+        },
+        {
+          "approach": "System state",
+          "code": "systemctl list-units --state=failed\nsystemctl list-units --type=service\nsystemctl --failed",
+          "when": "System overview"
+        }
+      ]
+    },
+    {
+      "id": "not_systemd",
+      "pattern": "System has not been booted with systemd|Failed to connect",
+      "message": "Not using systemd",
+      "cause": "System uses different init",
+      "solutions": [
+        {
+          "approach": "Check init",
+          "code": "ps -p 1 -o comm=\n# systemd, init, or openrc",
+          "when": "Identify init"
+        },
+        {
+          "approach": "Use service",
+          "code": "sudo service servicename start\nsudo /etc/init.d/servicename start",
+          "when": "Non-systemd"
+        },
+        {
+          "approach": "Docker/container",
+          "code": "# Containers often don't have systemd\n# Run service directly or use supervisor",
+          "when": "In container"
+        }
+      ]
+    }
+  ]
+}

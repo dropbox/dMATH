@@ -1,0 +1,139 @@
+{
+  "id": "go_fuzz",
+  "name": "Go Fuzzing",
+  "category": "go_testing",
+  "subcategory": "fuzzing",
+
+  "description": "Built-in coverage-guided fuzzing in Go 1.18+",
+  "long_description": "Go fuzzing is a native fuzzing capability built into the Go toolchain starting with Go 1.18. It uses coverage-guided fuzzing to automatically generate test inputs that explore new code paths. Fuzzing tests are written alongside regular tests using the testing.F type and can find edge cases, panics, and bugs that unit tests miss.",
+
+  "capabilities": [
+    "coverage_guided_fuzzing",
+    "automatic_input_generation",
+    "crash_detection",
+    "corpus_management",
+    "regression_testing",
+    "panic_detection",
+    "edge_case_discovery"
+  ],
+  "property_types": ["fuzz_target", "crash", "corpus_entry"],
+  "input_languages": ["go"],
+  "output_formats": ["text", "crash_files", "corpus_files"],
+
+  "installation": {
+    "methods": [
+      {"type": "builtin", "command": "Included in Go 1.18+"}
+    ],
+    "dependencies": ["go >= 1.18"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://go.dev/doc/fuzz/",
+    "tutorial": "https://go.dev/doc/tutorial/fuzz",
+    "security": "https://go.dev/security/fuzz/",
+    "examples": "https://github.com/golang/go/tree/master/src/cmd/go/testdata/script/test_fuzz"
+  },
+
+  "tactics": [
+    {
+      "name": "write_fuzz_test",
+      "description": "Write a fuzz test function",
+      "syntax": "func FuzzXxx(f *testing.F)",
+      "when_to_use": "Testing functions that parse input or handle untrusted data",
+      "examples": ["func FuzzParseJSON(f *testing.F) {\n    f.Add([]byte(`{\"key\": \"value\"}`))\n    f.Fuzz(func(t *testing.T, data []byte) {\n        ParseJSON(data)\n    })\n}"]
+    },
+    {
+      "name": "add_seed_corpus",
+      "description": "Add seed inputs to guide fuzzing",
+      "syntax": "f.Add(args...)",
+      "when_to_use": "Provide examples of valid inputs",
+      "examples": ["f.Add(\"hello\")", "f.Add([]byte{0x00, 0x01})", "f.Add(42, \"test\")"]
+    },
+    {
+      "name": "run_fuzzing",
+      "description": "Run fuzzing on a target",
+      "syntax": "go test -fuzz=FuzzXxx",
+      "when_to_use": "Active fuzzing to find new bugs",
+      "examples": ["go test -fuzz=FuzzParse -fuzztime=30s", "go test -fuzz=. -fuzztime=5m"]
+    },
+    {
+      "name": "run_corpus_tests",
+      "description": "Run corpus entries as regression tests",
+      "syntax": "go test",
+      "when_to_use": "CI/CD - run saved crash cases as tests",
+      "examples": ["go test ./...", "go test -run=FuzzParse"]
+    },
+    {
+      "name": "fuzz_minimize",
+      "description": "Minimize crash case to smallest input",
+      "syntax": "go test -fuzz=FuzzXxx -fuzzminimizetime=60s",
+      "when_to_use": "Simplify crash reproduction",
+      "examples": ["go test -fuzz=FuzzParse -fuzzminimizetime=1m"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "panic:",
+      "meaning": "Fuzz target panicked",
+      "common_causes": ["Nil pointer dereference", "Index out of range", "Invalid input handling"],
+      "fixes": ["Add nil checks", "Add bounds checks", "Handle edge cases"]
+    },
+    {
+      "pattern": "found a crash, minimizing",
+      "meaning": "Fuzzer found input that causes crash",
+      "common_causes": ["Bug in parsing logic", "Missing validation", "Edge case not handled"],
+      "fixes": ["Examine crash input", "Add validation", "Fix underlying bug"]
+    },
+    {
+      "pattern": "fuzz target.*wrong number of arguments",
+      "meaning": "Fuzz function signature mismatch",
+      "common_causes": ["f.Add() args don't match f.Fuzz() args", "Wrong types"],
+      "fixes": ["Ensure f.Add() types match f.Fuzz() parameter types"]
+    }
+  ],
+
+  "corpus_structure": {
+    "description": "Fuzzing corpus is stored in testdata/fuzz/FuzzXxx/",
+    "files": [
+      "testdata/fuzz/FuzzXxx/seed_corpus - Manually added seed inputs",
+      "testdata/fuzz/FuzzXxx/generated - Automatically generated interesting inputs"
+    ],
+    "format": "Each file contains serialized input data"
+  },
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "goland"],
+    "ci_integration": ["github_actions", "gitlab_ci", "oss-fuzz"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds for corpus tests, minutes/hours for active fuzzing",
+    "scalability": "Single-threaded fuzzing, can parallelize with -parallel",
+    "memory_usage": "Low to moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["go-fuzz", "gofuzz", "afl", "libfuzzer"],
+    "advantages": [
+      "Built into Go toolchain - no external dependencies",
+      "Integrates with go test",
+      "Corpus saved as regression tests",
+      "Coverage-guided for efficient exploration"
+    ],
+    "disadvantages": [
+      "Only available in Go 1.18+",
+      "Less feature-rich than specialized fuzzers",
+      "No distributed fuzzing support"
+    ]
+  },
+
+  "metadata": {
+    "version": "go1.21+",
+    "last_updated": "2025-12-22",
+    "maintainer": "Go Team",
+    "license": "BSD-3-Clause"
+  }
+}

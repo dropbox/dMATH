@@ -1,0 +1,211 @@
+{
+  "tool": "mocha",
+  "version": "10.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "Timeout|exceeded|async.*callback|done.*not.*called",
+      "message": "Test timed out",
+      "cause": "Async operation not completing or done() not called",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "// Per test\nit('slow test', function() {\n  this.timeout(5000);  // 5 seconds\n  // ...\n});\n\n// Or describe block\ndescribe('slow suite', function() {\n  this.timeout(10000);\n  // ...\n});\n\n// Command line\nmocha --timeout 10000",
+          "when": "Test needs more time"
+        },
+        {
+          "approach": "Use async/await",
+          "code": "// Recommended: async/await (no done needed)\nit('async test', async function() {\n  const result = await asyncOperation();\n  expect(result).to.equal('expected');\n});\n\n// Or return promise\nit('promise test', function() {\n  return asyncOperation().then(result => {\n    expect(result).to.equal('expected');\n  });\n});",
+          "when": "Not using async properly"
+        },
+        {
+          "approach": "Call done() correctly",
+          "code": "// If using done callback, must call it\nit('callback test', function(done) {\n  asyncOperation(function(err, result) {\n    if (err) return done(err);  // Pass error to done\n    expect(result).to.equal('expected');\n    done();  // Signal completion\n  });\n});\n\n// Don't mix done with async/await",
+          "when": "Using callback style"
+        },
+        {
+          "approach": "Disable timeout",
+          "code": "it('no timeout', function() {\n  this.timeout(0);  // Disable timeout\n  // ...\n});",
+          "when": "Debugging"
+        }
+      ]
+    },
+    {
+      "id": "module_error",
+      "pattern": "Cannot find module|Module not found|ERR_MODULE_NOT_FOUND|require.*is not defined",
+      "message": "Module resolution error",
+      "cause": "Module not installed or ESM/CJS mismatch",
+      "solutions": [
+        {
+          "approach": "Install package",
+          "code": "npm install missing-package",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Use ESM",
+          "code": "// package.json\n{\n  \"type\": \"module\"\n}\n\n// Or use .mjs extension\n// Or run with --experimental-modules\n\n// mocha.config.mjs\nexport default {\n  spec: 'test/**/*.test.mjs'\n};",
+          "when": "Using ESM imports"
+        },
+        {
+          "approach": "Use CommonJS",
+          "code": "// Use require() or .cjs extension\nconst chai = require('chai');\nconst { expect } = chai;\n\n// Or keep type:commonjs in package.json",
+          "when": "Prefer CommonJS"
+        },
+        {
+          "approach": "Configure loader",
+          "code": "# For TypeScript\nmocha --require ts-node/register 'test/**/*.ts'\n\n# For ESM TypeScript\nmocha --loader ts-node/esm 'test/**/*.ts'\n\n# .mocharc.json\n{\n  \"require\": [\"ts-node/register\"]\n}",
+          "when": "TypeScript support"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError|expected|to equal|to be|chai",
+      "message": "Assertion failed",
+      "cause": "Test expectation not met",
+      "solutions": [
+        {
+          "approach": "Use Chai assertions",
+          "code": "const { expect, assert } = require('chai');\n\n// BDD style\nexpect(result).to.equal(42);\nexpect(obj).to.deep.equal({ a: 1 });\nexpect(arr).to.have.lengthOf(3);\nexpect(fn).to.throw(Error);\n\n// Assert style\nassert.equal(result, 42);\nassert.deepEqual(obj, { a: 1 });",
+          "when": "Basic assertions"
+        },
+        {
+          "approach": "Use should style",
+          "code": "const chai = require('chai');\nchai.should();\n\n// Now can use .should\nresult.should.equal(42);\nobj.should.deep.equal({ a: 1 });\nobj.should.have.property('name');",
+          "when": "Prefer should syntax"
+        },
+        {
+          "approach": "Add chai plugins",
+          "code": "const chai = require('chai');\nconst chaiAsPromised = require('chai-as-promised');\nchai.use(chaiAsPromised);\n\n// Now can test promises\nawait expect(promise).to.eventually.equal('value');\nawait expect(promise).to.be.rejectedWith(Error);",
+          "when": "Testing promises"
+        }
+      ]
+    },
+    {
+      "id": "hooks_error",
+      "pattern": "before|after|beforeEach|afterEach|hook|cleanup",
+      "message": "Hook error or not running",
+      "cause": "Hook throwing error or not configured correctly",
+      "solutions": [
+        {
+          "approach": "Use hooks correctly",
+          "code": "describe('my suite', function() {\n  before(function() {\n    // Runs once before all tests\n  });\n  \n  beforeEach(function() {\n    // Runs before each test\n  });\n  \n  afterEach(function() {\n    // Runs after each test\n  });\n  \n  after(function() {\n    // Runs once after all tests\n  });\n  \n  it('test', function() { /* ... */ });\n});",
+          "when": "Setting up hooks"
+        },
+        {
+          "approach": "Async hooks",
+          "code": "before(async function() {\n  await setupDatabase();\n});\n\nafterEach(async function() {\n  await cleanupTestData();\n});",
+          "when": "Async setup/teardown"
+        },
+        {
+          "approach": "Root-level hooks",
+          "code": "// hooks.js\nexports.mochaHooks = {\n  beforeAll: async function() {\n    await globalSetup();\n  },\n  afterAll: async function() {\n    await globalTeardown();\n  }\n};\n\n// Run with\nmocha --require ./hooks.js",
+          "when": "Global hooks"
+        },
+        {
+          "approach": "Handle hook errors",
+          "code": "before(async function() {\n  try {\n    await riskySetup();\n  } catch (err) {\n    console.error('Setup failed:', err);\n    throw err;  // Fail the suite\n  }\n});",
+          "when": "Debug hook failures"
+        }
+      ]
+    },
+    {
+      "id": "watch_error",
+      "pattern": "watch|--watch|ENOSPC|inotify|file watcher",
+      "message": "Watch mode error",
+      "cause": "File watcher limit exceeded",
+      "solutions": [
+        {
+          "approach": "Use watch mode",
+          "code": "mocha --watch\n\n# Watch specific files\nmocha --watch 'test/**/*.js'\n\n# With extensions\nmocha --watch --extension js,ts",
+          "when": "Enable watch mode"
+        },
+        {
+          "approach": "Increase inotify limit",
+          "code": "# Linux - increase file watcher limit\necho fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf\nsudo sysctl -p",
+          "when": "ENOSPC on Linux"
+        },
+        {
+          "approach": "Configure watch files",
+          "code": "// .mocharc.json\n{\n  \"watch-files\": [\"src/**/*.js\", \"test/**/*.js\"],\n  \"watch-ignore\": [\"node_modules\", \".git\"]\n}",
+          "when": "Customize watched files"
+        }
+      ]
+    },
+    {
+      "id": "reporter_error",
+      "pattern": "reporter|--reporter|spec|dot|nyan|output format",
+      "message": "Reporter error or output issue",
+      "cause": "Reporter not installed or configured",
+      "solutions": [
+        {
+          "approach": "Choose built-in reporter",
+          "code": "# Available reporters\nmocha --reporter spec     # Default, hierarchical\nmocha --reporter dot      # Minimal dots\nmocha --reporter nyan     # Nyan cat\nmocha --reporter tap      # TAP format\nmocha --reporter json     # JSON output\nmocha --reporter list     # Flat list",
+          "when": "Change output format"
+        },
+        {
+          "approach": "Use custom reporter",
+          "code": "npm install mochawesome\n\nmocha --reporter mochawesome\n\n# Output goes to mochawesome-report/",
+          "when": "Need HTML report"
+        },
+        {
+          "approach": "Multiple reporters",
+          "code": "npm install mocha-multi-reporters\n\nmocha --reporter mocha-multi-reporters --reporter-options configFile=reporter-config.json\n\n// reporter-config.json\n{\n  \"reporterEnabled\": \"spec, mochawesome\"\n}",
+          "when": "Multiple outputs"
+        }
+      ]
+    },
+    {
+      "id": "parallel_error",
+      "pattern": "parallel|--parallel|worker|concurrent|shared state",
+      "message": "Parallel execution issue",
+      "cause": "Tests sharing state or not parallelizable",
+      "solutions": [
+        {
+          "approach": "Enable parallel",
+          "code": "mocha --parallel\n\n# Limit workers\nmocha --parallel --jobs 4",
+          "when": "Run tests in parallel"
+        },
+        {
+          "approach": "Isolate tests",
+          "code": "// Each test file should be independent\n// Don't share global state\n// Use beforeEach to reset state\n\nbeforeEach(function() {\n  // Reset to clean state\n  this.db = createFreshDb();\n});",
+          "when": "Tests interfering"
+        },
+        {
+          "approach": "Mark serial",
+          "code": "// Some suites can't run in parallel\ndescribe.serial('database tests', function() {\n  // These run sequentially\n});\n\n// Or run specific file serially\nmocha --parallel --file ./setup.js test/**/*.js",
+          "when": "Some tests must be serial"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "mocharc|config|configuration|cannot read|invalid option",
+      "message": "Configuration file error",
+      "cause": "Invalid .mocharc config",
+      "solutions": [
+        {
+          "approach": "Use .mocharc.json",
+          "code": "// .mocharc.json\n{\n  \"spec\": \"test/**/*.test.js\",\n  \"timeout\": 5000,\n  \"require\": [\"ts-node/register\"],\n  \"extension\": [\"js\", \"ts\"],\n  \"recursive\": true,\n  \"reporter\": \"spec\"\n}",
+          "when": "JSON config"
+        },
+        {
+          "approach": "Use .mocharc.js",
+          "code": "// .mocharc.js\nmodule.exports = {\n  spec: 'test/**/*.test.js',\n  timeout: 5000,\n  require: ['ts-node/register']\n};",
+          "when": "JS config"
+        },
+        {
+          "approach": "Package.json config",
+          "code": "// package.json\n{\n  \"mocha\": {\n    \"spec\": \"test/**/*.test.js\",\n    \"timeout\": 5000\n  }\n}",
+          "when": "Config in package.json"
+        },
+        {
+          "approach": "Debug config",
+          "code": "# See which config is loaded\nDEBUG=mocha:* mocha",
+          "when": "Config not loading"
+        }
+      ]
+    }
+  ]
+}

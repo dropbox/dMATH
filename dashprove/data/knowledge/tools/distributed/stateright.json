@@ -1,0 +1,124 @@
+{
+  "id": "stateright",
+  "name": "Stateright",
+  "category": "distributed_systems_testing",
+  "subcategory": "model_checking",
+
+  "description": "Model checker for distributed systems in Rust",
+  "long_description": "Stateright is a model checker for verifying distributed systems written in Rust. It explores the state space of your system to find bugs like deadlocks, livelocks, and invariant violations. Unlike TLA+, it tests your actual Rust code rather than a separate spec.",
+
+  "capabilities": [
+    "model_checking",
+    "deadlock_detection",
+    "livelock_detection",
+    "invariant_checking",
+    "liveness_checking",
+    "trace_generation",
+    "explorer_ui"
+  ],
+  "property_types": ["safety", "liveness", "invariant"],
+  "input_languages": ["rust"],
+  "output_formats": ["trace", "json", "html"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add stateright"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/stateright/stateright",
+    "tutorial": "https://www.stateright.rs/",
+    "api_reference": "https://docs.rs/stateright/",
+    "examples": "https://github.com/stateright/stateright/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "model",
+      "description": "Define model for checking",
+      "syntax": "impl Model for MySystem",
+      "when_to_use": "To model your system",
+      "examples": ["use stateright::*;\n\nimpl Model for MySystem {\n    type State = SystemState;\n    type Action = Message;\n    \n    fn init_states(&self) -> Vec<Self::State> { ... }\n    fn actions(&self, state: &Self::State, actions: &mut Vec<Self::Action>) { ... }\n    fn next_state(&self, state: &Self::State, action: Self::Action) -> Option<Self::State> { ... }\n}"]
+    },
+    {
+      "name": "check",
+      "description": "Run model checker",
+      "syntax": "model.checker().spawn_bfs().join()",
+      "when_to_use": "To verify properties",
+      "examples": ["let result = MySystem::new()\n    .checker()\n    .threads(num_cpus::get())\n    .spawn_bfs()\n    .join();\n\nassert!(result.is_done());"]
+    },
+    {
+      "name": "invariant",
+      "description": "Define safety property",
+      "syntax": "fn properties() -> Vec<Property>",
+      "when_to_use": "For safety checking",
+      "examples": ["impl Model for MySystem {\n    fn properties(&self) -> Vec<Property<Self>> {\n        vec![\n            Property::always(\"no deadlock\", |_, state| {\n                state.has_progress()\n            })\n        ]\n    }\n}"]
+    },
+    {
+      "name": "explorer",
+      "description": "Visual state explorer",
+      "syntax": "model.checker().serve(addr)",
+      "when_to_use": "For debugging",
+      "examples": ["MySystem::new()\n    .checker()\n    .serve(\"localhost:3000\")\n    .unwrap();"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Property.*violated",
+      "meaning": "Invariant broken",
+      "common_causes": ["Bug in system logic"],
+      "fixes": ["Review trace to find bug"]
+    },
+    {
+      "pattern": "Deadlock.*detected",
+      "meaning": "System stuck",
+      "common_causes": ["Missing progress"],
+      "fixes": ["Add missing transitions"]
+    },
+    {
+      "pattern": "State space.*exhausted",
+      "meaning": "Too many states",
+      "common_causes": ["Unbounded model"],
+      "fixes": ["Add bounds to model"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["safety", "liveness"],
+    "cli_command": "dashprove verify --backend stateright"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to hours",
+    "scalability": "Good with multi-threading",
+    "memory_usage": "State-dependent"
+  },
+
+  "comparisons": {
+    "similar_tools": ["tlaplus", "spin", "loom"],
+    "advantages": [
+      "Tests actual Rust code",
+      "Web-based explorer",
+      "Parallel checking",
+      "Good documentation",
+      "No separate spec language"
+    ],
+    "disadvantages": [
+      "Rust only",
+      "State explosion possible",
+      "Requires modeling skills"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.30.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Jonathan Nadal",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "fastlane",
+  "version": "2.219.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "codesigning_error",
+      "pattern": "Code signing|provisioning profile|certificate|signing identity",
+      "message": "Code signing failed",
+      "cause": "Provisioning profile or certificate issue",
+      "solutions": [
+        {
+          "approach": "Use match",
+          "code": "lane :certificates do\n  match(type: \"appstore\")\nend",
+          "when": "Manage via match"
+        },
+        {
+          "approach": "Import certificate",
+          "code": "import_certificate(\n  certificate_path: \"certs/dist.p12\",\n  certificate_password: ENV[\"CERT_PASSWORD\"],\n  keychain_name: \"login.keychain\"\n)",
+          "when": "Manual import"
+        },
+        {
+          "approach": "Automatic signing",
+          "code": "build_app(\n  export_method: \"app-store\",\n  xcargs: \"-allowProvisioningUpdates\"\n)",
+          "when": "Xcode auto-sign"
+        }
+      ]
+    },
+    {
+      "id": "gym_build_error",
+      "pattern": "gym|build failed|xcodebuild|archive",
+      "message": "Build/archive failed",
+      "cause": "Xcode build error",
+      "solutions": [
+        {
+          "approach": "Specify scheme",
+          "code": "build_app(\n  workspace: \"App.xcworkspace\",\n  scheme: \"App\",\n  configuration: \"Release\"\n)",
+          "when": "Wrong scheme"
+        },
+        {
+          "approach": "Clean build",
+          "code": "build_app(\n  scheme: \"App\",\n  clean: true\n)",
+          "when": "Stale build artifacts"
+        },
+        {
+          "approach": "Check derived data",
+          "code": "clear_derived_data",
+          "when": "Corrupted derived data"
+        }
+      ]
+    },
+    {
+      "id": "deliver_error",
+      "pattern": "deliver|App Store Connect|upload failed|ITMS",
+      "message": "App Store upload failed",
+      "cause": "App Store Connect API or validation error",
+      "solutions": [
+        {
+          "approach": "API key auth",
+          "code": "deliver(\n  api_key_path: \"fastlane/api_key.json\",\n  submit_for_review: true\n)",
+          "when": "Authentication issue"
+        },
+        {
+          "approach": "Skip metadata",
+          "code": "deliver(\n  skip_metadata: true,\n  skip_screenshots: true,\n  ipa: \"App.ipa\"\n)",
+          "when": "Upload only"
+        },
+        {
+          "approach": "Fix validation",
+          "code": "# Check Deliverfile and metadata/*.txt files\n# Ensure no invalid characters or missing required fields",
+          "when": "Metadata validation"
+        }
+      ]
+    },
+    {
+      "id": "match_error",
+      "pattern": "match|git repo|Could not decrypt|passphrase",
+      "message": "match certificate sync failed",
+      "cause": "Git repo access or encryption issue",
+      "solutions": [
+        {
+          "approach": "Set passphrase",
+          "code": "match(\n  type: \"appstore\",\n  git_url: \"git@github.com:org/certs.git\",\n  keychain_password: ENV[\"MATCH_PASSWORD\"]\n)",
+          "when": "Wrong passphrase"
+        },
+        {
+          "approach": "Force regenerate",
+          "code": "match_nuke(type: \"appstore\")\nmatch(type: \"appstore\", force: true)",
+          "when": "Corrupted certs"
+        },
+        {
+          "approach": "Read-only mode",
+          "code": "match(\n  type: \"appstore\",\n  readonly: true\n)",
+          "when": "CI environment"
+        }
+      ]
+    },
+    {
+      "id": "pilot_error",
+      "pattern": "pilot|TestFlight|beta|external testers",
+      "message": "TestFlight distribution failed",
+      "cause": "TestFlight upload or distribution error",
+      "solutions": [
+        {
+          "approach": "Upload to TestFlight",
+          "code": "pilot(\n  api_key_path: \"api_key.json\",\n  skip_waiting_for_build_processing: true\n)",
+          "when": "Basic upload"
+        },
+        {
+          "approach": "Distribute to group",
+          "code": "pilot(\n  distribute_external: true,\n  groups: [\"External Testers\"],\n  changelog: \"Bug fixes and improvements\"\n)",
+          "when": "External testers"
+        },
+        {
+          "approach": "Skip submission",
+          "code": "pilot(\n  skip_submission: true\n)",
+          "when": "Upload without distribute"
+        }
+      ]
+    },
+    {
+      "id": "supply_error",
+      "pattern": "supply|Google Play|upload|bundle",
+      "message": "Google Play upload failed",
+      "cause": "Play Console API or bundle error",
+      "solutions": [
+        {
+          "approach": "Set up credentials",
+          "code": "supply(\n  json_key: \"play_store_key.json\",\n  track: \"internal\",\n  aab: \"app-release.aab\"\n)",
+          "when": "Upload AAB"
+        },
+        {
+          "approach": "Set track",
+          "code": "supply(\n  track: \"production\",\n  rollout: \"0.1\"\n)",
+          "when": "Staged rollout"
+        },
+        {
+          "approach": "Skip images",
+          "code": "supply(\n  skip_upload_images: true,\n  skip_upload_screenshots: true\n)",
+          "when": "Binary only"
+        }
+      ]
+    },
+    {
+      "id": "lane_not_found",
+      "pattern": "Could not find lane|Lane .* is not available",
+      "message": "Lane not found",
+      "cause": "Lane not defined or wrong platform",
+      "solutions": [
+        {
+          "approach": "Check platform",
+          "code": "# Fastfile\nplatform :ios do\n  lane :beta do\n    # iOS lane\n  end\nend\n\nplatform :android do\n  lane :beta do\n    # Android lane\n  end\nend",
+          "when": "Platform-specific"
+        },
+        {
+          "approach": "Run with platform",
+          "code": "fastlane ios beta\nfastlane android beta",
+          "when": "Specify platform"
+        },
+        {
+          "approach": "Private lane",
+          "code": "private_lane :setup do\n  # Internal lane\nend",
+          "when": "Helper lane"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin|Could not find|gem|bundle",
+      "message": "Plugin not found",
+      "cause": "Fastlane plugin not installed",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "fastlane add_plugin firebase_app_distribution",
+          "when": "Add plugin"
+        },
+        {
+          "approach": "Bundle install",
+          "code": "bundle install\nbundle exec fastlane",
+          "when": "Use bundler"
+        },
+        {
+          "approach": "Update plugins",
+          "code": "fastlane update_plugins",
+          "when": "Outdated plugins"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "fsdp",
+  "version": "PyTorch 2.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "wrap_error",
+      "pattern": "FSDP wrapping.*error|auto_wrap.*failed",
+      "message": "FSDP module wrapping failed",
+      "cause": "Invalid wrap policy or module structure",
+      "solutions": [
+        {
+          "approach": "Use size-based policy",
+          "code": "from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy\nmy_policy = functools.partial(\n    size_based_auto_wrap_policy, min_num_params=1e6\n)",
+          "when": "Automatic wrapping not working"
+        },
+        {
+          "approach": "Use transformer policy",
+          "code": "from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy\npolicy = functools.partial(\n    transformer_auto_wrap_policy,\n    transformer_layer_cls={TransformerEncoderLayer}\n)",
+          "when": "Wrapping transformer model"
+        },
+        {
+          "approach": "Manual wrapping",
+          "code": "model.layer = FSDP(model.layer, sharding_strategy=...)",
+          "when": "Need fine-grained control"
+        }
+      ]
+    },
+    {
+      "id": "sharding_strategy_error",
+      "pattern": "ShardingStrategy.*incompatible",
+      "message": "Sharding strategy incompatible with model",
+      "cause": "FULL_SHARD doesn't work with certain model patterns",
+      "solutions": [
+        {
+          "approach": "Use SHARD_GRAD_OP",
+          "code": "FSDP(model, sharding_strategy=ShardingStrategy.SHARD_GRAD_OP)",
+          "when": "FULL_SHARD causing issues"
+        },
+        {
+          "approach": "Use NO_SHARD for debugging",
+          "code": "FSDP(model, sharding_strategy=ShardingStrategy.NO_SHARD)",
+          "when": "Debugging to isolate FSDP issues"
+        },
+        {
+          "approach": "Use HYBRID_SHARD",
+          "code": "FSDP(model, sharding_strategy=ShardingStrategy.HYBRID_SHARD)",
+          "when": "Multi-node with limited bandwidth"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_error",
+      "pattern": "FSDP checkpoint.*error|state_dict.*mismatch",
+      "message": "Checkpoint save/load failed",
+      "cause": "Wrong state dict type or rank configuration mismatch",
+      "solutions": [
+        {
+          "approach": "Use FULL_STATE_DICT",
+          "code": "from torch.distributed.fsdp import FullStateDictConfig, StateDictType\nwith FSDP.state_dict_type(\n    model,\n    StateDictType.FULL_STATE_DICT,\n    FullStateDictConfig(offload_to_cpu=True, rank0_only=True)\n):\n    state = model.state_dict()",
+          "when": "Need full checkpoint on rank 0"
+        },
+        {
+          "approach": "Use SHARDED_STATE_DICT",
+          "code": "from torch.distributed.checkpoint import FileSystemWriter\nFileSystemWriter(checkpoint_dir).save(state_dict)",
+          "when": "Checkpoints too large"
+        },
+        {
+          "approach": "Match world size",
+          "code": "# Load with same number of ranks as save",
+          "when": "Resuming with different world size"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "CUDA out of memory.*FSDP",
+      "message": "OOM during FSDP training",
+      "cause": "Activations too large or CPU offload not working",
+      "solutions": [
+        {
+          "approach": "Enable CPU offload",
+          "code": "from torch.distributed.fsdp import CPUOffload\nFSDP(model, cpu_offload=CPUOffload(offload_params=True))",
+          "when": "Parameters don't fit in GPU"
+        },
+        {
+          "approach": "Use activation checkpointing",
+          "code": "from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (\n    apply_activation_checkpointing\n)\napply_activation_checkpointing(model, check_fn=lambda m: isinstance(m, Block))",
+          "when": "Activations consuming memory"
+        },
+        {
+          "approach": "Reduce batch size",
+          "code": "# Use gradient accumulation instead of large batch",
+          "when": "Per-GPU batch too large"
+        }
+      ]
+    },
+    {
+      "id": "gradient_mismatch",
+      "pattern": "Gradient.*mismatch|grad.*not computed",
+      "message": "Gradient computation error",
+      "cause": "Parameter not in backward graph or requires_grad issue",
+      "solutions": [
+        {
+          "approach": "Check requires_grad",
+          "code": "for name, param in model.named_parameters():\n    print(f'{name}: requires_grad={param.requires_grad}')",
+          "when": "Parameters frozen unexpectedly"
+        },
+        {
+          "approach": "Use forward_prefetch",
+          "code": "FSDP(model, forward_prefetch=True)",
+          "when": "Gradient sync issues"
+        },
+        {
+          "approach": "Sync grads explicitly",
+          "code": "model.clip_grad_norm_(1.0)  # After loss.backward()",
+          "when": "Gradient clipping with FSDP"
+        }
+      ]
+    },
+    {
+      "id": "mixed_precision_error",
+      "pattern": "Mixed precision.*error|dtype.*mismatch",
+      "message": "Mixed precision configuration error",
+      "cause": "Incompatible dtypes or policy misconfiguration",
+      "solutions": [
+        {
+          "approach": "Use MixedPrecision policy",
+          "code": "from torch.distributed.fsdp import MixedPrecision\nmp_policy = MixedPrecision(\n    param_dtype=torch.bfloat16,\n    reduce_dtype=torch.bfloat16,\n    buffer_dtype=torch.bfloat16\n)",
+          "when": "Need consistent mixed precision"
+        },
+        {
+          "approach": "Keep some modules in FP32",
+          "code": "# Use different wrap policy for sensitive layers",
+          "when": "Numerically sensitive layers"
+        },
+        {
+          "approach": "Cast inputs",
+          "code": "inputs = inputs.to(torch.bfloat16)",
+          "when": "Input dtype mismatch"
+        }
+      ]
+    },
+    {
+      "id": "init_error",
+      "pattern": "FSDP.*initialization.*error|ProcessGroup.*not initialized",
+      "message": "FSDP initialization failed",
+      "cause": "Process group not initialized or rank mismatch",
+      "solutions": [
+        {
+          "approach": "Initialize process group first",
+          "code": "torch.distributed.init_process_group('nccl')",
+          "when": "Process group not initialized"
+        },
+        {
+          "approach": "Set device before FSDP",
+          "code": "torch.cuda.set_device(local_rank)\nmodel = model.to(local_rank)\nmodel = FSDP(model)",
+          "when": "Device not set"
+        },
+        {
+          "approach": "Use device_id parameter",
+          "code": "FSDP(model, device_id=torch.cuda.current_device())",
+          "when": "Need explicit device"
+        }
+      ]
+    },
+    {
+      "id": "backward_prefetch_error",
+      "pattern": "backward_prefetch.*error",
+      "message": "Backward prefetch configuration error",
+      "cause": "Prefetch not compatible with model structure",
+      "solutions": [
+        {
+          "approach": "Disable backward prefetch",
+          "code": "FSDP(model, backward_prefetch=None)",
+          "when": "Prefetch causing issues"
+        },
+        {
+          "approach": "Use PRE setting",
+          "code": "from torch.distributed.fsdp import BackwardPrefetch\nFSDP(model, backward_prefetch=BackwardPrefetch.BACKWARD_PRE)",
+          "when": "Default prefetch not working"
+        },
+        {
+          "approach": "Adjust limit_all_gathers",
+          "code": "FSDP(model, limit_all_gathers=True)",
+          "when": "Memory pressure from prefetch"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "tool": "sort",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "wrong_sort_order",
+      "pattern": "unexpected order|numeric.*string|lexicographic",
+      "message": "Sort order not as expected",
+      "cause": "Using wrong sort type (string vs numeric)",
+      "solutions": [
+        {
+          "approach": "Numeric sort",
+          "code": "sort -n file.txt  # Numeric order\nsort -h file.txt  # Human readable (1K, 2M)",
+          "when": "Numbers sorting wrong"
+        },
+        {
+          "approach": "Reverse",
+          "code": "sort -r file.txt  # Reverse order\nsort -nr file.txt  # Numeric reverse",
+          "when": "Descending order"
+        },
+        {
+          "approach": "Version sort",
+          "code": "sort -V file.txt  # Version numbers (1.2, 1.10)",
+          "when": "Version strings"
+        }
+      ]
+    },
+    {
+      "id": "locale_issues",
+      "pattern": "locale|LC_COLLATE|unexpected.*order|different.*results",
+      "message": "Locale affecting sort order",
+      "cause": "Locale settings changing collation",
+      "solutions": [
+        {
+          "approach": "Force C locale",
+          "code": "LC_ALL=C sort file.txt",
+          "when": "Consistent byte order"
+        },
+        {
+          "approach": "Set locale",
+          "code": "LC_COLLATE=en_US.UTF-8 sort file.txt",
+          "when": "Specific locale"
+        },
+        {
+          "approach": "Check locale",
+          "code": "locale\nexport LC_ALL=C",
+          "when": "Debug locale"
+        }
+      ]
+    },
+    {
+      "id": "field_delimiter",
+      "pattern": "field|column|delimiter|cut.*sort",
+      "message": "Sorting by wrong field",
+      "cause": "Field delimiter or column number wrong",
+      "solutions": [
+        {
+          "approach": "Specify delimiter",
+          "code": "sort -t',' -k2 file.csv  # CSV by column 2\nsort -t':' -k3 /etc/passwd  # Colon delimiter",
+          "when": "Non-space delimiter"
+        },
+        {
+          "approach": "Multiple fields",
+          "code": "sort -k2,2 -k1,1 file.txt  # Primary key 2, secondary 1",
+          "when": "Multi-key sort"
+        },
+        {
+          "approach": "Numeric field",
+          "code": "sort -t',' -k3,3n file.csv  # Numeric sort on field 3",
+          "when": "Numeric column"
+        }
+      ]
+    },
+    {
+      "id": "memory_exhausted",
+      "pattern": "memory exhausted|cannot allocate|out of memory",
+      "message": "Out of memory",
+      "cause": "File too large for available memory",
+      "solutions": [
+        {
+          "approach": "Use temp dir",
+          "code": "sort -T /mnt/large_disk file.txt",
+          "when": "More disk space"
+        },
+        {
+          "approach": "Limit buffer",
+          "code": "sort -S 50% file.txt  # Use 50% of memory\nsort -S 2G file.txt  # Use max 2GB",
+          "when": "Control memory"
+        },
+        {
+          "approach": "External sort",
+          "code": "sort --parallel=4 -S 1G file.txt",
+          "when": "Large file"
+        }
+      ]
+    },
+    {
+      "id": "not_stable",
+      "pattern": "original order|stable|preserve.*order",
+      "message": "Equal elements reordered",
+      "cause": "Sort is not stable by default",
+      "solutions": [
+        {
+          "approach": "Stable sort",
+          "code": "sort -s -k2 file.txt  # Stable sort",
+          "when": "Preserve order"
+        },
+        {
+          "approach": "Unique stable",
+          "code": "sort -s -u file.txt  # Unique and stable",
+          "when": "Dedupe stable"
+        }
+      ]
+    },
+    {
+      "id": "unique_not_working",
+      "pattern": "unique|duplicate|uniq.*not working",
+      "message": "Duplicates not removed",
+      "cause": "Lines not adjacent or field-specific unique",
+      "solutions": [
+        {
+          "approach": "Sort then unique",
+          "code": "sort file.txt | uniq\nsort -u file.txt  # Built-in unique",
+          "when": "Remove all dupes"
+        },
+        {
+          "approach": "Unique by field",
+          "code": "sort -t',' -k1,1 -u file.csv  # Unique by first field",
+          "when": "Field-based unique"
+        },
+        {
+          "approach": "Count duplicates",
+          "code": "sort file.txt | uniq -c | sort -rn",
+          "when": "Count occurrences"
+        }
+      ]
+    }
+  ]
+}

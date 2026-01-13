@@ -1,0 +1,186 @@
+{
+  "tool": "manticore",
+  "version": "0.3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Analysis timed out",
+      "cause": "Symbolic execution took too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "m.run(timeout=3600)  # 1 hour",
+          "when": "May succeed with more time"
+        },
+        {
+          "approach": "Limit exploration",
+          "code": "m.run(should_stop=lambda s: s.num_states > 1000)",
+          "when": "Bound state count"
+        },
+        {
+          "approach": "Hook complex functions",
+          "code": "@m.hook(address)\ndef hook(state):\n    state.cpu.EAX = 0",
+          "when": "Skip complex code"
+        }
+      ]
+    },
+    {
+      "id": "path_explosion",
+      "pattern": "state explosion",
+      "message": "Too many symbolic states",
+      "cause": "Exponential path explosion",
+      "solutions": [
+        {
+          "approach": "Concretize values",
+          "code": "state.constrain(sym_var == concrete_val)",
+          "when": "Can fix some inputs"
+        },
+        {
+          "approach": "Use state merging",
+          "code": "m.merge_states()",
+          "when": "Similar states can merge"
+        },
+        {
+          "approach": "Limit loop iterations",
+          "code": "# Set loop bound",
+          "when": "Loops cause explosion"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_instruction",
+      "pattern": "unsupported",
+      "message": "Unsupported instruction",
+      "cause": "CPU instruction not implemented",
+      "solutions": [
+        {
+          "approach": "Hook instruction",
+          "code": "@m.hook(address, after=True)\ndef skip_insn(state):\n    state.cpu.PC += insn_len",
+          "when": "Can skip instruction"
+        },
+        {
+          "approach": "Use concrete execution",
+          "code": "# Fall back to concrete mode",
+          "when": "Instruction has concrete inputs"
+        },
+        {
+          "approach": "Report issue",
+          "code": "# File issue on GitHub",
+          "when": "Need instruction support"
+        }
+      ]
+    },
+    {
+      "id": "solver_error",
+      "pattern": "solver",
+      "message": "Constraint solver error",
+      "cause": "Z3 cannot solve constraints",
+      "solutions": [
+        {
+          "approach": "Simplify constraints",
+          "code": "state.constraints.simplify()",
+          "when": "Constraints too complex"
+        },
+        {
+          "approach": "Check satisfiability",
+          "code": "if not state.can_be_true(constraint):\n    state.abandon()",
+          "when": "Infeasible path"
+        },
+        {
+          "approach": "Increase solver timeout",
+          "code": "m.context['solver_timeout'] = 60000",
+          "when": "Solver needs more time"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Symbolic memory error",
+      "cause": "Symbolic pointer issues",
+      "solutions": [
+        {
+          "approach": "Concretize address",
+          "code": "addr = state.solve_one(sym_addr)",
+          "when": "Can pick concrete address"
+        },
+        {
+          "approach": "Add constraints",
+          "code": "state.constrain(addr >= base)\nstate.constrain(addr < base + size)",
+          "when": "Know valid range"
+        },
+        {
+          "approach": "Use memory model",
+          "code": "# Configure memory model",
+          "when": "Need different model"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin",
+      "message": "Plugin error",
+      "cause": "Manticore plugin failed",
+      "solutions": [
+        {
+          "approach": "Check plugin API",
+          "code": "class MyPlugin(Plugin):\n    def will_execute_instruction(self, state, pc, insn):\n        pass",
+          "when": "Wrong callback signature"
+        },
+        {
+          "approach": "Handle exceptions",
+          "code": "try:\n    ...\nexcept Exception as e:\n    logger.error(e)",
+          "when": "Plugin raising exception"
+        }
+      ]
+    },
+    {
+      "id": "smart_contract_error",
+      "pattern": "EVM",
+      "message": "Smart contract analysis error",
+      "cause": "Ethereum bytecode analysis issue",
+      "solutions": [
+        {
+          "approach": "Set constructor args",
+          "code": "m = ManticoreEVM()\nm.create_contract(bytecode, args=[arg1, arg2])",
+          "when": "Contract needs constructor args"
+        },
+        {
+          "approach": "Increase gas limit",
+          "code": "m.create_contract(bytecode, gas=10000000)",
+          "when": "Out of gas"
+        },
+        {
+          "approach": "Check ABI",
+          "code": "# Verify function selectors",
+          "when": "Wrong function call"
+        }
+      ]
+    },
+    {
+      "id": "load_error",
+      "pattern": "load",
+      "message": "Binary loading failed",
+      "cause": "Cannot load executable",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "# Manticore supports ELF, PE, Mach-O",
+          "when": "Unknown format"
+        },
+        {
+          "approach": "Specify architecture",
+          "code": "m = Manticore.linux('binary', arch='x86_64')",
+          "when": "Architecture detection failed"
+        },
+        {
+          "approach": "Provide libraries",
+          "code": "m = Manticore.linux('binary', env={'LD_LIBRARY_PATH': '/lib'})",
+          "when": "Missing shared libraries"
+        }
+      ]
+    }
+  ]
+}

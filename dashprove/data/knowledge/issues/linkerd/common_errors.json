@@ -1,0 +1,163 @@
+{
+  "tool": "linkerd",
+  "version": "2.14.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "injection_failed",
+      "pattern": "linkerd-proxy not found|injection failed|not meshed",
+      "message": "Proxy injection failed",
+      "cause": "Namespace not annotated or injection not enabled",
+      "solutions": [
+        {
+          "approach": "Annotate namespace",
+          "code": "kubectl annotate namespace default linkerd.io/inject=enabled",
+          "when": "Namespace missing injection annotation"
+        },
+        {
+          "approach": "Check injection status",
+          "code": "linkerd check --proxy",
+          "when": "Need to verify proxy injection working"
+        },
+        {
+          "approach": "Manual injection",
+          "code": "cat deployment.yaml | linkerd inject - | kubectl apply -f -",
+          "when": "Auto-injection not working"
+        }
+      ]
+    },
+    {
+      "id": "control_plane_not_ready",
+      "pattern": "control plane not ready|can't reach|linkerd-destination",
+      "message": "Linkerd control plane not ready",
+      "cause": "Control plane pods not running or not healthy",
+      "solutions": [
+        {
+          "approach": "Run full check",
+          "code": "linkerd check",
+          "when": "Need comprehensive health check"
+        },
+        {
+          "approach": "Check control plane pods",
+          "code": "kubectl get pods -n linkerd",
+          "when": "Control plane may be unhealthy"
+        },
+        {
+          "approach": "View logs",
+          "code": "kubectl logs -n linkerd deployment/linkerd-destination",
+          "when": "Need to diagnose control plane issue"
+        }
+      ]
+    },
+    {
+      "id": "service_not_found",
+      "pattern": "service not found|no endpoints|no authority",
+      "message": "Destination service not found",
+      "cause": "Service doesn't exist, no endpoints, or service profile missing",
+      "solutions": [
+        {
+          "approach": "Check service exists",
+          "code": "kubectl get svc myservice\nkubectl get endpoints myservice",
+          "when": "Service may not exist"
+        },
+        {
+          "approach": "View proxy config",
+          "code": "linkerd diagnostics endpoints myservice.default.svc.cluster.local:80",
+          "when": "Need to see what proxy knows"
+        },
+        {
+          "approach": "Create ServiceProfile",
+          "code": "linkerd profile --open-api swagger.yaml myservice | kubectl apply -f -",
+          "when": "Want detailed routing rules"
+        }
+      ]
+    },
+    {
+      "id": "certificate_error",
+      "pattern": "certificate|TLS|identity|trust anchor",
+      "message": "mTLS identity certificate error",
+      "cause": "Certificate expired or trust anchor issue",
+      "solutions": [
+        {
+          "approach": "Check certificate expiry",
+          "code": "linkerd check --proxy",
+          "when": "Certificate may be expiring"
+        },
+        {
+          "approach": "Rotate trust anchor",
+          "code": "linkerd upgrade --identity-trust-anchors-file new-ca.crt | kubectl apply -f -",
+          "when": "Trust anchor needs rotation"
+        },
+        {
+          "approach": "Check identity service",
+          "code": "kubectl logs -n linkerd deployment/linkerd-identity",
+          "when": "Identity service may have errors"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|deadline exceeded|response timeout",
+      "message": "Request timeout",
+      "cause": "Slow backend, network issue, or timeout too short",
+      "solutions": [
+        {
+          "approach": "Check latency",
+          "code": "linkerd stat deployments\nlinkerd top deployment/myapp",
+          "when": "Need to see actual latencies"
+        },
+        {
+          "approach": "Set timeout in ServiceProfile",
+          "code": "apiVersion: linkerd.io/v1alpha2\nkind: ServiceProfile\nspec:\n  routes:\n  - name: GET /api\n    timeout: 30s",
+          "when": "Need custom timeout per route"
+        },
+        {
+          "approach": "Add retries",
+          "code": "spec:\n  routes:\n  - name: GET /api\n    isRetryable: true",
+          "when": "Transient failures should be retried"
+        }
+      ]
+    },
+    {
+      "id": "high_error_rate",
+      "pattern": "SR:.*%|success rate|5xx",
+      "message": "High error rate detected",
+      "cause": "Backend failing, misconfiguration, or overload",
+      "solutions": [
+        {
+          "approach": "Check success rate",
+          "code": "linkerd stat deployments -n default",
+          "when": "Need to see error rates"
+        },
+        {
+          "approach": "View live traffic",
+          "code": "linkerd tap deployment/myapp",
+          "when": "Need to see individual requests"
+        },
+        {
+          "approach": "Check backend logs",
+          "code": "kubectl logs deployment/myapp -c myapp",
+          "when": "Backend may be returning errors"
+        }
+      ]
+    },
+    {
+      "id": "prometheus_missing",
+      "pattern": "prometheus|metrics|viz not installed",
+      "message": "Linkerd Viz extension not installed",
+      "cause": "Viz extension required for dashboard and metrics",
+      "solutions": [
+        {
+          "approach": "Install Viz extension",
+          "code": "linkerd viz install | kubectl apply -f -",
+          "when": "Want metrics and dashboard"
+        },
+        {
+          "approach": "Check Viz status",
+          "code": "linkerd viz check",
+          "when": "Viz may be partially installed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+{
+  "tool": "bun",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_found",
+      "pattern": "ModuleNotFound|Cannot find module|error: Could not resolve|Module not found",
+      "message": "Bun cannot resolve a module",
+      "cause": "Module not installed or path incorrect",
+      "solutions": [
+        {
+          "approach": "Install package",
+          "code": "bun add missing-package\n\n# Dev dependency\nbun add -d @types/node",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Check path",
+          "code": "// Use correct relative path\nimport { foo } from \"./utils\";  // Not \"utils\"\n\n// Check extension\nimport { bar } from \"./lib.ts\";  // Bun resolves .ts",
+          "when": "Local file import"
+        },
+        {
+          "approach": "Configure paths",
+          "code": "// tsconfig.json\n{\n  \"compilerOptions\": {\n    \"baseUrl\": \".\",\n    \"paths\": {\n      \"@/*\": [\"src/*\"]\n    }\n  }\n}",
+          "when": "Path alias not working"
+        },
+        {
+          "approach": "Check bunfig.toml",
+          "code": "# bunfig.toml\n[install]\nregistry = \"https://registry.npmjs.org\"\n\n# If using private registry\n[install.scopes]\n\"@mycompany\" = \"https://npm.mycompany.com\"",
+          "when": "Private registry"
+        }
+      ]
+    },
+    {
+      "id": "native_module_error",
+      "pattern": "native module|.node|N-API|dlopen|node-gyp|prebuild",
+      "message": "Native Node module compatibility issue",
+      "cause": "Native addon not compatible or needs rebuild",
+      "solutions": [
+        {
+          "approach": "Rebuild native modules",
+          "code": "# Bun has its own native module handling\n# Try reinstalling\nrm -rf node_modules bun.lockb\nbun install",
+          "when": "Stale native modules"
+        },
+        {
+          "approach": "Use Bun alternative",
+          "code": "// Bun has built-in alternatives for common native modules\n// bcrypt -> Bun.password\nconst hash = await Bun.password.hash(password);\nconst valid = await Bun.password.verify(password, hash);\n\n// sqlite -> bun:sqlite\nimport { Database } from \"bun:sqlite\";",
+          "when": "Bun provides built-in"
+        },
+        {
+          "approach": "Check compatibility",
+          "code": "# Some native modules may not work\n# Check Bun compatibility list\n# https://bun.sh/docs/runtime/nodejs-apis",
+          "when": "Module fundamentally incompatible"
+        }
+      ]
+    },
+    {
+      "id": "typescript_error",
+      "pattern": "Type error|TypeScript|TS\\d+|type.*not assignable",
+      "message": "TypeScript compilation error",
+      "cause": "Type error in code",
+      "solutions": [
+        {
+          "approach": "Fix type error",
+          "code": "// Bun runs TypeScript directly but type-checks\n// Fix the actual type issue",
+          "when": "Code has type errors"
+        },
+        {
+          "approach": "Skip type checking",
+          "code": "# Run without type checking\nbun run --no-verify script.ts\n\n// Or use @ts-ignore\n// @ts-ignore\nproblematicCode();",
+          "when": "Third-party type issue"
+        },
+        {
+          "approach": "Configure tsconfig",
+          "code": "// tsconfig.json\n{\n  \"compilerOptions\": {\n    \"target\": \"ESNext\",\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",  // Bun uses bundler resolution\n    \"types\": [\"bun-types\"]\n  }\n}\n\n// Install types\nbun add -d bun-types",
+          "when": "Configure TypeScript"
+        }
+      ]
+    },
+    {
+      "id": "test_error",
+      "pattern": "bun test|Test failed|expect\\(|toEqual|toBe",
+      "message": "Bun test failure",
+      "cause": "Test assertion failed or configuration issue",
+      "solutions": [
+        {
+          "approach": "Run specific test",
+          "code": "# Run specific file\nbun test my.test.ts\n\n# Filter by name\nbun test --test-name-pattern \"should work\"\n\n# Watch mode\nbun test --watch",
+          "when": "Need to isolate test"
+        },
+        {
+          "approach": "Fix assertion",
+          "code": "import { expect, test, describe } from \"bun:test\";\n\ndescribe(\"my suite\", () => {\n  test(\"should work\", () => {\n    expect(1 + 1).toBe(2);\n    expect({ a: 1 }).toEqual({ a: 1 });\n    expect(() => { throw new Error(); }).toThrow();\n  });\n});",
+          "when": "Assertion failed"
+        },
+        {
+          "approach": "Async tests",
+          "code": "import { test, expect } from \"bun:test\";\n\ntest(\"async test\", async () => {\n  const result = await fetchData();\n  expect(result).toBeDefined();\n});\n\n// With timeout\ntest(\"slow test\", async () => {\n  // ...\n}, 10000);  // 10 second timeout",
+          "when": "Async test issues"
+        },
+        {
+          "approach": "Mock modules",
+          "code": "import { mock, spyOn } from \"bun:test\";\n\n// Mock function\nconst fn = mock(() => 42);\nfn();\nexpect(fn).toHaveBeenCalled();\n\n// Spy on method\nconst spy = spyOn(console, \"log\");\nconsole.log(\"test\");\nexpect(spy).toHaveBeenCalledWith(\"test\");",
+          "when": "Need mocking"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "bun build|bundling|Could not resolve|Build failed",
+      "message": "Bun bundler error",
+      "cause": "Build configuration issue or unresolved import",
+      "solutions": [
+        {
+          "approach": "Basic build",
+          "code": "# Build entrypoint\nbun build ./src/index.ts --outdir ./dist\n\n# Minified\nbun build ./src/index.ts --outdir ./dist --minify",
+          "when": "Need to bundle"
+        },
+        {
+          "approach": "Configure externals",
+          "code": "# Don't bundle certain deps\nbun build ./src/index.ts --outdir ./dist --external react --external react-dom\n\n# Or via API\nawait Bun.build({\n  entrypoints: ['./src/index.ts'],\n  outdir: './dist',\n  external: ['react', 'react-dom']\n});",
+          "when": "External dependencies"
+        },
+        {
+          "approach": "Target browser/node",
+          "code": "bun build ./src/index.ts --target browser --outdir ./dist\nbun build ./src/index.ts --target node --outdir ./dist\n\n# Or API\nawait Bun.build({\n  entrypoints: ['./src/index.ts'],\n  target: 'browser'  // or 'node' or 'bun'\n});",
+          "when": "Wrong target"
+        },
+        {
+          "approach": "Handle CSS/assets",
+          "code": "// Bun can bundle CSS\nawait Bun.build({\n  entrypoints: ['./src/index.ts', './src/styles.css'],\n  outdir: './dist'\n});\n\n// Import CSS in JS\nimport \"./styles.css\";  // Will be extracted",
+          "when": "CSS bundling"
+        }
+      ]
+    },
+    {
+      "id": "hot_reload",
+      "pattern": "hot reload|--hot|HMR|watch mode|changes not.*detected",
+      "message": "Hot reload not working",
+      "cause": "Watch mode not enabled or file not in watch scope",
+      "solutions": [
+        {
+          "approach": "Enable hot reload",
+          "code": "# Use --hot flag\nbun --hot run server.ts\n\n# Or --watch for restart\nbun --watch run server.ts",
+          "when": "Hot reload not enabled"
+        },
+        {
+          "approach": "Check file location",
+          "code": "# Files must be in project directory\n# node_modules changes are not watched by default",
+          "when": "File changes not detected"
+        },
+        {
+          "approach": "HTTP server hot reload",
+          "code": "// Using Bun.serve with hot reload\nexport default {\n  port: 3000,\n  fetch(req) {\n    return new Response(\"Hello!\");\n  }\n};\n\n// Run with: bun --hot server.ts",
+          "when": "Bun.serve hot reload"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "out of memory|heap|allocation failed|JavaScript heap|OOM",
+      "message": "Bun out of memory",
+      "cause": "Memory limit exceeded",
+      "solutions": [
+        {
+          "approach": "Increase memory",
+          "code": "# Set memory limit (in bytes or with suffix)\nbun --smol run script.ts  # Uses less memory\n\n# Or via env\nBUN_JSC_jitMemoryReservationSize=536870912 bun run script.ts",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Use streaming",
+          "code": "// Stream large files instead of loading\nconst file = Bun.file(\"large.json\");\nconst stream = file.stream();\n\n// Or line by line\nfor await (const line of Bun.stdin.stream()) {\n  // Process line\n}",
+          "when": "Processing large files"
+        },
+        {
+          "approach": "Check for leaks",
+          "code": "// Avoid accumulating data\n// Bad: const all = [];\n//      for (item of items) all.push(await process(item));\n\n// Better: Process and release\nfor (const item of items) {\n  await process(item);\n  // item can be GC'd\n}",
+          "when": "Memory leak"
+        }
+      ]
+    },
+    {
+      "id": "server_error",
+      "pattern": "Bun.serve|EADDRINUSE|port.*in use|fetch handler",
+      "message": "Bun HTTP server error",
+      "cause": "Port in use or server configuration issue",
+      "solutions": [
+        {
+          "approach": "Change port",
+          "code": "Bun.serve({\n  port: process.env.PORT || 3001,  // Use different port\n  fetch(req) {\n    return new Response(\"OK\");\n  }\n});",
+          "when": "Port in use"
+        },
+        {
+          "approach": "Kill existing process",
+          "code": "# Find and kill process\nlsof -i :3000\nkill -9 <PID>",
+          "when": "Need to free port"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "Bun.serve({\n  port: 3000,\n  fetch(req) {\n    try {\n      return handleRequest(req);\n    } catch (e) {\n      return new Response(\"Error\", { status: 500 });\n    }\n  },\n  error(error) {\n    console.error(error);\n    return new Response(\"Server Error\", { status: 500 });\n  }\n});",
+          "when": "Unhandled errors"
+        },
+        {
+          "approach": "WebSocket support",
+          "code": "Bun.serve({\n  fetch(req, server) {\n    if (server.upgrade(req)) return;  // WebSocket upgrade\n    return new Response(\"HTTP\");\n  },\n  websocket: {\n    message(ws, message) { ws.send(message); },\n    open(ws) { console.log(\"connected\"); },\n    close(ws) { console.log(\"disconnected\"); }\n  }\n});",
+          "when": "Need WebSocket"
+        }
+      ]
+    }
+  ]
+}

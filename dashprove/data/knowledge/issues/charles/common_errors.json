@@ -1,0 +1,145 @@
+{
+  "tool": "charles",
+  "version": "4.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "ssl_certificate_not_trusted",
+      "pattern": "certificate.*not trusted|SSL.*error|HTTPS.*not working|unable to get local issuer",
+      "message": "Charles SSL certificate not trusted",
+      "cause": "Charles root CA not installed on client/device",
+      "solutions": [
+        {
+          "approach": "macOS install",
+          "code": "# Help > SSL Proxying > Install Charles Root Certificate\n# Then: Keychain Access > Certificates > Charles > Always Trust",
+          "when": "macOS"
+        },
+        {
+          "approach": "iOS install",
+          "code": "# Help > SSL Proxying > Install Charles Root Certificate on Mobile\n# Visit chls.pro/ssl on device\n# Settings > General > About > Certificate Trust Settings",
+          "when": "iOS device"
+        },
+        {
+          "approach": "Android install",
+          "code": "# Help > SSL Proxying > Save Charles Root Certificate\n# adb push charles.pem /sdcard/\n# Settings > Security > Install from storage",
+          "when": "Android device"
+        }
+      ]
+    },
+    {
+      "id": "ssl_proxying_not_enabled",
+      "pattern": "HTTPS.*encrypted|cannot see contents|SSL Proxying not enabled|<unknown>",
+      "message": "SSL Proxying not enabled for host",
+      "cause": "Host not in SSL Proxying list",
+      "solutions": [
+        {
+          "approach": "Add host",
+          "code": "# Proxy > SSL Proxying Settings\n# Add: *.example.com:443\n# Or: *:* for all hosts",
+          "when": "Enable for host"
+        },
+        {
+          "approach": "From request",
+          "code": "# Right-click request > Enable SSL Proxying",
+          "when": "Quick enable"
+        },
+        {
+          "approach": "Wildcard",
+          "code": "# Add Location: Host: *, Port: 443\n# Intercepts all HTTPS",
+          "when": "All HTTPS"
+        }
+      ]
+    },
+    {
+      "id": "device_not_connecting",
+      "pattern": "no traffic|device.*not connecting|mobile.*not working|proxy not used",
+      "message": "Device traffic not appearing",
+      "cause": "Device proxy not configured correctly",
+      "solutions": [
+        {
+          "approach": "Check IP",
+          "code": "# Help > Local IP Address\n# Or: ifconfig | grep 'inet '\n# Configure device proxy to this IP:8888",
+          "when": "Find proxy IP"
+        },
+        {
+          "approach": "iOS proxy",
+          "code": "# Settings > Wi-Fi > (i) > HTTP Proxy > Manual\n# Server: <mac IP>, Port: 8888",
+          "when": "iOS setup"
+        },
+        {
+          "approach": "Android proxy",
+          "code": "# Settings > Wi-Fi > Long press > Modify > Advanced\n# Proxy: Manual, Host: <IP>, Port: 8888",
+          "when": "Android setup"
+        }
+      ]
+    },
+    {
+      "id": "access_control",
+      "pattern": "Access Control|Connection from.*blocked|unauthorized|access denied",
+      "message": "Connection blocked by access control",
+      "cause": "Client IP not in allowed list",
+      "solutions": [
+        {
+          "approach": "Allow IP",
+          "code": "# Proxy > Access Control Settings\n# Add IP address or subnet",
+          "when": "Add client IP"
+        },
+        {
+          "approach": "Prompt mode",
+          "code": "# Proxy > Access Control Settings\n# Enable 'Prompt to allow remote connections'",
+          "when": "Interactive allow"
+        },
+        {
+          "approach": "Allow all",
+          "code": "# Add: 0.0.0.0/0 (not recommended for security)",
+          "when": "Development only"
+        }
+      ]
+    },
+    {
+      "id": "license_error",
+      "pattern": "license.*expired|trial|shareware|30 minutes",
+      "message": "License or trial limitation",
+      "cause": "Trial expired or license not registered",
+      "solutions": [
+        {
+          "approach": "Restart trial",
+          "code": "# Trial: 30-day, then 30-minute sessions\n# Restart Charles to continue",
+          "when": "Trial mode"
+        },
+        {
+          "approach": "Register license",
+          "code": "# Help > Register Charles\n# Enter license name and key",
+          "when": "Have license"
+        },
+        {
+          "approach": "Purchase",
+          "code": "# https://www.charlesproxy.com/buy/",
+          "when": "Need license"
+        }
+      ]
+    },
+    {
+      "id": "certificate_pinning",
+      "pattern": "certificate pinning|SSLHandshakeException|trust anchor|pinned certificate",
+      "message": "App uses certificate pinning",
+      "cause": "App validates certificate fingerprint",
+      "solutions": [
+        {
+          "approach": "Disable in app",
+          "code": "# Debug builds often have pinning disabled\n# Or: Use app's debug/staging environment",
+          "when": "Development app"
+        },
+        {
+          "approach": "Android Frida",
+          "code": "# Use Frida to bypass pinning:\nfrida -U -l ssl-bypass.js -f com.app.name",
+          "when": "Root/Frida"
+        },
+        {
+          "approach": "iOS jailbreak",
+          "code": "# SSL Kill Switch 2 (jailbreak)\n# Or: Objection for non-jailbreak",
+          "when": "iOS bypass"
+        }
+      ]
+    }
+  ]
+}

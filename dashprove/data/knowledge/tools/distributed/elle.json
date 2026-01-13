@@ -1,0 +1,124 @@
+{
+  "id": "elle",
+  "name": "Elle",
+  "category": "distributed_systems_testing",
+  "subcategory": "transactional_consistency",
+
+  "description": "Black-box transactional consistency checker",
+  "long_description": "Elle is a black-box transactional consistency checker that detects violations of serializability, snapshot isolation, and other transactional guarantees using graph-based cycle detection. It works with any database by analyzing read-write dependencies without access to internal state.",
+
+  "capabilities": [
+    "serializability_checking",
+    "snapshot_isolation_checking",
+    "read_committed_checking",
+    "read_uncommitted_checking",
+    "cycle_detection",
+    "dependency_graph_analysis"
+  ],
+  "property_types": ["serializability", "snapshot_isolation", "read_committed"],
+  "input_languages": ["clojure", "edn"],
+  "output_formats": ["edn", "svg", "html"],
+
+  "installation": {
+    "methods": [
+      {"type": "deps.edn", "command": "io.jepsen/elle {:mvn/version \"0.2.1\"}"},
+      {"type": "lein", "command": "[io.jepsen/elle \"0.2.1\"]"}
+    ],
+    "dependencies": ["clojure"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/jepsen-io/elle",
+    "tutorial": "https://github.com/jepsen-io/elle#usage",
+    "api_reference": "https://github.com/jepsen-io/elle/blob/main/src/elle/core.clj",
+    "examples": "https://github.com/jepsen-io/elle/tree/main/test/elle"
+  },
+
+  "tactics": [
+    {
+      "name": "check",
+      "description": "Check transaction history",
+      "syntax": "(elle/check opts history)",
+      "when_to_use": "To verify consistency",
+      "examples": ["(require '[elle.core :as elle])\n\n(elle/check {:consistency-models [:serializable]}\n            history)"]
+    },
+    {
+      "name": "list_append",
+      "description": "Check list-append workload",
+      "syntax": "(elle/list-append-analysis history)",
+      "when_to_use": "For append-only data structures",
+      "examples": ["(require '[elle.list-append :as la])\n\n(la/check {:consistency-models [:strict-serializable]}\n          history)"]
+    },
+    {
+      "name": "rw_register",
+      "description": "Check read-write register",
+      "syntax": "(elle/rw-register-analysis history)",
+      "when_to_use": "For key-value workloads",
+      "examples": ["(require '[elle.rw-register :as rw])\n\n(rw/check {:consistency-models [:snapshot-isolation]}\n          history)"]
+    },
+    {
+      "name": "cycle_explain",
+      "description": "Explain consistency violation",
+      "syntax": "(:anomalies result)",
+      "when_to_use": "To understand violations",
+      "examples": ["(let [result (elle/check opts history)]\n  (when-not (:valid? result)\n    (println \"Anomalies:\" (:anomalies result))))"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "G1a",
+      "meaning": "Aborted read - transaction read uncommitted data",
+      "common_causes": ["Read uncommitted isolation"],
+      "fixes": ["Use stronger isolation level"]
+    },
+    {
+      "pattern": "G1b",
+      "meaning": "Intermediate read - saw partial transaction",
+      "common_causes": ["Non-atomic transactions"],
+      "fixes": ["Fix transaction atomicity"]
+    },
+    {
+      "pattern": "G2-item",
+      "meaning": "Anti-dependency cycle",
+      "common_causes": ["Write skew"],
+      "fixes": ["Use serializable isolation"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["serializability", "isolation"],
+    "cli_command": "dashprove verify --backend elle"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Good for moderate histories",
+    "memory_usage": "History-dependent"
+  },
+
+  "comparisons": {
+    "similar_tools": ["jepsen", "knossos", "dbcop"],
+    "advantages": [
+      "Black-box testing",
+      "Multiple isolation levels",
+      "Clear violation explanations",
+      "Graph visualizations",
+      "Well-tested theory"
+    ],
+    "disadvantages": [
+      "Clojure only",
+      "Memory-intensive for large histories",
+      "Requires structured history format"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.2.1",
+    "last_updated": "2025-12-22",
+    "maintainer": "Jepsen.io",
+    "license": "EPL-1.0"
+  }
+}

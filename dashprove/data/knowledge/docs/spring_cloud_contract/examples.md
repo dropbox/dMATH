@@ -1,0 +1,160 @@
+[[CircleCI]][1]
+
+# Spring Cloud Contract samples
+
+This repository contains the consumer and the producer applications to use with Spring Cloud
+Contract project.
+
+It contains several important branches. `master` where we test against the latest versions of Spring
+Cloud Contract, and `x.x.x` where we test against `x.x.x` version of Spring Cloud Contract.
+
+This repository shows examples of
+
+* storing contracts on the producer side
+* storing contracts in a common repo
+* passing stubs via Rest docs
+
+Both for REST and Messaging. Built with Maven and Gradle. Also some additional Spring Cloud Contract
+plugin configuration is present.
+
+These samples were used in the following presentation. It might help to use the samples.
+
+* [SlideShare][2] / [YouTube][3]
+
+You can also go through the [Spring Cloud Contract Workshops][4] to learn how to use the tool by
+example.
+
+## Projects
+
+### Common
+
+Contains the JAR with common classes used in the contracts on the producer side.
+
+### Beer_contracts
+
+Contains the repo with all contracts for all applications. It can be used when you want to store all
+contracts in a single place.
+
+### Producer
+
+The producer application contains contracts for both REST and messaging communication. From these
+contracts tests and stubs will be generated.
+
+The producer in the contract also uses features like usage of common libraries, different
+combination of dynamic properties.
+
+It also uses scenario based contracts. That means that the produced stubs are stateful.
+
+### Producer_yaml
+
+The same as `Producer` but uses YAML
+
+### Producer_advanced
+
+Contains more advanced examples of Spring Cloud Contract usage.
+
+### Producer_with_external_contracts
+
+The producer application that downloads its contracts for both REST and messaging communication,
+from the `Beer-contracts` JAR. From these contracts tests and stubs will be generated.
+
+### Producer_with_restdocs
+
+The producer application that uses both contracts and Spring Cloud Contract WireMock with RESTDocs.
+Contracts are used for messaging but the HTTP stubs are created via REST Docs tests.
+
+### Producer_with_stubs_per_consumer
+
+The producer application stores the contracts in such way that every consumer has its own, delegated
+folder. Then on the consumer side by turning on the stubs per consumer feature only respective stubs
+for the given consumer will be used.
+
+### Producer_with_latest_2_2_features
+
+The producer application using the latest, most notable features of Spring Cloud Contract 2.2
+
+### Producer_kotlin
+
+The producer application with code in Kotlin
+
+### Producer_kotlin_ftw
+
+(FTW - For the win) The producer application with code, setup and contract in Kotlin.
+
+### Consumer_kotlin_ftw
+
+(FTW - For the win) The consumer application with code, setup and contract in Kotlin.
+
+### Consumer
+
+The consumer application is using the stubs of the producer for both rest and messaging.
+
+It also contains the consumer side of the stateful scenario case. By calling the same endpoint a
+couple of times we get different responses due to changing state.
+
+### Consumer_with_discovery
+
+The consumer application is using the stubs of the producer for rest. It sends requests via a load
+balanced rest template. In the tests Spring Cloud Contract stubs out any discovery service
+infrastructure.
+
+### Consumer_with_restdocs
+
+The consumer application is using the stubs of the producer for both rest and messaging. The stubs
+come from the test compile dependency of the producer.
+
+### Consumer_with_stubs_per_consumer
+
+The consumer application that has the stub of the HTTP server get fed with stubs that lay under
+proper folder in the reused JAR.
+
+### Producer_proto
+
+Project that uses Protocol Buffers to communicate.
+
+### Consumer_proto
+
+Project that uses Protocol Buffers to communicate.
+
+## How to build it?
+
+You can run Maven from the root folder once the "common" module has been installed. So from a clean
+checkout:
+
+(cd common; ../mvnw clean install)
+./mvnw clean install -Ptest
+
+(or `./scripts/runMavenBuild.sh`). Then you can build normally
+
+./mvnw clean install
+
+The order should be as follows
+
+* common
+* beer-contracts
+* producer
+* producer_advanced
+* producer_with_external_contracts
+* producer_with_stubs_per_consumer
+* consumer
+* consumer_with_discovery
+* producer_with_restdocs
+* consumer_with_restdocs
+* consumer_with_stubs_per_consumer
+
+If the order is different then your apps will blow up most likely due to missing stubs.
+
+You can also go to each of the projects and run Gradle wrapper:
+
+./gradlew clean build publishToMavenLocal
+
+## How to test it?
+
+You can run the script
+
+./scripts/runAcceptanceTests.sh
+
+[1]: https://circleci.com/gh/spring-cloud-samples/spring-cloud-contract-samples
+[2]: https://goo.gl/qhVmg3
+[3]: https://www.youtube.com/watch?v=sAAklvxmPmk
+[4]: https://spring-cloud-samples.github.io/spring-cloud-contract-samples/workshops.html

@@ -1,0 +1,168 @@
+{
+  "tool": "ocaml",
+  "version": "5.1.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "This expression has type.*but an expression was expected of type",
+      "message": "Type mismatch",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Check function arguments",
+          "code": "let f (x : int) = x + 1  (* Add type annotation *)",
+          "when": "Argument type unclear"
+        },
+        {
+          "approach": "Use explicit conversion",
+          "code": "string_of_int n  (* int -> string *)\nint_of_string s  (* string -> int *)",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Check operator types",
+          "code": "(+) for int, (+.) for float  (* Different operators *)",
+          "when": "Using wrong numeric operator"
+        }
+      ]
+    },
+    {
+      "id": "unbound_value",
+      "pattern": "Unbound value|Unbound module|Unbound constructor",
+      "message": "Unbound identifier",
+      "cause": "Variable, module, or constructor not in scope",
+      "solutions": [
+        {
+          "approach": "Open module",
+          "code": "open List  (* or *) List.map f xs",
+          "when": "Identifier in another module"
+        },
+        {
+          "approach": "Check definition order",
+          "code": "let rec f x = ... and g y = ...  (* Mutual recursion *)",
+          "when": "Functions reference each other"
+        },
+        {
+          "approach": "Install missing library",
+          "code": "opam install package_name",
+          "when": "Module from external package"
+        }
+      ]
+    },
+    {
+      "id": "pattern_match_exhaustive",
+      "pattern": "Warning 8|this pattern-matching is not exhaustive",
+      "message": "Non-exhaustive pattern match",
+      "cause": "Pattern match doesn't cover all cases",
+      "solutions": [
+        {
+          "approach": "Add missing cases",
+          "code": "match opt with Some x -> x | None -> default",
+          "when": "Missing specific constructor"
+        },
+        {
+          "approach": "Add wildcard",
+          "code": "match x with 0 -> \"zero\" | _ -> \"other\"",
+          "when": "Want catch-all"
+        },
+        {
+          "approach": "Use Option.value",
+          "code": "Option.value ~default:0 opt",
+          "when": "Handling option types"
+        }
+      ]
+    },
+    {
+      "id": "value_restriction",
+      "pattern": "The type of this expression.*contains type variables that cannot be generalized",
+      "message": "Value restriction",
+      "cause": "Polymorphic value can't be generalized due to side effects",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "let empty : int list ref = ref []",
+          "when": "Want specific monomorphic type"
+        },
+        {
+          "approach": "Eta-expand",
+          "code": "let f x = g x  (* instead of let f = g *)",
+          "when": "Function should be polymorphic"
+        },
+        {
+          "approach": "Use weak type variable",
+          "code": "(* Accept '_a weak polymorphism *)",
+          "when": "Monomorphism acceptable"
+        }
+      ]
+    },
+    {
+      "id": "cyclic_dependency",
+      "pattern": "Error: Dependency cycle|recursive module",
+      "message": "Cyclic module dependency",
+      "cause": "Modules depend on each other circularly",
+      "solutions": [
+        {
+          "approach": "Use recursive modules",
+          "code": "module rec A : sig ... end = struct ... end\nand B : sig ... end = struct ... end",
+          "when": "Mutual recursion needed"
+        },
+        {
+          "approach": "Extract common types",
+          "code": "(* Put shared types in separate module *)",
+          "when": "Can factor out common code"
+        },
+        {
+          "approach": "Use functors",
+          "code": "module Make (X : S) = struct ... end",
+          "when": "Can parameterize modules"
+        }
+      ]
+    },
+    {
+      "id": "signature_mismatch",
+      "pattern": "Signature mismatch|Values do not match",
+      "message": "Module signature mismatch",
+      "cause": "Implementation doesn't match interface",
+      "solutions": [
+        {
+          "approach": "Check value types",
+          "code": "(* Ensure val declarations match definitions *)",
+          "when": "Type differs from signature"
+        },
+        {
+          "approach": "Add missing values",
+          "code": "(* Implement all sig declarations *)",
+          "when": "Value declared but not defined"
+        },
+        {
+          "approach": "Check type definitions",
+          "code": "(* type t in sig must match struct *)",
+          "when": "Type definition mismatch"
+        }
+      ]
+    },
+    {
+      "id": "dune_build_error",
+      "pattern": "dune build.*error|Cannot find library",
+      "message": "Dune build error",
+      "cause": "Build configuration or dependency issue",
+      "solutions": [
+        {
+          "approach": "Add library dependency",
+          "code": "(library (name mylib) (libraries dep1 dep2))",
+          "when": "Missing library in dune file"
+        },
+        {
+          "approach": "Install package",
+          "code": "opam install missing_package",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Rebuild",
+          "code": "dune clean && dune build",
+          "when": "Stale build artifacts"
+        }
+      ]
+    }
+  ]
+}

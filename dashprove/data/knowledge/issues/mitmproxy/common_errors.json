@@ -1,0 +1,145 @@
+{
+  "tool": "mitmproxy",
+  "version": "10.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "certificate_error",
+      "pattern": "certificate.*error|SSL.*error|CERTIFICATE_VERIFY_FAILED|CA.*not trusted",
+      "message": "SSL certificate error",
+      "cause": "mitmproxy CA certificate not installed on client",
+      "solutions": [
+        {
+          "approach": "Get CA cert",
+          "code": "# Start mitmproxy, visit http://mitm.it\n# Or: ~/.mitmproxy/mitmproxy-ca-cert.pem",
+          "when": "Get certificate"
+        },
+        {
+          "approach": "Install on macOS",
+          "code": "sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/.mitmproxy/mitmproxy-ca-cert.pem",
+          "when": "macOS system trust"
+        },
+        {
+          "approach": "Install on Linux",
+          "code": "sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt\nsudo update-ca-certificates",
+          "when": "Linux system trust"
+        }
+      ]
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "address already in use|port.*in use|EADDRINUSE|Cannot bind",
+      "message": "Proxy port already in use",
+      "cause": "Another process using port 8080",
+      "solutions": [
+        {
+          "approach": "Use different port",
+          "code": "mitmproxy -p 8888\nmitmweb -p 9090",
+          "when": "Change port"
+        },
+        {
+          "approach": "Find process",
+          "code": "lsof -i :8080\nkill -9 $(lsof -t -i:8080)",
+          "when": "Kill existing"
+        },
+        {
+          "approach": "Check existing",
+          "code": "ps aux | grep mitmproxy",
+          "when": "Find mitmproxy instance"
+        }
+      ]
+    },
+    {
+      "id": "client_not_connecting",
+      "pattern": "no traffic|client.*not connecting|proxy.*not used",
+      "message": "Client not using proxy",
+      "cause": "Client proxy settings not configured",
+      "solutions": [
+        {
+          "approach": "HTTP proxy",
+          "code": "export http_proxy=http://127.0.0.1:8080\nexport https_proxy=http://127.0.0.1:8080",
+          "when": "Shell environment"
+        },
+        {
+          "approach": "Transparent mode",
+          "code": "mitmproxy --mode transparent\n# Requires iptables/pf setup",
+          "when": "Intercept all traffic"
+        },
+        {
+          "approach": "Reverse proxy",
+          "code": "mitmproxy --mode reverse:https://api.example.com",
+          "when": "Specific upstream"
+        }
+      ]
+    },
+    {
+      "id": "tls_passthrough",
+      "pattern": "TLS handshake failed|Cannot intercept|passthrough|HTTPS.*not intercepted",
+      "message": "Cannot intercept TLS/HTTPS traffic",
+      "cause": "Certificate pinning or TLS configuration issue",
+      "solutions": [
+        {
+          "approach": "Ignore hosts",
+          "code": "mitmproxy --ignore-hosts '^.*\\.google\\.com$'",
+          "when": "Skip pinned hosts"
+        },
+        {
+          "approach": "SSL insecure",
+          "code": "mitmproxy --ssl-insecure",
+          "when": "Upstream cert issues"
+        },
+        {
+          "approach": "Set upstream cert",
+          "code": "mitmproxy --set ssl_verify_upstream_trusted_ca=/path/to/ca.pem",
+          "when": "Custom upstream CA"
+        }
+      ]
+    },
+    {
+      "id": "script_error",
+      "pattern": "Script error|addon.*error|mitmproxy.script|import.*error",
+      "message": "Addon/script error",
+      "cause": "Python script has errors or incompatible API",
+      "solutions": [
+        {
+          "approach": "Check API",
+          "code": "# mitmproxy 10.x API:\nfrom mitmproxy import http\n\ndef request(flow: http.HTTPFlow) -> None:\n    flow.request.headers['X-Custom'] = 'value'",
+          "when": "Modern API"
+        },
+        {
+          "approach": "Debug script",
+          "code": "mitmproxy -s script.py --set console_eventlog_verbosity=debug",
+          "when": "Verbose output"
+        },
+        {
+          "approach": "Validate syntax",
+          "code": "python -m py_compile script.py",
+          "when": "Check Python syntax"
+        }
+      ]
+    },
+    {
+      "id": "flow_error",
+      "pattern": "flow.*error|request.*timeout|upstream.*error|502",
+      "message": "Flow handling error",
+      "cause": "Upstream server issue or timeout",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "mitmproxy --set connection_strategy=lazy --set keep_alive_timeout=30",
+          "when": "Timeout issue"
+        },
+        {
+          "approach": "Check upstream",
+          "code": "curl -x http://127.0.0.1:8080 https://example.com",
+          "when": "Test through proxy"
+        },
+        {
+          "approach": "Disable HTTP/2",
+          "code": "mitmproxy --set http2=false",
+          "when": "HTTP/2 issues"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "tool": "tokei",
+  "version": "13.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "language_not_detected",
+      "pattern": "Total.*0|no files found",
+      "message": "No files or languages detected",
+      "cause": "Files not matching any known language",
+      "solutions": [
+        {
+          "approach": "Check supported languages",
+          "code": "tokei --languages",
+          "when": "See what's supported"
+        },
+        {
+          "approach": "Specify types explicitly",
+          "code": "tokei -t Rust,Python .",
+          "when": "Only count specific languages"
+        },
+        {
+          "approach": "Check hidden files",
+          "code": "tokei . --hidden",
+          "when": "Files might be hidden"
+        }
+      ]
+    },
+    {
+      "id": "exclude_not_working",
+      "pattern": "exclude.*ignored|still counting",
+      "message": "Exclusion pattern not working",
+      "cause": "Wrong glob syntax or pattern",
+      "solutions": [
+        {
+          "approach": "Use correct glob syntax",
+          "code": "tokei -e '**/node_modules/**' .",
+          "when": "Exclude directory"
+        },
+        {
+          "approach": "Multiple exclusions",
+          "code": "tokei -e '**/target/**' -e '**/dist/**' .",
+          "when": "Multiple patterns"
+        },
+        {
+          "approach": "Use .tokeignore",
+          "code": "echo 'node_modules' > .tokeignore\ntokei .",
+          "when": "Project-wide exclusions"
+        }
+      ]
+    },
+    {
+      "id": "sort_option_error",
+      "pattern": "sort.*invalid|unknown sort",
+      "message": "Invalid sort option",
+      "cause": "Wrong sort column specified",
+      "solutions": [
+        {
+          "approach": "Use valid sort options",
+          "code": "tokei --sort lines .     # By lines\ntokei --sort code .      # By code lines\ntokei --sort blanks .    # By blank lines\ntokei --sort comments .  # By comments\ntokei --sort files .     # By file count",
+          "when": "Want sorted output"
+        }
+      ]
+    },
+    {
+      "id": "output_format_error",
+      "pattern": "output.*error|format.*unknown",
+      "message": "Output format error",
+      "cause": "Invalid output format specified",
+      "solutions": [
+        {
+          "approach": "Use valid formats",
+          "code": "tokei -o json .   # JSON\ntokei -o yaml .   # YAML\ntokei -o cbor .   # CBOR (binary)",
+          "when": "Machine-readable output"
+        },
+        {
+          "approach": "Compact output",
+          "code": "tokei -c .  # Compact table",
+          "when": "Smaller output"
+        }
+      ]
+    },
+    {
+      "id": "large_repo_slow",
+      "pattern": "timeout|slow",
+      "message": "Slow on large repositories",
+      "cause": "Many files to count",
+      "solutions": [
+        {
+          "approach": "Increase thread count",
+          "code": "# tokei uses all cores by default, but ensure parallelism",
+          "when": "Has multiple cores"
+        },
+        {
+          "approach": "Exclude build artifacts",
+          "code": "tokei -e '**/target/**' -e '**/node_modules/**' .",
+          "when": "Build directories present"
+        },
+        {
+          "approach": "Count specific languages",
+          "code": "tokei -t Rust,Go .",
+          "when": "Only care about some languages"
+        }
+      ]
+    },
+    {
+      "id": "badge_generation",
+      "pattern": "badge.*error",
+      "message": "Badge URL generation",
+      "cause": "Want to generate a badge",
+      "solutions": [
+        {
+          "approach": "Generate badge",
+          "code": "# tokei doesn't generate badges directly\n# Use tokei-badge or shields.io\ncurl \"https://img.shields.io/badge/lines-$(tokei -o json . | jq '.Total.code')-blue\"",
+          "when": "Want README badge"
+        }
+      ]
+    },
+    {
+      "id": "git_integration",
+      "pattern": "git.*error|repository",
+      "message": "Git repository issues",
+      "cause": "Git-related problems",
+      "solutions": [
+        {
+          "approach": "Count only tracked files",
+          "code": "git ls-files | xargs tokei",
+          "when": "Exclude untracked"
+        },
+        {
+          "approach": "Respect gitignore",
+          "code": "# tokei respects .gitignore by default in git repos",
+          "when": "Already working"
+        }
+      ]
+    },
+    {
+      "id": "custom_language",
+      "pattern": "language.*not supported",
+      "message": "Custom language not supported",
+      "cause": "tokei doesn't support this language",
+      "solutions": [
+        {
+          "approach": "Request language support",
+          "code": "# Open issue at github.com/XAMPPRocky/tokei",
+          "when": "Common language"
+        },
+        {
+          "approach": "Count as similar language",
+          "code": "# Rename files or use --type",
+          "when": "Workaround needed"
+        }
+      ]
+    }
+  ]
+}

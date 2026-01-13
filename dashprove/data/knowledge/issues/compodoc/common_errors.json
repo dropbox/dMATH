@@ -1,0 +1,145 @@
+{
+  "tool": "compodoc",
+  "version": "1.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "tsconfig_not_found",
+      "pattern": "tsconfig.*not found|Cannot find.*tsconfig|Configuration file.*missing",
+      "message": "tsconfig.json not found",
+      "cause": "Path to tsconfig incorrect or file missing",
+      "solutions": [
+        {
+          "approach": "Specify path",
+          "code": "compodoc -p ./src/tsconfig.app.json",
+          "when": "Non-default location"
+        },
+        {
+          "approach": "Create tsconfig",
+          "code": "# Ensure tsconfig.json exists in project root\nnpx tsc --init",
+          "when": "Missing tsconfig"
+        },
+        {
+          "approach": "Angular project",
+          "code": "compodoc -p ./tsconfig.json  # Or tsconfig.app.json",
+          "when": "Angular workspace"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "Parse error|Could not parse|TypeScript.*error|Syntax error",
+      "message": "TypeScript parse error",
+      "cause": "TypeScript syntax errors or version mismatch",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "npx tsc --noEmit  # Find TypeScript errors first",
+          "when": "TypeScript errors"
+        },
+        {
+          "approach": "Check TS version",
+          "code": "# Compodoc supports TypeScript 4.x/5.x\nnpm ls typescript",
+          "when": "Version compatibility"
+        },
+        {
+          "approach": "Exclude problematic",
+          "code": "compodoc -p tsconfig.json --exclude '**/node_modules/**'",
+          "when": "Exclude directories"
+        }
+      ]
+    },
+    {
+      "id": "no_documentation",
+      "pattern": "No documentation found|Empty documentation|No components detected",
+      "message": "No documentation generated",
+      "cause": "No Angular components/modules found or JSDoc comments missing",
+      "solutions": [
+        {
+          "approach": "Check includes",
+          "code": "compodoc -p tsconfig.json --includes ./docs/additional.md",
+          "when": "Add additional docs"
+        },
+        {
+          "approach": "Add JSDoc",
+          "code": "/**\n * User service handles authentication\n * @example\n * const user = await userService.getUser(id);\n */\n@Injectable()\nexport class UserService { ... }",
+          "when": "Add documentation"
+        },
+        {
+          "approach": "Check files pattern",
+          "code": "compodoc -p tsconfig.json --files 'src/**/*.ts'",
+          "when": "Specify file patterns"
+        }
+      ]
+    },
+    {
+      "id": "serve_port_error",
+      "pattern": "Port.*in use|EADDRINUSE|Cannot start server|Address already in use",
+      "message": "Documentation server port in use",
+      "cause": "Another process using port 8080",
+      "solutions": [
+        {
+          "approach": "Use different port",
+          "code": "compodoc -s -r 9090",
+          "when": "Change port"
+        },
+        {
+          "approach": "Find process",
+          "code": "lsof -i :8080\nkill -9 <PID>",
+          "when": "Kill existing process"
+        },
+        {
+          "approach": "Generate only",
+          "code": "compodoc -p tsconfig.json -d ./documentation\n# Then serve separately",
+          "when": "Generate without serve"
+        }
+      ]
+    },
+    {
+      "id": "coverage_threshold",
+      "pattern": "Coverage.*threshold|Documentation coverage.*low|Minimum coverage.*not met",
+      "message": "Documentation coverage below threshold",
+      "cause": "Not enough JSDoc comments in codebase",
+      "solutions": [
+        {
+          "approach": "Check coverage",
+          "code": "compodoc -p tsconfig.json --coverageTest 70  # 70% threshold",
+          "when": "Set threshold"
+        },
+        {
+          "approach": "Generate report",
+          "code": "compodoc -p tsconfig.json --coverageTestThresholdFail false",
+          "when": "Don't fail on low coverage"
+        },
+        {
+          "approach": "View report",
+          "code": "compodoc -p tsconfig.json --coverageMinimumPerFile 50",
+          "when": "Per-file threshold"
+        }
+      ]
+    },
+    {
+      "id": "theme_error",
+      "pattern": "Theme.*not found|Invalid theme|Custom theme.*error",
+      "message": "Theme configuration error",
+      "cause": "Invalid theme name or custom theme path wrong",
+      "solutions": [
+        {
+          "approach": "Use built-in",
+          "code": "compodoc -p tsconfig.json --theme laravel  # or material, postmark, stripe, vagrant",
+          "when": "Built-in themes"
+        },
+        {
+          "approach": "Custom theme",
+          "code": "compodoc -p tsconfig.json --customFavicon ./favicon.ico --customLogo ./logo.png",
+          "when": "Custom branding"
+        },
+        {
+          "approach": "Extra templates",
+          "code": "compodoc -p tsconfig.json --templates ./my-templates/",
+          "when": "Custom templates"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "tool": "tracing",
+  "version": "0.1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_subscriber",
+      "pattern": "no.*Subscriber.*registered|tracing subscriber not set|tracing events.*dropped",
+      "message": "No tracing subscriber registered",
+      "cause": "tracing::subscriber::set_global_default() not called",
+      "solutions": [
+        {
+          "approach": "Use tracing_subscriber",
+          "code": "tracing_subscriber::fmt::init();\n// or\ntracing_subscriber::fmt().with_max_level(Level::DEBUG).init();",
+          "when": "Basic console output"
+        },
+        {
+          "approach": "Custom subscriber",
+          "code": "let subscriber = Registry::default().with(fmt::layer());\ntracing::subscriber::set_global_default(subscriber).unwrap();",
+          "when": "Custom configuration"
+        },
+        {
+          "approach": "Use EnvFilter",
+          "code": "tracing_subscriber::fmt()\n    .with_env_filter(EnvFilter::from_default_env())\n    .init();",
+          "when": "RUST_LOG control"
+        }
+      ]
+    },
+    {
+      "id": "multiple_init",
+      "pattern": "subscriber already set|init.*called more than once|SetGlobalDefaultError",
+      "message": "Global subscriber already registered",
+      "cause": "init() or set_global_default() called multiple times",
+      "solutions": [
+        {
+          "approach": "Use try_init",
+          "code": "let _ = tracing_subscriber::fmt().try_init();",
+          "when": "Subscriber may already exist"
+        },
+        {
+          "approach": "Init once at startup",
+          "code": "// Call init() only in main(), not in library code",
+          "when": "Library initialization"
+        },
+        {
+          "approach": "Use with_default for tests",
+          "code": "tracing::subscriber::with_default(subscriber, || { test_code() });",
+          "when": "Test-specific subscriber"
+        }
+      ]
+    },
+    {
+      "id": "span_not_entered",
+      "pattern": "span not entered|span.*dropped before enter|entered.*wrong span",
+      "message": "Span not properly entered or exited",
+      "cause": "Span guard dropped early or async boundary crossed",
+      "solutions": [
+        {
+          "approach": "Use span.enter()",
+          "code": "let span = info_span!(\"my_span\");\nlet _guard = span.enter();\n// guard dropped at end of scope",
+          "when": "Sync code"
+        },
+        {
+          "approach": "Use Instrument trait",
+          "code": "async_fn().instrument(info_span!(\"async_op\")).await;",
+          "when": "Async code"
+        },
+        {
+          "approach": "Use #[instrument]",
+          "code": "#[tracing::instrument]\nasync fn my_function() { ... }",
+          "when": "Instrument entire function"
+        }
+      ]
+    },
+    {
+      "id": "async_span_lost",
+      "pattern": "span.*lost across await|context.*not propagated|parent span missing",
+      "message": "Span context lost across async boundary",
+      "cause": "Span guard dropped before future completes",
+      "solutions": [
+        {
+          "approach": "Use .instrument()",
+          "code": "let span = info_span!(\"parent\");\nchild_future.instrument(span.clone()).await;",
+          "when": "Propagating span to child"
+        },
+        {
+          "approach": "Use in_current_span()",
+          "code": "async_fn().in_current_span().await;",
+          "when": "Keep current span"
+        },
+        {
+          "approach": "Use tokio-tracing",
+          "code": "// Add tracing feature to tokio\ntokio = { version = \"1\", features = [\"tracing\"] }",
+          "when": "Tokio task tracing"
+        }
+      ]
+    },
+    {
+      "id": "filter_syntax",
+      "pattern": "invalid filter directive|parse error.*RUST_LOG|EnvFilter.*invalid",
+      "message": "Invalid RUST_LOG or EnvFilter syntax",
+      "cause": "Malformed filter directive string",
+      "solutions": [
+        {
+          "approach": "Use valid syntax",
+          "code": "RUST_LOG=myapp=debug,tower_http=info,warn",
+          "when": "Setting log levels"
+        },
+        {
+          "approach": "Target specific spans",
+          "code": "RUST_LOG=myapp[my_span]=trace",
+          "when": "Filter by span"
+        },
+        {
+          "approach": "Use filter builder",
+          "code": "EnvFilter::builder()\n    .with_default_directive(LevelFilter::INFO.into())\n    .from_env_lossy()",
+          "when": "Fallback for invalid env"
+        }
+      ]
+    }
+  ]
+}

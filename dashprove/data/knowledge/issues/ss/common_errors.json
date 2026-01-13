@@ -1,0 +1,97 @@
+{
+  "tool": "ss",
+  "version": "iproute2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|can't read|users",
+      "message": "Cannot show process info",
+      "cause": "Need root to see all processes",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo ss -tulnp",
+          "when": "See all process names"
+        }
+      ]
+    },
+    {
+      "id": "no_output",
+      "pattern": "no output|empty",
+      "message": "No matching sockets",
+      "cause": "Filter too restrictive or no connections",
+      "solutions": [
+        {
+          "approach": "Show all",
+          "code": "ss -a    # All sockets\nss -t    # Just TCP\nss -u    # Just UDP\nss -l    # Just listening",
+          "when": "Broaden filter"
+        },
+        {
+          "approach": "Check service",
+          "code": "# If expecting a listener:\nsystemctl status servicename\nlsof -i :port",
+          "when": "Verify service"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "ss: command not found",
+      "message": "iproute2 not installed",
+      "cause": "Package missing (rare)",
+      "solutions": [
+        {
+          "approach": "Install iproute2",
+          "code": "sudo apt install iproute2  # Debian\nsudo yum install iproute  # RHEL",
+          "when": "Install package"
+        },
+        {
+          "approach": "Use netstat",
+          "code": "netstat -tulnp  # Fallback",
+          "when": "Legacy alternative"
+        }
+      ]
+    },
+    {
+      "id": "filter_syntax",
+      "pattern": "filter|state|dst|src|sport|dport",
+      "message": "Using ss filters",
+      "cause": "Need to filter output",
+      "solutions": [
+        {
+          "approach": "By port",
+          "code": "ss -tuln sport = :80\nss -tuln dport = :443\nss 'sport = :22 or sport = :80'",
+          "when": "Filter by port"
+        },
+        {
+          "approach": "By state",
+          "code": "ss state established\nss state listening\nss state time-wait",
+          "when": "Filter by state"
+        },
+        {
+          "approach": "By address",
+          "code": "ss dst 192.168.1.0/24\nss src 10.0.0.1",
+          "when": "Filter by IP"
+        }
+      ]
+    },
+    {
+      "id": "common_usage",
+      "pattern": "how to use|examples|common",
+      "message": "Common ss commands",
+      "cause": "Reference needed",
+      "solutions": [
+        {
+          "approach": "Essential flags",
+          "code": "ss -tulnp   # TCP/UDP listening, numeric, process\nss -t       # TCP connections\nss -ta      # All TCP (including TIME_WAIT)\nss -s       # Summary statistics\nss -o       # Show timers",
+          "when": "Reference"
+        },
+        {
+          "approach": "Find port usage",
+          "code": "ss -tulnp | grep :80\nlsof -i :80",
+          "when": "Who's using port"
+        }
+      ]
+    }
+  ]
+}

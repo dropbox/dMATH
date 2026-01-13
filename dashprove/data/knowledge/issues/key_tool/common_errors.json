@@ -1,0 +1,237 @@
+{
+  "tool": "key_tool",
+  "version": "2.12.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "proof_open",
+      "pattern": "Proof is OPEN|Open goal\\(s\\) remaining",
+      "message": "Proof could not be completed",
+      "cause": "KeY could not close all proof branches",
+      "solutions": [
+        {
+          "approach": "Apply more rules",
+          "code": "// Use KeY GUI to examine open goals",
+          "when": "Manual rule application needed"
+        },
+        {
+          "approach": "Strengthen invariants",
+          "code": "//@ loop_invariant strongerCondition;",
+          "when": "Invariant too weak"
+        },
+        {
+          "approach": "Add lemmas",
+          "code": "//@ assert helper_lemma; // Guide prover",
+          "when": "Complex reasoning needed"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_init",
+      "pattern": "Invariant Initially Valid|Loop invariant not established",
+      "message": "Loop invariant false before loop entry",
+      "cause": "Invariant must hold when loop is first reached",
+      "solutions": [
+        {
+          "approach": "Check initialization",
+          "code": "int i = 0; //@ loop_invariant i >= 0; // true on entry",
+          "when": "Variables not properly initialized"
+        },
+        {
+          "approach": "Weaken invariant",
+          "code": "//@ loop_invariant i >= 0 || !entered;",
+          "when": "Invariant too strong initially"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "//@ requires initial_condition;",
+          "when": "Method precondition needed"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_preserved",
+      "pattern": "Body Preserves Invariant|Invariant not preserved",
+      "message": "Loop invariant broken by loop body",
+      "cause": "Invariant does not hold after one iteration",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "//@ loop_invariant i >= 0 && i <= n && sum == i*(i+1)/2;",
+          "when": "Missing inductive part"
+        },
+        {
+          "approach": "Add frame condition",
+          "code": "//@ loop_modifies i, sum;",
+          "when": "Need to know what changes"
+        },
+        {
+          "approach": "Check off-by-one",
+          "code": "// Verify loop bounds and increments",
+          "when": "Common iteration error"
+        }
+      ]
+    },
+    {
+      "id": "decreases_error",
+      "pattern": "Decreases Check Failed|variant not decreasing",
+      "message": "Loop termination not proven",
+      "cause": "Loop variant does not decrease each iteration",
+      "solutions": [
+        {
+          "approach": "Fix decreases clause",
+          "code": "//@ decreases n - i; // Must decrease and stay >= 0",
+          "when": "Wrong variant expression"
+        },
+        {
+          "approach": "Add bounds",
+          "code": "//@ loop_invariant i <= n;\n//@ decreases n - i;",
+          "when": "Bound relationship unclear"
+        },
+        {
+          "approach": "Use lexicographic",
+          "code": "//@ decreases outer, inner; // Pair of variants",
+          "when": "Nested loops"
+        }
+      ]
+    },
+    {
+      "id": "null_pointer",
+      "pattern": "Null Pointer Check|NullPointerException",
+      "message": "Potential null dereference",
+      "cause": "KeY cannot prove reference is non-null",
+      "solutions": [
+        {
+          "approach": "Add non-null precondition",
+          "code": "//@ requires obj != null;",
+          "when": "Method parameter"
+        },
+        {
+          "approach": "Add instance invariant",
+          "code": "//@ invariant this.field != null;",
+          "when": "Object field"
+        },
+        {
+          "approach": "Guard dereference",
+          "code": "if (ref != null) { ref.method(); }",
+          "when": "Runtime check acceptable"
+        }
+      ]
+    },
+    {
+      "id": "array_bounds",
+      "pattern": "Array Index Within Bounds|ArrayIndexOutOfBoundsException",
+      "message": "Array access may be out of bounds",
+      "cause": "Index not proven within 0..length-1",
+      "solutions": [
+        {
+          "approach": "Add bounds invariant",
+          "code": "//@ loop_invariant 0 <= i && i < arr.length;",
+          "when": "Loop accessing array"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "//@ requires 0 <= idx && idx < data.length;",
+          "when": "Index is parameter"
+        },
+        {
+          "approach": "Check array creation",
+          "code": "int[] arr = new int[n]; //@ requires n > 0;",
+          "when": "Array size uncertain"
+        }
+      ]
+    },
+    {
+      "id": "heap_operation",
+      "pattern": "Heap Modification|frame condition violated",
+      "message": "Unexpected heap modification",
+      "cause": "Method modifies heap locations not permitted by assignable",
+      "solutions": [
+        {
+          "approach": "Extend assignable",
+          "code": "//@ assignable obj.field, arr[*];",
+          "when": "Legitimate modification"
+        },
+        {
+          "approach": "Use footprint",
+          "code": "//@ assignable \\footprint(obj);",
+          "when": "Object's entire footprint"
+        },
+        {
+          "approach": "Mark pure",
+          "code": "//@ pure",
+          "when": "No heap modification intended"
+        }
+      ]
+    },
+    {
+      "id": "integer_overflow",
+      "pattern": "Overflow Check|arithmetic overflow",
+      "message": "Integer overflow possible",
+      "cause": "Arithmetic may exceed Java integer bounds",
+      "solutions": [
+        {
+          "approach": "Use checked arithmetic",
+          "code": "//@ requires a <= Integer.MAX_VALUE - b;",
+          "when": "Precondition on inputs"
+        },
+        {
+          "approach": "Enable overflow checks",
+          "code": "// KeY settings: enable Java integer semantics",
+          "when": "Want modular arithmetic"
+        },
+        {
+          "approach": "Use bigint in specs",
+          "code": "//@ ensures \\result == (\\bigint)a * (\\bigint)b;",
+          "when": "Unbounded specification"
+        }
+      ]
+    },
+    {
+      "id": "strategy_timeout",
+      "pattern": "Timeout|max rules exceeded",
+      "message": "Proof search exceeded limits",
+      "cause": "Auto mode could not close proof within limits",
+      "solutions": [
+        {
+          "approach": "Increase limits",
+          "code": "// KeY Options > Proof Search Strategy > Max Rules",
+          "when": "Proof nearly closed"
+        },
+        {
+          "approach": "Manual proof",
+          "code": "// Use KeY GUI for interactive proving",
+          "when": "Complex proof structure"
+        },
+        {
+          "approach": "Add intermediate lemmas",
+          "code": "//@ assert intermediate_fact;",
+          "when": "Guide automatic prover"
+        }
+      ]
+    },
+    {
+      "id": "model_method_error",
+      "pattern": "model method .* error|ghost variable",
+      "message": "JML model construct error",
+      "cause": "Model method or ghost variable incorrectly specified",
+      "solutions": [
+        {
+          "approach": "Check model syntax",
+          "code": "/*@ model int modelField; @*/",
+          "when": "Ghost field declaration"
+        },
+        {
+          "approach": "Define model method",
+          "code": "/*@ model boolean pred(int x) { return x > 0; } @*/",
+          "when": "Specification-only method"
+        },
+        {
+          "approach": "Set represents",
+          "code": "//@ represents modelField = concrete.size();",
+          "when": "Link model to implementation"
+        }
+      ]
+    }
+  ]
+}

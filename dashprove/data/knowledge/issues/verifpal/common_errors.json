@@ -1,0 +1,185 @@
+{
+  "tool": "verifpal",
+  "version": "0.27.0",
+  "last_updated": "2025-12-22",
+  "description": "Modern cryptographic protocol analysis tool with user-friendly syntax",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error|parse error|unexpected",
+      "message": "Verifpal syntax error",
+      "cause": "Invalid Verifpal model syntax",
+      "solutions": [
+        {
+          "approach": "Check model structure",
+          "code": "attacker[active]\n\nprincipal Alice[]\nprincipal Bob[]\n\nAlice -> Bob: message\n\nqueries[\n  confidentiality? secret\n]",
+          "when": "Basic structure"
+        },
+        {
+          "approach": "Check primitive syntax",
+          "code": "// Encryption: ENC(k, m), DEC(k, c)\n// Hashing: HASH(m), HKDF(salt, ikm, info)\n// Signing: SIGN(k, m), SIGNVERIF(pk, m, sig)\n// DH: G^x, x^y",
+          "when": "Primitive usage"
+        },
+        {
+          "approach": "Check assignment syntax",
+          "code": "principal Alice[\n  knows private sk\n  generates nonce\n  pk = G^sk\n]",
+          "when": "Principal declarations"
+        }
+      ]
+    },
+    {
+      "id": "undeclared_value",
+      "pattern": "undeclared|not declared|unknown value",
+      "message": "Value used before declaration",
+      "cause": "Variable not declared in principal block",
+      "solutions": [
+        {
+          "approach": "Declare known values",
+          "code": "principal Alice[\n  knows private sk\n  knows public pkB\n]",
+          "when": "Pre-shared values"
+        },
+        {
+          "approach": "Generate fresh values",
+          "code": "principal Alice[\n  generates nonce\n]",
+          "when": "Fresh random value"
+        },
+        {
+          "approach": "Receive from network",
+          "code": "Bob -> Alice: pk_b\n// Alice now knows pk_b",
+          "when": "Received value"
+        }
+      ]
+    },
+    {
+      "id": "query_failed",
+      "pattern": "RESULT.*fail|analysis result.*violated",
+      "message": "Security query failed",
+      "cause": "Protocol doesn't satisfy security property",
+      "solutions": [
+        {
+          "approach": "Check confidentiality",
+          "code": "queries[\n  confidentiality? secret  // Can attacker learn secret?\n]",
+          "when": "Confidentiality violated"
+        },
+        {
+          "approach": "Check authentication",
+          "code": "queries[\n  authentication? Alice -> Bob: msg  // Was msg really from Alice?\n]",
+          "when": "Authentication violated"
+        },
+        {
+          "approach": "Review attack trace",
+          "code": "verifpal verify model.vp --result-verbose",
+          "when": "Understand attack"
+        }
+      ]
+    },
+    {
+      "id": "attacker_model_error",
+      "pattern": "attacker.*invalid|unknown attacker",
+      "message": "Invalid attacker model",
+      "cause": "Unknown attacker type specified",
+      "solutions": [
+        {
+          "approach": "Use valid attacker",
+          "code": "attacker[active]   // Can modify, inject, drop messages\nattacker[passive]  // Can only observe messages",
+          "when": "Choose attacker model"
+        }
+      ]
+    },
+    {
+      "id": "primitive_error",
+      "pattern": "unknown primitive|invalid primitive|primitive.*error",
+      "message": "Unknown or invalid cryptographic primitive",
+      "cause": "Using unsupported primitive or wrong arity",
+      "solutions": [
+        {
+          "approach": "Check symmetric primitives",
+          "code": "// Authenticated encryption:\nc = AEAD_ENC(k, m, ad)\nm = AEAD_DEC(k, c, ad)\n// Simple encryption:\nc = ENC(k, m)\nm = DEC(k, c)",
+          "when": "Symmetric encryption"
+        },
+        {
+          "approach": "Check asymmetric primitives",
+          "code": "// Public key encryption:\nc = PKE_ENC(pk, m)\nm = PKE_DEC(sk, c)\n// Signatures:\nsig = SIGN(sk, m)\nSIGNVERIF(pk, m, sig)?",
+          "when": "Asymmetric operations"
+        },
+        {
+          "approach": "Check key derivation",
+          "code": "// HKDF:\nk = HKDF(salt, ikm, info)\n// Simple hash:\nh = HASH(m)\n// MAC:\nt = MAC(k, m)",
+          "when": "Key derivation/hashing"
+        }
+      ]
+    },
+    {
+      "id": "phase_error",
+      "pattern": "phase.*error|invalid phase",
+      "message": "Phase declaration error",
+      "cause": "Invalid phase usage",
+      "solutions": [
+        {
+          "approach": "Use phases correctly",
+          "code": "phase[1]\nAlice -> Bob: setupMsg\n\nphase[2]\nAlice -> Bob: secretMsg",
+          "when": "Multi-phase protocol"
+        },
+        {
+          "approach": "Check phase ordering",
+          "code": "// Phases must be in order: 1, 2, 3...\n// Cannot go backwards",
+          "when": "Phase ordering"
+        }
+      ]
+    },
+    {
+      "id": "equivalence_error",
+      "pattern": "equivalence.*failed|unlinkability.*violated",
+      "message": "Equivalence/unlinkability query failed",
+      "cause": "Protocol distinguishable in different scenarios",
+      "solutions": [
+        {
+          "approach": "Check equivalence query",
+          "code": "queries[\n  equivalence? sessionA, sessionB\n]",
+          "when": "Session unlinkability"
+        },
+        {
+          "approach": "Review distinguishing attack",
+          "code": "// Attacker can distinguish based on:\n// - Message patterns\n// - Timing (if modeled)\n// - Revealed values",
+          "when": "Understand distinguisher"
+        }
+      ]
+    },
+    {
+      "id": "freshness_error",
+      "pattern": "freshness.*error|replay.*possible",
+      "message": "Freshness/replay protection issue",
+      "cause": "Protocol vulnerable to replay",
+      "solutions": [
+        {
+          "approach": "Add nonces",
+          "code": "principal Alice[\n  generates na\n]\nAlice -> Bob: na, ENC(k, m, na)",
+          "when": "Add replay protection"
+        },
+        {
+          "approach": "Check freshness query",
+          "code": "queries[\n  freshness? msg\n]",
+          "when": "Query message freshness"
+        }
+      ]
+    },
+    {
+      "id": "json_export_error",
+      "pattern": "JSON.*error|export.*failed",
+      "message": "JSON export/import error",
+      "cause": "Invalid JSON format for model",
+      "solutions": [
+        {
+          "approach": "Export to JSON",
+          "code": "verifpal verify model.vp --json",
+          "when": "Get JSON output"
+        },
+        {
+          "approach": "Check JSON structure",
+          "code": "// JSON must have valid Verifpal structure\n// Use official examples as template",
+          "when": "Importing JSON"
+        }
+      ]
+    }
+  ]
+}

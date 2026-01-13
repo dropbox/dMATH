@@ -1,0 +1,191 @@
+{
+  "tool": "pytest_pytorch",
+  "version": "0.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "cuda_not_available",
+      "pattern": "CUDA is not available|cuda.*unavailable",
+      "message": "CUDA not available for test",
+      "cause": "No GPU available or PyTorch not built with CUDA",
+      "solutions": [
+        {
+          "approach": "Skip on CPU-only",
+          "code": "@pytest.mark.skipif(not torch.cuda.is_available(), reason='CUDA required')",
+          "when": "Test requires GPU"
+        },
+        {
+          "approach": "Use parametrize for devices",
+          "code": "@pytest.mark.parametrize('device', ['cpu'] + (['cuda'] if torch.cuda.is_available() else []))",
+          "when": "Test should run on all available devices"
+        },
+        {
+          "approach": "Check CUDA build",
+          "code": "pip install torch --index-url https://download.pytorch.org/whl/cu121",
+          "when": "PyTorch not built with CUDA"
+        }
+      ]
+    },
+    {
+      "id": "tensor_mismatch",
+      "pattern": "Tensor mismatch|values.*not close",
+      "message": "Tensor values don't match expected",
+      "cause": "Numerical precision or algorithm difference",
+      "solutions": [
+        {
+          "approach": "Use torch.testing.assert_close",
+          "code": "torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-8)",
+          "when": "Need to compare tensors with tolerance"
+        },
+        {
+          "approach": "Check dtype consistency",
+          "code": "assert actual.dtype == expected.dtype",
+          "when": "Different dtypes giving different results"
+        },
+        {
+          "approach": "Use allclose for floats",
+          "code": "assert torch.allclose(a, b, rtol=1e-4)",
+          "when": "Float comparison with tolerance"
+        }
+      ]
+    },
+    {
+      "id": "gradient_mismatch",
+      "pattern": "Gradient.*mismatch|grad.*differs",
+      "message": "Gradient values don't match",
+      "cause": "Numerical gradient vs analytical gradient difference",
+      "solutions": [
+        {
+          "approach": "Use gradcheck",
+          "code": "from torch.autograd import gradcheck\ntest_input = test_input.double().requires_grad_(True)\nassert gradcheck(func, test_input, eps=1e-6, atol=1e-4)",
+          "when": "Verifying gradient implementation"
+        },
+        {
+          "approach": "Increase precision",
+          "code": "inputs = inputs.double()  # Use float64 for gradcheck",
+          "when": "Numerical precision issue"
+        },
+        {
+          "approach": "Use gradgradcheck",
+          "code": "from torch.autograd import gradgradcheck\nassert gradgradcheck(func, inputs)",
+          "when": "Testing second-order gradients"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "CUDA memory.*leak|memory.*not freed",
+      "message": "GPU memory not properly released",
+      "cause": "Tensors not garbage collected or cache not cleared",
+      "solutions": [
+        {
+          "approach": "Clear cache between tests",
+          "code": "@pytest.fixture(autouse=True)\ndef clear_cuda_cache():\n    yield\n    torch.cuda.empty_cache()",
+          "when": "Memory accumulating across tests"
+        },
+        {
+          "approach": "Use no_grad context",
+          "code": "with torch.no_grad():\n    output = model(input)",
+          "when": "Inference holding gradient history"
+        },
+        {
+          "approach": "Delete tensors explicitly",
+          "code": "del tensor\ntorch.cuda.empty_cache()",
+          "when": "Large tensors not freed"
+        }
+      ]
+    },
+    {
+      "id": "determinism_failure",
+      "pattern": "Non-deterministic|results.*differ.*runs",
+      "message": "Test results not deterministic",
+      "cause": "Random seeds not set or non-deterministic CUDA ops",
+      "solutions": [
+        {
+          "approach": "Set all seeds",
+          "code": "torch.manual_seed(42)\ntorch.cuda.manual_seed_all(42)\nnp.random.seed(42)",
+          "when": "Need reproducibility"
+        },
+        {
+          "approach": "Enable deterministic mode",
+          "code": "torch.use_deterministic_algorithms(True)\nos.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'",
+          "when": "CUDA ops non-deterministic"
+        },
+        {
+          "approach": "Use pytest-randomly",
+          "code": "pytest --randomly-seed=42",
+          "when": "Test order affecting results"
+        }
+      ]
+    },
+    {
+      "id": "shape_mismatch",
+      "pattern": "Shape mismatch|size.*expected.*got",
+      "message": "Tensor shapes don't match",
+      "cause": "Wrong dimensions or batch handling",
+      "solutions": [
+        {
+          "approach": "Assert shapes explicitly",
+          "code": "assert output.shape == (batch_size, num_classes)",
+          "when": "Debugging shape issues"
+        },
+        {
+          "approach": "Use named dimensions",
+          "code": "tensor = tensor.rename('batch', 'channel', 'height', 'width')",
+          "when": "Complex dimension handling"
+        },
+        {
+          "approach": "Print shapes in fixture",
+          "code": "print(f'Input: {input.shape}, Output: {output.shape}')",
+          "when": "Debugging test failure"
+        }
+      ]
+    },
+    {
+      "id": "serialization_error",
+      "pattern": "Serialization.*error|save.*load.*mismatch",
+      "message": "Model save/load mismatch",
+      "cause": "State dict keys changed or custom modules not handled",
+      "solutions": [
+        {
+          "approach": "Test round-trip",
+          "code": "torch.save(model.state_dict(), buf)\nmodel2.load_state_dict(torch.load(buf))\nassert_models_equal(model, model2)",
+          "when": "Verifying serialization"
+        },
+        {
+          "approach": "Use strict=False cautiously",
+          "code": "model.load_state_dict(state, strict=False)",
+          "when": "Keys intentionally differ"
+        },
+        {
+          "approach": "Test TorchScript",
+          "code": "scripted = torch.jit.script(model)\nassert torch.allclose(model(x), scripted(x))",
+          "when": "Testing TorchScript export"
+        }
+      ]
+    },
+    {
+      "id": "distributed_test_hang",
+      "pattern": "Test.*hung|timeout.*distributed",
+      "message": "Distributed test hanging",
+      "cause": "Rank synchronization issue or deadlock",
+      "solutions": [
+        {
+          "approach": "Use timeout decorator",
+          "code": "@pytest.mark.timeout(60)",
+          "when": "Test may hang"
+        },
+        {
+          "approach": "Check barrier placement",
+          "code": "dist.barrier()  # Ensure all ranks reach same point",
+          "when": "Ranks out of sync"
+        },
+        {
+          "approach": "Test single GPU first",
+          "code": "pytest -k 'not distributed'",
+          "when": "Isolating non-distributed issues"
+        }
+      ]
+    }
+  ]
+}

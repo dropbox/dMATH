@@ -1,0 +1,186 @@
+{
+  "tool": "spin",
+  "version": "6.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assertion_violated",
+      "pattern": "assertion violated",
+      "message": "Assertion violated",
+      "cause": "Some execution path violates the assertion",
+      "solutions": [
+        {
+          "approach": "Generate trail",
+          "code": "spin -t -p model.pml  # Show error trace",
+          "when": "Need to see counterexample"
+        },
+        {
+          "approach": "Fix the model",
+          "code": "// Bug in protocol - fix the logic",
+          "when": "Model has real bug"
+        },
+        {
+          "approach": "Check assertion",
+          "code": "// Assertion may be too strong",
+          "when": "Assertion incorrect"
+        }
+      ]
+    },
+    {
+      "id": "invalid_endstate",
+      "pattern": "invalid end state",
+      "message": "Invalid end state (deadlock)",
+      "cause": "Process blocked with no valid termination",
+      "solutions": [
+        {
+          "approach": "Add end label",
+          "code": "end: skip  // Mark valid end state",
+          "when": "Deadlock is intentional termination"
+        },
+        {
+          "approach": "Fix blocking",
+          "code": "// Ensure process can always progress or terminate",
+          "when": "Unintentional deadlock"
+        },
+        {
+          "approach": "Check channels",
+          "code": "// Ensure matching send/receive",
+          "when": "Channel communication blocked"
+        }
+      ]
+    },
+    {
+      "id": "never_claim_violated",
+      "pattern": "never claim violated",
+      "message": "LTL property violated",
+      "cause": "System violates temporal property",
+      "solutions": [
+        {
+          "approach": "View trace",
+          "code": "spin -t model.pml  # Show violation trace",
+          "when": "Need to understand violation"
+        },
+        {
+          "approach": "Check fairness",
+          "code": "spin -a -f model.pml  # Add fairness",
+          "when": "Property needs fairness assumption"
+        },
+        {
+          "approach": "Fix model",
+          "code": "// System doesn't satisfy property",
+          "when": "Model has bug"
+        }
+      ]
+    },
+    {
+      "id": "state_space_explosion",
+      "pattern": "too many states",
+      "message": "State space too large",
+      "cause": "Model generates too many states",
+      "solutions": [
+        {
+          "approach": "Reduce constants",
+          "code": "#define N 3  // Smaller values",
+          "when": "Can verify smaller instance"
+        },
+        {
+          "approach": "Use partial order",
+          "code": "spin -DNOREDUCE=0 model.pml  // Enable POR",
+          "when": "Want partial order reduction"
+        },
+        {
+          "approach": "Use compression",
+          "code": "spin -DCOLLAPSE -DBITSTATE model.pml",
+          "when": "Trade precision for capacity"
+        },
+        {
+          "approach": "Abstract model",
+          "code": "// Simplify protocol model",
+          "when": "Model can be abstracted"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error",
+      "message": "Promela syntax error",
+      "cause": "Invalid Promela syntax",
+      "solutions": [
+        {
+          "approach": "Check keywords",
+          "code": "proctype, init, active, chan, mtype, if, fi, do, od",
+          "when": "May be using keyword as name"
+        },
+        {
+          "approach": "Check guards",
+          "code": "if\n:: guard1 -> stmt\n:: guard2 -> stmt\nfi",
+          "when": "If/do syntax wrong"
+        },
+        {
+          "approach": "Check channel ops",
+          "code": "ch ! msg  // Send\nch ? msg  // Receive",
+          "when": "Channel operation syntax"
+        }
+      ]
+    },
+    {
+      "id": "channel_overflow",
+      "pattern": "channel overflow",
+      "message": "Channel capacity exceeded",
+      "cause": "Too many messages in channel",
+      "solutions": [
+        {
+          "approach": "Increase capacity",
+          "code": "chan c = [10] of { mtype }  // Larger buffer",
+          "when": "Need bigger buffer"
+        },
+        {
+          "approach": "Use synchronous",
+          "code": "chan c = [0] of { mtype }  // Rendezous",
+          "when": "Can use synchronous comm"
+        },
+        {
+          "approach": "Add flow control",
+          "code": "// Check nfull(c) before send",
+          "when": "Need backpressure"
+        }
+      ]
+    },
+    {
+      "id": "unreachable_code",
+      "pattern": "unreachable code",
+      "message": "Code never executed",
+      "cause": "Some code paths never taken",
+      "solutions": [
+        {
+          "approach": "Check guards",
+          "code": "// Ensure guards can be true",
+          "when": "Guards may be unsatisfiable"
+        },
+        {
+          "approach": "Remove dead code",
+          "code": "// Delete unreachable statements",
+          "when": "Code is genuinely dead"
+        }
+      ]
+    },
+    {
+      "id": "non_progress",
+      "pattern": "non-progress cycle",
+      "message": "Non-progress cycle detected",
+      "cause": "System can loop forever without progress",
+      "solutions": [
+        {
+          "approach": "Add progress label",
+          "code": "progress: stmt  // Mark progress point",
+          "when": "Progress happens but unmarked"
+        },
+        {
+          "approach": "Fix livelock",
+          "code": "// Ensure progress on every cycle",
+          "when": "Real livelock in model"
+        }
+      ]
+    }
+  ]
+}

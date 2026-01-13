@@ -1,0 +1,168 @@
+{
+  "tool": "wrk",
+  "version": "4.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_error",
+      "pattern": "unable to connect|Connection refused|connect\\(\\) failed",
+      "message": "Cannot connect to target",
+      "cause": "Server not running or wrong URL",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl -I http://localhost:8080/",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check URL",
+          "code": "wrk -t2 -c10 -d10s http://correct-host:port/path",
+          "when": "Wrong URL"
+        },
+        {
+          "approach": "Test locally",
+          "code": "wrk -t1 -c1 -d1s http://127.0.0.1:8080/",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "lua_script_error",
+      "pattern": "error loading script|attempt to call|syntax error|script error",
+      "message": "Lua script error",
+      "cause": "Lua script has syntax or runtime error",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "-- Validate Lua syntax\nluac -p script.lua",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Fix function",
+          "code": "request = function()\n  return wrk.format(\"GET\", \"/api\")\nend",
+          "when": "Function definition wrong"
+        },
+        {
+          "approach": "Debug output",
+          "code": "init = function(args)\n  print(\"Initialized\")\nend\n\nrequest = function()\n  print(\"Making request\")\n  return wrk.format(\"GET\", \"/\")\nend",
+          "when": "Need debugging"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Socket/request timeout|read timeout|Timeout",
+      "message": "Request timed out",
+      "cause": "Server response too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "wrk -t2 -c10 -d30s --timeout 10s http://localhost:8080/",
+          "when": "Requests legitimately slow"
+        },
+        {
+          "approach": "Reduce load",
+          "code": "wrk -t1 -c5 -d10s http://localhost:8080/",
+          "when": "Server overwhelmed"
+        },
+        {
+          "approach": "Profile server",
+          "code": "# Check server-side response times",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "thread_error",
+      "pattern": "unable to create thread|thread.*failed|pthread",
+      "message": "Thread creation failed",
+      "cause": "System cannot create requested threads",
+      "solutions": [
+        {
+          "approach": "Reduce threads",
+          "code": "wrk -t4 -c100 -d30s http://localhost:8080/\n# Use fewer threads than CPU cores",
+          "when": "Too many threads"
+        },
+        {
+          "approach": "Increase limits",
+          "code": "ulimit -u 4096  # Increase process limit",
+          "when": "System limit"
+        },
+        {
+          "approach": "Use connections",
+          "code": "# More connections per thread instead of more threads\nwrk -t2 -c200 -d30s http://localhost:8080/",
+          "when": "Need more concurrency"
+        }
+      ]
+    },
+    {
+      "id": "file_descriptor_limit",
+      "pattern": "too many open files|EMFILE|socket: Too many open files",
+      "message": "File descriptor limit reached",
+      "cause": "Too many connections for system limit",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "ulimit -n 10000\nwrk -t4 -c1000 -d30s http://localhost:8080/",
+          "when": "Need more connections"
+        },
+        {
+          "approach": "Reduce connections",
+          "code": "wrk -t2 -c100 -d30s http://localhost:8080/",
+          "when": "Cannot change limit"
+        },
+        {
+          "approach": "System config",
+          "code": "# Edit /etc/security/limits.conf\n* soft nofile 65535\n* hard nofile 65535",
+          "when": "Permanent increase needed"
+        }
+      ]
+    },
+    {
+      "id": "http_error",
+      "pattern": "Non-2xx or 3xx responses|HTTP errors",
+      "message": "High error rate in responses",
+      "cause": "Server returning error status codes",
+      "solutions": [
+        {
+          "approach": "Check endpoint",
+          "code": "curl -v http://localhost:8080/api/endpoint",
+          "when": "Verify manually"
+        },
+        {
+          "approach": "Add headers",
+          "code": "wrk -t2 -c10 -d10s -H \"Authorization: Bearer token\" http://localhost:8080/",
+          "when": "Auth required"
+        },
+        {
+          "approach": "Use Lua script",
+          "code": "request = function()\n  return wrk.format(\"POST\", \"/api\", {\n    [\"Content-Type\"] = \"application/json\"\n  }, '{\"key\": \"value\"}')\nend",
+          "when": "Need custom request"
+        }
+      ]
+    },
+    {
+      "id": "latency_distribution",
+      "pattern": "Latency Distribution|percentile",
+      "message": "Understanding latency output",
+      "cause": "Not an error - normal output explanation",
+      "solutions": [
+        {
+          "approach": "Read output",
+          "code": "# Latency shows: Avg, Stdev, Max, +/- Stdev\n# Req/Sec shows throughput per thread\n# Latency Distribution shows percentiles",
+          "when": "Understanding results"
+        },
+        {
+          "approach": "JSON output",
+          "code": "wrk -t2 -c10 -d10s --latency http://localhost:8080/\n# --latency shows detailed percentiles",
+          "when": "Need detailed stats"
+        },
+        {
+          "approach": "Custom reporting",
+          "code": "done = function(summary, latency, requests)\n  io.write(string.format(\"p99: %.2fms\\n\", latency:percentile(99.0)/1000))\nend",
+          "when": "Custom format needed"
+        }
+      ]
+    }
+  ]
+}

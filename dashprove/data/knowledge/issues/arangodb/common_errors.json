@@ -1,0 +1,191 @@
+{
+  "tool": "arangodb",
+  "version": "3.11.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not authorized|401|wrong credentials|authentication required",
+      "message": "Authentication error",
+      "cause": "Invalid credentials or not authenticated",
+      "solutions": [
+        {
+          "approach": "Default creds",
+          "code": "# Default credentials:\n# Username: root\n# Password: (empty or set during install)\narangosh --server.username root",
+          "when": "Login"
+        },
+        {
+          "approach": "Create user",
+          "code": "// In arangosh:\nrequire('@arangodb/users').save('myuser', 'password');\nrequire('@arangodb/users').grantDatabase('myuser', 'mydb', 'rw');",
+          "when": "Create user"
+        },
+        {
+          "approach": "JWT auth",
+          "code": "curl -X POST http://localhost:8529/_open/auth \\\n  -d '{\"username\":\"root\",\"password\":\"\"}'",
+          "when": "Get JWT"
+        }
+      ]
+    },
+    {
+      "id": "collection_error",
+      "pattern": "collection.*not found|collection or view not found|1203",
+      "message": "Collection not found",
+      "cause": "Collection doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create collection",
+          "code": "db._create('users');\n// Or document collection:\ndb._createDocumentCollection('users');\n// Or edge collection:\ndb._createEdgeCollection('relationships');",
+          "when": "Create collection"
+        },
+        {
+          "approach": "List collections",
+          "code": "db._collections()",
+          "when": "View collections"
+        },
+        {
+          "approach": "HTTP API",
+          "code": "curl -X POST http://localhost:8529/_api/collection \\\n  -H 'Authorization: bearer TOKEN' \\\n  -d '{\"name\":\"users\"}'",
+          "when": "REST API"
+        }
+      ]
+    },
+    {
+      "id": "query_error",
+      "pattern": "AQL.*error|syntax error|parse error|query.*failed",
+      "message": "AQL query error",
+      "cause": "Invalid AQL syntax",
+      "solutions": [
+        {
+          "approach": "Basic query",
+          "code": "FOR user IN users\n  FILTER user.age >= 18\n  SORT user.name\n  RETURN user",
+          "when": "Query syntax"
+        },
+        {
+          "approach": "Graph query",
+          "code": "FOR v, e, p IN 1..3 OUTBOUND 'users/alice' relationships\n  RETURN { vertex: v, edge: e, path: p }",
+          "when": "Graph traversal"
+        },
+        {
+          "approach": "Explain query",
+          "code": "db._explain('FOR u IN users RETURN u');",
+          "when": "Debug query"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "index.*not found|no suitable index|cannot use index",
+      "message": "Index error",
+      "cause": "Missing or unsuitable index",
+      "solutions": [
+        {
+          "approach": "Create index",
+          "code": "db.users.ensureIndex({ type: 'persistent', fields: ['email'], unique: true });\ndb.users.ensureIndex({ type: 'hash', fields: ['name'] });\ndb.users.ensureIndex({ type: 'geo', fields: ['location'] });",
+          "when": "Create indexes"
+        },
+        {
+          "approach": "View indexes",
+          "code": "db.users.indexes()",
+          "when": "List indexes"
+        },
+        {
+          "approach": "Fulltext index",
+          "code": "db.articles.ensureIndex({ type: 'fulltext', fields: ['content'], minLength: 3 });",
+          "when": "Text search"
+        }
+      ]
+    },
+    {
+      "id": "graph_error",
+      "pattern": "graph.*not found|edge.*invalid|vertex.*not found",
+      "message": "Graph error",
+      "cause": "Graph configuration or data issue",
+      "solutions": [
+        {
+          "approach": "Create graph",
+          "code": "const graph_module = require('@arangodb/general-graph');\ngraph_module._create('social', [\n  { collection: 'follows', from: ['users'], to: ['users'] }\n]);",
+          "when": "Create graph"
+        },
+        {
+          "approach": "Add edge",
+          "code": "db.follows.save({\n  _from: 'users/alice',\n  _to: 'users/bob',\n  since: '2024-01-01'\n});",
+          "when": "Add relationship"
+        },
+        {
+          "approach": "Traverse graph",
+          "code": "FOR v IN 1..2 OUTBOUND 'users/alice' GRAPH 'social'\n  RETURN v",
+          "when": "Query graph"
+        }
+      ]
+    },
+    {
+      "id": "document_error",
+      "pattern": "document.*not found|unique constraint|conflict|1202|1210",
+      "message": "Document error",
+      "cause": "Document not found or constraint violation",
+      "solutions": [
+        {
+          "approach": "Insert document",
+          "code": "db.users.save({ _key: 'alice', name: 'Alice', age: 30 });",
+          "when": "Insert"
+        },
+        {
+          "approach": "Upsert",
+          "code": "db._query(`\n  UPSERT { _key: 'alice' }\n  INSERT { _key: 'alice', name: 'Alice' }\n  UPDATE { name: 'Alice Updated' }\n  IN users\n`);",
+          "when": "Insert or update"
+        },
+        {
+          "approach": "Check exists",
+          "code": "db.users.exists('alice');\ndb.users.document('alice');",
+          "when": "Check document"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection refused|ECONNREFUSED|timeout|server.*unavailable",
+      "message": "Connection error",
+      "cause": "ArangoDB not running or unreachable",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "curl http://localhost:8529/_api/version",
+          "when": "Health check"
+        },
+        {
+          "approach": "Start server",
+          "code": "arangod --server.endpoint tcp://localhost:8529",
+          "when": "Start ArangoDB"
+        },
+        {
+          "approach": "Docker",
+          "code": "docker run -e ARANGO_ROOT_PASSWORD=password -p 8529:8529 arangodb",
+          "when": "Docker start"
+        }
+      ]
+    },
+    {
+      "id": "transaction_error",
+      "pattern": "transaction.*error|deadlock|lock timeout|write-write conflict",
+      "message": "Transaction error",
+      "cause": "Transaction conflict or timeout",
+      "solutions": [
+        {
+          "approach": "Basic transaction",
+          "code": "const trx = db._createTransaction({\n  collections: {\n    write: ['users', 'orders']\n  }\n});\ntry {\n  // operations\n  trx.commit();\n} catch(e) {\n  trx.abort();\n}",
+          "when": "Use transaction"
+        },
+        {
+          "approach": "AQL transaction",
+          "code": "db._query(`\n  LET user = FIRST(FOR u IN users FILTER u._key == 'alice' RETURN u)\n  UPDATE user WITH { balance: user.balance - 100 } IN users\n`);",
+          "when": "AQL transaction"
+        },
+        {
+          "approach": "Lock timeout",
+          "code": "// Increase lock timeout:\ndb._query(query, {}, { maxTransactionSize: 100000 });",
+          "when": "Timeout issue"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "tool": "instructor",
+  "version": "1.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "validation_error",
+      "pattern": "ValidationError|Pydantic.*error|Field required",
+      "message": "Pydantic model validation failed",
+      "cause": "LLM output doesn't match Pydantic model schema",
+      "solutions": [
+        {
+          "approach": "Add field descriptions",
+          "code": "from pydantic import BaseModel, Field\nclass User(BaseModel):\n    name: str = Field(description='Full name')\n    age: int = Field(description='Age in years')",
+          "when": "Model needs guidance on field format"
+        },
+        {
+          "approach": "Use Optional fields",
+          "code": "from typing import Optional\nage: Optional[int] = None",
+          "when": "Field may not always be present"
+        },
+        {
+          "approach": "Increase max_retries",
+          "code": "client.chat.completions.create(\n    response_model=User,\n    max_retries=3\n)",
+          "when": "Validation occasionally fails"
+        }
+      ]
+    },
+    {
+      "id": "api_key_error",
+      "pattern": "API key|AuthenticationError|Invalid API",
+      "message": "OpenAI API key not configured",
+      "cause": "OPENAI_API_KEY environment variable not set",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "export OPENAI_API_KEY=sk-...",
+          "when": "Key not set"
+        },
+        {
+          "approach": "Pass key directly",
+          "code": "from openai import OpenAI\nclient = instructor.from_openai(OpenAI(api_key='sk-...'))",
+          "when": "Not using env var"
+        },
+        {
+          "approach": "Use different provider",
+          "code": "from anthropic import Anthropic\nclient = instructor.from_anthropic(Anthropic())",
+          "when": "Using Anthropic instead"
+        }
+      ]
+    },
+    {
+      "id": "client_patch_error",
+      "pattern": "patch.*error|Cannot patch|Client not supported",
+      "message": "Failed to patch client with Instructor",
+      "cause": "Client type not supported or already patched",
+      "solutions": [
+        {
+          "approach": "Use from_openai",
+          "code": "import instructor\nfrom openai import OpenAI\nclient = instructor.from_openai(OpenAI())",
+          "when": "Patching OpenAI client"
+        },
+        {
+          "approach": "Use from_anthropic",
+          "code": "from anthropic import Anthropic\nclient = instructor.from_anthropic(Anthropic())",
+          "when": "Using Anthropic"
+        },
+        {
+          "approach": "Use from_litellm",
+          "code": "import litellm\nclient = instructor.from_litellm(litellm.completion)",
+          "when": "Using LiteLLM"
+        }
+      ]
+    },
+    {
+      "id": "retry_exhausted",
+      "pattern": "Max retries|Retry exhausted|InstructorRetryException",
+      "message": "All retry attempts failed",
+      "cause": "LLM consistently fails to produce valid output",
+      "solutions": [
+        {
+          "approach": "Improve prompt",
+          "code": "# Add clearer instructions in messages",
+          "when": "Model misunderstands task"
+        },
+        {
+          "approach": "Simplify schema",
+          "code": "# Break complex model into smaller parts",
+          "when": "Schema too complex"
+        },
+        {
+          "approach": "Add examples",
+          "code": "messages=[\n    {'role': 'user', 'content': 'Extract: John, 30 years old'},\n    {'role': 'assistant', 'content': '{\"name\": \"John\", \"age\": 30}'},\n    {'role': 'user', 'content': f'Extract: {text}'}\n]",
+          "when": "Model needs examples"
+        },
+        {
+          "approach": "Use better model",
+          "code": "model='gpt-4'  # Instead of gpt-3.5-turbo",
+          "when": "Model capability insufficient"
+        }
+      ]
+    },
+    {
+      "id": "streaming_error",
+      "pattern": "Streaming.*error|Partial.*error|PartialModel",
+      "message": "Streaming response error",
+      "cause": "Error during streaming extraction",
+      "solutions": [
+        {
+          "approach": "Use Partial for streaming",
+          "code": "from instructor import Partial\nfor partial in client.chat.completions.create_partial(\n    response_model=Partial[User]\n):\n    print(partial)",
+          "when": "Streaming structured output"
+        },
+        {
+          "approach": "Disable streaming",
+          "code": "# Use non-streaming if issues persist",
+          "when": "Streaming not required"
+        },
+        {
+          "approach": "Handle partial state",
+          "code": "# Partial objects may have None fields initially",
+          "when": "Accessing incomplete data"
+        }
+      ]
+    },
+    {
+      "id": "mode_error",
+      "pattern": "Mode.*error|function calling|tool_call",
+      "message": "Instructor mode not supported",
+      "cause": "Model doesn't support the selected extraction mode",
+      "solutions": [
+        {
+          "approach": "Use JSON mode",
+          "code": "client = instructor.from_openai(OpenAI(), mode=instructor.Mode.JSON)",
+          "when": "Function calling not supported"
+        },
+        {
+          "approach": "Use TOOLS mode",
+          "code": "client = instructor.from_openai(OpenAI(), mode=instructor.Mode.TOOLS)",
+          "when": "Using tool calling"
+        },
+        {
+          "approach": "Use MD_JSON mode",
+          "code": "client = instructor.from_openai(OpenAI(), mode=instructor.Mode.MD_JSON)",
+          "when": "Markdown JSON extraction"
+        }
+      ]
+    },
+    {
+      "id": "nested_model_error",
+      "pattern": "Nested.*error|List.*error|Complex type",
+      "message": "Complex nested model extraction failed",
+      "cause": "Deeply nested or complex Pydantic models fail extraction",
+      "solutions": [
+        {
+          "approach": "Use proper List type",
+          "code": "from typing import List\nclass Response(BaseModel):\n    users: List[User]",
+          "when": "Extracting lists"
+        },
+        {
+          "approach": "Flatten structure",
+          "code": "# Reduce nesting depth if possible",
+          "when": "Too many nested levels"
+        },
+        {
+          "approach": "Use Iterable for large lists",
+          "code": "from instructor import Iterable\nresponse_model=Iterable[User]",
+          "when": "Extracting many items"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Timeout|TimeoutError|Request timed out",
+      "message": "API request timed out",
+      "cause": "LLM took too long to respond",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "client = OpenAI(timeout=60.0)",
+          "when": "Complex extraction needs time"
+        },
+        {
+          "approach": "Simplify task",
+          "code": "# Break into smaller extractions",
+          "when": "Task is too large"
+        },
+        {
+          "approach": "Reduce max_tokens",
+          "code": "client.chat.completions.create(\n    max_tokens=500\n)",
+          "when": "Response doesn't need to be long"
+        }
+      ]
+    }
+  ]
+}

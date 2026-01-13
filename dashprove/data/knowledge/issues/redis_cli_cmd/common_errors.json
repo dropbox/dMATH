@@ -1,0 +1,66 @@
+{
+  "tool": "redis-cli",
+  "category": "database_client",
+  "common_errors": [
+    {
+      "error_pattern": "Could not connect to Redis at.*Connection refused",
+      "cause": "Redis server not running or listening on different host/port",
+      "solution": "Start Redis: sudo systemctl start redis. Check bind and port in redis.conf.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "NOAUTH Authentication required",
+      "cause": "Redis requires password but none provided",
+      "solution": "Use -a flag: redis-cli -a yourpassword. Or after connecting: AUTH yourpassword",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "WRONGPASS invalid username-password pair",
+      "cause": "Wrong password or username (Redis 6+ ACL)",
+      "solution": "Check password in redis.conf (requirepass). For ACL: verify user credentials.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "ERR unknown command",
+      "cause": "Command doesn't exist, is disabled, or renamed",
+      "solution": "Check command name. Some commands disabled in redis.conf (rename-command).",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "NOPERM.*command not allowed",
+      "cause": "ACL rule prevents this user from running this command",
+      "solution": "Update ACL to allow command: ACL SETUSER user +command. Or use admin user.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "OOM command not allowed",
+      "cause": "Redis is out of memory (maxmemory reached)",
+      "solution": "Free memory: delete keys, increase maxmemory, or set maxmemory-policy for eviction.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "LOADING Redis is loading the dataset",
+      "cause": "Redis is still loading data from disk (RDB/AOF)",
+      "solution": "Wait for loading to complete. Watch progress with INFO persistence.",
+      "severity": "warning"
+    },
+    {
+      "error_pattern": "READONLY You can't write against a read only replica",
+      "cause": "Connected to replica, not master, for write operation",
+      "solution": "Connect to master for writes. Or enable replica writes: CONFIG SET replica-read-only no",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "CLUSTERDOWN.*not serving",
+      "cause": "Redis cluster is unhealthy (slots not covered)",
+      "solution": "Check cluster: CLUSTER INFO. Fix with: redis-cli --cluster fix host:port",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "ERR wrong number of arguments",
+      "cause": "Command called with incorrect number of arguments",
+      "solution": "Check command syntax: HELP command. Refer to redis.io/commands.",
+      "severity": "error"
+    }
+  ]
+}

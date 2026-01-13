@@ -1,0 +1,127 @@
+{
+  "id": "mlflow",
+  "name": "MLflow",
+  "category": "ml_experiment_tracking",
+  "subcategory": "lifecycle",
+
+  "description": "Platform for ML lifecycle management",
+  "long_description": "MLflow is an open-source platform for managing the end-to-end machine learning lifecycle. It includes experiment tracking, model packaging, model registry, and deployment. Used by thousands of organizations for reproducible ML experiments.",
+
+  "capabilities": [
+    "experiment_tracking",
+    "model_registry",
+    "model_packaging",
+    "model_serving",
+    "artifact_logging",
+    "parameter_logging",
+    "metric_logging",
+    "autologging"
+  ],
+  "property_types": ["metric", "parameter", "artifact"],
+  "input_languages": ["python", "r", "java"],
+  "output_formats": ["mlflow_model", "onnx", "docker"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install mlflow"},
+      {"type": "pip_extras", "command": "pip install mlflow[extras]"},
+      {"type": "conda", "command": "conda install -c conda-forge mlflow"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://mlflow.org/docs/latest/index.html",
+    "tutorial": "https://mlflow.org/docs/latest/ml/getting-started/",
+    "api_reference": "https://mlflow.org/docs/latest/python_api/index.html",
+    "examples": "https://github.com/mlflow/mlflow/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "log_experiment",
+      "description": "Track experiment metrics",
+      "syntax": "mlflow.log_metric(key, value)",
+      "when_to_use": "To track training metrics",
+      "examples": ["import mlflow\n\nwith mlflow.start_run():\n    mlflow.log_param('learning_rate', 0.01)\n    mlflow.log_metric('accuracy', 0.95)\n    mlflow.log_artifact('model.pkl')"]
+    },
+    {
+      "name": "autolog",
+      "description": "Automatic logging",
+      "syntax": "mlflow.sklearn.autolog()",
+      "when_to_use": "For automatic metric capture",
+      "examples": ["mlflow.sklearn.autolog()\nmlflow.pytorch.autolog()\nmlflow.transformers.autolog()"]
+    },
+    {
+      "name": "register_model",
+      "description": "Register model version",
+      "syntax": "mlflow.register_model(model_uri, name)",
+      "when_to_use": "To version and deploy models",
+      "examples": ["result = mlflow.register_model(\n    'runs:/<run_id>/model',\n    'production_model'\n)"]
+    },
+    {
+      "name": "serve_model",
+      "description": "Deploy model as service",
+      "syntax": "mlflow models serve -m <model_uri>",
+      "when_to_use": "For model serving",
+      "examples": ["mlflow models serve -m models:/MyModel/Production -p 5000"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Run.*not found",
+      "meaning": "Invalid run ID",
+      "common_causes": ["Wrong run ID", "Run deleted"],
+      "fixes": ["Check run ID in UI", "List runs with search_runs()"]
+    },
+    {
+      "pattern": "Tracking server.*unavailable",
+      "meaning": "Cannot connect to server",
+      "common_causes": ["Server not running", "Wrong URI"],
+      "fixes": ["Start mlflow server", "Check MLFLOW_TRACKING_URI"]
+    },
+    {
+      "pattern": "Artifact.*too large",
+      "meaning": "Artifact exceeds limit",
+      "common_causes": ["Large model files"],
+      "fixes": ["Use cloud storage backend", "Compress artifacts"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["metric", "parameter"],
+    "cli_command": "dashprove verify --backend mlflow"
+  },
+
+  "performance": {
+    "typical_runtime": "Milliseconds for logging",
+    "scalability": "Excellent with proper backend",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["wandb", "neptune", "comet"],
+    "advantages": [
+      "Open source",
+      "Model registry",
+      "Multi-framework support",
+      "Good deployment options",
+      "Databricks integration"
+    ],
+    "disadvantages": [
+      "UI less polished than competitors",
+      "Requires self-hosting for scale",
+      "Limited collaboration features"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.10.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Databricks",
+    "license": "Apache-2.0"
+  }
+}

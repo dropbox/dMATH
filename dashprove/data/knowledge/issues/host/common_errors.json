@@ -1,0 +1,135 @@
+{
+  "tool": "host",
+  "version": "9.18",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_found",
+      "pattern": "not found|NXDOMAIN|Host.*not found|no address",
+      "message": "Domain does not exist",
+      "cause": "Invalid domain or DNS issue",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "host example.com  # Verify domain",
+          "when": "Typo in domain"
+        },
+        {
+          "approach": "Use different DNS",
+          "code": "host example.com 8.8.8.8\nhost example.com 1.1.1.1",
+          "when": "Try public DNS"
+        },
+        {
+          "approach": "Use dig",
+          "code": "dig +trace example.com  # Detailed tracing",
+          "when": "More details needed"
+        }
+      ]
+    },
+    {
+      "id": "connection_timed_out",
+      "pattern": "connection timed out|Host.*timed out|no servers could be reached",
+      "message": "DNS server unreachable",
+      "cause": "DNS server down or network issue",
+      "solutions": [
+        {
+          "approach": "Try other server",
+          "code": "host example.com 8.8.8.8",
+          "when": "Local DNS down"
+        },
+        {
+          "approach": "Check connectivity",
+          "code": "ping 8.8.8.8\nping 1.1.1.1",
+          "when": "Network issue"
+        },
+        {
+          "approach": "Use TCP",
+          "code": "host -T example.com",
+          "when": "UDP blocked"
+        }
+      ]
+    },
+    {
+      "id": "server_failure",
+      "pattern": "SERVFAIL|server failure|server failed",
+      "message": "DNS server error",
+      "cause": "Server misconfigured or DNSSEC issue",
+      "solutions": [
+        {
+          "approach": "Different server",
+          "code": "host example.com 8.8.8.8",
+          "when": "Server problem"
+        },
+        {
+          "approach": "Check DNSSEC",
+          "code": "dig +dnssec example.com",
+          "when": "DNSSEC issue"
+        },
+        {
+          "approach": "Contact admin",
+          "code": "whois example.com | grep -i nameserver",
+          "when": "Find authoritative NS"
+        }
+      ]
+    },
+    {
+      "id": "refused",
+      "pattern": "REFUSED|refused|Query refused",
+      "message": "Query refused by server",
+      "cause": "Server ACL blocking queries",
+      "solutions": [
+        {
+          "approach": "Use public DNS",
+          "code": "host example.com 8.8.8.8\nhost example.com 9.9.9.9",
+          "when": "Recursive blocked"
+        },
+        {
+          "approach": "Query authoritative",
+          "code": "host -t NS example.com\nhost example.com ns1.example.com",
+          "when": "Direct to auth NS"
+        }
+      ]
+    },
+    {
+      "id": "reverse_lookup_fail",
+      "pattern": "not found.*arpa|no PTR|reverse lookup.*fail",
+      "message": "Reverse DNS lookup failed",
+      "cause": "No PTR record configured",
+      "solutions": [
+        {
+          "approach": "Forward lookup",
+          "code": "host 8.8.8.8  # Reverse\nhost google.com  # Forward",
+          "when": "Verify both"
+        },
+        {
+          "approach": "Check PTR",
+          "code": "dig -x 8.8.8.8\nhost -t PTR 8.8.8.8.in-addr.arpa",
+          "when": "Explicit PTR query"
+        },
+        {
+          "approach": "Contact ISP",
+          "code": "# PTR records managed by IP owner\nwhois 8.8.8.8",
+          "when": "Missing PTR"
+        }
+      ]
+    },
+    {
+      "id": "invalid_type",
+      "pattern": "invalid type|unknown query type|unsupported type",
+      "message": "Invalid DNS record type",
+      "cause": "Unknown or unsupported record type",
+      "solutions": [
+        {
+          "approach": "Common types",
+          "code": "host -t A example.com\nhost -t AAAA example.com\nhost -t MX example.com\nhost -t TXT example.com\nhost -t NS example.com",
+          "when": "Standard types"
+        },
+        {
+          "approach": "Use dig",
+          "code": "dig example.com TYPE65  # Use dig for new types",
+          "when": "Newer record type"
+        }
+      ]
+    }
+  ]
+}

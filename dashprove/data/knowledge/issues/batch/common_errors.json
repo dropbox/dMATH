@@ -1,0 +1,107 @@
+{
+  "tool": "batch",
+  "version": "at 3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "daemon_not_running",
+      "pattern": "Cannot connect|atd.*not running|no atd",
+      "message": "at daemon not running",
+      "cause": "batch uses atd, which must be running",
+      "solutions": [
+        {
+          "approach": "Start daemon",
+          "code": "sudo systemctl start atd\nsudo systemctl enable atd",
+          "when": "systemd systems"
+        },
+        {
+          "approach": "Check status",
+          "code": "systemctl status atd",
+          "when": "Verify running"
+        }
+      ]
+    },
+    {
+      "id": "load_threshold",
+      "pattern": "load average|waiting|queue",
+      "message": "Job waiting for low load",
+      "cause": "batch waits until system load drops below threshold",
+      "solutions": [
+        {
+          "approach": "Check load",
+          "code": "uptime  # See current load average\ncat /proc/loadavg",
+          "when": "Understand delay"
+        },
+        {
+          "approach": "Use at instead",
+          "code": "at now + 1 minute  # Runs at specified time regardless of load",
+          "when": "Run immediately"
+        },
+        {
+          "approach": "Check threshold",
+          "code": "# Default threshold is usually 1.5 or 0.8\n# Configure with atd -l LOAD",
+          "when": "Adjust threshold"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "You do not have permission|not allowed",
+      "message": "User cannot use batch",
+      "cause": "Same restrictions as at command",
+      "solutions": [
+        {
+          "approach": "Check allow file",
+          "code": "cat /etc/at.allow",
+          "when": "Whitelist exists"
+        },
+        {
+          "approach": "Add user",
+          "code": "echo 'username' | sudo tee -a /etc/at.allow",
+          "when": "Grant access"
+        }
+      ]
+    },
+    {
+      "id": "no_output",
+      "pattern": "no output|silent|mail",
+      "message": "Cannot see job output",
+      "cause": "Output mailed or lost",
+      "solutions": [
+        {
+          "approach": "Redirect output",
+          "code": "batch <<EOF\ncommand > /tmp/batch_output.log 2>&1\nEOF",
+          "when": "Save to file"
+        },
+        {
+          "approach": "Check mail",
+          "code": "mail  # Check local mail\ncat /var/mail/$USER",
+          "when": "Output was mailed"
+        }
+      ]
+    },
+    {
+      "id": "job_management",
+      "pattern": "list.*job|pending|cancel",
+      "message": "Managing batch jobs",
+      "cause": "Want to see or manage queued jobs",
+      "solutions": [
+        {
+          "approach": "List jobs",
+          "code": "atq  # Lists both at and batch jobs",
+          "when": "See pending"
+        },
+        {
+          "approach": "View job",
+          "code": "at -c JOBID  # Show job contents",
+          "when": "Inspect"
+        },
+        {
+          "approach": "Remove job",
+          "code": "atrm JOBID",
+          "when": "Cancel job"
+        }
+      ]
+    }
+  ]
+}

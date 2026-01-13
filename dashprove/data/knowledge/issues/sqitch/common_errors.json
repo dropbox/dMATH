@@ -1,0 +1,145 @@
+{
+  "tool": "sqitch",
+  "version": "1.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "target_not_registered",
+      "pattern": "Unknown target|Target.*not registered|No registered target",
+      "message": "Target database not configured",
+      "cause": "Database target not added to sqitch.conf or sqitch.plan",
+      "solutions": [
+        {
+          "approach": "Add target",
+          "code": "sqitch target add mydb db:pg://user@host/db",
+          "when": "First time setup"
+        },
+        {
+          "approach": "List targets",
+          "code": "sqitch target list",
+          "when": "Check existing targets"
+        },
+        {
+          "approach": "Use URI directly",
+          "code": "sqitch deploy db:pg://user:pass@host/db",
+          "when": "One-time deployment"
+        }
+      ]
+    },
+    {
+      "id": "change_not_found",
+      "pattern": "Cannot find change|Unknown change|Change.*not in plan",
+      "message": "Referenced change does not exist",
+      "cause": "Typo in change name, change removed from plan, or wrong project",
+      "solutions": [
+        {
+          "approach": "List changes",
+          "code": "sqitch log --oneline",
+          "when": "Find correct change name"
+        },
+        {
+          "approach": "Check plan",
+          "code": "cat sqitch.plan",
+          "when": "Verify change is in plan"
+        },
+        {
+          "approach": "Revert to tag",
+          "code": "sqitch revert --to @tag",
+          "when": "Revert using known tag"
+        }
+      ]
+    },
+    {
+      "id": "deploy_conflict",
+      "pattern": "already deployed|Conflicts with previously deployed|Cannot deploy.*already exists",
+      "message": "Change conflicts with deployed state",
+      "cause": "Attempting to deploy already-deployed change or schema conflict",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "sqitch status",
+          "when": "See what's deployed"
+        },
+        {
+          "approach": "Revert first",
+          "code": "sqitch revert --to <change>",
+          "when": "Need to re-deploy from earlier state"
+        },
+        {
+          "approach": "Log changes",
+          "code": "sqitch log -f '%c %n'",
+          "when": "See deployment history"
+        }
+      ]
+    },
+    {
+      "id": "verify_failed",
+      "pattern": "Verify script.*failed|verify failed|not ok.*verify",
+      "message": "Change verification failed",
+      "cause": "Database state doesn't match expected schema in verify script",
+      "solutions": [
+        {
+          "approach": "Check verify script",
+          "code": "cat verify/<change>.sql",
+          "when": "See what's being checked"
+        },
+        {
+          "approach": "Run verify manually",
+          "code": "psql -f verify/<change>.sql",
+          "when": "Debug verification"
+        },
+        {
+          "approach": "Update verify",
+          "code": "sqitch add <change> --requires <dep>",
+          "when": "Missing dependency"
+        }
+      ]
+    },
+    {
+      "id": "dependency_not_deployed",
+      "pattern": "Depends on.*which has not been deployed|dependency not deployed",
+      "message": "Change depends on undeployed change",
+      "cause": "Required change listed in deploy script not yet applied",
+      "solutions": [
+        {
+          "approach": "Deploy dependencies",
+          "code": "sqitch deploy --to <dependency>",
+          "when": "Deploy prerequisite first"
+        },
+        {
+          "approach": "Check plan order",
+          "code": "sqitch plan",
+          "when": "Verify dependency ordering"
+        },
+        {
+          "approach": "Deploy all",
+          "code": "sqitch deploy",
+          "when": "Deploy entire plan in order"
+        }
+      ]
+    },
+    {
+      "id": "revert_failed",
+      "pattern": "Revert script.*failed|Cannot revert|revert not ok",
+      "message": "Revert operation failed",
+      "cause": "Revert SQL has errors or dependent objects exist",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "\\d+ <table> -- check foreign keys",
+          "when": "Dependent objects may exist"
+        },
+        {
+          "approach": "Cascade revert",
+          "code": "sqitch revert -y",
+          "when": "Force revert with confirmation"
+        },
+        {
+          "approach": "Fix revert script",
+          "code": "DROP TABLE IF EXISTS <table> CASCADE;",
+          "when": "Make revert idempotent"
+        }
+      ]
+    }
+  ]
+}

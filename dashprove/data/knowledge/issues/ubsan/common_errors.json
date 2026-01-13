@@ -1,0 +1,215 @@
+{
+  "tool": "ubsan",
+  "version": "clang 18.0 / gcc 14",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "signed_overflow",
+      "pattern": "signed integer overflow|runtime error:.*overflow",
+      "message": "Signed integer overflow",
+      "cause": "Arithmetic operation overflowed signed integer bounds",
+      "solutions": [
+        {
+          "approach": "Use larger type",
+          "code": "int64_t result = (int64_t)a + b;  // Avoid overflow",
+          "when": "Values may exceed int range"
+        },
+        {
+          "approach": "Check before operation",
+          "code": "if (a > INT_MAX - b) { /* handle overflow */ }\nresult = a + b;",
+          "when": "Need to detect overflow"
+        },
+        {
+          "approach": "Use unsigned for wrap semantics",
+          "code": "uint32_t counter = 0;\ncounter++;  // Well-defined wrap at UINT32_MAX",
+          "when": "Wrap-around is desired"
+        }
+      ]
+    },
+    {
+      "id": "shift_exponent",
+      "pattern": "shift exponent .* is negative|shift exponent .* is too large",
+      "message": "Invalid shift amount",
+      "cause": "Shift by negative amount or >= bit width",
+      "solutions": [
+        {
+          "approach": "Validate shift amount",
+          "code": "if (shift >= 0 && shift < 32) {\n    result = x << shift;\n}",
+          "when": "Shift amount is variable"
+        },
+        {
+          "approach": "Use safe shift",
+          "code": "result = (shift < 32) ? (x << shift) : 0;",
+          "when": "Zero is appropriate for large shifts"
+        }
+      ]
+    },
+    {
+      "id": "null_reference",
+      "pattern": "member access within null pointer|reference binding to null",
+      "message": "Null pointer/reference access",
+      "cause": "Dereferencing null or binding null to reference",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (ptr != nullptr) {\n    ptr->member = value;\n}",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Use std::optional",
+          "code": "std::optional<T> opt = get_value();\nif (opt) { use(*opt); }",
+          "when": "C++17 optional semantics"
+        }
+      ]
+    },
+    {
+      "id": "division_by_zero",
+      "pattern": "division by zero",
+      "message": "Division by zero",
+      "cause": "Dividing by zero (undefined behavior)",
+      "solutions": [
+        {
+          "approach": "Check divisor",
+          "code": "if (divisor != 0) {\n    result = dividend / divisor;\n}",
+          "when": "Divisor may be zero"
+        },
+        {
+          "approach": "Return default value",
+          "code": "result = (divisor != 0) ? (dividend / divisor) : default_value;",
+          "when": "Default makes sense"
+        }
+      ]
+    },
+    {
+      "id": "vptr_invalid",
+      "pattern": "member call on .* which does not point to an object of type",
+      "message": "Invalid virtual table pointer",
+      "cause": "Calling virtual method on object of wrong type or destroyed object",
+      "solutions": [
+        {
+          "approach": "Check object lifetime",
+          "code": "// Ensure object is valid when calling virtual methods",
+          "when": "Object may be destroyed"
+        },
+        {
+          "approach": "Use dynamic_cast",
+          "code": "if (auto* derived = dynamic_cast<Derived*>(base)) {\n    derived->method();\n}",
+          "when": "Type may be wrong"
+        }
+      ]
+    },
+    {
+      "id": "float_cast_overflow",
+      "pattern": ".*outside the range of representable values",
+      "message": "Float to integer conversion overflow",
+      "cause": "Floating point value too large for target integer type",
+      "solutions": [
+        {
+          "approach": "Clamp before cast",
+          "code": "int result = static_cast<int>(\n    std::clamp(float_val, (float)INT_MIN, (float)INT_MAX)\n);",
+          "when": "Value may exceed range"
+        },
+        {
+          "approach": "Check range first",
+          "code": "if (float_val >= INT_MIN && float_val <= INT_MAX) {\n    result = static_cast<int>(float_val);\n}",
+          "when": "Need to detect overflow"
+        }
+      ]
+    },
+    {
+      "id": "misaligned_address",
+      "pattern": "misaligned address|load of misaligned address",
+      "message": "Misaligned memory access",
+      "cause": "Accessing data at address not aligned for its type",
+      "solutions": [
+        {
+          "approach": "Use memcpy for unaligned",
+          "code": "int value;\nmemcpy(&value, unaligned_ptr, sizeof(int));",
+          "when": "Source is unaligned"
+        },
+        {
+          "approach": "Use aligned allocation",
+          "code": "alignas(16) char buffer[SIZE];",
+          "when": "Need specific alignment"
+        },
+        {
+          "approach": "Pack struct if intentional",
+          "code": "#pragma pack(push, 1)\nstruct Packed { ... };\n#pragma pack(pop)",
+          "when": "Packed layout needed"
+        }
+      ]
+    },
+    {
+      "id": "object_size_mismatch",
+      "pattern": "object .* is too small",
+      "message": "Object size mismatch",
+      "cause": "Accessing beyond actual object bounds",
+      "solutions": [
+        {
+          "approach": "Fix buffer size",
+          "code": "char buf[CORRECT_SIZE];",
+          "when": "Buffer too small"
+        },
+        {
+          "approach": "Check array bounds",
+          "code": "if (index < array_size) {\n    array[index] = value;\n}",
+          "when": "Index validation needed"
+        }
+      ]
+    },
+    {
+      "id": "nonnull_attribute",
+      "pattern": "null pointer passed to nonnull",
+      "message": "Null passed to nonnull parameter",
+      "cause": "Null passed to function parameter marked __attribute__((nonnull))",
+      "solutions": [
+        {
+          "approach": "Check before call",
+          "code": "if (ptr != nullptr) {\n    func_with_nonnull(ptr);\n}",
+          "when": "Caller has nullable pointer"
+        },
+        {
+          "approach": "Fix null source",
+          "code": "// Ensure pointer is never null at this point",
+          "when": "Null indicates bug"
+        }
+      ]
+    },
+    {
+      "id": "bool_load_invalid",
+      "pattern": "load of value .* which is not a valid value for type 'bool'",
+      "message": "Invalid bool value loaded",
+      "cause": "Memory has value other than 0 or 1 interpreted as bool",
+      "solutions": [
+        {
+          "approach": "Initialize memory",
+          "code": "bool flag = false;  // Not uninitialized",
+          "when": "Uninitialized bool"
+        },
+        {
+          "approach": "Normalize on read",
+          "code": "bool flag = (raw_value != 0);  // Normalize to 0/1",
+          "when": "Reading external data"
+        }
+      ]
+    },
+    {
+      "id": "enum_invalid",
+      "pattern": "load of value .* which is not a valid value for type",
+      "message": "Invalid enum value",
+      "cause": "Value outside valid enum range",
+      "solutions": [
+        {
+          "approach": "Validate enum",
+          "code": "if (val >= MIN_ENUM && val <= MAX_ENUM) {\n    process(static_cast<MyEnum>(val));\n}",
+          "when": "Value from external source"
+        },
+        {
+          "approach": "Use enum class",
+          "code": "enum class Status { OK = 0, Error = 1 };",
+          "when": "C++11 type safety"
+        }
+      ]
+    }
+  ]
+}

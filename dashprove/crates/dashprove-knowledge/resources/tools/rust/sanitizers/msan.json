@@ -1,0 +1,99 @@
+{
+  "id": "msan",
+  "name": "MemorySanitizer (MSAN)",
+  "category": "rust_sanitizers",
+  "subcategory": "memory",
+
+  "description": "Detector of uninitialized memory reads",
+  "long_description": "MemorySanitizer (MSAN) detects reads of uninitialized memory. It tracks the initialization state of every byte of memory and reports an error when uninitialized memory is used in a way that affects program behavior (e.g., in a branch condition or as a pointer).",
+
+  "capabilities": [
+    "uninitialized_read_detection",
+    "origin_tracking",
+    "stack_memory_tracking",
+    "heap_memory_tracking",
+    "shadow_memory"
+  ],
+  "property_types": ["runtime_check"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["diagnostic", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "rustup +nightly component add rust-src llvm-tools-preview"}
+    ],
+    "dependencies": ["rust-nightly", "llvm"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://clang.llvm.org/docs/MemorySanitizer.html",
+    "tutorial": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#memorysanitizer",
+    "api_reference": "https://github.com/google/sanitizers/wiki/MemorySanitizer",
+    "examples": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#memorysanitizer"
+  },
+
+  "tactics": [
+    {
+      "name": "enable",
+      "description": "Enable MSAN for Rust",
+      "syntax": "RUSTFLAGS=\"-Zsanitizer=memory\" cargo +nightly run/test",
+      "when_to_use": "Detecting uninitialized memory reads",
+      "examples": ["RUSTFLAGS=\"-Zsanitizer=memory\" cargo +nightly test -Zbuild-std --target x86_64-unknown-linux-gnu"]
+    },
+    {
+      "name": "origin_tracking",
+      "description": "Track where uninitialized memory came from",
+      "syntax": "MSAN_OPTIONS=origin=2",
+      "when_to_use": "Debugging source of uninitialized data",
+      "examples": ["MSAN_OPTIONS=origin=2 ./my_program"]
+    },
+    {
+      "name": "halt_on_error",
+      "description": "Stop on first error",
+      "syntax": "MSAN_OPTIONS=halt_on_error=1",
+      "when_to_use": "Debugging first issue",
+      "examples": ["MSAN_OPTIONS=halt_on_error=1 ./my_program"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "use-of-uninitialized-value",
+      "meaning": "Using memory that was never initialized",
+      "common_causes": ["Uninitialized struct field", "MaybeUninit misuse"],
+      "fixes": ["Initialize memory before use", "Fix unsafe code"]
+    },
+    {
+      "pattern": "Uninitialized value was created",
+      "meaning": "Origin of uninitialized memory",
+      "common_causes": ["Stack allocation", "Heap allocation"],
+      "fixes": ["Track origin and initialize"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["runtime_check"],
+    "cli_command": "dashprove verify --backend msan"
+  },
+
+  "performance": {
+    "typical_runtime": "3x slowdown",
+    "scalability": "Works on any size program",
+    "memory_usage": "2x increase (shadow memory)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["valgrind", "asan", "miri"],
+    "advantages": ["Comprehensive uninit tracking", "Origin tracking", "Lower overhead than valgrind"],
+    "disadvantages": ["Linux only", "Requires full rebuild with instrumentation", "No Windows/macOS support"]
+  },
+
+  "metadata": {
+    "version": "LLVM 17+",
+    "last_updated": "2025-12-20",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0"
+  }
+}

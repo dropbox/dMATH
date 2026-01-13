@@ -1,0 +1,237 @@
+{
+  "tool": "qiskit",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "circuit_too_large",
+      "pattern": "circuit.*too.*large|exceeds.*qubits|qubit.*limit",
+      "message": "Circuit exceeds device qubit limit",
+      "cause": "Circuit uses more qubits than available on backend",
+      "solutions": [
+        {
+          "approach": "Check backend qubit count",
+          "code": "from qiskit_ibm_runtime import QiskitRuntimeService\nservice = QiskitRuntimeService()\nbackend = service.backend('ibm_brisbane')\nprint(f'Qubits: {backend.num_qubits}')",
+          "when": "Verify backend capacity"
+        },
+        {
+          "approach": "Use circuit cutting",
+          "code": "from qiskit.circuit.library import TwoLocal\nfrom qiskit_addon_cutting import partition_problem\n\ncircuit = TwoLocal(10, 'ry', 'cx')\nsubcircuits = partition_problem(circuit, max_subcircuit_width=5)",
+          "when": "Circuit too wide"
+        },
+        {
+          "approach": "Use simulator",
+          "code": "from qiskit_aer import AerSimulator\nsimulator = AerSimulator()\njob = simulator.run(circuit)",
+          "when": "Development/testing"
+        }
+      ]
+    },
+    {
+      "id": "circuit_depth_exceeded",
+      "pattern": "depth.*exceed|too many gates|decoherence|noise",
+      "message": "Circuit depth too deep for coherence time",
+      "cause": "Too many gates cause decoherence on real hardware",
+      "solutions": [
+        {
+          "approach": "Optimize circuit",
+          "code": "from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager\n\npm = generate_preset_pass_manager(optimization_level=3, backend=backend)\noptimized = pm.run(circuit)\nprint(f'Depth: {circuit.depth()} -> {optimized.depth()}')",
+          "when": "Reduce depth"
+        },
+        {
+          "approach": "Use dynamical decoupling",
+          "code": "from qiskit.transpiler import PassManager\nfrom qiskit.transpiler.passes import PadDynamicalDecoupling\nfrom qiskit.circuit.library import XGate\n\ndd_sequence = [XGate(), XGate()]\npm = PassManager([PadDynamicalDecoupling(backend.target, dd_sequence)])",
+          "when": "Mitigate decoherence"
+        },
+        {
+          "approach": "Error mitigation",
+          "code": "from qiskit_ibm_runtime import SamplerV2, Options\noptions = Options()\noptions.resilience_level = 2  # Enable error mitigation",
+          "when": "Improve results"
+        }
+      ]
+    },
+    {
+      "id": "invalid_gate",
+      "pattern": "gate.*not supported|basis gate|unsupported.*instruction",
+      "message": "Gate not in backend's basis gate set",
+      "cause": "Circuit contains gates backend doesn't support natively",
+      "solutions": [
+        {
+          "approach": "Transpile circuit",
+          "code": "from qiskit import transpile\ntranspiled = transpile(circuit, backend, optimization_level=3)",
+          "when": "Convert to basis gates"
+        },
+        {
+          "approach": "Check basis gates",
+          "code": "print(backend.operation_names)  # Available gates",
+          "when": "See what's available"
+        },
+        {
+          "approach": "Decompose manually",
+          "code": "circuit.decompose().draw()",
+          "when": "Debug decomposition"
+        }
+      ]
+    },
+    {
+      "id": "measurement_error",
+      "pattern": "ClassicalRegister|measure.*error|no.*measurement|result.*empty",
+      "message": "Circuit measurement issue",
+      "cause": "Missing or incorrect measurement setup",
+      "solutions": [
+        {
+          "approach": "Add measurements",
+          "code": "from qiskit import QuantumCircuit\nqc = QuantumCircuit(2, 2)\nqc.h(0)\nqc.cx(0, 1)\nqc.measure([0, 1], [0, 1])  # Measure all qubits",
+          "when": "Need to measure"
+        },
+        {
+          "approach": "Measure all shorthand",
+          "code": "qc.measure_all()  # Adds classical register and measures all",
+          "when": "Measure everything"
+        },
+        {
+          "approach": "Check classical bits",
+          "code": "print(f'Quantum: {qc.num_qubits}, Classical: {qc.num_clbits}')",
+          "when": "Verify registers"
+        }
+      ]
+    },
+    {
+      "id": "import_error_qiskit",
+      "pattern": "ImportError|ModuleNotFoundError|qiskit.*import",
+      "message": "Qiskit import error",
+      "cause": "Missing Qiskit package or wrong version",
+      "solutions": [
+        {
+          "approach": "Install Qiskit",
+          "code": "pip install 'qiskit[all]'",
+          "when": "Fresh install"
+        },
+        {
+          "approach": "Update Qiskit 1.0",
+          "code": "pip install --upgrade qiskit\n# Qiskit 1.0 changed imports:\n# OLD: from qiskit import Aer\n# NEW: from qiskit_aer import AerSimulator",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Install runtime",
+          "code": "pip install qiskit-ibm-runtime\n# For IBM Quantum access",
+          "when": "Need IBM backend"
+        }
+      ]
+    },
+    {
+      "id": "api_credentials",
+      "pattern": "API.*token|credentials|authentication|IBMQ.*error",
+      "message": "IBM Quantum API authentication failed",
+      "cause": "Missing or invalid API token",
+      "solutions": [
+        {
+          "approach": "Save credentials",
+          "code": "from qiskit_ibm_runtime import QiskitRuntimeService\nQiskitRuntimeService.save_account(\n    channel='ibm_quantum',\n    token='YOUR_API_TOKEN',\n    overwrite=True\n)",
+          "when": "First time setup"
+        },
+        {
+          "approach": "Use environment variable",
+          "code": "export QISKIT_IBM_TOKEN='your_token'\n# Then in code:\nservice = QiskitRuntimeService()",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Get new token",
+          "code": "# Get token from: https://quantum.ibm.com/account",
+          "when": "Token expired"
+        }
+      ]
+    },
+    {
+      "id": "job_timeout",
+      "pattern": "job.*timeout|queue.*time|JobStatus.*QUEUED",
+      "message": "Job timed out or stuck in queue",
+      "cause": "Backend queue is long or job failed",
+      "solutions": [
+        {
+          "approach": "Check job status",
+          "code": "print(job.status())\nprint(job.queue_position())",
+          "when": "Monitor progress"
+        },
+        {
+          "approach": "Use less busy backend",
+          "code": "from qiskit_ibm_runtime import QiskitRuntimeService\nservice = QiskitRuntimeService()\nleast_busy = service.least_busy(operational=True, simulator=False)\nprint(f'Using: {least_busy.name}')",
+          "when": "Reduce wait time"
+        },
+        {
+          "approach": "Use simulator",
+          "code": "from qiskit_aer import AerSimulator\nsimulator = AerSimulator()\njob = simulator.run(circuit)",
+          "when": "Don't need real hardware"
+        }
+      ]
+    },
+    {
+      "id": "qubit_coupling",
+      "pattern": "coupling.*map|not connected|two-qubit.*error",
+      "message": "Qubits not connected on device",
+      "cause": "Two-qubit gate between non-adjacent qubits",
+      "solutions": [
+        {
+          "approach": "Check coupling map",
+          "code": "from qiskit.visualization import plot_coupling_map\nplot_coupling_map(backend)\n# Or: print(backend.coupling_map)",
+          "when": "See connectivity"
+        },
+        {
+          "approach": "Let transpiler handle routing",
+          "code": "from qiskit import transpile\ntranspiled = transpile(circuit, backend, optimization_level=3)",
+          "when": "Auto routing"
+        },
+        {
+          "approach": "Manual initial layout",
+          "code": "from qiskit import transpile\ntranspiled = transpile(\n    circuit, backend,\n    initial_layout=[0, 1, 4]  # Specify qubit mapping\n)",
+          "when": "Control placement"
+        }
+      ]
+    },
+    {
+      "id": "parameter_binding",
+      "pattern": "Parameter.*unbound|bind.*error|ParameterExpression",
+      "message": "Circuit has unbound parameters",
+      "cause": "Parameterized circuit not bound before execution",
+      "solutions": [
+        {
+          "approach": "Bind parameters",
+          "code": "from qiskit.circuit import Parameter\ntheta = Parameter('θ')\nqc = QuantumCircuit(1)\nqc.rx(theta, 0)\n\nbound_circuit = qc.assign_parameters({theta: 3.14})",
+          "when": "Single value"
+        },
+        {
+          "approach": "Bind multiple values",
+          "code": "import numpy as np\nvalues = np.linspace(0, 2*np.pi, 10)\ncircuits = [qc.assign_parameters({theta: v}) for v in values]",
+          "when": "Sweep parameters"
+        },
+        {
+          "approach": "Use Estimator",
+          "code": "from qiskit_ibm_runtime import EstimatorV2\nestimator = EstimatorV2(backend)\njob = estimator.run([(circuit, observable, [param_values])])",
+          "when": "VQE-style workload"
+        }
+      ]
+    },
+    {
+      "id": "result_parsing",
+      "pattern": "result.*error|counts.*empty|get_counts|quasi",
+      "message": "Error parsing job results",
+      "cause": "Wrong method for result type or job failed",
+      "solutions": [
+        {
+          "approach": "Check job success",
+          "code": "if job.status() == 'DONE':\n    result = job.result()\n    counts = result[0].data.meas.get_counts()\n    print(counts)",
+          "when": "Verify completion"
+        },
+        {
+          "approach": "Sampler result format",
+          "code": "from qiskit_ibm_runtime import SamplerV2\nsampler = SamplerV2(backend)\njob = sampler.run([circuit])\nresult = job.result()\npub_result = result[0]\nprint(pub_result.data.meas.get_counts())",
+          "when": "Using Sampler"
+        },
+        {
+          "approach": "Estimator result format",
+          "code": "from qiskit_ibm_runtime import EstimatorV2\nestimator = EstimatorV2(backend)\njob = estimator.run([(circuit, observable)])\nresult = job.result()\nprint(result[0].data.evs)  # Expectation values",
+          "when": "Using Estimator"
+        }
+      ]
+    }
+  ]
+}

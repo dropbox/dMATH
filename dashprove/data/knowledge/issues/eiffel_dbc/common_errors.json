@@ -1,0 +1,330 @@
+{
+  "tool_id": "eiffel_dbc",
+  "tool_name": "Eiffel Design by Contract",
+  "tool_version": "23.09",
+  "category": "contract_based_verification",
+  "error_patterns": [
+    {
+      "id": "eiffel_precondition_violation",
+      "pattern": "Precondition violated|require.*violated|PRECONDITION_VIOLATION",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A feature's precondition (require clause) was violated at call site",
+      "common_causes": [
+        "Client called feature without meeting requirements",
+        "Void (null) reference passed",
+        "Value out of acceptable range",
+        "Missing state check before call"
+      ],
+      "solutions": [
+        "Check preconditions before calling feature",
+        "Handle void references with attached types",
+        "Validate input ranges",
+        "Use conditional execution"
+      ],
+      "examples": [
+        {
+          "error": "PRECONDITION_VIOLATION: require positive: n > 0",
+          "context": "factorial(0) call",
+          "fix": "if n > 0 then factorial(n) else 1 end"
+        }
+      ],
+      "related_errors": ["eiffel_postcondition_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_postcondition_violation",
+      "pattern": "Postcondition violated|ensure.*violated|POSTCONDITION_VIOLATION",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A feature's postcondition (ensure clause) was not satisfied after execution",
+      "common_causes": [
+        "Implementation bug",
+        "Postcondition too strong",
+        "Missing case in implementation",
+        "Wrong return value"
+      ],
+      "solutions": [
+        "Fix the implementation to satisfy contract",
+        "Review postcondition correctness",
+        "Debug with intermediate checks",
+        "Weaken postcondition if specification wrong"
+      ],
+      "examples": [
+        {
+          "error": "POSTCONDITION_VIOLATION: ensure result_positive: Result >= 0",
+          "context": "Function returned negative value",
+          "fix": "Ensure all computation paths return non-negative"
+        }
+      ],
+      "related_errors": ["eiffel_precondition_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_class_invariant_violation",
+      "pattern": "Class invariant violated|invariant.*violated|CLASS_INVARIANT_VIOLATION",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A class invariant was not satisfied after creation or feature call",
+      "common_causes": [
+        "Creation procedure doesn't establish invariant",
+        "Feature breaks invariant",
+        "Invariant too strong for class",
+        "Missing update in feature"
+      ],
+      "solutions": [
+        "Ensure creation procedures establish invariant",
+        "Review all features for invariant preservation",
+        "Weaken invariant if too restrictive",
+        "Add internal consistency checks"
+      ],
+      "examples": [
+        {
+          "error": "CLASS_INVARIANT_VIOLATION: count >= 0",
+          "context": "count became -1 after remove",
+          "fix": "Guard remove with is_empty check"
+        }
+      ],
+      "related_errors": ["eiffel_postcondition_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_check_violation",
+      "pattern": "Check violated|check.*assertion.*violated|CHECK_VIOLATION",
+      "severity": "error",
+      "category": "assertion_failure",
+      "description": "A check instruction assertion failed",
+      "common_causes": [
+        "Unexpected program state",
+        "Logic error",
+        "Incorrect assumption in code",
+        "Missing error handling"
+      ],
+      "solutions": [
+        "Review the failed assertion",
+        "Debug to understand state",
+        "Fix logic error",
+        "Add proper error handling"
+      ],
+      "examples": [
+        {
+          "error": "CHECK_VIOLATION: check valid_index: i >= 1 and i <= count",
+          "context": "Index out of bounds",
+          "fix": "Validate index before use"
+        }
+      ],
+      "related_errors": ["eiffel_loop_invariant_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_loop_invariant_violation",
+      "pattern": "Loop invariant violated|invariant.*violated in loop|LOOP_INVARIANT_VIOLATION",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A loop invariant was violated during loop execution",
+      "common_causes": [
+        "Invariant doesn't hold initially",
+        "Loop body breaks invariant",
+        "Off-by-one in loop bounds",
+        "Invariant formulation incorrect"
+      ],
+      "solutions": [
+        "Check invariant holds before loop",
+        "Verify each iteration maintains invariant",
+        "Fix loop bounds",
+        "Reformulate invariant"
+      ],
+      "examples": [
+        {
+          "error": "LOOP_INVARIANT_VIOLATION: sum >= 0",
+          "context": "Sum went negative in iteration",
+          "fix": "Ensure additions don't cause underflow"
+        }
+      ],
+      "related_errors": ["eiffel_loop_variant_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_loop_variant_violation",
+      "pattern": "Loop variant.*not decreased|variant.*violation|LOOP_VARIANT_VIOLATION",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "Loop variant did not decrease, indicating potential non-termination",
+      "common_causes": [
+        "Loop counter not properly updated",
+        "Variant expression incorrect",
+        "Loop may not terminate",
+        "Integer underflow in variant"
+      ],
+      "solutions": [
+        "Ensure variant decreases each iteration",
+        "Check loop counter updates",
+        "Verify variant expression",
+        "Add termination guarantee"
+      ],
+      "examples": [
+        {
+          "error": "LOOP_VARIANT_VIOLATION: variant count - i did not decrease",
+          "context": "i not incremented in loop",
+          "fix": "Add i := i + 1 at end of loop"
+        }
+      ],
+      "related_errors": ["eiffel_loop_invariant_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_void_target",
+      "pattern": "Void.*target|call on void target|VOID_TARGET",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Attempted to call a feature on a Void (null) reference",
+      "common_causes": [
+        "Unattached reference",
+        "Failed creation",
+        "Reference set to Void",
+        "Missing attachment check"
+      ],
+      "solutions": [
+        "Use attached types where possible",
+        "Check /= Void before use",
+        "Ensure proper object creation",
+        "Use conditional attachment: if attached x as l_x"
+      ],
+      "examples": [
+        {
+          "error": "VOID_TARGET: call on void target",
+          "context": "my_list.count where my_list is Void",
+          "fix": "if attached my_list as l then l.count else 0 end"
+        }
+      ],
+      "related_errors": ["eiffel_precondition_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/Void-safe_programming_in_Eiffel"
+    },
+    {
+      "id": "eiffel_catcall",
+      "pattern": "CAT call|type mismatch|CATCALL",
+      "severity": "error",
+      "category": "type_error",
+      "description": "Changing Availability or Type (CAT) call detected - covariance issue",
+      "common_causes": [
+        "Covariant redefinition with runtime type mismatch",
+        "Generic container with wrong type",
+        "Inheritance hierarchy type issue",
+        "Polymorphic call to covariantly redefined feature"
+      ],
+      "solutions": [
+        "Use like Current for result types",
+        "Apply covariance carefully",
+        "Use anchor types",
+        "Review inheritance design"
+      ],
+      "examples": [
+        {
+          "error": "CAT call: argument type mismatch",
+          "context": "Polymorphic call with narrowed parameter",
+          "fix": "Use detachable type or redesign hierarchy"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/Catcall"
+    },
+    {
+      "id": "eiffel_old_expression_error",
+      "pattern": "old.*expression.*error|cannot evaluate old|OLD_EXPRESSION_ERROR",
+      "severity": "error",
+      "category": "contract_error",
+      "description": "Error evaluating 'old' expression in postcondition",
+      "common_causes": [
+        "Old expression causes exception",
+        "Void reference in old expression",
+        "Complex expression fails",
+        "Side effect in old expression"
+      ],
+      "solutions": [
+        "Ensure old expression is always evaluable",
+        "Use simple expressions in old",
+        "Guard with implies or check",
+        "Store value in local before feature body"
+      ],
+      "examples": [
+        {
+          "error": "OLD_EXPRESSION_ERROR: old list.first",
+          "context": "list was empty at call time",
+          "fix": "old (if list.is_empty then Void else list.first end)"
+        }
+      ],
+      "related_errors": ["eiffel_postcondition_violation"],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Design_by_Contract"
+    },
+    {
+      "id": "eiffel_rescue_failed",
+      "pattern": "Rescue failed|exception not handled|RESCUE_FAILED",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Exception occurred and rescue clause also failed",
+      "common_causes": [
+        "Rescue clause has its own bug",
+        "Retry without fixing condition",
+        "Resource cleanup failed",
+        "Cascading exceptions"
+      ],
+      "solutions": [
+        "Simplify rescue clause",
+        "Ensure retry will succeed",
+        "Handle cleanup exceptions",
+        "Log and re-raise if necessary"
+      ],
+      "examples": [
+        {
+          "error": "RESCUE_FAILED: nested exception in rescue",
+          "context": "Rescue attempted operation that also fails",
+          "fix": "Make rescue robust to further failures"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://www.eiffel.org/doc/eiffel/ET-_Exception_Handling"
+    }
+  ],
+  "general_tips": [
+    "Eiffel pioneered Design by Contract - require/ensure/invariant",
+    "Preconditions (require) are caller's responsibility",
+    "Postconditions (ensure) are supplier's responsibility",
+    "Class invariants must hold after creation and public features",
+    "Use 'old' in postconditions to refer to pre-state values",
+    "Loop invariants with 'until' and 'variant' prove termination",
+    "Void-safe Eiffel eliminates null pointer errors at compile time",
+    "AutoProof (EVE) provides static verification of contracts"
+  ],
+  "common_workflows": [
+    {
+      "name": "Adding contracts to feature",
+      "steps": [
+        "Add require clause for preconditions",
+        "Add ensure clause for postconditions",
+        "Use 'old' for comparing pre/post states",
+        "Test with assertion checking enabled"
+      ]
+    },
+    {
+      "name": "Defining class invariant",
+      "steps": [
+        "Add invariant clause to class",
+        "Ensure creation procedures establish invariant",
+        "Verify all exported features maintain invariant"
+      ]
+    },
+    {
+      "name": "Debugging contract violations",
+      "steps": [
+        "Run with ALL assertions enabled",
+        "Check stack trace for violation location",
+        "Review contract text in error",
+        "Add intermediate checks to isolate issue"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "23.09": "EiffelStudio 23.09 with improved void-safety",
+    "AutoProof": "Static verifier for Eiffel contracts (EVE project)"
+  }
+}

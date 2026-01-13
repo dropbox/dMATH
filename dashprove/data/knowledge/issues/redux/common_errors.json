@@ -1,0 +1,169 @@
+{
+  "tool": "redux",
+  "category": "state_management",
+  "common_errors": [
+    {
+      "error": "ACTIONS_MUST_BE_PLAIN_OBJECTS",
+      "pattern": "Actions must be plain objects|action must have a type|Expected an object",
+      "severity": "high",
+      "causes": [
+        "Dispatching a function instead of action object",
+        "Missing redux-thunk middleware",
+        "Action creator not returning plain object",
+        "Async action without middleware"
+      ],
+      "solutions": [
+        "Add thunk middleware: applyMiddleware(thunk)",
+        "Ensure action has type property: { type: 'ACTION_TYPE' }",
+        "Use action creator: () => ({ type: 'TYPE', payload })",
+        "For async actions, use redux-thunk or redux-saga"
+      ]
+    },
+    {
+      "error": "REDUCER_MUTATION",
+      "pattern": "A state mutation was detected|You may not mutate|state changed outside reducer",
+      "severity": "critical",
+      "causes": [
+        "Directly mutating state object",
+        "Using push/pop on state arrays",
+        "Modifying nested objects directly",
+        "Not returning new state reference"
+      ],
+      "solutions": [
+        "Use spread operator: { ...state, field: value }",
+        "For arrays: [...state.items, newItem]",
+        "Use immer via Redux Toolkit: createSlice",
+        "Deep clone nested objects before modifying"
+      ]
+    },
+    {
+      "error": "STORE_NOT_FOUND",
+      "pattern": "Could not find.*store|store.*is not defined|Provider.*missing",
+      "severity": "high",
+      "causes": [
+        "Missing Provider wrapper",
+        "Accessing store outside Provider",
+        "Provider in wrong location",
+        "Store not passed to Provider"
+      ],
+      "solutions": [
+        "Wrap app in Provider: <Provider store={store}>",
+        "Ensure component is descendant of Provider",
+        "Check store is correctly created and passed",
+        "Move Provider higher in component tree"
+      ]
+    },
+    {
+      "error": "SELECTOR_RETURNS_DIFFERENT_REFERENCE",
+      "pattern": "Selector.*returns.*different|useSelector.*re-render|infinite loop",
+      "severity": "high",
+      "causes": [
+        "Selector creating new object/array each time",
+        "Using inline selectors",
+        "Not memoizing complex selectors",
+        "Object creation in selector"
+      ],
+      "solutions": [
+        "Use reselect createSelector for memoization",
+        "Define selectors outside component",
+        "Return same reference for equal values",
+        "Use shallowEqual in useSelector: useSelector(selector, shallowEqual)"
+      ]
+    },
+    {
+      "error": "CIRCULAR_DEPENDENCY",
+      "pattern": "Circular dependency|ReferenceError.*before initialization|undefined.*import",
+      "severity": "high",
+      "causes": [
+        "Slice importing from other slice",
+        "Action imported in reducer file",
+        "Middleware depending on store",
+        "Thunk importing store directly"
+      ],
+      "solutions": [
+        "Use action type strings instead of importing actions",
+        "Move shared logic to separate file",
+        "Use middleware for cross-slice communication",
+        "Inject dependencies instead of importing"
+      ]
+    },
+    {
+      "error": "REDUCER_RETURNED_UNDEFINED",
+      "pattern": "returned undefined.*previous state|reducer.*undefined|initial state",
+      "severity": "high",
+      "causes": [
+        "No default case in switch",
+        "Not returning state in default case",
+        "undefined initial state",
+        "Forgetting return statement"
+      ],
+      "solutions": [
+        "Add default case: default: return state",
+        "Set initial state: const initialState = {}",
+        "Always return state from reducer",
+        "Use Redux Toolkit createSlice for safer reducers"
+      ]
+    },
+    {
+      "error": "MIDDLEWARE_ORDER_ISSUE",
+      "pattern": "middleware.*order|thunk.*not working|saga.*not running",
+      "severity": "medium",
+      "causes": [
+        "Middleware in wrong order",
+        "Thunk after logger",
+        "Custom middleware blocking dispatch",
+        "Forgetting next() call"
+      ],
+      "solutions": [
+        "Order: thunk before logger",
+        "Always call next(action) in custom middleware",
+        "Use configureStore from Redux Toolkit",
+        "Check middleware returns correctly"
+      ]
+    },
+    {
+      "error": "DEVTOOLS_NOT_WORKING",
+      "pattern": "DevTools.*not.*detected|Redux tab.*empty|state.*not updating",
+      "severity": "low",
+      "causes": [
+        "DevTools extension not installed",
+        "Enhancer not added",
+        "Production build without devtools",
+        "Multiple stores interfering"
+      ],
+      "solutions": [
+        "Install Redux DevTools browser extension",
+        "Use composeWithDevTools from redux-devtools-extension",
+        "Use Redux Toolkit configureStore (includes devtools)",
+        "Enable in production: devTools: true (for debugging)"
+      ]
+    },
+    {
+      "error": "TOO_MANY_RERENDERS",
+      "pattern": "Maximum update depth exceeded|Too many re-renders|infinite loop",
+      "severity": "critical",
+      "causes": [
+        "Dispatch in render without condition",
+        "useEffect without proper deps",
+        "Selector causing new reference each render",
+        "Action dispatched on every render"
+      ],
+      "solutions": [
+        "Wrap dispatch in useEffect with proper dependencies",
+        "Use useCallback for dispatch handlers",
+        "Memoize selectors with createSelector",
+        "Add condition before dispatching"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use Redux Toolkit for all new projects",
+    "Normalize state shape (use entities pattern)",
+    "Use reselect for memoized selectors",
+    "Keep reducers pure and synchronous",
+    "Use redux-thunk or redux-saga for side effects",
+    "Structure by feature, not by type",
+    "Enable Redux DevTools in development"
+  ],
+  "related_tools": ["mobx", "zustand", "recoil", "react_query"]
+}

@@ -1,0 +1,97 @@
+{
+  "tool": "factscore",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "knowledge_source_error",
+      "pattern": "(knowledge.*source|retrieval|Wikipedia)",
+      "message": "Knowledge source not configured",
+      "cause": "FactScore requires a knowledge source for fact verification",
+      "solutions": [
+        {
+          "approach": "Configure Wikipedia",
+          "code": "from factscore.factscorer import FactScorer\nfs = FactScorer(\n    openai_key='your-key',\n    data_dir='path/to/data',\n    model_name='retrieval+ChatGPT'\n)\n# Download Wikipedia dump first",
+          "when": "Using Wikipedia source"
+        },
+        {
+          "approach": "Use custom knowledge",
+          "code": "fs = FactScorer(\n    openai_key='your-key',\n    data_dir='path/to/data'\n)\n# Provide knowledge in topics dict",
+          "when": "Custom knowledge base"
+        }
+      ]
+    },
+    {
+      "id": "atomic_facts_error",
+      "pattern": "(atomic.*facts|decomposition|parsing)",
+      "message": "Atomic fact extraction failed",
+      "cause": "LLM failed to decompose text into atomic facts",
+      "solutions": [
+        {
+          "approach": "Check text format",
+          "code": "# Text should be clean, coherent sentences\ntext = 'Albert Einstein was born in Germany. He developed the theory of relativity.'\nresult = fs.get_score(topics={'Albert Einstein': text})",
+          "when": "Text format issues"
+        },
+        {
+          "approach": "Handle long text",
+          "code": "# Split long texts into paragraphs\nparagraphs = text.split('\\n\\n')\nfor para in paragraphs:\n    score = fs.get_score(topics={topic: para})",
+          "when": "Text too long"
+        }
+      ]
+    },
+    {
+      "id": "retrieval_error",
+      "pattern": "(retrieval|search|no passages)",
+      "message": "Knowledge retrieval failed",
+      "cause": "Could not retrieve relevant passages for fact checking",
+      "solutions": [
+        {
+          "approach": "Check index",
+          "code": "# Ensure Wikipedia index is built\n# python -m factscore.download --data_dir path/to/data",
+          "when": "Index not built"
+        },
+        {
+          "approach": "Provide passages directly",
+          "code": "# Skip retrieval, provide knowledge directly\nresult = fs.get_score(\n    topics={'Topic': text},\n    knowledge_source=custom_passages\n)",
+          "when": "Using provided knowledge"
+        }
+      ]
+    },
+    {
+      "id": "llm_verification_error",
+      "pattern": "(verification|LLM.*error|ChatGPT)",
+      "message": "LLM fact verification failed",
+      "cause": "LLM API error during fact verification",
+      "solutions": [
+        {
+          "approach": "Check API key",
+          "code": "import os\nos.environ['OPENAI_API_KEY'] = 'your-key'\n# Or pass directly\nfs = FactScorer(openai_key='your-key')",
+          "when": "API key issue"
+        },
+        {
+          "approach": "Use different model",
+          "code": "fs = FactScorer(\n    model_name='retrieval+llama',  # Use local model\n    data_dir='path/to/data'\n)",
+          "when": "OpenAI not available"
+        }
+      ]
+    },
+    {
+      "id": "score_computation_error",
+      "pattern": "(score|NaN|division|empty)",
+      "message": "Score computation error",
+      "cause": "No facts to score or computation issue",
+      "solutions": [
+        {
+          "approach": "Check output",
+          "code": "result = fs.get_score(topics={'Topic': text})\nprint(f'Atomic facts: {result.atomic_facts}')\nprint(f'Verified: {result.verified}')\nprint(f'Score: {result.score}')",
+          "when": "Debugging score"
+        },
+        {
+          "approach": "Handle empty",
+          "code": "result = fs.get_score(topics={'Topic': text})\nif result.atomic_facts:\n    score = result.score\nelse:\n    score = None  # No facts extracted",
+          "when": "Empty results"
+        }
+      ]
+    }
+  ]
+}

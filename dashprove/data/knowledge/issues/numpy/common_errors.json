@@ -1,0 +1,168 @@
+{
+  "tool": "numpy",
+  "version": "1.26.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "broadcast_error",
+      "pattern": "could not be broadcast|operands could not be broadcast together",
+      "message": "Array broadcast error",
+      "cause": "Array shapes are not compatible for broadcasting",
+      "solutions": [
+        {
+          "approach": "Check shapes",
+          "code": "print(f'a.shape: {a.shape}, b.shape: {b.shape}')",
+          "when": "Debug shape mismatch"
+        },
+        {
+          "approach": "Reshape array",
+          "code": "a_reshaped = a.reshape(-1, 1)  # Column vector\nb_reshaped = b.reshape(1, -1)  # Row vector",
+          "when": "Need compatible shapes"
+        },
+        {
+          "approach": "Use np.newaxis",
+          "code": "result = a[:, np.newaxis] + b[np.newaxis, :]",
+          "when": "Adding dimensions"
+        }
+      ]
+    },
+    {
+      "id": "dtype_error",
+      "pattern": "cannot cast|dtype.*mismatch|invalid type promotion",
+      "message": "Data type error",
+      "cause": "Operations between incompatible dtypes",
+      "solutions": [
+        {
+          "approach": "Cast explicitly",
+          "code": "arr = arr.astype(np.float64)",
+          "when": "Need specific dtype"
+        },
+        {
+          "approach": "Check dtype",
+          "code": "print(arr.dtype)",
+          "when": "Debug dtype issues"
+        },
+        {
+          "approach": "Set dtype at creation",
+          "code": "arr = np.array([1, 2, 3], dtype=np.float64)",
+          "when": "Creating array"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "MemoryError|Unable to allocate",
+      "message": "Out of memory",
+      "cause": "Array too large for available memory",
+      "solutions": [
+        {
+          "approach": "Use smaller dtype",
+          "code": "arr = arr.astype(np.float32)  # Half memory",
+          "when": "Precision not critical"
+        },
+        {
+          "approach": "Use memory mapping",
+          "code": "arr = np.memmap('data.bin', dtype='float64', mode='r', shape=(n,))",
+          "when": "Array larger than RAM"
+        },
+        {
+          "approach": "Process in chunks",
+          "code": "for i in range(0, n, chunk_size):\n    process(arr[i:i+chunk_size])",
+          "when": "Can process iteratively"
+        }
+      ]
+    },
+    {
+      "id": "indexing_error",
+      "pattern": "IndexError|index.*out of bounds|too many indices",
+      "message": "Array indexing error",
+      "cause": "Index exceeds array dimensions or bounds",
+      "solutions": [
+        {
+          "approach": "Check dimensions",
+          "code": "print(f'ndim: {arr.ndim}, shape: {arr.shape}')",
+          "when": "Wrong number of indices"
+        },
+        {
+          "approach": "Use clip",
+          "code": "idx = np.clip(idx, 0, arr.shape[0] - 1)",
+          "when": "Clamp to valid range"
+        },
+        {
+          "approach": "Use take with mode",
+          "code": "np.take(arr, indices, mode='clip')",
+          "when": "Advanced indexing"
+        }
+      ]
+    },
+    {
+      "id": "linalg_error",
+      "pattern": "LinAlgError|singular matrix|SVD did not converge",
+      "message": "Linear algebra error",
+      "cause": "Matrix operation failed (singular, ill-conditioned)",
+      "solutions": [
+        {
+          "approach": "Use pseudo-inverse",
+          "code": "inv = np.linalg.pinv(A)  # Instead of np.linalg.inv",
+          "when": "Matrix may be singular"
+        },
+        {
+          "approach": "Add regularization",
+          "code": "A_reg = A + np.eye(n) * 1e-6",
+          "when": "Matrix nearly singular"
+        },
+        {
+          "approach": "Use lstsq",
+          "code": "x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)",
+          "when": "Solving linear system"
+        }
+      ]
+    },
+    {
+      "id": "nan_warning",
+      "pattern": "RuntimeWarning.*invalid value|divide by zero|nan",
+      "message": "Invalid floating point operation",
+      "cause": "Operation produced NaN or infinity",
+      "solutions": [
+        {
+          "approach": "Use nan functions",
+          "code": "mean = np.nanmean(arr)\nsum = np.nansum(arr)",
+          "when": "Array contains NaN"
+        },
+        {
+          "approach": "Handle division",
+          "code": "result = np.divide(a, b, out=np.zeros_like(a), where=b!=0)",
+          "when": "Division by zero possible"
+        },
+        {
+          "approach": "Set error handling",
+          "code": "with np.errstate(invalid='ignore', divide='ignore'):\n    result = a / b",
+          "when": "Want to suppress warnings"
+        }
+      ]
+    },
+    {
+      "id": "view_copy",
+      "pattern": "ValueError.*read-only|cannot.*view.*copy",
+      "message": "View vs copy error",
+      "cause": "Attempting to modify view of read-only array",
+      "solutions": [
+        {
+          "approach": "Make copy",
+          "code": "arr = arr.copy()",
+          "when": "Need modifiable copy"
+        },
+        {
+          "approach": "Make writeable",
+          "code": "arr.flags.writeable = True",
+          "when": "Array should be writeable"
+        },
+        {
+          "approach": "Use out parameter",
+          "code": "np.add(a, b, out=result)",
+          "when": "In-place operation"
+        }
+      ]
+    }
+  ]
+}

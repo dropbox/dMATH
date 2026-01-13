@@ -1,0 +1,168 @@
+{
+  "tool": "powershell",
+  "version": "7.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "execution_policy",
+      "pattern": "cannot be loaded because.*execution.*policies|ExecutionPolicy",
+      "message": "Script execution is disabled",
+      "cause": "Execution policy restricts script running",
+      "solutions": [
+        {
+          "approach": "Set policy for current session",
+          "code": "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass",
+          "when": "Temporary override"
+        },
+        {
+          "approach": "Set policy for user",
+          "code": "Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned",
+          "when": "Permanent for user"
+        },
+        {
+          "approach": "Unblock specific file",
+          "code": "Unblock-File -Path script.ps1",
+          "when": "File from internet"
+        }
+      ]
+    },
+    {
+      "id": "cmdlet_not_found",
+      "pattern": "not recognized.*cmdlet|CommandNotFoundException",
+      "message": "Cmdlet not recognized",
+      "cause": "Module not imported or command misspelled",
+      "solutions": [
+        {
+          "approach": "Import module",
+          "code": "Import-Module ModuleName",
+          "when": "Module not loaded"
+        },
+        {
+          "approach": "Install module",
+          "code": "Install-Module -Name ModuleName -Scope CurrentUser",
+          "when": "Module not installed"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "Get-Command *keyword*",
+          "when": "Find similar commands"
+        }
+      ]
+    },
+    {
+      "id": "access_denied",
+      "pattern": "Access.*denied|UnauthorizedAccess",
+      "message": "Access denied",
+      "cause": "Insufficient permissions or file in use",
+      "solutions": [
+        {
+          "approach": "Run as admin",
+          "code": "Start-Process pwsh -Verb RunAs",
+          "when": "Need elevated privileges"
+        },
+        {
+          "approach": "Take ownership",
+          "code": "takeown /f file /r /d y\nicacls file /grant %username%:F",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Close handles",
+          "code": "Get-Process | Where-Object {$_.Modules.FileName -match \"filename\"} | Stop-Process",
+          "when": "File locked by process"
+        }
+      ]
+    },
+    {
+      "id": "parameter_binding",
+      "pattern": "parameter.*binding|Cannot bind parameter|ParameterBindingException",
+      "message": "Parameter binding failed",
+      "cause": "Wrong parameter type or value",
+      "solutions": [
+        {
+          "approach": "Check parameter type",
+          "code": "Get-Help Cmdlet-Name -Parameter ParamName",
+          "when": "Verify expected type"
+        },
+        {
+          "approach": "Cast to correct type",
+          "code": "[int]$value, [string]$name, [datetime]$date",
+          "when": "Type conversion needed"
+        },
+        {
+          "approach": "Use named parameters",
+          "code": "Cmdlet -ParamName Value",
+          "when": "Positional binding failed"
+        }
+      ]
+    },
+    {
+      "id": "path_not_found",
+      "pattern": "path.*not found|Cannot find path|ItemNotFoundException",
+      "message": "Path not found",
+      "cause": "File or directory doesn't exist",
+      "solutions": [
+        {
+          "approach": "Test path first",
+          "code": "if (Test-Path $path) { ... }",
+          "when": "Check existence"
+        },
+        {
+          "approach": "Create if missing",
+          "code": "New-Item -ItemType Directory -Path $path -Force",
+          "when": "Create directory"
+        },
+        {
+          "approach": "Resolve path",
+          "code": "Resolve-Path -Path $path",
+          "when": "Get full path"
+        }
+      ]
+    },
+    {
+      "id": "null_reference",
+      "pattern": "null-valued expression|NullReferenceException|cannot index into.*null",
+      "message": "Null reference",
+      "cause": "Variable is null when property/method accessed",
+      "solutions": [
+        {
+          "approach": "Null check",
+          "code": "if ($null -ne $obj) { $obj.Property }",
+          "when": "Variable might be null"
+        },
+        {
+          "approach": "Null conditional",
+          "code": "$obj?.Property  # PowerShell 7+",
+          "when": "Use null-conditional operator"
+        },
+        {
+          "approach": "Default value",
+          "code": "$value = $obj ?? 'default'",
+          "when": "Provide fallback"
+        }
+      ]
+    },
+    {
+      "id": "terminating_error",
+      "pattern": "terminating error|ErrorAction.*Stop",
+      "message": "Terminating error",
+      "cause": "Non-terminating error converted or explicit throw",
+      "solutions": [
+        {
+          "approach": "Use try-catch",
+          "code": "try { ... } catch { Write-Error $_ }",
+          "when": "Handle errors gracefully"
+        },
+        {
+          "approach": "Set ErrorAction",
+          "code": "Cmdlet -ErrorAction SilentlyContinue",
+          "when": "Suppress specific errors"
+        },
+        {
+          "approach": "Use ErrorVariable",
+          "code": "Cmdlet -ErrorVariable errors\nif ($errors) { ... }",
+          "when": "Capture errors for later"
+        }
+      ]
+    }
+  ]
+}

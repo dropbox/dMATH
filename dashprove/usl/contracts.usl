@@ -1,0 +1,209 @@
+// USL Standard Library: Contract Patterns
+// Pre/post condition templates for Rust functions
+// Compiles to Kani proof harnesses
+
+// =============================================================================
+// Collection Types for Contracts
+// =============================================================================
+
+type Stack = {
+    elements: List<Int>,
+    capacity: Int
+}
+
+type Array = {
+    data: List<Int>,
+    length: Int
+}
+
+// =============================================================================
+// Stack Contracts
+// =============================================================================
+
+// Stack push appends element
+contract Stack::push(self: Stack, value: Int) -> Result<Stack> {
+    requires {
+        self.elements.len() < self.capacity
+    }
+    ensures {
+        result.elements.len() == self.elements.len() + 1
+    }
+    ensures {
+        result.elements.last() == value
+    }
+    ensures_err {
+        self.elements.len() >= self.capacity
+    }
+}
+
+// Stack pop removes last element
+contract Stack::pop(self: Stack) -> Result<Int> {
+    requires {
+        self.elements.len() > 0
+    }
+    ensures {
+        result == self.elements.last()
+    }
+    ensures_err {
+        self.elements.len() == 0
+    }
+}
+
+// Stack peek returns last element without removing
+contract Stack::peek(self: Stack) -> Result<Int> {
+    requires {
+        self.elements.len() > 0
+    }
+    ensures {
+        result == self.elements.last()
+    }
+    ensures_err {
+        self.elements.len() == 0
+    }
+}
+
+// =============================================================================
+// Array Contracts
+// =============================================================================
+
+// Array bounds checking
+contract Array::get(self: Array, index: Int) -> Result<Int> {
+    requires {
+        index >= 0 and index < self.length
+    }
+    ensures {
+        result == self.data.at(index)
+    }
+    ensures_err {
+        index < 0 or index >= self.length
+    }
+}
+
+// Array set element
+contract Array::set(self: Array, index: Int, value: Int) -> Result<Array> {
+    requires {
+        index >= 0 and index < self.length
+    }
+    ensures {
+        result.data.at(index) == value
+    }
+    ensures_err {
+        index < 0 or index >= self.length
+    }
+}
+
+// =============================================================================
+// Numeric Safety Contracts
+// =============================================================================
+
+// Safe division (no divide by zero)
+contract divide(x: Int, y: Int) -> Result<Int> {
+    requires {
+        y != 0
+    }
+    ensures {
+        result * y == x
+    }
+    ensures_err {
+        y == 0
+    }
+}
+
+// Safe modulo
+contract modulo(x: Int, y: Int) -> Result<Int> {
+    requires {
+        y != 0
+    }
+    ensures {
+        result >= 0 and result < y
+    }
+    ensures_err {
+        y == 0
+    }
+}
+
+// Bounded addition
+contract bounded_add(x: Int, y: Int, max: Int) -> Result<Int> {
+    requires {
+        x + y <= max
+    }
+    ensures {
+        result == x + y
+    }
+    ensures_err {
+        x + y > max
+    }
+}
+
+// =============================================================================
+// Resource Contracts
+// =============================================================================
+
+// File read with buffer
+contract read_file(path: String, buffer: Array) -> Result<Int> {
+    requires {
+        buffer.length > 0
+    }
+    ensures {
+        result >= 0 and result <= buffer.length
+    }
+    ensures_err {
+        not file_exists(path)
+    }
+}
+
+// Memory allocation
+contract allocate(size: Int) -> Result<Array> {
+    requires {
+        size > 0
+    }
+    ensures {
+        result.length == size
+    }
+    ensures_err {
+        size <= 0 or out_of_memory
+    }
+}
+
+// =============================================================================
+// Graph Contracts
+// =============================================================================
+
+// Add node to graph
+contract Graph::add_node(self: Graph, node_id: String) -> Result<Graph> {
+    requires {
+        not contains_node(self, node_id)
+    }
+    ensures {
+        contains_node(result, node_id)
+    }
+    ensures_err {
+        contains_node(self, node_id)
+    }
+}
+
+// Add edge to graph
+contract Graph::add_edge(self: Graph, from_id: String, to_id: String) -> Result<Graph> {
+    requires {
+        contains_node(self, from_id) and contains_node(self, to_id)
+    }
+    ensures {
+        has_edge(result, from_id, to_id)
+    }
+    ensures_err {
+        not contains_node(self, from_id) or not contains_node(self, to_id)
+    }
+}
+
+// Execute graph step
+contract Graph::execute(self: Graph, state: State) -> Result<State> {
+    requires {
+        valid_state(state, self)
+    }
+    ensures {
+        valid_state(result, self)
+    }
+    ensures_err {
+        not valid_state(state, self)
+    }
+}

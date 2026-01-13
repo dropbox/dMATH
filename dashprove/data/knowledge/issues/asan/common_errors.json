@@ -1,0 +1,235 @@
+{
+  "tool": "asan",
+  "version": "clang 18.0 / gcc 14",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "heap_buffer_overflow",
+      "pattern": "heap-buffer-overflow",
+      "message": "Heap buffer overflow detected",
+      "cause": "Writing or reading beyond allocated heap memory",
+      "solutions": [
+        {
+          "approach": "Fix bounds checking",
+          "code": "for (int i = 0; i < size; i++)  // Not i <= size",
+          "when": "Off-by-one error"
+        },
+        {
+          "approach": "Allocate enough memory",
+          "code": "char* buf = malloc(strlen(src) + 1);  // +1 for null",
+          "when": "Buffer too small"
+        },
+        {
+          "approach": "Use safe functions",
+          "code": "strncpy(dest, src, dest_size - 1);\ndest[dest_size - 1] = '\\0';",
+          "when": "String copy"
+        }
+      ]
+    },
+    {
+      "id": "stack_buffer_overflow",
+      "pattern": "stack-buffer-overflow",
+      "message": "Stack buffer overflow detected",
+      "cause": "Writing or reading beyond stack-allocated array",
+      "solutions": [
+        {
+          "approach": "Increase array size",
+          "code": "char buf[256];  // Was char buf[64]",
+          "when": "Buffer too small"
+        },
+        {
+          "approach": "Use dynamic allocation",
+          "code": "std::vector<char> buf(needed_size);",
+          "when": "Size not known at compile time"
+        },
+        {
+          "approach": "Validate input length",
+          "code": "if (len >= sizeof(buf)) return ERROR;",
+          "when": "Input may exceed buffer"
+        }
+      ]
+    },
+    {
+      "id": "use_after_free",
+      "pattern": "heap-use-after-free",
+      "message": "Use after free detected",
+      "cause": "Accessing memory after it was freed",
+      "solutions": [
+        {
+          "approach": "Set pointer to null after free",
+          "code": "free(ptr);\nptr = NULL;",
+          "when": "May have dangling references"
+        },
+        {
+          "approach": "Use smart pointers",
+          "code": "auto ptr = std::make_unique<T>();\n// Automatic cleanup, no dangling",
+          "when": "C++ code"
+        },
+        {
+          "approach": "Fix lifetime issue",
+          "code": "// Ensure pointer not stored beyond scope",
+          "when": "Lifetime management bug"
+        }
+      ]
+    },
+    {
+      "id": "use_after_return",
+      "pattern": "stack-use-after-return",
+      "message": "Use after return (stack) detected",
+      "cause": "Accessing stack memory after function returned",
+      "solutions": [
+        {
+          "approach": "Don't return local address",
+          "code": "// WRONG: return &local_var;\n// RIGHT: return by value or allocate on heap",
+          "when": "Returning pointer to local"
+        },
+        {
+          "approach": "Use heap allocation",
+          "code": "int* result = new int(value);\nreturn result;  // Caller must free",
+          "when": "Need pointer return"
+        },
+        {
+          "approach": "Use output parameter",
+          "code": "void compute(int* out) {\n    *out = result;\n}",
+          "when": "Caller provides storage"
+        }
+      ]
+    },
+    {
+      "id": "double_free",
+      "pattern": "double-free|attempting free on.*already freed",
+      "message": "Double free detected",
+      "cause": "Memory freed twice",
+      "solutions": [
+        {
+          "approach": "Set to NULL after free",
+          "code": "free(ptr);\nptr = NULL;  // NULL free is safe",
+          "when": "May be freed multiple times"
+        },
+        {
+          "approach": "Clear ownership",
+          "code": "// Ensure only one code path frees",
+          "when": "Ownership confusion"
+        },
+        {
+          "approach": "Use smart pointers",
+          "code": "auto ptr = std::make_unique<T>();\n// Cannot double-free",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "detected memory leaks|LeakSanitizer",
+      "message": "Memory leak detected",
+      "cause": "Allocated memory not freed before losing reference",
+      "solutions": [
+        {
+          "approach": "Add free on all paths",
+          "code": "void* mem = malloc(size);\nif (error) {\n    free(mem);  // Free before early return\n    return;\n}",
+          "when": "Early return without cleanup"
+        },
+        {
+          "approach": "Use RAII",
+          "code": "std::unique_ptr<T> ptr(new T);  // Auto-freed",
+          "when": "C++ code"
+        },
+        {
+          "approach": "Track allocations",
+          "code": "// Use allocation tracker or valgrind for detailed info",
+          "when": "Complex allocation patterns"
+        }
+      ]
+    },
+    {
+      "id": "stack_use_after_scope",
+      "pattern": "stack-use-after-scope",
+      "message": "Use after scope (accessing destroyed local)",
+      "cause": "Accessing variable after its scope ended",
+      "solutions": [
+        {
+          "approach": "Extend lifetime",
+          "code": "// Move declaration to outer scope",
+          "when": "Variable needed longer"
+        },
+        {
+          "approach": "Copy value",
+          "code": "int saved = temp;  // Copy before scope ends",
+          "when": "Need value, not reference"
+        }
+      ]
+    },
+    {
+      "id": "global_buffer_overflow",
+      "pattern": "global-buffer-overflow",
+      "message": "Global buffer overflow",
+      "cause": "Accessing beyond global/static array bounds",
+      "solutions": [
+        {
+          "approach": "Check array size",
+          "code": "static int arr[10];\nif (idx < 10) arr[idx] = val;",
+          "when": "Index may exceed bounds"
+        },
+        {
+          "approach": "Use constexpr for size",
+          "code": "constexpr size_t ARR_SIZE = 10;\nstatic int arr[ARR_SIZE];\nif (idx < ARR_SIZE) ...",
+          "when": "Size used in multiple places"
+        }
+      ]
+    },
+    {
+      "id": "null_dereference",
+      "pattern": "null-dereference|SEGV on unknown address.*0x0",
+      "message": "Null pointer dereference",
+      "cause": "Dereferencing a null pointer",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (ptr != NULL) {\n    ptr->field = value;\n}",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Use assert",
+          "code": "assert(ptr != NULL);\nptr->field = value;",
+          "when": "Null indicates bug"
+        }
+      ]
+    },
+    {
+      "id": "alloc_dealloc_mismatch",
+      "pattern": "alloc-dealloc-mismatch",
+      "message": "Allocation/deallocation mismatch",
+      "cause": "Using wrong deallocation (free vs delete, delete vs delete[])",
+      "solutions": [
+        {
+          "approach": "Match allocation type",
+          "code": "// malloc/free, new/delete, new[]/delete[]\nint* arr = new int[10];\ndelete[] arr;  // Not delete arr",
+          "when": "Array allocation"
+        },
+        {
+          "approach": "Use smart pointers",
+          "code": "auto arr = std::make_unique<int[]>(10);",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "odr_violation",
+      "pattern": "odr-violation",
+      "message": "One Definition Rule violation",
+      "cause": "Symbol defined differently in multiple translation units",
+      "solutions": [
+        {
+          "approach": "Use inline for headers",
+          "code": "inline int func() { return 42; }  // In header",
+          "when": "Function in header"
+        },
+        {
+          "approach": "Use anonymous namespace",
+          "code": "namespace {\n    int helper() { ... }  // Internal linkage\n}",
+          "when": "File-local definitions"
+        }
+      ]
+    }
+  ]
+}

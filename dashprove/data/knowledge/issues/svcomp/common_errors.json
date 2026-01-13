@@ -1,0 +1,169 @@
+{
+  "tool": "svcomp",
+  "version": "2024",
+  "last_updated": "2025-12-23",
+  "description": "SV-COMP (Competition on Software Verification) benchmark suite for C verification",
+  "errors": [
+    {
+      "id": "property_file_missing",
+      "pattern": "property file.*not found|missing.*prp",
+      "message": "Property specification file not found",
+      "cause": "Property file (.prp) required for SV-COMP verification",
+      "solutions": [
+        {
+          "approach": "Use standard property files",
+          "code": "# Standard SV-COMP properties:\n# unreach-call.prp - __VERIFIER_error() unreachable\n# valid-memsafety.prp - no memory errors\n# termination.prp - program terminates\n# no-overflow.prp - no signed overflow\ncbmc --propertyfile unreach-call.prp program.c",
+          "when": "Property file not specified"
+        },
+        {
+          "approach": "Check property syntax",
+          "code": "# unreach-call.prp content:\nCHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )\n\n# valid-memsafety.prp content:\nCHECK( init(main()), LTL(G valid-free) )\nCHECK( init(main()), LTL(G valid-deref) )\nCHECK( init(main()), LTL(G valid-memtrack) )",
+          "when": "Creating custom property"
+        },
+        {
+          "approach": "Download benchmark suite",
+          "code": "# Get SV-COMP benchmarks with properties\ngit clone https://github.com/sosy-lab/sv-benchmarks.git\n# Properties in sv-benchmarks/c/properties/",
+          "when": "Need standard properties"
+        }
+      ]
+    },
+    {
+      "id": "verifier_assume_violation",
+      "pattern": "__VERIFIER_assume.*undefined|assume.*not defined",
+      "message": "__VERIFIER_assume function not recognized",
+      "cause": "SV-COMP intrinsic functions not defined",
+      "solutions": [
+        {
+          "approach": "Include SV-COMP header",
+          "code": "// Add to program:\nextern void __VERIFIER_assume(int);\nextern void __VERIFIER_error(void);\nextern int __VERIFIER_nondet_int(void);\nextern unsigned int __VERIFIER_nondet_uint(void);",
+          "when": "Intrinsics not declared"
+        },
+        {
+          "approach": "Use tool-specific modeling",
+          "code": "// CBMC models intrinsics automatically\ncbmc --svcomp program.c\n\n// Kani maps to kani:: functions\n// ESBMC has built-in support",
+          "when": "Tool doesn't recognize intrinsics"
+        },
+        {
+          "approach": "Check function signature",
+          "code": "// Correct signatures:\nvoid __VERIFIER_assume(int cond);  // Skip path if !cond\nvoid __VERIFIER_error(void);       // Mark as error\nint __VERIFIER_nondet_int(void);   // Any int value",
+          "when": "Wrong function signature"
+        }
+      ]
+    },
+    {
+      "id": "false_positive_unreach",
+      "pattern": "FALSE.*reachable|spurious.*counterexample",
+      "message": "Verifier reports FALSE but __VERIFIER_error is unreachable",
+      "cause": "Spurious counterexample due to abstraction or imprecision",
+      "solutions": [
+        {
+          "approach": "Increase precision",
+          "code": "# CPAchecker: more precise analysis\ncpa.sh -predicateAnalysis program.c\n\n# CBMC: increase unwinding\ncbmc --unwind 20 program.c",
+          "when": "Loop abstraction too coarse"
+        },
+        {
+          "approach": "Check witness",
+          "code": "# Validate with witness checker\nwitness-checker -witness witness.graphml program.c\n# MetaVal witness validator\nmetaval validate witness.graphml program.c",
+          "when": "Need to verify counterexample"
+        },
+        {
+          "approach": "Simplify program",
+          "code": "// Inline functions that cause imprecision\n// Add intermediate assertions\n__VERIFIER_assert(invariant);\n// Bound nondeterminism\nint x = __VERIFIER_nondet_int();\n__VERIFIER_assume(x >= 0 && x < 100);",
+          "when": "Analysis losing precision"
+        }
+      ]
+    },
+    {
+      "id": "memory_model_mismatch",
+      "pattern": "memory model|pointer.*encoding",
+      "message": "Memory model mismatch causing incorrect results",
+      "cause": "Tool's memory model differs from expected semantics",
+      "solutions": [
+        {
+          "approach": "Specify memory model",
+          "code": "# CBMC memory model options\ncbmc --32 program.c  # 32-bit pointers\ncbmc --64 program.c  # 64-bit pointers\ncbmc --mm sc program.c  # Sequential consistency",
+          "when": "Pointer size matters"
+        },
+        {
+          "approach": "Check undefined behavior",
+          "code": "// SV-COMP assumes no UB unless checking for it\n// These may be treated differently:\nint *p = NULL;\n*p = 1;  // UB - may not be detected without memsafety",
+          "when": "UB affecting results"
+        },
+        {
+          "approach": "Use architecture flag",
+          "code": "# Specify target architecture\ncbmc --arch x86_64 program.c\ncbmc --arch x86 program.c\n# Or in YAML task definition:\narchitecture: 32bit  # or 64bit",
+          "when": "Architecture-dependent behavior"
+        }
+      ]
+    },
+    {
+      "id": "timeout_loop_unwinding",
+      "pattern": "timeout|unwinding.*incomplete",
+      "message": "Verification timed out during loop unwinding",
+      "cause": "Loops with many iterations or unbounded loops",
+      "solutions": [
+        {
+          "approach": "Increase unwind bound",
+          "code": "# CBMC: set loop bounds\ncbmc --unwind 100 program.c\n# Or per-loop bounds\ncbmc --unwindset main.0:50,foo.1:20 program.c",
+          "when": "Known loop bounds"
+        },
+        {
+          "approach": "Use loop invariants",
+          "code": "// Add invariant annotations\nwhile (i < n) {\n    __VERIFIER_assert(0 <= i && i < n);  // Invariant\n    // loop body\n    i++;\n}",
+          "when": "Can express loop invariant"
+        },
+        {
+          "approach": "Try CEGAR-based tool",
+          "code": "# CEGAR tools don't require explicit unwinding\ncpa.sh -predicateAnalysis program.c\nultimate-automizer program.c",
+          "when": "BMC unwinding insufficient"
+        }
+      ]
+    },
+    {
+      "id": "witness_validation_failed",
+      "pattern": "witness.*invalid|cannot validate witness",
+      "message": "Verification witness failed validation",
+      "cause": "Witness does not correspond to program execution",
+      "solutions": [
+        {
+          "approach": "Check witness format",
+          "code": "# SV-COMP witness format (GraphML)\n# Correctness witness: invariants at program points\n# Violation witness: path to error",
+          "when": "Witness format wrong"
+        },
+        {
+          "approach": "Use correct validator",
+          "code": "# CPAchecker witness validation\ncpa.sh -witnessValidation \\\n  -witness witness.graphml \\\n  program.c\n\n# Ultimate witness checker\nultimate-witnesschecker witness.graphml program.c",
+          "when": "Using incompatible validator"
+        },
+        {
+          "approach": "Check program hash",
+          "code": "# Witness contains program hash\n# Ensure program matches:\nsha256sum program.c\n# Compare with programhash in witness",
+          "when": "Witness for different program version"
+        }
+      ]
+    },
+    {
+      "id": "category_mismatch",
+      "pattern": "wrong category|benchmark.*mismatch",
+      "message": "Benchmark not suitable for chosen category",
+      "cause": "Running benchmark with wrong property or category",
+      "solutions": [
+        {
+          "approach": "Check benchmark metadata",
+          "code": "# Look at .yml task definition\n# benchmark.yml example:\nformat_version: '2.0'\nproperties:\n  - property_file: ../properties/unreach-call.prp\n    expected_verdict: true",
+          "when": "Using wrong property file"
+        },
+        {
+          "approach": "Match category and property",
+          "code": "# SV-COMP categories and properties:\n# ReachSafety -> unreach-call.prp\n# MemSafety -> valid-memsafety.prp\n# Termination -> termination.prp\n# NoOverflows -> no-overflow.prp",
+          "when": "Property/category mismatch"
+        },
+        {
+          "approach": "Check expected verdict",
+          "code": "# File naming convention:\n# *_true-*.c -> property should hold\n# *_false-*.c -> property should be violated\n# Example: loop_true-unreach-call.c",
+          "when": "Unexpected verification result"
+        }
+      ]
+    }
+  ]
+}

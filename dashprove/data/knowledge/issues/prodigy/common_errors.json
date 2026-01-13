@@ -1,0 +1,145 @@
+{
+  "tool": "prodigy",
+  "version": "1.14",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "license_error",
+      "pattern": "license.*invalid|activation.*failed|PRODIGY_KEY|license key",
+      "message": "License key error",
+      "cause": "Missing or invalid license key",
+      "solutions": [
+        {
+          "approach": "Set key",
+          "code": "export PRODIGY_KEY='XXXX-XXXX-XXXX-XXXX'\nprodigy stats",
+          "when": "Environment variable"
+        },
+        {
+          "approach": "Config file",
+          "code": "# ~/.prodigy/prodigy.json:\n{\"license\": \"XXXX-XXXX-XXXX-XXXX\"}",
+          "when": "Config file"
+        },
+        {
+          "approach": "Verify license",
+          "code": "prodigy stats  # Shows license status",
+          "when": "Check activation"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "database.*error|Cannot connect|sqlite.*locked|dataset.*not found",
+      "message": "Database connection error",
+      "cause": "Database file locked or dataset missing",
+      "solutions": [
+        {
+          "approach": "Check dataset",
+          "code": "prodigy stats -l  # List datasets\nprodigy db-out dataset_name > backup.jsonl",
+          "when": "Verify exists"
+        },
+        {
+          "approach": "Fix lock",
+          "code": "# Kill hanging prodigy processes\npkill -f prodigy\nprodigy ner.manual dataset model source.jsonl",
+          "when": "SQLite locked"
+        },
+        {
+          "approach": "Custom database",
+          "code": "# prodigy.json:\n{\"db\": \"postgresql\", \"db_settings\": {\"host\": \"localhost\"}}",
+          "when": "Use PostgreSQL"
+        }
+      ]
+    },
+    {
+      "id": "model_error",
+      "pattern": "model.*not found|spacy.*error|Can't find model|OSError.*model",
+      "message": "spaCy model error",
+      "cause": "Model not installed or incompatible version",
+      "solutions": [
+        {
+          "approach": "Install model",
+          "code": "python -m spacy download en_core_web_sm\n# Or: en_core_web_lg for better accuracy",
+          "when": "Model missing"
+        },
+        {
+          "approach": "Check version",
+          "code": "python -c \"import spacy; print(spacy.__version__)\"\n# Prodigy 1.14 needs spaCy 3.x",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Blank model",
+          "code": "prodigy ner.manual dataset blank:en source.jsonl --label PERSON,ORG",
+          "when": "Start from blank"
+        }
+      ]
+    },
+    {
+      "id": "source_error",
+      "pattern": "source.*error|Cannot load|file not found|Invalid JSON|encoding",
+      "message": "Data source error",
+      "cause": "File not found or invalid format",
+      "solutions": [
+        {
+          "approach": "JSONL format",
+          "code": "{\"text\": \"First example\"}\n{\"text\": \"Second example\"}",
+          "when": "Proper JSONL"
+        },
+        {
+          "approach": "From text file",
+          "code": "prodigy ner.manual dataset en_core_web_sm data.txt --label PERSON",
+          "when": "Plain text input"
+        },
+        {
+          "approach": "From patterns",
+          "code": "prodigy terms.teach dataset en_core_web_sm patterns.jsonl --seeds seed_terms.txt",
+          "when": "Pattern-based"
+        }
+      ]
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "Address already in use|port.*in use|EADDRINUSE|Cannot start server",
+      "message": "Server port in use",
+      "cause": "Port 8080 already in use",
+      "solutions": [
+        {
+          "approach": "Different port",
+          "code": "prodigy ner.manual dataset model source.jsonl --port 8888",
+          "when": "Change port"
+        },
+        {
+          "approach": "Kill process",
+          "code": "lsof -i :8080\nkill -9 $(lsof -t -i:8080)",
+          "when": "Free port"
+        },
+        {
+          "approach": "Config port",
+          "code": "# prodigy.json:\n{\"port\": 8888, \"host\": \"0.0.0.0\"}",
+          "when": "Persistent setting"
+        }
+      ]
+    },
+    {
+      "id": "recipe_error",
+      "pattern": "recipe.*not found|Unknown recipe|command.*error",
+      "message": "Recipe not found",
+      "cause": "Recipe name wrong or custom recipe not loaded",
+      "solutions": [
+        {
+          "approach": "List recipes",
+          "code": "prodigy stats -l  # Lists built-in recipes",
+          "when": "Find recipes"
+        },
+        {
+          "approach": "Custom recipe",
+          "code": "# recipes.py:\n@prodigy.recipe(\"my.recipe\")\ndef my_recipe(dataset):\n    return {...}\n\nprodigy my.recipe dataset -F recipes.py",
+          "when": "Load custom"
+        },
+        {
+          "approach": "Common recipes",
+          "code": "prodigy ner.manual  # Manual NER\nprodigy ner.correct  # Correct model predictions\nprodigy textcat.manual  # Text classification",
+          "when": "Built-in tasks"
+        }
+      ]
+    }
+  ]
+}

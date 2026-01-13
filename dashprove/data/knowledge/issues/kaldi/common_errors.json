@@ -1,0 +1,177 @@
+{
+  "tool": "kaldi",
+  "version": "5.5",
+  "last_updated": "2025-12-22",
+  "description": "Speech recognition toolkit for researchers and production systems",
+  "errors": [
+    {
+      "id": "path_not_set",
+      "pattern": "kaldi/tools/env.sh.*not found|KALDI_ROOT not set",
+      "message": "Kaldi environment not configured",
+      "cause": "Kaldi installation path not in environment",
+      "solutions": [
+        {
+          "approach": "Source env.sh",
+          "code": "source /path/to/kaldi/tools/env.sh",
+          "when": "Kaldi installed but not sourced"
+        },
+        {
+          "approach": "Set KALDI_ROOT",
+          "code": "export KALDI_ROOT=/path/to/kaldi\nexport PATH=$KALDI_ROOT/src/bin:$PATH",
+          "when": "Need to set path manually"
+        }
+      ]
+    },
+    {
+      "id": "cuda_version_mismatch",
+      "pattern": "CUDA.*version.*mismatch|nvcc.*not compatible",
+      "message": "CUDA version incompatible with Kaldi build",
+      "cause": "Kaldi compiled with different CUDA version than installed",
+      "solutions": [
+        {
+          "approach": "Rebuild Kaldi with correct CUDA",
+          "code": "cd kaldi/src\n./configure --cudatk-dir=/usr/local/cuda-11.8\nmake -j clean depend; make -j 8",
+          "when": "CUDA version changed after Kaldi install"
+        },
+        {
+          "approach": "Use CPU-only build",
+          "code": "cd kaldi/src\n./configure --use-cuda=no\nmake -j clean depend; make -j 8",
+          "when": "GPU not needed"
+        }
+      ]
+    },
+    {
+      "id": "openfst_error",
+      "pattern": "OpenFst.*error|fstcompile.*failed",
+      "message": "OpenFst operation failed",
+      "cause": "FST compilation error or incompatible version",
+      "solutions": [
+        {
+          "approach": "Check OpenFst installation",
+          "code": "cd kaldi/tools\nmake openfst",
+          "when": "OpenFst not built"
+        },
+        {
+          "approach": "Verify FST format",
+          "code": "fstinfo your.fst  # Check if FST is valid",
+          "when": "FST file may be corrupted"
+        },
+        {
+          "approach": "Rebuild with correct flags",
+          "code": "# In tools/Makefile, set: OPENFST_VERSION = 1.7.2",
+          "when": "Version compatibility issue"
+        }
+      ]
+    },
+    {
+      "id": "feature_extraction_error",
+      "pattern": "compute-mfcc-feats.*failed|compute-fbank-feats.*error",
+      "message": "Feature extraction failed",
+      "cause": "Audio format issue or configuration mismatch",
+      "solutions": [
+        {
+          "approach": "Convert to WAV 16kHz mono",
+          "code": "ffmpeg -i input.mp3 -ar 16000 -ac 1 output.wav",
+          "when": "Audio not in expected format"
+        },
+        {
+          "approach": "Check conf/mfcc.conf",
+          "code": "--sample-frequency=16000\n--num-mel-bins=40\n--num-ceps=13",
+          "when": "Feature config doesn't match audio"
+        },
+        {
+          "approach": "Use sox for preprocessing",
+          "code": "sox input.wav -r 16000 -c 1 output.wav",
+          "when": "Need reliable format conversion"
+        }
+      ]
+    },
+    {
+      "id": "decode_error",
+      "pattern": "gmm-latgen-faster.*error|nnet3-latgen-faster.*failed",
+      "message": "Decoding failed",
+      "cause": "Model/graph mismatch or memory issues",
+      "solutions": [
+        {
+          "approach": "Check model dimensions",
+          "code": "gmm-info final.mdl  # Verify model properties\nfstinfo HCLG.fst  # Check graph",
+          "when": "Model and graph may not match"
+        },
+        {
+          "approach": "Reduce beam width",
+          "code": "--beam=10 --lattice-beam=6  # Reduce from defaults",
+          "when": "Memory issues during decoding"
+        },
+        {
+          "approach": "Check ivector dimension",
+          "code": "ivector-extractor-info final.ie  # Verify ivector dim matches",
+          "when": "Using ivector features"
+        }
+      ]
+    },
+    {
+      "id": "alignment_error",
+      "pattern": "align-text.*failed|Did not successfully decode",
+      "message": "Forced alignment failed",
+      "cause": "Transcript doesn't match audio or pronunciation issues",
+      "solutions": [
+        {
+          "approach": "Check lexicon coverage",
+          "code": "# Ensure all words in transcript are in lexicon\nutils/filter_dict.pl transcript.txt lexicon.txt",
+          "when": "OOV (out of vocabulary) words"
+        },
+        {
+          "approach": "Add pronunciation variants",
+          "code": "# Add to lexicon.txt:\nWORD  W ER D\nWORD(2)  W UH R D",
+          "when": "Word has multiple pronunciations"
+        },
+        {
+          "approach": "Increase alignment tolerance",
+          "code": "--beam=20 --retry-beam=40",
+          "when": "Strict alignment failing"
+        }
+      ]
+    },
+    {
+      "id": "training_divergence",
+      "pattern": "Average objective function.*nan|Training diverged",
+      "message": "Training produced NaN or diverged",
+      "cause": "Learning rate too high or data issues",
+      "solutions": [
+        {
+          "approach": "Reduce learning rate",
+          "code": "--initial-effective-lrate=0.001 --final-effective-lrate=0.0001",
+          "when": "Loss became NaN"
+        },
+        {
+          "approach": "Check data normalization",
+          "code": "# Ensure CMVN is applied\napply-cmvn-sliding --norm-vars=false --center=true --cmn-window=300 feats.scp ark:- |",
+          "when": "Features may have extreme values"
+        },
+        {
+          "approach": "Add gradient clipping",
+          "code": "--max-param-change=2.0",
+          "when": "Gradient explosion"
+        }
+      ]
+    },
+    {
+      "id": "wer_calculation_error",
+      "pattern": "compute-wer.*error|WER.*invalid",
+      "message": "WER computation failed",
+      "cause": "Reference/hypothesis format mismatch",
+      "solutions": [
+        {
+          "approach": "Check text format",
+          "code": "# Format: UTTERANCE_ID word1 word2 word3\n# Ensure consistent utterance IDs between ref and hyp",
+          "when": "Format mismatch"
+        },
+        {
+          "approach": "Sort files by utterance ID",
+          "code": "sort ref.txt > ref_sorted.txt\nsort hyp.txt > hyp_sorted.txt",
+          "when": "Files not sorted consistently"
+        }
+      ]
+    }
+  ]
+}

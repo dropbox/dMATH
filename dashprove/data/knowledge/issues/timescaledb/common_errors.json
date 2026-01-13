@@ -1,0 +1,191 @@
+{
+  "tool": "timescaledb",
+  "version": "2.13.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "extension_error",
+      "pattern": "extension.*not found|timescaledb.*not.*loaded|CREATE EXTENSION.*failed",
+      "message": "TimescaleDB extension error",
+      "cause": "Extension not installed or loaded",
+      "solutions": [
+        {
+          "approach": "Create extension",
+          "code": "CREATE EXTENSION IF NOT EXISTS timescaledb;",
+          "when": "Extension not created"
+        },
+        {
+          "approach": "Check installation",
+          "code": "SELECT * FROM pg_available_extensions WHERE name = 'timescaledb';",
+          "when": "Verify installed"
+        },
+        {
+          "approach": "Preload library",
+          "code": "# In postgresql.conf:\nshared_preload_libraries = 'timescaledb'\n# Then restart PostgreSQL",
+          "when": "Library not loaded"
+        }
+      ]
+    },
+    {
+      "id": "hypertable_error",
+      "pattern": "hypertable.*already exists|cannot create hypertable|not a hypertable|no such hypertable",
+      "message": "Hypertable error",
+      "cause": "Hypertable configuration issue",
+      "solutions": [
+        {
+          "approach": "Create hypertable",
+          "code": "SELECT create_hypertable('metrics', 'time');\n-- Or with partitioning:\nSELECT create_hypertable('metrics', 'time', 'device_id', 4);",
+          "when": "Create hypertable"
+        },
+        {
+          "approach": "Check if hypertable",
+          "code": "SELECT * FROM timescaledb_information.hypertables;",
+          "when": "List hypertables"
+        },
+        {
+          "approach": "Migrate existing",
+          "code": "-- Table must be empty or:\nSELECT create_hypertable('metrics', 'time', migrate_data => true);",
+          "when": "Existing data"
+        }
+      ]
+    },
+    {
+      "id": "chunk_error",
+      "pattern": "chunk.*error|chunk_time_interval|chunks.*exceeded|compression.*chunk",
+      "message": "Chunk management error",
+      "cause": "Chunk configuration or operation issue",
+      "solutions": [
+        {
+          "approach": "Set interval",
+          "code": "SELECT set_chunk_time_interval('metrics', INTERVAL '1 day');",
+          "when": "Adjust chunk size"
+        },
+        {
+          "approach": "View chunks",
+          "code": "SELECT show_chunks('metrics');",
+          "when": "List chunks"
+        },
+        {
+          "approach": "Drop old chunks",
+          "code": "SELECT drop_chunks('metrics', INTERVAL '30 days');",
+          "when": "Remove old data"
+        }
+      ]
+    },
+    {
+      "id": "compression_error",
+      "pattern": "compression.*failed|cannot compress|decompress.*error|already compressed",
+      "message": "Compression error",
+      "cause": "Compression configuration or operation issue",
+      "solutions": [
+        {
+          "approach": "Enable compression",
+          "code": "ALTER TABLE metrics SET (\n  timescaledb.compress,\n  timescaledb.compress_segmentby = 'device_id'\n);",
+          "when": "Enable compression"
+        },
+        {
+          "approach": "Add policy",
+          "code": "SELECT add_compression_policy('metrics', INTERVAL '7 days');",
+          "when": "Automatic compression"
+        },
+        {
+          "approach": "Manual compress",
+          "code": "SELECT compress_chunk(c) FROM show_chunks('metrics') c\nWHERE c < NOW() - INTERVAL '7 days';",
+          "when": "Compress manually"
+        }
+      ]
+    },
+    {
+      "id": "cagg_error",
+      "pattern": "continuous aggregate.*error|materialized.*failed|refresh.*policy|cagg",
+      "message": "Continuous aggregate error",
+      "cause": "Continuous aggregate configuration issue",
+      "solutions": [
+        {
+          "approach": "Create cagg",
+          "code": "CREATE MATERIALIZED VIEW metrics_hourly\nWITH (timescaledb.continuous) AS\nSELECT time_bucket('1 hour', time) AS bucket,\n       device_id,\n       AVG(value) AS avg_value\nFROM metrics\nGROUP BY bucket, device_id;",
+          "when": "Create aggregate"
+        },
+        {
+          "approach": "Add refresh policy",
+          "code": "SELECT add_continuous_aggregate_policy('metrics_hourly',\n  start_offset => INTERVAL '1 month',\n  end_offset => INTERVAL '1 hour',\n  schedule_interval => INTERVAL '1 hour'\n);",
+          "when": "Auto refresh"
+        },
+        {
+          "approach": "Manual refresh",
+          "code": "CALL refresh_continuous_aggregate('metrics_hourly', NULL, NOW());",
+          "when": "Force refresh"
+        }
+      ]
+    },
+    {
+      "id": "retention_error",
+      "pattern": "retention.*policy|drop_chunks.*failed|data.*expired",
+      "message": "Retention policy error",
+      "cause": "Retention policy configuration issue",
+      "solutions": [
+        {
+          "approach": "Add policy",
+          "code": "SELECT add_retention_policy('metrics', INTERVAL '90 days');",
+          "when": "Auto delete old data"
+        },
+        {
+          "approach": "View policies",
+          "code": "SELECT * FROM timescaledb_information.jobs\nWHERE proc_name = 'policy_retention';",
+          "when": "List policies"
+        },
+        {
+          "approach": "Remove policy",
+          "code": "SELECT remove_retention_policy('metrics');",
+          "when": "Disable retention"
+        }
+      ]
+    },
+    {
+      "id": "performance_error",
+      "pattern": "query.*slow|timeout|memory.*exceeded|out of shared memory",
+      "message": "Performance error",
+      "cause": "Query or configuration performance issue",
+      "solutions": [
+        {
+          "approach": "Use time_bucket",
+          "code": "-- Use time_bucket for aggregations:\nSELECT time_bucket('5 minutes', time) AS bucket,\n       AVG(value)\nFROM metrics\nWHERE time > NOW() - INTERVAL '1 day'\nGROUP BY bucket;",
+          "when": "Slow aggregations"
+        },
+        {
+          "approach": "Add indexes",
+          "code": "CREATE INDEX ON metrics (device_id, time DESC);",
+          "when": "Slow lookups"
+        },
+        {
+          "approach": "Use continuous aggregates",
+          "code": "-- Pre-compute common aggregations\n-- Query the cagg instead of raw data",
+          "when": "Repeated queries"
+        }
+      ]
+    },
+    {
+      "id": "replication_error",
+      "pattern": "replication.*failed|distributed.*error|data node|multi-node",
+      "message": "Distributed/replication error",
+      "cause": "Multi-node configuration issue",
+      "solutions": [
+        {
+          "approach": "Add data node",
+          "code": "SELECT add_data_node('dn1', host => 'datanode1.example.com');",
+          "when": "Add node"
+        },
+        {
+          "approach": "Check nodes",
+          "code": "SELECT * FROM timescaledb_information.data_nodes;",
+          "when": "List nodes"
+        },
+        {
+          "approach": "Distributed hypertable",
+          "code": "SELECT create_distributed_hypertable('metrics', 'time', 'device_id');",
+          "when": "Create distributed"
+        }
+      ]
+    }
+  ]
+}

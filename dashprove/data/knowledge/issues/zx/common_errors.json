@@ -1,0 +1,191 @@
+{
+  "tool": "zx",
+  "version": "8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "esm_requirement",
+      "pattern": "ERR_REQUIRE_ESM|SyntaxError.*import|must use.*mjs",
+      "message": "ESM module required",
+      "cause": "zx scripts must be ES modules",
+      "solutions": [
+        {
+          "approach": "Use .mjs extension",
+          "code": "// script.mjs\n#!/usr/bin/env zx\nawait $`echo hello`;",
+          "when": "File extension"
+        },
+        {
+          "approach": "Use type: module",
+          "code": "// package.json: { \"type\": \"module\" }\n// Then use .js extension",
+          "when": "Package config"
+        },
+        {
+          "approach": "Run with zx",
+          "code": "npx zx script.mjs\n# or\nzx script.mjs",
+          "when": "Execution"
+        }
+      ]
+    },
+    {
+      "id": "command_failed",
+      "pattern": "ProcessOutput|exit code|non-zero|command failed",
+      "message": "Command returned non-zero exit code",
+      "cause": "Shell command failed",
+      "solutions": [
+        {
+          "approach": "Catch error",
+          "code": "try {\n  await $`exit 1`;\n} catch (p) {\n  console.log(`Exit code: ${p.exitCode}`);\n  console.log(`Stderr: ${p.stderr}`);\n}",
+          "when": "Handle failure"
+        },
+        {
+          "approach": "Use nothrow",
+          "code": "const result = await $`failing-command`.nothrow();\nif (result.exitCode !== 0) {\n  console.log('Failed but continuing');\n}",
+          "when": "Don't throw"
+        },
+        {
+          "approach": "Check specific codes",
+          "code": "const p = await $`grep pattern file.txt`.nothrow();\nif (p.exitCode === 1) {\n  console.log('Pattern not found');\n}",
+          "when": "Expected failure"
+        }
+      ]
+    },
+    {
+      "id": "variable_interpolation",
+      "pattern": "undefined|not substituted|literal string|escaping",
+      "message": "Variable not interpolated correctly",
+      "cause": "Wrong template literal syntax or escaping",
+      "solutions": [
+        {
+          "approach": "Use template literals",
+          "code": "const name = 'file.txt';\nawait $`cat ${name}`;  // correct\n// NOT: await $`cat $name`;  // wrong",
+          "when": "Basic interpolation"
+        },
+        {
+          "approach": "Array expansion",
+          "code": "const files = ['a.txt', 'b.txt'];\nawait $`cat ${files}`;  // expands properly",
+          "when": "Multiple args"
+        },
+        {
+          "approach": "Quote for spaces",
+          "code": "const name = 'file with spaces.txt';\nawait $`cat ${name}`;  // zx quotes automatically\n// Or explicitly: await $`cat ${quote(name)}`;",
+          "when": "Spaces in values"
+        }
+      ]
+    },
+    {
+      "id": "stdin_pipe",
+      "pattern": "stdin|pipe|input not received|EPIPE",
+      "message": "Stdin piping not working",
+      "cause": "Pipe syntax or input method incorrect",
+      "solutions": [
+        {
+          "approach": "Use pipe",
+          "code": "const output = await $`cat file.txt`.pipe($`grep pattern`);",
+          "when": "Pipe commands"
+        },
+        {
+          "approach": "Provide stdin",
+          "code": "const result = await $({ input: 'hello' })`cat`;\nconsole.log(result.stdout);  // hello",
+          "when": "String input"
+        },
+        {
+          "approach": "Chain with await",
+          "code": "const content = await $`cat file.txt`;\nconst filtered = await $({ input: content.stdout })`grep pattern`;",
+          "when": "Sequential"
+        }
+      ]
+    },
+    {
+      "id": "path_issues",
+      "pattern": "ENOENT|command not found|No such file|cd.*error",
+      "message": "Path or command not found",
+      "cause": "Working directory or PATH issues",
+      "solutions": [
+        {
+          "approach": "Use cd helper",
+          "code": "cd('/tmp');\nawait $`pwd`;  // /tmp\ncd(os.homedir());",
+          "when": "Change directory"
+        },
+        {
+          "approach": "Use within",
+          "code": "await within(async () => {\n  cd('/tmp');\n  await $`pwd`;  // /tmp\n});\nawait $`pwd`;  // original directory",
+          "when": "Scoped cd"
+        },
+        {
+          "approach": "Check path",
+          "code": "if (await fs.pathExists('file.txt')) {\n  await $`cat file.txt`;\n}",
+          "when": "Verify existence"
+        }
+      ]
+    },
+    {
+      "id": "verbose_output",
+      "pattern": "too much output|verbose|hide commands|quiet",
+      "message": "Unwanted verbose output",
+      "cause": "zx prints commands by default",
+      "solutions": [
+        {
+          "approach": "Use quiet mode",
+          "code": "$.verbose = false;\n// Or:\nawait $`command`.quiet();",
+          "when": "Hide commands"
+        },
+        {
+          "approach": "Suppress specific",
+          "code": "const result = await $`command`.quiet();\nconsole.log(result.stdout);  // only show output",
+          "when": "Per-command"
+        },
+        {
+          "approach": "Use noquote",
+          "code": "$.quote = (s) => s;  // disable quoting display\n// Or for passwords:\nawait $`echo ${$.quote = () => '***', password}`;",
+          "when": "Hide sensitive"
+        }
+      ]
+    },
+    {
+      "id": "async_issues",
+      "pattern": "Promise|await|async|not waiting|parallel",
+      "message": "Async execution issues",
+      "cause": "Not awaiting or wrong async pattern",
+      "solutions": [
+        {
+          "approach": "Always await",
+          "code": "// Must await\nconst result = await $`command`;\n// NOT: const result = $`command`;",
+          "when": "Missing await"
+        },
+        {
+          "approach": "Parallel execution",
+          "code": "await Promise.all([\n  $`command1`,\n  $`command2`,\n  $`command3`\n]);",
+          "when": "Concurrent commands"
+        },
+        {
+          "approach": "Sequential with for",
+          "code": "for (const file of files) {\n  await $`process ${file}`;\n}",
+          "when": "One at a time"
+        }
+      ]
+    },
+    {
+      "id": "fetch_errors",
+      "pattern": "fetch.*error|network|ECONNREFUSED|timeout",
+      "message": "Built-in fetch failed",
+      "cause": "Network or URL issues",
+      "solutions": [
+        {
+          "approach": "Handle fetch errors",
+          "code": "try {\n  const resp = await fetch('https://api.example.com');\n  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);\n  const data = await resp.json();\n} catch (e) {\n  console.error('Fetch failed:', e);\n}",
+          "when": "Error handling"
+        },
+        {
+          "approach": "With retry",
+          "code": "import { retry } from 'zx';\nconst data = await retry(3, () => fetch(url).then(r => r.json()));",
+          "when": "Retry logic"
+        },
+        {
+          "approach": "Use spinner",
+          "code": "await spinner('Fetching...', async () => {\n  return await fetch(url);\n});",
+          "when": "Show progress"
+        }
+      ]
+    }
+  ]
+}

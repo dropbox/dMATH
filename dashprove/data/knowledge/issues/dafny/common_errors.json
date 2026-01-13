@@ -1,0 +1,189 @@
+{
+  "tool": "dafny",
+  "version": "4.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assertion_violation",
+      "pattern": "assertion might not hold",
+      "message": "Assertion might not hold",
+      "cause": "Dafny cannot prove the assertion is true",
+      "solutions": [
+        {
+          "approach": "Add intermediate assertions",
+          "code": "assert condition1;  // Break into steps\nassert condition2;",
+          "when": "Proof needs intermediate steps"
+        },
+        {
+          "approach": "Add calc block",
+          "code": "calc {\n  a;\n  == { /* hint */ }\n  b;\n}",
+          "when": "Need equational reasoning"
+        },
+        {
+          "approach": "Strengthen precondition",
+          "code": "requires stronger_precond",
+          "when": "Need more assumptions"
+        },
+        {
+          "approach": "Add reveal statement",
+          "code": "reveal function_name();",
+          "when": "Need to unfold opaque function"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_failure",
+      "pattern": "postcondition might not hold",
+      "message": "Postcondition might not hold",
+      "cause": "Method/function doesn't establish its postcondition",
+      "solutions": [
+        {
+          "approach": "Add assertions before return",
+          "code": "assert postcond;  // Help verifier\nreturn result;",
+          "when": "Verifier needs hints"
+        },
+        {
+          "approach": "Strengthen loop invariant",
+          "code": "invariant stronger_inv",
+          "when": "Loop doesn't preserve enough"
+        },
+        {
+          "approach": "Check all paths",
+          "code": "// Ensure all branches establish postcondition",
+          "when": "Some path doesn't establish postcond"
+        }
+      ]
+    },
+    {
+      "id": "decreases_failure",
+      "pattern": "cannot prove termination",
+      "message": "Cannot prove termination",
+      "cause": "Dafny cannot prove recursion terminates",
+      "solutions": [
+        {
+          "approach": "Add decreases clause",
+          "code": "decreases x, y  // Lexicographic\ndecreases |s|  // Size\ndecreases *   // Assume termination",
+          "when": "Need explicit termination metric"
+        },
+        {
+          "approach": "Use decreases expression",
+          "code": "decreases if cond then 1 else 0, x",
+          "when": "Complex termination argument"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant",
+      "pattern": "loop invariant violation",
+      "message": "Loop invariant might not be maintained",
+      "cause": "Loop body may break the invariant",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "invariant 0 <= i <= n\ninvariant forall j :: 0 <= j < i ==> P(j)",
+          "when": "Invariant too weak"
+        },
+        {
+          "approach": "Add intermediate invariant",
+          "code": "// Add invariant for each modified variable",
+          "when": "Missing key facts"
+        },
+        {
+          "approach": "Check loop body",
+          "code": "// Ensure all assignments maintain invariant",
+          "when": "Assignment breaks invariant"
+        }
+      ]
+    },
+    {
+      "id": "modifies_violation",
+      "pattern": "modifies clause might not be satisfied",
+      "message": "Modifies clause violation",
+      "cause": "Method modifies heap location not in modifies clause",
+      "solutions": [
+        {
+          "approach": "Expand modifies clause",
+          "code": "modifies this, this.field, `other`",
+          "when": "Need to modify more locations"
+        },
+        {
+          "approach": "Check called methods",
+          "code": "// Called method might modify more",
+          "when": "Callee modifies unexpected locations"
+        }
+      ]
+    },
+    {
+      "id": "precondition_failure",
+      "pattern": "precondition for call might not hold",
+      "message": "Precondition might not hold",
+      "cause": "Calling method without establishing its precondition",
+      "solutions": [
+        {
+          "approach": "Assert precondition first",
+          "code": "assert x > 0;  // Precondition\nresult := divide(y, x);",
+          "when": "Need to establish precondition"
+        },
+        {
+          "approach": "Add to caller's requires",
+          "code": "requires precond_of_callee",
+          "when": "Caller should require it"
+        }
+      ]
+    },
+    {
+      "id": "index_out_of_bounds",
+      "pattern": "index out of range",
+      "message": "Index out of range",
+      "cause": "Array/sequence access may be out of bounds",
+      "solutions": [
+        {
+          "approach": "Add bounds check",
+          "code": "requires 0 <= i < |s|\n// or\nif i < |s| { ... }",
+          "when": "Need to ensure valid index"
+        },
+        {
+          "approach": "Add loop invariant",
+          "code": "invariant 0 <= i < |arr|",
+          "when": "Index is loop variable"
+        }
+      ]
+    },
+    {
+      "id": "null_dereference",
+      "pattern": "target object may be null",
+      "message": "Target object may be null",
+      "cause": "Dereferencing potentially null reference",
+      "solutions": [
+        {
+          "approach": "Add non-null precondition",
+          "code": "requires obj != null",
+          "when": "Caller should ensure non-null"
+        },
+        {
+          "approach": "Add null check",
+          "code": "if obj != null { obj.method(); }",
+          "when": "Need to handle null case"
+        }
+      ]
+    },
+    {
+      "id": "quantifier_trigger",
+      "pattern": "no trigger",
+      "message": "No trigger found for quantifier",
+      "cause": "Quantifier has no matching pattern for instantiation",
+      "solutions": [
+        {
+          "approach": "Add trigger",
+          "code": "forall x {:trigger P(x)} :: P(x) ==> Q(x)",
+          "when": "Need explicit trigger"
+        },
+        {
+          "approach": "Rewrite quantifier",
+          "code": "// Use function application as trigger",
+          "when": "Current form has no good trigger"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "tool": "spark",
+  "version": "2024",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "not_in_spark_mode",
+      "pattern": "unit not compiled in SPARK mode|pragma SPARK off",
+      "message": "File excluded from SPARK analysis",
+      "cause": "Missing `pragma SPARK_Mode` or use of non-SPARK features",
+      "solutions": [
+        {
+          "approach": "Enable SPARK mode",
+          "code": "pragma SPARK_Mode (On);",
+          "when": "At top of package body/spec"
+        },
+        {
+          "approach": "Isolate non-SPARK code",
+          "code": "pragma Annotate (GNATprove, Intentional, \"unchecked_conversion\");",
+          "when": "Need to justify unsafe features"
+        }
+      ]
+    },
+    {
+      "id": "vc_not_proved",
+      "pattern": "VCs proved: .* \\(N proved, M unproved\\)|unproved verification conditions",
+      "message": "GNATprove leaves unproved VCs",
+      "cause": "Missing contracts, loop invariants, or too weak preconditions",
+      "solutions": [
+        {
+          "approach": "Add pre/postconditions",
+          "code": "procedure Push (S : in out Stack; X : Item) with\\n  Pre => not Full (S),\\n  Post => Top (S) = X;",
+          "when": "Subprogram contracts absent"
+        },
+        {
+          "approach": "Strengthen loop invariants",
+          "code": "for I in 1 .. N loop\\n  pragma Loop_Invariant (Index = I);\\nend loop;",
+          "when": "Loops under-specified"
+        },
+        {
+          "approach": "Switch prover or level",
+          "code": "gnatprove -P project.gpr --level=4 --prover=cvc5",
+          "when": "Default prover times out"
+        }
+      ]
+    },
+    {
+      "id": "initialization_error",
+      "pattern": "possible uninitialized variable|flow error",
+      "message": "Data flow analysis flags uninitialized values",
+      "cause": "Path not covered by assignments or missing default values",
+      "solutions": [
+        {
+          "approach": "Initialize on declaration",
+          "code": "Count : Integer := 0;",
+          "when": "Simple scalars"
+        },
+        {
+          "approach": "Add default discriminants",
+          "code": "Obj : My_Record := (others => <>);",
+          "when": "Records with discriminants"
+        },
+        {
+          "approach": "Use flow-specific pragmas",
+          "code": "pragma Annotate (GNATprove, Initialized, Var);",
+          "when": "False positive after proof"
+        }
+      ]
+    },
+    {
+      "id": "overflow_check",
+      "pattern": "potential overflow|range check might fail",
+      "message": "Runtime check may fail",
+      "cause": "Arithmetic exceeds subtype bounds or proofs missing",
+      "solutions": [
+        {
+          "approach": "Use modular/Big integers where intended",
+          "code": "X : Interfaces.Unsigned_32;",
+          "when": "Wrap-around acceptable"
+        },
+        {
+          "approach": "Add proof of bounds",
+          "code": "pragma Assert (X < Max_Int);",
+          "when": "Need explicit guarantee"
+        }
+      ]
+    },
+    {
+      "id": "runtime_dependency",
+      "pattern": "cannot find run-time|libgnatprove not present",
+      "message": "Toolchain missing SPARK runtime",
+      "cause": "GNATprove invoked without appropriate runtime or project setup",
+      "solutions": [
+        {
+          "approach": "Use supplied gnatprove runtime",
+          "code": "with \"s-default.adc\"; -- in gnatprove project",
+          "when": "Default Ada runtime incompatible"
+        },
+        {
+          "approach": "Install gnatprove dependencies",
+          "code": "sudo apt install gnat-community gnatprove",
+          "when": "Runtime not installed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "handlebars",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_helper",
+      "pattern": "Missing helper|Unknown helper|handlebars.*helper.*not.*found|is not a function",
+      "message": "Template helper not registered",
+      "cause": "Helper used in template but not registered with Handlebars.registerHelper",
+      "solutions": [
+        {
+          "approach": "Register the helper",
+          "code": "Handlebars.registerHelper('myHelper', function(arg) { return arg.toUpperCase(); });",
+          "when": "Custom helper needed"
+        },
+        {
+          "approach": "Check helper name spelling",
+          "code": "// In template: {{myHelper value}}\n// Ensure registerHelper uses same name\nHandlebars.registerHelper('myHelper', ...);",
+          "when": "Typo in helper name"
+        },
+        {
+          "approach": "Import helpers library",
+          "code": "import helpers from 'handlebars-helpers';\nhelpers({ handlebars: Handlebars });",
+          "when": "Need common helpers"
+        }
+      ]
+    },
+    {
+      "id": "missing_partial",
+      "pattern": "The partial .* could not be found|Missing partial|partial.*not.*registered",
+      "message": "Partial template not found",
+      "cause": "Partial referenced in template but not registered",
+      "solutions": [
+        {
+          "approach": "Register the partial",
+          "code": "Handlebars.registerPartial('header', '<div class=\"header\">{{title}}</div>');",
+          "when": "Inline partial"
+        },
+        {
+          "approach": "Load partials from files",
+          "code": "const partials = require('fs').readdirSync('./partials');\npartials.forEach(file => {\n  const name = path.basename(file, '.hbs');\n  Handlebars.registerPartial(name, fs.readFileSync(`./partials/${file}`, 'utf8'));\n});",
+          "when": "Partials in files"
+        },
+        {
+          "approach": "Check partial reference syntax",
+          "code": "{{> header}} <!-- not {{header}} or {{{header}}} -->",
+          "when": "Wrong syntax"
+        }
+      ]
+    },
+    {
+      "id": "context_path_error",
+      "pattern": "Cannot read propert.*undefined|undefined is not an object|path.*undefined",
+      "message": "Variable path not found in context",
+      "cause": "Template references property that doesn't exist in data context",
+      "solutions": [
+        {
+          "approach": "Use conditional block",
+          "code": "{{#if user}}{{user.name}}{{/if}}",
+          "when": "Property may not exist"
+        },
+        {
+          "approach": "Provide default value",
+          "code": "Handlebars.registerHelper('default', (v, d) => v ?? d);\n// Usage: {{default user.name 'Guest'}}",
+          "when": "Need fallback"
+        },
+        {
+          "approach": "Check data structure",
+          "code": "console.log(JSON.stringify(context, null, 2));\n// Ensure path matches: {{user.profile.name}} needs {user:{profile:{name:'..'}}}",
+          "when": "Debug context"
+        }
+      ]
+    },
+    {
+      "id": "html_escaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML|XSS",
+      "message": "HTML content is escaped",
+      "cause": "Handlebars escapes HTML by default for XSS protection",
+      "solutions": [
+        {
+          "approach": "Use triple braces",
+          "code": "{{{rawHtml}}} <!-- not {{rawHtml}} -->",
+          "when": "Trusted HTML content"
+        },
+        {
+          "approach": "Use SafeString",
+          "code": "Handlebars.registerHelper('raw', (html) => new Handlebars.SafeString(html));",
+          "when": "Helper returns HTML"
+        },
+        {
+          "approach": "Keep escaping for security",
+          "code": "// User input should stay escaped to prevent XSS\n{{userInput}} <!-- safe by default -->",
+          "when": "Untrusted content"
+        }
+      ]
+    },
+    {
+      "id": "block_helper_context",
+      "pattern": "this.*undefined|options.*undefined|Cannot read.*hash",
+      "message": "Block helper implementation error",
+      "cause": "Block helper not receiving or using context/options correctly",
+      "solutions": [
+        {
+          "approach": "Correct block helper signature",
+          "code": "Handlebars.registerHelper('list', function(items, options) {\n  return items.map(item => options.fn(item)).join('');\n});",
+          "when": "Block helper pattern"
+        },
+        {
+          "approach": "Access hash arguments",
+          "code": "// {{#myHelper arg1 key=\"value\"}}...{{/myHelper}}\nHandlebars.registerHelper('myHelper', function(arg, options) {\n  const hashVal = options.hash.key;\n  return options.fn(this);\n});",
+          "when": "Hash parameters"
+        },
+        {
+          "approach": "Use inverse block",
+          "code": "Handlebars.registerHelper('ifCond', function(v1, v2, options) {\n  return v1 === v2 ? options.fn(this) : options.inverse(this);\n});\n// {{#ifCond a b}}equal{{else}}not equal{{/ifCond}}",
+          "when": "Else block"
+        }
+      ]
+    },
+    {
+      "id": "precompile_error",
+      "pattern": "Parse error|Expecting|Lexer Error|syntax error",
+      "message": "Template compilation failed",
+      "cause": "Invalid Handlebars syntax",
+      "solutions": [
+        {
+          "approach": "Check bracket matching",
+          "code": "// Must have matching {{...}} or {{{...}}}\n// Not: {{value} or {{{value}}",
+          "when": "Unbalanced brackets"
+        },
+        {
+          "approach": "Escape literal braces",
+          "code": "\\{{notAVariable}} <!-- outputs {{notAVariable}} literally -->",
+          "when": "Need literal braces"
+        },
+        {
+          "approach": "Fix block helper closing",
+          "code": "{{#each items}}\n  {{this}}\n{{/each}} <!-- must match opening tag exactly -->",
+          "when": "Mismatched block tags"
+        }
+      ]
+    }
+  ]
+}

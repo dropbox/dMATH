@@ -1,0 +1,94 @@
+{
+  "id": "afl",
+  "name": "AFL++ (afl-rs)",
+  "category": "fuzzer",
+  "subcategory": "coverage_guided",
+
+  "description": "Coverage-guided fuzzer with process isolation",
+  "long_description": "AFL++ (American Fuzzy Lop Plus Plus) is a coverage-guided fuzzer that runs targets in separate processes for isolation. afl.rs provides Rust integration. AFL++ includes many improvements over original AFL.",
+
+  "capabilities": [
+    "coverage_guided_fuzzing",
+    "process_isolation",
+    "fork_server",
+    "parallel_fuzzing",
+    "persistent_mode"
+  ],
+  "property_types": ["crash_detection", "hang_detection"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["crash_artifact", "corpus"],
+
+  "installation": {
+    "methods": [
+      {"type": "apt", "command": "apt install afl++"},
+      {"type": "cargo", "command": "cargo install afl"}
+    ],
+    "dependencies": ["clang", "llvm"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://aflplus.plus/",
+    "tutorial": "https://rust-fuzz.github.io/book/afl.html",
+    "api_reference": "https://github.com/AFLplusplus/AFLplusplus",
+    "examples": "https://github.com/rust-fuzz/afl.rs"
+  },
+
+  "tactics": [
+    {
+      "name": "basic",
+      "description": "Basic fuzzing",
+      "syntax": "cargo afl fuzz -i in -o out target/debug/fuzz_target",
+      "when_to_use": "For general fuzzing",
+      "examples": ["cargo afl fuzz -i seeds -o findings ./target/debug/target"]
+    },
+    {
+      "name": "parallel",
+      "description": "Parallel fuzzing",
+      "syntax": "-M main / -S secondary",
+      "when_to_use": "For multi-core",
+      "examples": ["afl-fuzz -M main -i in -o out ./target"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "crash",
+      "meaning": "Crash found",
+      "common_causes": ["Memory bug", "Panic"],
+      "fixes": ["Investigate crash file"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["crash_freedom"],
+    "cli_command": "dashprove verify --backend afl"
+  },
+
+  "performance": {
+    "typical_runtime": "continuous",
+    "scalability": "Good parallel scaling",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["libfuzzer", "honggfuzz"],
+    "advantages": [
+      "Process isolation",
+      "Parallel support",
+      "Mature"
+    ],
+    "disadvantages": [
+      "Slower than in-process",
+      "Linux focused"
+    ]
+  },
+
+  "metadata": {
+    "version": "4.08c",
+    "last_updated": "2025-12-22",
+    "maintainer": "AFL++ Team",
+    "license": "Apache-2.0"
+  }
+}

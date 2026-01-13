@@ -1,0 +1,196 @@
+{
+  "tool": "flaui",
+  "version": "4.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "element_not_found",
+      "pattern": "ElementNotAvailableException|Element not found|Cannot find",
+      "message": "UI Automation element not found",
+      "cause": "Element doesn't exist or locator is incorrect",
+      "solutions": [
+        {
+          "approach": "Use FlaUInspect",
+          "code": "# Use FlaUInspect tool to find correct element properties",
+          "when": "Finding element properties"
+        },
+        {
+          "approach": "Try different locator",
+          "code": "window.FindFirstDescendant(cf => cf.ByAutomationId(\"btnOK\"));\nwindow.FindFirstDescendant(cf => cf.ByName(\"OK\"));\nwindow.FindFirstDescendant(cf => cf.ByClassName(\"Button\"));",
+          "when": "One locator doesn't work"
+        },
+        {
+          "approach": "Add retry/wait",
+          "code": "Retry.WhileNull(() => window.FindFirstDescendant(cf => cf.ByAutomationId(\"id\")), TimeSpan.FromSeconds(10));",
+          "when": "Element appears after delay"
+        }
+      ]
+    },
+    {
+      "id": "application_launch_error",
+      "pattern": "Application.*launch|Cannot start|ProcessStartException",
+      "message": "Cannot launch application",
+      "cause": "Application path incorrect or launch failed",
+      "solutions": [
+        {
+          "approach": "Launch with path",
+          "code": "var app = Application.Launch(@\"C:\\path\\to\\app.exe\");",
+          "when": "Starting new instance"
+        },
+        {
+          "approach": "Launch with arguments",
+          "code": "var app = Application.Launch(new ProcessStartInfo { FileName = path, Arguments = args });",
+          "when": "App needs arguments"
+        },
+        {
+          "approach": "Attach to running process",
+          "code": "var app = Application.Attach(Process.GetProcessesByName(\"app\")[0]);",
+          "when": "App already running"
+        },
+        {
+          "approach": "Attach by window title",
+          "code": "var app = Application.Attach(\"Window Title\");",
+          "when": "Finding by window name"
+        }
+      ]
+    },
+    {
+      "id": "window_not_found",
+      "pattern": "Window not found|GetMainWindow|No window",
+      "message": "Cannot find application window",
+      "cause": "Window not yet created or wrong window type",
+      "solutions": [
+        {
+          "approach": "Wait for main window",
+          "code": "var window = app.GetMainWindow(automation, TimeSpan.FromSeconds(10));",
+          "when": "Window takes time to load"
+        },
+        {
+          "approach": "Find by title",
+          "code": "var window = app.GetAllTopLevelWindows(automation).FirstOrDefault(w => w.Title.Contains(\"Title\"));",
+          "when": "Multiple windows"
+        },
+        {
+          "approach": "Use modal dialog",
+          "code": "var dialog = window.ModalWindows.FirstOrDefault();",
+          "when": "Looking for dialog"
+        }
+      ]
+    },
+    {
+      "id": "pattern_not_supported",
+      "pattern": "Pattern.*not supported|UnsupportedPattern|InvalidOperationException",
+      "message": "UI Automation pattern not supported by element",
+      "cause": "Element doesn't support the requested automation pattern",
+      "solutions": [
+        {
+          "approach": "Check supported patterns",
+          "code": "var patterns = element.GetSupportedPatterns();\nforeach(var p in patterns) Console.WriteLine(p.Name);",
+          "when": "Finding available patterns"
+        },
+        {
+          "approach": "Use AsButton for clicking",
+          "code": "element.AsButton().Invoke();",
+          "when": "Clicking button-like elements"
+        },
+        {
+          "approach": "Use mouse click fallback",
+          "code": "Mouse.Click(element.GetClickablePoint());",
+          "when": "Pattern not available"
+        },
+        {
+          "approach": "Use keyboard",
+          "code": "element.Focus();\nKeyboard.Type(Keys.Enter);",
+          "when": "Click patterns fail"
+        }
+      ]
+    },
+    {
+      "id": "stale_element",
+      "pattern": "Element no longer exists|StaleElement|InvalidElementState",
+      "message": "Element reference is stale",
+      "cause": "UI changed and element no longer valid",
+      "solutions": [
+        {
+          "approach": "Re-find element",
+          "code": "// Always re-find element before use if UI changed\nvar element = window.FindFirstDescendant(cf => cf.ByAutomationId(\"id\"));",
+          "when": "After navigation or refresh"
+        },
+        {
+          "approach": "Check element exists",
+          "code": "if (element != null && element.IsAvailable) { /* use element */ }",
+          "when": "Element may disappear"
+        }
+      ]
+    },
+    {
+      "id": "text_input_error",
+      "pattern": "Cannot set text|TextBox.*error|ValuePattern",
+      "message": "Cannot enter text into element",
+      "cause": "Element doesn't support text input or is read-only",
+      "solutions": [
+        {
+          "approach": "Use AsTextBox",
+          "code": "element.AsTextBox().Text = \"input text\";",
+          "when": "Standard text input"
+        },
+        {
+          "approach": "Use keyboard typing",
+          "code": "element.Focus();\nKeyboard.Type(\"input text\");",
+          "when": "TextBox pattern not available"
+        },
+        {
+          "approach": "Clear then type",
+          "code": "var tb = element.AsTextBox();\ntb.Text = \"\";\nKeyboard.Type(\"new text\");",
+          "when": "Replacing existing text"
+        }
+      ]
+    },
+    {
+      "id": "uia3_error",
+      "pattern": "UIA3|COM Exception|Automation.*error",
+      "message": "UI Automation framework error",
+      "cause": "UIA3 framework issue or COM interop error",
+      "solutions": [
+        {
+          "approach": "Use UIA3 automation",
+          "code": "using var automation = new UIA3Automation();",
+          "when": "Creating automation instance"
+        },
+        {
+          "approach": "Try UIA2 fallback",
+          "code": "using var automation = new UIA2Automation();",
+          "when": "UIA3 has issues with app"
+        },
+        {
+          "approach": "Restart application",
+          "code": "# Some COM errors require restarting the target app",
+          "when": "Intermittent COM errors"
+        }
+      ]
+    },
+    {
+      "id": "wait_timeout",
+      "pattern": "TimeoutException|Retry.*failed|Wait timed out",
+      "message": "Wait/retry operation timed out",
+      "cause": "Condition not met within timeout period",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "Retry.WhileNull(findFunc, TimeSpan.FromSeconds(30));",
+          "when": "Default timeout too short"
+        },
+        {
+          "approach": "Use custom retry",
+          "code": "Retry.WhileFalse(() => element.IsEnabled, TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(500));",
+          "when": "Custom retry interval"
+        },
+        {
+          "approach": "Check condition is achievable",
+          "code": "# Verify element will eventually meet condition",
+          "when": "Condition may never be true"
+        }
+      ]
+    }
+  ]
+}

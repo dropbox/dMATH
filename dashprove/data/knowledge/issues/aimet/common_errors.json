@@ -1,0 +1,110 @@
+{
+  "tool": "aimet",
+  "version": "1.30.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_preparation_error",
+      "pattern": "(prepare.*model|preparer|not supported)",
+      "message": "Model preparation failed",
+      "cause": "Model architecture not supported for quantization",
+      "solutions": [
+        {
+          "approach": "Prepare PyTorch model",
+          "code": "from aimet_torch.model_preparer import prepare_model\nfrom aimet_torch.batch_norm_fold import fold_all_batch_norms\nprepared_model = prepare_model(model)\nfold_all_batch_norms(prepared_model, input_shapes)",
+          "when": "Preparing for quantization"
+        },
+        {
+          "approach": "Check supported ops",
+          "code": "from aimet_torch.utils import get_module_to_name_dict\nmodules = get_module_to_name_dict(model)\nprint(modules)  # Check for unsupported ops",
+          "when": "Model not working"
+        }
+      ]
+    },
+    {
+      "id": "quantization_sim_error",
+      "pattern": "(QuantizationSimModel|sim.*error|wrapper)",
+      "message": "Quantization simulation error",
+      "cause": "Failed to create quantization simulation model",
+      "solutions": [
+        {
+          "approach": "Create quant sim",
+          "code": "from aimet_torch.quantsim import QuantizationSimModel\nfrom aimet_common.defs import QuantScheme\nsim = QuantizationSimModel(\n    model=prepared_model,\n    dummy_input=dummy_input,\n    quant_scheme=QuantScheme.post_training_tf_enhanced,\n    default_output_bw=8,\n    default_param_bw=8\n)",
+          "when": "Setting up PTQ"
+        },
+        {
+          "approach": "Handle ONNX",
+          "code": "from aimet_onnx.quantsim import QuantizationSimModel\nsim = QuantizationSimModel(\n    onnx_model_path='model.onnx',\n    dummy_input={'input': np.random.randn(1,3,224,224).astype(np.float32)}\n)",
+          "when": "Using ONNX model"
+        }
+      ]
+    },
+    {
+      "id": "calibration_error",
+      "pattern": "(calibration|compute_encodings|data.*loader)",
+      "message": "Calibration error",
+      "cause": "Calibration data or process failed",
+      "solutions": [
+        {
+          "approach": "Run calibration",
+          "code": "def pass_calibration_data(model, args):\n    dataloader = args[0]\n    for batch in dataloader:\n        model(batch)\n\nsim.compute_encodings(\n    forward_pass_callback=pass_calibration_data,\n    forward_pass_callback_args=[calibration_loader]\n)",
+          "when": "Calibrating model"
+        },
+        {
+          "approach": "Check data",
+          "code": "# Ensure calibration data matches training distribution\nassert len(calibration_loader) >= 100, 'Need more calibration samples'\nprint(f'Calibration samples: {len(calibration_loader.dataset)}')",
+          "when": "Calibration issues"
+        }
+      ]
+    },
+    {
+      "id": "accuracy_drop_error",
+      "pattern": "(accuracy.*drop|degradation|quantization.*error)",
+      "message": "Significant accuracy drop after quantization",
+      "cause": "Quantization causing too much accuracy loss",
+      "solutions": [
+        {
+          "approach": "Use AdaRound",
+          "code": "from aimet_torch.adaround.adaround_weight import Adaround, AdaroundParameters\nparams = AdaroundParameters(\n    data_loader=calibration_loader,\n    num_batches=100\n)\nAdaround.apply_adaround(\n    model, dummy_input, params, path='./adaround'\n)",
+          "when": "PTQ accuracy too low"
+        },
+        {
+          "approach": "Use QAT",
+          "code": "# Quantization-aware training\nsim.model.train()\nfor epoch in range(num_epochs):\n    for batch in train_loader:\n        output = sim.model(batch)\n        loss = criterion(output, target)\n        loss.backward()\n        optimizer.step()",
+          "when": "Need better accuracy"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "(export|save|ONNX|TorchScript)",
+      "message": "Model export error",
+      "cause": "Failed to export quantized model",
+      "solutions": [
+        {
+          "approach": "Export to ONNX",
+          "code": "sim.export(\n    path='./output',\n    filename_prefix='quantized_model',\n    dummy_input=dummy_input\n)",
+          "when": "Exporting quantized model"
+        },
+        {
+          "approach": "Export encodings",
+          "code": "# Save quantization encodings separately\nsim.export(\n    path='./output',\n    filename_prefix='model',\n    dummy_input=dummy_input,\n    onnx_export_args={'opset_version': 13}\n)",
+          "when": "Need specific ONNX version"
+        }
+      ]
+    },
+    {
+      "id": "mixed_precision_error",
+      "pattern": "(mixed.*precision|sensitivity|layer.*selection)",
+      "message": "Mixed precision configuration error",
+      "cause": "Error in sensitivity analysis or layer selection",
+      "solutions": [
+        {
+          "approach": "Run sensitivity analysis",
+          "code": "from aimet_torch.layer_selector import select_tensors\nfrom aimet_common.defs import GreedySelectionParameters\nparams = GreedySelectionParameters(\n    target_bw=4.0,\n    max_acc_degradation=0.01\n)\nselected = select_tensors(\n    model, eval_func, params\n)",
+          "when": "Selecting layers for mixed precision"
+        }
+      ]
+    }
+  ]
+}

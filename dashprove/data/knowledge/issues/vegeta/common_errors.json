@@ -1,0 +1,191 @@
+{
+  "tool": "vegeta",
+  "version": "12.11.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "target_parse_error",
+      "pattern": "error reading targets|invalid target|malformed|bad target format",
+      "message": "Target file format error",
+      "cause": "Target specification invalid",
+      "solutions": [
+        {
+          "approach": "HTTP format",
+          "code": "# targets.txt (HTTP format)\nGET http://localhost:8080/api\nPOST http://localhost:8080/api\nContent-Type: application/json\n@body.json",
+          "when": "Using HTTP format"
+        },
+        {
+          "approach": "JSON format",
+          "code": "# targets.json\n{\"method\": \"GET\", \"url\": \"http://localhost:8080/api\"}\n{\"method\": \"POST\", \"url\": \"http://localhost:8080/api\", \"body\": \"data\"}",
+          "when": "Using JSON format"
+        },
+        {
+          "approach": "Echo target",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=10/s -duration=10s | vegeta report",
+          "when": "Simple single target"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection refused|dial tcp|no such host|connection reset",
+      "message": "Cannot connect to target",
+      "cause": "Server not running or unreachable",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl -I http://localhost:8080/",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check target",
+          "code": "cat targets.txt  # Verify URL is correct",
+          "when": "Wrong URL"
+        },
+        {
+          "approach": "Local test",
+          "code": "echo 'GET http://127.0.0.1:8080/' | vegeta attack -rate=1/s -duration=1s | vegeta report",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|context deadline exceeded|i/o timeout",
+      "message": "Request timed out",
+      "cause": "Server response too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -timeout=30s -rate=10/s -duration=10s | vegeta report",
+          "when": "Slow requests"
+        },
+        {
+          "approach": "Reduce rate",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=5/s -duration=30s | vegeta report",
+          "when": "Server overwhelmed"
+        },
+        {
+          "approach": "Check server",
+          "code": "# Profile server to find bottlenecks",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "body_file_error",
+      "pattern": "body file.*not found|cannot read|open.*no such file",
+      "message": "Request body file not found",
+      "cause": "Referenced body file doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "# In targets.txt, use @filename for body\nPOST http://localhost:8080/api\nContent-Type: application/json\n@./data/body.json",
+          "when": "Path relative to targets.txt"
+        },
+        {
+          "approach": "Inline body",
+          "code": "# In targets.txt\nPOST http://localhost:8080/api\nContent-Type: application/json\n\n{\"key\": \"value\"}",
+          "when": "Small body"
+        },
+        {
+          "approach": "Verify file",
+          "code": "ls -la data/body.json && cat data/body.json",
+          "when": "Check file exists"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit",
+      "pattern": "rate must be|invalid rate|cannot parse rate",
+      "message": "Invalid rate specification",
+      "cause": "Rate format wrong",
+      "solutions": [
+        {
+          "approach": "Rate format",
+          "code": "# Rate format: number/duration\nvegeta attack -rate=100/s   # 100 per second\nvegeta attack -rate=1000/m  # 1000 per minute\nvegeta attack -rate=0       # Max rate",
+          "when": "Format wrong"
+        },
+        {
+          "approach": "Fixed rate",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=50/s -duration=30s",
+          "when": "Constant rate"
+        },
+        {
+          "approach": "Infinite rate",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=0 -max-workers=100 -duration=30s",
+          "when": "Max throughput"
+        }
+      ]
+    },
+    {
+      "id": "high_error_rate",
+      "pattern": "success.*0%|status code.*5|error ratio",
+      "message": "High error rate in results",
+      "cause": "Server returning errors under load",
+      "solutions": [
+        {
+          "approach": "Check report",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=10/s -duration=10s | vegeta report",
+          "when": "See error breakdown"
+        },
+        {
+          "approach": "Encode results",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=10/s -duration=10s | vegeta encode > results.json",
+          "when": "Analyze later"
+        },
+        {
+          "approach": "Add headers",
+          "code": "# In targets.txt\nGET http://localhost:8080/api\nAuthorization: Bearer token",
+          "when": "Auth required"
+        }
+      ]
+    },
+    {
+      "id": "histogram_output",
+      "pattern": "Histogram|Latencies|Status Codes",
+      "message": "Understanding report output",
+      "cause": "Not an error - output explanation",
+      "solutions": [
+        {
+          "approach": "Report types",
+          "code": "# Different report formats\nvegeta report                    # Text summary\nvegeta report -type=json         # JSON output\nvegeta report -type=hist[0,100ms,200ms,300ms]  # Histogram",
+          "when": "Choose format"
+        },
+        {
+          "approach": "Plot results",
+          "code": "vegeta attack -rate=10/s -duration=30s | tee results.bin | vegeta plot > plot.html",
+          "when": "Visual output"
+        },
+        {
+          "approach": "Encode and analyze",
+          "code": "vegeta attack ... | vegeta encode > results.json\n# Then analyze results.json programmatically",
+          "when": "Custom analysis"
+        }
+      ]
+    },
+    {
+      "id": "workers_exhausted",
+      "pattern": "workers exhausted|max workers|no available workers",
+      "message": "Worker pool exhausted",
+      "cause": "Too many concurrent requests for workers",
+      "solutions": [
+        {
+          "approach": "Increase workers",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=100/s -max-workers=200 -duration=30s",
+          "when": "Need more concurrency"
+        },
+        {
+          "approach": "Reduce rate",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=50/s -duration=30s",
+          "when": "Lower load needed"
+        },
+        {
+          "approach": "Increase connections",
+          "code": "echo 'GET http://localhost:8080/' | vegeta attack -rate=100/s -max-connections=500 -duration=30s",
+          "when": "Connection pooling"
+        }
+      ]
+    }
+  ]
+}

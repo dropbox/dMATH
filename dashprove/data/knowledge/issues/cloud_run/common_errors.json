@@ -1,0 +1,99 @@
+{
+  "tool": "cloud_run",
+  "category": "gcp_serverless",
+  "description": "Google Cloud Run - serverless container platform",
+  "common_errors": [
+    {
+      "id": "container_failed",
+      "pattern": "Container failed to start",
+      "regex": "(?i)container.*failed|failed.*to.*start|startup.*error|crash.*loop",
+      "cause": "Container crashed on startup",
+      "solution": "Check container logs, verify PORT env var is used (8080 default), ensure container listens on 0.0.0.0",
+      "severity": "high",
+      "category": "runtime"
+    },
+    {
+      "id": "image_not_found",
+      "pattern": "Image not found",
+      "regex": "(?i)image.*not.*found|manifest.*unknown|pull.*error|gcr\\.io.*error",
+      "cause": "Container image does not exist or is not accessible",
+      "solution": "Verify image URL, push image to Artifact Registry/GCR, check IAM permissions for image pull",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied",
+      "regex": "(?i)permission.*denied|403|not.*authorized|iam.*error",
+      "cause": "IAM permissions missing for Cloud Run operation",
+      "solution": "Grant roles/run.invoker for invocation, roles/run.developer for deployment",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "Quota exceeded",
+      "regex": "(?i)quota.*exceeded|resource.*exhausted|instance.*limit",
+      "cause": "Cloud Run quota or resource limit exceeded",
+      "solution": "Request quota increase, adjust min/max instances, optimize memory/CPU settings",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "cold_start_timeout",
+      "pattern": "Timeout",
+      "regex": "(?i)timeout|request.*timeout|504|deadline.*exceeded",
+      "cause": "Request timed out (cold start or processing)",
+      "solution": "Increase request timeout (max 60min), set min instances to reduce cold starts, optimize startup time",
+      "severity": "medium",
+      "category": "performance"
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "Memory limit",
+      "regex": "(?i)memory.*limit|out.*of.*memory|OOM|memory.*exceeded",
+      "cause": "Container exceeded memory limit",
+      "solution": "Increase memory allocation (up to 32GB), optimize application memory usage, check for memory leaks",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "vpc_connector",
+      "pattern": "VPC",
+      "regex": "(?i)vpc.*connector|serverless.*vpc|vpc.*access|internal.*service",
+      "cause": "VPC Connector configuration or connectivity issue",
+      "solution": "Create VPC connector in same region, configure service to use connector, check connector capacity",
+      "severity": "medium",
+      "category": "networking"
+    },
+    {
+      "id": "ingress_setting",
+      "pattern": "Ingress",
+      "regex": "(?i)ingress.*setting|internal.*only|load.*balancer|traffic.*source",
+      "cause": "Ingress settings blocking traffic",
+      "solution": "Verify ingress setting (all, internal, internal-and-cloud-load-balancing), check IAP configuration",
+      "severity": "medium",
+      "category": "networking"
+    },
+    {
+      "id": "secret_error",
+      "pattern": "Secret",
+      "regex": "(?i)secret.*manager|secret.*not.*found|cannot.*access.*secret|permission.*secret",
+      "cause": "Secret Manager access failed",
+      "solution": "Grant roles/secretmanager.secretAccessor to service account, verify secret name and version",
+      "severity": "high",
+      "category": "secrets"
+    },
+    {
+      "id": "revision_failed",
+      "pattern": "Revision failed",
+      "regex": "(?i)revision.*failed|deployment.*failed|traffic.*split|revision.*not.*ready",
+      "cause": "Service revision deployment failed",
+      "solution": "Check revision logs, verify container health check, review resource configuration",
+      "severity": "high",
+      "category": "deployment"
+    }
+  ],
+  "related_tools": ["gcloud", "docker", "cloud_build"],
+  "documentation_url": "https://cloud.google.com/run/docs"
+}

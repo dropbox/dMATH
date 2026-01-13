@@ -1,0 +1,145 @@
+{
+  "tool": "pkg-config",
+  "version": "2.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "package_not_found",
+      "pattern": "Package.*not found|No package.*found",
+      "message": "Package not found",
+      "cause": "Library not installed or .pc file not in search path",
+      "solutions": [
+        {
+          "approach": "Install dev package",
+          "code": "apt install libfoo-dev  # Debian/Ubuntu",
+          "when": "Library not installed"
+        },
+        {
+          "approach": "Set PKG_CONFIG_PATH",
+          "code": "export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig",
+          "when": ".pc file in non-standard location"
+        },
+        {
+          "approach": "Find .pc file",
+          "code": "find /usr -name '*.pc' | xargs grep -l packagename",
+          "when": "Locate existing .pc"
+        }
+      ]
+    },
+    {
+      "id": "version_mismatch",
+      "pattern": "Requires.*version|version.*not.*satisfied",
+      "message": "Version requirement not satisfied",
+      "cause": "Installed version too old",
+      "solutions": [
+        {
+          "approach": "Check version",
+          "code": "pkg-config --modversion package",
+          "when": "See installed version"
+        },
+        {
+          "approach": "Upgrade package",
+          "code": "apt install libfoo-dev  # or compile newer",
+          "when": "Need newer version"
+        },
+        {
+          "approach": "Use specific version",
+          "code": "pkg-config 'package >= 1.0'",
+          "when": "Check version constraint"
+        }
+      ]
+    },
+    {
+      "id": "requires_not_found",
+      "pattern": "Requires:.*not found|dependency.*not found",
+      "message": "Required dependency not found",
+      "cause": "Package requires another package that's missing",
+      "solutions": [
+        {
+          "approach": "Check requires",
+          "code": "pkg-config --print-requires package",
+          "when": "See dependencies"
+        },
+        {
+          "approach": "Install dependency",
+          "code": "Install the package mentioned in error",
+          "when": "Dependency missing"
+        },
+        {
+          "approach": "Check .pc file",
+          "code": "cat /usr/lib/pkgconfig/package.pc",
+          "when": "See full requirements"
+        }
+      ]
+    },
+    {
+      "id": "cflags_empty",
+      "pattern": "cflags.*empty|no.*include.*path",
+      "message": "Empty cflags/libs output",
+      "cause": "Package installed but misconfigured",
+      "solutions": [
+        {
+          "approach": "Check output",
+          "code": "pkg-config --cflags --libs package",
+          "when": "Verify output"
+        },
+        {
+          "approach": "Check .pc file",
+          "code": "cat $(pkg-config --variable=pcfiledir package)/package.pc",
+          "when": "Examine configuration"
+        },
+        {
+          "approach": "Reinstall",
+          "code": "apt reinstall libfoo-dev",
+          "when": ".pc file corrupted"
+        }
+      ]
+    },
+    {
+      "id": "cross_compile",
+      "pattern": "wrong.*architecture|host.*target",
+      "message": "Architecture mismatch in cross-compilation",
+      "cause": "Using host pkg-config for cross-compile",
+      "solutions": [
+        {
+          "approach": "Set sysroot",
+          "code": "export PKG_CONFIG_SYSROOT_DIR=/path/to/sysroot",
+          "when": "Cross-compiling"
+        },
+        {
+          "approach": "Use cross pkg-config",
+          "code": "arm-linux-gnueabihf-pkg-config",
+          "when": "Target-specific tool"
+        },
+        {
+          "approach": "Set libdir",
+          "code": "export PKG_CONFIG_LIBDIR=/path/to/target/pkgconfig",
+          "when": "Target library path"
+        }
+      ]
+    },
+    {
+      "id": "private_libs",
+      "pattern": "static.*link|private.*libraries|Libs.private",
+      "message": "Private library issue for static linking",
+      "cause": "Static linking needs private dependencies",
+      "solutions": [
+        {
+          "approach": "Include private",
+          "code": "pkg-config --libs --static package",
+          "when": "Static linking"
+        },
+        {
+          "approach": "Check private",
+          "code": "pkg-config --print-requires-private package",
+          "when": "See private deps"
+        },
+        {
+          "approach": "Link dynamically",
+          "code": "Use shared libraries instead",
+          "when": "Avoid complexity"
+        }
+      ]
+    }
+  ]
+}

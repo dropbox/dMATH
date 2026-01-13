@@ -1,0 +1,145 @@
+{
+  "tool": "wkhtmltopdf",
+  "version": "0.12.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "qt_platform_error",
+      "pattern": "cannot connect to X server|no display|QXcbConnection|could not connect to display",
+      "message": "No display available",
+      "cause": "Running in headless environment without virtual display",
+      "solutions": [
+        {
+          "approach": "Use xvfb",
+          "code": "xvfb-run wkhtmltopdf input.html output.pdf",
+          "when": "Linux server without display"
+        },
+        {
+          "approach": "Use headless build",
+          "code": "# Install wkhtmltopdf with patched Qt (headless support)",
+          "when": "Server deployment"
+        },
+        {
+          "approach": "Docker with Xvfb",
+          "code": "FROM surnet/alpine-wkhtmltopdf:3.18.0-0.12.6-full",
+          "when": "Container deployment"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL error|certificate verify failed|SSL handshake failed",
+      "message": "SSL/TLS connection failed",
+      "cause": "Invalid certificate or SSL configuration",
+      "solutions": [
+        {
+          "approach": "Disable SSL verification",
+          "code": "wkhtmltopdf --no-stop-slow-scripts --ssl-crt-path=/etc/ssl/certs input.html output.pdf",
+          "when": "Development/testing only"
+        },
+        {
+          "approach": "Use ignore-ssl-errors",
+          "code": "wkhtmltopdf --ignore-ssl-errors input.html output.pdf",
+          "when": "Self-signed certs (dev only)"
+        },
+        {
+          "approach": "Update CA bundle",
+          "code": "export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
+          "when": "CA certs outdated"
+        }
+      ]
+    },
+    {
+      "id": "javascript_timeout",
+      "pattern": "JavaScript.*timeout|page.*loading timeout|QT.*timeout",
+      "message": "JavaScript execution timed out",
+      "cause": "Page takes too long to render JavaScript",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "wkhtmltopdf --javascript-delay 5000 input.html output.pdf",
+          "when": "JS needs more time"
+        },
+        {
+          "approach": "Disable JavaScript",
+          "code": "wkhtmltopdf --disable-javascript input.html output.pdf",
+          "when": "JS not needed"
+        },
+        {
+          "approach": "Wait for window.status",
+          "code": "wkhtmltopdf --window-status ready input.html output.pdf\n// In page JS: window.status = 'ready';",
+          "when": "Custom ready signal"
+        }
+      ]
+    },
+    {
+      "id": "font_missing",
+      "pattern": "font.*not found|cannot render font|missing glyphs",
+      "message": "Required fonts not available",
+      "cause": "System fonts not installed in container/server",
+      "solutions": [
+        {
+          "approach": "Install fonts",
+          "code": "apt-get install fonts-liberation fonts-dejavu-core ttf-mscorefonts-installer",
+          "when": "Linux server"
+        },
+        {
+          "approach": "Use web fonts",
+          "code": "<link href=\"https://fonts.googleapis.com/css2?family=Roboto\" rel=\"stylesheet\">",
+          "when": "Google Fonts"
+        },
+        {
+          "approach": "Embed fonts in CSS",
+          "code": "@font-face { font-family: 'Custom'; src: url('data:font/ttf;base64,...'); }",
+          "when": "Custom fonts needed"
+        }
+      ]
+    },
+    {
+      "id": "page_size_error",
+      "pattern": "invalid page size|unknown paper size|cannot parse dimensions",
+      "message": "Invalid page size specification",
+      "cause": "Unrecognized page size name or format",
+      "solutions": [
+        {
+          "approach": "Use standard size",
+          "code": "wkhtmltopdf --page-size A4 input.html output.pdf\n# Options: A4, Letter, Legal, A3, etc.",
+          "when": "Standard paper size"
+        },
+        {
+          "approach": "Custom dimensions",
+          "code": "wkhtmltopdf --page-width 200mm --page-height 300mm input.html output.pdf",
+          "when": "Custom dimensions"
+        },
+        {
+          "approach": "Set margins",
+          "code": "wkhtmltopdf -T 10mm -B 10mm -L 10mm -R 10mm input.html output.pdf",
+          "when": "Adjust margins"
+        }
+      ]
+    },
+    {
+      "id": "blank_pdf",
+      "pattern": "blank PDF|empty output|no content rendered",
+      "message": "Generated PDF is blank",
+      "cause": "Content loaded asynchronously or CSS issues",
+      "solutions": [
+        {
+          "approach": "Add JavaScript delay",
+          "code": "wkhtmltopdf --javascript-delay 3000 input.html output.pdf",
+          "when": "Async content loading"
+        },
+        {
+          "approach": "Disable print media",
+          "code": "wkhtmltopdf --no-print-media-type input.html output.pdf",
+          "when": "@media print hides content"
+        },
+        {
+          "approach": "Debug locally",
+          "code": "wkhtmltopdf --debug-javascript input.html output.pdf",
+          "when": "JS errors suspected"
+        }
+      ]
+    }
+  ]
+}

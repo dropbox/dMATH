@@ -1,0 +1,168 @@
+{
+  "tool": "pandas",
+  "version": "2.1.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "settingwithcopy",
+      "pattern": "SettingWithCopyWarning|A value is trying to be set on a copy",
+      "message": "Setting on copy of DataFrame",
+      "cause": "Modifying slice that may be view or copy",
+      "solutions": [
+        {
+          "approach": "Use .loc explicitly",
+          "code": "df.loc[df['col'] > 0, 'other_col'] = value",
+          "when": "Setting values conditionally"
+        },
+        {
+          "approach": "Make explicit copy",
+          "code": "df_subset = df[condition].copy()\ndf_subset['col'] = value",
+          "when": "Want to modify copy"
+        },
+        {
+          "approach": "Chain with .copy()",
+          "code": "df_clean = df.dropna().copy()",
+          "when": "After filtering operations"
+        }
+      ]
+    },
+    {
+      "id": "keyerror",
+      "pattern": "KeyError|not in index",
+      "message": "Column or index not found",
+      "cause": "Referenced column or index label doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check columns",
+          "code": "print(df.columns.tolist())",
+          "when": "Debug column names"
+        },
+        {
+          "approach": "Use get with default",
+          "code": "value = df.get('col', default_df)",
+          "when": "Column may not exist"
+        },
+        {
+          "approach": "Check for whitespace",
+          "code": "df.columns = df.columns.str.strip()",
+          "when": "Hidden whitespace in names"
+        }
+      ]
+    },
+    {
+      "id": "dtype_error",
+      "pattern": "cannot convert|invalid literal|dtype.*object",
+      "message": "Data type conversion error",
+      "cause": "Values cannot be converted to target dtype",
+      "solutions": [
+        {
+          "approach": "Use to_numeric with errors",
+          "code": "df['col'] = pd.to_numeric(df['col'], errors='coerce')",
+          "when": "Some values invalid"
+        },
+        {
+          "approach": "Handle missing values",
+          "code": "df['col'] = df['col'].fillna(0).astype(int)",
+          "when": "NaN preventing conversion"
+        },
+        {
+          "approach": "Use nullable int dtype",
+          "code": "df['col'] = df['col'].astype('Int64')  # Nullable",
+          "when": "Need int with NaN"
+        }
+      ]
+    },
+    {
+      "id": "merge_error",
+      "pattern": "MergeError|columns overlap|merge keys",
+      "message": "Merge/join error",
+      "cause": "Merge columns incompatible or overlapping",
+      "solutions": [
+        {
+          "approach": "Specify suffixes",
+          "code": "df_merged = df1.merge(df2, on='key', suffixes=('_left', '_right'))",
+          "when": "Overlapping column names"
+        },
+        {
+          "approach": "Match dtypes",
+          "code": "df1['key'] = df1['key'].astype(str)\ndf2['key'] = df2['key'].astype(str)",
+          "when": "Key dtypes don't match"
+        },
+        {
+          "approach": "Use left_on/right_on",
+          "code": "df_merged = df1.merge(df2, left_on='id', right_on='ID')",
+          "when": "Different key names"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "MemoryError|Unable to allocate",
+      "message": "Out of memory",
+      "cause": "DataFrame too large for available memory",
+      "solutions": [
+        {
+          "approach": "Use chunking",
+          "code": "for chunk in pd.read_csv('file.csv', chunksize=10000):\n    process(chunk)",
+          "when": "Processing large files"
+        },
+        {
+          "approach": "Optimize dtypes",
+          "code": "df['col'] = df['col'].astype('category')\ndf['num'] = pd.to_numeric(df['num'], downcast='integer')",
+          "when": "Can reduce memory"
+        },
+        {
+          "approach": "Use dask",
+          "code": "import dask.dataframe as dd\nddf = dd.read_csv('large_file.csv')",
+          "when": "Dataset too large for pandas"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "IndexingError|iloc|positional indexers",
+      "message": "Indexing error",
+      "cause": "Mixing label and positional indexing",
+      "solutions": [
+        {
+          "approach": "Use .iloc for position",
+          "code": "row = df.iloc[0]  # First row by position",
+          "when": "Want positional access"
+        },
+        {
+          "approach": "Use .loc for labels",
+          "code": "row = df.loc['label']  # Row by label",
+          "when": "Want label access"
+        },
+        {
+          "approach": "Reset index",
+          "code": "df = df.reset_index(drop=True)",
+          "when": "Index is confusing"
+        }
+      ]
+    },
+    {
+      "id": "datetime_error",
+      "pattern": "ParserError|datetime.*format|out of bounds",
+      "message": "Datetime parsing error",
+      "cause": "String cannot be parsed as datetime",
+      "solutions": [
+        {
+          "approach": "Specify format",
+          "code": "df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')",
+          "when": "Non-standard format"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "df['date'] = pd.to_datetime(df['date'], errors='coerce')",
+          "when": "Some values invalid"
+        },
+        {
+          "approach": "Use infer_datetime_format",
+          "code": "df['date'] = pd.to_datetime(df['date'], infer_datetime_format=True)",
+          "when": "Mixed formats"
+        }
+      ]
+    }
+  ]
+}

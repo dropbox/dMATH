@@ -1,0 +1,145 @@
+{
+  "tool": "curl",
+  "version": "8.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "ssl_certificate_error",
+      "pattern": "SSL certificate problem|certificate verify failed|unable to get local issuer|self signed certificate",
+      "message": "SSL certificate verification failed",
+      "cause": "Certificate untrusted, expired, or self-signed",
+      "solutions": [
+        {
+          "approach": "Skip verification",
+          "code": "curl -k https://example.com\n# Or: curl --insecure",
+          "when": "Development only"
+        },
+        {
+          "approach": "Specify CA",
+          "code": "curl --cacert /path/to/ca-bundle.crt https://example.com",
+          "when": "Custom CA"
+        },
+        {
+          "approach": "Client cert",
+          "code": "curl --cert client.pem --key client-key.pem https://example.com",
+          "when": "mTLS"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|couldn't connect|Failed to connect|No route to host",
+      "message": "Cannot connect to server",
+      "cause": "Server not running or network issue",
+      "solutions": [
+        {
+          "approach": "Check host",
+          "code": "curl -v https://example.com 2>&1 | grep 'Connected to'",
+          "when": "Verbose output"
+        },
+        {
+          "approach": "Resolve DNS",
+          "code": "curl --resolve example.com:443:1.2.3.4 https://example.com",
+          "when": "Force IP"
+        },
+        {
+          "approach": "Use proxy",
+          "code": "curl -x http://proxy:8080 https://example.com",
+          "when": "Through proxy"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timed out|Connection timed out|Operation timed out|curl: \\(28\\)",
+      "message": "Request timed out",
+      "cause": "Server slow or connection timeout",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "curl --connect-timeout 30 --max-time 120 https://example.com",
+          "when": "Extend limits"
+        },
+        {
+          "approach": "Retry",
+          "code": "curl --retry 3 --retry-delay 5 https://example.com",
+          "when": "Auto retry"
+        },
+        {
+          "approach": "Check speed",
+          "code": "curl -w '@curl-format.txt' -o /dev/null https://example.com\n# Shows timing breakdown",
+          "when": "Debug timing"
+        }
+      ]
+    },
+    {
+      "id": "malformed_url",
+      "pattern": "URL.*malformed|bad.*URL|URL using bad.*protocol|curl: \\(3\\)",
+      "message": "Malformed URL",
+      "cause": "Invalid URL syntax or unsupported protocol",
+      "solutions": [
+        {
+          "approach": "Quote URL",
+          "code": "curl 'https://example.com/path?a=1&b=2'\n# Shell interprets & without quotes",
+          "when": "Special characters"
+        },
+        {
+          "approach": "Encode URL",
+          "code": "curl --data-urlencode 'param=value with spaces' https://example.com",
+          "when": "Encode data"
+        },
+        {
+          "approach": "Use --url",
+          "code": "curl --url 'https://example.com/path'",
+          "when": "Explicit URL"
+        }
+      ]
+    },
+    {
+      "id": "http_error",
+      "pattern": "HTTP.*error|4[0-9]{2}|5[0-9]{2}|curl: \\(22\\)",
+      "message": "HTTP error response",
+      "cause": "Server returned error status code",
+      "solutions": [
+        {
+          "approach": "Show response",
+          "code": "curl -f -S https://example.com  # Fail on error\ncurl -w '%{http_code}' -o /dev/null https://example.com",
+          "when": "Check status"
+        },
+        {
+          "approach": "Include headers",
+          "code": "curl -i https://example.com  # Show response headers",
+          "when": "Debug response"
+        },
+        {
+          "approach": "Auth header",
+          "code": "curl -H 'Authorization: Bearer TOKEN' https://example.com",
+          "when": "401 error"
+        }
+      ]
+    },
+    {
+      "id": "post_data_error",
+      "pattern": "POST.*error|data.*error|Content-Type|couldn't read data",
+      "message": "POST data error",
+      "cause": "Wrong content type or data format",
+      "solutions": [
+        {
+          "approach": "JSON POST",
+          "code": "curl -X POST -H 'Content-Type: application/json' -d '{\"key\":\"value\"}' https://example.com",
+          "when": "JSON data"
+        },
+        {
+          "approach": "Form POST",
+          "code": "curl -X POST -d 'key=value&other=data' https://example.com",
+          "when": "Form data"
+        },
+        {
+          "approach": "File upload",
+          "code": "curl -F 'file=@/path/to/file' https://example.com/upload",
+          "when": "Multipart upload"
+        }
+      ]
+    }
+  ]
+}

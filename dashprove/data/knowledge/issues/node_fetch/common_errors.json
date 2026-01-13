@@ -1,0 +1,117 @@
+{
+  "tool": "node_fetch",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "esm_require",
+      "pattern": "ERR_REQUIRE_ESM|require\\(\\) of ES Module|must use import",
+      "message": "Module system mismatch",
+      "cause": "node-fetch v3+ is ESM-only",
+      "solutions": [
+        {
+          "approach": "Use dynamic import",
+          "code": "const fetch = (await import('node-fetch')).default;",
+          "when": "CommonJS entry point"
+        },
+        {
+          "approach": "Convert to ESM",
+          "code": "// package.json: \"type\": \"module\"\nimport fetch from 'node-fetch';",
+          "when": "Can migrate"
+        },
+        {
+          "approach": "Use v2",
+          "code": "npm install node-fetch@2",
+          "when": "Must use CommonJS"
+        },
+        {
+          "approach": "Use native fetch",
+          "code": "// Node.js 18+ has built-in fetch\nconst response = await fetch(url);",
+          "when": "Node.js 18+"
+        }
+      ]
+    },
+    {
+      "id": "fetch_failed",
+      "pattern": "FetchError|request.*failed|ECONNREFUSED|ENOTFOUND",
+      "message": "Network request failed",
+      "cause": "Server unreachable or network error",
+      "solutions": [
+        {
+          "approach": "Check server",
+          "code": "curl -v https://api.example.com",
+          "when": "Verify server reachable"
+        },
+        {
+          "approach": "Add timeout",
+          "code": "const controller = new AbortController();\nsetTimeout(() => controller.abort(), 5000);\nfetch(url, { signal: controller.signal });",
+          "when": "Prevent hanging"
+        },
+        {
+          "approach": "Configure agent",
+          "code": "import https from 'https';\nconst agent = new https.Agent({ keepAlive: true });\nfetch(url, { agent });",
+          "when": "Connection pooling"
+        }
+      ]
+    },
+    {
+      "id": "json_parse",
+      "pattern": "invalid json|Unexpected token|SyntaxError.*JSON",
+      "message": "Response is not valid JSON",
+      "cause": "Server returned non-JSON response",
+      "solutions": [
+        {
+          "approach": "Check response first",
+          "code": "const res = await fetch(url);\nconst text = await res.text();\nconsole.log(text);  // debug\nconst json = JSON.parse(text);",
+          "when": "Debug response"
+        },
+        {
+          "approach": "Check content type",
+          "code": "const res = await fetch(url);\nif (res.headers.get('content-type')?.includes('json')) {\n  return res.json();\n}",
+          "when": "Handle mixed types"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "const res = await fetch(url);\nif (!res.ok) throw new Error(`HTTP ${res.status}`);\nreturn res.json();",
+          "when": "Check status first"
+        }
+      ]
+    },
+    {
+      "id": "body_consumed",
+      "pattern": "body.*already.*used|cannot read body|stream.*consumed",
+      "message": "Response body already read",
+      "cause": "Calling .json()/.text() multiple times",
+      "solutions": [
+        {
+          "approach": "Read once",
+          "code": "const data = await res.json();\n// Store result, don't call .json() again",
+          "when": "Multiple reads needed"
+        },
+        {
+          "approach": "Clone response",
+          "code": "const res = await fetch(url);\nconst clone = res.clone();\nconst text = await clone.text();\nconst json = await res.json();",
+          "when": "Need both text and JSON"
+        }
+      ]
+    },
+    {
+      "id": "headers_format",
+      "pattern": "Headers.*invalid|cannot set header|illegal header",
+      "message": "Invalid header format",
+      "cause": "Header name or value format incorrect",
+      "solutions": [
+        {
+          "approach": "Use Headers object",
+          "code": "const headers = new Headers();\nheaders.set('Content-Type', 'application/json');\nfetch(url, { headers });",
+          "when": "Complex headers"
+        },
+        {
+          "approach": "Use plain object",
+          "code": "fetch(url, {\n  headers: { 'Content-Type': 'application/json' }\n});",
+          "when": "Simple headers"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "tool_id": "mongodb_tla",
+  "tool_name": "MongoDB TLA+ Specification",
+  "description": "TLA+ specification of MongoDB's replication protocol including oplog, elections, read/write concerns, and causal consistency",
+  "common_errors": [
+    {
+      "id": "oplog_rollback",
+      "pattern": "Rollback detected|Oplog entries reverted|Data inconsistency after failover",
+      "category": "replication",
+      "severity": "critical",
+      "cause": "A primary acknowledged writes that weren't replicated to a majority before a failover, requiring rollback when the old primary rejoins",
+      "solution": "Use w: 'majority' write concern to ensure writes survive primary failures. Rolled back data is saved to rollback directory for manual recovery.",
+      "example": "db.collection.insertOne({}, { writeConcern: { w: 'majority' } })",
+      "related_concepts": ["write_concern", "majority_commit_point", "rollback_data"]
+    },
+    {
+      "id": "election_tiebreak",
+      "pattern": "Election failed - no eligible primary|Split vote in election",
+      "category": "elections",
+      "severity": "high",
+      "cause": "Multiple nodes have equal priority and similar oplogs, leading to repeated failed elections without a clear winner",
+      "solution": "Configure distinct priorities for nodes. Ensure odd number of voting members. Use election timeout randomization to break ties.",
+      "related_concepts": ["raft_elections", "node_priority", "voting_members"]
+    },
+    {
+      "id": "causal_consistency_stale_read",
+      "pattern": "afterClusterTime too far in future|Cannot satisfy read concern majority",
+      "category": "consistency",
+      "severity": "medium",
+      "cause": "Client attempting causal consistency read with a cluster time ahead of what the secondary has applied",
+      "solution": "Use sessions to track operation times automatically. For manual afterClusterTime, ensure value comes from the same cluster. Use primary for latest data.",
+      "related_concepts": ["causal_sessions", "cluster_time", "read_concern_levels"]
+    },
+    {
+      "id": "change_stream_lag",
+      "pattern": "Change stream resume token expired|Cannot continue change stream",
+      "category": "oplog",
+      "severity": "medium",
+      "cause": "Change stream consumer fell too far behind and the oplog entries needed for resumption have been overwritten",
+      "solution": "Increase oplog size to accommodate consumer lag. Process changes faster. Store resume tokens persistently and resume before oplog rolls over.",
+      "related_concepts": ["oplog_window", "resume_token", "watch_cursor"]
+    },
+    {
+      "id": "writeconcernerror_timeout",
+      "pattern": "WriteConcernError.*wtimeout|Write timed out waiting for replication",
+      "category": "write_path",
+      "severity": "medium",
+      "cause": "Write succeeded on primary but didn't replicate to enough secondaries within wtimeoutMS, often due to network issues or secondary lag",
+      "solution": "Check secondary replication lag. Verify network connectivity. Increase wtimeoutMS for expected latency. The write DID succeed on primary.",
+      "related_concepts": ["wtimeout", "replication_lag", "write_concern_error"]
+    }
+  ],
+  "best_practices": [
+    "Model the oplog as an append-only log with bounded size",
+    "Include election protocol with priorities, votes, and term numbers",
+    "Specify the majority commit point advancement mechanism",
+    "Model write concern levels and their durability guarantees",
+    "Test with varying replication lag and network partitions"
+  ],
+  "references": [
+    "https://www.mongodb.com/docs/manual/replication/",
+    "https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst",
+    "https://jepsen.io/analyses/mongodb-4.2.6"
+  ]
+}

@@ -1,0 +1,251 @@
+// Metal Platform API Constraints
+// Based on Apple's Metal Best Practices Guide and API Documentation
+//
+// These constraints model critical Metal API state machines to catch
+// bugs that formal verification tools cannot verify because they represent
+// external API behavior.
+
+platform_api Metal {
+
+    // MTLCommandBuffer State Machine
+    // Documentation: https://developer.apple.com/documentation/metal/mtlcommandbuffer
+    //
+    // A command buffer starts in Created state, transitions to Encoding when
+    // encoders are created, then to Committed when commit() is called, and
+    // finally to Completed when GPU execution finishes.
+    state MTLCommandBuffer {
+        enum Status { Created, Encoding, Committed, Completed }
+
+        // commit() - Commits the command buffer for execution
+        // CRITICAL: Must be called before the buffer can be executed
+        transition commit() {
+            requires { status == Created or status == Encoding }
+            ensures { status == Committed }
+        }
+
+        // waitUntilCompleted() - Blocks until GPU execution finishes
+        // Only valid after commit()
+        transition waitUntilCompleted() {
+            requires { status == Committed or status == Completed }
+            ensures { status == Completed }
+        }
+
+        // waitUntilScheduled() - Blocks until GPU scheduling
+        // Only valid after commit()
+        transition waitUntilScheduled() {
+            requires { status == Committed or status == Completed }
+        }
+
+        // addCompletedHandler() - Registers a callback for completion
+        // CRITICAL BUG SOURCE: Must be called BEFORE commit()
+        // This was the cause of N=1305 SIGABRT crash in MPS verification
+        transition addCompletedHandler(block: Block) {
+            requires { status == Created or status == Encoding }
+        }
+
+        // addScheduledHandler() - Registers a callback for scheduling
+        // Must be called before commit()
+        transition addScheduledHandler(block: Block) {
+            requires { status == Created or status == Encoding }
+        }
+
+        // enqueue() - Reserves a place in the command queue
+        // Must be called before commit() to guarantee ordering
+        transition enqueue() {
+            requires { status == Created or status == Encoding }
+        }
+
+        // presentDrawable() - Schedules drawable presentation
+        // Must be called while encoding
+        transition presentDrawable(drawable: Drawable) {
+            requires { status == Created or status == Encoding }
+        }
+    }
+
+    // MTLCommandEncoder State Machine (base for all encoder types)
+    // Encoders are created from command buffers and must be ended
+    // before another encoder can begin or commit() is called.
+    state MTLCommandEncoder {
+        enum Status { Active, Ended }
+
+        // endEncoding() - Ends the encoding session
+        // CRITICAL: Must be called before creating another encoder
+        // or committing the command buffer
+        transition endEncoding() {
+            requires { status == Active }
+            ensures { status == Ended }
+        }
+    }
+
+    // MTLComputeCommandEncoder State Machine
+    state MTLComputeCommandEncoder {
+        enum Status { Active, Ended }
+
+        // setComputePipelineState() - Sets the compute pipeline
+        // Must be done before dispatch
+        transition setComputePipelineState(pipeline: ComputePipeline) {
+            requires { status == Active }
+        }
+
+        // dispatchThreadgroups() - Dispatches compute work
+        // Requires pipeline to be set
+        transition dispatchThreadgroups(threadgroups: Size, threadsPerGroup: Size) {
+            requires { status == Active }
+        }
+
+        // setBuffer() - Binds a buffer to the compute function
+        transition setBuffer(buffer: Buffer, offset: Int, index: Int) {
+            requires { status == Active }
+        }
+
+        // setTexture() - Binds a texture to the compute function
+        transition setTexture(texture: Texture, index: Int) {
+            requires { status == Active }
+        }
+
+        // endEncoding() - Ends encoding session
+        transition endEncoding() {
+            requires { status == Active }
+            ensures { status == Ended }
+        }
+    }
+
+    // MTLBlitCommandEncoder State Machine
+    // Used for memory operations between resources
+    state MTLBlitCommandEncoder {
+        enum Status { Active, Ended }
+
+        // copyFromBuffer() - Copies data from one buffer to another
+        transition copyFromBuffer(src: Buffer, srcOffset: Int, dst: Buffer, dstOffset: Int, size: Int) {
+            requires { status == Active }
+        }
+
+        // copyFromTexture() - Copies data from texture to texture
+        transition copyFromTexture(src: Texture, dst: Texture) {
+            requires { status == Active }
+        }
+
+        // synchronizeResource() - Ensures visibility of resource modifications
+        transition synchronizeResource(resource: Resource) {
+            requires { status == Active }
+        }
+
+        // fillBuffer() - Fills a buffer with a byte value
+        transition fillBuffer(buffer: Buffer, range: Range, value: Int) {
+            requires { status == Active }
+        }
+
+        // endEncoding() - Ends encoding session
+        transition endEncoding() {
+            requires { status == Active }
+            ensures { status == Ended }
+        }
+    }
+
+    // MTLRenderCommandEncoder State Machine
+    state MTLRenderCommandEncoder {
+        enum Status { Active, Ended }
+
+        // setRenderPipelineState() - Sets the render pipeline
+        transition setRenderPipelineState(pipeline: RenderPipeline) {
+            requires { status == Active }
+        }
+
+        // setVertexBuffer() - Binds a vertex buffer
+        transition setVertexBuffer(buffer: Buffer, offset: Int, index: Int) {
+            requires { status == Active }
+        }
+
+        // setFragmentBuffer() - Binds a fragment buffer
+        transition setFragmentBuffer(buffer: Buffer, offset: Int, index: Int) {
+            requires { status == Active }
+        }
+
+        // drawPrimitives() - Draws primitives
+        transition drawPrimitives(type: PrimitiveType, vertexStart: Int, vertexCount: Int) {
+            requires { status == Active }
+        }
+
+        // drawIndexedPrimitives() - Draws indexed primitives
+        transition drawIndexedPrimitives(type: PrimitiveType, indexCount: Int, indexType: IndexType, indexBuffer: Buffer, indexBufferOffset: Int) {
+            requires { status == Active }
+        }
+
+        // endEncoding() - Ends encoding session
+        transition endEncoding() {
+            requires { status == Active }
+            ensures { status == Ended }
+        }
+    }
+
+    // MTLBuffer State Machine
+    // Represents a memory allocation on the GPU
+    state MTLBuffer {
+        enum Status { Valid, Released }
+
+        // contents() - Returns pointer to buffer contents
+        // Only valid for CPU-accessible storage modes
+        transition contents() {
+            requires { status == Valid }
+        }
+
+        // didModifyRange() - Notifies of CPU modifications
+        // Required after CPU writes for managed storage mode
+        transition didModifyRange(range: Range) {
+            requires { status == Valid }
+        }
+    }
+
+    // MTLTexture State Machine
+    state MTLTexture {
+        enum Status { Valid, Released }
+
+        // replaceRegion() - Copies data into texture
+        transition replaceRegion(region: Region, mipmapLevel: Int, slice: Int, bytes: Pointer, bytesPerRow: Int, bytesPerImage: Int) {
+            requires { status == Valid }
+        }
+
+        // getBytes() - Copies texture data to CPU memory
+        transition getBytes(bytes: Pointer, bytesPerRow: Int, bytesPerImage: Int, region: Region, mipmapLevel: Int, slice: Int) {
+            requires { status == Valid }
+        }
+    }
+
+    // MTLEvent State Machine
+    // Used for synchronization between command buffers
+    state MTLEvent {
+        enum Status { Valid, Signaled }
+
+        // Note: Events are signaled/waited on via encoders, not directly
+        // The event itself doesn't have transition methods, but it
+        // participates in synchronization
+    }
+
+    // MTLSharedEvent State Machine
+    // Extends MTLEvent for CPU-GPU synchronization
+    state MTLSharedEvent {
+        enum Status { Valid }
+
+        // notifyListener() - Registers a listener for signal
+        // Callback is invoked when signalValue reaches target
+        transition notifyListener(listener: SharedEventListener, value: Int, block: Block) {
+            requires { status == Valid }
+        }
+    }
+
+    // MTLHeap State Machine
+    // Memory allocator for resources
+    state MTLHeap {
+        enum Status { Valid }
+
+        // makeBuffer() - Allocates a buffer from the heap
+        transition makeBuffer(length: Int, options: ResourceOptions) {
+            requires { status == Valid }
+        }
+
+        // makeTexture() - Allocates a texture from the heap
+        transition makeTexture(descriptor: TextureDescriptor) {
+            requires { status == Valid }
+        }
+    }
+}

@@ -1,0 +1,176 @@
+{
+  "tool": "verinet",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Verification timed out",
+      "cause": "SIP or branch-and-bound too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "verifier.verify(timeout=3600)",
+          "when": "May succeed with more time"
+        },
+        {
+          "approach": "Use GPU",
+          "code": "verifier = Verifier(device='cuda')",
+          "when": "CPU too slow"
+        },
+        {
+          "approach": "Reduce epsilon",
+          "code": "# Smaller perturbation",
+          "when": "Large input region"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "CUDA out of memory|memory",
+      "message": "Out of memory",
+      "cause": "Network or batch too large",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "verifier.verify(batch_size=1)",
+          "when": "Batch too large"
+        },
+        {
+          "approach": "Use CPU",
+          "code": "verifier = Verifier(device='cpu')",
+          "when": "GPU memory limited"
+        },
+        {
+          "approach": "Limit branching",
+          "code": "# Reduce max branches",
+          "when": "BnB explosion"
+        }
+      ]
+    },
+    {
+      "id": "model_error",
+      "pattern": "model",
+      "message": "Model loading error",
+      "cause": "Unsupported model format",
+      "solutions": [
+        {
+          "approach": "Use ONNX",
+          "code": "model = load_onnx('model.onnx')",
+          "when": "Wrong format"
+        },
+        {
+          "approach": "Check activations",
+          "code": "# VeriNet supports ReLU, sigmoid, tanh",
+          "when": "Unsupported activation"
+        },
+        {
+          "approach": "Convert model",
+          "code": "torch.onnx.export(model, x, 'model.onnx')",
+          "when": "Have PyTorch model"
+        }
+      ]
+    },
+    {
+      "id": "spec_error",
+      "pattern": "specification",
+      "message": "Specification error",
+      "cause": "Invalid property specification",
+      "solutions": [
+        {
+          "approach": "Check input bounds",
+          "code": "input_bounds = (x_lb, x_ub)  # tensors",
+          "when": "Wrong bound format"
+        },
+        {
+          "approach": "Check output spec",
+          "code": "# Output specification as constraints",
+          "when": "Wrong output spec"
+        },
+        {
+          "approach": "Use VNN-LIB",
+          "code": "# Load from standard format",
+          "when": "Standard format available"
+        }
+      ]
+    },
+    {
+      "id": "sip_error",
+      "pattern": "SIP",
+      "message": "Symbolic interval error",
+      "cause": "Error in bound propagation",
+      "solutions": [
+        {
+          "approach": "Check input dimensions",
+          "code": "# Input must match network",
+          "when": "Dimension mismatch"
+        },
+        {
+          "approach": "Check numerical stability",
+          "code": "# Look for NaN/inf",
+          "when": "Numerical issues"
+        }
+      ]
+    },
+    {
+      "id": "unsafe",
+      "pattern": "UNSAFE|SAT",
+      "message": "Property violated",
+      "cause": "Found adversarial example",
+      "solutions": [
+        {
+          "approach": "Get counterexample",
+          "code": "result.counterexample",
+          "when": "Need adversarial input"
+        },
+        {
+          "approach": "Verify counterexample",
+          "code": "model(result.counterexample)  # check output",
+          "when": "Confirming result"
+        }
+      ]
+    },
+    {
+      "id": "unknown",
+      "pattern": "UNKNOWN",
+      "message": "Verification inconclusive",
+      "cause": "SIP bounds too loose",
+      "solutions": [
+        {
+          "approach": "Enable branching",
+          "code": "verifier.verify(branch=True)",
+          "when": "Need complete verification"
+        },
+        {
+          "approach": "Use tighter bounds",
+          "code": "# Enable optimization-based bounds",
+          "when": "Bounds too loose"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "verifier.verify(timeout=7200)",
+          "when": "BnB needs more time"
+        }
+      ]
+    },
+    {
+      "id": "layer_error",
+      "pattern": "layer",
+      "message": "Unsupported layer",
+      "cause": "Layer type not implemented",
+      "solutions": [
+        {
+          "approach": "Check supported layers",
+          "code": "# Linear, Conv2d, ReLU, MaxPool supported",
+          "when": "Using exotic layer"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "# Replace unsupported with equivalent",
+          "when": "Can restructure"
+        }
+      ]
+    }
+  ]
+}

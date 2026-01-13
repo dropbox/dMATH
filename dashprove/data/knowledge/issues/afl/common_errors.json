@@ -1,0 +1,145 @@
+{
+  "tool": "afl",
+  "version": "4.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "no_instrumentation",
+      "pattern": "No instrumentation detected|__AFL_FORKSRV not found|PCGUARD instrumentation not available",
+      "message": "Target binary is not instrumented for AFL",
+      "cause": "Program was compiled with a non-AFL compiler or sanitizer flags that disable coverage",
+      "solutions": [
+        {
+          "approach": "Rebuild with afl-clang-fast",
+          "code": "CC=afl-clang-fast CXX=afl-clang-fast++ CFLAGS='-O2 -g' make",
+          "when": "Building C/C++ targets"
+        },
+        {
+          "approach": "Use QEMU mode when source is unavailable",
+          "code": "AFL_SKIP_CPUFREQ=1 afl-fuzz -Q -i seeds -o findings -- ./binary @@",
+          "when": "Fuzzing closed-source binaries"
+        },
+        {
+          "approach": "Enable sanitizer-compatible coverage",
+          "code": "AFL_USE_ASAN=1 AFL_USE_UBSAN=1 CC=afl-clang-fast make",
+          "when": "Need ASan/UBSan with instrumentation"
+        }
+      ]
+    },
+    {
+      "id": "forkserver_failed",
+      "pattern": "Fork server handshake failed|forkserver terminated unexpectedly",
+      "message": "Forkserver could not start",
+      "cause": "Target performs early execve/exit or fails before reaching main loop",
+      "solutions": [
+        {
+          "approach": "Initialize AFL early",
+          "code": "int main(int argc, char **argv) {\n  __AFL_INIT();\n  // rest of program\n}",
+          "when": "Custom harnesses"
+        },
+        {
+          "approach": "Disable forkserver for tricky binaries",
+          "code": "AFL_NO_FORKSRV=1 afl-fuzz -i seeds -o findings -- ./binary @@",
+          "when": "Binary execs another process"
+        },
+        {
+          "approach": "Use persistent mode",
+          "code": "while (__AFL_LOOP(1000)) {\n  handle_input();\n}",
+          "when": "Target supports re-entry"
+        }
+      ]
+    },
+    {
+      "id": "hangs_dominating",
+      "pattern": "hangs found|timeouted executions|ms timeout",
+      "message": "Corpus dominated by hangs instead of crashes",
+      "cause": "Timeout too low/high or target blocks on external resources",
+      "solutions": [
+        {
+          "approach": "Tune timeout",
+          "code": "afl-fuzz -t 200 -i seeds -o findings -- ./binary @@",
+          "when": "Target needs longer than default 20-100ms"
+        },
+        {
+          "approach": "Stub external I/O",
+          "code": "#ifdef AFL_STDIN\n// replace network/disk with in-memory buffers\n#endif",
+          "when": "Program waits on network or disk"
+        },
+        {
+          "approach": "Use power schedules to prioritize coverage",
+          "code": "afl-fuzz -p fast -i seeds -o findings -- ./binary @@",
+          "when": "Hangs starve exploration"
+        }
+      ]
+    },
+    {
+      "id": "coverage_plateau",
+      "pattern": "stability.*variable|no new paths found|bitmap unchanged",
+      "message": "Fuzzer stopped discovering new edges",
+      "cause": "Seed corpus lacks structure or mutations are ineffective",
+      "solutions": [
+        {
+          "approach": "Add structured seeds and dictionaries",
+          "code": "afl-fuzz -x keywords.dict -i seeds -o findings -- ./binary @@",
+          "when": "Input format has keywords or delimiters"
+        },
+        {
+          "approach": "Use MOpt or AFL++ schedules",
+          "code": "afl-fuzz -L 0 -p exploit -i seeds -o findings -- ./binary @@",
+          "when": "Need more aggressive mutations"
+        },
+        {
+          "approach": "Enable context-sensitive coverage",
+          "code": "AFL_LLVM_CTX=1 CC=afl-clang-fast make",
+          "when": "Stateful parsers benefit from context coverage"
+        }
+      ]
+    },
+    {
+      "id": "unreproducible_crash",
+      "pattern": "crash.*cannot reproduce|resolves to a hang|stability below",
+      "message": "Crash inputs are flaky",
+      "cause": "Non-deterministic behavior or insufficient minimization",
+      "solutions": [
+        {
+          "approach": "Increase crash resync attempts",
+          "code": "AFL_CRASHES_ONLY=1 afl-fuzz ... && afl-cmin -C -i crashes -o stable",
+          "when": "Need stable reproducer"
+        },
+        {
+          "approach": "Disable ASLR and randomness",
+          "code": "setarch `uname -m` -R ./binary crash_input",
+          "when": "Address layout causes flakiness"
+        },
+        {
+          "approach": "Instrument deterministic harness",
+          "code": "srand(0); setenv(\"TZ\", \"UTC\", 1);",
+          "when": "Target uses time/PRNG"
+        }
+      ]
+    },
+    {
+      "id": "persistent_mode_bug",
+      "pattern": "persistent loop crashed|__AFL_LOOP misuse|state not reset",
+      "message": "Persistent mode corrupts state across iterations",
+      "cause": "Harness fails to reset globals or heap between executions",
+      "solutions": [
+        {
+          "approach": "Reset global state",
+          "code": "memset(&state, 0, sizeof(state)); free_all_buffers();",
+          "when": "Using __AFL_LOOP"
+        },
+        {
+          "approach": "Reinitialize libraries",
+          "code": "parser_reset(); fseek(stdin, 0, SEEK_SET);",
+          "when": "Parser caches data between runs"
+        },
+        {
+          "approach": "Fall back to fork mode",
+          "code": "AFL_NO_AUTODICT=1 afl-fuzz -i seeds -o findings -- ./binary @@",
+          "when": "State cannot be safely reset"
+        }
+      ]
+    }
+  ]
+}

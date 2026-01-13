@@ -1,0 +1,140 @@
+{
+  "tool": "mv",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cross_device_link",
+      "pattern": "Invalid cross-device link|cross-device|different.*filesystem",
+      "message": "Cannot move across filesystems",
+      "cause": "Moving between different mount points uses copy+delete",
+      "solutions": [
+        {
+          "approach": "Use cp then rm",
+          "code": "cp -a source dest && rm -r source",
+          "when": "Manual fallback"
+        },
+        {
+          "approach": "Use rsync",
+          "code": "rsync -av --remove-source-files source/ dest/",
+          "when": "Better for large"
+        },
+        {
+          "approach": "Check mounts",
+          "code": "df source dest  # Shows filesystems",
+          "when": "Debug"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot move|cannot create",
+      "message": "Permission denied",
+      "cause": "Cannot write to destination or remove source",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo mv source dest",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la source\nls -la dest_directory/",
+          "when": "Debug access"
+        },
+        {
+          "approach": "Check sticky bit",
+          "code": "ls -ld /tmp  # t flag prevents moving others' files",
+          "when": "Shared directory"
+        }
+      ]
+    },
+    {
+      "id": "directory_not_empty",
+      "pattern": "Directory not empty|cannot overwrite|is a directory",
+      "message": "Cannot move to non-empty directory",
+      "cause": "Target directory already exists with contents",
+      "solutions": [
+        {
+          "approach": "Move into dir",
+          "code": "mv source dest/  # Trailing slash moves into",
+          "when": "Move inside"
+        },
+        {
+          "approach": "Remove first",
+          "code": "rm -rf dest && mv source dest",
+          "when": "Replace entirely"
+        },
+        {
+          "approach": "Merge with rsync",
+          "code": "rsync -av source/ dest/ && rm -r source",
+          "when": "Merge contents"
+        }
+      ]
+    },
+    {
+      "id": "overwrite_prompt",
+      "pattern": "overwrite|replace|already exists|interactive",
+      "message": "Overwrite confirmation issues",
+      "cause": "Interactive mode or aliased mv -i",
+      "solutions": [
+        {
+          "approach": "Force overwrite",
+          "code": "mv -f source dest  # Force\n\\mv source dest  # Bypass alias",
+          "when": "Skip prompts"
+        },
+        {
+          "approach": "No clobber",
+          "code": "mv -n source dest  # Never overwrite",
+          "when": "Keep existing"
+        },
+        {
+          "approach": "Backup",
+          "code": "mv --backup=numbered source dest  # Create backups",
+          "when": "Save original"
+        }
+      ]
+    },
+    {
+      "id": "same_file",
+      "pattern": "same file|are the same|identical",
+      "message": "Source and destination are the same",
+      "cause": "Attempting to move file to itself",
+      "solutions": [
+        {
+          "approach": "Rename properly",
+          "code": "mv file.txt newname.txt  # Different name",
+          "when": "Just renaming"
+        },
+        {
+          "approach": "Check paths",
+          "code": "realpath source\nrealpath dest  # Resolve to check",
+          "when": "Symlink confusion"
+        }
+      ]
+    },
+    {
+      "id": "no_space_left",
+      "pattern": "No space left|cannot write|disk full",
+      "message": "Destination disk full",
+      "cause": "Insufficient disk space for cross-device move",
+      "solutions": [
+        {
+          "approach": "Same filesystem",
+          "code": "# Move within same filesystem is instant",
+          "when": "Stay on same disk"
+        },
+        {
+          "approach": "Check space",
+          "code": "df -h dest_directory/",
+          "when": "Verify space"
+        },
+        {
+          "approach": "Move incrementally",
+          "code": "for f in source/*; do mv \"$f\" dest/ && sync; done",
+          "when": "Piece by piece"
+        }
+      ]
+    }
+  ]
+}

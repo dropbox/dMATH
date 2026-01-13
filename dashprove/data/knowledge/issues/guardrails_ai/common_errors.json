@@ -1,0 +1,133 @@
+{
+  "tool": "guardrails_ai",
+  "version": "0.4.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "validator_error",
+      "pattern": "(validator|validation.*failed|Guardrail)",
+      "message": "Guardrail validation failed",
+      "cause": "LLM output didn't pass validator",
+      "solutions": [
+        {
+          "approach": "Check validation result",
+          "code": "from guardrails import Guard\nguard = Guard().use(validator)\nresult = guard.validate(llm_output)\nprint(f'Passed: {result.validation_passed}')\nprint(f'Errors: {result.validation_summaries}')",
+          "when": "Understanding failures"
+        },
+        {
+          "approach": "Use on_fail action",
+          "code": "from guardrails.validators import ValidLength\nguard = Guard().use(\n    ValidLength(min=10, max=1000, on_fail='fix')  # or 'reask', 'exception'\n)",
+          "when": "Configuring failure behavior"
+        }
+      ]
+    },
+    {
+      "id": "rail_spec_error",
+      "pattern": "(RAIL|spec|XML|schema)",
+      "message": "RAIL specification error",
+      "cause": "Invalid RAIL XML or schema definition",
+      "solutions": [
+        {
+          "approach": "Use Python API",
+          "code": "from guardrails import Guard\nfrom guardrails.validators import TwoWords\n# Python-based definition\nguard = Guard().use(TwoWords())",
+          "when": "Prefer Python over XML"
+        },
+        {
+          "approach": "Check RAIL syntax",
+          "code": "rail_spec = '''\n<rail version=\"0.1\">\n<output>\n    <string name=\"response\" validators=\"length: 10 1000\"/>\n</output>\n</rail>\n'''\nguard = Guard.from_rail_string(rail_spec)",
+          "when": "Using RAIL XML"
+        }
+      ]
+    },
+    {
+      "id": "llm_integration_error",
+      "pattern": "(LLM|call|completion|ChatCompletion)",
+      "message": "LLM integration error",
+      "cause": "Guard couldn't call LLM correctly",
+      "solutions": [
+        {
+          "approach": "Use with OpenAI",
+          "code": "from guardrails import Guard\nimport openai\nguard = Guard()\nresult = guard(\n    llm_api=openai.chat.completions.create,\n    model='gpt-4',\n    messages=[{'role': 'user', 'content': prompt}]\n)",
+          "when": "Using OpenAI"
+        },
+        {
+          "approach": "Validate existing output",
+          "code": "# Just validate, don't call LLM\nresult = guard.validate(existing_llm_output)",
+          "when": "Already have LLM output"
+        }
+      ]
+    },
+    {
+      "id": "reask_loop_error",
+      "pattern": "(reask|max.*attempts|loop)",
+      "message": "Reask loop exceeded max attempts",
+      "cause": "LLM couldn't produce valid output after retries",
+      "solutions": [
+        {
+          "approach": "Increase max reasks",
+          "code": "result = guard(\n    llm_api=llm_function,\n    max_reasks=5  # Increase from default 3\n)",
+          "when": "Need more retries"
+        },
+        {
+          "approach": "Change on_fail",
+          "code": "guard = Guard().use(\n    validator, on_fail='fix'  # Auto-fix instead of reask\n)",
+          "when": "Reask not effective"
+        }
+      ]
+    },
+    {
+      "id": "custom_validator_error",
+      "pattern": "(custom.*validator|register|Validator)",
+      "message": "Custom validator error",
+      "cause": "Custom validator not properly defined",
+      "solutions": [
+        {
+          "approach": "Define custom validator",
+          "code": "from guardrails.validators import Validator, register_validator\n@register_validator(name='my-validator', data_type='string')\nclass MyValidator(Validator):\n    def validate(self, value, metadata) -> ValidationResult:\n        if condition:\n            return PassResult()\n        return FailResult(error_message='Failed')",
+          "when": "Creating custom validator"
+        },
+        {
+          "approach": "Use lambda validator",
+          "code": "from guardrails.validators import ValidatorSpec\nguard = Guard().use(\n    ValidatorSpec(\n        lambda x: len(x) > 10,\n        on_fail='exception'\n    )\n)",
+          "when": "Simple validation"
+        }
+      ]
+    },
+    {
+      "id": "output_parsing_error",
+      "pattern": "(parse|JSON|format|output)",
+      "message": "Output parsing error",
+      "cause": "LLM output couldn't be parsed to expected format",
+      "solutions": [
+        {
+          "approach": "Define output schema",
+          "code": "from pydantic import BaseModel\nclass Output(BaseModel):\n    name: str\n    age: int\nguard = Guard.from_pydantic(output_class=Output)\nresult = guard(llm_api=..., prompt='...')\nprint(result.validated_output)",
+          "when": "Using Pydantic"
+        },
+        {
+          "approach": "Handle parse errors",
+          "code": "result = guard(llm_api=..., prompt='...')\nif result.validation_passed:\n    output = result.validated_output\nelse:\n    output = result.raw_llm_output  # Fall back to raw",
+          "when": "Graceful fallback"
+        }
+      ]
+    },
+    {
+      "id": "hub_validator_error",
+      "pattern": "(hub|install|guardrails.*hub)",
+      "message": "Guardrails Hub validator error",
+      "cause": "Hub validator not installed or configured",
+      "solutions": [
+        {
+          "approach": "Install from hub",
+          "code": "# Install validator from hub\n# guardrails hub install hub://guardrails/profanity_free\nfrom guardrails.hub import ProfanityFree\nguard = Guard().use(ProfanityFree())",
+          "when": "Using hub validators"
+        },
+        {
+          "approach": "Check installation",
+          "code": "# List installed validators\n# guardrails hub list",
+          "when": "Validator not found"
+        }
+      ]
+    }
+  ]
+}

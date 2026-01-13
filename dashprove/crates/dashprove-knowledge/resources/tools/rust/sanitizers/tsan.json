@@ -1,0 +1,106 @@
+{
+  "id": "tsan",
+  "name": "ThreadSanitizer (TSAN)",
+  "category": "rust_sanitizers",
+  "subcategory": "concurrency",
+
+  "description": "Data race detector for multithreaded programs",
+  "long_description": "ThreadSanitizer (TSAN) is a data race detector. It finds races between memory accesses from different threads when at least one access is a write and the accesses are not synchronized. TSAN can detect races in Rust unsafe code or in code using raw threads/atomics incorrectly.",
+
+  "capabilities": [
+    "data_race_detection",
+    "happens_before_tracking",
+    "lock_order_tracking",
+    "thread_leak_detection",
+    "mutex_deadlock_detection",
+    "atomic_race_detection"
+  ],
+  "property_types": ["runtime_check", "concurrency"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["diagnostic", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "rustup +nightly component add rust-src llvm-tools-preview"}
+    ],
+    "dependencies": ["rust-nightly", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://clang.llvm.org/docs/ThreadSanitizer.html",
+    "tutorial": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#threadsanitizer",
+    "api_reference": "https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual",
+    "examples": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#threadsanitizer"
+  },
+
+  "tactics": [
+    {
+      "name": "enable",
+      "description": "Enable TSAN for Rust",
+      "syntax": "RUSTFLAGS=\"-Zsanitizer=thread\" cargo +nightly run/test",
+      "when_to_use": "Detecting data races in concurrent code",
+      "examples": ["RUSTFLAGS=\"-Zsanitizer=thread\" cargo +nightly test"]
+    },
+    {
+      "name": "suppressions",
+      "description": "Suppress known races",
+      "syntax": "TSAN_OPTIONS=suppressions=FILE",
+      "when_to_use": "Ignoring intentional races",
+      "examples": ["TSAN_OPTIONS=suppressions=tsan.supp ./my_program"]
+    },
+    {
+      "name": "history_size",
+      "description": "Increase history for better reports",
+      "syntax": "TSAN_OPTIONS=history_size=7",
+      "when_to_use": "Getting more context for races",
+      "examples": ["TSAN_OPTIONS=history_size=7 ./my_program"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "data race",
+      "meaning": "Unsynchronized concurrent memory access",
+      "common_causes": ["Missing lock", "Incorrect atomic ordering", "Unsafe code bug"],
+      "fixes": ["Add synchronization", "Fix atomic ordering", "Review unsafe code"]
+    },
+    {
+      "pattern": "thread leak",
+      "meaning": "Thread not joined before program exit",
+      "common_causes": ["Detached thread", "Missing join()"],
+      "fixes": ["Join threads or use scoped threads"]
+    },
+    {
+      "pattern": "lock-order-inversion",
+      "meaning": "Potential deadlock from inconsistent lock order",
+      "common_causes": ["Different code paths acquire locks differently"],
+      "fixes": ["Establish consistent lock ordering"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["runtime_check", "concurrency"],
+    "cli_command": "dashprove verify --backend tsan"
+  },
+
+  "performance": {
+    "typical_runtime": "5-15x slowdown",
+    "scalability": "Works on any size program",
+    "memory_usage": "5-10x increase"
+  },
+
+  "comparisons": {
+    "similar_tools": ["loom", "shuttle", "helgrind"],
+    "advantages": ["Real execution (no model)", "Comprehensive race detection", "Good Rust support"],
+    "disadvantages": ["High overhead", "Only finds races that execute", "Shadow memory overhead"]
+  },
+
+  "metadata": {
+    "version": "LLVM 17+",
+    "last_updated": "2025-12-20",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0"
+  }
+}

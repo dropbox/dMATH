@@ -1,0 +1,227 @@
+{
+  "tool": "pyright",
+  "version": "1.1.390",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "Type \".*\" is not assignable to type",
+      "message": "Type assignment incompatibility",
+      "cause": "Value type doesn't match variable/parameter type annotation",
+      "solutions": [
+        {
+          "approach": "Fix the type annotation",
+          "code": "x: list[str] = []  # Not list[int]",
+          "when": "Annotation is wrong"
+        },
+        {
+          "approach": "Cast the value",
+          "code": "from typing import cast\nx = cast(TargetType, value)",
+          "when": "Know type is correct but Pyright can't infer"
+        },
+        {
+          "approach": "Use Union type",
+          "code": "x: str | None = possibly_none()",
+          "when": "Value can be multiple types"
+        }
+      ]
+    },
+    {
+      "id": "missing_return",
+      "pattern": "Function with declared return type .* must return a value",
+      "message": "Missing return statement",
+      "cause": "Not all code paths return a value",
+      "solutions": [
+        {
+          "approach": "Add return statement",
+          "code": "def f() -> int:\n    if cond:\n        return 1\n    return 0  # Add default",
+          "when": "Forgot return on some path"
+        },
+        {
+          "approach": "Return None explicitly",
+          "code": "def f() -> int | None:\n    if cond:\n        return 1\n    return None",
+          "when": "None is valid return"
+        },
+        {
+          "approach": "Use NoReturn",
+          "code": "from typing import NoReturn\ndef error() -> NoReturn:\n    raise Exception()",
+          "when": "Function never returns normally"
+        }
+      ]
+    },
+    {
+      "id": "possibly_unbound",
+      "pattern": "\".*\" is possibly unbound|may be unbound",
+      "message": "Variable may not be initialized",
+      "cause": "Variable only assigned in some branches",
+      "solutions": [
+        {
+          "approach": "Initialize before conditional",
+          "code": "result = None\nif cond:\n    result = compute()",
+          "when": "Provide default value"
+        },
+        {
+          "approach": "Ensure all branches assign",
+          "code": "if cond:\n    x = 1\nelse:\n    x = 0",
+          "when": "Every path should assign"
+        },
+        {
+          "approach": "Early return pattern",
+          "code": "if not cond:\n    return None\nresult = compute()\nreturn result",
+          "when": "Can restructure control flow"
+        }
+      ]
+    },
+    {
+      "id": "none_not_subscriptable",
+      "pattern": "\"None\" is not subscriptable|Object of type \"None\" is not subscriptable",
+      "message": "Trying to index None value",
+      "cause": "Optional type used without None check",
+      "solutions": [
+        {
+          "approach": "Add None check",
+          "code": "if result is not None:\n    return result[0]",
+          "when": "Value might be None"
+        },
+        {
+          "approach": "Use walrus operator",
+          "code": "if (result := get_value()) is not None:\n    return result[0]",
+          "when": "Python 3.8+"
+        },
+        {
+          "approach": "Use assertion",
+          "code": "assert result is not None\nreturn result[0]",
+          "when": "Know it's not None but Pyright doesn't"
+        }
+      ]
+    },
+    {
+      "id": "cannot_access_member",
+      "pattern": "Cannot access member \".*\" for type",
+      "message": "Attribute doesn't exist on type",
+      "cause": "Accessing attribute that type doesn't have",
+      "solutions": [
+        {
+          "approach": "Check type narrowing",
+          "code": "if isinstance(obj, SpecificType):\n    obj.specific_method()",
+          "when": "Need to narrow type first"
+        },
+        {
+          "approach": "Use hasattr",
+          "code": "if hasattr(obj, 'method'):\n    obj.method()",
+          "when": "Duck typing scenario"
+        },
+        {
+          "approach": "Add Protocol",
+          "code": "class HasMethod(Protocol):\n    def method(self) -> None: ...",
+          "when": "Define structural type"
+        }
+      ]
+    },
+    {
+      "id": "argument_missing",
+      "pattern": "Argument missing for parameter|required positional argument",
+      "message": "Missing required argument",
+      "cause": "Function call missing required parameter",
+      "solutions": [
+        {
+          "approach": "Add missing argument",
+          "code": "func(required_arg, optional=value)",
+          "when": "Forgot to pass argument"
+        },
+        {
+          "approach": "Use default in function",
+          "code": "def func(x: int = 0) -> None:",
+          "when": "Can make parameter optional"
+        }
+      ]
+    },
+    {
+      "id": "incompatible_override",
+      "pattern": "Method \".*\" overrides .* in an incompatible manner",
+      "message": "Subclass method signature incompatible with parent",
+      "cause": "Override has different signature than parent method",
+      "solutions": [
+        {
+          "approach": "Match parent signature",
+          "code": "def method(self, x: int) -> str:  # Match parent exactly",
+          "when": "Should match parent"
+        },
+        {
+          "approach": "Use contravariant parameters",
+          "code": "def method(self, x: int | str) -> str:  # Broader input OK",
+          "when": "Can accept more types"
+        },
+        {
+          "approach": "Use covariant return",
+          "code": "def method(self) -> SpecificSubclass:  # Narrower return OK",
+          "when": "Returning more specific type"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "Import \".*\" could not be resolved|Cannot find module",
+      "message": "Module import failed",
+      "cause": "Module not found in Python path or not installed",
+      "solutions": [
+        {
+          "approach": "Install package",
+          "code": "pip install package-name",
+          "when": "Third-party package missing"
+        },
+        {
+          "approach": "Install type stubs",
+          "code": "pip install types-package-name",
+          "when": "Package exists but no types"
+        },
+        {
+          "approach": "Add stub",
+          "code": "# stubs/package.pyi\ndef func() -> str: ...",
+          "when": "Need custom stubs"
+        },
+        {
+          "approach": "Configure pyrightconfig",
+          "code": "{\n  \"extraPaths\": [\"src\"]\n}",
+          "when": "Path not in Python path"
+        }
+      ]
+    },
+    {
+      "id": "reportGeneralTypeIssues",
+      "pattern": "reportGeneralTypeIssues",
+      "message": "General type checking error",
+      "cause": "Various type-related issues",
+      "solutions": [
+        {
+          "approach": "Use type: ignore",
+          "code": "x = problematic_call()  # type: ignore[reportGeneralTypeIssues]",
+          "when": "False positive, suppress"
+        },
+        {
+          "approach": "Add proper types",
+          "code": "# Fix underlying type issue",
+          "when": "Real type error"
+        }
+      ]
+    },
+    {
+      "id": "generic_type_issue",
+      "pattern": "Expected type arguments|Generic type .* expects .* type argument",
+      "message": "Generic type needs type parameters",
+      "cause": "Used generic without specifying type arguments",
+      "solutions": [
+        {
+          "approach": "Add type arguments",
+          "code": "x: list[int] = []  # Not just list",
+          "when": "Need explicit type params"
+        },
+        {
+          "approach": "Use from __future__",
+          "code": "from __future__ import annotations\nx: list[int] = []",
+          "when": "For Python 3.9+ syntax in earlier versions"
+        }
+      ]
+    }
+  ]
+}

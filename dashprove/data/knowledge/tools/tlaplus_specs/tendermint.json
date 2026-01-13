@@ -1,0 +1,116 @@
+{
+  "id": "tlaplus_tendermint",
+  "name": "Tendermint TLA+ Specifications",
+  "category": "tlaplus_specifications",
+  "subcategory": "byzantine_consensus",
+
+  "description": "TLA+ specifications for Tendermint BFT consensus protocol",
+  "long_description": "Tendermint is a Byzantine Fault Tolerant consensus engine that powers Cosmos and many blockchain networks. The TLA+ specifications cover the consensus protocol, light client verification, and evidence handling. Developed by Informal Systems, these specs have been used extensively to verify correctness and find bugs before production deployment.",
+
+  "capabilities": [
+    "byzantine_consensus",
+    "light_client_verification",
+    "evidence_handling",
+    "proposer_selection",
+    "vote_aggregation"
+  ],
+  "property_types": ["safety", "liveness", "byzantine_tolerance"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/tendermint/tendermint/tree/main/spec/light-client/verification",
+    "informal": "https://github.com/informalsystems/tendermint-rs/tree/main/docs/spec",
+    "paper": "https://arxiv.org/abs/1807.04938"
+  },
+
+  "documentation": {
+    "official": "https://docs.tendermint.com/",
+    "spec": "https://github.com/tendermint/spec",
+    "light_client": "https://github.com/tendermint/tendermint/tree/main/spec/light-client"
+  },
+
+  "protocol_rounds": [
+    {
+      "name": "Propose",
+      "description": "Proposer broadcasts block proposal",
+      "action": "Selected proposer creates and broadcasts block"
+    },
+    {
+      "name": "Prevote",
+      "description": "Validators prevote for proposal",
+      "action": "Validators send prevote for proposed block or nil"
+    },
+    {
+      "name": "Precommit",
+      "description": "Validators precommit if 2/3+ prevotes",
+      "action": "If 2/3+ prevotes for block, send precommit"
+    },
+    {
+      "name": "Commit",
+      "description": "Block is committed with 2/3+ precommits",
+      "action": "If 2/3+ precommits, commit block and advance height"
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "Agreement",
+      "description": "No two correct validators commit different blocks at same height",
+      "tla_formula": "\\A v1, v2 \\in Correct : commit(v1, h, b1) /\\ commit(v2, h, b2) => b1 = b2"
+    },
+    {
+      "name": "Validity",
+      "description": "Committed block was proposed by some process",
+      "tla_formula": "committed(b) => proposed(b)"
+    },
+    {
+      "name": "Termination",
+      "description": "All correct validators eventually commit",
+      "tla_formula": "[]<>(\\A v \\in Correct : committed(v))"
+    },
+    {
+      "name": "LightClientSafety",
+      "description": "Light client accepts only valid headers",
+      "tla_formula": "accepted(header) => valid(header) /\\ sufficient_trust(header)"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "height", "type": "Nat", "description": "Current blockchain height"},
+    {"name": "round", "type": "Nat", "description": "Current consensus round"},
+    {"name": "step", "type": "{Propose, Prevote, Precommit, Commit}", "description": "Current step"},
+    {"name": "lockedValue", "type": "Block \\cup {nil}", "description": "Locked block value"},
+    {"name": "lockedRound", "type": "Round", "description": "Round when locked"},
+    {"name": "validValue", "type": "Block \\cup {nil}", "description": "Valid value seen"}
+  ],
+
+  "model_checking_config": {
+    "tool": "Apalache",
+    "recommended_constants": {
+      "Validator": "{v1, v2, v3, v4}",
+      "MaxRound": "3",
+      "MaxHeight": "2",
+      "f": "1"
+    },
+    "invariants": ["TypeOK", "Agreement", "Validity"],
+    "expected_states": "Millions"
+  },
+
+  "related_specs": ["pbft", "hotstuff", "raft"],
+
+  "implementations": [
+    "Tendermint Core",
+    "CometBFT",
+    "Cosmos SDK chains",
+    "Polygon",
+    "BNB Chain"
+  ],
+
+  "metadata": {
+    "version": "0.34",
+    "last_updated": "2025-12-22",
+    "maintainer": "Informal Systems",
+    "license": "Apache-2.0"
+  }
+}

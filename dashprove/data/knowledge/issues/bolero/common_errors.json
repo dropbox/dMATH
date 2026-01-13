@@ -1,0 +1,227 @@
+{
+  "tool": "bolero",
+  "version": "0.11.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "crash_found",
+      "pattern": "crash|panic|SIGABRT|SIGSEGV|assertion.*failed",
+      "message": "Fuzzer found a crashing input",
+      "cause": "Code panics or crashes on specific input",
+      "solutions": [
+        {
+          "approach": "Examine crash artifact",
+          "code": "# Crash saved to:\n# target/fuzz/corpus/<test_name>/crashes/\n\n# Reproduce:\ncargo bolero test <test_name> --corpus-dir target/fuzz/corpus/<test_name>/crashes",
+          "when": "Need to reproduce crash"
+        },
+        {
+          "approach": "Debug with specific input",
+          "code": "// Add debug test:\n#[test]\nfn debug_crash() {\n    let input = include_bytes!(\"../target/fuzz/corpus/.../crashes/crash-abc\");\n    // Call your fuzz target with this input\n    fuzz_target(input);\n}",
+          "when": "Debugging specific crash"
+        },
+        {
+          "approach": "Minimize crash",
+          "code": "# Bolero automatically minimizes\n# The crash file is the minimal reproducer\n# Check the crashes/ directory",
+          "when": "Want minimal reproducer"
+        }
+      ]
+    },
+    {
+      "id": "coverage_plateau",
+      "pattern": "coverage.*plateau|no.*new.*coverage|stuck",
+      "message": "Fuzzer not finding new coverage",
+      "cause": "Input generation not reaching new code paths",
+      "solutions": [
+        {
+          "approach": "Add dictionary",
+          "code": "// Create dictionary file with common tokens:\n// dict.txt:\n// \"magic_value\"\n// \"\\x00\\x01\\x02\"\n// \"important_string\"\n\n# Run with dictionary:\ncargo bolero test my_test -- -dict=dict.txt",
+          "when": "Parser or format-aware input"
+        },
+        {
+          "approach": "Seed corpus",
+          "code": "# Add initial inputs:\nmkdir -p target/fuzz/corpus/my_test/\ncp valid_inputs/* target/fuzz/corpus/my_test/\n\n# Run fuzzer - will start from seeds",
+          "when": "Need starting points"
+        },
+        {
+          "approach": "Use structured generation",
+          "code": "use bolero::generator::*;\n\n#[test]\n#[cfg_attr(kani, kani::proof)]\nfn test_structured() {\n    bolero::check!()\n        .with_generator(gen::<(u32, Vec<u8>)>())\n        .for_each(|(size, data)| {\n            // Structured input\n        });\n}",
+          "when": "Need structured input"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|hung|slow.*unit|exceeds.*time",
+      "message": "Fuzz target timed out",
+      "cause": "Code took too long on specific input",
+      "solutions": [
+        {
+          "approach": "Set timeout limit",
+          "code": "# Set per-input timeout (in seconds):\ncargo bolero test my_test -- -timeout=5",
+          "when": "Need timeout protection"
+        },
+        {
+          "approach": "Handle slow inputs",
+          "code": "fn fuzz_target(data: &[u8]) {\n    // Limit input size to prevent slow operations:\n    if data.len() > MAX_INPUT_SIZE {\n        return;\n    }\n    // Process...\n}",
+          "when": "Large inputs cause slowdown"
+        },
+        {
+          "approach": "Profile and optimize",
+          "code": "# Save timeout inputs:\n# target/fuzz/corpus/<test>/timeout/\n\n# Analyze why they're slow:\ncargo flamegraph --root -- target/release/test_binary corpus/timeout/input-123",
+          "when": "Finding performance issues"
+        }
+      ]
+    },
+    {
+      "id": "generator_error",
+      "pattern": "generator.*error|TypeGenerator.*not.*implemented|cannot.*generate",
+      "message": "Cannot generate values for type",
+      "cause": "Type doesn't implement TypeGenerator",
+      "solutions": [
+        {
+          "approach": "Derive TypeGenerator",
+          "code": "use bolero::generator::*;\n\n#[derive(Debug, TypeGenerator)]\nstruct MyStruct {\n    field1: u32,\n    #[generator(gen::<u8>().map(|v| v as usize))]\n    field2: usize,\n}",
+          "when": "Simple struct"
+        },
+        {
+          "approach": "Implement TypeGenerator",
+          "code": "use bolero::generator::*;\n\nimpl TypeGenerator for MyType {\n    fn generate<D: Driver>(driver: &mut D) -> Option<Self> {\n        let field1 = driver.gen::<u32>()?;\n        let field2 = driver.gen::<String>()?;\n        Some(MyType { field1, field2 })\n    }\n}",
+          "when": "Custom generation logic"
+        },
+        {
+          "approach": "Use generator combinators",
+          "code": "bolero::check!()\n    .with_generator(\n        gen::<(u32, Vec<u8>)>()\n            .filter(|(n, v)| *n > 0 && !v.is_empty())\n    )\n    .for_each(|(n, v)| { ... });",
+          "when": "Combining generators"
+        }
+      ]
+    },
+    {
+      "id": "integration_engine",
+      "pattern": "engine.*error|libfuzzer|afl|honggfuzz|backend",
+      "message": "Fuzzing engine error",
+      "cause": "Issue with underlying fuzzing engine",
+      "solutions": [
+        {
+          "approach": "Check engine installation",
+          "code": "# For libfuzzer (default):\nrustup component add llvm-tools-preview\ncargo install cargo-bolero\n\n# For AFL:\ncargo install afl\n\n# For Honggfuzz:\ncargo install honggfuzz",
+          "when": "Engine not installed"
+        },
+        {
+          "approach": "Switch engine",
+          "code": "# Use different engine:\ncargo bolero test my_test --engine libfuzzer\ncargo bolero test my_test --engine afl\ncargo bolero test my_test --engine honggfuzz",
+          "when": "Engine issues"
+        },
+        {
+          "approach": "Use test engine for CI",
+          "code": "// In CI, use random testing:\ncargo bolero test my_test --engine test --iterations 1000",
+          "when": "No fuzzer in CI"
+        }
+      ]
+    },
+    {
+      "id": "sanitizer_error",
+      "pattern": "sanitizer|AddressSanitizer|MemorySanitizer|UndefinedBehavior",
+      "message": "Sanitizer detected issue",
+      "cause": "Memory safety or undefined behavior issue",
+      "solutions": [
+        {
+          "approach": "Enable sanitizers",
+          "code": "# Build with address sanitizer:\nRUSTFLAGS=\"-Zsanitizer=address\" cargo bolero test my_test\n\n# Memory sanitizer:\nRUSTFLAGS=\"-Zsanitizer=memory\" cargo bolero test my_test",
+          "when": "Finding memory bugs"
+        },
+        {
+          "approach": "Interpret ASan output",
+          "code": "// AddressSanitizer reports:\n// - heap-buffer-overflow\n// - stack-buffer-overflow\n// - use-after-free\n// - double-free\n// - memory leak\n\n// The report shows:\n// - Error type\n// - Stack trace\n// - Memory operation details",
+          "when": "Understanding ASan report"
+        },
+        {
+          "approach": "Use Miri instead",
+          "code": "# For pure Rust, Miri is easier:\ncargo miri test\n\n# Bolero can also use Miri:\ncargo bolero test my_test --engine miri",
+          "when": "Pure Rust code"
+        }
+      ]
+    },
+    {
+      "id": "corpus_management",
+      "pattern": "corpus|inputs|seeds",
+      "message": "Need to manage fuzz corpus",
+      "cause": "Corpus too large, stale, or needs cleanup",
+      "solutions": [
+        {
+          "approach": "Minimize corpus",
+          "code": "# Remove redundant inputs:\ncargo bolero reduce my_test\n\n# Keeps only inputs that provide unique coverage",
+          "when": "Corpus too large"
+        },
+        {
+          "approach": "Export corpus",
+          "code": "# Corpus location:\n# target/fuzz/corpus/<test_name>/\n\n# Export interesting inputs:\ncp -r target/fuzz/corpus/my_test ./saved_corpus/",
+          "when": "Saving inputs"
+        },
+        {
+          "approach": "Merge corpora",
+          "code": "# Combine multiple corpus directories:\ncargo bolero test my_test --corpus-dir corpus1 --corpus-dir corpus2",
+          "when": "Multiple sources"
+        }
+      ]
+    },
+    {
+      "id": "kani_integration",
+      "pattern": "kani|model.*check|formal.*verification",
+      "message": "Integrating with Kani model checker",
+      "cause": "Want to combine fuzzing with formal verification",
+      "solutions": [
+        {
+          "approach": "Write dual-purpose test",
+          "code": "use bolero::check;\n\n#[test]\n#[cfg_attr(kani, kani::proof)]\nfn test_with_kani() {\n    check!()\n        .with_type::<u32>()\n        .for_each(|value| {\n            // Property that both fuzzer and Kani check\n            assert!(my_function(*value) >= 0);\n        });\n}",
+          "when": "Want both fuzzing and proof"
+        },
+        {
+          "approach": "Run with Kani",
+          "code": "# Run as fuzz test:\ncargo bolero test test_with_kani\n\n# Run as Kani proof:\ncargo kani --tests",
+          "when": "Switching between engines"
+        }
+      ]
+    },
+    {
+      "id": "parallel_fuzzing",
+      "pattern": "parallel|jobs|multi-core",
+      "message": "Need parallel fuzzing",
+      "cause": "Single-core fuzzing too slow",
+      "solutions": [
+        {
+          "approach": "Use multiple jobs",
+          "code": "# Run with multiple parallel fuzzers:\ncargo bolero test my_test -- -jobs=4 -workers=4",
+          "when": "Multi-core system"
+        },
+        {
+          "approach": "Distributed fuzzing",
+          "code": "# Run on multiple machines with shared corpus:\n# Machine 1:\ncargo bolero test my_test --corpus-dir /shared/corpus\n# Machine 2:\ncargo bolero test my_test --corpus-dir /shared/corpus",
+          "when": "Multiple machines"
+        }
+      ]
+    },
+    {
+      "id": "continuous_fuzzing",
+      "pattern": "CI|continuous|regression",
+      "message": "Setting up continuous fuzzing",
+      "cause": "Want to run fuzzing in CI/CD",
+      "solutions": [
+        {
+          "approach": "CI configuration",
+          "code": "# GitHub Actions example:\n- name: Fuzz tests\n  run: |\n    cargo install cargo-bolero\n    cargo bolero test --all --engine test --iterations 10000\n    \n# Use saved corpus:\n- uses: actions/cache@v3\n  with:\n    path: target/fuzz/corpus\n    key: fuzz-corpus-${{ hashFiles('src/**') }}",
+          "when": "Setting up CI fuzzing"
+        },
+        {
+          "approach": "Regression testing",
+          "code": "// Check in interesting corpus inputs:\n// corpus/my_test/*.input\n\n# In CI:\ncargo bolero test my_test --corpus-dir corpus/my_test --engine test",
+          "when": "Regression testing"
+        },
+        {
+          "approach": "Use oss-fuzz",
+          "code": "// For continuous fuzzing service:\n// Create Dockerfile and build.sh for OSS-Fuzz\n// Submit to https://github.com/google/oss-fuzz",
+          "when": "Open source project"
+        }
+      ]
+    }
+  ]
+}

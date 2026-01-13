@@ -1,0 +1,232 @@
+{
+  "tool": "hypothesis",
+  "version": "6.115.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "flaky_test",
+      "pattern": "Flaky|hypothesis.errors.Flaky",
+      "message": "Test behavior is inconsistent",
+      "cause": "Test passes/fails inconsistently with same input",
+      "solutions": [
+        {
+          "approach": "Remove randomness",
+          "code": "# Don't use random.random() in test\n# Use @given for all random inputs",
+          "when": "Test uses non-hypothesis randomness"
+        },
+        {
+          "approach": "Check global state",
+          "code": "# Reset shared state in test setup\n# Use pytest fixtures properly",
+          "when": "Global state affects results"
+        },
+        {
+          "approach": "Use seed for debugging",
+          "code": "@settings(database=None)\n@seed(12345)\ndef test_...",
+          "when": "Investigating flakiness"
+        }
+      ]
+    },
+    {
+      "id": "unsatisfied_assumption",
+      "pattern": "Unsatisfied assumption|FailedHealthCheck.filter_too_much",
+      "message": "Too many examples filtered out",
+      "cause": "assume() rejects most generated examples",
+      "solutions": [
+        {
+          "approach": "Use better strategy",
+          "code": "@given(st.integers(min_value=0, max_value=100))\n# Instead of:\n# @given(st.integers())\n# assume(0 <= x <= 100)",
+          "when": "Can generate valid inputs directly"
+        },
+        {
+          "approach": "Use filter on strategy",
+          "code": "st.integers().filter(lambda x: x > 0)",
+          "when": "Simple filter condition"
+        },
+        {
+          "approach": "Use composite strategy",
+          "code": "@st.composite\ndef valid_input(draw):\n    x = draw(st.integers(0, 100))\n    y = draw(st.integers(x, 100))\n    return x, y",
+          "when": "Complex constraints between values"
+        }
+      ]
+    },
+    {
+      "id": "too_slow",
+      "pattern": "FailedHealthCheck.too_slow|test took .* seconds",
+      "message": "Test is too slow",
+      "cause": "Individual test execution exceeds deadline",
+      "solutions": [
+        {
+          "approach": "Increase deadline",
+          "code": "@settings(deadline=1000)  # 1 second\ndef test_...",
+          "when": "Test legitimately slow"
+        },
+        {
+          "approach": "Disable deadline",
+          "code": "@settings(deadline=None)",
+          "when": "Performance not important"
+        },
+        {
+          "approach": "Optimize test",
+          "code": "# Profile and optimize slow code path",
+          "when": "Test can be faster"
+        },
+        {
+          "approach": "Use smaller examples",
+          "code": "@given(st.lists(st.integers(), max_size=10))",
+          "when": "Large inputs cause slowness"
+        }
+      ]
+    },
+    {
+      "id": "data_too_large",
+      "pattern": "FailedHealthCheck.data_too_large|data generation",
+      "message": "Generated too much data",
+      "cause": "Strategy generates very large examples",
+      "solutions": [
+        {
+          "approach": "Add size limits",
+          "code": "st.lists(st.integers(), max_size=100)",
+          "when": "Can bound size"
+        },
+        {
+          "approach": "Use smaller elements",
+          "code": "st.integers(min_value=-1000, max_value=1000)",
+          "when": "Individual values too large"
+        },
+        {
+          "approach": "Increase limit",
+          "code": "@settings(max_examples=50, suppress_health_check=[HealthCheck.data_too_large])",
+          "when": "Large data is necessary"
+        }
+      ]
+    },
+    {
+      "id": "invalid_strategy",
+      "pattern": "InvalidArgument|InvalidDefinition",
+      "message": "Strategy definition is invalid",
+      "cause": "Strategy has contradictory or impossible constraints",
+      "solutions": [
+        {
+          "approach": "Fix bounds",
+          "code": "st.integers(min_value=0, max_value=10)  # min <= max",
+          "when": "Bounds are inverted"
+        },
+        {
+          "approach": "Check strategy params",
+          "code": "st.floats(allow_nan=False, allow_infinity=False)",
+          "when": "Invalid float config"
+        },
+        {
+          "approach": "Use valid alphabet",
+          "code": "st.text(alphabet=string.ascii_letters, min_size=1)",
+          "when": "Empty alphabet issue"
+        }
+      ]
+    },
+    {
+      "id": "did_not_reproduce",
+      "pattern": "DidNotReproduce|did not reproduce|Unreliable test",
+      "message": "Failed to reproduce failure",
+      "cause": "Example in database doesn't fail anymore",
+      "solutions": [
+        {
+          "approach": "Clear database",
+          "code": "rm -rf .hypothesis",
+          "when": "Old failures no longer relevant"
+        },
+        {
+          "approach": "Check test changes",
+          "code": "# If test logic changed, old examples may not apply",
+          "when": "Test was modified"
+        },
+        {
+          "approach": "Use explicit example",
+          "code": "@example(specific_failing_input)\ndef test_...",
+          "when": "Want to preserve regression"
+        }
+      ]
+    },
+    {
+      "id": "no_examples",
+      "pattern": "NoSuchExample|Could not find any",
+      "message": "Cannot find satisfying example",
+      "cause": "Strategy combined with assume() produces nothing",
+      "solutions": [
+        {
+          "approach": "Use composite strategy",
+          "code": "@st.composite\ndef constrained(draw):\n    # Generate with constraints built-in",
+          "when": "Complex constraints"
+        },
+        {
+          "approach": "Check assume logic",
+          "code": "# Is the condition ever satisfiable?",
+          "when": "May have impossible constraint"
+        },
+        {
+          "approach": "Use builds",
+          "code": "st.builds(MyClass, x=st.integers())",
+          "when": "Constructing objects"
+        }
+      ]
+    },
+    {
+      "id": "multiple_given",
+      "pattern": "cannot apply @given to a test .* already has @given",
+      "message": "Duplicate @given decorator",
+      "cause": "Test decorated with @given multiple times",
+      "solutions": [
+        {
+          "approach": "Use single @given",
+          "code": "@given(x=st.integers(), y=st.text())\ndef test_...",
+          "when": "Multiple parameters"
+        },
+        {
+          "approach": "Use st.one_of",
+          "code": "@given(st.one_of(st.integers(), st.text()))",
+          "when": "Alternative types"
+        }
+      ]
+    },
+    {
+      "id": "drawing_outside_given",
+      "pattern": "Cannot draw .* outside of a test",
+      "message": "draw() used outside @given context",
+      "cause": "Trying to draw from strategy outside test",
+      "solutions": [
+        {
+          "approach": "Use in @composite",
+          "code": "@st.composite\ndef my_strategy(draw):\n    return draw(st.integers())",
+          "when": "Creating custom strategy"
+        },
+        {
+          "approach": "Use example()",
+          "code": "st.integers().example()  # For debugging only",
+          "when": "Just want a single example"
+        }
+      ]
+    },
+    {
+      "id": "stateful_too_slow",
+      "pattern": "stateful test|RuleBasedStateMachine.*slow",
+      "message": "Stateful test is slow",
+      "cause": "State machine exploration taking too long",
+      "solutions": [
+        {
+          "approach": "Reduce max_examples",
+          "code": "TestMyMachine.TestCase.settings = settings(max_examples=50)",
+          "when": "Can run fewer sequences"
+        },
+        {
+          "approach": "Limit sequence length",
+          "code": "@settings(stateful_step_count=10)",
+          "when": "Shorter sequences sufficient"
+        },
+        {
+          "approach": "Simplify preconditions",
+          "code": "@precondition(lambda self: len(self.data) < 100)",
+          "when": "State grows unboundedly"
+        }
+      ]
+    }
+  ]
+}

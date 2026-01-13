@@ -1,0 +1,120 @@
+{
+  "tool": "gzip",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "incorrect header check|not in gzip format",
+      "meaning": "Data doesn't have valid gzip header",
+      "causes": [
+        "Data is raw deflate without gzip wrapper",
+        "Data is zlib format, not gzip",
+        "Data not compressed at all",
+        "Magic bytes missing (0x1f 0x8b)"
+      ],
+      "solutions": [
+        "Check magic bytes: file should start with 1f 8b",
+        "For raw deflate: use zlib.inflateRaw()",
+        "For zlib: use zlib.inflate()",
+        "Verify Content-Encoding header matches actual format"
+      ]
+    },
+    {
+      "pattern": "unexpected end of file|truncated gzip",
+      "meaning": "Gzip stream incomplete",
+      "causes": [
+        "Download interrupted",
+        "File truncated",
+        "Network transfer incomplete"
+      ],
+      "solutions": [
+        "Verify complete file transfer",
+        "Check Content-Length matches received bytes",
+        "Re-download or re-read file"
+      ]
+    },
+    {
+      "pattern": "CRC check failed|crc error",
+      "meaning": "Data integrity check failed",
+      "causes": [
+        "Data corrupted during transfer/storage",
+        "Gzip trailer CRC32 mismatch",
+        "Bit flip or partial corruption"
+      ],
+      "solutions": [
+        "Re-obtain original gzipped data",
+        "Check storage medium for errors",
+        "Verify network transfer reliability"
+      ]
+    },
+    {
+      "pattern": "unknown compression method",
+      "meaning": "Gzip header specifies unsupported method",
+      "causes": [
+        "Only method 8 (deflate) is standard",
+        "Corrupted header",
+        "Non-standard gzip variant"
+      ],
+      "solutions": [
+        "Standard gzip uses deflate only",
+        "Check for file corruption",
+        "Verify gzip file is standard format"
+      ]
+    },
+    {
+      "pattern": "multi-stream.*not supported|unexpected data after end",
+      "meaning": "Multiple gzip streams concatenated",
+      "causes": [
+        "Multiple files appended to single .gz",
+        "Incremental gzip compression",
+        "Log rotation appending"
+      ],
+      "solutions": [
+        "Multi-stream is valid but some tools don't handle it",
+        "Use gunzip -c file.gz | ... for full extraction",
+        "zlib-sync handles multi-stream properly"
+      ]
+    },
+    {
+      "pattern": "invalid block type|invalid distance",
+      "meaning": "Deflate block error within gzip",
+      "causes": [
+        "Corrupted compressed data",
+        "Invalid back-reference",
+        "Memory corruption during compression"
+      ],
+      "solutions": [
+        "Re-compress from original source",
+        "Verify no corruption in gzip file",
+        "Try alternate decompressor for diagnostics"
+      ]
+    },
+    {
+      "pattern": "gzip.*slow|compression taking too long",
+      "meaning": "Compression performance issue",
+      "causes": [
+        "High compression level (9) on large data",
+        "Synchronous API blocking event loop",
+        "Non-compressible data (random/encrypted)"
+      ],
+      "solutions": [
+        "Use level 6 (default) or lower for speed",
+        "Use async API: zlib.gzip()",
+        "Pre-compress static assets at build time"
+      ]
+    },
+    {
+      "pattern": "ISIZE.*mismatch|size doesn't match trailer",
+      "meaning": "Gzip trailer size field incorrect",
+      "causes": [
+        "File larger than 4GB (ISIZE is 32-bit mod 2^32)",
+        "Corrupted trailer",
+        "Incomplete decompression"
+      ],
+      "solutions": [
+        "For files >4GB, ISIZE wraps (valid but confusing)",
+        "Check for trailer corruption",
+        "Verify decompression completed successfully"
+      ]
+    }
+  ]
+}

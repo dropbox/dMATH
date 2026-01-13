@@ -1,0 +1,202 @@
+{
+  "tool": "tsan",
+  "version": "clang 18.0 / gcc 14",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "data_race",
+      "pattern": "WARNING: ThreadSanitizer: data race",
+      "message": "Data race detected",
+      "cause": "Concurrent unsynchronized access to shared memory",
+      "solutions": [
+        {
+          "approach": "Use mutex",
+          "code": "std::mutex mtx;\nmtx.lock();\nshared_data = value;\nmtx.unlock();",
+          "when": "Protecting shared data"
+        },
+        {
+          "approach": "Use lock_guard",
+          "code": "std::lock_guard<std::mutex> lock(mtx);\nshared_data = value;",
+          "when": "RAII-style locking"
+        },
+        {
+          "approach": "Use atomic",
+          "code": "std::atomic<int> counter;\ncounter.fetch_add(1, std::memory_order_relaxed);",
+          "when": "Simple atomic operations"
+        }
+      ]
+    },
+    {
+      "id": "lock_order_inversion",
+      "pattern": "lock-order-inversion.*potential deadlock",
+      "message": "Potential deadlock (lock order inversion)",
+      "cause": "Locks acquired in different orders in different threads",
+      "solutions": [
+        {
+          "approach": "Use consistent lock order",
+          "code": "// Always acquire lockA before lockB\nlockA.lock();\nlockB.lock();",
+          "when": "Multiple locks needed"
+        },
+        {
+          "approach": "Use std::lock",
+          "code": "std::lock(mtx1, mtx2);\nstd::lock_guard<std::mutex> lg1(mtx1, std::adopt_lock);\nstd::lock_guard<std::mutex> lg2(mtx2, std::adopt_lock);",
+          "when": "C++11 deadlock avoidance"
+        },
+        {
+          "approach": "Use scoped_lock",
+          "code": "std::scoped_lock lock(mtx1, mtx2);  // C++17",
+          "when": "C++17 available"
+        }
+      ]
+    },
+    {
+      "id": "thread_leak",
+      "pattern": "thread leak",
+      "message": "Thread not joined",
+      "cause": "Thread created but never joined or detached",
+      "solutions": [
+        {
+          "approach": "Join thread",
+          "code": "std::thread t(func);\n// ... work ...\nt.join();  // Wait for completion",
+          "when": "Need to wait for thread"
+        },
+        {
+          "approach": "Detach thread",
+          "code": "std::thread t(func);\nt.detach();  // Fire and forget",
+          "when": "Don't need to wait"
+        },
+        {
+          "approach": "Use jthread",
+          "code": "std::jthread t(func);  // Auto-joins on destruction (C++20)",
+          "when": "C++20 available"
+        }
+      ]
+    },
+    {
+      "id": "use_after_destruction",
+      "pattern": "use after destruction|heap-use-after-free.*from thread",
+      "message": "Use after destruction in multithreaded code",
+      "cause": "Object destroyed while another thread still accessing",
+      "solutions": [
+        {
+          "approach": "Ensure proper lifetime",
+          "code": "// Join threads before destroying shared data\nfor (auto& t : threads) t.join();\n// Now safe to destroy shared_data",
+          "when": "Threads use shared object"
+        },
+        {
+          "approach": "Use shared_ptr",
+          "code": "auto shared = std::make_shared<Data>();\n// Pass to threads - ref counted",
+          "when": "Shared ownership"
+        }
+      ]
+    },
+    {
+      "id": "signal_handler_race",
+      "pattern": "signal handler spoils errno|signal-unsafe call",
+      "message": "Signal handler data race",
+      "cause": "Signal handler accessing non-signal-safe data",
+      "solutions": [
+        {
+          "approach": "Use sig_atomic_t",
+          "code": "volatile sig_atomic_t flag = 0;\nvoid handler(int) { flag = 1; }",
+          "when": "Simple flag communication"
+        },
+        {
+          "approach": "Use signalfd",
+          "code": "int sfd = signalfd(-1, &mask, 0);\n// Handle in main loop",
+          "when": "Linux, need complex handling"
+        }
+      ]
+    },
+    {
+      "id": "mutex_unlock_nonlocked",
+      "pattern": "unlock of an unlocked mutex",
+      "message": "Unlocking mutex that isn't locked",
+      "cause": "unlock() called when mutex not held",
+      "solutions": [
+        {
+          "approach": "Use lock_guard",
+          "code": "std::lock_guard<std::mutex> lock(mtx);\n// Auto unlock, can't mismatch",
+          "when": "RAII-style"
+        },
+        {
+          "approach": "Check lock state",
+          "code": "// Ensure lock/unlock are paired",
+          "when": "Manual lock management"
+        }
+      ]
+    },
+    {
+      "id": "race_on_vptr",
+      "pattern": "race on vptr",
+      "message": "Race condition on virtual table pointer",
+      "cause": "Object constructed/destructed while being accessed",
+      "solutions": [
+        {
+          "approach": "Avoid concurrent construction",
+          "code": "// Don't share object until fully constructed",
+          "when": "Publishing too early"
+        },
+        {
+          "approach": "Use factory pattern",
+          "code": "auto create() {\n    auto obj = std::make_shared<T>();\n    // Fully constructed before return\n    return obj;\n}",
+          "when": "Need safe publication"
+        }
+      ]
+    },
+    {
+      "id": "destroyed_mutex",
+      "pattern": "destroy of a locked mutex",
+      "message": "Destroying mutex while locked",
+      "cause": "Mutex destroyed while still held",
+      "solutions": [
+        {
+          "approach": "Unlock before destroy",
+          "code": "mtx.unlock();\n// Now safe to destroy",
+          "when": "Manual management"
+        },
+        {
+          "approach": "Check scope",
+          "code": "// Ensure mutex outlives all users",
+          "when": "Lifetime issue"
+        }
+      ]
+    },
+    {
+      "id": "read_from_uninitialized",
+      "pattern": "read of size .* at .* by thread",
+      "message": "Read of uninitialized memory in thread",
+      "cause": "Thread reading memory not yet written by publishing thread",
+      "solutions": [
+        {
+          "approach": "Use synchronization",
+          "code": "// Writer thread\ndata = value;\nready.store(true, std::memory_order_release);\n\n// Reader thread\nwhile (!ready.load(std::memory_order_acquire));\nuse(data);",
+          "when": "Producer-consumer pattern"
+        },
+        {
+          "approach": "Use condition variable",
+          "code": "// Writer\n{\n    std::lock_guard lock(mtx);\n    data = value;\n}\ncv.notify_one();\n\n// Reader\n{\n    std::unique_lock lock(mtx);\n    cv.wait(lock, []{ return data_ready; });\n}",
+          "when": "Need wait/notify"
+        }
+      ]
+    },
+    {
+      "id": "false_positive_annotation",
+      "pattern": "ThreadSanitizer.*benign",
+      "message": "Potential false positive",
+      "cause": "Race may be intentional or false positive",
+      "solutions": [
+        {
+          "approach": "Use TSan annotations",
+          "code": "#include <sanitizer/tsan_interface.h>\n__tsan_acquire(&var);\n// access\n__tsan_release(&var);",
+          "when": "Custom synchronization"
+        },
+        {
+          "approach": "Use suppression file",
+          "code": "# tsan.supp\nrace:known_benign_race",
+          "when": "Known benign race"
+        }
+      ]
+    }
+  ]
+}

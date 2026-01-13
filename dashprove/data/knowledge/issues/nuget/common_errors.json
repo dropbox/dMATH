@@ -1,0 +1,232 @@
+{
+  "tool": "nuget",
+  "version": "6.8+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "package_not_found",
+      "pattern": "Package.*not found|Unable to find package|No packages found",
+      "message": "Package not found",
+      "cause": "Package doesn't exist or wrong source",
+      "solutions": [
+        {
+          "approach": "Check nuget.org",
+          "code": "dotnet search packagename",
+          "when": "Verify package exists"
+        },
+        {
+          "approach": "Add source",
+          "code": "dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org",
+          "when": "Source not configured"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "dotnet nuget locals all --clear",
+          "when": "Stale cache"
+        }
+      ]
+    },
+    {
+      "id": "version_conflict",
+      "pattern": "Version conflict|could not resolve|Detected package downgrade",
+      "message": "Package version conflict",
+      "cause": "Incompatible package versions",
+      "solutions": [
+        {
+          "approach": "Update packages",
+          "code": "dotnet add package PackageName --version X.Y.Z",
+          "when": "Specific version"
+        },
+        {
+          "approach": "Use central management",
+          "code": "<!-- Directory.Packages.props -->\n<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>",
+          "when": "Consistent versions"
+        },
+        {
+          "approach": "Check dependencies",
+          "code": "dotnet list package --include-transitive",
+          "when": "Debug conflicts"
+        }
+      ]
+    },
+    {
+      "id": "restore_failed",
+      "pattern": "Restore failed|NU1101|Unable to resolve",
+      "message": "Package restore failed",
+      "cause": "Cannot download or resolve packages",
+      "solutions": [
+        {
+          "approach": "Clear caches",
+          "code": "dotnet nuget locals all --clear",
+          "when": "Corrupted cache"
+        },
+        {
+          "approach": "Check sources",
+          "code": "dotnet nuget list source",
+          "when": "Source issue"
+        },
+        {
+          "approach": "Restore verbosely",
+          "code": "dotnet restore --verbosity detailed",
+          "when": "Debug restore"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "401.*Unauthorized|authentication failed|credentials",
+      "message": "Authentication failed",
+      "cause": "Invalid or missing credentials",
+      "solutions": [
+        {
+          "approach": "Add credentials",
+          "code": "dotnet nuget add source URL --username USER --password PAT --store-password-in-clear-text",
+          "when": "Add authenticated source"
+        },
+        {
+          "approach": "Use credential provider",
+          "code": "# Install Azure Artifacts Credential Provider",
+          "when": "Azure DevOps"
+        },
+        {
+          "approach": "Update nuget.config",
+          "code": "<packageSourceCredentials>\n  <Source>\n    <add key=\"Username\" value=\"USER\" />\n    <add key=\"ClearTextPassword\" value=\"PAT\" />\n  </Source>\n</packageSourceCredentials>",
+          "when": "Config file"
+        }
+      ]
+    },
+    {
+      "id": "framework_error",
+      "pattern": "framework.*not compatible|NU1202|target framework",
+      "message": "Target framework not compatible",
+      "cause": "Package doesn't support project's target framework",
+      "solutions": [
+        {
+          "approach": "Update framework",
+          "code": "<TargetFramework>net8.0</TargetFramework>",
+          "when": "Upgrade project"
+        },
+        {
+          "approach": "Use older package",
+          "code": "dotnet add package PackageName --version 1.0.0",
+          "when": "Older version compatible"
+        },
+        {
+          "approach": "Multi-target",
+          "code": "<TargetFrameworks>net8.0;net6.0</TargetFrameworks>",
+          "when": "Support multiple"
+        }
+      ]
+    },
+    {
+      "id": "push_failed",
+      "pattern": "push failed|403.*Forbidden|cannot push",
+      "message": "Package push failed",
+      "cause": "Cannot upload package",
+      "solutions": [
+        {
+          "approach": "Set API key",
+          "code": "dotnet nuget push package.nupkg --api-key YOUR_KEY --source nuget.org",
+          "when": "Missing API key"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "# Verify package ownership on nuget.org",
+          "when": "Not package owner"
+        },
+        {
+          "approach": "Version exists",
+          "code": "# Bump version in .csproj",
+          "when": "Version already published"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate.*error|TLS",
+      "message": "SSL/TLS error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Update certificates",
+          "code": "# Update system CA certificates",
+          "when": "Outdated certs"
+        },
+        {
+          "approach": "Trust source",
+          "code": "dotnet nuget trust source sourcename",
+          "when": "Trust specific source"
+        }
+      ]
+    },
+    {
+      "id": "locked_file",
+      "pattern": "locked|in use|cannot access",
+      "message": "File locked by another process",
+      "cause": "File in use by IDE or other process",
+      "solutions": [
+        {
+          "approach": "Close IDE",
+          "code": "# Close Visual Studio/Rider",
+          "when": "IDE has lock"
+        },
+        {
+          "approach": "Restart VS",
+          "code": "# Restart Visual Studio",
+          "when": "VS file lock"
+        },
+        {
+          "approach": "Kill dotnet processes",
+          "code": "dotnet build-server shutdown",
+          "when": "Build server lock"
+        }
+      ]
+    },
+    {
+      "id": "pack_error",
+      "pattern": "pack failed|cannot create package|nupkg.*error",
+      "message": "Package creation failed",
+      "cause": "Error creating .nupkg file",
+      "solutions": [
+        {
+          "approach": "Build first",
+          "code": "dotnet build && dotnet pack",
+          "when": "Build errors"
+        },
+        {
+          "approach": "Add package metadata",
+          "code": "<PackageId>MyPackage</PackageId>\n<Version>1.0.0</Version>\n<Authors>Me</Authors>",
+          "when": "Missing metadata"
+        },
+        {
+          "approach": "Check output path",
+          "code": "dotnet pack -o ./packages",
+          "when": "Output directory issue"
+        }
+      ]
+    },
+    {
+      "id": "deprecated_warning",
+      "pattern": "deprecated|NU1701|vulnerability",
+      "message": "Package deprecated or vulnerable",
+      "cause": "Package has security issues or is deprecated",
+      "solutions": [
+        {
+          "approach": "Update package",
+          "code": "dotnet add package PackageName",
+          "when": "Get latest"
+        },
+        {
+          "approach": "Find alternative",
+          "code": "# Check nuget.org for recommended replacement",
+          "when": "Package deprecated"
+        },
+        {
+          "approach": "Audit packages",
+          "code": "dotnet list package --vulnerable",
+          "when": "Check vulnerabilities"
+        }
+      ]
+    }
+  ]
+}

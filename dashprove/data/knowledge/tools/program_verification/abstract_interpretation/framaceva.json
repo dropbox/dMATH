@@ -1,0 +1,139 @@
+{
+  "id": "frama_ceva",
+  "name": "Frama-C EVA",
+  "category": "abstract_interpretation",
+  "subcategory": "c_static_analysis",
+  "description": "Value analysis plugin (EVA) for Frama-C",
+  "long_description": "EVA is Frama-C's abstract interpretation plugin for value analysis. It over-approximates all possible executions of C programs to detect runtime errors, overflows, and undefined behavior, and works with ACSL annotations for precision.",
+  "capabilities": [
+    "value_analysis",
+    "runtime_error_detection",
+    "acsl_annotation_support",
+    "alarm_generation",
+    "slicing_integration"
+  ],
+  "property_types": [
+    "safety",
+    "runtime_error"
+  ],
+  "input_languages": [
+    "c",
+    "acsl"
+  ],
+  "output_formats": [
+    "alarm_report",
+    "gui_annotations"
+  ],
+  "installation": {
+    "methods": [
+      {
+        "type": "opam",
+        "command": "opam install frama-c"
+      },
+      {
+        "type": "source",
+        "url": "https://git.frama-c.com/pub/frama-c"
+      }
+    ],
+    "dependencies": [
+      "ocaml",
+      "opam",
+      "gtk"
+    ],
+    "platforms": [
+      "linux",
+      "macos"
+    ]
+  },
+  "documentation": {
+    "official": "https://frama-c.com/plugins/eva.html",
+    "tutorial": "https://frama-c.com/download/eva-tutorial.pdf",
+    "api_reference": "https://frama-c.com/html/eva.html",
+    "examples": "https://git.frama-c.com/pub/frama-c/-/tree/master/tests/value"
+  },
+  "tactics": [
+    {
+      "name": "set_precision",
+      "description": "Adjust widening and precision parameters",
+      "syntax": "-eva-widening-delay 3",
+      "when_to_use": "Balancing performance and precision",
+      "examples": [
+        "frama-c -eva -eva-widening-delay 2 file.c"
+      ]
+    },
+    {
+      "name": "use_acsl_assumptions",
+      "description": "Guide analysis with ACSL annotations",
+      "syntax": "/*@ requires x > 0; */",
+      "when_to_use": "Reducing false alarms",
+      "examples": [
+        "/*@ assert i < 100; */"
+      ]
+    },
+    {
+      "name": "slicing",
+      "description": "Slice program to focus on property",
+      "syntax": "-slicing",
+      "when_to_use": "Simplifying analysis for targeted alarms",
+      "examples": [
+        "frama-c -eva -slicing file.c"
+      ]
+    }
+  ],
+  "error_patterns": [
+    {
+      "pattern": "Alarm: undefined behavior",
+      "meaning": "Potential runtime error detected",
+      "common_causes": [
+        "Pointer arithmetic",
+        "Division by zero"
+      ],
+      "fixes": [
+        "Refine ACSL contracts",
+        "Guard operations"
+      ]
+    },
+    {
+      "pattern": "Library function missing",
+      "meaning": "Cannot analyze external call",
+      "common_causes": [
+        "Missing stubs"
+      ],
+      "fixes": [
+        "Add ACSL contract or stub"
+      ]
+    }
+  ],
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": [
+      "runtime_error"
+    ],
+    "cli_command": "dashprove verify --backend frama_ceva"
+  },
+  "performance": {
+    "typical_runtime": "Seconds to minutes per unit",
+    "scalability": "Improves with slicing and modular analysis",
+    "memory_usage": "Moderate"
+  },
+  "comparisons": {
+    "similar_tools": [
+      "astree",
+      "polyspace"
+    ],
+    "advantages": [
+      "Open source",
+      "Tight ACSL integration"
+    ],
+    "disadvantages": [
+      "Needs configuration",
+      "Less automation than commercial tools"
+    ]
+  },
+  "metadata": {
+    "version": "26.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "CEA List",
+    "license": "LGPL-2.1"
+  }
+}

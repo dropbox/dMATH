@@ -1,0 +1,191 @@
+{
+  "tool": "autocannon",
+  "version": "7.15.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_error",
+      "pattern": "ECONNREFUSED|ENOTFOUND|getaddrinfo|connection reset",
+      "message": "Cannot connect to target",
+      "cause": "Server not running or wrong URL",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl -I http://localhost:3000/",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check URL",
+          "code": "autocannon -c 10 -d 10 http://correct-host:port/path",
+          "when": "Wrong URL"
+        },
+        {
+          "approach": "Local test",
+          "code": "autocannon -c 1 -d 1 http://127.0.0.1:3000/",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "ETIMEDOUT|socket hang up|timeout",
+      "message": "Request timed out",
+      "cause": "Server response too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "autocannon -c 10 -d 30 --timeout 30 http://localhost:3000/",
+          "when": "Slow requests"
+        },
+        {
+          "approach": "Reduce connections",
+          "code": "autocannon -c 5 -d 30 http://localhost:3000/",
+          "when": "Server overwhelmed"
+        },
+        {
+          "approach": "Check server",
+          "code": "# Profile Node.js server for bottlenecks",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "body_file_error",
+      "pattern": "ENOENT.*body|Cannot read file|body file",
+      "message": "Request body file not found",
+      "cause": "Specified body file doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "autocannon -m POST -b @./data/body.json -H 'Content-Type: application/json' http://localhost:3000/api",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Inline body",
+          "code": "autocannon -m POST -b '{\"key\":\"value\"}' -H 'Content-Type: application/json' http://localhost:3000/api",
+          "when": "Small body"
+        },
+        {
+          "approach": "Verify file",
+          "code": "cat data/body.json && ls -la data/body.json",
+          "when": "Check file"
+        }
+      ]
+    },
+    {
+      "id": "http2_error",
+      "pattern": "http2|protocol error|NGHTTP2",
+      "message": "HTTP/2 error",
+      "cause": "HTTP/2 compatibility issue",
+      "solutions": [
+        {
+          "approach": "Use HTTP/1.1",
+          "code": "autocannon -c 10 -d 10 http://localhost:3000/\n# HTTP/1.1 is default",
+          "when": "HTTP/2 issues"
+        },
+        {
+          "approach": "Check server",
+          "code": "# Verify server supports HTTP/2",
+          "when": "Server config"
+        },
+        {
+          "approach": "Disable pipelining",
+          "code": "autocannon -c 10 -d 10 -p 1 http://localhost:3000/",
+          "when": "Pipelining issues"
+        }
+      ]
+    },
+    {
+      "id": "high_error_rate",
+      "pattern": "Non-2xx|errors|timeouts",
+      "message": "High error rate in results",
+      "cause": "Server returning errors",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "autocannon -c 10 -d 10 --renderStatusCodes http://localhost:3000/",
+          "when": "See status breakdown"
+        },
+        {
+          "approach": "Add auth",
+          "code": "autocannon -c 10 -d 10 -H 'Authorization: Bearer token' http://localhost:3000/api",
+          "when": "Auth required"
+        },
+        {
+          "approach": "Debug manually",
+          "code": "curl -v http://localhost:3000/api",
+          "when": "Investigate errors"
+        }
+      ]
+    },
+    {
+      "id": "programmatic_error",
+      "pattern": "TypeError|ReferenceError|SyntaxError",
+      "message": "JavaScript error in programmatic use",
+      "cause": "Error in autocannon API usage",
+      "solutions": [
+        {
+          "approach": "Basic usage",
+          "code": "const autocannon = require('autocannon');\n\nautocannon({\n  url: 'http://localhost:3000',\n  connections: 10,\n  duration: 10\n}, console.log);",
+          "when": "API usage"
+        },
+        {
+          "approach": "Async/await",
+          "code": "const autocannon = require('autocannon');\n\nconst result = await autocannon({\n  url: 'http://localhost:3000',\n  connections: 10,\n  duration: 10\n});\nconsole.log(result);",
+          "when": "Modern syntax"
+        },
+        {
+          "approach": "Custom requests",
+          "code": "autocannon({\n  url: 'http://localhost:3000',\n  requests: [\n    { method: 'GET', path: '/api/users' },\n    { method: 'POST', path: '/api/data', body: '{\"key\":\"value\"}' }\n  ]\n});",
+          "when": "Multiple endpoints"
+        }
+      ]
+    },
+    {
+      "id": "pipeline_error",
+      "pattern": "pipeline|pipelining|socket error",
+      "message": "HTTP pipelining error",
+      "cause": "Server doesn't support pipelining",
+      "solutions": [
+        {
+          "approach": "Disable pipelining",
+          "code": "autocannon -c 10 -d 10 -p 1 http://localhost:3000/",
+          "when": "Pipelining not supported"
+        },
+        {
+          "approach": "Reduce pipeline",
+          "code": "autocannon -c 10 -d 10 -p 5 http://localhost:3000/",
+          "when": "Reduce pipeline depth"
+        },
+        {
+          "approach": "Check server",
+          "code": "# Not all servers support HTTP pipelining",
+          "when": "Server limitation"
+        }
+      ]
+    },
+    {
+      "id": "output_format",
+      "pattern": "Latency|Req/Bytes counts|Throughput",
+      "message": "Understanding output format",
+      "cause": "Not an error - output explanation",
+      "solutions": [
+        {
+          "approach": "Read output",
+          "code": "# Latency shows: 2.5%, 50%, 97.5%, 99%, Avg, Stdev, Max\n# Req/Sec shows: 2.5%, 50%, 97.5%, 99%, Avg, Stdev, Min\n# Bytes/Sec shows throughput",
+          "when": "Understanding results"
+        },
+        {
+          "approach": "JSON output",
+          "code": "autocannon -c 10 -d 10 -j http://localhost:3000/ > results.json",
+          "when": "Need JSON"
+        },
+        {
+          "approach": "Progress output",
+          "code": "autocannon -c 10 -d 30 --renderProgressBar http://localhost:3000/",
+          "when": "See progress"
+        }
+      ]
+    }
+  ]
+}

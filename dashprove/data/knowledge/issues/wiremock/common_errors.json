@@ -1,0 +1,134 @@
+{
+  "tool": "wiremock",
+  "category": "api_mocking",
+  "common_errors": [
+    {
+      "id": "wiremock_no_matching_stub",
+      "pattern": "No matching stub|Request was not matched|404.*/__admin",
+      "severity": "error",
+      "causes": [
+        "No stub defined for incoming request",
+        "Request URL/method doesn't match any stub",
+        "Headers or body matchers don't match"
+      ],
+      "solutions": [
+        "Add stub with stubFor(get(urlEqualTo(\"/path\")))",
+        "Check URL pattern: urlPathEqualTo vs urlEqualTo",
+        "Use /__admin/requests to see unmatched requests",
+        "Use withRequestBody() matcher for body requirements"
+      ]
+    },
+    {
+      "id": "wiremock_port_already_in_use",
+      "pattern": "Address already in use|BindException|port.*already bound",
+      "severity": "error",
+      "causes": [
+        "Another WireMock instance using the port",
+        "Previous test didn't stop WireMock server",
+        "System process using the port"
+      ],
+      "solutions": [
+        "Use dynamicPort() to auto-select available port",
+        "Stop server in @AfterEach: wireMockServer.stop()",
+        "Use WireMockExtension (JUnit 5) for lifecycle management",
+        "Configure different port per test class"
+      ]
+    },
+    {
+      "id": "wiremock_verification_failed",
+      "pattern": "Expected exactly \\d+ request|Verification failed|WireMock verify",
+      "severity": "error",
+      "causes": [
+        "Expected request count doesn't match actual",
+        "Request never made to WireMock",
+        "Wrong endpoint called by application"
+      ],
+      "solutions": [
+        "Use verify(moreThanOrExactly(1), getRequestedFor())",
+        "Check test is hitting WireMock URL not real service",
+        "Use /__admin/requests to inspect actual requests",
+        "Verify request timing with verify(timeout) option"
+      ]
+    },
+    {
+      "id": "wiremock_json_path_not_found",
+      "pattern": "JsonPath.*not found|No results for path|JsonPathException",
+      "severity": "error",
+      "causes": [
+        "JSONPath expression matches nothing in body",
+        "Wrong JSON structure in request",
+        "Case sensitivity in JSON keys"
+      ],
+      "solutions": [
+        "Test JSONPath expression with online tools first",
+        "Use matchingJsonPath(\"$.field\", equalTo(\"value\"))",
+        "Log request bodies to verify structure",
+        "Use containing() for partial JSON matching"
+      ]
+    },
+    {
+      "id": "wiremock_connection_refused",
+      "pattern": "Connection refused|ECONNREFUSED.*wiremock",
+      "severity": "error",
+      "causes": [
+        "WireMock server not started",
+        "Test hitting wrong host/port",
+        "Server crashed or stopped early"
+      ],
+      "solutions": [
+        "Start WireMock before making requests",
+        "Use wireMockServer.baseUrl() to get correct URL",
+        "Check server.isRunning() before tests",
+        "Configure application to use WireMock URL"
+      ]
+    },
+    {
+      "id": "wiremock_recording_not_persisted",
+      "pattern": "Recordings not saved|mappings file not created|--root-dir",
+      "severity": "warning",
+      "causes": [
+        "Recording mode not enabled",
+        "No root-dir configured for persistence",
+        "Insufficient file permissions"
+      ],
+      "solutions": [
+        "Use startRecording() and stopRecording()",
+        "Configure --root-dir for file persistence",
+        "Use snapshotRecord() to save current recordings",
+        "Check mappings/ and __files/ directories exist"
+      ]
+    },
+    {
+      "id": "wiremock_ssl_handshake_failed",
+      "pattern": "SSLHandshakeException|certificate.*untrusted|PKIX path",
+      "severity": "error",
+      "causes": [
+        "WireMock using self-signed certificate",
+        "Client not configured to trust WireMock cert",
+        "Wrong HTTPS configuration"
+      ],
+      "solutions": [
+        "For testing: disable SSL verification in client",
+        "Configure WireMock with trusted certificate",
+        "Use httpsPort() and provide keystore",
+        "Add WireMock cert to client truststore"
+      ]
+    },
+    {
+      "id": "wiremock_response_template_error",
+      "pattern": "Template error|Handlebars.*error|response-template",
+      "severity": "error",
+      "causes": [
+        "Invalid Handlebars template syntax",
+        "Missing response template transformer",
+        "Undefined helper function used"
+      ],
+      "solutions": [
+        "Enable response templating: .withTransformers(\"response-template\")",
+        "Use valid Handlebars syntax: {{request.path}}",
+        "Check available helpers in WireMock docs",
+        "Use globalSettings().templateExtensions() for custom helpers"
+      ]
+    }
+  ]
+}

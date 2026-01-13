@@ -1,0 +1,145 @@
+{
+  "tool": "swagger_codegen",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "spec_parse_error",
+      "pattern": "unable to read.*spec|Could not parse|Malformed.*swagger|Invalid.*OpenAPI",
+      "message": "Failed to parse API specification",
+      "cause": "Invalid YAML/JSON syntax or non-compliant OpenAPI/Swagger spec",
+      "solutions": [
+        {
+          "approach": "Validate spec",
+          "code": "swagger-codegen validate -i api.yaml",
+          "when": "Check spec validity"
+        },
+        {
+          "approach": "Fix YAML syntax",
+          "code": "python -c \"import yaml; yaml.safe_load(open('api.yaml'))\"",
+          "when": "YAML parse error"
+        },
+        {
+          "approach": "Use correct version",
+          "code": "# For OpenAPI 3.0, use swagger-codegen-cli-3.x.x\n# For Swagger 2.0, use swagger-codegen-cli-2.x.x",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "unknown_language",
+      "pattern": "Could not find.*language|Unsupported.*language|Unknown generator|Language .* not found",
+      "message": "Unknown or unsupported generator language",
+      "cause": "Target language/generator not available in this version",
+      "solutions": [
+        {
+          "approach": "List languages",
+          "code": "swagger-codegen langs\n# or for v3: swagger-codegen-cli-3.x.x langs",
+          "when": "Find available generators"
+        },
+        {
+          "approach": "Use correct name",
+          "code": "swagger-codegen generate -l typescript-axios  # Not 'typescript'\nswagger-codegen generate -l python  # or python-flask",
+          "when": "Typo in language name"
+        },
+        {
+          "approach": "Use openapi-generator",
+          "code": "npx @openapitools/openapi-generator-cli generate -g typescript-axios -i api.yaml",
+          "when": "Need newer generators"
+        }
+      ]
+    },
+    {
+      "id": "output_dir_error",
+      "pattern": "Cannot create.*directory|Output.*error|Permission denied.*output",
+      "message": "Output directory issues",
+      "cause": "Directory doesn't exist, permission denied, or path issues",
+      "solutions": [
+        {
+          "approach": "Create directory",
+          "code": "mkdir -p ./generated\nswagger-codegen generate -o ./generated ...",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la ./generated\nchmod 755 ./generated",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Use absolute path",
+          "code": "swagger-codegen generate -o $(pwd)/generated -i api.yaml -l python",
+          "when": "Relative path issues"
+        }
+      ]
+    },
+    {
+      "id": "template_error",
+      "pattern": "Template.*error|Could not process.*template|Mustache.*error|freemarker",
+      "message": "Template processing failed",
+      "cause": "Custom template syntax error or incompatible template version",
+      "solutions": [
+        {
+          "approach": "Use default templates",
+          "code": "swagger-codegen generate -l python -i api.yaml -o out\n# Remove -t flag to use defaults",
+          "when": "Custom template issue"
+        },
+        {
+          "approach": "Export templates",
+          "code": "swagger-codegen config-help -l python\n# Customize exported templates",
+          "when": "Need to customize"
+        },
+        {
+          "approach": "Check mustache syntax",
+          "code": "# Templates use {{variable}} syntax\n# Check for unescaped braces or missing sections",
+          "when": "Template syntax error"
+        }
+      ]
+    },
+    {
+      "id": "model_generation_error",
+      "pattern": "Could not generate.*model|Model.*error|Invalid.*schema|Type.*not supported",
+      "message": "Model generation failed",
+      "cause": "Complex schema, circular references, or unsupported types",
+      "solutions": [
+        {
+          "approach": "Simplify schema",
+          "code": "# Avoid deeply nested allOf/oneOf/anyOf\n# Break complex schemas into refs",
+          "when": "Complex schema"
+        },
+        {
+          "approach": "Handle circular refs",
+          "code": "swagger-codegen generate --skip-validate-spec -i api.yaml ...",
+          "when": "Circular reference warning"
+        },
+        {
+          "approach": "Use type mappings",
+          "code": "swagger-codegen generate --type-mappings DateTime=string ...",
+          "when": "Unsupported type"
+        }
+      ]
+    },
+    {
+      "id": "java_runtime_error",
+      "pattern": "OutOfMemoryError|Java heap|java.lang|Could not create.*JVM",
+      "message": "Java runtime error",
+      "cause": "Not enough memory or Java not installed",
+      "solutions": [
+        {
+          "approach": "Increase heap",
+          "code": "export JAVA_OPTS=\"-Xmx1024M -Xms512M\"\nswagger-codegen generate ...",
+          "when": "Out of memory"
+        },
+        {
+          "approach": "Install Java",
+          "code": "java -version  # Should be 8+\n# Install: brew install openjdk@11",
+          "when": "Java not found"
+        },
+        {
+          "approach": "Use Docker",
+          "code": "docker run --rm -v ${PWD}:/local swaggerapi/swagger-codegen-cli-v3 generate -i /local/api.yaml -l python -o /local/out",
+          "when": "Avoid local Java"
+        }
+      ]
+    }
+  ]
+}

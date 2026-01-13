@@ -1,0 +1,110 @@
+{
+  "tool": "insmod",
+  "version": "kmod",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted",
+      "message": "Need root privileges",
+      "cause": "Kernel module loading requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo insmod ./module.ko",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "invalid_module",
+      "pattern": "invalid module format|Exec format error",
+      "message": "Module format error",
+      "cause": "Module built for different kernel",
+      "solutions": [
+        {
+          "approach": "Check kernel version",
+          "code": "modinfo module.ko | grep vermagic\nuname -r\n# Must match",
+          "when": "Version check"
+        },
+        {
+          "approach": "Rebuild module",
+          "code": "make -C /lib/modules/$(uname -r)/build M=$(pwd) modules",
+          "when": "Recompile"
+        }
+      ]
+    },
+    {
+      "id": "unknown_symbol",
+      "pattern": "Unknown symbol|undefined symbol|symbol.*not found",
+      "message": "Missing dependencies",
+      "cause": "Required modules not loaded",
+      "solutions": [
+        {
+          "approach": "Use modprobe instead",
+          "code": "# modprobe handles dependencies automatically:\nsudo modprobe modulename",
+          "when": "Recommended"
+        },
+        {
+          "approach": "Load deps manually",
+          "code": "# Find dependencies:\nmodinfo module.ko | grep depends\n# Load each dependency first:\nsudo insmod dep1.ko\nsudo insmod module.ko",
+          "when": "Manual loading"
+        }
+      ]
+    },
+    {
+      "id": "file_not_found",
+      "pattern": "No such file|file not found|cannot open",
+      "message": "Module file not found",
+      "cause": "Wrong path to .ko file",
+      "solutions": [
+        {
+          "approach": "Use full path",
+          "code": "sudo insmod /full/path/to/module.ko\nsudo insmod ./module.ko  # Current directory",
+          "when": "Specify path"
+        },
+        {
+          "approach": "Use modprobe",
+          "code": "# modprobe searches module paths:\nsudo modprobe modulename\n# No need for full path",
+          "when": "System modules"
+        }
+      ]
+    },
+    {
+      "id": "module_already_loaded",
+      "pattern": "already loaded|File exists|module.*already",
+      "message": "Module already loaded",
+      "cause": "Module is currently in use",
+      "solutions": [
+        {
+          "approach": "Check if loaded",
+          "code": "lsmod | grep modulename",
+          "when": "Verify state"
+        },
+        {
+          "approach": "Reload",
+          "code": "sudo rmmod modulename\nsudo insmod module.ko",
+          "when": "Replace module"
+        }
+      ]
+    },
+    {
+      "id": "insmod_vs_modprobe",
+      "pattern": "use modprobe|prefer modprobe",
+      "message": "Use modprobe instead",
+      "cause": "insmod is low-level",
+      "solutions": [
+        {
+          "approach": "Prefer modprobe",
+          "code": "# insmod: manual loading, no deps, needs full path\n# modprobe: auto deps, searches module path, configurable\nsudo modprobe modulename  # Recommended",
+          "when": "Best practice"
+        },
+        {
+          "approach": "When to use insmod",
+          "code": "# Use insmod for:\n# - Development (loading from local directory)\n# - Module not in standard paths\nsudo insmod ./mydev.ko param=value",
+          "when": "Development"
+        }
+      ]
+    }
+  ]
+}

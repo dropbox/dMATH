@@ -1,0 +1,186 @@
+{
+  "tool": "fscheck",
+  "version": "2.16.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "falsifiable",
+      "pattern": "Falsifiable|Property.*failed|Counterexample",
+      "message": "Property test found a counterexample",
+      "cause": "Generated input violates the property - this is intended behavior",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "// FsCheck prints the failing input\n// Falsifiable, after 42 tests: (\"input\", 123)",
+          "when": "Understanding the failure"
+        },
+        {
+          "approach": "Fix implementation",
+          "code": "// The shrunk counterexample shows minimal failing case",
+          "when": "Implementation has bug"
+        },
+        {
+          "approach": "Refine property",
+          "code": "[<Property>]\nlet ``property holds`` x = x > 0 ==> (myFunc x > 0)",
+          "when": "Property needs precondition"
+        }
+      ]
+    },
+    {
+      "id": "exhausted",
+      "pattern": "Exhausted|Arguments exhausted|Too many discards",
+      "message": "Property test exhausted without enough valid inputs",
+      "cause": "Generator produces too many values rejected by precondition",
+      "solutions": [
+        {
+          "approach": "Use custom generator",
+          "code": "let posInt = Arb.from<int> |> Arb.filter (fun x -> x > 0)\nProp.forAll posInt (fun x -> ...)",
+          "when": "Need constrained inputs"
+        },
+        {
+          "approach": "Reduce precondition strictness",
+          "code": "// Make ==> condition less restrictive",
+          "when": "Precondition rejects too much"
+        },
+        {
+          "approach": "Increase MaxRejected",
+          "code": "Check.One({Config.Quick with MaxRejected = 10000}, prop)",
+          "when": "Need more attempts"
+        }
+      ]
+    },
+    {
+      "id": "generator_error",
+      "pattern": "Generator.*error|No Arbitrary|Cannot generate",
+      "message": "FsCheck cannot generate values for type",
+      "cause": "No Arbitrary instance for custom type",
+      "solutions": [
+        {
+          "approach": "Register Arbitrary",
+          "code": "type MyGenerators =\n    static member MyType() = Arb.fromGen myGen\nArb.register<MyGenerators>()",
+          "when": "Custom type needs generator"
+        },
+        {
+          "approach": "Use Gen combinators",
+          "code": "let myTypeGen = gen {\n    let! x = Arb.generate<int>\n    let! y = Arb.generate<string>\n    return { X = x; Y = y }\n}",
+          "when": "Building generator"
+        },
+        {
+          "approach": "Use Arb.Default",
+          "code": "// Check Arb.Default for available types",
+          "when": "Using built-in types"
+        }
+      ]
+    },
+    {
+      "id": "shrink_error",
+      "pattern": "Shrink.*error|Cannot shrink|Shrinker loop",
+      "message": "Shrinking failed or entered infinite loop",
+      "cause": "Custom shrinker is incorrect or produces invalid values",
+      "solutions": [
+        {
+          "approach": "Define proper shrinker",
+          "code": "let shrinkMyType x = seq {\n    if x.Value > 0 then yield { x with Value = x.Value - 1 }\n}",
+          "when": "Custom shrinking logic"
+        },
+        {
+          "approach": "Use Arb.fromGenShrink",
+          "code": "Arb.fromGenShrink(myGen, shrinkMyType)",
+          "when": "Combining gen and shrink"
+        },
+        {
+          "approach": "Disable shrinking",
+          "code": "Arb.fromGen myGen  // No shrinker",
+          "when": "Shrinking not needed"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout|Test timed out|MaxTime exceeded",
+      "message": "Property test timed out",
+      "cause": "Property evaluation or generation too slow",
+      "solutions": [
+        {
+          "approach": "Reduce test count",
+          "code": "Check.One({Config.Quick with MaxTest = 100}, prop)",
+          "when": "Running too many tests"
+        },
+        {
+          "approach": "Simplify generator",
+          "code": "// Generate smaller/simpler values",
+          "when": "Generation is slow"
+        },
+        {
+          "approach": "Optimize property",
+          "code": "// Make property evaluation faster",
+          "when": "Property check is slow"
+        }
+      ]
+    },
+    {
+      "id": "replay_error",
+      "pattern": "Cannot replay|Replay.*error|Seed not found",
+      "message": "Cannot replay failing test",
+      "cause": "Seed or test configuration changed",
+      "solutions": [
+        {
+          "approach": "Use replay seed",
+          "code": "Check.One({Config.Quick with Replay = Some (Random.StdGen(123, 456))}, prop)",
+          "when": "Reproducing failure"
+        },
+        {
+          "approach": "Save seed from output",
+          "code": "// FsCheck prints: Seed for reproduction: (123, 456)",
+          "when": "Recording seed"
+        },
+        {
+          "approach": "Use Verbose mode",
+          "code": "Check.Verbose prop",
+          "when": "Need to see all inputs"
+        }
+      ]
+    },
+    {
+      "id": "xunit_integration",
+      "pattern": "xUnit.*error|Property attribute|FsCheck.Xunit",
+      "message": "FsCheck xUnit integration error",
+      "cause": "FsCheck.Xunit package not configured correctly",
+      "solutions": [
+        {
+          "approach": "Add NuGet package",
+          "code": "dotnet add package FsCheck.Xunit",
+          "when": "Package missing"
+        },
+        {
+          "approach": "Use Property attribute",
+          "code": "[<Property>]\nlet ``my property`` (x: int) = x + 0 = x",
+          "when": "F# property test"
+        },
+        {
+          "approach": "Use PropertiesAttribute",
+          "code": "[<Properties(MaxTest = 1000)>]\ntype MyProperties() = ...",
+          "when": "Configuring all tests"
+        }
+      ]
+    },
+    {
+      "id": "nunit_integration",
+      "pattern": "NUnit.*error|FsCheck.NUnit",
+      "message": "FsCheck NUnit integration error",
+      "cause": "FsCheck.NUnit package not configured correctly",
+      "solutions": [
+        {
+          "approach": "Add NuGet package",
+          "code": "dotnet add package FsCheck.NUnit",
+          "when": "Package missing"
+        },
+        {
+          "approach": "Use FsCheck.NUnit.Property",
+          "code": "[<FsCheck.NUnit.Property>]\npublic void MyProperty(int x) => Assert.AreEqual(x + 0, x);",
+          "when": "C# with NUnit"
+        }
+      ]
+    }
+  ]
+}

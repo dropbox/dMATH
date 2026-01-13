@@ -1,0 +1,146 @@
+{
+  "tool": "dynamodb_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specifications for Amazon DynamoDB's consistency and replication",
+  "errors": [
+    {
+      "id": "eventual_consistency_anomaly",
+      "pattern": "eventual.*read.*stale|replica.*lag",
+      "message": "Eventually consistent read returned unexpectedly stale data",
+      "cause": "Replica lag exceeded expected bounds",
+      "solutions": [
+        {
+          "approach": "Model replication delay",
+          "code": "\\* Eventually consistent reads may lag\nEventualRead(key) ==\n    CHOOSE version \\in versions[key] : \n        version.timestamp >= now - maxReplicationDelay",
+          "when": "Assuming immediate consistency"
+        },
+        {
+          "approach": "Use strongly consistent read",
+          "code": "\\* Strong read goes to leader\nStrongRead(key) ==\n    /\\ node = LeaderForKey(key)\n    /\\ Return(node.data[key])",
+          "when": "Need latest value"
+        },
+        {
+          "approach": "Check global table sync",
+          "code": "\\* Global tables have async replication\nGlobalSync(region1, region2) ==\n    \\A key \\in DOMAIN data :\n        Abs(region1.data[key].version - region2.data[key].version) <= maxLag",
+          "when": "Cross-region consistency needed"
+        }
+      ]
+    },
+    {
+      "id": "condition_check_race",
+      "pattern": "condition.*check.*race|conditional.*write.*failed",
+      "message": "Conditional write failed unexpectedly",
+      "cause": "Concurrent modification between condition check and write",
+      "solutions": [
+        {
+          "approach": "Verify atomic condition+write",
+          "code": "\\* Condition and write are atomic\nConditionalWrite(key, cond, value) ==\n    /\\ Lock(key)\n    /\\ IF Eval(cond, data[key]) THEN Write(key, value)\n    /\\ Unlock(key)",
+          "when": "Not atomic check-and-set"
+        },
+        {
+          "approach": "Use version attribute",
+          "code": "\\* Optimistic locking with version\nUpdateWithVersion(key, newVal, expectedVersion) ==\n    IF data[key].version = expectedVersion\n    THEN /\\ data' = [data EXCEPT ![key] = \n            [value |-> newVal, version |-> expectedVersion + 1]]\n    ELSE Reject(\"version mismatch\")",
+          "when": "Need optimistic concurrency"
+        },
+        {
+          "approach": "Check transaction boundaries",
+          "code": "\\* TransactWrite provides atomicity across items\nTransactWrite(ops) ==\n    /\\ \\A op \\in ops : CheckCondition(op)\n    /\\ \\A op \\in ops : ApplyWrite(op)",
+          "when": "Multi-item consistency needed"
+        }
+      ]
+    },
+    {
+      "id": "hot_partition",
+      "pattern": "hot.*partition|throughput.*exceeded",
+      "message": "Partition throttled due to hot key",
+      "cause": "Single partition receiving more than 3000 RCU or 1000 WCU",
+      "solutions": [
+        {
+          "approach": "Model partition capacity",
+          "code": "\\* Each partition has throughput limit\nPartitionCapacity(pk) ==\n    /\\ readUnits[pk] <= 3000\n    /\\ writeUnits[pk] <= 1000",
+          "when": "Exceeding partition limits"
+        },
+        {
+          "approach": "Add write sharding",
+          "code": "\\* Shard hot keys across partitions\nShardedKey(key) == <<key, random(0..numShards-1)>>\n\\* Or: <<key, timestamp MOD numShards>>",
+          "when": "Single hot write key"
+        },
+        {
+          "approach": "Use DAX for reads",
+          "code": "\\* DAX caches hot read partitions\nDAXRead(key) ==\n    IF key \\in cache THEN cache[key]\n    ELSE /\\ cache' = [cache EXCEPT ![key] = DynamoRead(key)]\n         /\\ cache[key]",
+          "when": "Hot read partition"
+        }
+      ]
+    },
+    {
+      "id": "transaction_conflict",
+      "pattern": "transaction.*conflict|TransactionCanceledException",
+      "message": "Transaction cancelled due to conflict",
+      "cause": "Concurrent transactions modified same items",
+      "solutions": [
+        {
+          "approach": "Model transaction isolation",
+          "code": "\\* Transactions conflict on item overlap\nConflict(txn1, txn2) ==\n    txn1.items \\cap txn2.items # {} /\\\n    txn1.status = \"active\" /\\ txn2.status = \"active\"",
+          "when": "Concurrent item access"
+        },
+        {
+          "approach": "Implement retry logic",
+          "code": "\\* Exponential backoff retry\nRetryTransaction(txn, attempt) ==\n    IF attempt > maxRetries THEN Fail\n    ELSE /\\ Wait(backoff * 2^attempt)\n         /\\ ExecuteTransaction(txn)",
+          "when": "Transient conflicts"
+        },
+        {
+          "approach": "Reduce transaction scope",
+          "code": "\\* Smaller transactions have fewer conflicts\nMinimalTransaction(ops) ==\n    Cardinality(ops) <= 25  \\* DynamoDB limit\n    /\\ \\A op \\in ops : SamePartition(ops)",
+          "when": "Large transaction scope"
+        }
+      ]
+    },
+    {
+      "id": "stream_event_loss",
+      "pattern": "stream.*event.*lost|missing.*stream.*record",
+      "message": "DynamoDB Streams event not delivered",
+      "cause": "Stream shard expired or consumer fell behind",
+      "solutions": [
+        {
+          "approach": "Check shard iterator age",
+          "code": "\\* Iterators expire after 24 hours\nValidIterator(iter) ==\n    iter.createdAt >= now - 24*hours",
+          "when": "Iterator expired"
+        },
+        {
+          "approach": "Track sequence numbers",
+          "code": "\\* Resume from last processed sequence\nResumeStream(shardId, lastSeq) ==\n    GetShardIterator(shardId, \"AFTER_SEQUENCE_NUMBER\", lastSeq)",
+          "when": "Need exactly-once processing"
+        },
+        {
+          "approach": "Handle shard splits",
+          "code": "\\* Parent shard closes, children created\nHandleShardEnd(shard) ==\n    /\\ ProcessRemainingRecords(shard)\n    /\\ ForEach(shard.childShards, StartProcessing)",
+          "when": "Missing events after split"
+        }
+      ]
+    },
+    {
+      "id": "gsi_async_divergence",
+      "pattern": "GSI.*divergence|secondary.*index.*stale",
+      "message": "Global Secondary Index not reflecting base table",
+      "cause": "GSI is eventually consistent with base table",
+      "solutions": [
+        {
+          "approach": "Model GSI propagation",
+          "code": "\\* GSI updates are async\nGSIConsistency ==\n    \\A item \\in baseTable :\n        eventually(item \\in GSI \\/ item.gsiKey = Nil)",
+          "when": "Expecting immediate GSI update"
+        },
+        {
+          "approach": "Query base table for consistency",
+          "code": "\\* For critical reads, query base table\nConsistentQuery(key) ==\n    Query(baseTable, key, ConsistentRead=TRUE)",
+          "when": "Need latest GSI data"
+        },
+        {
+          "approach": "Handle GSI throttling",
+          "code": "\\* GSI has separate throughput\nGSICapacity(gsi) ==\n    /\\ gsi.readUnits <= gsi.provisionedRead\n    /\\ gsi.writeUnits <= gsi.provisionedWrite",
+          "when": "GSI updates backing up"
+        }
+      ]
+    }
+  ]
+}

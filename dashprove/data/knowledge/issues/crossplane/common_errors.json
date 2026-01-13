@@ -1,0 +1,77 @@
+{
+  "tool": "crossplane",
+  "category": "cloud_native",
+  "common_errors": [
+    {
+      "pattern": "cannot find provider|provider.*not installed",
+      "meaning": "Crossplane provider not installed",
+      "causes": ["Provider not installed", "Wrong provider name", "Version mismatch"],
+      "solutions": ["Install provider: kubectl apply -f provider.yaml", "Check: kubectl get providers", "Verify provider version compatibility"]
+    },
+    {
+      "pattern": "ProviderConfig.*not found|no ProviderConfig",
+      "meaning": "Provider configuration missing",
+      "causes": ["ProviderConfig not created", "Wrong name referenced", "Namespace issue"],
+      "solutions": ["Create ProviderConfig with credentials", "Check providerConfigRef in resource", "Ensure default ProviderConfig exists"]
+    },
+    {
+      "pattern": "credentials.*invalid|authentication failed",
+      "meaning": "Cloud credentials error",
+      "causes": ["Invalid credentials in secret", "Wrong key format", "Expired credentials"],
+      "solutions": ["Verify secret has correct format", "Check cloud provider credentials", "Rotate/refresh credentials"]
+    },
+    {
+      "pattern": "cannot apply managed resource|spec is invalid",
+      "meaning": "Invalid resource specification",
+      "causes": ["Required field missing", "Invalid field value", "API version mismatch"],
+      "solutions": ["Check resource CRD documentation", "Validate against API reference", "Use kubectl explain <resource>"]
+    },
+    {
+      "pattern": "Synced.*False|ReconcileError",
+      "meaning": "Resource failed to reconcile",
+      "causes": ["Cloud API error", "Configuration invalid", "Rate limiting"],
+      "solutions": ["Check events: kubectl describe <resource>", "Review status.conditions", "Check cloud provider logs/status"]
+    },
+    {
+      "pattern": "composition.*not found|no composition matches",
+      "meaning": "Composition not found for claim",
+      "causes": ["Composition not created", "Label selector mismatch", "compositionRef wrong"],
+      "solutions": ["Create Composition resource", "Check compositionSelector labels", "Verify Composition matches XRD"]
+    },
+    {
+      "pattern": "XRD.*not found|composite resource.*undefined",
+      "meaning": "CompositeResourceDefinition missing",
+      "causes": ["XRD not created", "Wrong group/kind", "CRD not established"],
+      "solutions": ["Create XRD first", "Check group/version/kind match", "Wait for XRD to become Established"]
+    },
+    {
+      "pattern": "patch.*failed|cannot patch",
+      "meaning": "Resource patching failed",
+      "causes": ["Invalid patch", "Field immutable", "FromCompositeFieldPath wrong"],
+      "solutions": ["Check patch field paths", "Some fields cannot change after creation", "Verify source field exists"]
+    },
+    {
+      "pattern": "cannot delete.*dependent resources|finalizer",
+      "meaning": "Resource deletion blocked",
+      "causes": ["Dependent resources exist", "Finalizer preventing delete", "Claim still referencing"],
+      "solutions": ["Delete claims first", "Check for orphaned resources", "Remove finalizer if stuck (caution)"]
+    },
+    {
+      "pattern": "rate limit|API rate exceeded",
+      "meaning": "Cloud provider rate limiting",
+      "causes": ["Too many API calls", "Account rate limit hit", "Reconcile loop"],
+      "solutions": ["Check provider poll interval", "Review reconcile frequency", "Request limit increase from provider"]
+    }
+  ],
+  "debugging_commands": [
+    "kubectl get providers",
+    "kubectl get providerconfigs",
+    "kubectl describe <managed-resource>",
+    "kubectl get xrd,compositions",
+    "crossplane xpkg build"
+  ],
+  "documentation_urls": [
+    "https://docs.crossplane.io/",
+    "https://github.com/crossplane/crossplane"
+  ]
+}

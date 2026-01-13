@@ -1,0 +1,34 @@
+────┬──────────
+Z3  │          
+────┴──────────
+Loading...
+Searching...
+No Matches
+An Efficient Theorem Prover
+
+Z3 is a high-performance theorem prover being developed at [Microsoft Research][1].
+
+The Z3 website is at [http://github.com/z3prover][2].
+
+This website hosts the automatically generated documentation for the Z3 APIs.
+
+* [C API][3]
+* [C++ API][4]
+* [.NET API][5]
+* [Java API][6]
+* [Python API][7] (also available in [pydoc format][8])
+* [ML/OCaml API][9]
+* [Javascript/Typescript API][10]
+Generated on Sat Dec 20 2025 19:33:23 for Z3 by [[doxygen]][11] 1.9.8
+
+[1]: http://research.microsoft.com
+[2]: http://github.com/z3prover
+[3]: z3__api_8h.html
+[4]: namespacez3.html
+[5]: namespace_microsoft_1_1_z3.html
+[6]: namespacecom_1_1microsoft_1_1z3.html
+[7]: namespacez3py.html
+[8]: z3.html
+[9]: ml/index.html
+[10]: js/index.html
+[11]: https://www.doxygen.org/index.html

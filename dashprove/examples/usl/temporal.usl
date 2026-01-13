@@ -1,0 +1,46 @@
+// Temporal Logic Examples
+// Demonstrates temporal properties (compiles to TLA+)
+
+// Type for process states
+type Process = {
+    id: Int,
+    enabled: Bool,
+    state: String
+}
+
+type System = {
+    processes: Set<Process>
+}
+
+// Safety: mutual exclusion - at most one process in critical section
+temporal mutual_exclusion {
+    always(
+        forall s: System .
+            at_most_one_critical(s)
+    )
+}
+
+// Liveness: eventually reach checkpoint
+temporal eventually_checkpoint {
+    forall execution: Trace .
+        always(eventually(at_checkpoint(execution)))
+}
+
+// Progress: no deadlock - always some process can make progress
+temporal no_deadlock {
+    always(
+        exists p: Process .
+            p.enabled == true
+    )
+}
+
+// Leads-to: request eventually leads to response
+temporal request_response {
+    request(client) ~> response(client)
+}
+
+// Fairness: eventually scheduled
+temporal fair_scheduling {
+    forall p: Process .
+        always(eventually(scheduled(p)))
+}

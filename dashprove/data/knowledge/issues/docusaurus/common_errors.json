@@ -1,0 +1,242 @@
+{
+  "tool": "docusaurus",
+  "version": "3.0+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "build_failed",
+      "pattern": "Build failed|build error|webpack.*error",
+      "message": "Documentation build failed",
+      "cause": "Various build errors in content or config",
+      "solutions": [
+        {
+          "approach": "Check build output",
+          "code": "npm run build 2>&1 | head -100",
+          "when": "Need error details"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "npm run clear && npm run build",
+          "when": "Stale cache"
+        },
+        {
+          "approach": "Check Node version",
+          "code": "node --version  # Requires Node 18+",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "mdx_syntax_error",
+      "pattern": "MDX.*error|Could not parse|Unexpected token",
+      "message": "MDX syntax error",
+      "cause": "Invalid MDX/JSX in markdown",
+      "solutions": [
+        {
+          "approach": "Escape curly braces",
+          "code": "Use `{'{'}` or `{'}'}` for literal braces",
+          "when": "Literal { } needed"
+        },
+        {
+          "approach": "Fix JSX syntax",
+          "code": "<Component prop=\"value\" /> // Self-close or pair tags",
+          "when": "Invalid JSX"
+        },
+        {
+          "approach": "Use html comments",
+          "code": "{/* Comment */} instead of <!-- -->",
+          "when": "Comments in MDX"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "Use `<` instead of < in text",
+          "when": "Angle brackets in content"
+        }
+      ]
+    },
+    {
+      "id": "frontmatter_error",
+      "pattern": "frontmatter.*invalid|YAML.*error in frontmatter|slug.*conflict",
+      "message": "Front matter parsing error",
+      "cause": "Invalid YAML in document front matter",
+      "solutions": [
+        {
+          "approach": "Fix YAML syntax",
+          "code": "---\ntitle: \"Title with: colon\"\nslug: /my-page\n---",
+          "when": "Special characters"
+        },
+        {
+          "approach": "Use unique slugs",
+          "code": "---\nslug: /unique-page-slug\n---",
+          "when": "Slug conflict"
+        },
+        {
+          "approach": "Check indentation",
+          "code": "# Use spaces, not tabs in front matter",
+          "when": "Indentation error"
+        }
+      ]
+    },
+    {
+      "id": "plugin_not_found",
+      "pattern": "plugin.*not found|cannot resolve plugin|Module not found.*plugin",
+      "message": "Docusaurus plugin not found",
+      "cause": "Plugin package not installed",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "npm install @docusaurus/plugin-content-blog",
+          "when": "Plugin not installed"
+        },
+        {
+          "approach": "Check plugin name",
+          "code": "// docusaurus.config.js\nplugins: ['@docusaurus/plugin-xxx']",
+          "when": "Wrong plugin name"
+        },
+        {
+          "approach": "Reinstall dependencies",
+          "code": "rm -rf node_modules && npm install",
+          "when": "Corrupted node_modules"
+        }
+      ]
+    },
+    {
+      "id": "broken_link",
+      "pattern": "broken link|link.*does not exist|Docs.*not found",
+      "message": "Broken internal link detected",
+      "cause": "Link target doesn't exist",
+      "solutions": [
+        {
+          "approach": "Fix link path",
+          "code": "[Link](/docs/page) // Without .md extension",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Use relative links",
+          "code": "[Link](./relative-page)",
+          "when": "Same directory"
+        },
+        {
+          "approach": "Skip validation",
+          "code": "onBrokenLinks: 'warn' // or 'ignore' in config",
+          "when": "External link"
+        }
+      ]
+    },
+    {
+      "id": "versioning_error",
+      "pattern": "version.*error|versioned docs.*missing|invalid version",
+      "message": "Documentation versioning error",
+      "cause": "Version configuration issues",
+      "solutions": [
+        {
+          "approach": "Create version",
+          "code": "npm run docusaurus docs:version 1.0",
+          "when": "Version not created"
+        },
+        {
+          "approach": "Check versions.json",
+          "code": "cat versions.json  # Must be valid JSON array",
+          "when": "Versions config invalid"
+        },
+        {
+          "approach": "Fix versioned sidebars",
+          "code": "// Each version needs versioned_sidebars/version-X.X.X-sidebars.json",
+          "when": "Sidebar missing"
+        }
+      ]
+    },
+    {
+      "id": "sidebar_error",
+      "pattern": "sidebar.*error|category.*not found|sidebar items.*invalid",
+      "message": "Sidebar configuration error",
+      "cause": "Invalid sidebar.js configuration",
+      "solutions": [
+        {
+          "approach": "Use autogenerated",
+          "code": "module.exports = {\n  docs: [{type: 'autogenerated', dirName: '.'}]\n};",
+          "when": "Simple docs structure"
+        },
+        {
+          "approach": "Fix category path",
+          "code": "{\n  type: 'category',\n  label: 'Guide',\n  items: ['guide/intro', 'guide/setup']\n}",
+          "when": "Manual sidebar"
+        },
+        {
+          "approach": "Check doc IDs",
+          "code": "// Doc ID = filename without .md extension",
+          "when": "Item not found"
+        }
+      ]
+    },
+    {
+      "id": "theme_error",
+      "pattern": "theme.*error|Cannot find module.*theme|ThemeNotFound",
+      "message": "Theme component error",
+      "cause": "Theme or swizzled component issue",
+      "solutions": [
+        {
+          "approach": "Install theme",
+          "code": "npm install @docusaurus/theme-classic",
+          "when": "Theme not installed"
+        },
+        {
+          "approach": "Fix swizzled component",
+          "code": "npx docusaurus swizzle @docusaurus/theme-classic ComponentName --eject",
+          "when": "Need to customize"
+        },
+        {
+          "approach": "Reset theme",
+          "code": "rm -rf src/theme/*",
+          "when": "Swizzled component broken"
+        }
+      ]
+    },
+    {
+      "id": "static_asset_error",
+      "pattern": "static.*not found|asset.*missing|image.*cannot be resolved",
+      "message": "Static asset not found",
+      "cause": "Image or static file path incorrect",
+      "solutions": [
+        {
+          "approach": "Use static folder",
+          "code": "![Image](/img/screenshot.png) // Files in static/img/",
+          "when": "Image in static folder"
+        },
+        {
+          "approach": "Use require for images",
+          "code": "![Image](require('./img/local.png').default)",
+          "when": "Image next to markdown"
+        },
+        {
+          "approach": "Check case sensitivity",
+          "code": "// Filename case must match exactly",
+          "when": "Works locally but not in CI"
+        }
+      ]
+    },
+    {
+      "id": "algolia_error",
+      "pattern": "Algolia.*error|search.*failed|docsearch.*configuration",
+      "message": "Algolia search configuration error",
+      "cause": "DocSearch credentials or config invalid",
+      "solutions": [
+        {
+          "approach": "Set API keys",
+          "code": "themeConfig: {\n  algolia: {\n    appId: 'YOUR_APP_ID',\n    apiKey: 'YOUR_API_KEY',\n    indexName: 'your_index'\n  }\n}",
+          "when": "Missing credentials"
+        },
+        {
+          "approach": "Apply for DocSearch",
+          "code": "// Apply at https://docsearch.algolia.com/",
+          "when": "No Algolia account"
+        },
+        {
+          "approach": "Use local search",
+          "code": "npm install @easyops-cn/docusaurus-search-local",
+          "when": "Don't want Algolia"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "dialyzer",
+  "version": "5.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_return",
+      "pattern": "Function.*has no local return",
+      "message": "Function has no local return",
+      "cause": "Function always raises exception or never terminates",
+      "solutions": [
+        {
+          "approach": "Add return path",
+          "code": "def f(x) do\n  if condition, do: result, else: other_result\nend",
+          "when": "Missing non-exception return"
+        },
+        {
+          "approach": "Use @spec no_return",
+          "code": "@spec raise_error() :: no_return()",
+          "when": "Function intentionally never returns"
+        },
+        {
+          "approach": "Check recursion",
+          "code": "# Ensure base case exists",
+          "when": "Infinite recursion suspected"
+        }
+      ]
+    },
+    {
+      "id": "invalid_contract",
+      "pattern": "Invalid type specification|contract.*cannot be",
+      "message": "Invalid type contract",
+      "cause": "@spec doesn't match function implementation",
+      "solutions": [
+        {
+          "approach": "Fix spec to match code",
+          "code": "@spec f(integer()) :: {:ok, integer()} | {:error, term()}",
+          "when": "Spec too restrictive"
+        },
+        {
+          "approach": "Fix code to match spec",
+          "code": "# Ensure return type matches @spec",
+          "when": "Code has bug"
+        },
+        {
+          "approach": "Use union types",
+          "code": "@type result :: {:ok, term()} | {:error, atom()}",
+          "when": "Multiple return types"
+        }
+      ]
+    },
+    {
+      "id": "pattern_never_match",
+      "pattern": "pattern can never match|will never match",
+      "message": "Pattern can never match",
+      "cause": "Pattern matching clause is unreachable",
+      "solutions": [
+        {
+          "approach": "Check pattern order",
+          "code": "# More specific patterns before general ones",
+          "when": "Earlier pattern catches all"
+        },
+        {
+          "approach": "Remove dead code",
+          "code": "# Delete unreachable clause",
+          "when": "Pattern truly unreachable"
+        },
+        {
+          "approach": "Fix type",
+          "code": "# Check input type allows this pattern",
+          "when": "Type system prevents match"
+        }
+      ]
+    },
+    {
+      "id": "call_without_opaque",
+      "pattern": "call.*without opaque|breaks.*opacity",
+      "message": "Opaque type violation",
+      "cause": "Code pattern matches on opaque type internals",
+      "solutions": [
+        {
+          "approach": "Use accessor functions",
+          "code": "# Use module's public API, not pattern matching",
+          "when": "Accessing opaque type fields"
+        },
+        {
+          "approach": "Add public accessors",
+          "code": "@spec get_field(t()) :: term()",
+          "when": "Module needs accessor functions"
+        },
+        {
+          "approach": "Remove @opaque",
+          "code": "@type t :: %{field: term()}  # Make type transparent",
+          "when": "Type shouldn't be opaque"
+        }
+      ]
+    },
+    {
+      "id": "unknown_type",
+      "pattern": "Unknown type|type.*undefined",
+      "message": "Unknown type referenced",
+      "cause": "Type specification references undefined type",
+      "solutions": [
+        {
+          "approach": "Define the type",
+          "code": "@type my_type :: term()",
+          "when": "Type not defined"
+        },
+        {
+          "approach": "Import type",
+          "code": "alias OtherModule.{SomeType}",
+          "when": "Type in another module"
+        },
+        {
+          "approach": "Use remote type syntax",
+          "code": "@spec f() :: OtherModule.t()",
+          "when": "Reference external type"
+        }
+      ]
+    },
+    {
+      "id": "plt_error",
+      "pattern": "Could not find.*PLT|PLT.*not found",
+      "message": "PLT file missing or invalid",
+      "cause": "Persistent Lookup Table not built or corrupted",
+      "solutions": [
+        {
+          "approach": "Build PLT",
+          "code": "mix dialyzer --plt",
+          "when": "First time running dialyzer"
+        },
+        {
+          "approach": "Rebuild PLT",
+          "code": "rm -rf _build/.dialyzer* && mix dialyzer",
+          "when": "PLT corrupted or outdated"
+        },
+        {
+          "approach": "Use dialyxir",
+          "code": "# Add {:dialyxir, \"~> 1.4\", only: :dev} to deps",
+          "when": "Want better Mix integration"
+        }
+      ]
+    },
+    {
+      "id": "guard_fail",
+      "pattern": "Guard test.*can never succeed",
+      "message": "Guard always fails",
+      "cause": "Guard condition can never be true",
+      "solutions": [
+        {
+          "approach": "Check types",
+          "code": "# Ensure variable can have expected type",
+          "when": "Type prevents guard success"
+        },
+        {
+          "approach": "Fix guard logic",
+          "code": "when is_integer(x) and x > 0",
+          "when": "Guard logic incorrect"
+        },
+        {
+          "approach": "Remove dead clause",
+          "code": "# Delete impossible guard clause",
+          "when": "Clause truly impossible"
+        }
+      ]
+    }
+  ]
+}

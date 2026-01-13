@@ -1,0 +1,153 @@
+{
+  "tool": "captum",
+  "version": "0.7.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_not_in_eval",
+      "pattern": "(model.*eval|dropout|batch.*norm)",
+      "message": "Model should be in eval mode for attribution",
+      "cause": "Training mode affects dropout/batchnorm behavior",
+      "solutions": [
+        {
+          "approach": "Set eval mode",
+          "code": "model.eval()\nwith torch.no_grad():\n    attr = ig.attribute(input_tensor)",
+          "when": "Running inference for attribution"
+        },
+        {
+          "approach": "Disable specific layers",
+          "code": "for module in model.modules():\n    if isinstance(module, nn.Dropout):\n        module.p = 0",
+          "when": "Need deterministic behavior"
+        }
+      ]
+    },
+    {
+      "id": "baseline_not_provided",
+      "pattern": "(baseline|reference.*required)",
+      "message": "Baseline required for attribution method",
+      "cause": "Integrated Gradients and similar methods need a baseline",
+      "solutions": [
+        {
+          "approach": "Use zero baseline",
+          "code": "baseline = torch.zeros_like(input_tensor)\nattr = ig.attribute(input_tensor, baselines=baseline)",
+          "when": "Default baseline appropriate"
+        },
+        {
+          "approach": "Use meaningful baseline",
+          "code": "# For images, use mean image or black image\nbaseline = torch.mean(dataset, dim=0, keepdim=True).expand_as(input_tensor)",
+          "when": "Need domain-specific baseline"
+        },
+        {
+          "approach": "Use random baseline",
+          "code": "# Average over multiple random baselines\nattr = ig.attribute(input_tensor, baselines=torch.randn_like(input_tensor) * 0.01, n_steps=50)",
+          "when": "Want robust attribution"
+        }
+      ]
+    },
+    {
+      "id": "target_not_specified",
+      "pattern": "(target.*required|output.*index)",
+      "message": "Target class not specified for multi-class model",
+      "cause": "Attribution needs to know which output to explain",
+      "solutions": [
+        {
+          "approach": "Specify target class",
+          "code": "attr = ig.attribute(input_tensor, target=predicted_class)",
+          "when": "Explaining specific prediction"
+        },
+        {
+          "approach": "Use predicted class",
+          "code": "with torch.no_grad():\n    output = model(input_tensor)\n    target = output.argmax(dim=1)\nattr = ig.attribute(input_tensor, target=target)",
+          "when": "Want to explain top prediction"
+        }
+      ]
+    },
+    {
+      "id": "gradient_error",
+      "pattern": "(gradient.*None|requires_grad|backward)",
+      "message": "Cannot compute gradients for attribution",
+      "cause": "Input tensor or intermediate values don't have gradients",
+      "solutions": [
+        {
+          "approach": "Enable gradient tracking",
+          "code": "input_tensor = input_tensor.requires_grad_(True)\nattr = saliency.attribute(input_tensor, target=target)",
+          "when": "Input needs gradients"
+        },
+        {
+          "approach": "Check model parameters",
+          "code": "for name, param in model.named_parameters():\n    if not param.requires_grad:\n        print(f\"No grad: {name}\")",
+          "when": "Model may be frozen"
+        },
+        {
+          "approach": "Use gradient-free method",
+          "code": "from captum.attr import ShapleyValueSampling\nshap = ShapleyValueSampling(model)\nattr = shap.attribute(input_tensor, target=target)",
+          "when": "Gradients unavailable"
+        }
+      ]
+    },
+    {
+      "id": "layer_not_found",
+      "pattern": "(layer.*not found|invalid layer)",
+      "message": "Specified layer not found in model",
+      "cause": "Layer name or reference incorrect for LayerConductance etc.",
+      "solutions": [
+        {
+          "approach": "List model layers",
+          "code": "for name, module in model.named_modules():\n    print(name, type(module))",
+          "when": "Finding correct layer name"
+        },
+        {
+          "approach": "Use layer reference",
+          "code": "lc = LayerConductance(model, model.layer4)  # Direct reference\nattr = lc.attribute(input_tensor, target=target)",
+          "when": "Using module reference"
+        },
+        {
+          "approach": "Use string name",
+          "code": "from captum.attr import LayerIntegratedGradients\nlig = LayerIntegratedGradients(model, model.get_submodule('features.0'))",
+          "when": "Using nested module"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "(CUDA.*memory|OOM|out of memory)",
+      "message": "Out of memory during attribution",
+      "cause": "Attribution methods can be memory intensive",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "# Process one sample at a time\nfor i, sample in enumerate(batch):\n    attr = ig.attribute(sample.unsqueeze(0), target=targets[i])",
+          "when": "Large batch causing OOM"
+        },
+        {
+          "approach": "Reduce n_steps",
+          "code": "attr = ig.attribute(input_tensor, n_steps=20)  # Default is 50",
+          "when": "Using Integrated Gradients"
+        },
+        {
+          "approach": "Use internal batch size",
+          "code": "attr = ig.attribute(input_tensor, target=target, internal_batch_size=1)",
+          "when": "Steps computed in parallel"
+        }
+      ]
+    },
+    {
+      "id": "visualization_error",
+      "pattern": "(visualize|plot.*failed|color.*range)",
+      "message": "Attribution visualization failed",
+      "cause": "Attribution values may be out of expected range",
+      "solutions": [
+        {
+          "approach": "Normalize attributions",
+          "code": "from captum.attr import visualization as viz\nattr_normalized = attr / torch.max(torch.abs(attr))\nviz.visualize_image_attr(attr_normalized, original_image)",
+          "when": "Values out of range"
+        },
+        {
+          "approach": "Use appropriate method",
+          "code": "viz.visualize_image_attr_multiple(\n    attr_list, original_image,\n    methods=['heat_map', 'blended_heat_map'],\n    signs=['all', 'positive']\n)",
+          "when": "Default visualization unclear"
+        }
+      ]
+    }
+  ]
+}

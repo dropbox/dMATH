@@ -1,0 +1,176 @@
+{
+  "tool": "chromatic",
+  "version": "11.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_project_token",
+      "pattern": "CHROMATIC_PROJECT_TOKEN.*not|Missing project token|Invalid project token",
+      "message": "Chromatic project token not set",
+      "cause": "CHROMATIC_PROJECT_TOKEN environment variable missing or invalid",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "export CHROMATIC_PROJECT_TOKEN=your_token",
+          "when": "Running locally"
+        },
+        {
+          "approach": "Pass via CLI",
+          "code": "npx chromatic --project-token=your_token",
+          "when": "Quick test run"
+        },
+        {
+          "approach": "Add to CI",
+          "code": "env:\n  CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}",
+          "when": "CI configuration"
+        }
+      ]
+    },
+    {
+      "id": "storybook_build_failed",
+      "pattern": "Storybook build failed|Cannot find module|Build error",
+      "message": "Storybook failed to build",
+      "cause": "Storybook configuration or dependency issues",
+      "solutions": [
+        {
+          "approach": "Build locally first",
+          "code": "npm run build-storybook",
+          "when": "Verify build works"
+        },
+        {
+          "approach": "Use custom build command",
+          "code": "npx chromatic --build-script-name build-storybook",
+          "when": "Non-standard build script"
+        },
+        {
+          "approach": "Skip build",
+          "code": "npx chromatic --storybook-build-dir storybook-static",
+          "when": "Pre-built Storybook"
+        }
+      ]
+    },
+    {
+      "id": "baseline_changed",
+      "pattern": "Visual changes detected|differs from baseline",
+      "message": "Visual differences detected",
+      "cause": "Component appearance changed from baseline",
+      "solutions": [
+        {
+          "approach": "Review in UI",
+          "code": "# Visit Chromatic dashboard to review changes",
+          "when": "Intentional changes"
+        },
+        {
+          "approach": "Auto-accept",
+          "code": "npx chromatic --auto-accept-changes",
+          "when": "Known breaking changes on main"
+        },
+        {
+          "approach": "Skip on branch",
+          "code": "npx chromatic --skip \"dependabot/**\"",
+          "when": "Skip certain branches"
+        }
+      ]
+    },
+    {
+      "id": "story_timeout",
+      "pattern": "Story.*timeout|Timed out rendering",
+      "message": "Story took too long to render",
+      "cause": "Story has long-running operations or never stabilizes",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "// In story:\nexport const MyStory = {\n  parameters: { chromatic: { delay: 5000 } }\n};",
+          "when": "Story needs more time"
+        },
+        {
+          "approach": "Disable animations",
+          "code": "export const MyStory = {\n  parameters: { chromatic: { disableSnapshot: false, pauseAnimationAtEnd: true } }\n};",
+          "when": "Animations causing issues"
+        },
+        {
+          "approach": "Mock slow data",
+          "code": "// Mock API calls with MSW or storybook decorators",
+          "when": "API calls causing delays"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_skipped",
+      "pattern": "Snapshot skipped|disableSnapshot|No snapshots",
+      "message": "Story snapshots were skipped",
+      "cause": "Story configured to skip snapshots",
+      "solutions": [
+        {
+          "approach": "Enable snapshot",
+          "code": "export const MyStory = {\n  parameters: { chromatic: { disableSnapshot: false } }\n};",
+          "when": "Accidentally disabled"
+        },
+        {
+          "approach": "Check global config",
+          "code": "// .storybook/preview.js\nexport const parameters = {\n  chromatic: { disableSnapshot: false }\n};",
+          "when": "Global disable"
+        }
+      ]
+    },
+    {
+      "id": "turbosnap_issue",
+      "pattern": "TurboSnap.*failed|Could not determine changed files",
+      "message": "TurboSnap dependency detection failed",
+      "cause": "Git history or file tracking issues",
+      "solutions": [
+        {
+          "approach": "Full checkout",
+          "code": "- uses: actions/checkout@v4\n  with:\n    fetch-depth: 0",
+          "when": "Shallow clone in CI"
+        },
+        {
+          "approach": "Disable TurboSnap",
+          "code": "npx chromatic --no-turbo-snap",
+          "when": "TurboSnap unreliable"
+        },
+        {
+          "approach": "Trace dependency",
+          "code": "npx chromatic --trace-changed",
+          "when": "Debug what changed"
+        }
+      ]
+    },
+    {
+      "id": "viewport_issue",
+      "pattern": "Invalid viewport|viewport.*error",
+      "message": "Viewport configuration error",
+      "cause": "Invalid viewport dimensions specified",
+      "solutions": [
+        {
+          "approach": "Use valid viewports",
+          "code": "export const MyStory = {\n  parameters: {\n    chromatic: { viewports: [320, 768, 1200] }\n  }\n};",
+          "when": "Per-story viewports"
+        },
+        {
+          "approach": "Configure modes",
+          "code": "export const MyStory = {\n  parameters: {\n    chromatic: { modes: { mobile: { viewport: 'iPhone 12' } } }\n  }\n};",
+          "when": "Using Chromatic modes"
+        }
+      ]
+    },
+    {
+      "id": "interaction_test_failed",
+      "pattern": "Interaction.*failed|play function.*error",
+      "message": "Story interaction test failed",
+      "cause": "Play function threw an error during capture",
+      "solutions": [
+        {
+          "approach": "Debug play function",
+          "code": "// Run storybook test locally\nnpm run test-storybook",
+          "when": "Test failing locally"
+        },
+        {
+          "approach": "Wait for elements",
+          "code": "export const MyStory = {\n  play: async ({ canvasElement }) => {\n    const canvas = within(canvasElement);\n    await canvas.findByRole('button');\n  }\n};",
+          "when": "Elements not ready"
+        }
+      ]
+    }
+  ]
+}

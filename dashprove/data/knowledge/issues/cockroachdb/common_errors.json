@@ -1,0 +1,77 @@
+{
+  "tool": "cockroachdb",
+  "category": "database",
+  "common_errors": [
+    {
+      "pattern": "restart transaction.*retry",
+      "meaning": "Transaction needs retry (serialization conflict)",
+      "causes": ["Serializable isolation conflict", "Concurrent transaction modified same row", "Read-write conflict"],
+      "solutions": ["Implement retry loop with exponential backoff", "Use SELECT FOR UPDATE", "Reduce transaction scope"]
+    },
+    {
+      "pattern": "RETRY_SERIALIZABLE",
+      "meaning": "Serializable transaction conflict",
+      "causes": ["Read-after-write conflict", "Write skew", "Clock skew between nodes"],
+      "solutions": ["Wrap transaction in retry loop", "Use AS OF SYSTEM TIME for reads", "Check cluster clock sync"]
+    },
+    {
+      "pattern": "certificate.*not valid",
+      "meaning": "TLS certificate validation failed",
+      "causes": ["Certificate expired", "Wrong CA", "Hostname mismatch"],
+      "solutions": ["Renew certificates", "Use correct CA cert", "Verify certificate SAN"]
+    },
+    {
+      "pattern": "node unavailable",
+      "meaning": "Cannot reach CockroachDB node",
+      "causes": ["Node down", "Network partition", "Node decommissioned"],
+      "solutions": ["Check node status: cockroach node status", "Verify network connectivity", "Check node logs"]
+    },
+    {
+      "pattern": "range.*unavailable",
+      "meaning": "Data range not accessible",
+      "causes": ["Majority of replicas down", "Under-replication", "Raft leadership issue"],
+      "solutions": ["Bring up replica nodes", "Check replication factor", "Check debug/pprof/ui"]
+    },
+    {
+      "pattern": "memory budget exceeded",
+      "meaning": "Query exceeded memory limit",
+      "causes": ["Query using too much memory", "Large sort/join", "Insufficient cluster memory"],
+      "solutions": ["Increase memory budget", "Add indexes to reduce memory", "Use disk-based operations"]
+    },
+    {
+      "pattern": "could not serialize access",
+      "meaning": "Transaction cannot be serialized",
+      "causes": ["Serialization failure", "High contention", "Long-running transaction"],
+      "solutions": ["Retry transaction", "Use SELECT FOR UPDATE SKIP LOCKED", "Reduce transaction duration"]
+    },
+    {
+      "pattern": "unique constraint.*violated",
+      "meaning": "Primary key or unique constraint violation",
+      "causes": ["Duplicate insert", "Concurrent inserts", "Upsert conflict"],
+      "solutions": ["Use UPSERT or ON CONFLICT", "Check for existing row", "Handle constraint error"]
+    },
+    {
+      "pattern": "deadline exceeded",
+      "meaning": "Operation exceeded time limit",
+      "causes": ["Query too slow", "Network latency", "Cluster overloaded"],
+      "solutions": ["Optimize query", "Increase statement_timeout", "Scale cluster"]
+    },
+    {
+      "pattern": "split.*failed",
+      "meaning": "Range split operation failed",
+      "causes": ["Insufficient replicas", "Load balancing issue", "Range too hot"],
+      "solutions": ["Check cluster health", "Verify replication factor", "Use zone configs for placement"]
+    }
+  ],
+  "debugging_commands": [
+    "SHOW CLUSTER SETTING ...",
+    "SELECT * FROM crdb_internal.node_status;",
+    "SHOW RANGES FROM TABLE <table>;",
+    "cockroach node status",
+    "cockroach debug zip"
+  ],
+  "documentation_urls": [
+    "https://www.cockroachlabs.com/docs/",
+    "https://github.com/cockroachdb/cockroach"
+  ]
+}

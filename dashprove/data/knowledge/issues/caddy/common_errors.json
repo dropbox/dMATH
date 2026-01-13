@@ -1,0 +1,191 @@
+{
+  "tool": "caddy",
+  "version": "2.7.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "caddyfile_parse_error",
+      "pattern": "Caddyfile.*error|parsing.*failed|unexpected token|adapt.*error",
+      "message": "Caddyfile parsing error",
+      "cause": "Syntax error in Caddyfile",
+      "solutions": [
+        {
+          "approach": "Validate config",
+          "code": "caddy validate --config Caddyfile",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Format file",
+          "code": "caddy fmt --overwrite Caddyfile",
+          "when": "Fix formatting"
+        },
+        {
+          "approach": "Basic syntax",
+          "code": "example.com {\n    reverse_proxy localhost:8080\n}",
+          "when": "Syntax reference"
+        }
+      ]
+    },
+    {
+      "id": "bind_error",
+      "pattern": "cannot bind|address already in use|permission denied.*:80|:443",
+      "message": "Cannot bind to address/port",
+      "cause": "Port in use or permission issue",
+      "solutions": [
+        {
+          "approach": "Check port",
+          "code": "ss -tlnp | grep ':80\\|:443'",
+          "when": "Port in use"
+        },
+        {
+          "approach": "Change port",
+          "code": ":8080 {\n    respond \"Hello\"\n}",
+          "when": "Use non-privileged port"
+        },
+        {
+          "approach": "Use capability",
+          "code": "setcap 'cap_net_bind_service=+ep' /usr/bin/caddy",
+          "when": "Run as non-root"
+        }
+      ]
+    },
+    {
+      "id": "tls_error",
+      "pattern": "obtaining certificate|ACME.*error|certificate.*failed|TLS handshake",
+      "message": "TLS/ACME certificate error",
+      "cause": "Cannot obtain or use certificate",
+      "solutions": [
+        {
+          "approach": "Check domain",
+          "code": "# Ensure domain DNS points to this server\ndig +short example.com",
+          "when": "DNS not configured"
+        },
+        {
+          "approach": "Use staging",
+          "code": "{\n    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory\n}\n\nexample.com {\n    reverse_proxy localhost:8080\n}",
+          "when": "Rate limit issues"
+        },
+        {
+          "approach": "Local cert",
+          "code": "localhost {\n    tls internal\n    reverse_proxy localhost:8080\n}",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "upstream_error",
+      "pattern": "upstream.*unreachable|connection refused|dial tcp|no upstreams available",
+      "message": "Cannot connect to upstream/backend",
+      "cause": "Backend server not running",
+      "solutions": [
+        {
+          "approach": "Check backend",
+          "code": "curl -I http://localhost:8080/",
+          "when": "Verify backend"
+        },
+        {
+          "approach": "Health check",
+          "code": "example.com {\n    reverse_proxy localhost:8080 {\n        health_uri /health\n        health_interval 10s\n    }\n}",
+          "when": "Add health check"
+        },
+        {
+          "approach": "Multiple upstreams",
+          "code": "example.com {\n    reverse_proxy localhost:8080 localhost:8081 {\n        lb_policy round_robin\n        fail_duration 30s\n    }\n}",
+          "when": "Load balance"
+        }
+      ]
+    },
+    {
+      "id": "matcher_error",
+      "pattern": "matcher.*error|unrecognized matcher|invalid path pattern",
+      "message": "Request matcher error",
+      "cause": "Matcher syntax wrong",
+      "solutions": [
+        {
+          "approach": "Path matcher",
+          "code": "example.com {\n    handle /api/* {\n        reverse_proxy localhost:3000\n    }\n    handle {\n        reverse_proxy localhost:8080\n    }\n}",
+          "when": "Path-based routing"
+        },
+        {
+          "approach": "Named matcher",
+          "code": "example.com {\n    @api {\n        path /api/*\n        method POST PUT DELETE\n    }\n    reverse_proxy @api localhost:3000\n}",
+          "when": "Complex conditions"
+        },
+        {
+          "approach": "Header matcher",
+          "code": "example.com {\n    @websocket {\n        header Connection *Upgrade*\n        header Upgrade websocket\n    }\n    reverse_proxy @websocket localhost:8080\n}",
+          "when": "Match headers"
+        }
+      ]
+    },
+    {
+      "id": "storage_error",
+      "pattern": "storage.*error|cannot write|permission denied.*data",
+      "message": "Storage/data directory error",
+      "cause": "Cannot write to data directory",
+      "solutions": [
+        {
+          "approach": "Fix permissions",
+          "code": "mkdir -p /var/lib/caddy\nchown caddy:caddy /var/lib/caddy",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Custom storage",
+          "code": "{\n    storage file_system /path/to/data\n}\n\nexample.com {\n    reverse_proxy localhost:8080\n}",
+          "when": "Change data dir"
+        },
+        {
+          "approach": "Environment",
+          "code": "export XDG_DATA_HOME=/var/lib/caddy\ncaddy run",
+          "when": "Set via env"
+        }
+      ]
+    },
+    {
+      "id": "json_config_error",
+      "pattern": "JSON.*error|adapter.*error|invalid JSON",
+      "message": "JSON configuration error",
+      "cause": "Invalid JSON config format",
+      "solutions": [
+        {
+          "approach": "Convert Caddyfile",
+          "code": "caddy adapt --config Caddyfile --pretty",
+          "when": "See JSON output"
+        },
+        {
+          "approach": "Validate JSON",
+          "code": "caddy validate --config caddy.json",
+          "when": "Check JSON config"
+        },
+        {
+          "approach": "API config",
+          "code": "curl localhost:2019/config/ | jq .",
+          "when": "View runtime config"
+        }
+      ]
+    },
+    {
+      "id": "reload_error",
+      "pattern": "reload.*failed|config.*error after reload",
+      "message": "Configuration reload failed",
+      "cause": "Error in new configuration",
+      "solutions": [
+        {
+          "approach": "Validate first",
+          "code": "caddy validate --config Caddyfile && caddy reload",
+          "when": "Check before reload"
+        },
+        {
+          "approach": "API reload",
+          "code": "curl -X POST \"http://localhost:2019/load\" -H \"Content-Type: text/caddyfile\" --data-binary @Caddyfile",
+          "when": "Via admin API"
+        },
+        {
+          "approach": "Check logs",
+          "code": "journalctl -u caddy -f",
+          "when": "Debug reload"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "tool": "logstash",
+  "category": "logging",
+  "common_errors": [
+    {
+      "pattern": "Pipeline.*failed to start",
+      "meaning": "Logstash pipeline cannot start",
+      "causes": ["Config syntax error", "Plugin not installed", "Resource unavailable"],
+      "solutions": ["Test config: bin/logstash --config.test_and_exit", "Install missing plugin", "Check input/output availability"]
+    },
+    {
+      "pattern": "Plugin.*not found",
+      "meaning": "Logstash plugin not installed",
+      "causes": ["Plugin not installed", "Wrong plugin name", "Version incompatibility"],
+      "solutions": ["Install: bin/logstash-plugin install <plugin>", "Check plugin name spelling", "Check plugin compatibility"]
+    },
+    {
+      "pattern": "output.*connection refused",
+      "meaning": "Cannot connect to output destination",
+      "causes": ["Output service down", "Wrong host/port", "Firewall blocking"],
+      "solutions": ["Verify output service is running", "Check host and port config", "Open firewall"]
+    },
+    {
+      "pattern": "grok.*parse failure",
+      "meaning": "Grok pattern didn't match",
+      "causes": ["Pattern doesn't match data", "Data format changed", "Wrong pattern"],
+      "solutions": ["Test pattern in Grok Debugger", "Update pattern for new format", "Add fallback patterns"]
+    },
+    {
+      "pattern": "out of memory",
+      "meaning": "Logstash JVM ran out of memory",
+      "causes": ["Heap too small", "Large events", "Memory leak"],
+      "solutions": ["Increase -Xmx in jvm.options", "Limit event size", "Update Logstash version"]
+    },
+    {
+      "pattern": "slow pipeline",
+      "meaning": "Pipeline processing events slowly",
+      "causes": ["Output bottleneck", "Complex filters", "Insufficient workers"],
+      "solutions": ["Check output throughput", "Optimize filters", "Increase pipeline.workers"]
+    },
+    {
+      "pattern": "codec.*error",
+      "meaning": "Codec failed to process data",
+      "causes": ["Wrong codec for data format", "Malformed input", "Encoding issue"],
+      "solutions": ["Use correct codec (json, plain, etc)", "Fix input data format", "Set charset"]
+    },
+    {
+      "pattern": "dead letter queue.*full",
+      "meaning": "DLQ storage exhausted",
+      "causes": ["Many failed events", "DLQ not being processed", "Storage too small"],
+      "solutions": ["Process DLQ events", "Increase DLQ size", "Fix root cause of failures"]
+    },
+    {
+      "pattern": "input.*read error",
+      "meaning": "Cannot read from input source",
+      "causes": ["File permissions", "Kafka offset reset", "Beat connection lost"],
+      "solutions": ["Check file permissions", "Reset consumer offset", "Verify Beat is running"]
+    },
+    {
+      "pattern": "elasticsearch.*bulk.*failure",
+      "meaning": "Elasticsearch bulk indexing failed",
+      "causes": ["ES rejecting writes", "Mapping conflict", "Index read-only"],
+      "solutions": ["Check ES cluster health", "Fix mapping conflicts", "Clear index read-only flag"]
+    }
+  ],
+  "debugging_commands": [
+    "bin/logstash --config.test_and_exit -f <config>",
+    "bin/logstash-plugin list",
+    "curl -XGET 'localhost:9600/_node/stats?pretty'",
+    "curl -XGET 'localhost:9600/_node/pipelines?pretty'"
+  ],
+  "documentation_urls": [
+    "https://www.elastic.co/guide/en/logstash/current/",
+    "https://github.com/elastic/logstash"
+  ]
+}

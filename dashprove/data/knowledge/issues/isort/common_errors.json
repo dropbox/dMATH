@@ -1,0 +1,222 @@
+{
+  "tool": "isort",
+  "version": "5.13+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "conflict_with_black",
+      "pattern": "conflict.*black|import.*reordered|black.*isort",
+      "message": "isort conflicts with Black",
+      "cause": "Default settings differ from Black's import style",
+      "solutions": [
+        {
+          "approach": "Use Black profile",
+          "code": "isort --profile black file.py",
+          "when": "Using Black formatter"
+        },
+        {
+          "approach": "Configure in pyproject.toml",
+          "code": "[tool.isort]\nprofile = \"black\"",
+          "when": "Project-wide setting"
+        },
+        {
+          "approach": "Match line length",
+          "code": "[tool.isort]\nline_length = 88",
+          "when": "Sync with Black"
+        }
+      ]
+    },
+    {
+      "id": "import_not_sorted",
+      "pattern": "would sort|imports.*not sorted|check failed",
+      "message": "Imports need sorting",
+      "cause": "Imports not following configured order",
+      "solutions": [
+        {
+          "approach": "Sort imports",
+          "code": "isort file.py",
+          "when": "Apply sorting"
+        },
+        {
+          "approach": "Sort all files",
+          "code": "isort .",
+          "when": "Format entire project"
+        },
+        {
+          "approach": "Show diff first",
+          "code": "isort --diff file.py",
+          "when": "Preview changes"
+        }
+      ]
+    },
+    {
+      "id": "known_first_party_wrong",
+      "pattern": "first.party.*wrong|local.*imports|section.*incorrect",
+      "message": "First-party imports miscategorized",
+      "cause": "isort can't detect project's packages",
+      "solutions": [
+        {
+          "approach": "Specify known first party",
+          "code": "[tool.isort]\nknown_first_party = [\"myproject\", \"mylib\"]",
+          "when": "Manual specification"
+        },
+        {
+          "approach": "Set src path",
+          "code": "[tool.isort]\nsrc_paths = [\"src\", \"tests\"]",
+          "when": "Non-root package location"
+        },
+        {
+          "approach": "Use auto detection",
+          "code": "isort --src-path src file.py",
+          "when": "CLI override"
+        }
+      ]
+    },
+    {
+      "id": "third_party_unknown",
+      "pattern": "third.party.*unknown|package.*section",
+      "message": "Package section not detected correctly",
+      "cause": "isort can't determine if package is third-party",
+      "solutions": [
+        {
+          "approach": "Specify known third party",
+          "code": "[tool.isort]\nknown_third_party = [\"numpy\", \"pandas\"]",
+          "when": "Explicit third party"
+        },
+        {
+          "approach": "Use virtual environment",
+          "code": "# isort detects from installed packages",
+          "when": "Venv not activated"
+        },
+        {
+          "approach": "Force third party",
+          "code": "[tool.isort]\ndefault_section = \"THIRDPARTY\"",
+          "when": "Unknown is third party"
+        }
+      ]
+    },
+    {
+      "id": "skip_not_working",
+      "pattern": "skip.*not working|file.*not skipped",
+      "message": "Skip patterns not working",
+      "cause": "Skip or skip_glob patterns not matching",
+      "solutions": [
+        {
+          "approach": "Use skip_glob",
+          "code": "[tool.isort]\nskip_glob = [\"**/migrations/*.py\"]",
+          "when": "Glob pattern matching"
+        },
+        {
+          "approach": "Use extend_skip",
+          "code": "[tool.isort]\nextend_skip = [\".venv\", \"build\"]",
+          "when": "Add to defaults"
+        },
+        {
+          "approach": "Skip in file",
+          "code": "# isort: skip_file",
+          "when": "Skip entire file"
+        }
+      ]
+    },
+    {
+      "id": "multi_line_conflict",
+      "pattern": "multi.line.*style|VERTICAL|parentheses",
+      "message": "Multi-line import style issue",
+      "cause": "Multi-line style differs from preference",
+      "solutions": [
+        {
+          "approach": "Use vertical hanging",
+          "code": "[tool.isort]\nmulti_line_output = 3\ninclude_trailing_comma = true",
+          "when": "Black-compatible style"
+        },
+        {
+          "approach": "Use parentheses style",
+          "code": "[tool.isort]\nmulti_line_output = 5\nforce_single_line = false",
+          "when": "Prefer parentheses"
+        },
+        {
+          "approach": "Force single line",
+          "code": "[tool.isort]\nforce_single_line = true",
+          "when": "One import per line"
+        }
+      ]
+    },
+    {
+      "id": "sections_wrong_order",
+      "pattern": "section.*order|FUTURE.*STDLIB",
+      "message": "Import sections in wrong order",
+      "cause": "Custom sections or order needed",
+      "solutions": [
+        {
+          "approach": "Define section order",
+          "code": "[tool.isort]\nsections = [\"FUTURE\", \"STDLIB\", \"THIRDPARTY\", \"FIRSTPARTY\", \"LOCALFOLDER\"]",
+          "when": "Custom order needed"
+        },
+        {
+          "approach": "Add custom section",
+          "code": "[tool.isort]\nknown_django = [\"django\"]\nsections = [\"FUTURE\", \"STDLIB\", \"DJANGO\", \"THIRDPARTY\", \"FIRSTPARTY\", \"LOCALFOLDER\"]",
+          "when": "Framework-specific section"
+        }
+      ]
+    },
+    {
+      "id": "encoding_error",
+      "pattern": "UnicodeDecodeError|encoding|codec can't decode",
+      "message": "File encoding error",
+      "cause": "File not UTF-8 encoded",
+      "solutions": [
+        {
+          "approach": "Add encoding declaration",
+          "code": "# -*- coding: utf-8 -*-",
+          "when": "Non-ASCII characters"
+        },
+        {
+          "approach": "Convert file",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file.py > file_utf8.py",
+          "when": "Wrong encoding"
+        }
+      ]
+    },
+    {
+      "id": "float_to_top_issue",
+      "pattern": "float.*top|future.*position|__future__",
+      "message": "Future imports not at top",
+      "cause": "float_to_top behavior needed",
+      "solutions": [
+        {
+          "approach": "Enable float to top",
+          "code": "[tool.isort]\nfloat_to_top = true",
+          "when": "Future imports should be first"
+        },
+        {
+          "approach": "Ensure future first",
+          "code": "[tool.isort]\nensure_newline_before_comments = true",
+          "when": "Clean separation"
+        }
+      ]
+    },
+    {
+      "id": "diff_shows_no_change",
+      "pattern": "no changes|diff empty|already sorted",
+      "message": "No changes detected but expected",
+      "cause": "File already correctly sorted",
+      "solutions": [
+        {
+          "approach": "Verify sorting",
+          "code": "isort --check-only file.py",
+          "when": "Confirm file is sorted"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "isort --clear-caches",
+          "when": "Cache may be stale"
+        },
+        {
+          "approach": "Use verbose mode",
+          "code": "isort --verbose file.py",
+          "when": "Debug isort behavior"
+        }
+      ]
+    }
+  ]
+}

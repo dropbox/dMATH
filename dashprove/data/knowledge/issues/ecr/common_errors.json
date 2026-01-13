@@ -1,0 +1,99 @@
+{
+  "tool": "ecr",
+  "category": "aws_containers",
+  "description": "Amazon Elastic Container Registry - container image registry",
+  "common_errors": [
+    {
+      "id": "auth_token_expired",
+      "pattern": "authorization token has expired",
+      "regex": "(?i)authorization.*token.*expired|no.*basic.*auth.*credentials|denied.*access",
+      "cause": "ECR authorization token expired (valid for 12 hours)",
+      "solution": "Re-authenticate with 'aws ecr get-login-password | docker login', tokens expire after 12 hours",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "repository_not_found",
+      "pattern": "RepositoryNotFoundException",
+      "regex": "(?i)repository.*not.*found|does.*not.*exist|name.*unknown|manifest.*unknown",
+      "cause": "ECR repository does not exist",
+      "solution": "Create repository with 'aws ecr create-repository', verify repository name and region",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "image_not_found",
+      "pattern": "ImageNotFoundException",
+      "regex": "(?i)image.*not.*found|manifest.*not.*found|tag.*not.*found|no.*matching.*image",
+      "cause": "Specified image tag does not exist in repository",
+      "solution": "Verify image tag, list images with 'aws ecr list-images', check image wasn't deleted by lifecycle policy",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "push_failed",
+      "pattern": "error pushing",
+      "regex": "(?i)error.*pushing|failed.*to.*push|push.*denied|layer.*upload.*failed",
+      "cause": "Docker push to ECR failed",
+      "solution": "Check IAM permissions (ecr:PutImage, ecr:InitiateLayerUpload), verify Docker daemon is running, check network",
+      "severity": "high",
+      "category": "push"
+    },
+    {
+      "id": "layer_part_too_small",
+      "pattern": "LayerPartTooSmall",
+      "regex": "(?i)layer.*part.*too.*small|layer.*already.*exists|upload.*error",
+      "cause": "Layer upload issue during push",
+      "solution": "Retry push, clear local Docker cache, check network stability",
+      "severity": "medium",
+      "category": "push"
+    },
+    {
+      "id": "limit_exceeded",
+      "pattern": "LimitExceededException",
+      "regex": "(?i)limit.*exceeded|repository.*limit|image.*limit|quota",
+      "cause": "ECR service limits exceeded",
+      "solution": "Configure lifecycle policy to delete old images, request quota increase",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "scan_failed",
+      "pattern": "ScanFailed",
+      "regex": "(?i)scan.*failed|vulnerability.*scan|unsupported.*image|cannot.*scan",
+      "cause": "Image vulnerability scan failed",
+      "solution": "Verify image OS is supported for scanning, check image is not corrupted",
+      "severity": "low",
+      "category": "scanning"
+    },
+    {
+      "id": "lifecycle_policy",
+      "pattern": "LifecyclePolicyPreview",
+      "regex": "(?i)lifecycle.*policy|image.*expired|image.*deleted|retention.*rule",
+      "cause": "Image deleted by lifecycle policy",
+      "solution": "Review lifecycle policy rules, protect production tags, use image immutability",
+      "severity": "medium",
+      "category": "lifecycle"
+    },
+    {
+      "id": "cross_account",
+      "pattern": "cross-account",
+      "regex": "(?i)cross.*account|repository.*policy|resource.*policy|pull.*permission",
+      "cause": "Cross-account access not configured",
+      "solution": "Set repository policy to allow cross-account access, or use ECR pull through cache",
+      "severity": "medium",
+      "category": "permissions"
+    },
+    {
+      "id": "encryption_error",
+      "pattern": "KMS",
+      "regex": "(?i)kms.*key|encryption.*error|cannot.*encrypt|key.*policy",
+      "cause": "KMS encryption configuration issue",
+      "solution": "Verify KMS key policy allows ECR service, check key isn't deleted",
+      "severity": "high",
+      "category": "security"
+    }
+  ],
+  "related_tools": ["aws_cli", "docker", "ecs", "eks"],
+  "documentation_url": "https://docs.aws.amazon.com/ecr/"
+}

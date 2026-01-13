@@ -1,0 +1,176 @@
+{
+  "tool": "mythril",
+  "version": "0.24.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "integer_overflow",
+      "pattern": "Integer Overflow|SWC-101",
+      "message": "Potential integer overflow detected",
+      "cause": "Arithmetic operation may overflow without SafeMath",
+      "solutions": [
+        {
+          "approach": "Use Solidity 0.8+",
+          "code": "pragma solidity ^0.8.0;  // Built-in overflow checks",
+          "when": "Can upgrade Solidity version"
+        },
+        {
+          "approach": "Use SafeMath",
+          "code": "using SafeMath for uint256;\nuint256 result = a.add(b);",
+          "when": "Stuck on older Solidity"
+        },
+        {
+          "approach": "Add explicit check",
+          "code": "require(a + b >= a, \"Overflow\");",
+          "when": "Need minimal dependencies"
+        }
+      ]
+    },
+    {
+      "id": "reentrancy",
+      "pattern": "State change after external call|SWC-107",
+      "message": "Potential reentrancy vulnerability",
+      "cause": "State variable modified after external call",
+      "solutions": [
+        {
+          "approach": "CEI pattern",
+          "code": "// Checks-Effects-Interactions\nrequire(amount <= balances[msg.sender]);\nbalances[msg.sender] -= amount;\n(bool ok,) = msg.sender.call{value: amount}(\"\");",
+          "when": "Can reorder operations"
+        },
+        {
+          "approach": "Reentrancy guard",
+          "code": "bool private locked;\nmodifier noReentrancy() {\n    require(!locked);\n    locked = true;\n    _;\n    locked = false;\n}",
+          "when": "Need mutex protection"
+        }
+      ]
+    },
+    {
+      "id": "unprotected_selfdestruct",
+      "pattern": "Unprotected.*selfdestruct|SWC-106",
+      "message": "selfdestruct can be called by anyone",
+      "cause": "No access control on destructive function",
+      "solutions": [
+        {
+          "approach": "Add ownership check",
+          "code": "function destroy() external onlyOwner {\n    selfdestruct(payable(owner));\n}",
+          "when": "Only owner should destroy"
+        },
+        {
+          "approach": "Remove selfdestruct",
+          "code": "// Consider if selfdestruct is really needed",
+          "when": "selfdestruct is not necessary"
+        }
+      ]
+    },
+    {
+      "id": "delegatecall_injection",
+      "pattern": "Delegatecall to user-supplied|SWC-112",
+      "message": "Delegatecall to user-controlled address",
+      "cause": "Attacker can execute arbitrary code in contract context",
+      "solutions": [
+        {
+          "approach": "Whitelist targets",
+          "code": "require(allowedTargets[target], \"Invalid target\");\n(bool ok,) = target.delegatecall(data);",
+          "when": "Can restrict valid targets"
+        },
+        {
+          "approach": "Remove delegatecall",
+          "code": "// Use regular call if possible",
+          "when": "Don't need to preserve msg.sender/storage"
+        },
+        {
+          "approach": "Use proxy pattern properly",
+          "code": "// Only delegatecall to immutable implementation",
+          "when": "Building upgrade pattern"
+        }
+      ]
+    },
+    {
+      "id": "unchecked_call",
+      "pattern": "Unchecked Call Return Value|SWC-104",
+      "message": "Return value of call not checked",
+      "cause": "External call may fail silently",
+      "solutions": [
+        {
+          "approach": "Check return value",
+          "code": "(bool success,) = addr.call{value: amt}(\"\");\nrequire(success, \"Call failed\");",
+          "when": "Need to handle failure"
+        },
+        {
+          "approach": "Use transfer (deprecated)",
+          "code": "payable(addr).transfer(amt);  // Reverts on failure but 2300 gas limit",
+          "when": "Simple ETH transfer"
+        }
+      ]
+    },
+    {
+      "id": "timestamp_dependency",
+      "pattern": "timestamp|SWC-116",
+      "message": "Dangerous reliance on block.timestamp",
+      "cause": "Miners can manipulate timestamp slightly",
+      "solutions": [
+        {
+          "approach": "Use block number",
+          "code": "require(block.number >= unlockBlock);",
+          "when": "Don't need exact time"
+        },
+        {
+          "approach": "Add tolerance",
+          "code": "// Accept timestamp variance of ~15 seconds",
+          "when": "Small manipulation is acceptable"
+        },
+        {
+          "approach": "Use oracle",
+          "code": "uint256 time = timeOracle.getTime();",
+          "when": "Need tamper-proof time"
+        }
+      ]
+    },
+    {
+      "id": "analysis_timeout",
+      "pattern": "timeout|Timeout during|execution time",
+      "message": "Analysis timed out",
+      "cause": "Contract too complex for bounded analysis",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "myth analyze --execution-timeout 3600",
+          "when": "Have time for deeper analysis"
+        },
+        {
+          "approach": "Limit transaction count",
+          "code": "myth analyze -t 2",
+          "when": "Reduce search depth"
+        },
+        {
+          "approach": "Analyze specific functions",
+          "code": "myth analyze --function \"withdraw\"",
+          "when": "Focus on critical functions"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "Error compiling|CompilerError",
+      "message": "Contract failed to compile",
+      "cause": "Solidity syntax error or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Set Solidity version",
+          "code": "myth analyze --solv 0.8.19 contract.sol",
+          "when": "Need specific compiler"
+        },
+        {
+          "approach": "Install solc",
+          "code": "pip install py-solc-x && python -c \"from solcx import install_solc; install_solc('0.8.19')\"",
+          "when": "Compiler not installed"
+        },
+        {
+          "approach": "Use bytecode",
+          "code": "myth analyze -a 0x... --rpc http://localhost:8545",
+          "when": "Can analyze deployed bytecode"
+        }
+      ]
+    }
+  ]
+}

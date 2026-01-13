@@ -1,0 +1,191 @@
+{
+  "tool": "algolia",
+  "version": "4.22.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "Invalid Application-ID|Invalid API key|403|unauthorized",
+      "message": "Authentication error",
+      "cause": "Invalid Application ID or API key",
+      "solutions": [
+        {
+          "approach": "Check credentials",
+          "code": "const client = algoliasearch(\n  'YOUR_APP_ID',\n  'YOUR_API_KEY'  // Admin or Search key depending on operation\n);",
+          "when": "Client setup"
+        },
+        {
+          "approach": "Key permissions",
+          "code": "// Admin API Key: full access (never expose client-side)\n// Search-Only API Key: search operations only\n// Use Search-Only for frontend",
+          "when": "Wrong key type"
+        },
+        {
+          "approach": "Secured API key",
+          "code": "// Generate restricted key for frontend:\nconst publicKey = client.generateSecuredApiKey(\n  'YOUR_SEARCH_KEY',\n  { filters: 'user_id:123' }\n);",
+          "when": "Frontend security"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "IndexNotFoundException|index.*not found|does not exist",
+      "message": "Index not found",
+      "cause": "Index doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create index",
+          "code": "const index = client.initIndex('products');\nawait index.saveObjects(records);  // Creates index on first save",
+          "when": "Create index"
+        },
+        {
+          "approach": "List indexes",
+          "code": "const { items } = await client.listIndices();",
+          "when": "View indexes"
+        },
+        {
+          "approach": "Copy index",
+          "code": "await client.copyIndex('source_index', 'dest_index');",
+          "when": "Clone index"
+        }
+      ]
+    },
+    {
+      "id": "record_error",
+      "pattern": "objectID.*missing|Record.*too big|exceeds.*limit",
+      "message": "Record error",
+      "cause": "Invalid record format or size",
+      "solutions": [
+        {
+          "approach": "Add objectID",
+          "code": "const records = data.map(item => ({\n  objectID: item.id,  // Required unique identifier\n  ...item\n}));\nawait index.saveObjects(records);",
+          "when": "Missing objectID"
+        },
+        {
+          "approach": "Check size",
+          "code": "// Max record size: 100KB\n// Reduce data or split into multiple records\nconst smallRecords = records.map(r => ({\n  objectID: r.id,\n  title: r.title,\n  description: r.description.slice(0, 5000)\n}));",
+          "when": "Record too large"
+        },
+        {
+          "approach": "Batch save",
+          "code": "// Save in batches of 1000:\nfor (let i = 0; i < records.length; i += 1000) {\n  await index.saveObjects(records.slice(i, i + 1000));\n}",
+          "when": "Large dataset"
+        }
+      ]
+    },
+    {
+      "id": "search_error",
+      "pattern": "Invalid.*filter|attribute.*not.*filterable|facet.*error",
+      "message": "Search configuration error",
+      "cause": "Attribute not configured for filtering/faceting",
+      "solutions": [
+        {
+          "approach": "Configure settings",
+          "code": "await index.setSettings({\n  searchableAttributes: ['title', 'description'],\n  attributesForFaceting: ['filterOnly(category)', 'brand'],\n  customRanking: ['desc(popularity)']\n});",
+          "when": "Index settings"
+        },
+        {
+          "approach": "Search with filters",
+          "code": "const { hits } = await index.search('query', {\n  filters: 'category:electronics AND price < 100',\n  facets: ['brand', 'category']\n});",
+          "when": "Use filters"
+        },
+        {
+          "approach": "Facet values",
+          "code": "const { facetHits } = await index.searchForFacetValues('brand', 'app');",
+          "when": "Search facets"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_error",
+      "pattern": "Too Many Requests|429|rate.*limit|quota",
+      "message": "Rate limit exceeded",
+      "cause": "API rate limit reached",
+      "solutions": [
+        {
+          "approach": "Batch operations",
+          "code": "// Use batch operations instead of individual calls:\nawait index.saveObjects(records);  // Single call for many records",
+          "when": "Reduce calls"
+        },
+        {
+          "approach": "Check plan",
+          "code": "// Check usage in Algolia dashboard\n// Upgrade plan if needed",
+          "when": "View limits"
+        },
+        {
+          "approach": "Implement backoff",
+          "code": "const retry = async (fn, retries = 3) => {\n  for (let i = 0; i < retries; i++) {\n    try {\n      return await fn();\n    } catch (e) {\n      if (e.status === 429) await new Promise(r => setTimeout(r, 1000 * (i + 1)));\n      else throw e;\n    }\n  }\n};",
+          "when": "Add retry logic"
+        }
+      ]
+    },
+    {
+      "id": "relevance_error",
+      "pattern": "ranking|relevance|no results|wrong results",
+      "message": "Search relevance issue",
+      "cause": "Ranking configuration needs tuning",
+      "solutions": [
+        {
+          "approach": "Configure ranking",
+          "code": "await index.setSettings({\n  ranking: [\n    'typo',\n    'geo',\n    'words',\n    'filters',\n    'proximity',\n    'attribute',\n    'exact',\n    'custom'\n  ],\n  customRanking: ['desc(popularity)', 'asc(price)']\n});",
+          "when": "Adjust ranking"
+        },
+        {
+          "approach": "Synonyms",
+          "code": "await index.saveSynonyms([\n  { objectID: '1', type: 'synonym', synonyms: ['phone', 'mobile', 'cellphone'] }\n]);",
+          "when": "Add synonyms"
+        },
+        {
+          "approach": "Rules",
+          "code": "await index.saveRule({\n  objectID: 'promote-sale',\n  condition: { anchoring: 'contains', pattern: 'sale' },\n  consequence: { promote: [{ objectID: '123', position: 0 }] }\n});",
+          "when": "Query rules"
+        }
+      ]
+    },
+    {
+      "id": "reindex_error",
+      "pattern": "reindex.*failed|zero downtime|atomic",
+      "message": "Reindexing error",
+      "cause": "Reindexing operation failed",
+      "solutions": [
+        {
+          "approach": "Zero downtime",
+          "code": "// Use replaceAllObjects for atomic reindex:\nawait index.replaceAllObjects(newRecords);",
+          "when": "Safe reindex"
+        },
+        {
+          "approach": "Manual atomic",
+          "code": "// Or use temporary index:\nconst tmpIndex = client.initIndex('products_tmp');\nawait tmpIndex.saveObjects(records);\nawait client.moveIndex('products_tmp', 'products');",
+          "when": "Manual approach"
+        },
+        {
+          "approach": "Partial update",
+          "code": "await index.partialUpdateObjects([\n  { objectID: '1', stock: 100 }\n]);",
+          "when": "Update fields only"
+        }
+      ]
+    },
+    {
+      "id": "analytics_error",
+      "pattern": "analytics.*disabled|click.*tracking|conversion",
+      "message": "Analytics error",
+      "cause": "Analytics not configured",
+      "solutions": [
+        {
+          "approach": "Enable analytics",
+          "code": "await index.setSettings({\n  enablePersonalization: true\n});",
+          "when": "Enable analytics"
+        },
+        {
+          "approach": "Send events",
+          "code": "// Initialize insights client:\nconst aa = require('search-insights');\naa('init', { appId: 'APP_ID', apiKey: 'SEARCH_KEY' });\n\n// Track click:\naa('clickedObjectIDsAfterSearch', {\n  index: 'products',\n  eventName: 'Product Clicked',\n  queryID: 'query-id',\n  objectIDs: ['product-1'],\n  positions: [1]\n});",
+          "when": "Track events"
+        },
+        {
+          "approach": "Conversion",
+          "code": "aa('convertedObjectIDsAfterSearch', {\n  index: 'products',\n  eventName: 'Product Purchased',\n  queryID: 'query-id',\n  objectIDs: ['product-1']\n});",
+          "when": "Track conversions"
+        }
+      ]
+    }
+  ]
+}

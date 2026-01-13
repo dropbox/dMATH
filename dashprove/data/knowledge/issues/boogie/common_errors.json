@@ -1,0 +1,219 @@
+{
+  "tool": "boogie",
+  "version": "3.0.4",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assertion_violation",
+      "pattern": "assertion violation|Assert might not hold",
+      "message": "Assertion may fail",
+      "cause": "Cannot prove assert statement",
+      "solutions": [
+        {
+          "approach": "Add precondition",
+          "code": "requires condition;",
+          "when": "Assertion depends on input"
+        },
+        {
+          "approach": "Add loop invariant",
+          "code": "invariant condition;",
+          "when": "Assertion inside or after loop"
+        },
+        {
+          "approach": "Add intermediate assertion",
+          "code": "assert intermediate_fact;",
+          "when": "Help prover with stepping stone"
+        }
+      ]
+    },
+    {
+      "id": "precondition_not_established",
+      "pattern": "precondition .* might not hold",
+      "message": "Call site doesn't satisfy requires clause",
+      "cause": "Caller doesn't establish precondition before call",
+      "solutions": [
+        {
+          "approach": "Add assertion before call",
+          "code": "assert precondition;\ncall result := procedure(args);",
+          "when": "Help prover see precondition"
+        },
+        {
+          "approach": "Add caller's precondition",
+          "code": "requires precondition;\nprocedure Caller(...) { ... }",
+          "when": "Push to outer caller"
+        },
+        {
+          "approach": "Verify modifies clause",
+          "code": "modifies x;  // Ensure frame is correct",
+          "when": "Modifies might hide needed info"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_not_proven",
+      "pattern": "postcondition .* might not hold",
+      "message": "Cannot prove ensures clause",
+      "cause": "Procedure body doesn't establish postcondition",
+      "solutions": [
+        {
+          "approach": "Add intermediate assertion",
+          "code": "assert fact_needed_for_ensures;",
+          "when": "Break proof into steps"
+        },
+        {
+          "approach": "Strengthen loop invariant",
+          "code": "invariant property_for_ensures;",
+          "when": "Postcondition depends on loop"
+        },
+        {
+          "approach": "Check implementation",
+          "code": "// Verify code actually establishes ensures",
+          "when": "Logic error in procedure"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_entry",
+      "pattern": "loop invariant .* might not hold on entry",
+      "message": "Invariant not established before loop",
+      "cause": "Invariant is false before first iteration",
+      "solutions": [
+        {
+          "approach": "Weaken invariant",
+          "code": "invariant i == 0 || property;",
+          "when": "Property only holds after first iteration"
+        },
+        {
+          "approach": "Initialize correctly",
+          "code": "i := 0;  // Satisfy invariant before loop",
+          "when": "Missing initialization"
+        },
+        {
+          "approach": "Check initial values",
+          "code": "assert invariant_condition; // Before loop",
+          "when": "Debug invariant establishment"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_maintenance",
+      "pattern": "loop invariant .* might not be maintained",
+      "message": "Loop body doesn't preserve invariant",
+      "cause": "Invariant broken by loop iteration",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "invariant additional_property;",
+          "when": "Need more facts for preservation"
+        },
+        {
+          "approach": "Fix loop body",
+          "code": "// Ensure body maintains invariant",
+          "when": "Logic error in loop"
+        },
+        {
+          "approach": "Check modifies",
+          "code": "// Ensure modified vars are in invariant",
+          "when": "Invariant references untracked var"
+        }
+      ]
+    },
+    {
+      "id": "termination_failure",
+      "pattern": "termination .* might fail|decreases expression",
+      "message": "Cannot prove loop terminates",
+      "cause": "Loop variant doesn't decrease each iteration",
+      "solutions": [
+        {
+          "approach": "Add decreases clause",
+          "code": "while (...)\n  invariant ...\n  decreases expression\n{ ... }",
+          "when": "Missing termination measure"
+        },
+        {
+          "approach": "Fix variant",
+          "code": "decreases upper_bound - i;",
+          "when": "Wrong variant chosen"
+        },
+        {
+          "approach": "Prove variant positive",
+          "code": "invariant expression >= 0;",
+          "when": "Variant might go negative"
+        }
+      ]
+    },
+    {
+      "id": "modifies_violation",
+      "pattern": "modifies clause|modified but not in modifies",
+      "message": "Procedure modifies undeclared variable",
+      "cause": "Code writes to variable not in modifies clause",
+      "solutions": [
+        {
+          "approach": "Add to modifies",
+          "code": "modifies x, y, z;",
+          "when": "Forgot to list variable"
+        },
+        {
+          "approach": "Use local variable",
+          "code": "var local: int;\nlocal := computation;",
+          "when": "Don't need to modify global"
+        },
+        {
+          "approach": "Check called procedures",
+          "code": "// Callee's modifies propagates to caller",
+          "when": "Indirect modification"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "type error|type mismatch",
+      "message": "Type checking failed",
+      "cause": "Expression has wrong type for context",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "var x: int;  // Explicit type",
+          "when": "Type inference fails"
+        },
+        {
+          "approach": "Use type cast",
+          "code": "int(expr)  // If conversion valid",
+          "when": "Need explicit conversion"
+        },
+        {
+          "approach": "Check map types",
+          "code": "[int]bool  // Map from int to bool",
+          "when": "Map type syntax issue"
+        }
+      ]
+    },
+    {
+      "id": "verification_timeout",
+      "pattern": "timeout|timed out",
+      "message": "Z3 solver timed out",
+      "cause": "Proof obligation too complex",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "boogie /timeLimit:600 file.bpl",
+          "when": "Just needs more time"
+        },
+        {
+          "approach": "Add trigger",
+          "code": "forall x :: {f(x)} P(x) ==> Q(x)",
+          "when": "Quantifier instantiation issue"
+        },
+        {
+          "approach": "Split verification",
+          "code": "// Break into smaller procedures",
+          "when": "Procedure too complex"
+        },
+        {
+          "approach": "Use smoke test",
+          "code": "boogie /smoke file.bpl",
+          "when": "Find problematic assertions"
+        }
+      ]
+    }
+  ]
+}

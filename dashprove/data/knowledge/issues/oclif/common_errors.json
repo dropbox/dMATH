@@ -1,0 +1,145 @@
+{
+  "tool": "oclif",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_required_flag",
+      "pattern": "Missing required flag|--\\w+ flag is required",
+      "message": "Required flag not provided",
+      "cause": "Flag defined with required: true was not passed",
+      "solutions": [
+        {
+          "approach": "Pass the required flag",
+          "code": "mycli command --flag value",
+          "when": "Flag is genuinely needed"
+        },
+        {
+          "approach": "Add default value",
+          "code": "static flags = { config: Flags.string({ default: 'config.json' }) }",
+          "when": "Sensible default exists"
+        },
+        {
+          "approach": "Use environment variable",
+          "code": "static flags = { token: Flags.string({ env: 'API_TOKEN', required: true }) }",
+          "when": "Value available in env"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "command.*not found|Run.*--help.*for a list of available commands",
+      "message": "Unknown command invoked",
+      "cause": "Command class not exported or not in commands directory",
+      "solutions": [
+        {
+          "approach": "Check command exists",
+          "code": "mycli --help",
+          "when": "Listing available commands"
+        },
+        {
+          "approach": "Export command",
+          "code": "// src/commands/mycommand.ts\nexport default class MyCommand extends Command {}",
+          "when": "Command file exists but not exported"
+        },
+        {
+          "approach": "Check topics config",
+          "code": "// package.json oclif.topics configuration",
+          "when": "Nested command structure"
+        }
+      ]
+    },
+    {
+      "id": "invalid_flag_value",
+      "pattern": "Expected.*to be one of|must be an integer|Invalid flag value",
+      "message": "Flag value doesn't match expected type/options",
+      "cause": "Value doesn't match flag's type or options constraint",
+      "solutions": [
+        {
+          "approach": "Use valid option",
+          "code": "mycli cmd --format json  # options: json, yaml, xml",
+          "when": "Flag has options constraint"
+        },
+        {
+          "approach": "Check flag definition",
+          "code": "format: Flags.string({ options: ['json', 'yaml', 'xml'] })",
+          "when": "Understanding constraints"
+        },
+        {
+          "approach": "Pass correct type",
+          "code": "mycli cmd --count 10  # expects integer",
+          "when": "Type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "unexpected_argument",
+      "pattern": "Unexpected argument|nonexistent flag|Unknown flag",
+      "message": "Unrecognized flag or argument",
+      "cause": "Flag not defined in command's static flags",
+      "solutions": [
+        {
+          "approach": "Check flag spelling",
+          "code": "mycli command --help",
+          "when": "Typo suspected"
+        },
+        {
+          "approach": "Define the flag",
+          "code": "static flags = { newFlag: Flags.boolean() }",
+          "when": "Flag should exist"
+        },
+        {
+          "approach": "Allow passthrough",
+          "code": "static strict = false",
+          "when": "Forwarding args to subprocess"
+        }
+      ]
+    },
+    {
+      "id": "plugin_not_found",
+      "pattern": "Plugin.*not found|Cannot find plugin|Error loading plugin",
+      "message": "Plugin failed to load",
+      "cause": "Plugin not installed, not configured, or has errors",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "mycli plugins:install @scope/plugin-name",
+          "when": "Plugin not installed"
+        },
+        {
+          "approach": "Check plugins list",
+          "code": "mycli plugins",
+          "when": "Verify installed plugins"
+        },
+        {
+          "approach": "Link local plugin",
+          "code": "mycli plugins:link ./path/to/plugin",
+          "when": "Developing plugin locally"
+        }
+      ]
+    },
+    {
+      "id": "hook_error",
+      "pattern": "Error in hook|Hook.*failed|hook threw an error",
+      "message": "Lifecycle hook threw an error",
+      "cause": "Code in init, prerun, or postrun hook failed",
+      "solutions": [
+        {
+          "approach": "Check hook code",
+          "code": "// src/hooks/init.ts - review error handling",
+          "when": "Hook has bug"
+        },
+        {
+          "approach": "Add error handling",
+          "code": "try { await hook() } catch(e) { this.warn(e) }",
+          "when": "Hook should be resilient"
+        },
+        {
+          "approach": "Skip hooks temporarily",
+          "code": "OCLIF_SKIP_PLUGINS=1 mycli command",
+          "when": "Debug without plugins"
+        }
+      ]
+    }
+  ]
+}

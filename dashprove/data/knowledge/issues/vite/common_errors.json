@@ -1,0 +1,211 @@
+{
+  "tool": "vite",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_found",
+      "pattern": "Failed to resolve|Module not found|Cannot find module|Could not resolve",
+      "message": "Vite cannot resolve a module",
+      "cause": "Module not installed, wrong path, or needs optimization",
+      "solutions": [
+        {
+          "approach": "Install missing package",
+          "code": "npm install missing-module",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Configure alias",
+          "code": "// vite.config.js\nimport { defineConfig } from 'vite';\nimport path from 'path';\n\nexport default defineConfig({\n  resolve: {\n    alias: {\n      '@': path.resolve(__dirname, './src'),\n      'components': path.resolve(__dirname, './src/components')\n    }\n  }\n});",
+          "when": "Path alias not working"
+        },
+        {
+          "approach": "Add to optimizeDeps",
+          "code": "// vite.config.js\nexport default defineConfig({\n  optimizeDeps: {\n    include: ['problematic-dep'],\n    // Or exclude if causing issues\n    exclude: ['another-dep']\n  }\n});",
+          "when": "CommonJS dependency issues"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "// Vite needs explicit extensions for non-JS\nimport Comp from './Component.vue'  // Not ./Component\nimport styles from './styles.css'",
+          "when": "Extension not inferred"
+        }
+      ]
+    },
+    {
+      "id": "cjs_esm_interop",
+      "pattern": "default.*not.*export|not provide an export named|__esModule|Named export.*not found",
+      "message": "CommonJS/ESM interop issue",
+      "cause": "Module is CommonJS but imported as ESM",
+      "solutions": [
+        {
+          "approach": "Use default import",
+          "code": "// Instead of named exports\n// import { foo } from 'cjs-package';\n\n// Use default and destructure\nimport pkg from 'cjs-package';\nconst { foo } = pkg;",
+          "when": "Named import failing"
+        },
+        {
+          "approach": "Force pre-bundling",
+          "code": "// vite.config.js\nexport default defineConfig({\n  optimizeDeps: {\n    include: ['cjs-package']\n  }\n});",
+          "when": "CJS module not pre-bundled"
+        },
+        {
+          "approach": "Use vite-plugin-commonjs",
+          "code": "npm install vite-plugin-commonjs\n\n// vite.config.js\nimport commonjs from 'vite-plugin-commonjs';\n\nexport default defineConfig({\n  plugins: [commonjs()]\n});",
+          "when": "Multiple CJS issues"
+        }
+      ]
+    },
+    {
+      "id": "hmr_not_working",
+      "pattern": "HMR|hot.*update|Full reload|page reload instead",
+      "message": "Hot Module Replacement not working",
+      "cause": "HMR boundary not accepting updates",
+      "solutions": [
+        {
+          "approach": "Check React Fast Refresh",
+          "code": "// vite.config.js\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()]\n});\n\n// Component must be in separate file\n// Must export component, not inline",
+          "when": "React HMR broken"
+        },
+        {
+          "approach": "Check Vue HMR",
+          "code": "// vite.config.js\nimport vue from '@vitejs/plugin-vue';\n\nexport default defineConfig({\n  plugins: [vue()]\n});",
+          "when": "Vue HMR broken"
+        },
+        {
+          "approach": "Accept HMR manually",
+          "code": "// For custom modules\nif (import.meta.hot) {\n  import.meta.hot.accept((newModule) => {\n    // Handle update\n  });\n}",
+          "when": "Non-component file"
+        },
+        {
+          "approach": "Check export patterns",
+          "code": "// Fast Refresh requires:\n// 1. Only export React components\n// 2. Use named or default export\n// 3. Component name starts with uppercase\n\n// Bad: mixing exports\nexport const FOO = 1;  // constant + component breaks HMR\nexport function MyComp() {}",
+          "when": "Mixed exports"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Build failed|Rollup|error during build|Could not load",
+      "message": "Production build failed",
+      "cause": "Build-only issues not caught in dev mode",
+      "solutions": [
+        {
+          "approach": "Check dynamic imports",
+          "code": "// Dev uses native ESM, build uses Rollup\n// Dynamic imports must use static strings for build\n\n// Bad\nconst mod = await import(variable);\n\n// Good\nconst mod = await import(`./modules/${name}.js`);",
+          "when": "Dynamic import fails"
+        },
+        {
+          "approach": "Configure build target",
+          "code": "// vite.config.js\nexport default defineConfig({\n  build: {\n    target: 'es2015',  // Older browsers\n    // Or modern only\n    target: 'esnext'\n  }\n});",
+          "when": "Syntax not supported"
+        },
+        {
+          "approach": "Check external deps",
+          "code": "// vite.config.js\nexport default defineConfig({\n  build: {\n    rollupOptions: {\n      external: ['node-module'],  // Don't bundle\n    }\n  }\n});",
+          "when": "Node module in build"
+        },
+        {
+          "approach": "Preview build locally",
+          "code": "npm run build && npm run preview\n\n# Check console for runtime errors",
+          "when": "Works in dev, fails in prod"
+        }
+      ]
+    },
+    {
+      "id": "proxy_error",
+      "pattern": "ECONNREFUSED|proxy error|502|connect ECONNREFUSED|target server",
+      "message": "Dev server proxy not connecting",
+      "cause": "Backend server not running or proxy misconfigured",
+      "solutions": [
+        {
+          "approach": "Check backend is running",
+          "code": "# Verify backend server\ncurl http://localhost:3001/api/health",
+          "when": "Backend not running"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "// vite.config.js\nexport default defineConfig({\n  server: {\n    proxy: {\n      '/api': {\n        target: 'http://localhost:3001',\n        changeOrigin: true,\n        // rewrite: (path) => path.replace(/^\\/api/, '')\n      }\n    }\n  }\n});",
+          "when": "Proxy not configured"
+        },
+        {
+          "approach": "Debug proxy",
+          "code": "// vite.config.js\nserver: {\n  proxy: {\n    '/api': {\n      target: 'http://localhost:3001',\n      configure: (proxy, options) => {\n        proxy.on('error', (err) => console.log('proxy error', err));\n        proxy.on('proxyReq', (proxyReq) => console.log('Request'));\n        proxy.on('proxyRes', (proxyRes) => console.log('Response'));\n      }\n    }\n  }\n}",
+          "when": "Need to debug requests"
+        }
+      ]
+    },
+    {
+      "id": "env_not_loaded",
+      "pattern": "import.meta.env|VITE_|undefined|env variables",
+      "message": "Environment variables not available",
+      "cause": "Env vars not prefixed with VITE_ or not loaded",
+      "solutions": [
+        {
+          "approach": "Use VITE_ prefix",
+          "code": "# .env\nVITE_API_URL=http://localhost:3001\nVITE_APP_NAME=MyApp\n\n# NOT exposed (no VITE_ prefix)\nSECRET_KEY=xxx",
+          "when": "Variable not exposed to client"
+        },
+        {
+          "approach": "Access correctly",
+          "code": "// In code\nconst apiUrl = import.meta.env.VITE_API_URL;\nconst mode = import.meta.env.MODE;  // 'development' or 'production'\nconst isDev = import.meta.env.DEV;  // boolean",
+          "when": "Wrong access syntax"
+        },
+        {
+          "approach": "Use correct env file",
+          "code": "# Load order:\n# .env                # always loaded\n# .env.local          # always loaded, gitignored\n# .env.[mode]         # only in specified mode\n# .env.[mode].local   # only in specified mode, gitignored\n\nvite --mode staging  # loads .env.staging",
+          "when": "Wrong mode"
+        },
+        {
+          "approach": "TypeScript types",
+          "code": "// src/vite-env.d.ts\n/// <reference types=\"vite/client\" />\n\ninterface ImportMetaEnv {\n  readonly VITE_API_URL: string\n}\n\ninterface ImportMeta {\n  readonly env: ImportMetaEnv\n}",
+          "when": "TypeScript errors"
+        }
+      ]
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "Port.*in use|EADDRINUSE|address already in use",
+      "message": "Dev server port already in use",
+      "cause": "Another process using the port",
+      "solutions": [
+        {
+          "approach": "Use different port",
+          "code": "# Command line\nvite --port 3001\n\n# Or config\nexport default defineConfig({\n  server: {\n    port: 3001\n  }\n});",
+          "when": "Can use different port"
+        },
+        {
+          "approach": "Find and kill process",
+          "code": "# Find process\nlsof -i :5173\n\n# Kill it\nkill -9 <PID>\n\n# Or one-liner\nkill -9 $(lsof -t -i:5173)",
+          "when": "Need to free port"
+        },
+        {
+          "approach": "Auto-find open port",
+          "code": "// vite.config.js\nexport default defineConfig({\n  server: {\n    strictPort: false  // Will find next available\n  }\n});",
+          "when": "Any port is fine"
+        }
+      ]
+    },
+    {
+      "id": "css_issues",
+      "pattern": "CSS|SCSS|PostCSS|@import|stylesheet",
+      "message": "CSS processing error",
+      "cause": "CSS preprocessor not configured or import issue",
+      "solutions": [
+        {
+          "approach": "Install preprocessor",
+          "code": "# Vite has built-in support, just install\nnpm install -D sass  # For SCSS\nnpm install -D less  # For Less\nnpm install -D stylus  # For Stylus",
+          "when": "Preprocessor not installed"
+        },
+        {
+          "approach": "Configure PostCSS",
+          "code": "// postcss.config.js\nexport default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {}\n  }\n}",
+          "when": "PostCSS plugins needed"
+        },
+        {
+          "approach": "Global CSS imports",
+          "code": "// vite.config.js\nexport default defineConfig({\n  css: {\n    preprocessorOptions: {\n      scss: {\n        additionalData: `@import \"@/styles/variables.scss\";`\n      }\n    }\n  }\n});",
+          "when": "Global imports needed"
+        }
+      ]
+    }
+  ]
+}

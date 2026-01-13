@@ -1,0 +1,191 @@
+{
+  "tool": "fluxcd",
+  "version": "2.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "reconciliation_failed",
+      "pattern": "reconciliation failed|Reconciliation.*error|unable to reconcile",
+      "message": "Resource reconciliation failed",
+      "cause": "Source unavailable, manifest error, or dependency not ready",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "flux get all -A\nflux get kustomizations",
+          "when": "Diagnose reconciliation state"
+        },
+        {
+          "approach": "Force reconcile",
+          "code": "flux reconcile kustomization <name> --with-source",
+          "when": "Force immediate sync"
+        },
+        {
+          "approach": "Suspend and resume",
+          "code": "flux suspend kustomization <name>\nflux resume kustomization <name>",
+          "when": "Reset reconciliation"
+        }
+      ]
+    },
+    {
+      "id": "source_not_ready",
+      "pattern": "source.*not ready|GitRepository.*not found|unable to clone",
+      "message": "Source not ready",
+      "cause": "Git clone failed, authentication error, or branch not found",
+      "solutions": [
+        {
+          "approach": "Check source status",
+          "code": "flux get sources git\nkubectl describe gitrepository <name> -n flux-system",
+          "when": "Diagnose source issue"
+        },
+        {
+          "approach": "Create/update secret",
+          "code": "flux create secret git <secret-name> \\\n  --url=<repo-url> \\\n  --username=git \\\n  --password=<token>",
+          "when": "Authentication failing"
+        },
+        {
+          "approach": "Use SSH key",
+          "code": "flux create secret git <secret-name> \\\n  --url=ssh://git@github.com/<org>/<repo> \\\n  --private-key-file=<path>",
+          "when": "Prefer SSH authentication"
+        }
+      ]
+    },
+    {
+      "id": "kustomize_build_failed",
+      "pattern": "kustomize build|accumulating resources|unable to find",
+      "message": "Kustomize build failed",
+      "cause": "Invalid kustomization.yaml or missing resources",
+      "solutions": [
+        {
+          "approach": "Test locally",
+          "code": "kustomize build <path>\nflux build kustomization <name> --path <path>",
+          "when": "Test manifest generation"
+        },
+        {
+          "approach": "Check path structure",
+          "code": "# Ensure kustomization.yaml exists\nls -la <path>/kustomization.yaml",
+          "when": "Path may be wrong"
+        },
+        {
+          "approach": "View detailed error",
+          "code": "kubectl describe kustomization <name> -n flux-system",
+          "when": "Need full error message"
+        }
+      ]
+    },
+    {
+      "id": "helm_release_failed",
+      "pattern": "HelmRelease.*failed|upgrade.*failed|install.*failed",
+      "message": "Helm release failed",
+      "cause": "Chart error, values invalid, or dependency missing",
+      "solutions": [
+        {
+          "approach": "Check release status",
+          "code": "flux get helmreleases -A\nhelm list -A",
+          "when": "Diagnose Helm state"
+        },
+        {
+          "approach": "View Helm history",
+          "code": "helm history <release> -n <namespace>",
+          "when": "Check release history"
+        },
+        {
+          "approach": "Rollback release",
+          "code": "flux suspend helmrelease <name>\nhelm rollback <release> <revision> -n <namespace>\nflux resume helmrelease <name>",
+          "when": "Need to rollback"
+        }
+      ]
+    },
+    {
+      "id": "dependency_not_ready",
+      "pattern": "dependency.*not ready|waiting for|dependsOn",
+      "message": "Dependency not ready",
+      "cause": "Resource depends on another that hasn't reconciled",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "flux get kustomization <name> -o yaml | grep -A5 dependsOn",
+          "when": "View dependencies"
+        },
+        {
+          "approach": "Reconcile dependency first",
+          "code": "flux reconcile kustomization <dependency-name> --with-source",
+          "when": "Force dependency sync"
+        },
+        {
+          "approach": "Check entire chain",
+          "code": "flux get all -A --status-selector ready=false",
+          "when": "Find all failing resources"
+        }
+      ]
+    },
+    {
+      "id": "image_update_failed",
+      "pattern": "ImageUpdateAutomation.*failed|unable to update|no new images",
+      "message": "Image automation failed",
+      "cause": "No matching images, policy error, or commit failed",
+      "solutions": [
+        {
+          "approach": "Check image policies",
+          "code": "flux get images all -A",
+          "when": "Diagnose image automation"
+        },
+        {
+          "approach": "Force image scan",
+          "code": "flux reconcile image repository <name>",
+          "when": "Force registry scan"
+        },
+        {
+          "approach": "Check automation config",
+          "code": "kubectl describe imageupdateautomation <name> -n flux-system",
+          "when": "Review automation settings"
+        }
+      ]
+    },
+    {
+      "id": "notification_failed",
+      "pattern": "Alert.*failed|Provider.*error|notification",
+      "message": "Notification failed",
+      "cause": "Webhook URL invalid, auth failed, or provider error",
+      "solutions": [
+        {
+          "approach": "Check provider status",
+          "code": "flux get alert-providers -A",
+          "when": "Verify provider config"
+        },
+        {
+          "approach": "Create provider secret",
+          "code": "kubectl create secret generic <secret-name> \\\n  --from-literal=address=<webhook-url> \\\n  -n flux-system",
+          "when": "Authentication needed"
+        },
+        {
+          "approach": "Test alert",
+          "code": "kubectl describe alert <name> -n flux-system",
+          "when": "Debug alert config"
+        }
+      ]
+    },
+    {
+      "id": "bootstrap_failed",
+      "pattern": "bootstrap.*failed|unable to bootstrap|flux-system.*not ready",
+      "message": "Flux bootstrap failed",
+      "cause": "Cluster access issue, repo write failed, or components crash",
+      "solutions": [
+        {
+          "approach": "Check cluster access",
+          "code": "kubectl cluster-info\nkubectl get nodes",
+          "when": "Cluster may be unreachable"
+        },
+        {
+          "approach": "Retry bootstrap",
+          "code": "flux bootstrap github \\\n  --owner=<org> \\\n  --repository=<repo> \\\n  --path=clusters/<cluster> \\\n  --personal",
+          "when": "Retry with correct params"
+        },
+        {
+          "approach": "Check component health",
+          "code": "flux check\nkubectl get pods -n flux-system",
+          "when": "Flux components unhealthy"
+        }
+      ]
+    }
+  ]
+}

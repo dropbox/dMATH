@@ -1,0 +1,204 @@
+{
+  "tool": "bugsnag",
+  "version": "8.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "api_key_invalid",
+      "pattern": "Invalid API key|401|unauthorized",
+      "message": "Invalid or missing API key",
+      "cause": "API key incorrect or missing",
+      "solutions": [
+        {
+          "approach": "Verify API key",
+          "code": "// Find API key in Project Settings > General\nBugsnag.start({ apiKey: 'YOUR_API_KEY' });",
+          "when": "Key not found"
+        },
+        {
+          "approach": "Check project",
+          "code": "# Each project has unique API key\n# Ensure using correct project's key",
+          "when": "Wrong project"
+        },
+        {
+          "approach": "Use notifier key",
+          "code": "# Browser/mobile: Use Notifier API key (public)\n# Server: Use Server API key",
+          "when": "Wrong key type"
+        }
+      ]
+    },
+    {
+      "id": "events_not_sending",
+      "pattern": "not sending|events missing|not appearing",
+      "message": "Events not appearing in dashboard",
+      "cause": "SDK not initialized or events filtered",
+      "solutions": [
+        {
+          "approach": "Check initialization",
+          "code": "Bugsnag.start({\n  apiKey: 'KEY',\n  enabledReleaseStages: ['production', 'staging'],\n  releaseStage: process.env.NODE_ENV\n});",
+          "when": "SDK not started"
+        },
+        {
+          "approach": "Check release stage",
+          "code": "// If releaseStage not in enabledReleaseStages, events won't send\n// Add 'development' to test locally",
+          "when": "Stage filtered"
+        },
+        {
+          "approach": "Manual notify",
+          "code": "Bugsnag.notify(new Error('Test error'));",
+          "when": "Test connection"
+        }
+      ]
+    },
+    {
+      "id": "source_maps_issues",
+      "pattern": "source.*map|minified|line numbers wrong",
+      "message": "Source maps not working",
+      "cause": "Source maps not uploaded or version mismatch",
+      "solutions": [
+        {
+          "approach": "Upload source maps",
+          "code": "# Using bugsnag-source-maps:\nnpx bugsnag-source-maps upload \\\n  --api-key KEY \\\n  --app-version 1.0.0 \\\n  --directory ./dist",
+          "when": "Source maps missing"
+        },
+        {
+          "approach": "Configure app version",
+          "code": "Bugsnag.start({\n  apiKey: 'KEY',\n  appVersion: '1.0.0'  // Must match upload\n});",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Webpack plugin",
+          "code": "const BugsnagSourceMapPlugin = require('@bugsnag/source-maps').BugsnagSourceMapUploaderPlugin;\n\nplugins: [\n  new BugsnagSourceMapPlugin({ apiKey: 'KEY', appVersion: '1.0.0' })\n]",
+          "when": "Automate upload"
+        }
+      ]
+    },
+    {
+      "id": "breadcrumbs_missing",
+      "pattern": "breadcrumb.*missing|no context",
+      "message": "Breadcrumbs not appearing",
+      "cause": "Breadcrumbs not configured or filtered",
+      "solutions": [
+        {
+          "approach": "Enable breadcrumbs",
+          "code": "Bugsnag.start({\n  enabledBreadcrumbTypes: ['error', 'log', 'navigation', 'request', 'user']\n});",
+          "when": "Breadcrumbs disabled"
+        },
+        {
+          "approach": "Add custom breadcrumbs",
+          "code": "Bugsnag.leaveBreadcrumb('User clicked checkout', {\n  productId: '123',\n  price: 99.99\n}, 'user');",
+          "when": "Need custom context"
+        },
+        {
+          "approach": "Configure max breadcrumbs",
+          "code": "Bugsnag.start({\n  maxBreadcrumbs: 50  // Default is 25\n});",
+          "when": "Need more history"
+        }
+      ]
+    },
+    {
+      "id": "user_tracking",
+      "pattern": "user.*not showing|no user info",
+      "message": "User information not showing",
+      "cause": "User not set on Bugsnag client",
+      "solutions": [
+        {
+          "approach": "Set user",
+          "code": "Bugsnag.setUser('user-id-123', 'user@example.com', 'John Doe');",
+          "when": "User logged in"
+        },
+        {
+          "approach": "Clear user",
+          "code": "Bugsnag.setUser();  // Clear on logout",
+          "when": "User logged out"
+        },
+        {
+          "approach": "Add user in callback",
+          "code": "Bugsnag.start({\n  onError: (event) => {\n    event.setUser(getUserId(), getUserEmail(), getUserName());\n  }\n});",
+          "when": "Dynamic user data"
+        }
+      ]
+    },
+    {
+      "id": "metadata_not_appearing",
+      "pattern": "metadata.*missing|custom data",
+      "message": "Custom metadata not appearing",
+      "cause": "Metadata not added correctly",
+      "solutions": [
+        {
+          "approach": "Add metadata to event",
+          "code": "Bugsnag.notify(error, (event) => {\n  event.addMetadata('order', {\n    orderId: '12345',\n    total: 99.99\n  });\n});",
+          "when": "Per-error metadata"
+        },
+        {
+          "approach": "Global metadata",
+          "code": "Bugsnag.addMetadata('app', {\n  version: '1.0.0',\n  environment: 'production'\n});",
+          "when": "Always include"
+        },
+        {
+          "approach": "Callback for all errors",
+          "code": "Bugsnag.start({\n  onError: (event) => {\n    event.addMetadata('request', getRequestContext());\n  }\n});",
+          "when": "Add to all errors"
+        }
+      ]
+    },
+    {
+      "id": "filtering_not_working",
+      "pattern": "filter.*not working|still sending",
+      "message": "Error filtering not working",
+      "cause": "Filter configuration incorrect",
+      "solutions": [
+        {
+          "approach": "Ignore by message",
+          "code": "Bugsnag.start({\n  onError: (event) => {\n    if (event.errors[0].errorMessage.includes('ResizeObserver')) {\n      return false;  // Don't send\n    }\n  }\n});",
+          "when": "Filter by message"
+        },
+        {
+          "approach": "Ignore by class",
+          "code": "Bugsnag.start({\n  onError: (event) => {\n    if (event.errors[0].errorClass === 'NetworkError') {\n      return false;\n    }\n  }\n});",
+          "when": "Filter by error type"
+        },
+        {
+          "approach": "Discard noisy errors",
+          "code": "Bugsnag.start({\n  discardClasses: ['NetworkError', 'AbortError']\n});",
+          "when": "Simple class filtering"
+        }
+      ]
+    },
+    {
+      "id": "session_tracking",
+      "pattern": "session.*not working|stability score",
+      "message": "Session tracking issues",
+      "cause": "Sessions not being tracked correctly",
+      "solutions": [
+        {
+          "approach": "Enable sessions",
+          "code": "Bugsnag.start({\n  autoTrackSessions: true\n});",
+          "when": "Sessions disabled"
+        },
+        {
+          "approach": "Manual session",
+          "code": "Bugsnag.startSession();  // On app foreground\nBugsnag.pauseSession();  // On app background\nBugsnag.resumeSession(); // Resume existing",
+          "when": "Custom session control"
+        }
+      ]
+    },
+    {
+      "id": "network_errors",
+      "pattern": "network|offline|failed to send",
+      "message": "Network errors sending reports",
+      "cause": "Network issues or firewall blocking",
+      "solutions": [
+        {
+          "approach": "Configure endpoint",
+          "code": "Bugsnag.start({\n  endpoints: {\n    notify: 'https://notify.bugsnag.com',\n    sessions: 'https://sessions.bugsnag.com'\n  }\n});",
+          "when": "Custom endpoint needed"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "// For Node.js:\nBugsnag.start({\n  agent: new HttpsProxyAgent('http://proxy:8080')\n});",
+          "when": "Behind proxy"
+        }
+      ]
+    }
+  ]
+}

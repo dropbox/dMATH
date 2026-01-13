@@ -1,0 +1,135 @@
+{
+  "tool": "jsonwebtoken",
+  "version": "9.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_signature",
+      "pattern": "invalid signature|signature verification failed|JsonWebTokenError",
+      "message": "Token signature verification failed",
+      "cause": "Wrong secret, algorithm mismatch, or corrupted token",
+      "solutions": [
+        {
+          "approach": "Check secret",
+          "code": "// Sign and verify with SAME secret\nconst token = jwt.sign(payload, process.env.JWT_SECRET);\nconst decoded = jwt.verify(token, process.env.JWT_SECRET);",
+          "when": "Secret mismatch"
+        },
+        {
+          "approach": "Specify algorithm",
+          "code": "jwt.verify(token, secret, { algorithms: ['HS256'] });",
+          "when": "Algorithm confusion attack"
+        },
+        {
+          "approach": "Check for corruption",
+          "code": "// Ensure token wasn't truncated in transit\nconst parts = token.split('.');\nif (parts.length !== 3) throw new Error('Malformed token');",
+          "when": "Token truncated"
+        }
+      ]
+    },
+    {
+      "id": "token_expired",
+      "pattern": "TokenExpiredError|jwt expired|exp.*claim",
+      "message": "Token has expired",
+      "cause": "Token's exp claim is in the past",
+      "solutions": [
+        {
+          "approach": "Issue new token",
+          "code": "jwt.sign(payload, secret, { expiresIn: '1h' });",
+          "when": "Normal expiration"
+        },
+        {
+          "approach": "Use refresh tokens",
+          "code": "// Short-lived access token + long-lived refresh token\nconst accessToken = jwt.sign(payload, secret, { expiresIn: '15m' });\nconst refreshToken = jwt.sign({ userId }, refreshSecret, { expiresIn: '7d' });",
+          "when": "Better UX needed"
+        },
+        {
+          "approach": "Ignore expiration (dev)",
+          "code": "jwt.verify(token, secret, { ignoreExpiration: true });",
+          "when": "Testing only"
+        }
+      ]
+    },
+    {
+      "id": "not_before_error",
+      "pattern": "NotBeforeError|jwt not active|nbf.*claim",
+      "message": "Token not yet valid",
+      "cause": "Token's nbf claim is in the future",
+      "solutions": [
+        {
+          "approach": "Wait until valid",
+          "code": "// Token has notBefore set to future time",
+          "when": "Intentional delay"
+        },
+        {
+          "approach": "Add clock tolerance",
+          "code": "jwt.verify(token, secret, { clockTolerance: 60 });  // 60s tolerance",
+          "when": "Clock skew between servers"
+        },
+        {
+          "approach": "Check notBefore",
+          "code": "const decoded = jwt.decode(token);\nconsole.log('Valid from:', new Date(decoded.nbf * 1000));",
+          "when": "Debug timing"
+        }
+      ]
+    },
+    {
+      "id": "malformed_token",
+      "pattern": "jwt malformed|invalid token|Unexpected token",
+      "message": "Token format is invalid",
+      "cause": "Token is not a valid JWT string",
+      "solutions": [
+        {
+          "approach": "Validate format",
+          "code": "// JWT is three base64url parts separated by dots\nif (!/^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]*$/.test(token)) {\n  throw new Error('Invalid JWT format');\n}",
+          "when": "Pre-validation"
+        },
+        {
+          "approach": "Check Bearer prefix",
+          "code": "const authHeader = req.headers.authorization;\nconst token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;",
+          "when": "Extracting from header"
+        },
+        {
+          "approach": "Handle decode errors",
+          "code": "try {\n  const decoded = jwt.decode(token, { complete: true });\n  if (!decoded) throw new Error('Invalid token');\n} catch (e) { ... }",
+          "when": "Safe decoding"
+        }
+      ]
+    },
+    {
+      "id": "algorithm_none",
+      "pattern": "algorithm.*none|alg.*none|insecure algorithm",
+      "message": "Token uses insecure 'none' algorithm",
+      "cause": "Algorithm confusion attack or misconfiguration",
+      "solutions": [
+        {
+          "approach": "Always specify algorithms",
+          "code": "// NEVER allow 'none' algorithm\njwt.verify(token, secret, { algorithms: ['HS256'] });",
+          "when": "Security hardening"
+        },
+        {
+          "approach": "Use asymmetric keys",
+          "code": "// RS256 with public/private keys\njwt.sign(payload, privateKey, { algorithm: 'RS256' });\njwt.verify(token, publicKey, { algorithms: ['RS256'] });",
+          "when": "Distributed verification"
+        }
+      ]
+    },
+    {
+      "id": "async_callback",
+      "pattern": "callback.*not.*function|sign.*callback|verify.*callback",
+      "message": "Callback usage error",
+      "cause": "Mixing callback and promise styles",
+      "solutions": [
+        {
+          "approach": "Use promises",
+          "code": "const token = jwt.sign(payload, secret);  // sync\n// or with callback:\njwt.sign(payload, secret, (err, token) => { ... });",
+          "when": "Async signing"
+        },
+        {
+          "approach": "Promisify",
+          "code": "const { promisify } = require('util');\nconst signAsync = promisify(jwt.sign);\nconst token = await signAsync(payload, secret);",
+          "when": "Need promise API"
+        }
+      ]
+    }
+  ]
+}

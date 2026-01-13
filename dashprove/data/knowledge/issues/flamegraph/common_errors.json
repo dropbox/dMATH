@@ -1,0 +1,176 @@
+{
+  "tool": "flamegraph",
+  "version": "1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "empty_svg",
+      "pattern": "No stack counts found",
+      "message": "No stack data found for flamegraph",
+      "cause": "Input file is empty or in wrong format",
+      "solutions": [
+        {
+          "approach": "Verify perf data",
+          "code": "perf script | head -20  # Check output format",
+          "when": "Using perf input"
+        },
+        {
+          "approach": "Use correct stackcollapse script",
+          "code": "perf script | stackcollapse-perf.pl | flamegraph.pl > out.svg",
+          "when": "perf data"
+        },
+        {
+          "approach": "Check sample count",
+          "code": "perf report --stdio | grep -c '^\\s*[0-9]'",
+          "when": "Verifying data exists"
+        }
+      ]
+    },
+    {
+      "id": "missing_symbols",
+      "pattern": "\\[unknown\\]|\\?\\?\\?",
+      "message": "Missing symbols in flamegraph",
+      "cause": "Binary or libraries missing debug symbols",
+      "solutions": [
+        {
+          "approach": "Record with frame pointers",
+          "code": "perf record -g --call-graph dwarf ./prog",
+          "when": "Missing call stacks"
+        },
+        {
+          "approach": "Install debug symbols",
+          "code": "sudo apt install libc6-dbg  # For libc symbols",
+          "when": "Library symbols missing"
+        },
+        {
+          "approach": "Compile with debug info",
+          "code": "gcc -g -fno-omit-frame-pointer prog.c",
+          "when": "Building from source"
+        }
+      ]
+    },
+    {
+      "id": "svg_too_wide",
+      "pattern": "width.*exceeds|truncated",
+      "message": "SVG width too large",
+      "cause": "Too many unique stack traces",
+      "solutions": [
+        {
+          "approach": "Set width limit",
+          "code": "flamegraph.pl --width 1200 input.txt > out.svg",
+          "when": "Want fixed width"
+        },
+        {
+          "approach": "Filter by threshold",
+          "code": "flamegraph.pl --minwidth 0.5 input.txt > out.svg",
+          "when": "Hide tiny frames"
+        },
+        {
+          "approach": "Aggregate samples",
+          "code": "# Take fewer samples\nperf record -F 99 ./prog",
+          "when": "Too much detail"
+        }
+      ]
+    },
+    {
+      "id": "perl_not_found",
+      "pattern": "perl.*not found|Can't locate",
+      "message": "Perl or module not found",
+      "cause": "Perl not installed or missing modules",
+      "solutions": [
+        {
+          "approach": "Install perl",
+          "code": "sudo apt install perl",
+          "when": "Perl missing"
+        },
+        {
+          "approach": "Use Rust flamegraph",
+          "code": "cargo install flamegraph\nflamegraph -- ./my_program",
+          "when": "Prefer Rust tooling"
+        },
+        {
+          "approach": "Use inferno",
+          "code": "cargo install inferno\nperf script | inferno-collapse-perf | inferno-flamegraph > out.svg",
+          "when": "Cross-platform solution"
+        }
+      ]
+    },
+    {
+      "id": "inverted_confusion",
+      "pattern": "icicle|inverted",
+      "message": "Flamegraph appears inverted",
+      "cause": "Using icicle graph (inverted flamegraph) by default",
+      "solutions": [
+        {
+          "approach": "Use standard orientation",
+          "code": "flamegraph.pl input.txt > out.svg  # Default is normal",
+          "when": "Want traditional view"
+        },
+        {
+          "approach": "Generate icicle intentionally",
+          "code": "flamegraph.pl --inverted input.txt > icicle.svg",
+          "when": "Want icicle graph"
+        }
+      ]
+    },
+    {
+      "id": "color_not_working",
+      "pattern": "color.*not recognized|palette",
+      "message": "Color scheme not recognized",
+      "cause": "Invalid color palette name",
+      "solutions": [
+        {
+          "approach": "Use built-in palettes",
+          "code": "flamegraph.pl --colors hot input.txt > out.svg\n# Options: hot, mem, io, java, js, perl, red, green, blue, aqua, yellow, purple, orange",
+          "when": "Want specific color scheme"
+        },
+        {
+          "approach": "Custom colors",
+          "code": "flamegraph.pl --cp --hash input.txt > out.svg",
+          "when": "Want consistent coloring per function"
+        }
+      ]
+    },
+    {
+      "id": "diff_format_error",
+      "pattern": "diff.*format|before.*after",
+      "message": "Differential flamegraph format error",
+      "cause": "Input not in differential format",
+      "solutions": [
+        {
+          "approach": "Generate diff properly",
+          "code": "difffolded.pl before.folded after.folded | flamegraph.pl > diff.svg",
+          "when": "Comparing two profiles"
+        },
+        {
+          "approach": "Use inferno-diff-folded",
+          "code": "inferno-diff-folded before.txt after.txt | inferno-flamegraph > diff.svg",
+          "when": "Using Rust tools"
+        }
+      ]
+    },
+    {
+      "id": "javascript_disabled",
+      "pattern": "interactive.*not working|search.*disabled",
+      "message": "Interactive features not working",
+      "cause": "Browser has JavaScript disabled or SVG viewed as image",
+      "solutions": [
+        {
+          "approach": "Open in browser directly",
+          "code": "firefox output.svg  # Open SVG directly",
+          "when": "Viewing as embedded image"
+        },
+        {
+          "approach": "Enable JavaScript",
+          "code": "# Check browser settings for JavaScript",
+          "when": "JS disabled"
+        },
+        {
+          "approach": "Use HTML wrapper",
+          "code": "# Some tools generate HTML with embedded SVG for better compatibility",
+          "when": "SVG not interactive"
+        }
+      ]
+    }
+  ]
+}

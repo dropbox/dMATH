@@ -1,0 +1,168 @@
+{
+  "tool": "clang",
+  "version": "19.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_member_named",
+      "pattern": "no member named.*in",
+      "message": "No member named 'X' in struct/class",
+      "cause": "Accessing non-existent member or typo in member name",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "Verify member name matches declaration",
+          "when": "Typo in member name"
+        },
+        {
+          "approach": "Check visibility",
+          "code": "Ensure member is public/accessible",
+          "when": "Private member access"
+        },
+        {
+          "approach": "Include correct header",
+          "code": "#include <header_with_definition.h>",
+          "when": "Forward declaration only"
+        }
+      ]
+    },
+    {
+      "id": "no_matching_function",
+      "pattern": "no matching function|no viable.*conversion",
+      "message": "No matching function for call",
+      "cause": "Arguments don't match any overload",
+      "solutions": [
+        {
+          "approach": "Check argument types",
+          "code": "Verify argument types match declaration",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Explicit conversion",
+          "code": "func(static_cast<int>(value));",
+          "when": "Need explicit cast"
+        },
+        {
+          "approach": "Check const correctness",
+          "code": "func(const_cast<T*>(ptr));  // If safe",
+          "when": "Const qualification mismatch"
+        }
+      ]
+    },
+    {
+      "id": "arc_bridge_cast",
+      "pattern": "__bridge|ARC.*forbids|toll-free bridging",
+      "message": "ARC bridge cast required",
+      "cause": "Casting between Objective-C and Core Foundation types",
+      "solutions": [
+        {
+          "approach": "Use __bridge",
+          "code": "(__bridge CFStringRef)nsString",
+          "when": "No ownership transfer"
+        },
+        {
+          "approach": "Use __bridge_retained",
+          "code": "(__bridge_retained CFStringRef)nsString",
+          "when": "Transfer to CF (release CF)"
+        },
+        {
+          "approach": "Use __bridge_transfer",
+          "code": "(__bridge_transfer NSString *)cfString",
+          "when": "Transfer from CF (CF already retained)"
+        }
+      ]
+    },
+    {
+      "id": "non_constant_expression",
+      "pattern": "non-constant.*expression|not a constant expression",
+      "message": "Expression is not a constant expression",
+      "cause": "Using runtime value where compile-time constant required",
+      "solutions": [
+        {
+          "approach": "Use constexpr",
+          "code": "constexpr int SIZE = 10;",
+          "when": "Make compile-time constant"
+        },
+        {
+          "approach": "Use VLA alternative",
+          "code": "std::vector<int> arr(runtime_size);",
+          "when": "Runtime-sized array"
+        },
+        {
+          "approach": "Use template",
+          "code": "template<int N> void func() { int arr[N]; }",
+          "when": "Template parameter"
+        }
+      ]
+    },
+    {
+      "id": "unused_result",
+      "pattern": "ignoring return value|unused.*result|nodiscard",
+      "message": "Ignoring return value",
+      "cause": "Function result not used, may indicate error",
+      "solutions": [
+        {
+          "approach": "Use result",
+          "code": "if (func() != 0) { /* handle error */ }",
+          "when": "Check return value"
+        },
+        {
+          "approach": "Cast to void",
+          "code": "(void)func();",
+          "when": "Intentionally ignore"
+        },
+        {
+          "approach": "Use [[maybe_unused]]",
+          "code": "[[maybe_unused]] auto result = func();",
+          "when": "Suppress warning"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "module.*not found|unable to find module",
+      "message": "Module not found",
+      "cause": "C++20 module or framework not available",
+      "solutions": [
+        {
+          "approach": "Install framework",
+          "code": "xcode-select --install",
+          "when": "Missing system framework (macOS)"
+        },
+        {
+          "approach": "Add framework search path",
+          "code": "-F/path/to/frameworks",
+          "when": "Framework in custom location"
+        },
+        {
+          "approach": "Enable modules",
+          "code": "-fmodules -fimplicit-modules",
+          "when": "Modules not enabled"
+        }
+      ]
+    },
+    {
+      "id": "sanitizer_error",
+      "pattern": "SUMMARY.*Sanitizer|AddressSanitizer|UndefinedBehaviorSanitizer",
+      "message": "Sanitizer detected issue",
+      "cause": "Memory error or undefined behavior at runtime",
+      "solutions": [
+        {
+          "approach": "Check stack trace",
+          "code": "Look at the printed stack trace for source location",
+          "when": "Find error location"
+        },
+        {
+          "approach": "Get symbolicated trace",
+          "code": "ASAN_OPTIONS=symbolize=1 ./program",
+          "when": "Need better symbols"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "Address buffer overflow, use-after-free, etc.",
+          "when": "After identifying issue"
+        }
+      ]
+    }
+  ]
+}

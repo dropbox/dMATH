@@ -1,0 +1,86 @@
+{
+  "tool": "highland",
+  "category": "streams",
+  "common_errors": [
+    {
+      "id": "highland_lazy_execution",
+      "pattern": "stream not running|nothing happening|no output",
+      "severity": "error",
+      "causes": [
+        "Highland streams are lazy",
+        "No consumer attached",
+        "Missing .consume() or similar"
+      ],
+      "solutions": [
+        "Add consumer: .each(console.log) or .done(callback)",
+        "Or pipe to writable: stream.pipe(dest)",
+        "Use .toArray(arr => {}) to collect results",
+        "Lazy means nothing runs until consumed"
+      ]
+    },
+    {
+      "id": "highland_backpressure",
+      "pattern": "memory growing|slow consumer|backpressure not working",
+      "severity": "warning",
+      "causes": [
+        "Generator faster than consumer",
+        "Using _(generator) without throttle",
+        "Not respecting backpressure"
+      ],
+      "solutions": [
+        "Highland handles backpressure automatically",
+        "Use .ratelimit(n, ms) to slow emission",
+        "Use .batch(n) to group items",
+        "Check consumer is actually consuming"
+      ]
+    },
+    {
+      "id": "highland_parallel",
+      "pattern": "parallel not working|map async|concurrent operations",
+      "severity": "warning",
+      "causes": [
+        "Using map instead of flatMap for async",
+        "Parallel option not used",
+        "Sequential execution unexpected"
+      ],
+      "solutions": [
+        "Use .flatMap() for async operations",
+        ".flatMap(asyncFn).parallel(n) for concurrency",
+        ".map() is synchronous by nature",
+        ".batch(n).map(processBatch) for batch parallel"
+      ]
+    },
+    {
+      "id": "highland_error_handling",
+      "pattern": "error kills stream|errors not caught|stream stopped",
+      "severity": "error",
+      "causes": [
+        "Errors propagate and end stream",
+        "No error handler",
+        "Uncaught in async operation"
+      ],
+      "solutions": [
+        "Use .errors((err, push) => { push(null, fallback); })",
+        "Errors callback can recover and push value",
+        "Or: .stopOnError(handler)",
+        ".errors() passes to handler, .stopOnError() ends"
+      ]
+    },
+    {
+      "id": "highland_array_source",
+      "pattern": "array not streaming|immediate execution|not lazy",
+      "severity": "info",
+      "causes": [
+        "Arrays are pulled immediately",
+        "Expecting lazy array iteration",
+        "Large array memory issue"
+      ],
+      "solutions": [
+        "_([1,2,3]) pulls array synchronously but emits lazily",
+        "For lazy generation: _(generator) or _(function)",
+        "Use generator for infinite/large sequences",
+        "Array source is fine for finite small data"
+      ]
+    }
+  ]
+}

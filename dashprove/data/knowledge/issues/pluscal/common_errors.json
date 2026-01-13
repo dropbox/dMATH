@@ -1,0 +1,227 @@
+{
+  "tool": "pluscal",
+  "version": "TLA+ Toolbox 1.7.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "translation_error",
+      "pattern": "translation.*error|PlusCal.*error|cannot.*translate",
+      "message": "PlusCal to TLA+ translation failed",
+      "cause": "PlusCal syntax error or semantic issue preventing translation",
+      "solutions": [
+        {
+          "approach": "Check algorithm block",
+          "code": "(* --algorithm MyAlgo\nvariables x = 0;\nbegin\n  skip;\nend algorithm; *)",
+          "when": "Algorithm structure wrong"
+        },
+        {
+          "approach": "Verify variable declarations",
+          "code": "variables\n  x = 0,\n  y \\in 1..10,\n  seq = <<>>;",
+          "when": "Variable syntax error"
+        },
+        {
+          "approach": "Check label requirements",
+          "code": "process (p \\in 1..N)\nbegin\nL1: while TRUE do\n      x := x + 1;\n    end while;\nend process;",
+          "when": "Missing required labels"
+        }
+      ]
+    },
+    {
+      "id": "missing_label",
+      "pattern": "label.*required|missing.*label|unlabeled",
+      "message": "Statement requires a label",
+      "cause": "PlusCal requires labels at certain points for atomicity",
+      "solutions": [
+        {
+          "approach": "Add label before while",
+          "code": "L1: while condition do\n      body;\n    end while;",
+          "when": "While loop needs label"
+        },
+        {
+          "approach": "Add label after await/with",
+          "code": "await condition;\nL2: next_statement;",
+          "when": "After await needs label"
+        },
+        {
+          "approach": "Use atomic block",
+          "code": "L1: begin\n      stmt1;\n      stmt2;  \\* Atomic with stmt1\n    end;",
+          "when": "Want multiple statements atomic"
+        }
+      ]
+    },
+    {
+      "id": "process_error",
+      "pattern": "process.*error|process.*identifier",
+      "message": "Process declaration error",
+      "cause": "Invalid process declaration syntax or identifier",
+      "solutions": [
+        {
+          "approach": "Use correct process syntax",
+          "code": "process (worker \\in 1..N)\nvariables local_var = 0;\nbegin\n  skip;\nend process;",
+          "when": "Process syntax wrong"
+        },
+        {
+          "approach": "Single process variant",
+          "code": "process (main = 0)\nbegin\n  skip;\nend process;",
+          "when": "Single process needed"
+        },
+        {
+          "approach": "Fair process",
+          "code": "fair process (p \\in 1..N)\nbegin\n  ...\nend process;",
+          "when": "Need fairness assumption"
+        }
+      ]
+    },
+    {
+      "id": "procedure_error",
+      "pattern": "procedure.*error|call.*error|return.*error",
+      "message": "Procedure definition or call error",
+      "cause": "Issue with procedure definition, call, or return",
+      "solutions": [
+        {
+          "approach": "Define procedure correctly",
+          "code": "procedure MyProc(arg1, arg2)\nvariables local = 0;\nbegin\n  P1: local := arg1 + arg2;\n      return;\nend procedure;",
+          "when": "Procedure syntax wrong"
+        },
+        {
+          "approach": "Call procedure correctly",
+          "code": "L1: call MyProc(x, y);",
+          "when": "Call syntax wrong"
+        },
+        {
+          "approach": "Ensure return",
+          "code": "procedure P()\nbegin\n  P1: return;  \\* Must have return\nend procedure;",
+          "when": "Missing return"
+        }
+      ]
+    },
+    {
+      "id": "await_error",
+      "pattern": "await.*error|when.*error|condition.*false",
+      "message": "Await/when condition error",
+      "cause": "Guard condition syntax error or always false",
+      "solutions": [
+        {
+          "approach": "Check condition syntax",
+          "code": "await x > 0 /\\ y < 10;",
+          "when": "Condition syntax wrong"
+        },
+        {
+          "approach": "Use when in with",
+          "code": "with (i \\in S) when i > 0 do\n  x := i;\nend with;",
+          "when": "Filtering in with block"
+        },
+        {
+          "approach": "Verify condition satisfiable",
+          "code": "\\* Ensure initial state can satisfy await\nawait Len(queue) > 0;",
+          "when": "Condition never true"
+        }
+      ]
+    },
+    {
+      "id": "either_error",
+      "pattern": "either.*error|or.*block",
+      "message": "Either/or block error",
+      "cause": "Syntax error in non-deterministic choice block",
+      "solutions": [
+        {
+          "approach": "Use correct either syntax",
+          "code": "either\n  x := 1;\nor\n  x := 2;\nor\n  x := 3;\nend either;",
+          "when": "Either block syntax wrong"
+        },
+        {
+          "approach": "Add labels if needed",
+          "code": "L1: either\n      L2: x := 1;\n    or\n      L3: x := 2;\n    end either;",
+          "when": "Labels required in branches"
+        }
+      ]
+    },
+    {
+      "id": "with_error",
+      "pattern": "with.*error|\\\\in.*error",
+      "message": "With block error",
+      "cause": "Syntax error in with block for non-deterministic selection",
+      "solutions": [
+        {
+          "approach": "Use correct with syntax",
+          "code": "with (i \\in 1..N) do\n  x := i;\nend with;",
+          "when": "With syntax wrong"
+        },
+        {
+          "approach": "Multiple selections",
+          "code": "with (i \\in S, j \\in T) do\n  x := i + j;\nend with;",
+          "when": "Need multiple choices"
+        }
+      ]
+    },
+    {
+      "id": "sequence_error",
+      "pattern": "sequence.*error|Append.*error|Head.*Tail",
+      "message": "Sequence operation error",
+      "cause": "Error operating on TLA+ sequences",
+      "solutions": [
+        {
+          "approach": "Initialize sequence",
+          "code": "variables seq = <<1, 2, 3>>;",
+          "when": "Sequence literal wrong"
+        },
+        {
+          "approach": "Append correctly",
+          "code": "seq := Append(seq, elem);",
+          "when": "Append syntax wrong"
+        },
+        {
+          "approach": "Check non-empty before Head/Tail",
+          "code": "await Len(seq) > 0;\nx := Head(seq);\nseq := Tail(seq);",
+          "when": "Head/Tail on empty sequence"
+        }
+      ]
+    },
+    {
+      "id": "macro_error",
+      "pattern": "macro.*error|expand.*error",
+      "message": "Macro definition or expansion error",
+      "cause": "Issue with PlusCal macro",
+      "solutions": [
+        {
+          "approach": "Define macro correctly",
+          "code": "macro inc(v) begin\n  v := v + 1;\nend macro;",
+          "when": "Macro definition wrong"
+        },
+        {
+          "approach": "Use macro correctly",
+          "code": "L1: inc(counter);",
+          "when": "Macro call wrong"
+        },
+        {
+          "approach": "Avoid labels in macros",
+          "code": "\\* Macros cannot contain labels",
+          "when": "Label in macro"
+        }
+      ]
+    },
+    {
+      "id": "invariant_violated",
+      "pattern": "Invariant.*violated|TypeOK.*FALSE",
+      "message": "Model checker found invariant violation",
+      "cause": "System can reach state violating declared invariant",
+      "solutions": [
+        {
+          "approach": "Examine error trace",
+          "code": "\\* Click on error in TLC output to see trace",
+          "when": "Need to understand violation"
+        },
+        {
+          "approach": "Strengthen guards",
+          "code": "await condition1 /\\ condition2;",
+          "when": "Action enabled when shouldn't be"
+        },
+        {
+          "approach": "Fix algorithm logic",
+          "code": "\\* Algorithm has bug - trace shows how",
+          "when": "Real bug found"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "tool": "z3",
+  "version": "4.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unknown_result",
+      "pattern": "unknown",
+      "message": "Result: unknown",
+      "cause": "Z3 could not determine satisfiability within resource limits",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "(set-option :timeout 60000)  ; 60 seconds",
+          "when": "Problem may be solvable with more time"
+        },
+        {
+          "approach": "Simplify the problem",
+          "code": "; Break into smaller subproblems",
+          "when": "Formula is too complex"
+        },
+        {
+          "approach": "Change tactics",
+          "code": "(check-sat-using (then simplify smt))",
+          "when": "Default strategy isn't working"
+        },
+        {
+          "approach": "Use incremental solving",
+          "code": "(push) (assert ...) (check-sat) (pop)",
+          "when": "Want to explore incrementally"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Solver timed out",
+      "cause": "Problem took too long to solve",
+      "solutions": [
+        {
+          "approach": "Add quantifier patterns",
+          "code": "(forall ((x Int)) (! (P x) :pattern ((f x))))",
+          "when": "Quantifiers cause explosion"
+        },
+        {
+          "approach": "Use finite domains",
+          "code": "(assert (and (<= 0 x) (< x 100)))",
+          "when": "Can bound variable ranges"
+        },
+        {
+          "approach": "Avoid non-linear arithmetic",
+          "code": "; Replace x*y with auxiliary variable",
+          "when": "Problem has multiplication of variables"
+        },
+        {
+          "approach": "Use QF logic",
+          "code": "(set-logic QF_LIA)  ; Quantifier-free linear integer arithmetic",
+          "when": "Problem is actually quantifier-free"
+        }
+      ]
+    },
+    {
+      "id": "sort_mismatch",
+      "pattern": "sort mismatch",
+      "message": "Sort mismatch at position X",
+      "cause": "Expression has wrong type/sort",
+      "solutions": [
+        {
+          "approach": "Check declarations",
+          "code": "(declare-fun f (Int) Bool)  ; Verify parameter sorts",
+          "when": "Function applied to wrong argument type"
+        },
+        {
+          "approach": "Add type conversion",
+          "code": "(to_int x)  ; or (to_real x)",
+          "when": "Need to convert between numeric types"
+        },
+        {
+          "approach": "Check operator overloading",
+          "code": "; + works on Int, Real, BitVec - ensure consistency",
+          "when": "Mixed numeric types"
+        }
+      ]
+    },
+    {
+      "id": "undeclared_identifier",
+      "pattern": "unknown constant",
+      "message": "Unknown constant or function symbol",
+      "cause": "Symbol not declared before use",
+      "solutions": [
+        {
+          "approach": "Declare the constant",
+          "code": "(declare-const x Int)",
+          "when": "Variable not declared"
+        },
+        {
+          "approach": "Declare the function",
+          "code": "(declare-fun f (Int Int) Bool)",
+          "when": "Function not declared"
+        },
+        {
+          "approach": "Define the function",
+          "code": "(define-fun f ((x Int)) Int (+ x 1))",
+          "when": "Want to define rather than declare"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_combination",
+      "pattern": "unsupported",
+      "message": "Unsupported theory combination",
+      "cause": "Z3 cannot handle this combination of theories",
+      "solutions": [
+        {
+          "approach": "Check logic",
+          "code": "(set-logic ALL)  ; or specific logic",
+          "when": "Wrong logic selected"
+        },
+        {
+          "approach": "Avoid mixing theories",
+          "code": "; Keep arrays, bitvectors, reals separate if possible",
+          "when": "Theory combination is problematic"
+        },
+        {
+          "approach": "Use approximation",
+          "code": "; Model the problem differently",
+          "when": "Original encoding not supported"
+        }
+      ]
+    },
+    {
+      "id": "model_incomplete",
+      "pattern": "model is not available",
+      "message": "Model is not available",
+      "cause": "Tried to get model when result was unsat or unknown",
+      "solutions": [
+        {
+          "approach": "Check result first",
+          "code": "(check-sat)  ; Must be sat before (get-model)",
+          "when": "Forgot to check satisfiability"
+        },
+        {
+          "approach": "Enable model production",
+          "code": "(set-option :produce-models true)",
+          "when": "Model generation disabled"
+        }
+      ]
+    },
+    {
+      "id": "quantifier_instantiation",
+      "pattern": "quantifier instantiation",
+      "message": "Quantifier instantiation failure or explosion",
+      "cause": "Too many or no useful quantifier instantiations",
+      "solutions": [
+        {
+          "approach": "Add patterns/triggers",
+          "code": "(forall ((x T)) (! (body x) :pattern ((trigger x))))",
+          "when": "Need to guide instantiation"
+        },
+        {
+          "approach": "Use mbqi",
+          "code": "(set-option :smt.mbqi true)",
+          "when": "Want model-based quantifier instantiation"
+        },
+        {
+          "approach": "Bound quantifiers",
+          "code": "(forall ((x Int)) (=> (and (<= 0 x) (< x N)) (P x)))",
+          "when": "Can limit quantifier range"
+        },
+        {
+          "approach": "Use Skolemization",
+          "code": "; Replace existential with fresh constant",
+          "when": "Can eliminate some quantifiers"
+        }
+      ]
+    },
+    {
+      "id": "non_linear_arithmetic",
+      "pattern": "non-linear arithmetic",
+      "message": "Non-linear arithmetic is undecidable",
+      "cause": "Problem contains multiplication of variables",
+      "solutions": [
+        {
+          "approach": "Use nlsat tactic",
+          "code": "(check-sat-using qfnra-nlsat)",
+          "when": "Problem is polynomial over reals"
+        },
+        {
+          "approach": "Linearize",
+          "code": "; Introduce auxiliary variable z = x*y with constraints",
+          "when": "Can encode multiplication explicitly"
+        },
+        {
+          "approach": "Use interval arithmetic",
+          "code": "; Bound variables and approximate",
+          "when": "Exact solution not needed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "torch_testing",
+  "version": "PyTorch 2.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assert_close_failure",
+      "pattern": "AssertionError.*assert_close",
+      "message": "torch.testing.assert_close failed",
+      "cause": "Tensors differ beyond tolerance",
+      "solutions": [
+        {
+          "approach": "Increase tolerance",
+          "code": "torch.testing.assert_close(a, b, rtol=1e-4, atol=1e-6)",
+          "when": "Minor numerical differences"
+        },
+        {
+          "approach": "Check NaN/Inf",
+          "code": "torch.testing.assert_close(a, b, equal_nan=True)",
+          "when": "NaN values expected"
+        },
+        {
+          "approach": "Use appropriate dtypes",
+          "code": "# float16 has lower precision than float32",
+          "when": "Low precision dtype"
+        }
+      ]
+    },
+    {
+      "id": "dtype_mismatch",
+      "pattern": "dtype.*mismatch|Expected.*dtype.*got",
+      "message": "Tensor dtypes don't match",
+      "cause": "Tensors have different data types",
+      "solutions": [
+        {
+          "approach": "Allow dtype promotion",
+          "code": "torch.testing.assert_close(a, b, check_dtype=False)",
+          "when": "Dtype difference acceptable"
+        },
+        {
+          "approach": "Cast to same dtype",
+          "code": "a = a.to(b.dtype)",
+          "when": "Need exact match"
+        },
+        {
+          "approach": "Specify expected dtype",
+          "code": "assert output.dtype == torch.float32",
+          "when": "Verifying output type"
+        }
+      ]
+    },
+    {
+      "id": "device_mismatch",
+      "pattern": "device.*mismatch|Expected.*device.*got",
+      "message": "Tensors on different devices",
+      "cause": "One tensor on CPU, other on GPU",
+      "solutions": [
+        {
+          "approach": "Skip device check",
+          "code": "torch.testing.assert_close(a, b, check_device=False)",
+          "when": "Device doesn't matter for comparison"
+        },
+        {
+          "approach": "Move to same device",
+          "code": "a = a.to(b.device)",
+          "when": "Need same device"
+        },
+        {
+          "approach": "Compare on CPU",
+          "code": "torch.testing.assert_close(a.cpu(), b.cpu())",
+          "when": "Always compare on CPU"
+        }
+      ]
+    },
+    {
+      "id": "layout_mismatch",
+      "pattern": "layout.*mismatch",
+      "message": "Tensor layouts don't match",
+      "cause": "Dense vs sparse or different memory layouts",
+      "solutions": [
+        {
+          "approach": "Convert to dense",
+          "code": "if a.is_sparse:\n    a = a.to_dense()",
+          "when": "Comparing sparse to dense"
+        },
+        {
+          "approach": "Use contiguous tensors",
+          "code": "a = a.contiguous()",
+          "when": "Memory layout issues"
+        },
+        {
+          "approach": "Skip layout check",
+          "code": "torch.testing.assert_close(a, b, check_layout=False)",
+          "when": "Layout difference acceptable"
+        }
+      ]
+    },
+    {
+      "id": "stride_mismatch",
+      "pattern": "stride.*mismatch",
+      "message": "Tensor strides don't match",
+      "cause": "Different memory layouts or views",
+      "solutions": [
+        {
+          "approach": "Skip stride check",
+          "code": "torch.testing.assert_close(a, b, check_stride=False)",
+          "when": "Stride doesn't matter"
+        },
+        {
+          "approach": "Make contiguous",
+          "code": "a = a.contiguous()\nb = b.contiguous()",
+          "when": "Need same strides"
+        },
+        {
+          "approach": "Clone tensor",
+          "code": "a = a.clone()  # Fresh tensor with default strides",
+          "when": "View causing stride difference"
+        }
+      ]
+    },
+    {
+      "id": "make_tensor_error",
+      "pattern": "make_tensor.*error|Invalid.*dtype.*device",
+      "message": "torch.testing.make_tensor failed",
+      "cause": "Invalid dtype/device combination or shape",
+      "solutions": [
+        {
+          "approach": "Check dtype support",
+          "code": "# Not all dtypes supported on all devices\ntensor = torch.testing.make_tensor((2, 3), dtype=torch.float32, device='cpu')",
+          "when": "Unsupported dtype/device combo"
+        },
+        {
+          "approach": "Specify valid range",
+          "code": "torch.testing.make_tensor((2, 3), dtype=torch.int8, low=-128, high=127)",
+          "when": "Values out of range for dtype"
+        },
+        {
+          "approach": "Use requires_grad correctly",
+          "code": "# requires_grad only for floating point\nt = torch.testing.make_tensor((2,), dtype=torch.float32, requires_grad=True)",
+          "when": "requires_grad on non-float"
+        }
+      ]
+    },
+    {
+      "id": "shape_mismatch_error",
+      "pattern": "Shapes.*do not match",
+      "message": "Tensor shapes don't match",
+      "cause": "Tensors have different dimensions or sizes",
+      "solutions": [
+        {
+          "approach": "Check shapes first",
+          "code": "assert a.shape == b.shape, f'Shape mismatch: {a.shape} vs {b.shape}'",
+          "when": "Debugging shape issues"
+        },
+        {
+          "approach": "Broadcast if appropriate",
+          "code": "# Shapes must be broadcastable for assert_close",
+          "when": "Shapes are broadcastable"
+        },
+        {
+          "approach": "Reshape tensors",
+          "code": "a = a.view(-1)\nb = b.view(-1)",
+          "when": "Only care about values, not shape"
+        }
+      ]
+    },
+    {
+      "id": "complex_tensor_error",
+      "pattern": "complex.*tensor.*error",
+      "message": "Complex tensor comparison failed",
+      "cause": "Complex numbers require special handling",
+      "solutions": [
+        {
+          "approach": "Compare real and imag",
+          "code": "torch.testing.assert_close(a.real, b.real)\ntorch.testing.assert_close(a.imag, b.imag)",
+          "when": "Debugging complex comparison"
+        },
+        {
+          "approach": "Use abs for magnitude",
+          "code": "torch.testing.assert_close(a.abs(), b.abs())",
+          "when": "Only care about magnitude"
+        },
+        {
+          "approach": "Check phase separately",
+          "code": "torch.testing.assert_close(a.angle(), b.angle(), atol=1e-5)",
+          "when": "Phase matters"
+        }
+      ]
+    }
+  ]
+}

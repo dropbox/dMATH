@@ -1,0 +1,127 @@
+{
+  "tool": "journalctl",
+  "version": "systemd",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|No journal files were opened|Hint: You are currently not seeing",
+      "message": "Cannot read journal",
+      "cause": "User not in appropriate group",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo journalctl",
+          "when": "View all logs"
+        },
+        {
+          "approach": "Add to group",
+          "code": "sudo usermod -aG systemd-journal $USER\n# Log out and back in",
+          "when": "Permanent access"
+        },
+        {
+          "approach": "User journal only",
+          "code": "journalctl --user",
+          "when": "Own logs only"
+        }
+      ]
+    },
+    {
+      "id": "no_entries",
+      "pattern": "No entries|no journal files|No journal files were found",
+      "message": "No log entries found",
+      "cause": "Journals empty or filtered too strictly",
+      "solutions": [
+        {
+          "approach": "Broaden filter",
+          "code": "journalctl --no-pager | head\njournalctl -b  # Current boot only",
+          "when": "Remove filters"
+        },
+        {
+          "approach": "Check persistence",
+          "code": "# Journals may not persist across reboot\nmkdir -p /var/log/journal\nsystemctl restart systemd-journald",
+          "when": "Enable persistence"
+        },
+        {
+          "approach": "Check service name",
+          "code": "journalctl -u nginx  # not 'nginx.service' needed\nsystemctl list-units | grep servicename",
+          "when": "Wrong unit name"
+        }
+      ]
+    },
+    {
+      "id": "disk_full",
+      "pattern": "No space left|disk full|journal rotation|System journal.*exhausted",
+      "message": "Journal taking too much space",
+      "cause": "Logs consuming disk space",
+      "solutions": [
+        {
+          "approach": "Vacuum old logs",
+          "code": "sudo journalctl --vacuum-time=7d  # Keep 7 days\nsudo journalctl --vacuum-size=500M  # Keep 500MB",
+          "when": "Clean up"
+        },
+        {
+          "approach": "Check usage",
+          "code": "journalctl --disk-usage",
+          "when": "See size"
+        },
+        {
+          "approach": "Configure limit",
+          "code": "# Edit /etc/systemd/journald.conf:\nSystemMaxUse=500M\nSystemMaxFileSize=50M\nsudo systemctl restart systemd-journald",
+          "when": "Permanent limit"
+        }
+      ]
+    },
+    {
+      "id": "common_usage",
+      "pattern": "how to|filter|examples",
+      "message": "Common usage",
+      "cause": "Reference needed",
+      "solutions": [
+        {
+          "approach": "By service",
+          "code": "journalctl -u nginx         # nginx logs\njournalctl -u nginx -f       # Follow\njournalctl -u nginx -n 100   # Last 100 lines",
+          "when": "Service logs"
+        },
+        {
+          "approach": "By time",
+          "code": "journalctl --since \"1 hour ago\"\njournalctl --since \"2024-01-01\" --until \"2024-01-02\"\njournalctl -b    # Current boot\njournalctl -b -1  # Previous boot",
+          "when": "Time filter"
+        },
+        {
+          "approach": "By priority",
+          "code": "journalctl -p err         # Errors and above\njournalctl -p warning     # Warnings and above\n# Priorities: emerg,alert,crit,err,warning,notice,info,debug",
+          "when": "Severity filter"
+        },
+        {
+          "approach": "Output format",
+          "code": "journalctl -o json-pretty  # JSON format\njournalctl -o verbose      # All fields\njournalctl -o short-iso    # ISO timestamps",
+          "when": "Format options"
+        }
+      ]
+    },
+    {
+      "id": "corrupt_journal",
+      "pattern": "corrupt|invalid|Journal file.*corrupted",
+      "message": "Journal corrupted",
+      "cause": "Journal files damaged",
+      "solutions": [
+        {
+          "approach": "Verify journal",
+          "code": "journalctl --verify",
+          "when": "Check integrity"
+        },
+        {
+          "approach": "Rotate and clean",
+          "code": "sudo journalctl --rotate\nsudo journalctl --vacuum-time=1s",
+          "when": "Fresh start"
+        },
+        {
+          "approach": "Remove corrupt files",
+          "code": "sudo rm /var/log/journal/*/system@*.journal~\nsudo systemctl restart systemd-journald",
+          "when": "Delete corrupt"
+        }
+      ]
+    }
+  ]
+}

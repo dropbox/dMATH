@@ -1,0 +1,171 @@
+{
+  "tool": "taskfile",
+  "version": "3.33.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "taskfile_not_found",
+      "pattern": "No Taskfile|Taskfile.yml.*not found|cannot find",
+      "message": "Taskfile.yml not found",
+      "cause": "No Taskfile in current or parent directories",
+      "solutions": [
+        {
+          "approach": "Create taskfile",
+          "code": "# Taskfile.yml\nversion: '3'\n\ntasks:\n  build:\n    cmds:\n      - go build",
+          "when": "New project"
+        },
+        {
+          "approach": "Specify taskfile",
+          "code": "task --taskfile path/to/Taskfile.yml build",
+          "when": "Non-standard location"
+        }
+      ]
+    },
+    {
+      "id": "task_not_found",
+      "pattern": "task.*not found|Unknown task|no task named",
+      "message": "Task not found",
+      "cause": "Specified task name doesn't exist",
+      "solutions": [
+        {
+          "approach": "List tasks",
+          "code": "task --list",
+          "when": "Find available tasks"
+        },
+        {
+          "approach": "Check namespaces",
+          "code": "# Tasks can be namespaced: task namespace:taskname",
+          "when": "Using includes"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "yaml.*error|parse.*error|invalid.*syntax",
+      "message": "Taskfile YAML syntax error",
+      "cause": "Invalid YAML in Taskfile",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "yamllint Taskfile.yml",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Check version",
+          "code": "# Ensure version is specified\nversion: '3'",
+          "when": "Missing version"
+        },
+        {
+          "approach": "Quote special chars",
+          "code": "tasks:\n  echo:\n    cmds:\n      - 'echo \"hello: world\"'",
+          "when": "YAML special characters"
+        }
+      ]
+    },
+    {
+      "id": "variable_error",
+      "pattern": "variable.*error|undefined variable|{{.*}}",
+      "message": "Variable error",
+      "cause": "Variable not defined or template error",
+      "solutions": [
+        {
+          "approach": "Define variables",
+          "code": "version: '3'\n\nvars:\n  GREETING: Hello\n\ntasks:\n  greet:\n    cmds:\n      - echo \"{{.GREETING}}\"",
+          "when": "Add variable"
+        },
+        {
+          "approach": "Environment variable",
+          "code": "tasks:\n  build:\n    cmds:\n      - echo $HOME\n      - echo {{.HOME}}",
+          "when": "Use env var"
+        },
+        {
+          "approach": "Dynamic variable",
+          "code": "vars:\n  GIT_SHA:\n    sh: git rev-parse HEAD",
+          "when": "Command output"
+        }
+      ]
+    },
+    {
+      "id": "command_failed",
+      "pattern": "task.*failed|exit status|command failed",
+      "message": "Task command failed",
+      "cause": "Command returned non-zero exit code",
+      "solutions": [
+        {
+          "approach": "Ignore errors",
+          "code": "tasks:\n  build:\n    cmds:\n      - cmd: might-fail\n        ignore_error: true",
+          "when": "Continue on failure"
+        },
+        {
+          "approach": "Verbose mode",
+          "code": "task --verbose build",
+          "when": "Debug task"
+        },
+        {
+          "approach": "Check sources",
+          "code": "tasks:\n  build:\n    sources:\n      - '**/*.go'\n    generates:\n      - bin/app",
+          "when": "Source/generate issues"
+        }
+      ]
+    },
+    {
+      "id": "dependency_error",
+      "pattern": "dependency.*error|circular|deps.*failed",
+      "message": "Task dependency error",
+      "cause": "Dependency cycle or dependency failed",
+      "solutions": [
+        {
+          "approach": "Check deps",
+          "code": "tasks:\n  build:\n    deps: [compile, lint]\n    cmds:\n      - echo done",
+          "when": "Define dependencies"
+        },
+        {
+          "approach": "Parallel deps",
+          "code": "tasks:\n  build:\n    deps:\n      - task: compile\n      - task: lint\n    cmds:\n      - echo done",
+          "when": "Parallel execution"
+        }
+      ]
+    },
+    {
+      "id": "includes_error",
+      "pattern": "include.*error|cannot include|imported.*not found",
+      "message": "Taskfile include error",
+      "cause": "Included Taskfile not found or has errors",
+      "solutions": [
+        {
+          "approach": "Check include path",
+          "code": "includes:\n  docker: ./docker/Taskfile.yml\n  tests:\n    taskfile: ./tests/Taskfile.yml\n    optional: true",
+          "when": "Fix include path"
+        },
+        {
+          "approach": "Remote include",
+          "code": "includes:\n  remote: https://raw.githubusercontent.com/org/repo/main/Taskfile.yml",
+          "when": "Include from URL"
+        }
+      ]
+    },
+    {
+      "id": "status_check_error",
+      "pattern": "status.*error|precondition|checksum",
+      "message": "Task status check failed",
+      "cause": "Status/precondition check failed",
+      "solutions": [
+        {
+          "approach": "Define status",
+          "code": "tasks:\n  build:\n    cmds:\n      - go build -o bin/app\n    status:\n      - test -f bin/app",
+          "when": "Skip if up-to-date"
+        },
+        {
+          "approach": "Define preconditions",
+          "code": "tasks:\n  deploy:\n    preconditions:\n      - test -f bin/app\n      - sh: '[ \"$ENV\" = \"production\" ]'\n        msg: \"Must be production\"",
+          "when": "Require conditions"
+        },
+        {
+          "approach": "Force run",
+          "code": "task --force build",
+          "when": "Ignore status"
+        }
+      ]
+    }
+  ]
+}

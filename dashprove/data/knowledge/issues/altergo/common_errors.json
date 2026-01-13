@@ -1,0 +1,191 @@
+{
+  "tool": "altergo",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "Timeout",
+      "message": "Timeout exceeded",
+      "cause": "Alt-Ergo could not prove the goal within the time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "alt-ergo --timelimit 120 file.ae",
+          "when": "Goal may be provable with more time"
+        },
+        {
+          "approach": "Add intermediate lemmas",
+          "code": "lemma helper: forall x:int. P(x) -> Q(x)",
+          "when": "Proof requires intermediate steps"
+        },
+        {
+          "approach": "Use triggers",
+          "code": "axiom a: forall x:int [f(x)]. P(f(x))",
+          "when": "Quantifier instantiation needs guidance"
+        },
+        {
+          "approach": "Split into subgoals",
+          "code": "goal g1: P and goal g2: Q",
+          "when": "Goal is too complex"
+        }
+      ]
+    },
+    {
+      "id": "unknown",
+      "pattern": "Unknown",
+      "message": "Unknown result",
+      "cause": "Alt-Ergo could not determine validity",
+      "solutions": [
+        {
+          "approach": "Add more axioms",
+          "code": "axiom domain: forall x:int. 0 <= x -> P(x)",
+          "when": "Missing background theory"
+        },
+        {
+          "approach": "Use SAT solver fallback",
+          "code": "alt-ergo --sat-solver Tableaux file.ae",
+          "when": "Different SAT solver may help"
+        },
+        {
+          "approach": "Enable case splitting",
+          "code": "alt-ergo --case-split-policy after-theory-assume file.ae",
+          "when": "Need to explore case distinctions"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "Syntax error",
+      "message": "Syntax error at line N",
+      "cause": "Input file has syntax error",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "type t = int  (* not type t: int *)",
+          "when": "Using wrong syntax for declarations"
+        },
+        {
+          "approach": "Check keywords",
+          "code": "logic f: int -> int  (* logic not function *)",
+          "when": "Using wrong keyword"
+        },
+        {
+          "approach": "Check quantifier syntax",
+          "code": "forall x:int. P(x)  (* colon not comma *)",
+          "when": "Wrong quantifier format"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type error",
+      "message": "Type mismatch",
+      "cause": "Expression has incompatible types",
+      "solutions": [
+        {
+          "approach": "Check function signatures",
+          "code": "logic f: int -> bool  (* verify parameter/return types *)",
+          "when": "Function applied to wrong type"
+        },
+        {
+          "approach": "Use type annotations",
+          "code": "let x: int = 42",
+          "when": "Type inference fails"
+        },
+        {
+          "approach": "Check operator types",
+          "code": "(* + works on int and real, not mixed *)",
+          "when": "Arithmetic type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "unbound_symbol",
+      "pattern": "Unbound symbol",
+      "message": "Unbound identifier",
+      "cause": "Symbol not declared before use",
+      "solutions": [
+        {
+          "approach": "Declare logic symbol",
+          "code": "logic x: int",
+          "when": "Variable not declared"
+        },
+        {
+          "approach": "Declare function",
+          "code": "logic f: int, int -> bool",
+          "when": "Function not declared"
+        },
+        {
+          "approach": "Define type",
+          "code": "type mytype",
+          "when": "Using undefined type"
+        }
+      ]
+    },
+    {
+      "id": "quantifier_explosion",
+      "pattern": "too many instances",
+      "message": "Quantifier instantiation limit exceeded",
+      "cause": "Too many quantifier instantiations generated",
+      "solutions": [
+        {
+          "approach": "Limit instantiation depth",
+          "code": "alt-ergo --instantiation-depth 3 file.ae",
+          "when": "Exponential blowup from nested quantifiers"
+        },
+        {
+          "approach": "Use better triggers",
+          "code": "axiom a: forall x:int [specific_trigger(x)]. P(x)",
+          "when": "Current triggers too permissive"
+        },
+        {
+          "approach": "Add explicit bounds",
+          "code": "forall x:int. 0 <= x <= 100 -> P(x)",
+          "when": "Can restrict domain"
+        }
+      ]
+    },
+    {
+      "id": "incomplete_match",
+      "pattern": "non-exhaustive",
+      "message": "Non-exhaustive pattern match",
+      "cause": "Pattern match doesn't cover all cases",
+      "solutions": [
+        {
+          "approach": "Add missing cases",
+          "code": "match x with | A -> ... | B -> ... | _ -> ...",
+          "when": "Missing constructor cases"
+        },
+        {
+          "approach": "Add default case",
+          "code": "| _ -> default_value",
+          "when": "Want catch-all behavior"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "Out of memory",
+      "message": "Memory limit exceeded",
+      "cause": "Problem requires too much memory",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "alt-ergo --max-memory 8000 file.ae",
+          "when": "System has more memory available"
+        },
+        {
+          "approach": "Simplify the problem",
+          "code": "(* Break into smaller lemmas *)",
+          "when": "Problem can be decomposed"
+        },
+        {
+          "approach": "Reduce quantifier depth",
+          "code": "(* Flatten nested quantifiers *)",
+          "when": "Deep quantifier nesting"
+        }
+      ]
+    }
+  ]
+}

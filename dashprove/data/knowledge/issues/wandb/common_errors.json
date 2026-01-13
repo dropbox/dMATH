@@ -1,0 +1,191 @@
+{
+  "tool": "wandb",
+  "version": "0.16.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "api_key_error",
+      "pattern": "wandb: ERROR api_key",
+      "message": "API key authentication failed",
+      "cause": "Missing, invalid, or expired API key",
+      "solutions": [
+        {
+          "approach": "Login again",
+          "code": "wandb login",
+          "when": "Key not configured"
+        },
+        {
+          "approach": "Set environment variable",
+          "code": "export WANDB_API_KEY=your_key_here",
+          "when": "Running in CI/CD"
+        },
+        {
+          "approach": "Use service account",
+          "code": "wandb login --relogin --host=https://api.wandb.ai",
+          "when": "Using enterprise/self-hosted"
+        }
+      ]
+    },
+    {
+      "id": "run_init_error",
+      "pattern": "wandb: ERROR Could not create run",
+      "message": "Failed to initialize wandb run",
+      "cause": "Network issue, invalid project/entity, or config error",
+      "solutions": [
+        {
+          "approach": "Check network connectivity",
+          "code": "curl https://api.wandb.ai/healthz",
+          "when": "Network/firewall blocking"
+        },
+        {
+          "approach": "Use offline mode",
+          "code": "wandb.init(mode='offline')",
+          "when": "No network available"
+        },
+        {
+          "approach": "Verify project exists",
+          "code": "wandb.init(project='existing_project', entity='your_entity')",
+          "when": "Project/entity misconfigured"
+        }
+      ]
+    },
+    {
+      "id": "sync_error",
+      "pattern": "wandb: ERROR Unable to sync",
+      "message": "Failed to sync run data",
+      "cause": "Upload failed or corrupted local files",
+      "solutions": [
+        {
+          "approach": "Manual sync",
+          "code": "wandb sync wandb/offline-run-*/",
+          "when": "Sync interrupted"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "rm -rf wandb/.wandb-cache",
+          "when": "Cache corrupted"
+        },
+        {
+          "approach": "Resume run",
+          "code": "wandb.init(resume='must', id='previous_run_id')",
+          "when": "Want to continue previous run"
+        }
+      ]
+    },
+    {
+      "id": "artifact_error",
+      "pattern": "wandb: ERROR artifact",
+      "message": "Artifact upload/download failed",
+      "cause": "Large file, network timeout, or permission issue",
+      "solutions": [
+        {
+          "approach": "Use reference artifacts",
+          "code": "artifact.add_reference('s3://bucket/path', 'model.pt')",
+          "when": "File too large for direct upload"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "wandb.init(settings=wandb.Settings(program_relpath='train.py'))",
+          "when": "Large artifacts timing out"
+        },
+        {
+          "approach": "Check artifact permissions",
+          "code": "wandb.use_artifact('entity/project/artifact:version')",
+          "when": "Access denied to artifact"
+        }
+      ]
+    },
+    {
+      "id": "media_logging_error",
+      "pattern": "wandb: ERROR media",
+      "message": "Failed to log media (images/video/audio)",
+      "cause": "Invalid media format or too many media items",
+      "solutions": [
+        {
+          "approach": "Use correct media type",
+          "code": "wandb.log({'image': wandb.Image(pil_image)})",
+          "when": "Need to wrap media correctly"
+        },
+        {
+          "approach": "Limit media per step",
+          "code": "if step % 100 == 0:\n    wandb.log({'images': [wandb.Image(img) for img in images[:10]]})",
+          "when": "Logging too much media"
+        },
+        {
+          "approach": "Convert media format",
+          "code": "wandb.log({'video': wandb.Video(np.array(frames), fps=30)})",
+          "when": "Media in wrong format"
+        }
+      ]
+    },
+    {
+      "id": "sweep_error",
+      "pattern": "wandb: ERROR sweep",
+      "message": "Hyperparameter sweep failed",
+      "cause": "Invalid sweep config or agent error",
+      "solutions": [
+        {
+          "approach": "Validate sweep config",
+          "code": "sweep_config = {\n    'method': 'bayes',\n    'metric': {'name': 'val_loss', 'goal': 'minimize'},\n    'parameters': {'lr': {'min': 1e-5, 'max': 1e-2}}\n}",
+          "when": "Config schema invalid"
+        },
+        {
+          "approach": "Handle agent failures gracefully",
+          "code": "try:\n    train()\nexcept Exception as e:\n    wandb.log({'error': str(e)})\n    raise",
+          "when": "Training crashes affect sweep"
+        },
+        {
+          "approach": "Resume sweep",
+          "code": "wandb.agent(sweep_id, function=train, count=10)",
+          "when": "Need to continue sweep"
+        }
+      ]
+    },
+    {
+      "id": "table_error",
+      "pattern": "wandb: ERROR table",
+      "message": "Failed to log wandb.Table",
+      "cause": "Invalid table data or schema mismatch",
+      "solutions": [
+        {
+          "approach": "Define columns explicitly",
+          "code": "table = wandb.Table(columns=['id', 'prediction', 'label'])\nfor row in data:\n    table.add_data(*row)",
+          "when": "Column inference failed"
+        },
+        {
+          "approach": "Use DataFrame",
+          "code": "wandb.log({'table': wandb.Table(dataframe=df)})",
+          "when": "Converting from pandas"
+        },
+        {
+          "approach": "Limit table size",
+          "code": "wandb.log({'table': wandb.Table(dataframe=df.head(10000))})",
+          "when": "Table too large"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_run_error",
+      "pattern": "wandb: ERROR duplicate",
+      "message": "Run ID already exists",
+      "cause": "Trying to create run with existing ID without resume",
+      "solutions": [
+        {
+          "approach": "Use unique run ID",
+          "code": "wandb.init(id=wandb.util.generate_id())",
+          "when": "Need new unique run"
+        },
+        {
+          "approach": "Resume existing run",
+          "code": "wandb.init(resume='allow', id='existing_id')",
+          "when": "Want to continue run"
+        },
+        {
+          "approach": "Force new run",
+          "code": "wandb.init(reinit=True)",
+          "when": "Multiple runs in same process"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "tool": "triton",
+  "version": "2.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "kernel_launch_error",
+      "pattern": "(launch|grid|block|CUDA)",
+      "message": "Kernel launch error",
+      "cause": "Invalid grid or block configuration",
+      "solutions": [
+        {
+          "approach": "Configure grid",
+          "code": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef kernel(x_ptr, output_ptr, n_elements, BLOCK_SIZE: tl.constexpr):\n    pid = tl.program_id(0)\n    offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)\n    mask = offsets < n_elements\n    x = tl.load(x_ptr + offsets, mask=mask)\n    tl.store(output_ptr + offsets, x * 2, mask=mask)\n\ngrid = lambda meta: (triton.cdiv(n_elements, meta['BLOCK_SIZE']),)\nkernel[grid](x, output, n_elements, BLOCK_SIZE=1024)",
+          "when": "Basic kernel launch"
+        },
+        {
+          "approach": "Check dimensions",
+          "code": "# Grid must be positive\nassert n_elements > 0\ngrid = (triton.cdiv(n_elements, BLOCK_SIZE),)",
+          "when": "Grid size issues"
+        }
+      ]
+    },
+    {
+      "id": "memory_access_error",
+      "pattern": "(load|store|pointer|mask)",
+      "message": "Memory access error",
+      "cause": "Invalid memory access in kernel",
+      "solutions": [
+        {
+          "approach": "Use masking",
+          "code": "@triton.jit\ndef kernel(x_ptr, n_elements, BLOCK_SIZE: tl.constexpr):\n    pid = tl.program_id(0)\n    offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)\n    mask = offsets < n_elements  # Prevent out-of-bounds\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)",
+          "when": "Bounds checking"
+        },
+        {
+          "approach": "Check alignment",
+          "code": "# Ensure tensor is contiguous\nx = x.contiguous()\nassert x.stride(-1) == 1",
+          "when": "Memory layout issues"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "(dtype|type|float|int)",
+      "message": "Data type error",
+      "cause": "Type mismatch between tensors or operations",
+      "solutions": [
+        {
+          "approach": "Cast types",
+          "code": "@triton.jit\ndef kernel(x_ptr, BLOCK_SIZE: tl.constexpr):\n    x = tl.load(x_ptr + offsets)\n    x_fp32 = x.to(tl.float32)  # Cast to float32\n    result = tl.sqrt(x_fp32)\n    result_fp16 = result.to(tl.float16)",
+          "when": "Type conversion needed"
+        },
+        {
+          "approach": "Match tensor types",
+          "code": "# Ensure input tensors match\nx = x.to(torch.float16)\ny = y.to(torch.float16)\nkernel[grid](x, y, ...)",
+          "when": "Input type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "(compile|jit|constexpr|autotune)",
+      "message": "Kernel compilation error",
+      "cause": "JIT compilation failed",
+      "solutions": [
+        {
+          "approach": "Check constexpr",
+          "code": "@triton.jit\ndef kernel(\n    x_ptr,\n    BLOCK_SIZE: tl.constexpr,  # Must be constexpr\n    N_ELEMENTS: tl.constexpr\n):\n    pass\n\nkernel[grid](x, BLOCK_SIZE=1024, N_ELEMENTS=n)",
+          "when": "Constexpr issues"
+        },
+        {
+          "approach": "Use autotune",
+          "code": "@triton.autotune(\n    configs=[\n        triton.Config({'BLOCK_SIZE': 128}),\n        triton.Config({'BLOCK_SIZE': 256}),\n        triton.Config({'BLOCK_SIZE': 512}),\n    ],\n    key=['n_elements']\n)\n@triton.jit\ndef kernel(x_ptr, n_elements, BLOCK_SIZE: tl.constexpr):\n    pass",
+          "when": "Auto-tuning kernels"
+        }
+      ]
+    },
+    {
+      "id": "reduction_error",
+      "pattern": "(reduce|sum|max|min)",
+      "message": "Reduction operation error",
+      "cause": "Incorrect reduction configuration",
+      "solutions": [
+        {
+          "approach": "Block reduction",
+          "code": "@triton.jit\ndef sum_kernel(x_ptr, output_ptr, n_elements, BLOCK_SIZE: tl.constexpr):\n    pid = tl.program_id(0)\n    offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)\n    mask = offsets < n_elements\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    block_sum = tl.sum(x, axis=0)\n    # Atomic add for final result\n    tl.atomic_add(output_ptr, block_sum)",
+          "when": "Sum reduction"
+        }
+      ]
+    },
+    {
+      "id": "matmul_error",
+      "pattern": "(matmul|dot|GEMM|matrix)",
+      "message": "Matrix multiplication error",
+      "cause": "Invalid matrix dimensions or tile configuration",
+      "solutions": [
+        {
+          "approach": "Tiled matmul",
+          "code": "@triton.jit\ndef matmul_kernel(\n    a_ptr, b_ptr, c_ptr,\n    M, N, K,\n    BLOCK_M: tl.constexpr, BLOCK_N: tl.constexpr, BLOCK_K: tl.constexpr\n):\n    pid = tl.program_id(0)\n    pid_m = pid // tl.cdiv(N, BLOCK_N)\n    pid_n = pid % tl.cdiv(N, BLOCK_N)\n    # Load tiles and compute\n    accumulator = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)\n    for k in range(0, K, BLOCK_K):\n        a = tl.load(a_ptr + ...)  # Load A tile\n        b = tl.load(b_ptr + ...)  # Load B tile\n        accumulator += tl.dot(a, b)",
+          "when": "Matrix multiplication"
+        }
+      ]
+    }
+  ]
+}

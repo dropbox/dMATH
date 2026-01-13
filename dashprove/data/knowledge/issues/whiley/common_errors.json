@@ -1,0 +1,327 @@
+{
+  "tool_id": "whiley",
+  "tool_name": "Whiley",
+  "tool_version": "0.8",
+  "category": "verification_language",
+  "error_patterns": [
+    {
+      "id": "whiley_precondition_failure",
+      "pattern": "precondition not satisfied|requires clause may fail|precondition failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley verifier cannot prove a precondition holds at call site",
+      "common_causes": [
+        "Caller doesn't establish required condition",
+        "Type constraints not satisfied",
+        "Missing null check",
+        "Value out of specified range"
+      ],
+      "solutions": [
+        "Add assertions before call",
+        "Use flow typing to establish condition",
+        "Add explicit type test",
+        "Strengthen caller's context"
+      ],
+      "examples": [
+        {
+          "error": "precondition not satisfied: requires x >= 0",
+          "context": "factorial(n) where n might be negative",
+          "fix": "if n >= 0: factorial(n)"
+        }
+      ],
+      "related_errors": ["whiley_postcondition_failure"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_postcondition_failure",
+      "pattern": "postcondition not satisfied|ensures clause may fail|postcondition failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley verifier cannot prove a postcondition is established",
+      "common_causes": [
+        "Implementation doesn't satisfy ensures clause",
+        "Missing case in implementation",
+        "Loop doesn't establish required condition",
+        "Wrong computation"
+      ],
+      "solutions": [
+        "Fix the implementation",
+        "Add loop invariant",
+        "Weaken postcondition if too strong",
+        "Add intermediate assertions"
+      ],
+      "examples": [
+        {
+          "error": "postcondition not satisfied: ensures result > 0",
+          "context": "Function may return zero",
+          "fix": "Ensure all return paths return positive"
+        }
+      ],
+      "related_errors": ["whiley_precondition_failure"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_type_error",
+      "pattern": "type error|incompatible types|cannot assign|type mismatch",
+      "severity": "error",
+      "category": "type_error",
+      "description": "Whiley type checker detected a type error",
+      "common_causes": [
+        "Incompatible types in assignment",
+        "Wrong parameter type",
+        "Return type mismatch",
+        "Union type not narrowed"
+      ],
+      "solutions": [
+        "Use correct type",
+        "Add type test to narrow union",
+        "Convert types explicitly",
+        "Fix function signature"
+      ],
+      "examples": [
+        {
+          "error": "type error: expected int, found int|null",
+          "context": "Using nullable without check",
+          "fix": "if x is int: use x"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_loop_invariant_failure",
+      "pattern": "loop invariant not maintained|invariant may fail|loop invariant failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley cannot prove loop invariant is maintained",
+      "common_causes": [
+        "Invariant too strong for loop body",
+        "Invariant not established initially",
+        "Side effect breaks invariant",
+        "Missing case in loop"
+      ],
+      "solutions": [
+        "Weaken invariant to match actual behavior",
+        "Ensure invariant holds before loop",
+        "Check all loop paths maintain invariant",
+        "Add intermediate assertions"
+      ],
+      "examples": [
+        {
+          "error": "loop invariant may fail: sum >= 0",
+          "context": "Sum might go negative in loop",
+          "fix": "Ensure loop operations preserve invariant"
+        }
+      ],
+      "related_errors": ["whiley_postcondition_failure"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_assertion_failure",
+      "pattern": "assertion may fail|assert not satisfied|assertion failure",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley cannot prove an assertion",
+      "common_causes": [
+        "Logic error in code",
+        "Insufficient context for assertion",
+        "Incorrect assumption",
+        "Missing preconditions"
+      ],
+      "solutions": [
+        "Review code logic",
+        "Add helper assertions",
+        "Strengthen context",
+        "Check assumptions"
+      ],
+      "examples": [
+        {
+          "error": "assertion may fail: assert items.length > 0",
+          "context": "Array might be empty",
+          "fix": "Add check or requires clause"
+        }
+      ],
+      "related_errors": ["whiley_precondition_failure"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_array_bounds",
+      "pattern": "array index out of bounds|index may be negative|index may exceed length",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley cannot prove array access is within bounds",
+      "common_causes": [
+        "Index not validated",
+        "Off-by-one error",
+        "Loop counter exceeds array",
+        "Negative index"
+      ],
+      "solutions": [
+        "Add requires 0 <= i < arr.length",
+        "Use for-each loop",
+        "Add loop invariant for index",
+        "Check index before access"
+      ],
+      "examples": [
+        {
+          "error": "index may exceed length",
+          "context": "arr[i] where i might equal arr.length",
+          "fix": "requires i < |arr|"
+        }
+      ],
+      "related_errors": ["whiley_assertion_failure"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_division_by_zero",
+      "pattern": "possible division by zero|divisor may be zero",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley cannot prove divisor is non-zero",
+      "common_causes": [
+        "Divisor not validated",
+        "Computed divisor might be zero",
+        "Missing precondition"
+      ],
+      "solutions": [
+        "Add requires divisor != 0",
+        "Check before division",
+        "Use guarded expression",
+        "Prove divisor non-zero"
+      ],
+      "examples": [
+        {
+          "error": "possible division by zero: a / b",
+          "context": "b might be 0",
+          "fix": "requires b != 0"
+        }
+      ],
+      "related_errors": ["whiley_assertion_failure"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_null_dereference",
+      "pattern": "possible null dereference|receiver may be null|null access",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Whiley cannot prove reference is non-null",
+      "common_causes": [
+        "Nullable type without check",
+        "Failed lookup returning null",
+        "Uninitialized reference",
+        "Missing null handling"
+      ],
+      "solutions": [
+        "Add null check: if x is T",
+        "Use non-null type where possible",
+        "Initialize references properly",
+        "Add requires x is T"
+      ],
+      "examples": [
+        {
+          "error": "receiver may be null: obj.field",
+          "context": "obj has type T|null",
+          "fix": "if obj is T: obj.field"
+        }
+      ],
+      "related_errors": ["whiley_type_error"],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_unknown_result",
+      "pattern": "verification timeout|unknown|could not determine",
+      "severity": "warning",
+      "category": "verification_result",
+      "description": "Whiley verifier could not definitively prove or disprove",
+      "common_causes": [
+        "Complex arithmetic",
+        "Deep quantification",
+        "Timeout",
+        "Insufficient hints"
+      ],
+      "solutions": [
+        "Add helper assertions",
+        "Simplify specifications",
+        "Increase timeout",
+        "Add intermediate lemmas"
+      ],
+      "examples": [
+        {
+          "error": "unknown: verification timeout",
+          "context": "Complex loop verification",
+          "fix": "Add loop invariant or simplify"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://whiley.org/documentation/"
+    },
+    {
+      "id": "whiley_syntax_error",
+      "pattern": "syntax error|parse error|unexpected token",
+      "severity": "error",
+      "category": "input_error",
+      "description": "Whiley parser encountered invalid syntax",
+      "common_causes": [
+        "Incorrect Whiley syntax",
+        "Missing colon or keyword",
+        "Wrong indentation",
+        "Unclosed brackets"
+      ],
+      "solutions": [
+        "Check Whiley syntax",
+        "Verify indentation",
+        "Close all brackets",
+        "Review language reference"
+      ],
+      "examples": [
+        {
+          "error": "syntax error: expected ':'",
+          "context": "function f(int x) int",
+          "fix": "function f(int x) -> int:"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://whiley.org/documentation/"
+    }
+  ],
+  "general_tips": [
+    "Whiley combines programming with verification specifications",
+    "Flow typing automatically narrows types based on tests",
+    "Use requires for preconditions, ensures for postconditions",
+    "Loop invariants go with where keyword",
+    "Whiley uses Python-like syntax with strong static typing",
+    "Types like int|null are union types requiring narrowing",
+    "Property types can encode refined types with constraints"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic function verification",
+      "steps": [
+        "Add requires clause for preconditions",
+        "Add ensures clause for postconditions",
+        "Run: wy verify file.whiley",
+        "Fix reported issues"
+      ]
+    },
+    {
+      "name": "Loop verification",
+      "steps": [
+        "Add where clause for loop invariant",
+        "Ensure invariant holds initially",
+        "Verify invariant maintained by loop body"
+      ]
+    },
+    {
+      "name": "Type refinement",
+      "steps": [
+        "Define property type: type nat is (int x) where x >= 0",
+        "Use property type in signatures",
+        "Verifier checks constraints"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "0.8.x": "Current stable, improved backend",
+    "0.7.x": "Previous stable version"
+  }
+}

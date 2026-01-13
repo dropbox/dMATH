@@ -1,0 +1,191 @@
+{
+  "tool": "netlify",
+  "version": "17.10.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not logged in|authentication.*failed|token.*invalid|NETLIFY_AUTH_TOKEN",
+      "message": "Authentication error",
+      "cause": "Not logged in or token expired",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "netlify login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Token auth",
+          "code": "export NETLIFY_AUTH_TOKEN=your-token\nnetlify deploy",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Re-auth",
+          "code": "netlify logout\nnetlify login",
+          "when": "Token expired"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Build failed|Command.*failed|exit code|npm ERR!",
+      "message": "Build failed",
+      "cause": "Build command or dependencies error",
+      "solutions": [
+        {
+          "approach": "Check build",
+          "code": "# In netlify.toml:\n[build]\n  command = \"npm run build\"\n  publish = \"dist\"",
+          "when": "Config issue"
+        },
+        {
+          "approach": "Local build",
+          "code": "netlify build\n# Or: npm run build",
+          "when": "Test locally"
+        },
+        {
+          "approach": "Node version",
+          "code": "# In netlify.toml:\n[build.environment]\n  NODE_VERSION = \"18\"",
+          "when": "Node version"
+        }
+      ]
+    },
+    {
+      "id": "function_error",
+      "pattern": "Function.*error|lambda.*failed|500.*functions",
+      "message": "Netlify Function error",
+      "cause": "Function code error",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "netlify functions:list\nnetlify functions:log function-name",
+          "when": "See error"
+        },
+        {
+          "approach": "Local test",
+          "code": "netlify dev\ncurl http://localhost:8888/.netlify/functions/function-name",
+          "when": "Test locally"
+        },
+        {
+          "approach": "Function format",
+          "code": "// netlify/functions/hello.js\nexports.handler = async (event, context) => {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Hello' })\n  };\n};",
+          "when": "Check format"
+        }
+      ]
+    },
+    {
+      "id": "function_timeout",
+      "pattern": "timeout|function.*exceeded|10 second",
+      "message": "Function timeout",
+      "cause": "Function exceeded 10s (free) or 26s (paid) limit",
+      "solutions": [
+        {
+          "approach": "Background function",
+          "code": "// Add -background suffix for 15min timeout:\n// netlify/functions/process-background.js\nexports.handler = async (event, context) => {\n  // Long running task\n};",
+          "when": "Long processing"
+        },
+        {
+          "approach": "Optimize",
+          "code": "// Add connection pooling, caching\n// Reduce cold start time",
+          "when": "Function slow"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Pro plan has 26s timeout",
+          "when": "Need more time"
+        }
+      ]
+    },
+    {
+      "id": "redirect_error",
+      "pattern": "redirect.*loop|too many redirects|_redirects.*error",
+      "message": "Redirect configuration error",
+      "cause": "Redirect rules causing loop or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check redirects",
+          "code": "# _redirects file:\n/*    /index.html   200\n# NOT:\n/*    /index.html   301  # This causes loop",
+          "when": "SPA rewrite"
+        },
+        {
+          "approach": "netlify.toml",
+          "code": "[[redirects]]\n  from = \"/*\"\n  to = \"/index.html\"\n  status = 200",
+          "when": "Use toml"
+        },
+        {
+          "approach": "Force HTTPS",
+          "code": "[[redirects]]\n  from = \"http://example.com/*\"\n  to = \"https://example.com/:splat\"\n  status = 301\n  force = true",
+          "when": "HTTPS redirect"
+        }
+      ]
+    },
+    {
+      "id": "env_error",
+      "pattern": "environment.*undefined|Missing.*variable|process.env",
+      "message": "Missing environment variable",
+      "cause": "Env var not set or not available at build",
+      "solutions": [
+        {
+          "approach": "Set via CLI",
+          "code": "netlify env:set API_KEY value",
+          "when": "Add variable"
+        },
+        {
+          "approach": "Import env",
+          "code": "netlify env:import .env",
+          "when": "Import from file"
+        },
+        {
+          "approach": "Build vs runtime",
+          "code": "# Build time: available during build\n# Runtime: available in functions only\n# Use VITE_/NEXT_PUBLIC_ prefix for client-side",
+          "when": "Variable scope"
+        }
+      ]
+    },
+    {
+      "id": "deploy_preview_error",
+      "pattern": "deploy preview.*failed|branch.*not found|preview.*error",
+      "message": "Deploy preview error",
+      "cause": "Branch deploy configuration issue",
+      "solutions": [
+        {
+          "approach": "Check branches",
+          "code": "# In netlify.toml:\n[context.deploy-preview]\n  command = \"npm run build\"",
+          "when": "Preview config"
+        },
+        {
+          "approach": "Branch deploy",
+          "code": "# Site settings > Build & deploy > Branches\n# Enable branch deploys",
+          "when": "Enable branches"
+        },
+        {
+          "approach": "Skip PR",
+          "code": "# Commit message:\ngit commit -m \"Update [skip netlify]\"",
+          "when": "Skip deploy"
+        }
+      ]
+    },
+    {
+      "id": "forms_error",
+      "pattern": "form.*not detected|submission.*failed|netlify.*forms",
+      "message": "Netlify Forms error",
+      "cause": "Form not detected or misconfigured",
+      "solutions": [
+        {
+          "approach": "Add attribute",
+          "code": "<form name=\"contact\" method=\"POST\" data-netlify=\"true\">\n  <input type=\"hidden\" name=\"form-name\" value=\"contact\" />\n  <!-- form fields -->\n</form>",
+          "when": "Form not detected"
+        },
+        {
+          "approach": "React form",
+          "code": "// For React/Vue SPAs, include hidden input:\n<input type=\"hidden\" name=\"form-name\" value=\"contact\" />",
+          "when": "SPA form"
+        },
+        {
+          "approach": "Check submissions",
+          "code": "# Site dashboard > Forms\n# Check spam filter settings",
+          "when": "Missing submissions"
+        }
+      ]
+    }
+  ]
+}

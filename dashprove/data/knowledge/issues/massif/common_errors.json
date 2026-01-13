@@ -1,0 +1,106 @@
+{
+  "tool": "massif",
+  "version": "3.22",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "valgrind_missing",
+      "pattern": "valgrind: command not found|massif: No such file or directory",
+      "message": "Valgrind/massif not installed",
+      "cause": "Valgrind package unavailable in PATH",
+      "solutions": [
+        {
+          "approach": "Install valgrind",
+          "code": "sudo apt install valgrind",
+          "when": "Debian/Ubuntu systems"
+        },
+        {
+          "approach": "Use correct tool name",
+          "code": "valgrind --tool=massif ./app",
+          "when": "Invoking massif via valgrind"
+        }
+      ]
+    },
+    {
+      "id": "output_missing",
+      "pattern": "ms_print: Failed to open massif\\.out|no massif output file",
+      "message": "Massif output file not generated",
+      "cause": "Program crashed early or output path unwritable",
+      "solutions": [
+        {
+          "approach": "Set explicit output path",
+          "code": "valgrind --tool=massif --massif-out-file=/tmp/massif.out.%p ./app",
+          "when": "Default current directory not writable"
+        },
+        {
+          "approach": "Ensure clean exit",
+          "code": "# Avoid abrupt kill signals; allow process to exit so massif writes file",
+          "when": "Program terminated by signal"
+        }
+      ]
+    },
+    {
+      "id": "no_allocations",
+      "pattern": "no heap allocations found|heap profiling not enabled",
+      "message": "Massif shows empty or zero heap",
+      "cause": "Custom allocator bypassing glibc or short-lived process",
+      "solutions": [
+        {
+          "approach": "Disable custom allocator",
+          "code": "LD_PRELOAD= ./app  # Remove jemalloc/tcmalloc preload",
+          "when": "Allocator hides allocations from Valgrind"
+        },
+        {
+          "approach": "Profile longer window",
+          "code": "valgrind --tool=massif --time-unit=ms --max-snapshots=400 ./app",
+          "when": "Process exits too quickly"
+        }
+      ]
+    },
+    {
+      "id": "high_overhead",
+      "pattern": "program extremely slow under valgrind|Massif overhead",
+      "message": "Profiling overhead too high",
+      "cause": "Full heap tracking slows down allocation-heavy programs",
+      "solutions": [
+        {
+          "approach": "Sample less frequently",
+          "code": "valgrind --tool=massif --time-unit=ms --threshold=1.0 ./app",
+          "when": "Need lower snapshot frequency"
+        },
+        {
+          "approach": "Treat pages as heap",
+          "code": "valgrind --tool=massif --pages-as-heap=yes ./app",
+          "when": "Reduce bookkeeping for mmap-heavy apps"
+        },
+        {
+          "approach": "Scope the run",
+          "code": "valgrind --tool=massif --run-libc-freeres=no --stacks=no ./app",
+          "when": "Only heap interest, skip stack"
+        }
+      ]
+    },
+    {
+      "id": "missing_stacks",
+      "pattern": "stack allocations not tracked|set --stacks=yes",
+      "message": "Stack usage not included in report",
+      "cause": "Massif defaults to heap-only",
+      "solutions": [
+        {
+          "approach": "Enable stack profiling",
+          "code": "valgrind --tool=massif --stacks=yes ./app",
+          "when": "Need combined heap+stack sizes"
+        },
+        {
+          "approach": "Analyze stack separately",
+          "code": "ms_print --x=bytes massif.out.%p | head",
+          "when": "Quick view of stack contribution"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://valgrind.org/docs/manual/ms-manual.html",
+    "https://valgrind.org/docs/manual/ms-manual.html#opt.massif"
+  ]
+}

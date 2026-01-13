@@ -1,0 +1,99 @@
+{
+  "tool": "ebs",
+  "category": "aws_storage",
+  "description": "Amazon Elastic Block Store - block storage volumes for EC2",
+  "common_errors": [
+    {
+      "id": "volume_in_use",
+      "pattern": "VolumeInUse",
+      "regex": "(?i)volume.*in.*use|already.*attached|attached.*to.*instance",
+      "cause": "Volume is already attached to another instance",
+      "solution": "Detach volume from current instance first, or force detach if instance is unresponsive",
+      "severity": "medium",
+      "category": "attachment"
+    },
+    {
+      "id": "incorrect_state",
+      "pattern": "IncorrectState",
+      "regex": "(?i)incorrect.*state|invalid.*state|volume.*not.*available|creating|deleting",
+      "cause": "Volume not in valid state for requested operation",
+      "solution": "Wait for volume state to become 'available', check for stuck volumes",
+      "severity": "medium",
+      "category": "state"
+    },
+    {
+      "id": "snapshot_not_found",
+      "pattern": "InvalidSnapshot",
+      "regex": "(?i)invalid.*snapshot|snapshot.*not.*found|does.*not.*exist",
+      "cause": "Snapshot ID does not exist or is not accessible",
+      "solution": "Verify snapshot ID, check if shared snapshot permissions are correct, verify region",
+      "severity": "medium",
+      "category": "snapshots"
+    },
+    {
+      "id": "volume_limit",
+      "pattern": "VolumeLimitExceeded",
+      "regex": "(?i)volume.*limit|too.*many.*volumes|quota.*exceeded|maximum.*volumes",
+      "cause": "Account volume limit exceeded",
+      "solution": "Delete unused volumes, request quota increase via Service Quotas",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "wrong_az",
+      "pattern": "InvalidZone",
+      "regex": "(?i)invalid.*zone|different.*availability.*zone|wrong.*az|zone.*mismatch",
+      "cause": "Volume and instance are in different Availability Zones",
+      "solution": "Create snapshot and restore in correct AZ, or create new volume in instance's AZ",
+      "severity": "high",
+      "category": "availability"
+    },
+    {
+      "id": "insufficient_iops",
+      "pattern": "InvalidParameterValue",
+      "regex": "(?i)iops.*too.*high|invalid.*iops|iops.*size.*ratio|throughput.*limit",
+      "cause": "IOPS/throughput configuration exceeds volume type limits",
+      "solution": "Review IOPS limits per volume type, increase volume size for higher IOPS, use io2 for highest IOPS",
+      "severity": "medium",
+      "category": "performance"
+    },
+    {
+      "id": "encryption_error",
+      "pattern": "InvalidKms",
+      "regex": "(?i)kms.*key|encryption.*error|cannot.*encrypt|key.*not.*found",
+      "cause": "KMS key access issue for encrypted volume",
+      "solution": "Verify KMS key policy allows EBS service, ensure key exists and is enabled",
+      "severity": "high",
+      "category": "security"
+    },
+    {
+      "id": "attachment_limit",
+      "pattern": "AttachmentLimitExceeded",
+      "regex": "(?i)attachment.*limit|maximum.*ebs.*volumes|too.*many.*attached|device.*limit",
+      "cause": "Instance has reached maximum number of EBS attachments",
+      "solution": "Detach unused volumes, use larger volumes instead of many small ones, check instance type limits",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "io_stalled",
+      "pattern": "io stalled",
+      "regex": "(?i)i/o.*stalled|volume.*impaired|io.*error|disk.*error|volume.*stuck",
+      "cause": "Volume I/O operations are failing or stalled",
+      "solution": "Check CloudWatch VolumeQueueLength metric, review instance system logs, consider creating new volume from snapshot",
+      "severity": "high",
+      "category": "health"
+    },
+    {
+      "id": "size_modification",
+      "pattern": "ModificationNotAuthorized",
+      "regex": "(?i)modification.*not.*authorized|cannot.*modify|size.*decrease|invalid.*modification",
+      "cause": "Volume modification not allowed (cannot decrease size)",
+      "solution": "EBS volumes can only be increased in size, create new smaller volume if needed",
+      "severity": "medium",
+      "category": "modification"
+    }
+  ],
+  "related_tools": ["aws_cli", "ec2", "cloudwatch"],
+  "documentation_url": "https://docs.aws.amazon.com/ebs/"
+}

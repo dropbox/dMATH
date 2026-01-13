@@ -1,0 +1,115 @@
+{
+  "id": "modelator",
+  "name": "Modelator",
+  "category": "model_based_testing",
+  "subcategory": "tlaplus_testing",
+
+  "description": "Model-based testing framework bridging TLA+ specifications to implementation tests",
+  "long_description": "Modelator is a framework for model-based testing that bridges TLA+ specifications to implementation tests. Developed by Informal Systems, it generates test cases from TLA+ models using the Apalache model checker, then executes them against real implementations. Used for testing distributed systems like CometBFT (Tendermint) and IBC protocols.",
+
+  "capabilities": [
+    "tlaplus_test_generation",
+    "trace_generation",
+    "model_based_testing",
+    "property_based_testing",
+    "counterexample_execution",
+    "implementation_testing"
+  ],
+  "property_types": ["safety", "liveness", "invariants"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["json", "traces"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install modelator"},
+      {"type": "source", "command": "git clone https://github.com/informalsystems/modelator"}
+    ],
+    "dependencies": ["apalache", "tlaplus", "rust"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/informalsystems/modelator",
+    "tutorial": "https://github.com/informalsystems/modelator/blob/main/docs/tutorial.md",
+    "examples": "https://github.com/informalsystems/modelator/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "generate_traces",
+      "description": "Generate test traces from TLA+ spec",
+      "syntax": "modelator trace --spec spec.tla",
+      "when_to_use": "To generate test cases from model",
+      "examples": ["modelator trace --spec consensus.tla --invariant Safety --length 10"]
+    },
+    {
+      "name": "run_tests",
+      "description": "Execute traces against implementation",
+      "syntax": "modelator test --traces traces.json",
+      "when_to_use": "To test implementation against model",
+      "examples": ["modelator test --traces traces.json --driver test_driver.rs"]
+    },
+    {
+      "name": "explore",
+      "description": "Explore state space and find counterexamples",
+      "syntax": "modelator explore --spec spec.tla",
+      "when_to_use": "To find specification violations",
+      "examples": ["modelator explore --spec spec.tla --invariant TypeOK --max-states 10000"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Invariant violated",
+      "meaning": "TLA+ invariant does not hold",
+      "common_causes": ["Bug in specification", "Missing constraints"],
+      "fixes": ["Review invariant definition", "Add missing constraints"]
+    },
+    {
+      "pattern": "Apalache.*error",
+      "meaning": "Model checking failed",
+      "common_causes": ["Invalid TLA+ syntax", "Unsupported features"],
+      "fixes": ["Check TLA+ syntax", "Use Apalache-supported subset"]
+    },
+    {
+      "pattern": "Trace execution failed",
+      "meaning": "Implementation does not match model",
+      "common_causes": ["Implementation bug", "Model-implementation mismatch"],
+      "fixes": ["Fix implementation", "Update model to match implementation"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "usl_property_types": ["safety", "invariants"],
+    "cli_command": "modelator"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Limited by state space",
+    "memory_usage": "Moderate to high"
+  },
+
+  "comparisons": {
+    "similar_tools": ["apalache", "tlc", "tipocket"],
+    "advantages": [
+      "Bridges spec to implementation",
+      "Uses Apalache for symbolic execution",
+      "Rust implementation",
+      "JSON trace format"
+    ],
+    "disadvantages": [
+      "Requires Apalache setup",
+      "Limited to TLA+ models",
+      "Custom driver needed"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.2.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Informal Systems",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "id": "spin",
+  "name": "SPIN",
+  "category": "model_checker",
+  "subcategory": "temporal",
+
+  "description": "Protocol verification model checker using LTL",
+  "long_description": "SPIN is a widely-used model checker for verifying concurrent systems. It uses Promela (Process Meta Language) for modeling and supports verification of LTL (Linear Temporal Logic) properties. SPIN has been used to verify distributed algorithms, communication protocols, and concurrent programs.",
+
+  "capabilities": [
+    "ltl_verification",
+    "deadlock_detection",
+    "assertion_checking",
+    "partial_order_reduction",
+    "on_the_fly_verification",
+    "bitstate_hashing"
+  ],
+  "property_types": ["ltl", "assertion", "never_claim"],
+  "input_languages": ["promela"],
+  "output_formats": ["counterexample", "trail"],
+
+  "installation": {
+    "methods": [
+      {"type": "apt", "command": "apt install spin"},
+      {"type": "brew", "command": "brew install spin"},
+      {"type": "source", "command": "make"}
+    ],
+    "dependencies": ["gcc"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://spinroot.com/spin/whatispin.html",
+    "tutorial": "https://spinroot.com/spin/Man/Manual.html",
+    "api_reference": "https://spinroot.com/spin/Man/",
+    "examples": "https://spinroot.com/spin/Examples/"
+  },
+
+  "tactics": [
+    {
+      "name": "safety",
+      "description": "Check safety properties only",
+      "syntax": "spin -a -DSAFETY",
+      "when_to_use": "For deadlock/assertion checks",
+      "examples": ["spin -a model.pml && cc -DSAFETY -o pan pan.c && ./pan"]
+    },
+    {
+      "name": "bfs",
+      "description": "Breadth-first search",
+      "syntax": "-DBFS",
+      "when_to_use": "For shortest counterexamples",
+      "examples": ["cc -DBFS -o pan pan.c"]
+    },
+    {
+      "name": "bitstate",
+      "description": "Bitstate hashing",
+      "syntax": "-DBITSTATE",
+      "when_to_use": "For large state spaces",
+      "examples": ["cc -DBITSTATE -o pan pan.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "assertion violated",
+      "meaning": "Assertion failed",
+      "common_causes": ["Bug in model", "Invalid invariant"],
+      "fixes": ["Fix model", "Review assertion"]
+    },
+    {
+      "pattern": "invalid end state",
+      "meaning": "Deadlock detected",
+      "common_causes": ["Missing synchronization", "Blocking operations"],
+      "fixes": ["Add synchronization", "Fix blocking"]
+    },
+    {
+      "pattern": "out of memory",
+      "meaning": "State space too large",
+      "common_causes": ["Unbounded variables", "Too many processes"],
+      "fixes": ["Use bitstate", "Bound variables", "Abstract model"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["temporal", "invariant"],
+    "cli_command": "dashprove verify --backend spin"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "Good with partial order reduction",
+    "memory_usage": "Variable (bitstate helps)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["nusmv", "tlaplus", "uppaal"],
+    "advantages": [
+      "Fast verification",
+      "On-the-fly approach",
+      "Industry standard"
+    ],
+    "disadvantages": [
+      "Finite state only",
+      "Promela learning curve"
+    ]
+  },
+
+  "metadata": {
+    "version": "6.5.2",
+    "last_updated": "2025-12-21",
+    "maintainer": "Gerard Holzmann",
+    "license": "BSD-3-Clause"
+  }
+}

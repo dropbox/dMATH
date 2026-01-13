@@ -1,0 +1,140 @@
+{
+  "tool": "liquibase",
+  "version": "4.28",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "validation_failed",
+      "pattern": "Validation Failed|validation failed for change set|MD5Sum Check Failed",
+      "message": "ChangeSet validation failed",
+      "cause": "Checksum mismatch or modified changeSet already applied",
+      "solutions": [
+        {
+          "approach": "Recompute checksums",
+          "code": "liquibase clearCheckSums",
+          "when": "History table needs refresh"
+        },
+        {
+          "approach": "Avoid editing applied changes",
+          "code": "Create new changeSet instead of modifying old ones",
+          "when": "Prevent checksum drift"
+        },
+        {
+          "approach": "Allow known checksum",
+          "code": "<validCheckSum>7:abcd1234</validCheckSum>",
+          "when": "Need to accept intentional change"
+        }
+      ]
+    },
+    {
+      "id": "changelog_lock",
+      "pattern": "Could not acquire change log lock|Locked by another process",
+      "message": "Change log lock present",
+      "cause": "Previous run crashed or concurrent execution",
+      "solutions": [
+        {
+          "approach": "Release lock",
+          "code": "liquibase releaseLocks",
+          "when": "Lock left by failed run"
+        },
+        {
+          "approach": "Inspect lock table",
+          "code": "SELECT * FROM DATABASECHANGELOGLOCK;",
+          "when": "Confirm who holds lock"
+        },
+        {
+          "approach": "Serialise deployments",
+          "code": "Run Liquibase once per database",
+          "when": "Concurrent pipelines"
+        }
+      ]
+    },
+    {
+      "id": "driver_not_found",
+      "pattern": "Cannot find database driver|No suitable driver",
+      "message": "JDBC driver not found",
+      "cause": "Driver JAR not on classpath",
+      "solutions": [
+        {
+          "approach": "Provide driver",
+          "code": "liquibase --classpath=drivers/postgresql.jar update",
+          "when": "Missing vendor driver"
+        },
+        {
+          "approach": "Use download",
+          "code": "liquibase --includeSystemClasspath true",
+          "when": "Driver already in JVM classpath"
+        }
+      ]
+    },
+    {
+      "id": "invalid_changelog",
+      "pattern": "changelog.*not found|Failed to parse changelog|unexpected element",
+      "message": "Changelog file invalid",
+      "cause": "Wrong path, syntax error, or unsupported format",
+      "solutions": [
+        {
+          "approach": "Verify path",
+          "code": "liquibase --changeLogFile=db/changelog.xml validate",
+          "when": "Relative path confusion"
+        },
+        {
+          "approach": "Validate format",
+          "code": "liquibase validate",
+          "when": "Schema errors in XML/SQL/YAML"
+        },
+        {
+          "approach": "Check includes",
+          "code": "<include file=\"changelog/001.xml\" relativeToChangelogFile=\"true\"/>",
+          "when": "Included files not resolved"
+        }
+      ]
+    },
+    {
+      "id": "database_exception",
+      "pattern": "DatabaseException|SQLState|Table .* not found",
+      "message": "Database error executing changeSet",
+      "cause": "Changelog expects schema objects or permissions not present",
+      "solutions": [
+        {
+          "approach": "Set default schema",
+          "code": "liquibase --defaultSchemaName=app_schema update",
+          "when": "Objects created in non-default schema"
+        },
+        {
+          "approach": "Grant permissions",
+          "code": "GRANT CREATE, ALTER ON SCHEMA app_schema TO liquibase;",
+          "when": "User lacks privileges"
+        },
+        {
+          "approach": "Preview SQL",
+          "code": "liquibase updateSQL | head",
+          "when": "Validate statements before execution"
+        }
+      ]
+    },
+    {
+      "id": "precondition_failed",
+      "pattern": "Precondition Failed|precondition error",
+      "message": "Preconditions blocked execution",
+      "cause": "Database state does not meet expected preconditions",
+      "solutions": [
+        {
+          "approach": "Inspect state",
+          "code": "liquibase status --verbose",
+          "when": "Understand unmet conditions"
+        },
+        {
+          "approach": "Adjust precondition handling",
+          "code": "<preConditions onFail=\"MARK_RAN\">...</preConditions>",
+          "when": "Allow proceeding when safe"
+        },
+        {
+          "approach": "Update database to satisfy",
+          "code": "CREATE TABLE ...",
+          "when": "Need to create prerequisites"
+        }
+      ]
+    }
+  ]
+}

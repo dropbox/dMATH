@@ -1,0 +1,125 @@
+{
+  "tool": "hexdump",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "format_confusion",
+      "pattern": "format|output.*not|expected",
+      "message": "Output format unexpected",
+      "cause": "hexdump has multiple output modes",
+      "solutions": [
+        {
+          "approach": "Canonical format",
+          "code": "hexdump -C file   # Best: offset | hex | ASCII",
+          "when": "Most readable"
+        },
+        {
+          "approach": "Other formats",
+          "code": "hexdump -b file   # Octal bytes\nhexdump -c file   # One-byte chars\nhexdump -d file   # Decimal 2-byte\nhexdump -x file   # Hex 2-byte (default)",
+          "when": "Alternative formats"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "hexdump:.*not found|hexdump:.*command not found",
+      "message": "hexdump not installed",
+      "cause": "Not available on all systems",
+      "solutions": [
+        {
+          "approach": "Install on Linux",
+          "code": "sudo apt install bsdmainutils  # Debian/Ubuntu\nsudo yum install util-linux    # RHEL",
+          "when": "Install hexdump"
+        },
+        {
+          "approach": "Use xxd",
+          "code": "xxd file",
+          "when": "xxd available"
+        },
+        {
+          "approach": "Use od",
+          "code": "od -A x -t x1z -v file",
+          "when": "od available"
+        }
+      ]
+    },
+    {
+      "id": "endianness",
+      "pattern": "byte order|endian|swapped|reversed",
+      "message": "Multi-byte values in wrong order",
+      "cause": "hexdump shows native byte order for multi-byte formats",
+      "solutions": [
+        {
+          "approach": "Use -C",
+          "code": "hexdump -C file   # Shows bytes in file order",
+          "when": "Single-byte hex"
+        },
+        {
+          "approach": "Custom format",
+          "code": "hexdump -e '16/1 \"%02x \" \"\\n\"' file",
+          "when": "Control byte order"
+        }
+      ]
+    },
+    {
+      "id": "custom_format",
+      "pattern": "custom|-e|format string",
+      "message": "Need custom output format",
+      "cause": "-e format syntax is complex",
+      "solutions": [
+        {
+          "approach": "Format basics",
+          "code": "hexdump -e '\"iteration count/byte_count format\" ...' file\n# Example: 16 hex bytes per line\nhexdump -e '16/1 \"%02x \" \"\\n\"' file",
+          "when": "Understanding format"
+        },
+        {
+          "approach": "Common formats",
+          "code": "# 16 hex bytes, newline:\nhexdump -e '16/1 \"%02x \" \"\\n\"'\n# Address + 16 hex + newline:\nhexdump -e '\"%08x  \" 16/1 \"%02x \" \"\\n\"'\n# Decimal bytes:\nhexdump -e '16/1 \"%3d \" \"\\n\"'",
+          "when": "Examples"
+        },
+        {
+          "approach": "Multiple formats",
+          "code": "hexdump -e '16/1 \"%02x \" \"  \"' -e '16/1 \"%_p\" \"\\n\"' file",
+          "when": "Hex + ASCII"
+        }
+      ]
+    },
+    {
+      "id": "skip_limit",
+      "pattern": "skip|offset|length|partial",
+      "message": "View portion of file",
+      "cause": "Want to limit output",
+      "solutions": [
+        {
+          "approach": "Skip bytes",
+          "code": "hexdump -C -s 100 file    # Start at byte 100\nhexdump -C -s 0x100 file  # Start at byte 256",
+          "when": "Offset"
+        },
+        {
+          "approach": "Limit length",
+          "code": "hexdump -C -n 64 file      # Only first 64 bytes\nhexdump -C -s 100 -n 32 file",
+          "when": "Limit output"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_suppression",
+      "pattern": "\\*|asterisk|repeated|suppressed",
+      "message": "Output shows * for repeated lines",
+      "cause": "hexdump suppresses identical consecutive lines by default",
+      "solutions": [
+        {
+          "approach": "Show all",
+          "code": "hexdump -v -C file  # -v shows all data",
+          "when": "No suppression"
+        },
+        {
+          "approach": "Understanding",
+          "code": "# * on a line means the previous line repeats\n# Until the next different line shown",
+          "when": "Reading output"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "tool": "stat",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_such_file",
+      "pattern": "No such file or directory|cannot stat|stat: cannot",
+      "message": "File not found",
+      "cause": "File doesn't exist or wrong path",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "ls -la /path/to/file\nrealpath /path/to/file",
+          "when": "Verify location"
+        },
+        {
+          "approach": "Handle spaces",
+          "code": "stat 'file with spaces.txt'\nstat \"$variable\"",
+          "when": "Special chars"
+        }
+      ]
+    },
+    {
+      "id": "format_string",
+      "pattern": "invalid.*format|format|custom output",
+      "message": "Custom format not working",
+      "cause": "BSD vs GNU format syntax differs",
+      "solutions": [
+        {
+          "approach": "GNU format",
+          "code": "stat -c '%s' file  # Size in bytes\nstat -c '%U:%G' file  # Owner:Group\nstat -c '%a' file  # Octal permissions",
+          "when": "Linux"
+        },
+        {
+          "approach": "BSD format",
+          "code": "stat -f '%z' file  # Size in bytes\nstat -f '%Su:%Sg' file  # Owner:Group\nstat -f '%Lp' file  # Permissions",
+          "when": "macOS/BSD"
+        },
+        {
+          "approach": "Portable",
+          "code": "# Use ls for portable output:\nls -la file\n# Or detect OS:\nif stat -c '' . 2>/dev/null; then echo 'GNU'; else echo 'BSD'; fi",
+          "when": "Cross-platform"
+        }
+      ]
+    },
+    {
+      "id": "time_formats",
+      "pattern": "time|date|mtime|atime|ctime|timestamp",
+      "message": "Getting file times",
+      "cause": "Need access, modify, or change times",
+      "solutions": [
+        {
+          "approach": "GNU times",
+          "code": "stat -c '%x' file  # Access time\nstat -c '%y' file  # Modify time\nstat -c '%z' file  # Change time\nstat -c '%w' file  # Birth time",
+          "when": "Linux"
+        },
+        {
+          "approach": "BSD times",
+          "code": "stat -f '%Sa' file  # Access time\nstat -f '%Sm' file  # Modify time\nstat -f '%Sc' file  # Change time\nstat -f '%SB' file  # Birth time",
+          "when": "macOS/BSD"
+        },
+        {
+          "approach": "Epoch seconds",
+          "code": "stat -c '%Y' file  # GNU mtime epoch\nstat -f '%m' file  # BSD mtime epoch",
+          "when": "For scripts"
+        }
+      ]
+    },
+    {
+      "id": "symlink_stat",
+      "pattern": "symbolic link|symlink|link target",
+      "message": "Stat shows link instead of target",
+      "cause": "By default stat shows link info, not target",
+      "solutions": [
+        {
+          "approach": "Follow link",
+          "code": "stat -L symlink  # Stat the target",
+          "when": "Get target info"
+        },
+        {
+          "approach": "Link info",
+          "code": "stat symlink  # Without -L shows link info",
+          "when": "Get link info"
+        },
+        {
+          "approach": "Both",
+          "code": "stat symlink && stat -L symlink",
+          "when": "Compare"
+        }
+      ]
+    },
+    {
+      "id": "filesystem_stat",
+      "pattern": "filesystem|disk|mount|statfs",
+      "message": "Want filesystem info not file info",
+      "cause": "Need info about filesystem containing file",
+      "solutions": [
+        {
+          "approach": "Filesystem stat",
+          "code": "stat -f file  # GNU: filesystem info\nstat -f '%T' file  # Filesystem type",
+          "when": "FS info"
+        },
+        {
+          "approach": "Use df",
+          "code": "df -h file  # Disk space for file's FS\ndf -T file  # With filesystem type",
+          "when": "Disk usage"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot access",
+      "message": "Cannot stat file",
+      "cause": "No permission to access file or parent directory",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo stat /root/file",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check parent",
+          "code": "ls -ld parent_dir/  # Need execute on parent",
+          "when": "Dir permissions"
+        }
+      ]
+    }
+  ]
+}

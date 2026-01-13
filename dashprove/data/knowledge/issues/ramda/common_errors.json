@@ -1,0 +1,168 @@
+{
+  "tool": "ramda",
+  "version": "0.30.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auto_currying",
+      "pattern": "curry|partial|arguments|function returned",
+      "message": "Unexpected function return instead of value",
+      "cause": "Ramda auto-curries - missing arguments returns a function",
+      "solutions": [
+        {
+          "approach": "Understand auto-currying",
+          "code": "// R.add expects 2 arguments\nR.add(1, 2);    // 3\nR.add(1);       // function waiting for second arg\nR.add(1)(2);    // 3",
+          "when": "Basic currying"
+        },
+        {
+          "approach": "Check argument count",
+          "code": "// If result is a function when expecting value:\nconst result = R.map(fn);  // needs array too!\nconst result = R.map(fn, array);  // correct",
+          "when": "Missing args"
+        },
+        {
+          "approach": "Use placeholder",
+          "code": "import { __ } from 'ramda';\nconst divideBy2 = R.divide(__, 2);\ndivideBy2(10);  // 5",
+          "when": "Skip argument"
+        }
+      ]
+    },
+    {
+      "id": "data_last",
+      "pattern": "data-last|argument order|pipe|compose",
+      "message": "Arguments in wrong order",
+      "cause": "Ramda uses data-last argument order for piping",
+      "solutions": [
+        {
+          "approach": "Understand data-last",
+          "code": "// Lodash (data-first): _.map(array, fn)\n// Ramda (data-last):   R.map(fn, array)\n\n// This enables:\nconst double = R.map(x => x * 2);\ndouble([1, 2, 3]);  // [2, 4, 6]",
+          "when": "Argument order"
+        },
+        {
+          "approach": "Use pipe/compose",
+          "code": "const process = R.pipe(\n  R.filter(x => x > 0),\n  R.map(x => x * 2),\n  R.sum\n);\nprocess([-1, 1, 2, 3]);  // 12",
+          "when": "Compose functions"
+        },
+        {
+          "approach": "Flip arguments",
+          "code": "// If you need data-first for a specific call:\nR.flip(R.map)([1, 2, 3], x => x * 2);",
+          "when": "Reverse order"
+        }
+      ]
+    },
+    {
+      "id": "immutable_gotchas",
+      "pattern": "immutable|mutate|original unchanged|clone",
+      "message": "Expecting mutation but Ramda returns new value",
+      "cause": "Ramda never mutates - always returns new values",
+      "solutions": [
+        {
+          "approach": "Capture return value",
+          "code": "const arr = [1, 2, 3];\n// Wrong - arr unchanged:\nR.append(4, arr);\n\n// Correct - capture new array:\nconst newArr = R.append(4, arr);",
+          "when": "Mutation expected"
+        },
+        {
+          "approach": "Use lenses for updates",
+          "code": "const data = { user: { name: 'John' } };\nconst nameLens = R.lensPath(['user', 'name']);\nconst updated = R.set(nameLens, 'Jane', data);",
+          "when": "Deep updates"
+        },
+        {
+          "approach": "Chain transformations",
+          "code": "const result = R.pipe(\n  R.assoc('newField', 'value'),\n  R.dissoc('oldField'),\n  R.over(R.lensProp('count'), R.inc)\n)(data);",
+          "when": "Multiple updates"
+        }
+      ]
+    },
+    {
+      "id": "lens_errors",
+      "pattern": "lens|view|set|over|lensPath|lensProp",
+      "message": "Lens not working as expected",
+      "cause": "Lens usage or creation issues",
+      "solutions": [
+        {
+          "approach": "Basic lens usage",
+          "code": "const xLens = R.lensProp('x');\nR.view(xLens, { x: 1 });     // 1\nR.set(xLens, 2, { x: 1 });   // { x: 2 }\nR.over(xLens, R.inc, { x: 1 }); // { x: 2 }",
+          "when": "Understand lens"
+        },
+        {
+          "approach": "Path lens",
+          "code": "const deepLens = R.lensPath(['a', 'b', 'c']);\nR.view(deepLens, { a: { b: { c: 1 } } });  // 1\nR.set(deepLens, 2, { a: { b: { c: 1 } } }); // { a: { b: { c: 2 } } }",
+          "when": "Nested access"
+        },
+        {
+          "approach": "Index lens",
+          "code": "const secondLens = R.lensIndex(1);\nR.view(secondLens, [1, 2, 3]);  // 2\nR.set(secondLens, 9, [1, 2, 3]); // [1, 9, 3]",
+          "when": "Array index"
+        }
+      ]
+    },
+    {
+      "id": "equality_issues",
+      "pattern": "equals|identical|===|deep equality|reference",
+      "message": "Equality check not working as expected",
+      "cause": "Confusion between R.equals and R.identical",
+      "solutions": [
+        {
+          "approach": "Understand equals vs identical",
+          "code": "// R.equals - deep structural equality\nR.equals({ a: 1 }, { a: 1 });  // true\n\n// R.identical - reference equality (===)\nR.identical({ a: 1 }, { a: 1 });  // false\n\nconst obj = { a: 1 };\nR.identical(obj, obj);  // true",
+          "when": "Choose correctly"
+        },
+        {
+          "approach": "Use in conditions",
+          "code": "R.when(\n  R.equals({ status: 'active' }),\n  R.assoc('highlight', true)\n);",
+          "when": "Conditional logic"
+        },
+        {
+          "approach": "NaN handling",
+          "code": "// R.equals handles NaN correctly\nR.equals(NaN, NaN);  // true\nNaN === NaN;         // false",
+          "when": "NaN comparison"
+        }
+      ]
+    },
+    {
+      "id": "type_handling",
+      "pattern": "undefined|null|type error|Maybe|Nothing",
+      "message": "Unexpected behavior with null/undefined",
+      "cause": "Ramda doesn't have special null handling like other FP libs",
+      "solutions": [
+        {
+          "approach": "Check for nil",
+          "code": "R.isNil(null);      // true\nR.isNil(undefined); // true\nR.isNil(0);         // false\n\nR.when(R.isNil, R.always('default'))(null); // 'default'",
+          "when": "Null check"
+        },
+        {
+          "approach": "Use defaultTo",
+          "code": "R.defaultTo(0, null);      // 0\nR.defaultTo(0, undefined); // 0\nR.defaultTo(0, 5);         // 5\nR.defaultTo(0, '');        // '' (only null/undefined trigger default)",
+          "when": "Default values"
+        },
+        {
+          "approach": "Safe path access",
+          "code": "// pathOr provides default for any falsy path\nR.pathOr('N/A', ['user', 'email'], data);\n\n// path returns undefined\nR.path(['user', 'email'], data);",
+          "when": "Safe access"
+        }
+      ]
+    },
+    {
+      "id": "point_free",
+      "pattern": "point-free|tacit|composition|this binding",
+      "message": "Point-free style causing issues",
+      "cause": "Context (this) lost or wrong function composition",
+      "solutions": [
+        {
+          "approach": "Avoid this dependency",
+          "code": "// Wrong - loses this:\nconst fn = R.map(obj.method);\n\n// Correct - bind or wrap:\nconst fn = R.map(x => obj.method(x));\nconst fn = R.map(obj.method.bind(obj));",
+          "when": "Method reference"
+        },
+        {
+          "approach": "Balance point-free",
+          "code": "// Too point-free (hard to read):\nR.pipe(R.map(R.prop('x')), R.filter(R.gt(R.__, 5)))\n\n// More readable:\nR.pipe(\n  R.map(item => item.x),\n  R.filter(x => x > 5)\n)",
+          "when": "Readability"
+        },
+        {
+          "approach": "Debug with tap",
+          "code": "R.pipe(\n  R.filter(isActive),\n  R.tap(x => console.log('After filter:', x)),\n  R.map(transform)\n)",
+          "when": "Debug pipeline"
+        }
+      ]
+    }
+  ]
+}

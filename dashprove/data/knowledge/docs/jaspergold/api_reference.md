@@ -1,0 +1,3 @@
+# JasperGold access notes
+
+JasperGold API and app documentation requires Cadence credentials, so this entry provides a high-level reference. JasperGold exposes Tcl as its primary automation surface: sessions use commands such as `open_design`, `read_verilog`, `formal_app -name cdc`, and `prove -all` to drive proofs. Results are exported through `report_rjg` and coverage databases for integration with regression dashboards. The platform bundles formal apps for CDC, secure path, X-propagation, sequential equivalence, and property checking; each app adds dedicated Tcl commands and report generators. For complete command listings and property templates, consult Cadence support or the JasperGold user guide distributed with licensed installations.

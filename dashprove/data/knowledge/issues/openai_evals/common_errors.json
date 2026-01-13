@@ -1,0 +1,191 @@
+{
+  "tool": "openai_evals",
+  "version": "1.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "api_key_missing",
+      "pattern": "OPENAI_API_KEY|AuthenticationError|Invalid API key",
+      "message": "OpenAI API key not configured",
+      "cause": "Environment variable OPENAI_API_KEY not set or invalid",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "export OPENAI_API_KEY=sk-...",
+          "when": "API key not set"
+        },
+        {
+          "approach": "Check key validity",
+          "code": "openai api models list",
+          "when": "Verifying key works"
+        },
+        {
+          "approach": "Use .env file",
+          "code": "# .env\nOPENAI_API_KEY=sk-...",
+          "when": "Persisting key"
+        }
+      ]
+    },
+    {
+      "id": "eval_not_found",
+      "pattern": "Eval not found|Unknown eval|KeyError.*eval",
+      "message": "Specified eval does not exist",
+      "cause": "Eval name is incorrect or not registered",
+      "solutions": [
+        {
+          "approach": "List available evals",
+          "code": "oaieval --list",
+          "when": "Finding eval names"
+        },
+        {
+          "approach": "Register custom eval",
+          "code": "# Add to evals/registry/evals/your_eval.yaml",
+          "when": "Using custom evaluation"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "oaieval gpt-4 match  # lowercase, hyphens",
+          "when": "Typo in eval name"
+        }
+      ]
+    },
+    {
+      "id": "completion_fn_error",
+      "pattern": "Completion function|completion_fn|Model not available",
+      "message": "Cannot create completion function for model",
+      "cause": "Model name incorrect or not accessible",
+      "solutions": [
+        {
+          "approach": "Use correct model name",
+          "code": "oaieval gpt-4 my_eval",
+          "when": "Standard OpenAI model"
+        },
+        {
+          "approach": "Register custom completion fn",
+          "code": "# evals/registry/completion_fns/your_fn.yaml\nyour_fn:\n  class: evals.completion_fns:OpenAIChatCompletionFn\n  args:\n    model: gpt-4",
+          "when": "Custom model wrapper"
+        },
+        {
+          "approach": "Check model access",
+          "code": "# Verify you have access to the model in your OpenAI account",
+          "when": "Model requires special access"
+        }
+      ]
+    },
+    {
+      "id": "data_format_error",
+      "pattern": "Invalid sample|Sample format|Expected keys",
+      "message": "Eval data format is incorrect",
+      "cause": "JSONL samples don't match expected schema",
+      "solutions": [
+        {
+          "approach": "Check sample format",
+          "code": "{\"input\": [{\"role\": \"user\", \"content\": \"...\"}], \"ideal\": \"...\"}",
+          "when": "Using chat format"
+        },
+        {
+          "approach": "Use completion format",
+          "code": "{\"prompt\": \"...\", \"completion\": \"...\"}",
+          "when": "Using legacy completion format"
+        },
+        {
+          "approach": "Validate JSONL",
+          "code": "python -c \"import json; [json.loads(l) for l in open('data.jsonl')]\"",
+          "when": "Checking file syntax"
+        }
+      ]
+    },
+    {
+      "id": "registry_error",
+      "pattern": "Registry error|Cannot load|YAML.*error",
+      "message": "Eval registry configuration error",
+      "cause": "YAML syntax error or missing fields in registry",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "python -c \"import yaml; yaml.safe_load(open('eval.yaml'))\"",
+          "when": "Checking YAML syntax"
+        },
+        {
+          "approach": "Check required fields",
+          "code": "# Eval needs: id, class, args with samples_jsonl",
+          "when": "Missing required configuration"
+        },
+        {
+          "approach": "Use template",
+          "code": "my_eval:\n  id: my_eval.match.v1\n  class: evals.elsuite.match:Match\n  args:\n    samples_jsonl: data.jsonl",
+          "when": "Starting new eval"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit",
+      "pattern": "RateLimitError|429|Too many requests",
+      "message": "OpenAI API rate limit exceeded",
+      "cause": "Too many requests to OpenAI API",
+      "solutions": [
+        {
+          "approach": "Add request delay",
+          "code": "# Configure lower concurrency in eval runner",
+          "when": "Running many samples"
+        },
+        {
+          "approach": "Use caching",
+          "code": "oaieval gpt-4 my_eval --cache",
+          "when": "Re-running same eval"
+        },
+        {
+          "approach": "Check usage limits",
+          "code": "# Review rate limits at platform.openai.com",
+          "when": "Hitting API tier limits"
+        }
+      ]
+    },
+    {
+      "id": "metrics_error",
+      "pattern": "Metric.*error|Cannot compute|Invalid metric",
+      "message": "Eval metric computation failed",
+      "cause": "Metric function received unexpected input",
+      "solutions": [
+        {
+          "approach": "Check output format",
+          "code": "# Ensure model output matches expected type for metric",
+          "when": "Output format mismatch"
+        },
+        {
+          "approach": "Use built-in metrics",
+          "code": "# exact_match, includes, fuzzy_match are built-in",
+          "when": "Starting with standard metrics"
+        },
+        {
+          "approach": "Debug with verbose",
+          "code": "oaieval gpt-4 my_eval --debug",
+          "when": "Need to see intermediate values"
+        }
+      ]
+    },
+    {
+      "id": "recording_error",
+      "pattern": "Recording error|Cannot save|sqlite.*error",
+      "message": "Cannot save eval results",
+      "cause": "Results recording failed due to database or file issues",
+      "solutions": [
+        {
+          "approach": "Check output directory",
+          "code": "mkdir -p /tmp/evallogs",
+          "when": "Output directory missing"
+        },
+        {
+          "approach": "Set custom record path",
+          "code": "oaieval gpt-4 my_eval --record_path ./results.jsonl",
+          "when": "Custom output location"
+        },
+        {
+          "approach": "Check disk space",
+          "code": "df -h",
+          "when": "Disk may be full"
+        }
+      ]
+    }
+  ]
+}

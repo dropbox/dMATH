@@ -1,0 +1,112 @@
+{
+  "tool": "log4js",
+  "version": "6.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_appenders",
+      "pattern": "No appenders|No valid appender|output not appearing",
+      "message": "No appenders configured",
+      "cause": "configure() not called or appenders not defined",
+      "solutions": [
+        {
+          "approach": "Configure appenders",
+          "code": "log4js.configure({\n  appenders: { console: { type: 'console' } },\n  categories: { default: { appenders: ['console'], level: 'debug' } }\n});",
+          "when": "Basic setup needed"
+        },
+        {
+          "approach": "Add file appender",
+          "code": "appenders: { file: { type: 'file', filename: 'logs/app.log' } }",
+          "when": "File logging needed"
+        },
+        {
+          "approach": "Use dateFile appender",
+          "code": "appenders: { app: { type: 'dateFile', filename: 'logs/app', pattern: '.yyyy-MM-dd.log' } }",
+          "when": "Daily rotation needed"
+        }
+      ]
+    },
+    {
+      "id": "category_not_found",
+      "pattern": "category.*not found|No category|using default category",
+      "message": "Requested logger category doesn't exist",
+      "cause": "getLogger() called with undefined category",
+      "solutions": [
+        {
+          "approach": "Define category",
+          "code": "categories: {\n  default: { appenders: ['console'], level: 'info' },\n  auth: { appenders: ['console', 'file'], level: 'debug' }\n}",
+          "when": "Need specific category"
+        },
+        {
+          "approach": "Use default category",
+          "code": "const logger = log4js.getLogger();  // uses 'default' category",
+          "when": "Single logger sufficient"
+        }
+      ]
+    },
+    {
+      "id": "file_permission",
+      "pattern": "EACCES|EPERM|permission denied|cannot write",
+      "message": "Cannot write to log file",
+      "cause": "Insufficient permissions or directory missing",
+      "solutions": [
+        {
+          "approach": "Create logs directory",
+          "code": "const fs = require('fs');\nfs.mkdirSync('./logs', { recursive: true });",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "mkdir -p logs && chmod 755 logs",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Use stdout appender",
+          "code": "appenders: { out: { type: 'stdout' } }",
+          "when": "Container deployment"
+        }
+      ]
+    },
+    {
+      "id": "shutdown_incomplete",
+      "pattern": "logs missing|shutdown before flush|buffered logs lost",
+      "message": "Application exited before logs flushed",
+      "cause": "Process.exit() called before async writes complete",
+      "solutions": [
+        {
+          "approach": "Use shutdown callback",
+          "code": "log4js.shutdown((err) => {\n  if (err) console.error(err);\n  process.exit(0);\n});",
+          "when": "Graceful shutdown needed"
+        },
+        {
+          "approach": "Use synchronous appender",
+          "code": "appenders: { console: { type: 'console' } }  // console is sync",
+          "when": "Short-lived scripts"
+        }
+      ]
+    },
+    {
+      "id": "layout_error",
+      "pattern": "layout.*not found|Invalid layout|cannot parse pattern",
+      "message": "Invalid layout configuration",
+      "cause": "Custom layout type not registered or pattern syntax error",
+      "solutions": [
+        {
+          "approach": "Use built-in layout",
+          "code": "layout: { type: 'pattern', pattern: '%d %p %c %m' }",
+          "when": "Custom pattern needed"
+        },
+        {
+          "approach": "Use JSON layout",
+          "code": "layout: { type: 'json' }",
+          "when": "Structured logging"
+        },
+        {
+          "approach": "Register custom layout",
+          "code": "log4js.addLayout('myLayout', function(config) { return function(logEvent) { ... } });",
+          "when": "Custom format needed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "creusot",
+  "version": "0.2.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "precondition_not_proven",
+      "pattern": "precondition .* might not hold",
+      "message": "Cannot prove precondition",
+      "cause": "The requires clause cannot be proven from the current context",
+      "solutions": [
+        {
+          "approach": "Add assumption at call site",
+          "code": "#[requires(condition)]\nfn caller() { ... }",
+          "when": "Caller should establish precondition"
+        },
+        {
+          "approach": "Add intermediate assertion",
+          "code": "proof_assert!(condition);",
+          "when": "Prover needs a hint"
+        },
+        {
+          "approach": "Strengthen loop invariant",
+          "code": "#[invariant(condition)]",
+          "when": "Precondition depends on loop state"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_not_proven",
+      "pattern": "postcondition .* might not hold",
+      "message": "Cannot prove postcondition",
+      "cause": "The ensures clause cannot be proven from function body",
+      "solutions": [
+        {
+          "approach": "Add intermediate assertions",
+          "code": "proof_assert!(intermediate_fact);",
+          "when": "Prover needs stepping stones"
+        },
+        {
+          "approach": "Strengthen loop invariant",
+          "code": "#[invariant(property_needed_for_ensures)]",
+          "when": "Loop doesn't preserve needed property"
+        },
+        {
+          "approach": "Check specification correctness",
+          "code": "// Verify ensures clause matches actual behavior",
+          "when": "Specification may be wrong"
+        }
+      ]
+    },
+    {
+      "id": "invariant_not_established",
+      "pattern": "loop invariant .* might not hold on entry",
+      "message": "Loop invariant not established before loop",
+      "cause": "Invariant is not true before entering the loop",
+      "solutions": [
+        {
+          "approach": "Weaken invariant",
+          "code": "#[invariant(i == 0 || property)]",
+          "when": "Invariant only holds after first iteration"
+        },
+        {
+          "approach": "Add setup code",
+          "code": "// Initialize state to satisfy invariant\n#[invariant(...)]",
+          "when": "Need initialization before loop"
+        },
+        {
+          "approach": "Check initial values",
+          "code": "proof_assert!(invariant_condition); // Before loop",
+          "when": "Debugging invariant establishment"
+        }
+      ]
+    },
+    {
+      "id": "invariant_not_preserved",
+      "pattern": "loop invariant .* might not be preserved",
+      "message": "Loop invariant not preserved by loop body",
+      "cause": "Loop body breaks the invariant",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "#[invariant(additional_property)]",
+          "when": "Need more facts to prove preservation"
+        },
+        {
+          "approach": "Add intermediate assertions",
+          "code": "// Inside loop:\nproof_assert!(invariant_still_holds);",
+          "when": "Prover loses track of facts"
+        },
+        {
+          "approach": "Fix loop body",
+          "code": "// Ensure loop body maintains invariant",
+          "when": "Logic error in loop"
+        }
+      ]
+    },
+    {
+      "id": "variant_not_decreasing",
+      "pattern": "variant .* might not decrease",
+      "message": "Cannot prove loop terminates",
+      "cause": "Loop variant doesn't decrease on each iteration",
+      "solutions": [
+        {
+          "approach": "Fix variant expression",
+          "code": "#[variant(correct_decreasing_expr)]",
+          "when": "Wrong variant chosen"
+        },
+        {
+          "approach": "Add bounds check",
+          "code": "#[requires(n <= MAX)]\n#[variant(MAX - i)]",
+          "when": "Variant needs bounded context"
+        },
+        {
+          "approach": "Use lexicographic variant",
+          "code": "#[variant((outer, inner))]",
+          "when": "Need multiple decreasing values"
+        }
+      ]
+    },
+    {
+      "id": "model_not_found",
+      "pattern": "no model found for type",
+      "message": "Type needs a logical model",
+      "cause": "Custom type needs a pearlite model for specification",
+      "solutions": [
+        {
+          "approach": "Derive DeepModel",
+          "code": "#[derive(DeepModel)]\nstruct MyType { ... }",
+          "when": "Simple struct"
+        },
+        {
+          "approach": "Implement DeepModel manually",
+          "code": "impl DeepModel for MyType {\n    type DeepModelTy = ...;\n}",
+          "when": "Custom model needed"
+        }
+      ]
+    },
+    {
+      "id": "why3_error",
+      "pattern": "Why3 error:",
+      "message": "Backend prover error",
+      "cause": "Why3 or underlying SMT solver encountered an issue",
+      "solutions": [
+        {
+          "approach": "Try different prover",
+          "code": "creusot prove --prover=cvc5",
+          "when": "One prover times out"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "creusot prove --timeout=120",
+          "when": "Proof needs more time"
+        },
+        {
+          "approach": "Simplify specification",
+          "code": "// Break complex spec into smaller lemmas",
+          "when": "Specification too complex"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported: |not yet supported:",
+      "message": "Rust feature not supported by Creusot",
+      "cause": "Code uses Rust feature Creusot cannot verify",
+      "solutions": [
+        {
+          "approach": "Use trusted block",
+          "code": "#[trusted]\nfn external_fn() { ... }",
+          "when": "Function uses unsupported features"
+        },
+        {
+          "approach": "Rewrite without feature",
+          "code": "// Use supported Rust subset",
+          "when": "Can restructure code"
+        },
+        {
+          "approach": "Check Creusot version",
+          "code": "// Newer versions support more features",
+          "when": "Feature may be recently added"
+        }
+      ]
+    }
+  ]
+}

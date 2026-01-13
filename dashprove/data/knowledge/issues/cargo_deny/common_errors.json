@@ -1,0 +1,171 @@
+{
+  "tool": "cargo-deny",
+  "version": "0.16.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "license_denied",
+      "pattern": "license .* is not explicitly allowed|denied by .* license",
+      "message": "Dependency uses a denied license",
+      "cause": "A dependency's license is on the deny list or not on the allow list",
+      "solutions": [
+        {
+          "approach": "Add license to allow list",
+          "code": "[licenses]\nallow = [\"MIT\", \"Apache-2.0\", \"BSD-3-Clause\"]",
+          "when": "License is acceptable for your project"
+        },
+        {
+          "approach": "Add exception for specific crate",
+          "code": "[[licenses.clarify]]\nname = \"crate-name\"\nexpression = \"MIT OR Apache-2.0\"",
+          "when": "Crate has acceptable but unclear license"
+        },
+        {
+          "approach": "Find alternative crate",
+          "code": "# Replace dependency with one using allowed license",
+          "when": "License is truly incompatible"
+        }
+      ]
+    },
+    {
+      "id": "advisory_found",
+      "pattern": "RUSTSEC-\\d{4}-\\d{4}|security advisory",
+      "message": "Dependency has a known security vulnerability",
+      "cause": "Crate version has published RUSTSEC advisory",
+      "solutions": [
+        {
+          "approach": "Update dependency",
+          "code": "cargo update -p vulnerable-crate",
+          "when": "Patched version available"
+        },
+        {
+          "approach": "Add advisory exception (with reason)",
+          "code": "[advisories]\nignore = [\"RUSTSEC-2024-XXXX\"]  # Reason: not applicable to our use",
+          "when": "Vulnerability doesn't apply to your usage"
+        },
+        {
+          "approach": "Replace crate",
+          "code": "# Find alternative without advisories",
+          "when": "No patch available"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_crate",
+      "pattern": "multiple versions of .* found|duplicate .* crate",
+      "message": "Multiple versions of same crate in dependency tree",
+      "cause": "Different dependencies require different versions",
+      "solutions": [
+        {
+          "approach": "Update dependencies",
+          "code": "cargo update",
+          "when": "Updates can resolve duplication"
+        },
+        {
+          "approach": "Add to skip list",
+          "code": "[bans]\nskip = [\n  { name = \"crate-name\", version = \"1.0\" }\n]",
+          "when": "Duplication is acceptable"
+        },
+        {
+          "approach": "Use skip-tree",
+          "code": "[bans]\nskip-tree = [\n  { name = \"root-crate\" }\n]",
+          "when": "Skip all duplicates from a subtree"
+        }
+      ]
+    },
+    {
+      "id": "unmaintained_crate",
+      "pattern": "unmaintained|no longer maintained",
+      "message": "Dependency is unmaintained",
+      "cause": "Crate has RUSTSEC advisory marking it unmaintained",
+      "solutions": [
+        {
+          "approach": "Find maintained alternative",
+          "code": "# Search crates.io for alternatives",
+          "when": "Active replacement exists"
+        },
+        {
+          "approach": "Ignore if acceptable",
+          "code": "[advisories]\nignore = [\"RUSTSEC-XXXX-XXXX\"]  # Unmaintained but still works",
+          "when": "Crate is stable enough for your needs"
+        },
+        {
+          "approach": "Fork and maintain",
+          "code": "[patch.crates-io]\ncrate-name = { git = \"https://github.com/you/fork\" }",
+          "when": "You can maintain it"
+        }
+      ]
+    },
+    {
+      "id": "source_denied",
+      "pattern": "source .* is not allowed",
+      "message": "Dependency from unauthorized source",
+      "cause": "Crate comes from git, path, or registry not on allow list",
+      "solutions": [
+        {
+          "approach": "Add source to allow list",
+          "code": "[sources]\nunknown-registry = \"deny\"\nunknown-git = \"deny\"\nallow-git = [\"https://github.com/org/repo\"]",
+          "when": "Source is trusted"
+        },
+        {
+          "approach": "Use crates.io version",
+          "code": "# Remove git/path dependency, use published version",
+          "when": "Published version available"
+        }
+      ]
+    },
+    {
+      "id": "yanked_crate",
+      "pattern": "yanked|has been yanked",
+      "message": "Using a yanked crate version",
+      "cause": "Crate version was yanked from crates.io",
+      "solutions": [
+        {
+          "approach": "Update to non-yanked version",
+          "code": "cargo update -p yanked-crate",
+          "when": "Newer version available"
+        },
+        {
+          "approach": "Pin to specific non-yanked version",
+          "code": "crate-name = \"=1.2.3\"  # Non-yanked version",
+          "when": "Need specific older version"
+        }
+      ]
+    },
+    {
+      "id": "wildcard_dependency",
+      "pattern": "wildcard dependency|version = \"\\*\"",
+      "message": "Dependency uses wildcard version",
+      "cause": "Dependency version is * which is too permissive",
+      "solutions": [
+        {
+          "approach": "Specify version constraint",
+          "code": "crate-name = \"^1.0\"  # Or \"1.0\", \">=1.0,<2.0\"",
+          "when": "Always - wildcards are bad practice"
+        },
+        {
+          "approach": "Allow wildcards if needed",
+          "code": "[bans]\nwildcards = \"allow\"",
+          "when": "Rarely - only for special cases"
+        }
+      ]
+    },
+    {
+      "id": "build_script_not_allowed",
+      "pattern": "build script is not allowed",
+      "message": "Crate has disallowed build script",
+      "cause": "Build scripts can execute arbitrary code; blocked by policy",
+      "solutions": [
+        {
+          "approach": "Allow build script for crate",
+          "code": "[bans]\nbuild = { allow-build-scripts = [\"crate-name\"] }",
+          "when": "Build script is trusted"
+        },
+        {
+          "approach": "Find alternative without build script",
+          "code": "# Look for pure-Rust alternative",
+          "when": "Avoiding build scripts is required"
+        }
+      ]
+    }
+  ]
+}

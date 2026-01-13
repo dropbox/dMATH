@@ -1,0 +1,191 @@
+{
+  "tool": "coyote",
+  "version": "1.7.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "bug_found",
+      "pattern": "Bug found|Assertion failed|Deadlock detected",
+      "message": "Coyote found a concurrency bug",
+      "cause": "Systematic testing found a bug - this is intended behavior",
+      "solutions": [
+        {
+          "approach": "Examine trace",
+          "code": "coyote replay Test.dll output/test_0.trace",
+          "when": "Understanding the bug"
+        },
+        {
+          "approach": "Debug with replay",
+          "code": "// Set breakpoint and replay to hit exact interleaving",
+          "when": "Debugging the issue"
+        },
+        {
+          "approach": "Fix synchronization",
+          "code": "// Review locks, async/await, shared state",
+          "when": "Concurrency bug confirmed"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout|Test timed out|Iteration limit",
+      "message": "Coyote test timed out",
+      "cause": "Test took too long or hit iteration limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "coyote test Test.dll --timeout 300",
+          "when": "Tests need more time"
+        },
+        {
+          "approach": "Increase iterations",
+          "code": "coyote test Test.dll --iterations 1000",
+          "when": "Need more exploration"
+        },
+        {
+          "approach": "Simplify test",
+          "code": "// Reduce test complexity or state space",
+          "when": "Test too complex"
+        }
+      ]
+    },
+    {
+      "id": "uncontrolled_task",
+      "pattern": "Uncontrolled task|UncontrolledTaskException|Task not controlled",
+      "message": "Coyote cannot control a task",
+      "cause": "Code uses Task APIs not rewritten by Coyote",
+      "solutions": [
+        {
+          "approach": "Use Microsoft.Coyote.Tasks",
+          "code": "using Microsoft.Coyote.Tasks;\nawait Task.Delay(100);  // Controlled version",
+          "when": "Need controlled delay"
+        },
+        {
+          "approach": "Enable rewriting",
+          "code": "coyote rewrite Test.dll",
+          "when": "Assembly not rewritten"
+        },
+        {
+          "approach": "Mock uncontrolled code",
+          "code": "// Wrap external async calls in controlled interfaces",
+          "when": "Third-party async code"
+        }
+      ]
+    },
+    {
+      "id": "actor_error",
+      "pattern": "Actor.*error|ActorId|UnhandledEventException",
+      "message": "Coyote actor model error",
+      "cause": "Actor received unexpected event or invalid state",
+      "solutions": [
+        {
+          "approach": "Handle all events",
+          "code": "[OnEventDoAction(typeof(MyEvent), nameof(HandleEvent))]\nprivate class MyState : State { }",
+          "when": "Missing event handler"
+        },
+        {
+          "approach": "Use defer",
+          "code": "[DeferEvents(typeof(MyEvent))]\nprivate class BusyState : State { }",
+          "when": "Event should be queued"
+        },
+        {
+          "approach": "Add wildcard handler",
+          "code": "[OnEventDoAction(typeof(WildCardEvent), nameof(HandleWild))]",
+          "when": "Catch-all needed"
+        }
+      ]
+    },
+    {
+      "id": "rewriting_error",
+      "pattern": "Rewriting.*error|Cannot rewrite|Assembly.*error",
+      "message": "Assembly rewriting failed",
+      "cause": "Coyote cannot rewrite the assembly",
+      "solutions": [
+        {
+          "approach": "Check assembly format",
+          "code": "# Ensure assembly is .NET Standard 2.0+ or .NET Core/5+",
+          "when": "Framework compatibility"
+        },
+        {
+          "approach": "Rewrite dependencies",
+          "code": "coyote rewrite Test.dll --rewrite-dependencies",
+          "when": "Dependencies need rewriting too"
+        },
+        {
+          "approach": "Use config file",
+          "code": "// coyote-rewrite.json\n{\n  \"AssembliesPath\": \"bin/Debug\",\n  \"OutputPath\": \"bin/Rewritten\"\n}",
+          "when": "Complex rewrite configuration"
+        }
+      ]
+    },
+    {
+      "id": "scheduler_error",
+      "pattern": "Scheduler.*error|SchedulingStrategy|Exploration blocked",
+      "message": "Coyote scheduler encountered an error",
+      "cause": "Scheduling strategy failed or exploration blocked",
+      "solutions": [
+        {
+          "approach": "Try different strategy",
+          "code": "coyote test Test.dll --strategy random\ncoyote test Test.dll --strategy pct\ncoyote test Test.dll --strategy fairpct",
+          "when": "Default strategy ineffective"
+        },
+        {
+          "approach": "Increase max steps",
+          "code": "coyote test Test.dll --max-steps 10000",
+          "when": "Exploration cut off too early"
+        },
+        {
+          "approach": "Add scheduling points",
+          "code": "SchedulingPoint.Interleave();",
+          "when": "Need more scheduling granularity"
+        }
+      ]
+    },
+    {
+      "id": "spec_violation",
+      "pattern": "Specification.*violation|Monitor.*error|Liveness",
+      "message": "Specification monitor detected violation",
+      "cause": "System violated safety or liveness specification",
+      "solutions": [
+        {
+          "approach": "Check safety property",
+          "code": "// Assert in hot state should never fire",
+          "when": "Safety violation"
+        },
+        {
+          "approach": "Review liveness",
+          "code": "// Hot state should eventually be left",
+          "when": "Liveness violation"
+        },
+        {
+          "approach": "Examine monitor trace",
+          "code": "// Replay shows monitor state transitions",
+          "when": "Understanding violation"
+        }
+      ]
+    },
+    {
+      "id": "coverage_error",
+      "pattern": "Coverage.*error|Activity coverage|State coverage",
+      "message": "Coverage measurement error",
+      "cause": "Cannot measure code or state coverage",
+      "solutions": [
+        {
+          "approach": "Enable coverage",
+          "code": "coyote test Test.dll --coverage",
+          "when": "Measuring coverage"
+        },
+        {
+          "approach": "Check coverage report",
+          "code": "// Review coverage.txt for activity coverage",
+          "when": "Analyzing results"
+        },
+        {
+          "approach": "Use graph coverage",
+          "code": "coyote test Test.dll --coverage --graph",
+          "when": "Visual coverage graph"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "swiftcheck",
+  "version": "0.15.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "test_failed",
+      "pattern": "failed.*after \\d+ tests|Falsifiable",
+      "message": "Property test found counterexample",
+      "cause": "Property doesn't hold for generated input",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "// SwiftCheck prints failing input - analyze it",
+          "when": "Need to understand failure"
+        },
+        {
+          "approach": "Add preconditions",
+          "code": "property(\"...\") <- forAll { (x: Int) in\n    (x > 0) ==> (sqrt(Double(x)) >= 0)\n}",
+          "when": "Property has implicit assumptions"
+        },
+        {
+          "approach": "Fix implementation",
+          "code": "// Counterexample reveals bug in code under test",
+          "when": "Found real bug"
+        }
+      ]
+    },
+    {
+      "id": "generator_error",
+      "pattern": "could not generate|Arbitrary.*not found|no Arbitrary instance",
+      "message": "Cannot generate arbitrary values for type",
+      "cause": "Type doesn't conform to Arbitrary protocol",
+      "solutions": [
+        {
+          "approach": "Implement Arbitrary conformance",
+          "code": "extension MyType: Arbitrary {\n    static var arbitrary: Gen<MyType> {\n        Gen<MyType>.compose { c in\n            MyType(field: c.generate())\n        }\n    }\n}",
+          "when": "Custom type needs generator"
+        },
+        {
+          "approach": "Use Gen.compose",
+          "code": "let myGen = Gen<MyType>.compose { c in\n    MyType(a: c.generate(), b: c.generate())\n}",
+          "when": "One-off generator"
+        },
+        {
+          "approach": "Use existing generators",
+          "code": "let gen = Int.arbitrary.map { MyType(value: $0) }",
+          "when": "Simple mapping suffices"
+        }
+      ]
+    },
+    {
+      "id": "shrinking_timeout",
+      "pattern": "shrink.*timeout|too many shrink attempts",
+      "message": "Shrinking counterexample timed out",
+      "cause": "Shrinking taking too long to find minimal counterexample",
+      "solutions": [
+        {
+          "approach": "Limit shrink iterations",
+          "code": "property(\"...\") <- forAll { ... }.withMaxShrinkIterations(100)",
+          "when": "Default shrinking too slow"
+        },
+        {
+          "approach": "Custom shrink function",
+          "code": "extension MyType: Arbitrary {\n    static func shrink(_ x: MyType) -> [MyType] {\n        // Return simpler versions\n    }\n}",
+          "when": "Need smarter shrinking"
+        },
+        {
+          "approach": "Disable shrinking",
+          "code": ".noShrinking",
+          "when": "Don't need minimal example"
+        }
+      ]
+    },
+    {
+      "id": "size_exhaustion",
+      "pattern": "exhausted|gave up after|discarded too many",
+      "message": "Generator exhausted or too many discarded values",
+      "cause": "Preconditions filter out too many generated values",
+      "solutions": [
+        {
+          "approach": "Use smarter generator",
+          "code": "forAll(Int.arbitrary.suchThat { $0 > 0 }) { ... }",
+          "when": "suchThat more efficient than ==>"
+        },
+        {
+          "approach": "Increase max discard ratio",
+          "code": ".withMaxDiscardRatio(10)",
+          "when": "Preconditions legitimately filter many"
+        },
+        {
+          "approach": "Generate valid values directly",
+          "code": "let positiveInts = Gen<Int>.choose((1, 1000))",
+          "when": "Can constrain at generation"
+        }
+      ]
+    },
+    {
+      "id": "property_exception",
+      "pattern": "threw exception|fatal error|crashed during test",
+      "message": "Property test threw an exception",
+      "cause": "Code under test crashes on some input",
+      "solutions": [
+        {
+          "approach": "Catch expected exceptions",
+          "code": "property(\"...\") <- forAll { x in\n    !((try? riskyOperation(x)) == nil)\n}",
+          "when": "Exception is valid behavior"
+        },
+        {
+          "approach": "Guard against bad input",
+          "code": "(validInput(x)) ==> property(x)",
+          "when": "Filter invalid inputs"
+        },
+        {
+          "approach": "Fix crash in code",
+          "code": "// Found real crash bug - fix it",
+          "when": "Genuine bug found"
+        }
+      ]
+    },
+    {
+      "id": "no_tests_run",
+      "pattern": "no tests|0 tests|property not found",
+      "message": "No property tests were executed",
+      "cause": "Properties not discovered or not run",
+      "solutions": [
+        {
+          "approach": "Use correct test function",
+          "code": "func testMyProperty() {\n    property(\"...\") <- forAll { ... }\n}",
+          "when": "In XCTest context"
+        },
+        {
+          "approach": "Check import",
+          "code": "import SwiftCheck",
+          "when": "Module not imported"
+        },
+        {
+          "approach": "Run specific test",
+          "code": "swift test --filter testMyProperty",
+          "when": "Run targeted test"
+        }
+      ]
+    },
+    {
+      "id": "reproducibility_error",
+      "pattern": "could not reproduce|seed.*failed|non-deterministic",
+      "message": "Cannot reproduce failing test",
+      "cause": "Test depends on non-deterministic behavior",
+      "solutions": [
+        {
+          "approach": "Use fixed seed",
+          "code": ".withSeed(12345)",
+          "when": "Need reproducibility"
+        },
+        {
+          "approach": "Log seed on failure",
+          "code": "// SwiftCheck prints seed - use it to reproduce",
+          "when": "Investigating flaky test"
+        },
+        {
+          "approach": "Remove non-determinism",
+          "code": "// Don't use Date(), random(), etc. in properties",
+          "when": "Test has hidden randomness"
+        }
+      ]
+    },
+    {
+      "id": "assertion_message",
+      "pattern": "assertion failed|XCTAssert.*failed",
+      "message": "Property assertion failed",
+      "cause": "Property returned false or assertion failed",
+      "solutions": [
+        {
+          "approach": "Use property operators",
+          "code": "return (a + b) == (b + a)  // Return Bool, don't assert",
+          "when": "Converting from XCTAssert"
+        },
+        {
+          "approach": "Combine properties",
+          "code": "property1 .&. property2",
+          "when": "Multiple conditions"
+        },
+        {
+          "approach": "Label properties",
+          "code": "(\"commutativity\" <?> property)",
+          "when": "Better failure messages"
+        }
+      ]
+    }
+  ]
+}

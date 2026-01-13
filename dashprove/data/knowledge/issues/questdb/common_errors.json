@@ -1,0 +1,191 @@
+{
+  "tool": "questdb",
+  "version": "7.4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "ilp_error",
+      "pattern": "ILP.*error|line protocol.*failed|invalid.*line|InfluxDB line protocol",
+      "message": "ILP (InfluxDB Line Protocol) error",
+      "cause": "Invalid line protocol syntax",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "# Format: table,tag=value column=value timestamp\ncpu,host=server01 usage=0.64 1609459200000000000",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Client library",
+          "code": "// Node.js example:\nconst { Sender } = require('@questdb/nodejs-client');\nconst sender = Sender.fromConfig('http::addr=localhost:9000');\nawait sender.table('cpu').symbol('host', 'server01').floatColumn('usage', 0.64).atNow();",
+          "when": "Use client"
+        },
+        {
+          "approach": "Check types",
+          "code": "# Strings must be quoted with double quotes\n# Symbols don't need quotes\ntrades,symbol=BTC price=45000.5,quantity=1.5 1609459200000000000",
+          "when": "Type issue"
+        }
+      ]
+    },
+    {
+      "id": "query_error",
+      "pattern": "SQL.*error|syntax error|column.*not found|table.*does not exist",
+      "message": "SQL query error",
+      "cause": "Invalid SQL syntax or missing objects",
+      "solutions": [
+        {
+          "approach": "Check table",
+          "code": "SHOW TABLES;\nSELECT * FROM 'table_name' LIMIT 10;",
+          "when": "Table not found"
+        },
+        {
+          "approach": "Check columns",
+          "code": "SHOW COLUMNS FROM 'table_name';",
+          "when": "Column not found"
+        },
+        {
+          "approach": "Time functions",
+          "code": "-- QuestDB time functions:\nSELECT * FROM trades\nWHERE timestamp > dateadd('h', -1, now());",
+          "when": "Time filtering"
+        }
+      ]
+    },
+    {
+      "id": "timestamp_error",
+      "pattern": "designated timestamp|out of order|timestamp.*required|partition",
+      "message": "Timestamp/partition error",
+      "cause": "Timestamp column or ordering issue",
+      "solutions": [
+        {
+          "approach": "Create with timestamp",
+          "code": "CREATE TABLE trades (\n  timestamp TIMESTAMP,\n  symbol SYMBOL,\n  price DOUBLE\n) timestamp(timestamp) PARTITION BY DAY;",
+          "when": "Define timestamp"
+        },
+        {
+          "approach": "O3 (out of order)",
+          "code": "-- QuestDB handles out-of-order by default\n-- Check maxUncommittedRows setting",
+          "when": "Out of order data"
+        },
+        {
+          "approach": "Sample by",
+          "code": "SELECT timestamp, symbol, avg(price)\nFROM trades\nSAMPLE BY 1h  -- Time-based aggregation\nALIGN TO CALENDAR;",
+          "when": "Aggregation"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection refused|timeout|ECONNREFUSED|port.*closed",
+      "message": "Connection error",
+      "cause": "QuestDB not running or wrong port",
+      "solutions": [
+        {
+          "approach": "Check ports",
+          "code": "# Default ports:\n# 9000 - HTTP/REST API\n# 9009 - ILP TCP\n# 8812 - PostgreSQL wire protocol\n# 9003 - Min HTTP health",
+          "when": "Port reference"
+        },
+        {
+          "approach": "Health check",
+          "code": "curl http://localhost:9003",
+          "when": "Check health"
+        },
+        {
+          "approach": "PostgreSQL connection",
+          "code": "psql -h localhost -p 8812 -U admin -d qdb",
+          "when": "Use psql"
+        }
+      ]
+    },
+    {
+      "id": "disk_error",
+      "pattern": "disk.*full|no space|cannot write|partition.*error",
+      "message": "Disk/storage error",
+      "cause": "Disk full or partition issue",
+      "solutions": [
+        {
+          "approach": "Check space",
+          "code": "df -h /path/to/questdb/data",
+          "when": "Check disk"
+        },
+        {
+          "approach": "Drop partitions",
+          "code": "ALTER TABLE trades DROP PARTITION LIST '2023-01', '2023-02';",
+          "when": "Remove old data"
+        },
+        {
+          "approach": "Detach partition",
+          "code": "ALTER TABLE trades DETACH PARTITION LIST '2023-01';",
+          "when": "Archive partition"
+        }
+      ]
+    },
+    {
+      "id": "symbol_error",
+      "pattern": "symbol.*limit|too many symbols|symbol cache",
+      "message": "Symbol capacity error",
+      "cause": "Too many unique symbol values",
+      "solutions": [
+        {
+          "approach": "Increase capacity",
+          "code": "-- Set symbol capacity on creation:\nCREATE TABLE trades (\n  symbol SYMBOL CAPACITY 100000,\n  price DOUBLE\n);",
+          "when": "Need more symbols"
+        },
+        {
+          "approach": "Use string",
+          "code": "-- For high-cardinality, use STRING instead of SYMBOL",
+          "when": "High cardinality"
+        },
+        {
+          "approach": "Check usage",
+          "code": "SELECT table_name, symbol_count FROM table_columns()\nWHERE type = 'SYMBOL';",
+          "when": "View symbol counts"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "import.*failed|CSV.*error|COPY.*failed|invalid format",
+      "message": "Data import error",
+      "cause": "Import format or configuration issue",
+      "solutions": [
+        {
+          "approach": "HTTP import",
+          "code": "curl -F data=@trades.csv 'http://localhost:9000/imp?name=trades'",
+          "when": "Import CSV"
+        },
+        {
+          "approach": "With schema",
+          "code": "curl -F schema='[{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"pattern\":\"yyyy-MM-ddTHH:mm:ss\"}]' \\\n     -F data=@trades.csv 'http://localhost:9000/imp?name=trades'",
+          "when": "Specify schema"
+        },
+        {
+          "approach": "COPY command",
+          "code": "COPY trades FROM '/path/to/trades.csv' WITH HEADER true;",
+          "when": "SQL import"
+        }
+      ]
+    },
+    {
+      "id": "wal_error",
+      "pattern": "WAL.*error|write ahead log|transaction.*failed|recovery",
+      "message": "WAL (Write-Ahead Log) error",
+      "cause": "WAL corruption or configuration issue",
+      "solutions": [
+        {
+          "approach": "Check WAL",
+          "code": "SELECT * FROM wal_transactions();",
+          "when": "View WAL status"
+        },
+        {
+          "approach": "Force commit",
+          "code": "SELECT wal_apply(-1);  -- Apply all pending",
+          "when": "Apply WAL"
+        },
+        {
+          "approach": "Recovery mode",
+          "code": "# Start with recovery:\nquestdb.exe start -f",
+          "when": "Recover data"
+        }
+      ]
+    }
+  ]
+}

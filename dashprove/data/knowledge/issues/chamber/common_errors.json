@@ -1,0 +1,145 @@
+{
+  "tool": "chamber",
+  "version": "2.13",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "aws_credentials",
+      "pattern": "NoCredentialProviders|credentials.*not found|AccessDenied|unable to locate credentials",
+      "message": "AWS credentials not found or invalid",
+      "cause": "AWS credentials not configured or expired",
+      "solutions": [
+        {
+          "approach": "Configure AWS",
+          "code": "aws configure\n# Or export:\nexport AWS_ACCESS_KEY_ID=xxx\nexport AWS_SECRET_ACCESS_KEY=xxx",
+          "when": "Set up credentials"
+        },
+        {
+          "approach": "Use profile",
+          "code": "export AWS_PROFILE=myprofile\nchamber list myservice",
+          "when": "Named profile"
+        },
+        {
+          "approach": "IAM role",
+          "code": "# On EC2/ECS/Lambda, ensure IAM role has:\n# ssm:GetParameters\n# ssm:GetParametersByPath\n# kms:Decrypt",
+          "when": "Instance role"
+        }
+      ]
+    },
+    {
+      "id": "service_not_found",
+      "pattern": "service.*not found|no secrets|ParameterNotFound|path does not exist",
+      "message": "Service or parameters not found",
+      "cause": "No parameters exist for this service path",
+      "solutions": [
+        {
+          "approach": "List services",
+          "code": "chamber list-services\nchamber list myservice",
+          "when": "Find services"
+        },
+        {
+          "approach": "Write first",
+          "code": "chamber write myservice key value",
+          "when": "Create secret"
+        },
+        {
+          "approach": "Check region",
+          "code": "export AWS_REGION=us-east-1\nchamber list myservice",
+          "when": "Wrong region"
+        }
+      ]
+    },
+    {
+      "id": "kms_error",
+      "pattern": "KMS.*error|decrypt.*failed|encryption.*error|key.*not found",
+      "message": "KMS encryption/decryption error",
+      "cause": "KMS key missing or access denied",
+      "solutions": [
+        {
+          "approach": "Specify key",
+          "code": "export CHAMBER_KMS_KEY_ALIAS=alias/parameter_store_key\nchamber write myservice key value",
+          "when": "Custom KMS key"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "# IAM policy needs:\n# kms:Decrypt on the KMS key\n# kms:Encrypt for write operations",
+          "when": "KMS access denied"
+        },
+        {
+          "approach": "Use default key",
+          "code": "# Default: alias/parameter_store_key\n# Or alias/aws/ssm for AWS managed",
+          "when": "Key alias"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "AccessDeniedException|not authorized|permission denied|UnauthorizedAccess",
+      "message": "SSM Parameter Store access denied",
+      "cause": "IAM policy doesn't allow SSM operations",
+      "solutions": [
+        {
+          "approach": "Grant SSM access",
+          "code": "# IAM policy:\n{\n  \"Effect\": \"Allow\",\n  \"Action\": [\n    \"ssm:GetParameters\",\n    \"ssm:GetParametersByPath\",\n    \"ssm:PutParameter\"\n  ],\n  \"Resource\": \"arn:aws:ssm:*:*:parameter/myservice/*\"\n}",
+          "when": "Add permissions"
+        },
+        {
+          "approach": "Restrict path",
+          "code": "# Scope to specific service:\n\"Resource\": \"arn:aws:ssm:*:*:parameter/production/*\"",
+          "when": "Least privilege"
+        },
+        {
+          "approach": "Test access",
+          "code": "aws ssm get-parameters-by-path --path /myservice/ --recursive",
+          "when": "Verify permissions"
+        }
+      ]
+    },
+    {
+      "id": "exec_failed",
+      "pattern": "exec.*failed|command not found|failed to start|env injection failed",
+      "message": "Chamber exec failed",
+      "cause": "Command not found or secrets not loaded",
+      "solutions": [
+        {
+          "approach": "Debug exec",
+          "code": "chamber exec myservice -- env | grep MY_VAR",
+          "when": "Check injection"
+        },
+        {
+          "approach": "Full path",
+          "code": "chamber exec myservice -- /usr/bin/myapp",
+          "when": "Absolute path"
+        },
+        {
+          "approach": "Multiple services",
+          "code": "chamber exec svc1 svc2 -- myapp",
+          "when": "Combine services"
+        }
+      ]
+    },
+    {
+      "id": "export_format",
+      "pattern": "export.*error|format.*invalid|output.*failed",
+      "message": "Export format error",
+      "cause": "Invalid format or output issue",
+      "solutions": [
+        {
+          "approach": "JSON export",
+          "code": "chamber export myservice --format json > secrets.json",
+          "when": "JSON format"
+        },
+        {
+          "approach": "Dotenv export",
+          "code": "chamber export myservice --format dotenv > .env",
+          "when": "Dotenv format"
+        },
+        {
+          "approach": "TSV export",
+          "code": "chamber export myservice --format tsv",
+          "when": "Tab-separated"
+        }
+      ]
+    }
+  ]
+}

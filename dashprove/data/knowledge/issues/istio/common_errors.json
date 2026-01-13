@@ -1,0 +1,163 @@
+{
+  "tool": "istio",
+  "version": "1.21.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sidecar_injection_failed",
+      "pattern": "sidecar injection failed|istio-proxy not found|init container not started",
+      "message": "Sidecar injection failed",
+      "cause": "Namespace not labeled for injection or injection webhook not working",
+      "solutions": [
+        {
+          "approach": "Label namespace",
+          "code": "kubectl label namespace default istio-injection=enabled",
+          "when": "Namespace missing injection label"
+        },
+        {
+          "approach": "Check webhook",
+          "code": "kubectl get mutatingwebhookconfigurations istio-sidecar-injector -o yaml",
+          "when": "Injection webhook may be misconfigured"
+        },
+        {
+          "approach": "Manual injection",
+          "code": "istioctl kube-inject -f deployment.yaml | kubectl apply -f -",
+          "when": "Auto-injection not available"
+        }
+      ]
+    },
+    {
+      "id": "upstream_connection_failed",
+      "pattern": "upstream connect error|no healthy upstream|503 UF",
+      "message": "Service unavailable - upstream connection failed",
+      "cause": "Destination service not available, misconfigured routing, or circuit breaker open",
+      "solutions": [
+        {
+          "approach": "Check destination pods",
+          "code": "kubectl get pods -l app=myservice\nkubectl describe pod myservice-xxx",
+          "when": "Backend service may be down"
+        },
+        {
+          "approach": "Verify VirtualService",
+          "code": "istioctl analyze\nkubectl get virtualservice -o yaml",
+          "when": "Routing configuration may be wrong"
+        },
+        {
+          "approach": "Check DestinationRule",
+          "code": "kubectl get destinationrule -o yaml",
+          "when": "Traffic policy may be blocking"
+        }
+      ]
+    },
+    {
+      "id": "certificate_error",
+      "pattern": "TLS error|certificate verify failed|SSL_ERROR_SSL",
+      "message": "mTLS certificate error",
+      "cause": "Certificate expired, wrong CA, or mTLS mode mismatch",
+      "solutions": [
+        {
+          "approach": "Check certificate validity",
+          "code": "istioctl proxy-config secret deployment/myapp -o json | jq '.dynamicActiveSecrets[].secret.tlsCertificate.certificateChain.inlineBytes' -r | base64 -d | openssl x509 -text -noout",
+          "when": "Certificate may be expired"
+        },
+        {
+          "approach": "Restart pod to renew cert",
+          "code": "kubectl rollout restart deployment/myapp",
+          "when": "Certificate rotation not happening"
+        },
+        {
+          "approach": "Check PeerAuthentication",
+          "code": "kubectl get peerauthentication -A",
+          "when": "mTLS mode may be inconsistent"
+        }
+      ]
+    },
+    {
+      "id": "config_not_propagating",
+      "pattern": "configuration not found|CDS|RDS|stale config",
+      "message": "Configuration not propagating to proxies",
+      "cause": "Istiod not pushing config, proxy disconnected, or config rejected",
+      "solutions": [
+        {
+          "approach": "Check proxy status",
+          "code": "istioctl proxy-status",
+          "when": "Need to see config sync state"
+        },
+        {
+          "approach": "View proxy config",
+          "code": "istioctl proxy-config clusters deployment/myapp\nistioctl proxy-config routes deployment/myapp",
+          "when": "Need to inspect applied config"
+        },
+        {
+          "approach": "Check istiod logs",
+          "code": "kubectl logs -n istio-system deployment/istiod",
+          "when": "Istiod may have errors"
+        }
+      ]
+    },
+    {
+      "id": "circuit_breaker_open",
+      "pattern": "overflow|circuit breaker|503 UC",
+      "message": "Circuit breaker tripped",
+      "cause": "Too many pending requests or connection pool exhausted",
+      "solutions": [
+        {
+          "approach": "Increase connection pool",
+          "code": "apiVersion: networking.istio.io/v1alpha3\nkind: DestinationRule\nspec:\n  trafficPolicy:\n    connectionPool:\n      tcp:\n        maxConnections: 100\n      http:\n        h2UpgradePolicy: UPGRADE\n        http1MaxPendingRequests: 100\n        http2MaxRequests: 1000",
+          "when": "Pool sizes too small for traffic"
+        },
+        {
+          "approach": "Adjust outlier detection",
+          "code": "spec:\n  trafficPolicy:\n    outlierDetection:\n      consecutive5xxErrors: 7\n      interval: 30s\n      baseEjectionTime: 30s",
+          "when": "Outlier detection too aggressive"
+        }
+      ]
+    },
+    {
+      "id": "gateway_not_working",
+      "pattern": "gateway|404|no route|listener not found",
+      "message": "Ingress gateway not routing traffic",
+      "cause": "Gateway/VirtualService misconfigured or not bound",
+      "solutions": [
+        {
+          "approach": "Check Gateway resource",
+          "code": "kubectl get gateway -o yaml\nkubectl describe gateway mygateway",
+          "when": "Gateway may be misconfigured"
+        },
+        {
+          "approach": "Verify VirtualService binds to Gateway",
+          "code": "# VirtualService must reference Gateway:\nspec:\n  gateways:\n    - mygateway\n  hosts:\n    - \"myapp.example.com\"",
+          "when": "VirtualService not attached to Gateway"
+        },
+        {
+          "approach": "Check gateway pod",
+          "code": "kubectl get pods -n istio-system -l app=istio-ingressgateway\nkubectl logs -n istio-system -l app=istio-ingressgateway",
+          "when": "Gateway pod may have issues"
+        }
+      ]
+    },
+    {
+      "id": "rbac_denied",
+      "pattern": "RBAC: access denied|403|AuthorizationPolicy",
+      "message": "Request denied by authorization policy",
+      "cause": "AuthorizationPolicy blocking the request",
+      "solutions": [
+        {
+          "approach": "Check policies",
+          "code": "kubectl get authorizationpolicy -A\nkubectl describe authorizationpolicy mypolicy",
+          "when": "Need to see what policies exist"
+        },
+        {
+          "approach": "Debug with proxy logs",
+          "code": "kubectl logs deployment/myapp -c istio-proxy | grep rbac",
+          "when": "Need to see why request was denied"
+        },
+        {
+          "approach": "Add allow rule",
+          "code": "apiVersion: security.istio.io/v1beta1\nkind: AuthorizationPolicy\nspec:\n  rules:\n  - from:\n    - source:\n        principals: [\"cluster.local/ns/default/sa/myservice\"]",
+          "when": "Need to permit specific access"
+        }
+      ]
+    }
+  ]
+}

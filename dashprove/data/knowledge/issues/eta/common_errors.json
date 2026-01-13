@@ -1,0 +1,168 @@
+{
+  "tool": "eta",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_variable",
+      "pattern": "is not defined|ReferenceError|Cannot read propert.*undefined",
+      "message": "Variable not in template context",
+      "cause": "Variable not passed to render or wrong path",
+      "solutions": [
+        {
+          "approach": "Pass data to render",
+          "code": "import { Eta } from 'eta';\nconst eta = new Eta();\neta.renderString('<%= it.name %>', { name: 'John' });",
+          "when": "Missing data"
+        },
+        {
+          "approach": "Use it. prefix",
+          "code": "<%= it.name %>  <!-- not <%= name %> by default -->",
+          "when": "Access pattern"
+        },
+        {
+          "approach": "Configure variable name",
+          "code": "const eta = new Eta({ varName: 'data' });\neta.renderString('<%= data.name %>', { name: 'World' });",
+          "when": "Custom variable"
+        }
+      ]
+    },
+    {
+      "id": "template_not_found",
+      "pattern": "Could not find|template.*not.*found|ENOENT|views.*undefined",
+      "message": "Template file not found",
+      "cause": "Views directory not configured or wrong path",
+      "solutions": [
+        {
+          "approach": "Configure views directory",
+          "code": "const eta = new Eta({ views: path.join(__dirname, 'templates') });",
+          "when": "Set template root"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "eta.render('page')        // looks for page.eta\neta.render('page.html')  // explicit extension",
+          "when": "Extension issue"
+        },
+        {
+          "approach": "Use absolute path",
+          "code": "eta.renderString(fs.readFileSync('/full/path/template.eta', 'utf8'), data);",
+          "when": "Direct file"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "SyntaxError|Unexpected token|unexpected identifier",
+      "message": "Invalid syntax in template",
+      "cause": "JavaScript syntax error or wrong delimiters",
+      "solutions": [
+        {
+          "approach": "Check delimiter types",
+          "code": "<% /* code only */ %>\n<%= /* escaped output */ %>\n<%~ /* raw output */ %>",
+          "when": "Wrong delimiter"
+        },
+        {
+          "approach": "Close tags properly",
+          "code": "<% if (it.show) { %>\n  Content\n<% } %>  <!-- closing brace in separate tag -->",
+          "when": "Unclosed block"
+        },
+        {
+          "approach": "Valid JavaScript",
+          "code": "<% const items = it.list || []; %>\n<% for (const item of items) { %>\n  <%= item %>\n<% } %>",
+          "when": "JS syntax"
+        }
+      ]
+    },
+    {
+      "id": "include_error",
+      "pattern": "include.*failed|partial.*not found|cannot resolve",
+      "message": "Include/partial resolution failed",
+      "cause": "Partial path incorrect or not configured",
+      "solutions": [
+        {
+          "approach": "Use include function",
+          "code": "<%~ include('partials/header', { title: 'Home' }) %>",
+          "when": "Include with data"
+        },
+        {
+          "approach": "Configure partial path",
+          "code": "const eta = new Eta({\n  views: './views',\n  cache: true  // production\n});",
+          "when": "Path config"
+        },
+        {
+          "approach": "Relative includes",
+          "code": "<%~ include('./header') %>  <!-- relative to current template -->",
+          "when": "Same directory"
+        }
+      ]
+    },
+    {
+      "id": "html_escaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML|XSS",
+      "message": "HTML content is escaped",
+      "cause": "Using <%= (escaped) instead of <%~ (raw)",
+      "solutions": [
+        {
+          "approach": "Use raw output",
+          "code": "<%~ it.rawHtml %>  <!-- unescaped -->\n<%= it.userInput %>  <!-- escaped, safe -->",
+          "when": "Trusted HTML"
+        },
+        {
+          "approach": "Configure autoEscape",
+          "code": "const eta = new Eta({ autoEscape: false });  // globally disable (careful!)",
+          "when": "Disable escaping"
+        },
+        {
+          "approach": "Safe string helper",
+          "code": "// In data:\n{ htmlContent: new eta.Eta.safe('<b>bold</b>') }",
+          "when": "Mark safe"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "async.*error|Promise|await.*not.*allowed",
+      "message": "Async operation not handled",
+      "cause": "Using async without enabling async mode",
+      "solutions": [
+        {
+          "approach": "Enable async mode",
+          "code": "const html = await eta.renderAsync('template', data);",
+          "when": "Async render"
+        },
+        {
+          "approach": "Async in template",
+          "code": "// Configure: { async: true }\n<% const items = await it.fetchItems(); %>\n<% for (const item of items) { %>\n  <%= item.name %>\n<% } %>",
+          "when": "Async template code"
+        },
+        {
+          "approach": "Pre-fetch data",
+          "code": "const items = await fetchItems();\neta.renderString(template, { items });",
+          "when": "Fetch before render"
+        }
+      ]
+    },
+    {
+      "id": "cache_stale",
+      "pattern": "changes not.*reflected|old template|cache.*stale",
+      "message": "Template changes not appearing",
+      "cause": "Templates cached in production mode",
+      "solutions": [
+        {
+          "approach": "Disable cache in dev",
+          "code": "const eta = new Eta({\n  views: './views',\n  cache: process.env.NODE_ENV === 'production'\n});",
+          "when": "Environment-based"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "eta.templatesSync.clear();  // or eta.templates.clear() for async",
+          "when": "Manual clear"
+        },
+        {
+          "approach": "Use debug mode",
+          "code": "const eta = new Eta({ debug: true });",
+          "when": "Debugging"
+        }
+      ]
+    }
+  ]
+}

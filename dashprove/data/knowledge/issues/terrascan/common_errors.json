@@ -1,0 +1,76 @@
+{
+  "tool": "terrascan",
+  "category": "policy",
+  "common_errors": [
+    {
+      "pattern": "no IaC files found|directory.*empty",
+      "meaning": "No IaC files to scan",
+      "causes": ["Wrong directory", "No supported files", "File extension not recognized"],
+      "solutions": ["Specify correct path: -d /path/to/iac", "Check for .tf, .yaml, .json files", "Use -i to specify IaC type"]
+    },
+    {
+      "pattern": "failed to load.*module|module.*not found",
+      "meaning": "Terraform module loading failed",
+      "causes": ["Remote module not downloaded", "Module path wrong", "No network access"],
+      "solutions": ["Run terraform init first", "Use --non-recursive for local only", "Check module source URLs"]
+    },
+    {
+      "pattern": "policy.*parse error|rule.*invalid",
+      "meaning": "Custom policy parse error",
+      "causes": ["Invalid Rego syntax", "Wrong policy format", "Missing metadata"],
+      "solutions": ["Validate Rego syntax", "Check policy file structure", "Include required metadata fields"]
+    },
+    {
+      "pattern": "unsupported.*IaC type|invalid.*-i flag",
+      "meaning": "IaC type not supported",
+      "causes": ["Wrong -i value", "Unsupported cloud/format", "Typo in type"],
+      "solutions": ["Use supported types: terraform, k8s, docker, etc.", "Check terrascan --help for -i options", "Verify file format matches type"]
+    },
+    {
+      "pattern": "remote backend.*error|state.*access denied",
+      "meaning": "Cannot access Terraform state",
+      "causes": ["No state access", "Remote backend config", "Credentials missing"],
+      "solutions": ["Use --config-only for config-only scan", "Provide backend credentials", "Scan without state if not needed"]
+    },
+    {
+      "pattern": "violation.*High|failed.*policies",
+      "meaning": "Policy violations found",
+      "causes": ["IaC doesn't meet policy", "Security misconfiguration", "Compliance violation"],
+      "solutions": ["Fix reported issues", "Use --skip-rules if false positive", "Add exception in .terrascan-config"]
+    },
+    {
+      "pattern": "notification.*failed|webhook.*error",
+      "meaning": "Notification delivery failed",
+      "causes": ["Webhook URL wrong", "Network blocked", "Auth failed"],
+      "solutions": ["Verify webhook URL", "Check network connectivity", "Review notification config"]
+    },
+    {
+      "pattern": "version.*mismatch|policy download.*failed",
+      "meaning": "Policy version/download issue",
+      "causes": ["Network error", "Policy repo unavailable", "Version doesn't exist"],
+      "solutions": ["Check network connectivity", "Specify valid policy version", "Use offline policy bundle"]
+    },
+    {
+      "pattern": "config file.*error|invalid.*config",
+      "meaning": "Configuration file error",
+      "causes": ["YAML/TOML syntax error", "Invalid config option", "File not found"],
+      "solutions": ["Check config file syntax", "Review terrascan config options", "Verify path to config file"]
+    },
+    {
+      "pattern": "output.*format.*invalid|json.*parse error",
+      "meaning": "Output format issue",
+      "causes": ["Invalid -o format", "Output pipe broken", "Large output truncated"],
+      "solutions": ["Use valid format: json, yaml, xml, sarif", "Check output destination", "Write to file: -o json > results.json"]
+    }
+  ],
+  "debugging_commands": [
+    "terrascan scan -d . -v",
+    "terrascan scan -d . --list-policies",
+    "terrascan scan -i terraform -d . -o json",
+    "terrascan scan -d . --config-path=.terrascan-config"
+  ],
+  "documentation_urls": [
+    "https://runterrascan.io/docs/",
+    "https://github.com/tenable/terrascan"
+  ]
+}

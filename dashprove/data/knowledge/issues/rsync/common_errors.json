@@ -1,0 +1,168 @@
+{
+  "tool": "rsync",
+  "version": "3.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|rsync.*permission",
+      "message": "Permission denied",
+      "cause": "Insufficient permissions on source or destination",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo rsync -av source/ dest/",
+          "when": "Need elevated privileges"
+        },
+        {
+          "approach": "Preserve permissions",
+          "code": "rsync -av --no-perms source/ dest/",
+          "when": "Ignore permission errors"
+        },
+        {
+          "approach": "Run as owner",
+          "code": "rsync -av --chown=user:group source/ dest/",
+          "when": "Change ownership"
+        }
+      ]
+    },
+    {
+      "id": "partial_transfer",
+      "pattern": "partial transfer|rsync error.*23|some files.*not transferred",
+      "message": "Partial transfer due to error",
+      "cause": "Some files couldn't be transferred",
+      "solutions": [
+        {
+          "approach": "Exclude problematic files",
+          "code": "rsync -av --exclude='pattern' source/ dest/",
+          "when": "Skip specific files"
+        },
+        {
+          "approach": "Ignore errors",
+          "code": "rsync -av --ignore-errors source/ dest/",
+          "when": "Continue despite errors"
+        },
+        {
+          "approach": "Run with verbose",
+          "code": "rsync -avv source/ dest/ 2>&1 | tee rsync.log",
+          "when": "Find which files failed"
+        }
+      ]
+    },
+    {
+      "id": "trailing_slash",
+      "pattern": "copying.*into.*subdirectory|unexpected.*directory",
+      "message": "Trailing slash matters",
+      "cause": "Source trailing slash changes behavior",
+      "solutions": [
+        {
+          "approach": "Copy contents (with slash)",
+          "code": "rsync -av source/ dest/  # Contents of source into dest",
+          "when": "Want to sync contents"
+        },
+        {
+          "approach": "Copy directory (no slash)",
+          "code": "rsync -av source dest/  # Creates dest/source/",
+          "when": "Want source as subdirectory"
+        },
+        {
+          "approach": "Dry run first",
+          "code": "rsync -avn source/ dest/  # Preview changes",
+          "when": "Verify behavior"
+        }
+      ]
+    },
+    {
+      "id": "connection_unexpectedly_closed",
+      "pattern": "connection unexpectedly closed|rsync.*unexpectedly closed",
+      "message": "Connection unexpectedly closed",
+      "cause": "SSH session terminated or network issue",
+      "solutions": [
+        {
+          "approach": "Use partial",
+          "code": "rsync -avP --partial source/ dest/",
+          "when": "Resume interrupted transfers"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "rsync -av --timeout=60 source/ dest/",
+          "when": "Slow connection"
+        },
+        {
+          "approach": "Check SSH config",
+          "code": "rsync -av -e 'ssh -o ServerAliveInterval=60' source/ host:dest/",
+          "when": "Keep connection alive"
+        }
+      ]
+    },
+    {
+      "id": "out_of_space",
+      "pattern": "No space left|disk.*full|Disk quota exceeded",
+      "message": "No space left on device",
+      "cause": "Destination filesystem full",
+      "solutions": [
+        {
+          "approach": "Check space",
+          "code": "df -h dest/",
+          "when": "Verify available space"
+        },
+        {
+          "approach": "Use max-size",
+          "code": "rsync -av --max-size=100M source/ dest/",
+          "when": "Skip large files"
+        },
+        {
+          "approach": "Delete first",
+          "code": "rsync -av --delete source/ dest/",
+          "when": "Remove old files to make space"
+        }
+      ]
+    },
+    {
+      "id": "protocol_mismatch",
+      "pattern": "protocol version mismatch|rsync.*protocol",
+      "message": "Protocol version mismatch",
+      "cause": "Different rsync versions on source and destination",
+      "solutions": [
+        {
+          "approach": "Specify protocol",
+          "code": "rsync -av --protocol=30 source/ dest/",
+          "when": "Force older protocol"
+        },
+        {
+          "approach": "Update rsync",
+          "code": "Upgrade rsync on both ends",
+          "when": "Can update software"
+        },
+        {
+          "approach": "Use scp fallback",
+          "code": "scp -r source/ host:dest/",
+          "when": "rsync incompatible"
+        }
+      ]
+    },
+    {
+      "id": "symlink_error",
+      "pattern": "symlink.*error|cannot.*follow.*symlink",
+      "message": "Symlink handling error",
+      "cause": "Symlink points outside synced tree or broken",
+      "solutions": [
+        {
+          "approach": "Copy symlinks as symlinks",
+          "code": "rsync -avl source/ dest/  # -l copies symlinks",
+          "when": "Preserve symlinks"
+        },
+        {
+          "approach": "Follow symlinks",
+          "code": "rsync -avL source/ dest/  # -L follows symlinks",
+          "when": "Copy actual files"
+        },
+        {
+          "approach": "Skip symlinks",
+          "code": "rsync -av --no-links source/ dest/",
+          "when": "Ignore symlinks entirely"
+        }
+      ]
+    }
+  ]
+}

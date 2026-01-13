@@ -1,0 +1,145 @@
+{
+  "tool": "flyway",
+  "version": "9.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "db_connection_failed",
+      "pattern": "Unable to obtain connection|Cannot read connection parameters|Communications link failure",
+      "message": "Database connection failed",
+      "cause": "JDBC URL, credentials, network, or TLS settings are incorrect",
+      "solutions": [
+        {
+          "approach": "Verify JDBC URL",
+          "code": "flyway.url=jdbc:postgresql://host:5432/dbname",
+          "when": "URL or port may be wrong"
+        },
+        {
+          "approach": "Check credentials",
+          "code": "flyway.user=app\nflyway.password=secret",
+          "when": "Auth failures"
+        },
+        {
+          "approach": "Test connectivity",
+          "code": "psql $FLYWAY_URL || mysql --host ... || sqlcmd ...",
+          "when": "Network/firewall suspicion"
+        },
+        {
+          "approach": "Configure SSL",
+          "code": "flyway.url=jdbc:postgresql://host/db?sslmode=require",
+          "when": "DB enforces TLS"
+        }
+      ]
+    },
+    {
+      "id": "checksum_mismatch",
+      "pattern": "Validate failed|checksum mismatch|detected applied migration not resolved",
+      "message": "Applied migration differs from filesystem",
+      "cause": "Executed migration file changed or missing",
+      "solutions": [
+        {
+          "approach": "Repair metadata",
+          "code": "flyway repair",
+          "when": "History table must be realigned"
+        },
+        {
+          "approach": "Revert file changes",
+          "code": "git checkout -- sql/V1__file.sql",
+          "when": "File accidentally edited"
+        },
+        {
+          "approach": "Use repeatable scripts",
+          "code": "R__script.sql for idempotent changes",
+          "when": "Migration content evolves"
+        },
+        {
+          "approach": "Baseline existing schema",
+          "code": "flyway -baselineOnMigrate=true migrate",
+          "when": "Database already has schema without history"
+        }
+      ]
+    },
+    {
+      "id": "schema_history_missing",
+      "pattern": "Flyway Schema History table.*not found|schema history table does not exist",
+      "message": "Schema history table missing",
+      "cause": "First run without baseline or wrong schema configured",
+      "solutions": [
+        {
+          "approach": "Create baseline",
+          "code": "flyway baseline",
+          "when": "Existing DB without migrations"
+        },
+        {
+          "approach": "Set schema",
+          "code": "flyway.schemas=public\nflyway.table=flyway_schema_history",
+          "when": "Using non-default schema"
+        },
+        {
+          "approach": "Ensure permissions",
+          "code": "GRANT CREATE, INSERT, UPDATE ON SCHEMA public TO flyway_user;",
+          "when": "User cannot create history table"
+        }
+      ]
+    },
+    {
+      "id": "unresolved_placeholders",
+      "pattern": "Unable to resolve placeholder|No value provided for placeholder",
+      "message": "Placeholder variables not substituted",
+      "cause": "Missing placeholder configuration or wrong syntax",
+      "solutions": [
+        {
+          "approach": "Define placeholders",
+          "code": "flyway.placeholders.env=prod\nflyway.placeholders.schema=app",
+          "when": "Values not provided"
+        },
+        {
+          "approach": "Use correct syntax",
+          "code": "${env} instead of :env in SQL",
+          "when": "Placeholder markers incorrect"
+        },
+        {
+          "approach": "Pass CLI vars",
+          "code": "flyway -placeholders.schema=public migrate",
+          "when": "Per-run overrides"
+        }
+      ]
+    },
+    {
+      "id": "non_transactional_statement",
+      "pattern": "non-transactional.*statement|cannot run inside a transaction",
+      "message": "Statement cannot run inside a transaction",
+      "cause": "DDL not supported in transaction for target database",
+      "solutions": [
+        {
+          "approach": "Disable transaction for migration",
+          "code": "-- \n-- flyway:executeInTransaction=false",
+          "when": "Single migration needs auto-commit"
+        },
+        {
+          "approach": "Split migration",
+          "code": "Keep non-transactional steps separate from transactional ones",
+          "when": "Mixing statements"
+        }
+      ]
+    },
+    {
+      "id": "clean_disabled",
+      "pattern": "Clean disabled|Flyway clean is not allowed",
+      "message": "Clean command blocked",
+      "cause": "flyway.cleanDisabled is true or database prohibits clean",
+      "solutions": [
+        {
+          "approach": "Enable clean explicitly",
+          "code": "flyway.cleanDisabled=false\nflyway clean",
+          "when": "Safe to drop schema"
+        },
+        {
+          "approach": "Drop schema manually",
+          "code": "DROP SCHEMA <schema> CASCADE;",
+          "when": "Need manual reset"
+        }
+      ]
+    }
+  ]
+}

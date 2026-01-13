@@ -1,0 +1,126 @@
+{
+  "tool": "sqlmodel",
+  "category": "python_orm",
+  "common_errors": [
+    {
+      "id": "sqlmodel_table",
+      "pattern": "table=True|SQLModel table|not a table",
+      "severity": "error",
+      "causes": [
+        "Model not marked as table",
+        "Missing table=True",
+        "Inheritance issues"
+      ],
+      "solutions": [
+        "Table model: class User(SQLModel, table=True)",
+        "Data model (no table): class UserCreate(SQLModel)",
+        "Table models create DB tables"
+      ]
+    },
+    {
+      "id": "sqlmodel_relationship",
+      "pattern": "Relationship|foreign key|back_populates",
+      "severity": "error",
+      "causes": [
+        "Relationship not loading",
+        "Circular import",
+        "Missing back_populates"
+      ],
+      "solutions": [
+        "Use Relationship() with back_populates",
+        "ForeignKey: Optional[int] = Field(foreign_key='table.id')",
+        "Use TYPE_CHECKING for circular imports"
+      ]
+    },
+    {
+      "id": "sqlmodel_session",
+      "pattern": "Session|session.exec|select",
+      "severity": "info",
+      "causes": [
+        "Query execution",
+        "Session management",
+        "Transaction handling"
+      ],
+      "solutions": [
+        "with Session(engine) as session:",
+        "results = session.exec(select(Model))",
+        "session.add(), session.commit()"
+      ]
+    },
+    {
+      "id": "sqlmodel_select",
+      "pattern": "select|query|filter",
+      "severity": "info",
+      "causes": [
+        "Building queries",
+        "Filtering data",
+        "Joins"
+      ],
+      "solutions": [
+        "from sqlmodel import select",
+        "select(Model).where(Model.field == value)",
+        "session.exec(statement).all()"
+      ]
+    },
+    {
+      "id": "sqlmodel_optional",
+      "pattern": "Optional|None|nullable",
+      "severity": "warning",
+      "causes": [
+        "Nullable columns",
+        "Optional fields",
+        "Default None"
+      ],
+      "solutions": [
+        "Nullable: name: str | None = None",
+        "Or: Optional[str] = None",
+        "Required: name: str (no default)"
+      ]
+    },
+    {
+      "id": "sqlmodel_primary_key",
+      "pattern": "primary_key|id field|autoincrement",
+      "severity": "error",
+      "causes": [
+        "Missing primary key",
+        "Auto-increment setup",
+        "Custom ID"
+      ],
+      "solutions": [
+        "id: int | None = Field(default=None, primary_key=True)",
+        "None default for auto-increment",
+        "Or use UUID: id: str = Field(default_factory=uuid4)"
+      ]
+    },
+    {
+      "id": "sqlmodel_async",
+      "pattern": "async|AsyncSession|asyncio",
+      "severity": "info",
+      "causes": [
+        "Async database operations",
+        "FastAPI integration",
+        "Concurrent queries"
+      ],
+      "solutions": [
+        "Use: from sqlmodel.ext.asyncio.session import AsyncSession",
+        "create_async_engine() for async",
+        "async with AsyncSession(engine) as session:"
+      ]
+    },
+    {
+      "id": "sqlmodel_migration",
+      "pattern": "alembic|migration|schema change",
+      "severity": "info",
+      "causes": [
+        "Database schema changes",
+        "Version control",
+        "Production updates"
+      ],
+      "solutions": [
+        "Use Alembic for migrations",
+        "alembic init alembic",
+        "alembic revision --autogenerate"
+      ]
+    }
+  ]
+}

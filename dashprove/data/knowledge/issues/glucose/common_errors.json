@@ -1,0 +1,176 @@
+{
+  "tool": "glucose",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT",
+      "message": "Solver timed out",
+      "cause": "Glucose could not solve within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "glucose -cpu-lim=600 file.cnf",
+          "when": "Problem may be solvable with more time"
+        },
+        {
+          "approach": "Try glucose-syrup",
+          "code": "glucose-syrup -nthreads=4 file.cnf",
+          "when": "Parallel solving may help"
+        },
+        {
+          "approach": "Preprocess the CNF",
+          "code": "; Use SatELite or similar preprocessor",
+          "when": "CNF can be simplified"
+        },
+        {
+          "approach": "Adjust restart parameters",
+          "code": "glucose -K=0.8 -R=1.4 file.cnf",
+          "when": "Restart strategy not optimal"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "PARSE ERROR",
+      "message": "Parse error in input file",
+      "cause": "Invalid DIMACS CNF format",
+      "solutions": [
+        {
+          "approach": "Check header",
+          "code": "p cnf 100 500",
+          "when": "Missing or malformed problem line"
+        },
+        {
+          "approach": "Check clause terminators",
+          "code": "1 -2 3 0",
+          "when": "Clauses must end with 0"
+        },
+        {
+          "approach": "Verify variable count",
+          "code": "; All literals must be in range [-num_vars, num_vars] \\ {0}",
+          "when": "Variable index exceeds declared count"
+        }
+      ]
+    },
+    {
+      "id": "memory_exhausted",
+      "pattern": "out of memory",
+      "message": "Memory limit exceeded",
+      "cause": "Learned clause database too large",
+      "solutions": [
+        {
+          "approach": "Set memory limit",
+          "code": "glucose -mem-lim=4000 file.cnf",
+          "when": "Want to cap memory usage"
+        },
+        {
+          "approach": "Adjust clause deletion",
+          "code": "glucose -cla-decay=0.99 file.cnf",
+          "when": "Too many learned clauses retained"
+        },
+        {
+          "approach": "Use incremental mode",
+          "code": "; Solve in chunks with assumptions",
+          "when": "Can decompose the problem"
+        }
+      ]
+    },
+    {
+      "id": "unsat",
+      "pattern": "UNSATISFIABLE",
+      "message": "Formula is unsatisfiable",
+      "cause": "No satisfying assignment exists",
+      "solutions": [
+        {
+          "approach": "Get DRUP proof",
+          "code": "glucose -certified -certified-output=proof.drup file.cnf",
+          "when": "Need proof of unsatisfiability"
+        },
+        {
+          "approach": "Verify encoding",
+          "code": "; Double-check the CNF encoding",
+          "when": "May have encoding error"
+        },
+        {
+          "approach": "Extract unsat core",
+          "code": "; Use UNSAT core extractor",
+          "when": "Want minimal unsatisfiable subset"
+        }
+      ]
+    },
+    {
+      "id": "glue_threshold",
+      "pattern": "LBD",
+      "message": "LBD-based deletion issues",
+      "cause": "Glucose's glue (LBD) heuristic aggressive",
+      "solutions": [
+        {
+          "approach": "Adjust LBD threshold",
+          "code": "glucose -minLBDFrozenClause=3 file.cnf",
+          "when": "Good clauses being deleted"
+        },
+        {
+          "approach": "Protect small clauses",
+          "code": "glucose -minSizeMinimizingClause=5 file.cnf",
+          "when": "Small learned clauses important"
+        }
+      ]
+    },
+    {
+      "id": "incremental_error",
+      "pattern": "incremental",
+      "message": "Incremental solving error",
+      "cause": "Error in incremental SAT solving",
+      "solutions": [
+        {
+          "approach": "Clear assumptions",
+          "code": "solver.clearAssumptions()",
+          "when": "Stale assumptions"
+        },
+        {
+          "approach": "Check conflict clause",
+          "code": "solver.getConflict()",
+          "when": "Need to understand UNSAT under assumptions"
+        }
+      ]
+    },
+    {
+      "id": "invalid_literal",
+      "pattern": "invalid literal",
+      "message": "Invalid literal in clause",
+      "cause": "Literal 0 or out of range",
+      "solutions": [
+        {
+          "approach": "Check variable indices",
+          "code": "; Literals are +/- var indices, never 0",
+          "when": "Using 0 as a literal"
+        },
+        {
+          "approach": "Check header consistency",
+          "code": "p cnf <max_var> <num_clauses>",
+          "when": "Using variable beyond declared max"
+        }
+      ]
+    },
+    {
+      "id": "luby_restart",
+      "pattern": "restart",
+      "message": "Too many restarts without progress",
+      "cause": "Restart policy not effective",
+      "solutions": [
+        {
+          "approach": "Use glucose-style restarts",
+          "code": "glucose -no-luby file.cnf",
+          "when": "Luby restarts not working"
+        },
+        {
+          "approach": "Adjust restart multiplier",
+          "code": "glucose -rfirst=100 file.cnf",
+          "when": "Initial restarts too frequent"
+        }
+      ]
+    }
+  ]
+}

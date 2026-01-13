@@ -1,0 +1,211 @@
+{
+  "tool": "vitest",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_found",
+      "pattern": "Failed to resolve|Cannot find module|Module not found|Could not resolve",
+      "message": "Vitest cannot resolve a module",
+      "cause": "Module not installed or path incorrect",
+      "solutions": [
+        {
+          "approach": "Install package",
+          "code": "npm install missing-package\n\n# Or as dev dependency\nnpm install -D @types/node",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Configure alias",
+          "code": "// vitest.config.ts\nimport { defineConfig } from 'vitest/config';\nimport path from 'path';\n\nexport default defineConfig({\n  resolve: {\n    alias: {\n      '@': path.resolve(__dirname, './src')\n    }\n  }\n});",
+          "when": "Path alias not working"
+        },
+        {
+          "approach": "Use Vite config",
+          "code": "// vitest.config.ts inherits from vite.config.ts\nimport { defineConfig, mergeConfig } from 'vitest/config';\nimport viteConfig from './vite.config';\n\nexport default mergeConfig(viteConfig, defineConfig({\n  test: {\n    // test-specific config\n  }\n}));",
+          "when": "Use existing Vite config"
+        }
+      ]
+    },
+    {
+      "id": "esm_cjs_error",
+      "pattern": "require.*not defined|__dirname.*not defined|Cannot use import|ERR_REQUIRE_ESM",
+      "message": "ESM/CommonJS interop error",
+      "cause": "Mixing module systems incorrectly",
+      "solutions": [
+        {
+          "approach": "Use ESM syntax",
+          "code": "// Vitest is ESM-first\nimport { describe, it, expect } from 'vitest';\n\n// Instead of __dirname\nimport { fileURLToPath } from 'url';\nimport { dirname } from 'path';\nconst __dirname = dirname(fileURLToPath(import.meta.url));",
+          "when": "Using CJS in ESM"
+        },
+        {
+          "approach": "Configure deps optimization",
+          "code": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    deps: {\n      inline: ['problematic-cjs-package']\n    }\n  }\n});",
+          "when": "CJS package not working"
+        },
+        {
+          "approach": "Transform node_modules",
+          "code": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    server: {\n      deps: {\n        inline: true  // or specific packages\n      }\n    }\n  }\n});",
+          "when": "node_modules issues"
+        }
+      ]
+    },
+    {
+      "id": "mock_error",
+      "pattern": "vi\\.mock|vi\\.spyOn|mock.*not.*called|mockImplementation|toHaveBeenCalled",
+      "message": "Mock not working as expected",
+      "cause": "Mock hoisting or setup issue",
+      "solutions": [
+        {
+          "approach": "Use vi.mock correctly",
+          "code": "import { vi, describe, it, expect } from 'vitest';\n\n// vi.mock is hoisted to top\nvi.mock('./myModule', () => ({\n  myFunction: vi.fn(() => 'mocked')\n}));\n\nimport { myFunction } from './myModule';\n\nit('uses mock', () => {\n  expect(myFunction()).toBe('mocked');\n});",
+          "when": "Module mock"
+        },
+        {
+          "approach": "Use vi.spyOn",
+          "code": "import * as utils from './utils';\nimport { vi, it, expect } from 'vitest';\n\nit('spy test', async () => {\n  const spy = vi.spyOn(utils, 'fetchData')\n    .mockResolvedValue({ data: 'test' });\n  \n  await doSomething();\n  \n  expect(spy).toHaveBeenCalled();\n});",
+          "when": "Spy on method"
+        },
+        {
+          "approach": "Reset mocks",
+          "code": "import { beforeEach, vi } from 'vitest';\n\nbeforeEach(() => {\n  vi.clearAllMocks();  // Clear call history\n  // Or\n  vi.resetAllMocks();  // Also reset implementations\n  // Or\n  vi.restoreAllMocks();  // Restore originals\n});",
+          "when": "Mocks bleeding between tests"
+        },
+        {
+          "approach": "Mock auto-imports",
+          "code": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    globals: true,  // Enable vi, describe, it as globals\n    mockReset: true  // Auto-reset mocks\n  }\n});",
+          "when": "Auto-cleanup mocks"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "async|await|Promise|timeout|timed out",
+      "message": "Async test timing out or not completing",
+      "cause": "Unresolved promise or timeout too short",
+      "solutions": [
+        {
+          "approach": "Use async/await",
+          "code": "import { it, expect } from 'vitest';\n\nit('async test', async () => {\n  const result = await fetchData();\n  expect(result).toBeDefined();\n});",
+          "when": "Basic async test"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "import { it, describe } from 'vitest';\n\n// Per test\nit('slow test', async () => {\n  // ...\n}, 10000);  // 10 seconds\n\n// Per suite\ndescribe('slow suite', { timeout: 10000 }, () => {\n  // ...\n});\n\n// Global in config\n// vitest.config.ts\nexport default defineConfig({\n  test: {\n    testTimeout: 10000\n  }\n});",
+          "when": "Test needs more time"
+        },
+        {
+          "approach": "Use fake timers",
+          "code": "import { it, vi, expect, beforeEach, afterEach } from 'vitest';\n\nbeforeEach(() => {\n  vi.useFakeTimers();\n});\n\nafterEach(() => {\n  vi.useRealTimers();\n});\n\nit('timers', async () => {\n  const fn = vi.fn();\n  setTimeout(fn, 1000);\n  \n  await vi.advanceTimersByTimeAsync(1000);\n  \n  expect(fn).toHaveBeenCalled();\n});",
+          "when": "Testing timers"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_error",
+      "pattern": "Snapshot.*differ|toMatchSnapshot|toMatchInlineSnapshot|received value",
+      "message": "Snapshot test failed",
+      "cause": "Component output changed",
+      "solutions": [
+        {
+          "approach": "Update snapshots",
+          "code": "# Update all snapshots\nvitest --update\nvitest -u\n\n# Interactive mode\nvitest --ui  # Press 'u' to update",
+          "when": "Intentional change"
+        },
+        {
+          "approach": "Review diff",
+          "code": "# Run to see diff\nvitest\n\n# The diff shows:\n# - Received (actual)\n# + Expected (snapshot)",
+          "when": "Verify change"
+        },
+        {
+          "approach": "Use inline snapshots",
+          "code": "import { it, expect } from 'vitest';\n\nit('inline snapshot', () => {\n  expect({ name: 'test' }).toMatchInlineSnapshot(`\n    {\n      \"name\": \"test\",\n    }\n  `);\n});",
+          "when": "Prefer inline"
+        },
+        {
+          "approach": "Property matchers",
+          "code": "expect(data).toMatchSnapshot({\n  id: expect.any(String),\n  createdAt: expect.any(Date)\n});",
+          "when": "Dynamic values"
+        }
+      ]
+    },
+    {
+      "id": "coverage_error",
+      "pattern": "coverage|--coverage|c8|istanbul|threshold|uncovered",
+      "message": "Coverage error or threshold not met",
+      "cause": "Coverage below threshold or not configured",
+      "solutions": [
+        {
+          "approach": "Enable coverage",
+          "code": "vitest --coverage\n\n# Or configure\n// vitest.config.ts\nexport default defineConfig({\n  test: {\n    coverage: {\n      provider: 'v8',  // or 'istanbul'\n      reporter: ['text', 'html', 'lcov']\n    }\n  }\n});",
+          "when": "Enable coverage"
+        },
+        {
+          "approach": "Install provider",
+          "code": "# For v8 (faster)\nnpm install -D @vitest/coverage-v8\n\n# For istanbul (more features)\nnpm install -D @vitest/coverage-istanbul",
+          "when": "Provider not installed"
+        },
+        {
+          "approach": "Configure thresholds",
+          "code": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    coverage: {\n      thresholds: {\n        lines: 80,\n        branches: 80,\n        functions: 80,\n        statements: 80\n      }\n    }\n  }\n});",
+          "when": "Set thresholds"
+        },
+        {
+          "approach": "Exclude files",
+          "code": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    coverage: {\n      exclude: [\n        'node_modules/',\n        'test/',\n        '**/*.d.ts',\n        '**/*.config.*'\n      ]\n    }\n  }\n});",
+          "when": "Exclude from coverage"
+        }
+      ]
+    },
+    {
+      "id": "environment_error",
+      "pattern": "document is not defined|window is not defined|DOM|jsdom|happy-dom",
+      "message": "DOM/Browser API not available",
+      "cause": "Using browser APIs with node environment",
+      "solutions": [
+        {
+          "approach": "Use jsdom environment",
+          "code": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    environment: 'jsdom'\n  }\n});\n\n// Per-file annotation\n// @vitest-environment jsdom",
+          "when": "Need browser APIs"
+        },
+        {
+          "approach": "Use happy-dom",
+          "code": "npm install -D happy-dom\n\n// vitest.config.ts\nexport default defineConfig({\n  test: {\n    environment: 'happy-dom'  // Faster than jsdom\n  }\n});",
+          "when": "Prefer faster DOM"
+        },
+        {
+          "approach": "Per-file environment",
+          "code": "// Add at top of test file\n// @vitest-environment jsdom\n\nimport { describe, it } from 'vitest';\n\ndescribe('DOM tests', () => {\n  // Now has document, window, etc.\n});",
+          "when": "Different envs per file"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "vitest\\.config|configuration|vite\\.config|cannot find config",
+      "message": "Configuration error",
+      "cause": "Config file issue or missing",
+      "solutions": [
+        {
+          "approach": "Create vitest.config.ts",
+          "code": "// vitest.config.ts\nimport { defineConfig } from 'vitest/config';\n\nexport default defineConfig({\n  test: {\n    globals: true,\n    environment: 'node',\n    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}']\n  }\n});",
+          "when": "Create config"
+        },
+        {
+          "approach": "Use vite.config.ts",
+          "code": "// vite.config.ts - Vitest reads this by default\nimport { defineConfig } from 'vite';\n\nexport default defineConfig({\n  // vite config...\n  test: {\n    // vitest config\n  }\n});",
+          "when": "Use existing vite config"
+        },
+        {
+          "approach": "Merge configs",
+          "code": "// vitest.config.ts\nimport { defineConfig, mergeConfig } from 'vitest/config';\nimport viteConfig from './vite.config';\n\nexport default mergeConfig(\n  viteConfig,\n  defineConfig({\n    test: {\n      // test overrides\n    }\n  })\n);",
+          "when": "Extend vite config"
+        },
+        {
+          "approach": "Workspace config",
+          "code": "// vitest.workspace.ts\nimport { defineWorkspace } from 'vitest/config';\n\nexport default defineWorkspace([\n  './packages/*/vitest.config.ts',\n  {\n    test: {\n      include: ['tests/**/*.test.ts'],\n      name: 'unit'\n    }\n  }\n]);",
+          "when": "Monorepo"
+        }
+      ]
+    }
+  ]
+}

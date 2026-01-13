@@ -1,0 +1,58 @@
+{
+  "tool": "graceful_fs",
+  "category": "file_operations",
+  "common_errors": [
+    {
+      "pattern": "EMFILE: too many open files|ENFILE: file table overflow",
+      "meaning": "File descriptor exhaustion despite graceful handling",
+      "causes": [
+        "graceful-fs not initialized (gracefulify not called)",
+        "Burst of concurrent fs operations without backpressure",
+        "ulimit -n too low on system"
+      ],
+      "solutions": [
+        "Apply patch early: const fs = require('graceful-fs'); fs.gracefulify(require('fs'));",
+        "Throttle concurrency or use stream pipelines",
+        "Increase file descriptor limit (ulimit -n) if allowed"
+      ]
+    },
+    {
+      "pattern": "TypeError: fs\\.gracefulify is not a function",
+      "meaning": "Using built-in fs instead of graceful-fs module",
+      "causes": [
+        "Imported wrong module (require('fs') instead of graceful-fs)",
+        "ESM default import mismatch"
+      ],
+      "solutions": [
+        "Import module directly: const gfs = require('graceful-fs'); gfs.gracefulify(fs);",
+        "For ESM: import gfs from 'graceful-fs'; gfs.gracefulify(fs);"
+      ]
+    },
+    {
+      "pattern": "Maximum call stack size exceeded|circular gracefulify",
+      "meaning": "fs patched multiple times creating recursion",
+      "causes": [
+        "Calling gracefulify repeatedly on already wrapped fs",
+        "Modules patching fs independently"
+      ],
+      "solutions": [
+        "Call gracefulify once at process startup",
+        "Export patched fs and reuse across modules",
+        "Guard with flag before calling gracefulify"
+      ]
+    },
+    {
+      "pattern": "watch limit reached|ENOSPC: System limit for number of file watchers reached",
+      "meaning": "Inotify/watchers exhausted",
+      "causes": [
+        "Large watch set with chokidar/webpack",
+        "OS watcher limit too low"
+      ],
+      "solutions": [
+        "Raise fs.inotify.max_user_watches (Linux) or reduce watched paths",
+        "Use polling if necessary: chokidar({ usePolling: true })",
+        "Close watchers when no longer needed"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "tool": "toxiproxy",
+  "version": "2.9.0",
+  "last_updated": "2025-12-22",
+  "description": "TCP proxy for simulating network conditions (latency, jitter, bandwidth, partition)",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "connection refused|dial tcp.*refused",
+      "message": "Cannot connect to Toxiproxy server",
+      "cause": "Toxiproxy server not running or wrong address",
+      "solutions": [
+        {
+          "approach": "Start Toxiproxy server",
+          "code": "toxiproxy-server &\n# or with Docker:\ndocker run -p 8474:8474 -p 5000-5100:5000-5100 ghcr.io/shopify/toxiproxy:2.9.0",
+          "when": "Server not running"
+        },
+        {
+          "approach": "Check server address",
+          "code": "export TOXIPROXY_URL=http://localhost:8474\ntoxiproxy-cli list",
+          "when": "Wrong API endpoint"
+        },
+        {
+          "approach": "Verify port availability",
+          "code": "lsof -i :8474  # Check if port is in use",
+          "when": "Port conflict"
+        }
+      ]
+    },
+    {
+      "id": "proxy_not_found",
+      "pattern": "proxy.*not found|no proxy with name",
+      "message": "Proxy with given name not found",
+      "cause": "Proxy not created or wrong name",
+      "solutions": [
+        {
+          "approach": "List existing proxies",
+          "code": "toxiproxy-cli list",
+          "when": "Check proxy names"
+        },
+        {
+          "approach": "Create proxy",
+          "code": "toxiproxy-cli create my-proxy -l localhost:5000 -u localhost:6379",
+          "when": "Proxy doesn't exist"
+        },
+        {
+          "approach": "Use exact name",
+          "code": "# Proxy names are case-sensitive",
+          "when": "Name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "upstream_connection_error",
+      "pattern": "upstream.*connection.*failed|backend.*unreachable",
+      "message": "Cannot connect to upstream service",
+      "cause": "Upstream service not running or wrong address",
+      "solutions": [
+        {
+          "approach": "Check upstream service",
+          "code": "nc -zv localhost 6379  # Test upstream directly",
+          "when": "Verify upstream is running"
+        },
+        {
+          "approach": "Update upstream address",
+          "code": "toxiproxy-cli update my-proxy -u new-host:6379",
+          "when": "Wrong upstream address"
+        },
+        {
+          "approach": "Enable proxy",
+          "code": "toxiproxy-cli toggle my-proxy  # Enable if disabled",
+          "when": "Proxy might be disabled"
+        }
+      ]
+    },
+    {
+      "id": "toxic_not_added",
+      "pattern": "toxic.*failed|invalid toxic type",
+      "message": "Failed to add toxic",
+      "cause": "Invalid toxic type or parameters",
+      "solutions": [
+        {
+          "approach": "Use valid toxic types",
+          "code": "# Valid types: latency, bandwidth, slow_close, timeout, reset_peer, slicer, limit_data\ntoxiproxy-cli toxic add my-proxy -t latency -a latency=1000 -a jitter=500",
+          "when": "Wrong toxic type"
+        },
+        {
+          "approach": "Check toxic attributes",
+          "code": "# latency: latency (ms), jitter (ms)\n# bandwidth: rate (KB/s)\n# timeout: timeout (ms)\n# slow_close: delay (ms)",
+          "when": "Wrong attributes"
+        },
+        {
+          "approach": "Set toxic direction",
+          "code": "toxiproxy-cli toxic add my-proxy -t latency -a latency=1000 --downstream",
+          "when": "Need specific direction"
+        }
+      ]
+    },
+    {
+      "id": "port_already_in_use",
+      "pattern": "address already in use|port.*occupied|bind.*error",
+      "message": "Listen port already in use",
+      "cause": "Another process using the proxy listen port",
+      "solutions": [
+        {
+          "approach": "Find process using port",
+          "code": "lsof -i :5000  # Find what's using the port\nkill <pid>     # Kill if appropriate",
+          "when": "Port conflict"
+        },
+        {
+          "approach": "Use different port",
+          "code": "toxiproxy-cli create my-proxy -l localhost:5001 -u localhost:6379",
+          "when": "Can't free the port"
+        },
+        {
+          "approach": "Delete existing proxy",
+          "code": "toxiproxy-cli delete my-proxy\ntoxiproxy-cli create my-proxy -l localhost:5000 -u localhost:6379",
+          "when": "Recreating proxy"
+        }
+      ]
+    },
+    {
+      "id": "client_timeout",
+      "pattern": "client.*timeout|read.*timeout|context deadline exceeded",
+      "message": "Client connection timeout",
+      "cause": "Toxic latency exceeds client timeout",
+      "solutions": [
+        {
+          "approach": "Increase client timeout",
+          "code": "# In your client code:\nclient.setTimeout(5000)  // 5 seconds",
+          "when": "Testing timeout behavior"
+        },
+        {
+          "approach": "Reduce toxic latency",
+          "code": "toxiproxy-cli toxic update my-proxy -n latency_downstream -a latency=500",
+          "when": "Latency too high"
+        },
+        {
+          "approach": "Remove toxic temporarily",
+          "code": "toxiproxy-cli toxic remove my-proxy -n latency_downstream",
+          "when": "Debug without toxics"
+        }
+      ]
+    },
+    {
+      "id": "docker_networking",
+      "pattern": "cannot connect from container|docker.*network.*error",
+      "message": "Docker container cannot reach Toxiproxy",
+      "cause": "Docker network isolation issue",
+      "solutions": [
+        {
+          "approach": "Use host.docker.internal",
+          "code": "# From Docker container, connect to:\nhost.docker.internal:5000  # Instead of localhost:5000",
+          "when": "Container to host communication"
+        },
+        {
+          "approach": "Use Docker network",
+          "code": "docker network create mynet\ndocker run --network mynet --name toxiproxy ghcr.io/shopify/toxiproxy\n# Connect to toxiproxy:8474 from other containers",
+          "when": "Container to container"
+        },
+        {
+          "approach": "Bind to 0.0.0.0",
+          "code": "toxiproxy-cli create my-proxy -l 0.0.0.0:5000 -u backend:6379",
+          "when": "Listen on all interfaces"
+        }
+      ]
+    },
+    {
+      "id": "api_error",
+      "pattern": "API.*error|HTTP.*4\\d\\d|HTTP.*5\\d\\d",
+      "message": "Toxiproxy API error",
+      "cause": "Invalid API request or server error",
+      "solutions": [
+        {
+          "approach": "Check API request",
+          "code": "curl -v http://localhost:8474/proxies",
+          "when": "Debug API calls"
+        },
+        {
+          "approach": "Verify JSON payload",
+          "code": "curl -X POST http://localhost:8474/proxies \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"my-proxy\",\"listen\":\"localhost:5000\",\"upstream\":\"localhost:6379\"}'",
+          "when": "Creating via API"
+        },
+        {
+          "approach": "Check server logs",
+          "code": "# Run server with debug logging\ntoxiproxy-server -host 0.0.0.0 -port 8474",
+          "when": "Server-side issues"
+        }
+      ]
+    }
+  ]
+}

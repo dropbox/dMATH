@@ -1,0 +1,145 @@
+{
+  "tool": "autoconf",
+  "version": "2.72",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "macro_not_found",
+      "pattern": "possibly undefined macro|required file.*not found|AC_.*not found",
+      "message": "Macro not found",
+      "cause": "Required m4 macro not installed",
+      "solutions": [
+        {
+          "approach": "Install automake",
+          "code": "apt install automake autoconf libtool",
+          "when": "Missing AM_ macros"
+        },
+        {
+          "approach": "Install pkg-config",
+          "code": "apt install pkg-config",
+          "when": "Missing PKG_CHECK_MODULES"
+        },
+        {
+          "approach": "Set ACLOCAL_PATH",
+          "code": "export ACLOCAL_PATH=/usr/local/share/aclocal",
+          "when": "Macros in non-standard location"
+        }
+      ]
+    },
+    {
+      "id": "autoreconf_failed",
+      "pattern": "autoreconf.*failed|aclocal.*failed",
+      "message": "autoreconf failed",
+      "cause": "Build system regeneration failed",
+      "solutions": [
+        {
+          "approach": "Install dependencies",
+          "code": "apt install autoconf automake libtool gettext",
+          "when": "Tools missing"
+        },
+        {
+          "approach": "Force regenerate",
+          "code": "autoreconf -vfi",
+          "when": "Need fresh regeneration"
+        },
+        {
+          "approach": "Check configure.ac",
+          "code": "Verify configure.ac syntax",
+          "when": "Configuration error"
+        }
+      ]
+    },
+    {
+      "id": "version_mismatch",
+      "pattern": "version.*mismatch|aclocal.*version|automake.*version",
+      "message": "Version mismatch",
+      "cause": "Different autotools versions used",
+      "solutions": [
+        {
+          "approach": "Regenerate all",
+          "code": "autoreconf -vfi",
+          "when": "Regenerate with current versions"
+        },
+        {
+          "approach": "Clean generated files",
+          "code": "rm -rf aclocal.m4 autom4te.cache configure",
+          "when": "Start fresh"
+        },
+        {
+          "approach": "Match versions",
+          "code": "Install matching autoconf/automake versions",
+          "when": "Specific version required"
+        }
+      ]
+    },
+    {
+      "id": "configure_syntax",
+      "pattern": "syntax error|unexpected.*token|premature end",
+      "message": "configure.ac syntax error",
+      "cause": "m4 or shell syntax error in configure.ac",
+      "solutions": [
+        {
+          "approach": "Quote properly",
+          "code": "Use [square brackets] for m4 quoting",
+          "when": "Quoting issues"
+        },
+        {
+          "approach": "Check m4 syntax",
+          "code": "m4 macros need dnl for comments",
+          "when": "Comment issues"
+        },
+        {
+          "approach": "Validate incrementally",
+          "code": "Run autoconf after each change",
+          "when": "Find exact error"
+        }
+      ]
+    },
+    {
+      "id": "missing_auxiliary",
+      "pattern": "required file.*missing|install-sh.*not found|config.sub",
+      "message": "Missing auxiliary files",
+      "cause": "Build support files not present",
+      "solutions": [
+        {
+          "approach": "Install auxiliary",
+          "code": "autoreconf -i  (--install)",
+          "when": "Copy missing files"
+        },
+        {
+          "approach": "Manual copy",
+          "code": "cp /usr/share/automake-*/install-sh .",
+          "when": "Copy specific files"
+        },
+        {
+          "approach": "Add to repo",
+          "code": "Commit auxiliary files to repository",
+          "when": "Ensure availability"
+        }
+      ]
+    },
+    {
+      "id": "ac_init_args",
+      "pattern": "AC_INIT.*missing|package.*version",
+      "message": "AC_INIT arguments wrong",
+      "cause": "Incorrect AC_INIT macro call",
+      "solutions": [
+        {
+          "approach": "Modern format",
+          "code": "AC_INIT([package], [version], [bug-email], [tarname], [url])",
+          "when": "Using modern autoconf"
+        },
+        {
+          "approach": "Minimal format",
+          "code": "AC_INIT([package], [version])",
+          "when": "Basic initialization"
+        },
+        {
+          "approach": "Check docs",
+          "code": "info autoconf 'AC_INIT'",
+          "when": "Verify syntax"
+        }
+      ]
+    }
+  ]
+}

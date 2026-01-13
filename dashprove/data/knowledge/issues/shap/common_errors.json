@@ -1,0 +1,153 @@
+{
+  "tool": "shap",
+  "version": "0.44.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "explainer_type_mismatch",
+      "pattern": "(Explainer|TreeExplainer|DeepExplainer|KernelExplainer)",
+      "message": "Wrong explainer type for model",
+      "cause": "Different model types require different SHAP explainers",
+      "solutions": [
+        {
+          "approach": "Use TreeExplainer for trees",
+          "code": "import shap\n# For XGBoost, LightGBM, CatBoost, RandomForest\nexplainer = shap.TreeExplainer(model)\nshap_values = explainer.shap_values(X)",
+          "when": "Using tree-based model"
+        },
+        {
+          "approach": "Use DeepExplainer for neural nets",
+          "code": "# For PyTorch/TensorFlow deep learning models\nexplainer = shap.DeepExplainer(model, background_data)\nshap_values = explainer.shap_values(X_test)",
+          "when": "Using neural network"
+        },
+        {
+          "approach": "Use KernelExplainer for any model",
+          "code": "# Model-agnostic, slower but works for any model\nexplainer = shap.KernelExplainer(model.predict_proba, shap.sample(X_train, 100))\nshap_values = explainer.shap_values(X_test[:10])",
+          "when": "Model type unknown or unsupported"
+        }
+      ]
+    },
+    {
+      "id": "background_data_error",
+      "pattern": "(background|data.*required|reference)",
+      "message": "Background data required but not provided",
+      "cause": "Some explainers need reference data for comparison",
+      "solutions": [
+        {
+          "approach": "Provide background sample",
+          "code": "background = shap.sample(X_train, 100)  # Random sample\nexplainer = shap.KernelExplainer(model.predict, background)",
+          "when": "Using KernelExplainer"
+        },
+        {
+          "approach": "Use kmeans summarization",
+          "code": "background = shap.kmeans(X_train, 10)  # K-means summary\nexplainer = shap.KernelExplainer(model.predict, background)",
+          "when": "Need smaller background"
+        },
+        {
+          "approach": "Use masker for text/images",
+          "code": "masker = shap.maskers.Text(tokenizer)\nexplainer = shap.Explainer(model, masker)",
+          "when": "Explaining text or images"
+        }
+      ]
+    },
+    {
+      "id": "additivity_check_failed",
+      "pattern": "(additivity|sum.*not equal|base.*value)",
+      "message": "SHAP additivity check failed",
+      "cause": "SHAP values don't sum to prediction difference from baseline",
+      "solutions": [
+        {
+          "approach": "Disable check",
+          "code": "explainer = shap.TreeExplainer(model, feature_perturbation='interventional')\nshap_values = explainer.shap_values(X, check_additivity=False)",
+          "when": "Check failing but values reasonable"
+        },
+        {
+          "approach": "Use interventional",
+          "code": "explainer = shap.TreeExplainer(\n    model,\n    data=X_train,\n    feature_perturbation='interventional'\n)",
+          "when": "Features are correlated"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "(memory|MemoryError|OOM)",
+      "message": "Out of memory computing SHAP values",
+      "cause": "SHAP computation is memory intensive",
+      "solutions": [
+        {
+          "approach": "Use smaller background",
+          "code": "background = shap.sample(X_train, 50)  # Smaller sample\nexplainer = shap.KernelExplainer(model.predict, background)",
+          "when": "Large background dataset"
+        },
+        {
+          "approach": "Explain in batches",
+          "code": "shap_values = []\nfor i in range(0, len(X_test), 100):\n    batch = X_test[i:i+100]\n    shap_values.append(explainer.shap_values(batch))",
+          "when": "Large test set"
+        },
+        {
+          "approach": "Use approximate",
+          "code": "explainer = shap.Explainer(model, X_train, algorithm='permutation')\nshap_values = explainer(X_test, max_evals=500)",
+          "when": "Can accept approximation"
+        }
+      ]
+    },
+    {
+      "id": "visualization_error",
+      "pattern": "(plot|summary_plot|force_plot|waterfall)",
+      "message": "SHAP visualization error",
+      "cause": "Plot configuration or data format issue",
+      "solutions": [
+        {
+          "approach": "Fix summary plot",
+          "code": "shap.summary_plot(shap_values, X_test, feature_names=feature_names)",
+          "when": "Basic summary plot"
+        },
+        {
+          "approach": "Fix force plot for single",
+          "code": "shap.initjs()  # In Jupyter\nshap.force_plot(\n    explainer.expected_value,\n    shap_values[0],\n    X_test.iloc[0] if hasattr(X_test, 'iloc') else X_test[0]\n)",
+          "when": "Single prediction explanation"
+        },
+        {
+          "approach": "Use new API",
+          "code": "# New unified API\nexplainer = shap.Explainer(model, X_train)\nshap_values = explainer(X_test)\nshap.plots.waterfall(shap_values[0])",
+          "when": "Using newer SHAP version"
+        }
+      ]
+    },
+    {
+      "id": "multiclass_shape_error",
+      "pattern": "(multiclass|shape|classes|output)",
+      "message": "SHAP values shape mismatch for multiclass",
+      "cause": "Multiclass returns list of arrays per class",
+      "solutions": [
+        {
+          "approach": "Access specific class",
+          "code": "# shap_values is list of arrays, one per class\nshap_values = explainer.shap_values(X_test)\nclass_0_shap = shap_values[0]  # SHAP for class 0\nclass_1_shap = shap_values[1]  # SHAP for class 1",
+          "when": "Multiclass classification"
+        },
+        {
+          "approach": "Plot specific class",
+          "code": "shap.summary_plot(shap_values[1], X_test)  # Plot class 1\nshap.summary_plot(shap_values, X_test, class_names=class_names)  # All classes",
+          "when": "Visualizing multiclass"
+        }
+      ]
+    },
+    {
+      "id": "model_output_error",
+      "pattern": "(output|predict|probability|logit)",
+      "message": "Model output format incompatible",
+      "cause": "SHAP expecting different output format from model",
+      "solutions": [
+        {
+          "approach": "Wrap model function",
+          "code": "def model_predict(x):\n    return model.predict_proba(x)[:, 1]  # Binary: just positive class\nexplainer = shap.KernelExplainer(model_predict, background)",
+          "when": "Need specific output"
+        },
+        {
+          "approach": "Use link function",
+          "code": "explainer = shap.KernelExplainer(\n    model.predict_proba,\n    background,\n    link='logit'  # For log-odds\n)",
+          "when": "Want log-odds explanations"
+        }
+      ]
+    }
+  ]
+}

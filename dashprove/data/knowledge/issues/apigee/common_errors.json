@@ -1,0 +1,122 @@
+{
+  "tool": "apigee",
+  "version": "X/Hybrid",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "deployment_failed",
+      "pattern": "Deployment of API Proxy .* failed|Bundle is invalid|Invalid resource",
+      "message": "Proxy deployment failed",
+      "cause": "Proxy bundle has invalid XML, missing policies, or bad basepath",
+      "solutions": [
+        {
+          "approach": "Lint bundle",
+          "code": "apigeelint -s ./apiproxy -f html -w report.html",
+          "when": "Validate structure locally"
+        },
+        {
+          "approach": "Check basepath",
+          "code": "<ProxyEndpoint>\n  <BasePath>/v1</BasePath>\n</ProxyEndpoint>",
+          "when": "Incorrect or duplicate basepath"
+        },
+        {
+          "approach": "Verify policy references",
+          "code": "Ensure <Step> names match policy file names",
+          "when": "Policy file missing or renamed"
+        }
+      ]
+    },
+    {
+      "id": "ssl_handshake_failed",
+      "pattern": "SSLHandshakeException|certificate unknown|PKIX path building failed",
+      "message": "TLS handshake failed to target",
+      "cause": "Backend certificate untrusted or hostname mismatch",
+      "solutions": [
+        {
+          "approach": "Add to truststore",
+          "code": "Upload cert to env keystore and reference in TargetEndpoint",
+          "when": "Self-signed backend"
+        },
+        {
+          "approach": "Disable SSL validation (dev only)",
+          "code": "<SSLInfo>\n  <TrustStore>...\n  <IgnoreValidationErrors>true</IgnoreValidationErrors>\n</SSLInfo>",
+          "when": "Testing only"
+        },
+        {
+          "approach": "Match host",
+          "code": "Ensure <VirtualHost> matches SNI expected by backend",
+          "when": "Hostname mismatch"
+        }
+      ]
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "QuotaViolation|exceeded quota|exceeded the limit",
+      "message": "Quota policy blocking requests",
+      "cause": "Quota policy configured too low or key not reset",
+      "solutions": [
+        {
+          "approach": "Inspect counters",
+          "code": "Use trace tool or Edge UI to view quota usage",
+          "when": "Confirm quota consumption"
+        },
+        {
+          "approach": "Adjust limits",
+          "code": "<Quota>\n  <Interval>1</Interval>\n  <TimeUnit>minute</TimeUnit>\n  <Allow>600</Allow>\n</Quota>",
+          "when": "Need higher throughput"
+        },
+        {
+          "approach": "Reset for testing",
+          "code": "apigeetool invalidatecache --environment test --type quota",
+          "when": "Integration testing"
+        }
+      ]
+    },
+    {
+      "id": "api_product_mismatch",
+      "pattern": "API product not found|Invalid API product|Access denied to this API",
+      "message": "API key not authorised",
+      "cause": "API key not associated with product covering the requested proxy/path",
+      "solutions": [
+        {
+          "approach": "Check product scopes",
+          "code": "Ensure product includes proxy name, paths, and environments",
+          "when": "404/403 with valid key"
+        },
+        {
+          "approach": "Regenerate key",
+          "code": "Create app and generate new credentials",
+          "when": "Existing key missing correct product"
+        },
+        {
+          "approach": "Pass header correctly",
+          "code": "curl -H 'x-api-key: <key>' https://host/v1/resource",
+          "when": "Wrong header/query parameter"
+        }
+      ]
+    },
+    {
+      "id": "policy_reference_error",
+      "pattern": "StepDefinitionNotFound|Policy .* not found|SharedFlow .* not found",
+      "message": "Referenced policy or shared flow missing",
+      "cause": "Policy file absent, misnamed, or not included in bundle",
+      "solutions": [
+        {
+          "approach": "Align names",
+          "code": "<Step><Name>OAuth-v2-Verify</Name></Step> matches OAuth-v2-Verify.xml",
+          "when": "Case-sensitive mismatch"
+        },
+        {
+          "approach": "Include resources",
+          "code": "Ensure policies/ and sharedflows/ directories included in zip",
+          "when": "CI packaging custom steps"
+        },
+        {
+          "approach": "Check flow hooks",
+          "code": "Verify PreFlow/PostFlow steps reference existing policies",
+          "when": "Flow uses removed policy"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "tool": "yes",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "runaway_output",
+      "pattern": "infinite|never stops|disk full|filling",
+      "message": "yes output not stopping",
+      "cause": "yes outputs infinitely by default",
+      "solutions": [
+        {
+          "approach": "Pipe to command",
+          "code": "yes | head -5           # Just 5 lines\nyes | command_that_prompts",
+          "when": "Limit output"
+        },
+        {
+          "approach": "Use timeout",
+          "code": "timeout 5 yes | wc -l",
+          "when": "Time limit"
+        },
+        {
+          "approach": "Ctrl+C to stop",
+          "code": "# Press Ctrl+C to interrupt",
+          "when": "Stop manually"
+        }
+      ]
+    },
+    {
+      "id": "not_answering_prompts",
+      "pattern": "prompt|interactive|not.*answering",
+      "message": "yes not answering prompts",
+      "cause": "Command may not read from stdin",
+      "solutions": [
+        {
+          "approach": "Check stdin",
+          "code": "yes | strace -e read command 2>&1 | grep read",
+          "when": "Debug if reading"
+        },
+        {
+          "approach": "Use expect instead",
+          "code": "expect -c 'spawn cmd; expect \"?\"; send \"y\\r\"'",
+          "when": "Complex prompts"
+        },
+        {
+          "approach": "Command-specific flag",
+          "code": "rm -f file        # -f instead of yes | rm\napt -y install pkg  # -y flag",
+          "when": "Use native flag"
+        }
+      ]
+    },
+    {
+      "id": "custom_response",
+      "pattern": "no|custom|other.*string",
+      "message": "Need to respond with something other than 'y'",
+      "cause": "Default output is 'y'",
+      "solutions": [
+        {
+          "approach": "Custom string",
+          "code": "yes 'no'           # Outputs 'no' repeatedly\nyes 'password123'  # Any string\nyes ''             # Empty lines",
+          "when": "Different response"
+        },
+        {
+          "approach": "Alternating",
+          "code": "printf 'y\\nn\\n' | command  # One y, one n",
+          "when": "Multiple responses"
+        },
+        {
+          "approach": "Here-doc",
+          "code": "command <<EOF\ny\nn\nmaybe\nEOF",
+          "when": "Specific sequence"
+        }
+      ]
+    },
+    {
+      "id": "performance",
+      "pattern": "slow|benchmark|speed|throughput",
+      "message": "Testing write speed with yes",
+      "cause": "yes is often used for benchmarks",
+      "solutions": [
+        {
+          "approach": "Write benchmark",
+          "code": "yes | pv > /dev/null  # Shows throughput\nyes | dd of=/dev/null bs=1M count=1000",
+          "when": "Measure speed"
+        },
+        {
+          "approach": "Fill disk test",
+          "code": "yes | dd of=testfile bs=1M count=100",
+          "when": "Create large file"
+        },
+        {
+          "approach": "CPU stress",
+          "code": "yes > /dev/null &   # Pegs one CPU core",
+          "when": "Load testing"
+        }
+      ]
+    },
+    {
+      "id": "newlines",
+      "pattern": "newline|\\n|no newline",
+      "message": "Need control over newlines",
+      "cause": "yes adds newline after each output",
+      "solutions": [
+        {
+          "approach": "Newlines included",
+          "code": "# Each 'y' followed by newline - normal behavior\nyes | head -3  # y\\ny\\ny\\n",
+          "when": "Standard use"
+        },
+        {
+          "approach": "Without newlines",
+          "code": "yes | tr -d '\\n' | head -c 100",
+          "when": "Continuous stream"
+        },
+        {
+          "approach": "Custom with newlines",
+          "code": "yes $'line1\\nline2'  # Multi-line per iteration",
+          "when": "Complex output"
+        }
+      ]
+    },
+    {
+      "id": "memory_usage",
+      "pattern": "memory|buffer|backpressure",
+      "message": "Pipeline memory issues",
+      "cause": "Buffering between yes and slow consumer",
+      "solutions": [
+        {
+          "approach": "Unbuffered",
+          "code": "stdbuf -oL yes | slow_command",
+          "when": "Line buffered"
+        },
+        {
+          "approach": "Rate limit",
+          "code": "yes | pv -L 100 | command  # 100 bytes/sec",
+          "when": "Slow down"
+        }
+      ]
+    }
+  ]
+}

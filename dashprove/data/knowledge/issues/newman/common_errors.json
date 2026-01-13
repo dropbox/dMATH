@@ -1,0 +1,191 @@
+{
+  "tool": "newman",
+  "version": "6.1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "collection_not_found",
+      "pattern": "collection could not be loaded|ENOENT|file not found",
+      "message": "Collection file not found",
+      "cause": "Collection path invalid or file missing",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "newman run ./postman/collection.json",
+          "when": "Local file"
+        },
+        {
+          "approach": "Use URL",
+          "code": "newman run https://api.getpostman.com/collections/12345-abcdef",
+          "when": "Postman cloud"
+        },
+        {
+          "approach": "Export from Postman",
+          "code": "# In Postman: Collection > Export > Collection v2.1",
+          "when": "Need to export"
+        }
+      ]
+    },
+    {
+      "id": "environment_error",
+      "pattern": "environment could not be loaded|variable.*undefined",
+      "message": "Environment not found or variable missing",
+      "cause": "Environment file missing or variables not set",
+      "solutions": [
+        {
+          "approach": "Specify environment",
+          "code": "newman run collection.json -e environment.json",
+          "when": "Use environment file"
+        },
+        {
+          "approach": "Set variables via CLI",
+          "code": "newman run collection.json --env-var \"baseUrl=https://api.example.com\" --env-var \"apiKey=abc123\"",
+          "when": "Override variables"
+        },
+        {
+          "approach": "Use globals",
+          "code": "newman run collection.json -g globals.json",
+          "when": "Global variables"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError|expected|to have|test failed",
+      "message": "Test assertion failed",
+      "cause": "Response doesn't match test expectations",
+      "solutions": [
+        {
+          "approach": "Check test scripts",
+          "code": "pm.test('Status is 200', function() {\n    pm.response.to.have.status(200);\n});",
+          "when": "Status assertion"
+        },
+        {
+          "approach": "Check JSON response",
+          "code": "pm.test('Has user data', function() {\n    const data = pm.response.json();\n    pm.expect(data.name).to.eql('John');\n});",
+          "when": "Body assertion"
+        },
+        {
+          "approach": "Continue on error",
+          "code": "newman run collection.json --bail=false",
+          "when": "Run all despite failures"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "ETIMEDOUT|socket hang up|timeout|ESOCKETTIMEDOUT",
+      "message": "Request timed out",
+      "cause": "Server didn't respond in time",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "newman run collection.json --timeout-request 60000",
+          "when": "Slow endpoint"
+        },
+        {
+          "approach": "Set script timeout",
+          "code": "newman run collection.json --timeout-script 30000",
+          "when": "Slow pre/post scripts"
+        },
+        {
+          "approach": "Overall timeout",
+          "code": "newman run collection.json --timeout 300000",
+          "when": "Long collection"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate|CERT_|self-signed|unable to verify",
+      "message": "SSL certificate error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Skip verification",
+          "code": "newman run collection.json --insecure",
+          "when": "Self-signed cert"
+        },
+        {
+          "approach": "Use client cert",
+          "code": "newman run collection.json --ssl-client-cert cert.pem --ssl-client-key key.pem",
+          "when": "mTLS required"
+        },
+        {
+          "approach": "Custom CA",
+          "code": "newman run collection.json --ssl-extra-ca-certs ca.pem",
+          "when": "Custom CA"
+        }
+      ]
+    },
+    {
+      "id": "reporter_error",
+      "pattern": "reporter|htmlextra|could not load reporter",
+      "message": "Reporter not found",
+      "cause": "Reporter package not installed",
+      "solutions": [
+        {
+          "approach": "Install reporter",
+          "code": "npm install -g newman-reporter-htmlextra",
+          "when": "HTML report"
+        },
+        {
+          "approach": "Use built-in",
+          "code": "newman run collection.json -r cli,json,junit",
+          "when": "Standard reporters"
+        },
+        {
+          "approach": "Multiple reporters",
+          "code": "newman run collection.json -r cli,htmlextra --reporter-htmlextra-export report.html",
+          "when": "Multiple outputs"
+        }
+      ]
+    },
+    {
+      "id": "iteration_error",
+      "pattern": "iteration|data file|CSV|JSON data",
+      "message": "Data iteration error",
+      "cause": "Data file format or iteration issue",
+      "solutions": [
+        {
+          "approach": "Use CSV data",
+          "code": "newman run collection.json -d data.csv",
+          "when": "CSV data file"
+        },
+        {
+          "approach": "Use JSON data",
+          "code": "newman run collection.json -d data.json",
+          "when": "JSON data file"
+        },
+        {
+          "approach": "Set iterations",
+          "code": "newman run collection.json -n 10",
+          "when": "Fixed iterations"
+        }
+      ]
+    },
+    {
+      "id": "folder_error",
+      "pattern": "folder|--folder|no requests found",
+      "message": "Folder not found or empty",
+      "cause": "Specified folder doesn't exist in collection",
+      "solutions": [
+        {
+          "approach": "Run specific folder",
+          "code": "newman run collection.json --folder \"User APIs\"",
+          "when": "Run subset"
+        },
+        {
+          "approach": "Check folder name",
+          "code": "# Folder name is case-sensitive and must match exactly",
+          "when": "Name mismatch"
+        },
+        {
+          "approach": "List collection",
+          "code": "# View collection in Postman to see folder structure",
+          "when": "Verify structure"
+        }
+      ]
+    }
+  ]
+}

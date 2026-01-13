@@ -1,0 +1,136 @@
+{
+  "id": "onnx_checker",
+  "name": "ONNX Checker",
+  "category": "ml_testing",
+  "subcategory": "model_validation",
+
+  "description": "ONNX model validation and verification",
+  "long_description": "ONNX checker provides utilities for validating ONNX models, checking graph structure, verifying operator compatibility, and ensuring model correctness. Essential for validating model exports and ensuring cross-framework compatibility.",
+
+  "capabilities": [
+    "model_validation",
+    "graph_checking",
+    "shape_inference",
+    "operator_verification",
+    "version_checking",
+    "ir_validation"
+  ],
+  "property_types": ["validity", "compatibility", "correctness"],
+  "input_languages": ["python"],
+  "output_formats": ["boolean", "exception"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install onnx"},
+      {"type": "pip_runtime", "command": "pip install onnxruntime"}
+    ],
+    "dependencies": ["protobuf", "numpy"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://onnx.ai/onnx/api/checker.html",
+    "tutorial": "https://onnx.ai/onnx/intro/python.html",
+    "api_reference": "https://onnx.ai/onnx/api/index.html",
+    "examples": "https://github.com/onnx/onnx/tree/main/onnx/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "check_model",
+      "description": "Validate ONNX model",
+      "syntax": "onnx.checker.check_model(model)",
+      "when_to_use": "After exporting to ONNX",
+      "examples": ["import onnx\n\nmodel = onnx.load('model.onnx')\nonnx.checker.check_model(model)\nprint('Model is valid')"]
+    },
+    {
+      "name": "check_graph",
+      "description": "Validate graph structure",
+      "syntax": "onnx.checker.check_graph(graph)",
+      "when_to_use": "To check graph separately",
+      "examples": ["onnx.checker.check_graph(model.graph)"]
+    },
+    {
+      "name": "shape_inference",
+      "description": "Infer tensor shapes",
+      "syntax": "onnx.shape_inference.infer_shapes(model)",
+      "when_to_use": "To add shape info to model",
+      "examples": ["from onnx import shape_inference\ninferred = shape_inference.infer_shapes(model)\nonnx.save(inferred, 'model_with_shapes.onnx')"]
+    },
+    {
+      "name": "runtime_check",
+      "description": "Test with ONNX Runtime",
+      "syntax": "ort.InferenceSession(model_path)",
+      "when_to_use": "For runtime verification",
+      "examples": ["import onnxruntime as ort\nimport numpy as np\n\nsess = ort.InferenceSession('model.onnx')\ninputs = {'input': np.random.randn(1, 3, 224, 224).astype(np.float32)}\noutputs = sess.run(None, inputs)"]
+    },
+    {
+      "name": "compare_outputs",
+      "description": "Compare PyTorch vs ONNX",
+      "syntax": "np.allclose(torch_out, onnx_out)",
+      "when_to_use": "To verify export correctness",
+      "examples": ["# PyTorch inference\nwith torch.no_grad():\n    torch_out = model(input_tensor).numpy()\n\n# ONNX inference\nsess = ort.InferenceSession('model.onnx')\nonnx_out = sess.run(None, {'input': input_tensor.numpy()})[0]\n\nassert np.allclose(torch_out, onnx_out, rtol=1e-3, atol=1e-5)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "ValidationError.*invalid model",
+      "meaning": "Model structure invalid",
+      "common_causes": ["Corrupt export", "Unsupported ops"],
+      "fixes": ["Re-export model", "Check operator compatibility"]
+    },
+    {
+      "pattern": "No opset import",
+      "meaning": "Missing opset version",
+      "common_causes": ["Old ONNX export"],
+      "fixes": ["Specify opset_version in export"]
+    },
+    {
+      "pattern": "Shape inference.*failed",
+      "meaning": "Cannot infer shapes",
+      "common_causes": ["Dynamic shapes", "Custom ops"],
+      "fixes": ["Provide input shapes", "Check custom op definitions"]
+    },
+    {
+      "pattern": "Unsupported.*operator",
+      "meaning": "Op not in opset",
+      "common_causes": ["Custom op", "Old opset version"],
+      "fixes": ["Increase opset version", "Register custom op"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["validity", "equivalence"],
+    "cli_command": "dashprove verify --backend onnx"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds",
+    "scalability": "Good",
+    "memory_usage": "Model-dependent"
+  },
+
+  "comparisons": {
+    "similar_tools": ["torch.onnx.verification", "onnx-simplifier"],
+    "advantages": [
+      "Official ONNX tool",
+      "Comprehensive validation",
+      "Shape inference",
+      "Well documented"
+    ],
+    "disadvantages": [
+      "Only checks structure",
+      "No numerical verification",
+      "Cannot fix issues"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.15.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "ONNX",
+    "license": "Apache-2.0"
+  }
+}

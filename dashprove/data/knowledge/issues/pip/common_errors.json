@@ -1,0 +1,237 @@
+{
+  "tool": "pip",
+  "version": "24.0+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "package_not_found",
+      "pattern": "No matching distribution|Could not find.*satisfies|package.*not found",
+      "message": "Package not found on PyPI",
+      "cause": "Package doesn't exist or wrong name",
+      "solutions": [
+        {
+          "approach": "Check package name",
+          "code": "pip search packagename  # deprecated, use pypi.org",
+          "when": "Typo in name"
+        },
+        {
+          "approach": "Check PyPI directly",
+          "code": "# Search https://pypi.org/search/?q=packagename",
+          "when": "Verify package exists"
+        },
+        {
+          "approach": "Use correct index",
+          "code": "pip install --index-url https://pypi.org/simple/ packagename",
+          "when": "Wrong index configured"
+        }
+      ]
+    },
+    {
+      "id": "version_conflict",
+      "pattern": "ResolutionImpossible|Conflict.*version|incompatible.*requirements",
+      "message": "Dependency version conflict",
+      "cause": "Incompatible package version requirements",
+      "solutions": [
+        {
+          "approach": "Use pip-tools",
+          "code": "pip-compile requirements.in",
+          "when": "Resolve conflicts"
+        },
+        {
+          "approach": "Relax constraints",
+          "code": "package>=1.0,<3.0",
+          "when": "Too strict version"
+        },
+        {
+          "approach": "Fresh virtualenv",
+          "code": "python -m venv .venv --clear && source .venv/bin/activate",
+          "when": "Start fresh"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Could not install|PermissionError",
+      "message": "Permission denied during install",
+      "cause": "No write permission to site-packages",
+      "solutions": [
+        {
+          "approach": "Use virtualenv",
+          "code": "python -m venv .venv && source .venv/bin/activate",
+          "when": "Not using virtualenv"
+        },
+        {
+          "approach": "Install to user",
+          "code": "pip install --user packagename",
+          "when": "User-level install"
+        },
+        {
+          "approach": "Use pipx for apps",
+          "code": "pipx install packagename",
+          "when": "CLI tool"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "Failed building wheel|error.*setup.py|compilation.*failed",
+      "message": "Package build failed",
+      "cause": "Missing build dependencies or compiler",
+      "solutions": [
+        {
+          "approach": "Install build tools",
+          "code": "# macOS: xcode-select --install\n# Linux: sudo apt install build-essential",
+          "when": "No compiler"
+        },
+        {
+          "approach": "Install dev headers",
+          "code": "sudo apt install python3-dev libssl-dev libffi-dev",
+          "when": "Missing headers"
+        },
+        {
+          "approach": "Use binary wheel",
+          "code": "pip install --only-binary :all: packagename",
+          "when": "Prebuilt available"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL.*error|certificate.*verify|CERTIFICATE_VERIFY_FAILED",
+      "message": "SSL certificate error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Update certificates",
+          "code": "pip install --upgrade certifi",
+          "when": "Outdated certs"
+        },
+        {
+          "approach": "Use trusted host",
+          "code": "pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org packagename",
+          "when": "Corporate proxy"
+        },
+        {
+          "approach": "Fix macOS certs",
+          "code": "/Applications/Python\\ 3.x/Install\\ Certificates.command",
+          "when": "macOS cert issue"
+        }
+      ]
+    },
+    {
+      "id": "hash_mismatch",
+      "pattern": "HASH.*mismatch|hash.*does not match|verification failed",
+      "message": "Package hash mismatch",
+      "cause": "Downloaded package doesn't match expected hash",
+      "solutions": [
+        {
+          "approach": "Clear cache",
+          "code": "pip cache purge",
+          "when": "Corrupted cache"
+        },
+        {
+          "approach": "Reinstall with no cache",
+          "code": "pip install --no-cache-dir packagename",
+          "when": "Cache issue"
+        },
+        {
+          "approach": "Update lock file",
+          "code": "pip-compile --generate-hashes requirements.in",
+          "when": "Hash outdated"
+        }
+      ]
+    },
+    {
+      "id": "externally_managed",
+      "pattern": "externally-managed-environment|This environment is externally managed",
+      "message": "Externally managed environment",
+      "cause": "System Python managed by OS package manager",
+      "solutions": [
+        {
+          "approach": "Use virtualenv",
+          "code": "python -m venv .venv && source .venv/bin/activate",
+          "when": "Create virtualenv"
+        },
+        {
+          "approach": "Use pipx",
+          "code": "pipx install packagename",
+          "when": "CLI tools"
+        },
+        {
+          "approach": "Use pyenv",
+          "code": "pyenv install 3.12 && pyenv local 3.12",
+          "when": "Manage Python versions"
+        }
+      ]
+    },
+    {
+      "id": "no_space",
+      "pattern": "No space left|disk.*full|storage.*exceeded",
+      "message": "Not enough disk space",
+      "cause": "Disk full",
+      "solutions": [
+        {
+          "approach": "Clear pip cache",
+          "code": "pip cache purge",
+          "when": "Cache using space"
+        },
+        {
+          "approach": "Remove old virtualenvs",
+          "code": "rm -rf ~/.local/share/virtualenvs/*",
+          "when": "Many old envs"
+        },
+        {
+          "approach": "Free disk space",
+          "code": "# Remove unnecessary files",
+          "when": "Disk full"
+        }
+      ]
+    },
+    {
+      "id": "python_version",
+      "pattern": "requires Python|python_requires|Requires-Python",
+      "message": "Python version incompatible",
+      "cause": "Package requires different Python version",
+      "solutions": [
+        {
+          "approach": "Use pyenv",
+          "code": "pyenv install 3.12 && pyenv local 3.12",
+          "when": "Need different version"
+        },
+        {
+          "approach": "Use older package version",
+          "code": "pip install 'packagename<2.0'",
+          "when": "Older version supports your Python"
+        },
+        {
+          "approach": "Upgrade Python",
+          "code": "# Install newer Python version",
+          "when": "Python too old"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timed out|ReadTimeoutError|connection.*timeout",
+      "message": "Connection timeout",
+      "cause": "Slow network or unreachable PyPI",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "pip install --timeout 60 packagename",
+          "when": "Slow connection"
+        },
+        {
+          "approach": "Use mirror",
+          "code": "pip install -i https://mirrors.aliyun.com/pypi/simple/ packagename",
+          "when": "PyPI slow/blocked"
+        },
+        {
+          "approach": "Retry",
+          "code": "pip install --retries 5 packagename",
+          "when": "Intermittent failure"
+        }
+      ]
+    }
+  ]
+}

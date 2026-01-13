@@ -1,0 +1,153 @@
+{
+  "tool": "ftp",
+  "version": "standard ftp client",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|Not connected|connect:.*failed",
+      "message": "Cannot connect to FTP server",
+      "cause": "Server not running or firewall blocking",
+      "solutions": [
+        {
+          "approach": "Check port",
+          "code": "nc -zv hostname 21  # Test FTP port",
+          "when": "Verify connectivity"
+        },
+        {
+          "approach": "Passive mode",
+          "code": "ftp -p hostname  # Passive mode (firewall friendly)",
+          "when": "Active mode blocked"
+        },
+        {
+          "approach": "Explicit SSL",
+          "code": "# Use lftp for FTPS\nlftp -e 'set ssl:verify-certificate no' ftps://host",
+          "when": "Need FTPS"
+        }
+      ]
+    },
+    {
+      "id": "login_failed",
+      "pattern": "Login failed|530|User.*cannot log in|Authentication failed",
+      "message": "Login credentials rejected",
+      "cause": "Wrong username/password or account restrictions",
+      "solutions": [
+        {
+          "approach": "Check credentials",
+          "code": "ftp hostname\n# Enter username when prompted\n# Enter password when prompted",
+          "when": "Interactive login"
+        },
+        {
+          "approach": "Anonymous FTP",
+          "code": "ftp -a hostname  # Anonymous login\n# Or user: anonymous, pass: your@email.com",
+          "when": "Public FTP server"
+        },
+        {
+          "approach": "Netrc file",
+          "code": "# ~/.netrc (chmod 600):\nmachine hostname login user password pass",
+          "when": "Automated login"
+        }
+      ]
+    },
+    {
+      "id": "binary_ascii",
+      "pattern": "corrupt|different size|binary|ascii|type",
+      "message": "File corrupted after transfer",
+      "cause": "Wrong transfer mode (binary vs ASCII)",
+      "solutions": [
+        {
+          "approach": "Binary mode",
+          "code": "ftp> binary  # or: bin\nftp> get file.zip",
+          "when": "Binary files (images, archives, executables)"
+        },
+        {
+          "approach": "ASCII mode",
+          "code": "ftp> ascii\nftp> get file.txt",
+          "when": "Text files (may convert line endings)"
+        },
+        {
+          "approach": "Default binary",
+          "code": "# Always use binary unless specifically need line ending conversion\n# Binary works for all files; ASCII can corrupt binary files",
+          "when": "Best practice"
+        }
+      ]
+    },
+    {
+      "id": "passive_mode",
+      "pattern": "PASV|passive|425|data connection|firewall|NAT",
+      "message": "Data connection failed",
+      "cause": "Active FTP blocked by firewall",
+      "solutions": [
+        {
+          "approach": "Enable passive",
+          "code": "ftp -p hostname  # Start in passive mode\n# Or in session:\nftp> passive",
+          "when": "Behind NAT/firewall"
+        },
+        {
+          "approach": "Use lftp",
+          "code": "lftp hostname  # Better passive support",
+          "when": "Better client"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|550|Access denied|not allowed",
+      "message": "Operation not permitted",
+      "cause": "Server permissions or directory restrictions",
+      "solutions": [
+        {
+          "approach": "Check permissions",
+          "code": "ftp> ls -la  # See file permissions",
+          "when": "Inspect permissions"
+        },
+        {
+          "approach": "Change directory",
+          "code": "ftp> cd /allowed/path/\nftp> pwd  # Show current directory",
+          "when": "Navigate to allowed area"
+        }
+      ]
+    },
+    {
+      "id": "command_not_recognized",
+      "pattern": "500|502|command not recognized|unknown command",
+      "message": "Server doesn't support command",
+      "cause": "FTP server has limited command set",
+      "solutions": [
+        {
+          "approach": "Basic commands",
+          "code": "ftp> ls       # List files\nftp> cd dir   # Change directory\nftp> pwd      # Print working directory\nftp> get file # Download\nftp> put file # Upload\nftp> mget *   # Multiple download\nftp> mput *   # Multiple upload\nftp> bye      # Exit",
+          "when": "Standard commands"
+        },
+        {
+          "approach": "Help",
+          "code": "ftp> help\nftp> help get",
+          "when": "Available commands"
+        }
+      ]
+    },
+    {
+      "id": "insecure_warning",
+      "pattern": "insecure|plaintext|unencrypted|security",
+      "message": "FTP is insecure",
+      "cause": "FTP sends passwords in plaintext",
+      "solutions": [
+        {
+          "approach": "Use SFTP",
+          "code": "sftp user@host  # SSH-based, encrypted",
+          "when": "SSH available"
+        },
+        {
+          "approach": "Use FTPS",
+          "code": "lftp -e 'set ftp:ssl-force true' ftp://host",
+          "when": "FTP over TLS"
+        },
+        {
+          "approach": "SCP",
+          "code": "scp file user@host:/path/",
+          "when": "Simple file transfer"
+        }
+      ]
+    }
+  ]
+}

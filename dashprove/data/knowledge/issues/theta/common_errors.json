@@ -1,0 +1,168 @@
+{
+  "tool": "theta",
+  "version": "6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unsafe_result",
+      "pattern": "SafetyResult\\.Unsafe|counterexample found",
+      "message": "Safety property violated",
+      "cause": "Theta's CEGAR found reachable error state",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "# Check output for ARG (Abstract Reachability Graph)",
+          "when": "Need error trace"
+        },
+        {
+          "approach": "Fix property violation",
+          "code": "// Counterexample shows real bug",
+          "when": "Genuine safety issue"
+        },
+        {
+          "approach": "Refine abstraction",
+          "code": "--refinement NWT_SP_LV",
+          "when": "Spurious counterexample"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "SafetyResult\\.Unknown|analysis aborted",
+      "message": "Verification inconclusive",
+      "cause": "CEGAR could not prove or disprove property",
+      "solutions": [
+        {
+          "approach": "Try different domain",
+          "code": "theta-cfa --domain EXPL program.c",
+          "when": "PRED domain insufficient"
+        },
+        {
+          "approach": "Use different refinement",
+          "code": "theta-cfa --refinement SEQ_ITP program.c",
+          "when": "Current refinement stuck"
+        },
+        {
+          "approach": "Increase limits",
+          "code": "# Increase memory and timeout",
+          "when": "Resources exhausted"
+        }
+      ]
+    },
+    {
+      "id": "cfa_parsing_error",
+      "pattern": "CFA parsing failed|invalid CFA",
+      "message": "Control Flow Automaton parsing error",
+      "cause": "Input CFA has syntax errors",
+      "solutions": [
+        {
+          "approach": "Check CFA syntax",
+          "code": "// Verify location and edge declarations",
+          "when": "CFA format invalid"
+        },
+        {
+          "approach": "Use C frontend",
+          "code": "theta-c --input program.c",
+          "when": "Start from C source"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "// Ensure UTF-8 encoding without BOM",
+          "when": "Encoding issues"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemoryError|Java heap space",
+      "message": "Theta ran out of memory",
+      "cause": "Abstract state space exceeded heap",
+      "solutions": [
+        {
+          "approach": "Increase heap",
+          "code": "java -Xmx16g -jar theta.jar ...",
+          "when": "System has more RAM"
+        },
+        {
+          "approach": "Use EXPL domain",
+          "code": "theta-cfa --domain EXPL",
+          "when": "PRED uses too much memory"
+        },
+        {
+          "approach": "Enable lazy refinement",
+          "code": "--refinement-search DFS",
+          "when": "BFS expansion too broad"
+        }
+      ]
+    },
+    {
+      "id": "smt_timeout",
+      "pattern": "SMT timeout|solver did not respond",
+      "message": "SMT solver timed out",
+      "cause": "Solver query too complex",
+      "solutions": [
+        {
+          "approach": "Increase solver timeout",
+          "code": "--solver-timeout 120",
+          "when": "Queries nearly completing"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "--solver cvc5",
+          "when": "Z3 struggling"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "// Reduce bitvector widths or array sizes",
+          "when": "Queries too complex"
+        }
+      ]
+    },
+    {
+      "id": "refinement_failed",
+      "pattern": "refinement failed|cannot eliminate counterexample",
+      "message": "CEGAR refinement failed",
+      "cause": "Could not find predicates to eliminate spurious CEX",
+      "solutions": [
+        {
+          "approach": "Try different algorithm",
+          "code": "--refinement BW_BIN_ITP",
+          "when": "Forward interpolation failed"
+        },
+        {
+          "approach": "Use explicit domain",
+          "code": "--domain EXPL",
+          "when": "Predicate domain unsuitable"
+        },
+        {
+          "approach": "Add manual predicates",
+          "code": "--init-prec FILE with initial predicates",
+          "when": "Know important predicates"
+        }
+      ]
+    },
+    {
+      "id": "xcfa_error",
+      "pattern": "XCFA.*error|extended CFA.*invalid",
+      "message": "Extended CFA processing error",
+      "cause": "XCFA features not supported or malformed",
+      "solutions": [
+        {
+          "approach": "Check XCFA features",
+          "code": "// Verify procedure calls, arrays handled correctly",
+          "when": "Advanced XCFA features"
+        },
+        {
+          "approach": "Use basic CFA",
+          "code": "// Convert to plain CFA if XCFA not needed",
+          "when": "Simple program"
+        },
+        {
+          "approach": "Update Theta",
+          "code": "# Get latest Theta version for XCFA support",
+          "when": "Using old version"
+        }
+      ]
+    }
+  ]
+}

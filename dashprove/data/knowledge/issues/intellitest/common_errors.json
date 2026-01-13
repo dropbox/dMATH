@@ -1,0 +1,169 @@
+{
+  "tool": "intellitest",
+  "version": "17.0",
+  "last_updated": "2025-12-23",
+  "description": "Microsoft IntelliTest (Pex) for automated unit test generation in Visual Studio",
+  "errors": [
+    {
+      "id": "exploration_bounds_exceeded",
+      "pattern": "exploration bounds|MaxBranches.*exceeded|MaxConstraintSolverTime",
+      "message": "IntelliTest exploration limits exceeded",
+      "cause": "Code has too many paths or complex constraints",
+      "solutions": [
+        {
+          "approach": "Increase exploration limits",
+          "code": "[PexMethod(MaxBranches = 40000)]\npublic void TestMethod(int x)\n{\n    // ...\n}\n\n// Or in PexAssemblyInfo.cs:\n[assembly: PexExplorationBounds(\n    MaxBranches = 40000,\n    MaxConstraintSolverTime = 5)]",
+          "when": "Hit default limits"
+        },
+        {
+          "approach": "Add PexAssume constraints",
+          "code": "[PexMethod]\npublic void TestMethod(string input)\n{\n    PexAssume.IsNotNullOrEmpty(input);\n    PexAssume.IsTrue(input.Length < 100);\n    // Reduces search space\n}",
+          "when": "Too much input space"
+        },
+        {
+          "approach": "Use PexClass attributes",
+          "code": "[PexClass(MaxBranches = 40000, MaxConstraintSolverTime = 5)]\n[TestClass]\npublic partial class MyTests\n{\n    // All PexMethods inherit these limits\n}",
+          "when": "Multiple methods need limits"
+        }
+      ]
+    },
+    {
+      "id": "uninstrumented_code",
+      "pattern": "uninstrumented|cannot explore|external code",
+      "message": "IntelliTest cannot explore uninstrumented code",
+      "cause": "External libraries or system code not instrumented",
+      "solutions": [
+        {
+          "approach": "Instrument additional assemblies",
+          "code": "// In PexAssemblyInfo.cs:\n[assembly: PexInstrumentAssembly(\"MyLibrary\")]\n[assembly: PexInstrumentAssembly(\"OtherDependency\")]",
+          "when": "Own libraries not instrumented"
+        },
+        {
+          "approach": "Use stubs for external code",
+          "code": "[PexMethod]\npublic void TestMethod([PexAssumeUnderTest] MyClass target)\n{\n    // Create stub/mock for external dependency\n    var fileSystem = new StubIFileSystem\n    {\n        ReadAllTextString = path => \"mock content\"\n    };\n    target.FileSystem = fileSystem;\n}",
+          "when": "External dependency"
+        },
+        {
+          "approach": "Use PexChoose for behaviors",
+          "code": "// Model external behavior with PexChoose\npublic string GetExternalData()\n{\n    // IntelliTest will explore both outcomes\n    if (PexChoose.Value<bool>(\"externalSuccess\"))\n        return PexChoose.Value<string>(\"data\");\n    else\n        throw new ExternalException();\n}",
+          "when": "Can't stub easily"
+        }
+      ]
+    },
+    {
+      "id": "constraint_solver_timeout",
+      "pattern": "Z3.*timeout|constraint solver.*failed|solver.*gave up",
+      "message": "Z3 constraint solver timed out",
+      "cause": "Constraints too complex for solver",
+      "solutions": [
+        {
+          "approach": "Simplify code under test",
+          "code": "// Avoid complex arithmetic in conditions\n// Instead of:\nif (x * x + y * y < z * z)  // Nonlinear\n\n// Use:\nif (IsValidTriangle(x, y, z))  // Extract to method",
+          "when": "Nonlinear constraints"
+        },
+        {
+          "approach": "Increase solver time",
+          "code": "[PexMethod(MaxConstraintSolverTime = 10)]\npublic void TestComplexMethod(int[] data)\n{\n    // More time for solver\n}",
+          "when": "Solver needs more time"
+        },
+        {
+          "approach": "Use factories",
+          "code": "// Factory creates valid instances directly\n[PexFactoryMethod(typeof(ComplexObject))]\npublic static ComplexObject Create(\n    [PexAssumeNotNull] string name,\n    int value)\n{\n    PexAssume.IsTrue(value > 0);\n    return new ComplexObject(name, value);\n}",
+          "when": "Object construction complex"
+        }
+      ]
+    },
+    {
+      "id": "test_generation_failed",
+      "pattern": "failed to generate|no tests generated|empty test suite",
+      "message": "IntelliTest generated no tests",
+      "cause": "Code unreachable or all paths filtered",
+      "solutions": [
+        {
+          "approach": "Check PUT method",
+          "code": "[PexMethod]\npublic void TestMethod(\n    [PexAssumeUnderTest] MyClass target,\n    int input)\n{\n    // Ensure code is reachable\n    target.Process(input);\n}",
+          "when": "Method signature wrong"
+        },
+        {
+          "approach": "Remove overly restrictive assumes",
+          "code": "// Too restrictive:\nPexAssume.IsTrue(x == 42);  // Only one value\n\n// Better:\nPexAssume.IsTrue(x >= 0 && x < 100);",
+          "when": "Assumes too strict"
+        },
+        {
+          "approach": "Check exploration results",
+          "code": "// View exploration results in IntelliTest window\n// Look for:\n// - Red: exceptions/failures\n// - Yellow: warnings/boundaries  \n// - Gray: filtered paths",
+          "when": "Understanding what happened"
+        }
+      ]
+    },
+    {
+      "id": "object_creation_failed",
+      "pattern": "cannot create|factory.*failed|no constructor",
+      "message": "IntelliTest cannot create object instance",
+      "cause": "Class has complex construction requirements",
+      "solutions": [
+        {
+          "approach": "Add PexFactoryMethod",
+          "code": "[PexFactoryMethod(typeof(Customer))]\npublic static Customer CreateCustomer(\n    string name,\n    int age)\n{\n    PexAssume.IsNotNull(name);\n    PexAssume.IsTrue(age >= 0);\n    return new Customer(name, age);\n}",
+          "when": "No public constructor"
+        },
+        {
+          "approach": "Use PexAssumeUnderTest",
+          "code": "[PexMethod]\npublic void TestMethod(\n    [PexAssumeUnderTest] MyClass target)\n{\n    // IntelliTest creates via factory or constructor\n    // Ensures object is in valid state\n}",
+          "when": "Need valid instance"
+        },
+        {
+          "approach": "Handle abstract classes",
+          "code": "// Create concrete implementation for abstract\n[PexFactoryMethod(typeof(AbstractBase))]\npublic static AbstractBase Create()\n{\n    return new ConcreteImplementation();\n}",
+          "when": "Abstract type parameter"
+        }
+      ]
+    },
+    {
+      "id": "flaky_test_generated",
+      "pattern": "flaky|non.?deterministic|inconsistent.*result",
+      "message": "Generated test is flaky/non-deterministic",
+      "cause": "Code depends on non-deterministic factors",
+      "solutions": [
+        {
+          "approach": "Mock time dependencies",
+          "code": "// Inject clock dependency\npublic interface IClock\n{\n    DateTime Now { get; }\n}\n\n[PexMethod]\npublic void TestWithTime([PexAssumeUnderTest] MyClass target)\n{\n    var clock = new FakeClock(new DateTime(2024, 1, 1));\n    target.Clock = clock;\n}",
+          "when": "Uses DateTime.Now"
+        },
+        {
+          "approach": "Handle random values",
+          "code": "// Inject random source\npublic interface IRandom\n{\n    int Next(int max);\n}\n\n// In test:\nvar random = new FakeRandom(42);  // Deterministic seed",
+          "when": "Uses Random"
+        },
+        {
+          "approach": "Mock file system",
+          "code": "// Use System.IO.Abstractions\npublic void TestFileOps(\n    [PexAssumeUnderTest] MyClass target,\n    IFileSystem fs)\n{\n    target.FileSystem = new MockFileSystem();\n}",
+          "when": "Depends on file system"
+        }
+      ]
+    },
+    {
+      "id": "debugging_generated_test",
+      "pattern": "debug.*generated|understand.*test",
+      "message": "Need to understand why test was generated",
+      "cause": "Unclear why IntelliTest chose specific values",
+      "solutions": [
+        {
+          "approach": "View path conditions",
+          "code": "// In IntelliTest Exploration Results:\n// 1. Click on generated test\n// 2. View \"Details\" tab\n// 3. Shows path conditions that led to values\n// 4. Shows code coverage achieved",
+          "when": "Understanding test purpose"
+        },
+        {
+          "approach": "Add trace messages",
+          "code": "[PexMethod]\npublic void TestMethod(int x)\n{\n    PexObserve.ValueForViewing(\"input\", x);\n    var result = Process(x);\n    PexObserve.ValueForViewing(\"output\", result);\n}",
+          "when": "Need to trace values"
+        },
+        {
+          "approach": "Use PexGoal",
+          "code": "[PexMethod]\npublic void TestMethod(int x)\n{\n    // Mark goals for exploration\n    if (x > 100)\n    {\n        PexGoal.Reached();  // Try to reach this\n    }\n}",
+          "when": "Want to reach specific code"
+        }
+      ]
+    }
+  ]
+}

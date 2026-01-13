@@ -1,0 +1,172 @@
+{
+  "tool": "marabou",
+  "version": "2.0.0",
+  "last_updated": "2025-12-22",
+  "description": "Neural network verification tool for SMT-based property checking",
+  "errors": [
+    {
+      "id": "network_load_error",
+      "pattern": "Failed to load network|ONNX.*error|network file.*not found",
+      "message": "Failed to load neural network",
+      "cause": "Network file format or path issue",
+      "solutions": [
+        {
+          "approach": "Check ONNX format",
+          "code": "# Marabou supports ONNX format\n# Convert from other formats:\nimport torch.onnx\ntorch.onnx.export(model, dummy_input, 'model.onnx')",
+          "when": "Need to convert model"
+        },
+        {
+          "approach": "Check supported layers",
+          "code": "# Supported: Linear, ReLU, MaxPool, Conv, Flatten\n# Unsupported: BatchNorm (must fold), Softmax (in some cases)",
+          "when": "Unsupported layer type"
+        },
+        {
+          "approach": "Use NNet format",
+          "code": "# For fully-connected ReLU networks:\n# NNet format (text-based) also supported",
+          "when": "Alternative format"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout|time limit exceeded|verification timed out",
+      "message": "Verification timed out",
+      "cause": "Problem too large or difficult",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "from maraboupy import Marabou\nnetwork = Marabou.read_onnx('model.onnx')\nvals, stats = network.solve(options={'timeoutInSeconds': 3600})",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Simplify property",
+          "code": "# Break into smaller subproblems\n# Verify input regions separately",
+          "when": "Property too complex"
+        },
+        {
+          "approach": "Use DnC (divide and conquer)",
+          "code": "options = Marabou.createOptions(dnc=True, numWorkers=4)",
+          "when": "Parallelize verification"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "Out of memory|memory allocation failed|MemoryError",
+      "message": "Out of memory",
+      "cause": "Network or problem too large",
+      "solutions": [
+        {
+          "approach": "Reduce precision",
+          "code": "# Use lower precision floats if possible",
+          "when": "High memory usage"
+        },
+        {
+          "approach": "Use split-and-conquer",
+          "code": "options = {'snc': True, 'numWorkers': 1}  # Sequential split",
+          "when": "Avoid parallelism overhead"
+        },
+        {
+          "approach": "Verify smaller network",
+          "code": "# Verify abstracted/pruned network first",
+          "when": "Network too large"
+        }
+      ]
+    },
+    {
+      "id": "input_query_error",
+      "pattern": "Invalid input.*bounds|query.*error|constraint.*invalid",
+      "message": "Invalid input query or bounds",
+      "cause": "Input bounds or property specification wrong",
+      "solutions": [
+        {
+          "approach": "Set input bounds",
+          "code": "network.setLowerBound(inputVar, 0.0)\nnetwork.setUpperBound(inputVar, 1.0)",
+          "when": "Define input region"
+        },
+        {
+          "approach": "Add output constraint",
+          "code": "# For adversarial robustness:\n# Output class 0 should be greater than class 1\nfrom maraboupy import MarabouCore\neq = MarabouCore.Equation()\neq.addAddend(1, outputVars[0])\neq.addAddend(-1, outputVars[1])\neq.setScalar(0)\nnetwork.addEquation(eq, isProperty=True)",
+          "when": "Specify property"
+        },
+        {
+          "approach": "Check variable indices",
+          "code": "inputVars = network.inputVars[0][0]  # First input layer\noutputVars = network.outputVars[0][0]  # First output",
+          "when": "Wrong variable indices"
+        }
+      ]
+    },
+    {
+      "id": "sat_unsat_result",
+      "pattern": "Result: sat|Result: unsat|counterexample found",
+      "message": "Understanding SAT/UNSAT results",
+      "cause": "Interpreting verification results",
+      "solutions": [
+        {
+          "approach": "Interpret SAT result",
+          "code": "# SAT = counterexample found = property VIOLATED\nvals, stats = network.solve()\nif vals:  # vals is not empty\n    print('Counterexample:', vals)\n    # vals contains input that violates property",
+          "when": "SAT result"
+        },
+        {
+          "approach": "Interpret UNSAT result",
+          "code": "# UNSAT = no counterexample = property HOLDS\nif vals is None or len(vals) == 0:\n    print('Property verified!')",
+          "when": "UNSAT result"
+        }
+      ]
+    },
+    {
+      "id": "relu_encoding_error",
+      "pattern": "ReLU.*error|piecewise.*encoding|nonlinear.*constraint",
+      "message": "ReLU encoding error",
+      "cause": "Issue with ReLU constraint encoding",
+      "solutions": [
+        {
+          "approach": "Check network activation",
+          "code": "# Ensure all activations are ReLU\n# Marabou encodes ReLU as: y = max(0, x)",
+          "when": "Activation function issue"
+        },
+        {
+          "approach": "Use abstract interpretation",
+          "code": "# DeepPoly/MILP can be faster for some properties",
+          "when": "ReLU case explosion"
+        }
+      ]
+    },
+    {
+      "id": "acas_xu_error",
+      "pattern": "ACAS.*error|property\\d+.*failed",
+      "message": "ACAS Xu benchmark error",
+      "cause": "Issue with standard ACAS Xu benchmarks",
+      "solutions": [
+        {
+          "approach": "Load ACAS Xu network",
+          "code": "from maraboupy import Marabou\nnetwork = Marabou.read_nnet('ACASXU_run2a_1_1_batch_2000.nnet')",
+          "when": "Loading ACAS Xu"
+        },
+        {
+          "approach": "Set ACAS Xu property",
+          "code": "# Property 1: If input is in certain region,\n# output (COC) should be maximal\n# See: reluplex.github.io/acas_xu for properties",
+          "when": "Standard properties"
+        }
+      ]
+    },
+    {
+      "id": "python_binding_error",
+      "pattern": "maraboupy.*import.*error|module.*not found",
+      "message": "Python binding error",
+      "cause": "Maraboupy not installed correctly",
+      "solutions": [
+        {
+          "approach": "Install from pip",
+          "code": "pip install maraboupy",
+          "when": "Standard installation"
+        },
+        {
+          "approach": "Build from source",
+          "code": "git clone https://github.com/NeuralNetworkVerification/Marabou.git\ncd Marabou\nmkdir build && cd build\ncmake .. -DBUILD_PYTHON=ON\ncmake --build .\nexport PYTHONPATH=$PYTHONPATH:$(pwd)",
+          "when": "Need latest version"
+        }
+      ]
+    }
+  ]
+}

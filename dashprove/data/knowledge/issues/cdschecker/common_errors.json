@@ -1,0 +1,176 @@
+{
+  "tool": "cdschecker",
+  "version": "latest",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "data_race",
+      "pattern": "Data race",
+      "message": "Data race detected",
+      "cause": "Concurrent access without synchronization",
+      "solutions": [
+        {
+          "approach": "Add atomics",
+          "code": "std::atomic<int> x;\nx.store(1, std::memory_order_release);",
+          "when": "Need atomic access"
+        },
+        {
+          "approach": "Add mutex",
+          "code": "std::mutex m;\nstd::lock_guard<std::mutex> lock(m);",
+          "when": "Need mutual exclusion"
+        },
+        {
+          "approach": "Use fence",
+          "code": "std::atomic_thread_fence(std::memory_order_seq_cst);",
+          "when": "Need memory barrier"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failure",
+      "pattern": "Assertion",
+      "message": "Assertion violation",
+      "cause": "Program assertion failed under some schedule",
+      "solutions": [
+        {
+          "approach": "Examine trace",
+          "code": "# Check execution trace for failing schedule",
+          "when": "Understanding which interleaving fails"
+        },
+        {
+          "approach": "Strengthen synchronization",
+          "code": "// Add synchronization before assertion",
+          "when": "Race to assertion"
+        },
+        {
+          "approach": "Fix logic",
+          "code": "// Assertion may be too strict",
+          "when": "Assertion incorrect"
+        }
+      ]
+    },
+    {
+      "id": "deadlock",
+      "pattern": "deadlock",
+      "message": "Deadlock detected",
+      "cause": "Threads blocked waiting for each other",
+      "solutions": [
+        {
+          "approach": "Fix lock ordering",
+          "code": "// Always acquire locks in same order",
+          "when": "Lock order inversion"
+        },
+        {
+          "approach": "Use try_lock",
+          "code": "if (m.try_lock()) { ... }",
+          "when": "Can handle lock failure"
+        },
+        {
+          "approach": "Use lock-free",
+          "code": "// Use lock-free data structure",
+          "when": "Can avoid locks"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_read",
+      "pattern": "uninitialized",
+      "message": "Read of uninitialized atomic",
+      "cause": "Atomic variable read before any write",
+      "solutions": [
+        {
+          "approach": "Initialize atomic",
+          "code": "std::atomic<int> x{0};  // Value initialization",
+          "when": "Missing initialization"
+        },
+        {
+          "approach": "Use ATOMIC_VAR_INIT",
+          "code": "std::atomic<int> x = ATOMIC_VAR_INIT(0);",
+          "when": "C-style initialization"
+        }
+      ]
+    },
+    {
+      "id": "memory_order_error",
+      "pattern": "memory order",
+      "message": "Invalid memory order combination",
+      "cause": "Wrong memory order for operation",
+      "solutions": [
+        {
+          "approach": "Check load orders",
+          "code": "x.load(std::memory_order_acquire);  // Not release",
+          "when": "Using release on load"
+        },
+        {
+          "approach": "Check store orders",
+          "code": "x.store(1, std::memory_order_release);  // Not acquire",
+          "when": "Using acquire on store"
+        },
+        {
+          "approach": "Use seq_cst",
+          "code": "x.load(std::memory_order_seq_cst);  // Always valid",
+          "when": "Unsure of correct order"
+        }
+      ]
+    },
+    {
+      "id": "state_explosion",
+      "pattern": "explored",
+      "message": "State space too large",
+      "cause": "Too many thread interleavings",
+      "solutions": [
+        {
+          "approach": "Reduce threads",
+          "code": "// Use fewer threads in test",
+          "when": "Many threads"
+        },
+        {
+          "approach": "Reduce iterations",
+          "code": "// Shorter loops",
+          "when": "Many loop iterations"
+        },
+        {
+          "approach": "Use partial order reduction",
+          "code": "# CDSChecker applies DPOR automatically",
+          "when": "Already using DPOR"
+        }
+      ]
+    },
+    {
+      "id": "model_api_error",
+      "pattern": "model API",
+      "message": "CDSChecker API error",
+      "cause": "Wrong usage of CDSChecker API",
+      "solutions": [
+        {
+          "approach": "Check thread creation",
+          "code": "thrd_t t;\nthrd_create(&t, func, arg);",
+          "when": "Thread API wrong"
+        },
+        {
+          "approach": "Include headers",
+          "code": "#include <threads.h>\n#include <stdatomic.h>",
+          "when": "Missing includes"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Exploration timed out",
+      "cause": "Could not explore all executions",
+      "solutions": [
+        {
+          "approach": "Simplify test",
+          "code": "// Reduce test complexity",
+          "when": "Test too complex"
+        },
+        {
+          "approach": "Bound exploration",
+          "code": "./run.sh -m 10000  # Limit executions",
+          "when": "Want partial coverage"
+        }
+      ]
+    }
+  ]
+}

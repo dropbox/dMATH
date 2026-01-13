@@ -1,0 +1,196 @@
+{
+  "tool": "cypress",
+  "version": "13.6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "element_not_found",
+      "pattern": "Timed out retrying|Expected to find element|never found",
+      "message": "Element not found within timeout",
+      "cause": "Element doesn't exist, wrong selector, or slow loading",
+      "solutions": [
+        {
+          "approach": "Use data-cy attribute",
+          "code": "cy.get('[data-cy=submit-btn]').click();",
+          "when": "Need stable selector"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "cy.get('.element', { timeout: 10000 }).should('be.visible');",
+          "when": "Element loads slowly"
+        },
+        {
+          "approach": "Use contains",
+          "code": "cy.contains('button', 'Submit').click();",
+          "when": "Select by text content"
+        },
+        {
+          "approach": "Use within",
+          "code": "cy.get('.container').within(() => {\n  cy.get('button').click();\n});",
+          "when": "Need scoped selection"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "AssertionError|expected .* to equal|expected .* but got",
+      "message": "Assertion expectation not met",
+      "cause": "Actual value differs from expected",
+      "solutions": [
+        {
+          "approach": "Use should with retry",
+          "code": "cy.get('.count').should('have.text', '5');",
+          "when": "Value may change"
+        },
+        {
+          "approach": "Debug with pause",
+          "code": "cy.get('.element').then(($el) => {\n  cy.pause();\n  expect($el).to.have.text('expected');\n});",
+          "when": "Need to inspect state"
+        },
+        {
+          "approach": "Check async updates",
+          "code": "cy.intercept('POST', '/api/*').as('save');\ncy.wait('@save');\ncy.get('.result').should('contain', 'Success');",
+          "when": "Need to wait for API"
+        }
+      ]
+    },
+    {
+      "id": "cross_origin",
+      "pattern": "cross-origin|Blocked a frame|different superDomain",
+      "message": "Cross-origin request blocked",
+      "cause": "Trying to interact with different origin",
+      "solutions": [
+        {
+          "approach": "Configure chromeWebSecurity",
+          "code": "// cypress.config.js\nchromeWebSecurity: false",
+          "when": "Need cross-origin access"
+        },
+        {
+          "approach": "Use cy.origin",
+          "code": "cy.origin('https://other-site.com', () => {\n  cy.get('button').click();\n});",
+          "when": "Multi-origin test"
+        },
+        {
+          "approach": "Mock external sites",
+          "code": "cy.intercept('https://external.com/*', { fixture: 'response.json' });",
+          "when": "Don't need real external"
+        }
+      ]
+    },
+    {
+      "id": "detached_dom",
+      "pattern": "detached from the DOM|element has been removed",
+      "message": "Element removed during test",
+      "cause": "DOM updated while Cypress was acting on element",
+      "solutions": [
+        {
+          "approach": "Re-query element",
+          "code": "cy.get('.list').should('be.visible');\ncy.get('.list').find('.item').first().click();",
+          "when": "DOM updates between commands"
+        },
+        {
+          "approach": "Use aliases",
+          "code": "cy.get('.element').as('myEl');\ncy.get('@myEl').should('be.visible');\ncy.get('@myEl').click();",
+          "when": "Need to reuse selector"
+        },
+        {
+          "approach": "Wait for stability",
+          "code": "cy.get('.loading').should('not.exist');\ncy.get('.content').click();",
+          "when": "Page is still updating"
+        }
+      ]
+    },
+    {
+      "id": "cy_request_failed",
+      "pattern": "cy.request failed|status code: [45]\\d\\d",
+      "message": "HTTP request failed",
+      "cause": "API returned error status",
+      "solutions": [
+        {
+          "approach": "Allow failures",
+          "code": "cy.request({ url: '/api/test', failOnStatusCode: false });",
+          "when": "Testing error handling"
+        },
+        {
+          "approach": "Check server",
+          "code": "// Verify server is running and endpoint exists",
+          "when": "Server-side issue"
+        },
+        {
+          "approach": "Add authentication",
+          "code": "cy.request({\n  url: '/api/data',\n  headers: { Authorization: `Bearer ${token}` }\n});",
+          "when": "Need auth token"
+        }
+      ]
+    },
+    {
+      "id": "uncaught_exception",
+      "pattern": "uncaught exception|Uncaught Error",
+      "message": "Application threw unhandled error",
+      "cause": "JavaScript error in application code",
+      "solutions": [
+        {
+          "approach": "Handle in test",
+          "code": "Cypress.on('uncaught:exception', (err) => {\n  if (err.message.includes('ResizeObserver')) {\n    return false;  // Ignore this error\n  }\n});",
+          "when": "Known benign error"
+        },
+        {
+          "approach": "Fix application",
+          "code": "// The app has a bug - fix it",
+          "when": "Legitimate error"
+        },
+        {
+          "approach": "Test-specific handling",
+          "code": "cy.on('uncaught:exception', () => false);",
+          "when": "One test expects error"
+        }
+      ]
+    },
+    {
+      "id": "stub_intercept_fail",
+      "pattern": "cy.intercept|No request ever occurred",
+      "message": "Network interception issue",
+      "cause": "Request didn't match intercept pattern",
+      "solutions": [
+        {
+          "approach": "Check pattern",
+          "code": "cy.intercept('GET', '**/api/users*').as('getUsers');",
+          "when": "Pattern too specific"
+        },
+        {
+          "approach": "Use regex",
+          "code": "cy.intercept(/\\/api\\/users\\/\\d+/).as('getUser');",
+          "when": "Dynamic URL pattern"
+        },
+        {
+          "approach": "Debug requests",
+          "code": "cy.intercept('**/*', (req) => {\n  console.log(req.url);\n});",
+          "when": "Need to see all requests"
+        }
+      ]
+    },
+    {
+      "id": "viewport_issue",
+      "pattern": "not visible|outside the viewport|covered",
+      "message": "Element not in viewport",
+      "cause": "Element off-screen or hidden by other element",
+      "solutions": [
+        {
+          "approach": "Scroll into view",
+          "code": "cy.get('button').scrollIntoView().click();",
+          "when": "Element below fold"
+        },
+        {
+          "approach": "Set viewport",
+          "code": "cy.viewport(1280, 720);",
+          "when": "Need specific viewport"
+        },
+        {
+          "approach": "Force click",
+          "code": "cy.get('button').click({ force: true });",
+          "when": "Element covered but clickable"
+        }
+      ]
+    }
+  ]
+}

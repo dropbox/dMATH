@@ -1,0 +1,76 @@
+{
+  "tool": "cert_manager",
+  "category": "cloud_native",
+  "common_errors": [
+    {
+      "pattern": "Issuer.*not found|ClusterIssuer.*not ready",
+      "meaning": "Certificate issuer not available",
+      "causes": ["Issuer not created", "Wrong issuer name", "Issuer not ready"],
+      "solutions": ["Create Issuer/ClusterIssuer first", "Check: kubectl get issuers,clusterissuers", "Review issuer status conditions"]
+    },
+    {
+      "pattern": "ACME.*challenge failed|HTTP01.*failed",
+      "meaning": "ACME HTTP-01 challenge failed",
+      "causes": ["Ingress not routing to solver", "Firewall blocking port 80", "Wrong domain"],
+      "solutions": ["Ensure /.well-known/acme-challenge reachable", "Check ingress controller logs", "Verify DNS points to cluster"]
+    },
+    {
+      "pattern": "DNS01.*failed|TXT record.*not found",
+      "meaning": "ACME DNS-01 challenge failed",
+      "causes": ["DNS provider credentials wrong", "DNS propagation slow", "Wrong zone"],
+      "solutions": ["Verify DNS provider secret", "Wait for DNS propagation", "Check zone permissions"]
+    },
+    {
+      "pattern": "rate limit.*exceeded|too many certificates",
+      "meaning": "Let's Encrypt rate limit hit",
+      "causes": ["Too many certs for domain", "Too many failed validations", "Duplicate certificate requests"],
+      "solutions": ["Use staging environment first", "Wait for rate limit reset", "Reuse certificates across environments"]
+    },
+    {
+      "pattern": "private key.*not found|secret.*missing",
+      "meaning": "TLS secret not created",
+      "causes": ["Certificate not ready", "Secret name mismatch", "Wrong namespace"],
+      "solutions": ["Wait for Certificate to be Ready", "Check secretName in Certificate spec", "Verify namespace matches"]
+    },
+    {
+      "pattern": "Certificate.*False.*Issuing",
+      "meaning": "Certificate stuck issuing",
+      "causes": ["Challenge failing", "Order pending", "Issuer misconfigured"],
+      "solutions": ["Check: kubectl describe certificate", "Review CertificateRequest and Order", "Check Challenge resources"]
+    },
+    {
+      "pattern": "self-signed|CA.*not found",
+      "meaning": "CA issuer configuration issue",
+      "causes": ["CA secret missing", "Wrong secret key names", "CA cert invalid"],
+      "solutions": ["Create CA secret with tls.crt and tls.key", "Verify CA certificate is valid", "Check secret namespace"]
+    },
+    {
+      "pattern": "webhook.*failed|conversion webhook.*error",
+      "meaning": "cert-manager webhook error",
+      "causes": ["Webhook not running", "Certificate for webhook expired", "Network policy blocking"],
+      "solutions": ["Check cert-manager-webhook pod", "Reinstall cert-manager", "Review webhook service connectivity"]
+    },
+    {
+      "pattern": "renewal.*failed|certificate expired",
+      "meaning": "Certificate renewal failed",
+      "causes": ["Issuer configuration changed", "Challenge no longer works", "Account deactivated"],
+      "solutions": ["Check issuer still valid", "Verify challenges can succeed", "Review ACME account status"]
+    },
+    {
+      "pattern": "unsupported.*version|CRD.*not found",
+      "meaning": "cert-manager version mismatch",
+      "causes": ["CRDs not installed", "Wrong API version", "Upgrade needed"],
+      "solutions": ["Install CRDs: kubectl apply -f crds.yaml", "Check API version matches installed version", "Upgrade cert-manager"]
+    }
+  ],
+  "debugging_commands": [
+    "kubectl get certificates,certificaterequests,orders,challenges -A",
+    "kubectl describe certificate <name>",
+    "cmctl status certificate <name>",
+    "cmctl check api"
+  ],
+  "documentation_urls": [
+    "https://cert-manager.io/docs/",
+    "https://github.com/cert-manager/cert-manager"
+  ]
+}

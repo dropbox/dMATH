@@ -1,0 +1,120 @@
+{
+  "tool": "brotli",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "ERR_BROTLI_INVALID_PARAM|invalid parameter",
+      "meaning": "Invalid Brotli configuration option",
+      "causes": [
+        "Quality level out of range (0-11)",
+        "Invalid window size",
+        "Incompatible option combination"
+      ],
+      "solutions": [
+        "Quality: 0-11 (default 11, use 4-6 for speed/size balance)",
+        "Window: lgwin 10-24 (24 is max, default is 22)",
+        "Mode: 0=generic, 1=text, 2=font"
+      ]
+    },
+    {
+      "pattern": "BROTLI_DECODER_ERROR|decoder error|corrupt input",
+      "meaning": "Data is not valid Brotli format",
+      "causes": [
+        "Data is gzip/deflate, not Brotli",
+        "Data corrupted or truncated",
+        "Wrong Content-Encoding handling"
+      ],
+      "solutions": [
+        "Check for Brotli magic (no standard header, context-dependent)",
+        "Verify server sent Content-Encoding: br",
+        "Ensure complete data stream received"
+      ]
+    },
+    {
+      "pattern": "Cannot decompress.*Brotli.*not available",
+      "meaning": "Brotli support not compiled in",
+      "causes": [
+        "Node.js version < 11.7.0",
+        "Node.js built without Brotli support",
+        "Missing native module on older Node"
+      ],
+      "solutions": [
+        "Upgrade to Node.js >= 11.7.0 (native zlib.brotli*)",
+        "Install brotli npm package for older Node",
+        "Use iltorb package for pre-compiled binaries"
+      ]
+    },
+    {
+      "pattern": "Output buffer overflow|output too large",
+      "meaning": "Decompressed size exceeds limit",
+      "causes": [
+        "Brotli bomb (malicious high compression)",
+        "Buffer size underestimated",
+        "Compression ratio unusually high"
+      ],
+      "solutions": [
+        "Implement max decompressed size check",
+        "Use streaming API: zlib.createBrotliDecompress()",
+        "Monitor output size during decompression"
+      ]
+    },
+    {
+      "pattern": "BROTLI_DECODER_NEEDS_MORE_INPUT|incomplete",
+      "meaning": "Compressed data stream incomplete",
+      "causes": [
+        "Network transfer interrupted",
+        "File read incomplete",
+        "Streaming data not fully received"
+      ],
+      "solutions": [
+        "Ensure all data received before final decode",
+        "Handle stream 'end' event properly",
+        "Buffer complete data for non-streaming decode"
+      ]
+    },
+    {
+      "pattern": "brotliCompressSync.*slow|performance",
+      "meaning": "Brotli compression slow at high quality",
+      "causes": [
+        "Quality 11 (max) is very slow",
+        "Large input with high quality",
+        "Blocking event loop with sync API"
+      ],
+      "solutions": [
+        "Use quality 4-6 for real-time compression",
+        "Use async API: zlib.brotliCompress()",
+        "Pre-compress static assets at build time",
+        "Quality 11 only for offline/build-time compression"
+      ]
+    },
+    {
+      "pattern": "ERR_BROTLI_COMPRESSION_FAILED",
+      "meaning": "Compression operation failed",
+      "causes": [
+        "Memory allocation failure",
+        "Invalid input data",
+        "Internal encoder error"
+      ],
+      "solutions": [
+        "Check available memory",
+        "Reduce quality or window size",
+        "Split large data into chunks"
+      ]
+    },
+    {
+      "pattern": "Content-Encoding.*br.*not recognized|unsupported",
+      "meaning": "HTTP client/server doesn't support Brotli",
+      "causes": [
+        "Browser doesn't support Brotli (old versions)",
+        "CDN/proxy stripping br encoding",
+        "Server not advertising Brotli support"
+      ],
+      "solutions": [
+        "Check Accept-Encoding header includes br",
+        "Brotli requires HTTPS in browsers",
+        "Fall back to gzip for non-br clients",
+        "Configure CDN to pass through br encoding"
+      ]
+    }
+  ]
+}

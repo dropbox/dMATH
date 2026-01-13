@@ -1,0 +1,191 @@
+{
+  "tool": "changesets",
+  "version": "2.27.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_changeset",
+      "pattern": "No changesets|This PR does not have a changeset|Some packages have been changed but no changesets",
+      "message": "Missing changeset file",
+      "cause": "PR has code changes but no changeset",
+      "solutions": [
+        {
+          "approach": "Add changeset",
+          "code": "npx changeset add",
+          "when": "Interactive add"
+        },
+        {
+          "approach": "Empty changeset",
+          "code": "npx changeset --empty",
+          "when": "No version bump needed"
+        },
+        {
+          "approach": "Manual changeset",
+          "code": "# .changeset/my-change.md\n---\n\"@myorg/package\": patch\n---\n\nFix button styling",
+          "when": "Create manually"
+        }
+      ]
+    },
+    {
+      "id": "invalid_changeset",
+      "pattern": "Invalid changeset|Could not parse|YAML error",
+      "message": "Changeset file format invalid",
+      "cause": "Changeset frontmatter or content malformed",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "---\n\"package-name\": minor\n---\n\nDescription of change",
+          "when": "Basic format"
+        },
+        {
+          "approach": "Multiple packages",
+          "code": "---\n\"@myorg/core\": minor\n\"@myorg/utils\": patch\n---\n\nAdd new feature with utility updates",
+          "when": "Multiple packages"
+        },
+        {
+          "approach": "Valid bump types",
+          "code": "# Valid: major, minor, patch\n---\n\"my-package\": major\n---",
+          "when": "Wrong bump type"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "Could not find changesets config|config error",
+      "message": "Configuration error",
+      "cause": "Missing or invalid .changeset/config.json",
+      "solutions": [
+        {
+          "approach": "Initialize changesets",
+          "code": "npx changeset init",
+          "when": "Not initialized"
+        },
+        {
+          "approach": "Valid config",
+          "code": "// .changeset/config.json\n{\n  \"$schema\": \"https://unpkg.com/@changesets/config@3.0.0/schema.json\",\n  \"changelog\": \"@changesets/cli/changelog\",\n  \"commit\": false,\n  \"fixed\": [],\n  \"linked\": [],\n  \"access\": \"restricted\",\n  \"baseBranch\": \"main\",\n  \"updateInternalDependencies\": \"patch\",\n  \"ignore\": []\n}",
+          "when": "Create config"
+        },
+        {
+          "approach": "Public packages",
+          "code": "{\n  \"access\": \"public\",\n  \"baseBranch\": \"main\"\n}",
+          "when": "Public npm"
+        }
+      ]
+    },
+    {
+      "id": "version_error",
+      "pattern": "version command|failed to version|Cannot apply changesets",
+      "message": "Version command failed",
+      "cause": "Error applying changesets to package versions",
+      "solutions": [
+        {
+          "approach": "Run version",
+          "code": "npx changeset version",
+          "when": "Apply changesets"
+        },
+        {
+          "approach": "Fix package.json",
+          "code": "# Ensure valid package.json in each package",
+          "when": "Invalid package.json"
+        },
+        {
+          "approach": "Check workspaces",
+          "code": "// package.json root\n{\n  \"workspaces\": [\"packages/*\"]\n}",
+          "when": "Monorepo setup"
+        }
+      ]
+    },
+    {
+      "id": "publish_error",
+      "pattern": "publish command|npm publish|failed to publish",
+      "message": "Publish command failed",
+      "cause": "Error publishing packages to registry",
+      "solutions": [
+        {
+          "approach": "Run publish",
+          "code": "npx changeset publish",
+          "when": "Publish packages"
+        },
+        {
+          "approach": "Set npm auth",
+          "code": "npm login\n# Or set NPM_TOKEN in CI",
+          "when": "Auth error"
+        },
+        {
+          "approach": "Skip publish",
+          "code": "{\n  \"privatePackages\": { \"version\": true, \"tag\": false }\n}",
+          "when": "Private packages"
+        }
+      ]
+    },
+    {
+      "id": "linked_packages_error",
+      "pattern": "linked|linked packages|version mismatch",
+      "message": "Linked packages version error",
+      "cause": "Linked packages have version mismatch",
+      "solutions": [
+        {
+          "approach": "Configure linked",
+          "code": "// .changeset/config.json\n{\n  \"linked\": [[\"@myorg/core\", \"@myorg/utils\"]]\n}",
+          "when": "Link package versions"
+        },
+        {
+          "approach": "Fixed versions",
+          "code": "{\n  \"fixed\": [[\"@myorg/core\", \"@myorg/utils\"]]\n}",
+          "when": "Same version always"
+        },
+        {
+          "approach": "Sync versions",
+          "code": "npx changeset version\n# Will sync linked package versions",
+          "when": "Out of sync"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_error",
+      "pattern": "snapshot|prerelease|pre mode",
+      "message": "Snapshot/prerelease error",
+      "cause": "Error with prerelease versioning",
+      "solutions": [
+        {
+          "approach": "Enter pre mode",
+          "code": "npx changeset pre enter beta",
+          "when": "Start prereleases"
+        },
+        {
+          "approach": "Exit pre mode",
+          "code": "npx changeset pre exit",
+          "when": "End prereleases"
+        },
+        {
+          "approach": "Snapshot release",
+          "code": "npx changeset version --snapshot canary\nnpx changeset publish --tag canary",
+          "when": "PR preview"
+        }
+      ]
+    },
+    {
+      "id": "git_error",
+      "pattern": "git|uncommitted changes|dirty working directory",
+      "message": "Git state error",
+      "cause": "Uncommitted changes or git issues",
+      "solutions": [
+        {
+          "approach": "Commit changes",
+          "code": "git add .\ngit commit -m \"chore: version packages\"",
+          "when": "After version"
+        },
+        {
+          "approach": "Configure commit",
+          "code": "// .changeset/config.json\n{\n  \"commit\": true\n}",
+          "when": "Auto-commit"
+        },
+        {
+          "approach": "GitHub Action",
+          "code": "# .github/workflows/release.yml\n- name: Create Release PR\n  uses: changesets/action@v1\n  with:\n    publish: npm run release\n  env:\n    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n    NPM_TOKEN: ${{ secrets.NPM_TOKEN }}",
+          "when": "CI automation"
+        }
+      ]
+    }
+  ]
+}

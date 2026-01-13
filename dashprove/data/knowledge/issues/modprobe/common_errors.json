@@ -1,0 +1,148 @@
+{
+  "tool": "modprobe",
+  "version": "kmod",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted|superuser",
+      "message": "Need root privileges",
+      "cause": "Kernel module operations require root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo modprobe modulename",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "Module .* not found|FATAL: Module .* not found|not found in directory",
+      "message": "Module not found",
+      "cause": "Module doesn't exist or wrong name",
+      "solutions": [
+        {
+          "approach": "Search for module",
+          "code": "find /lib/modules/$(uname -r) -name '*.ko*' | grep modulename\nmodprobe -D modulename  # Show dependencies",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Update module index",
+          "code": "sudo depmod -a",
+          "when": "After installing modules"
+        },
+        {
+          "approach": "Check kernel version",
+          "code": "uname -r\nls /lib/modules/\n# Modules must match kernel",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "invalid_module_format",
+      "pattern": "invalid module format|Exec format error|Invalid module format",
+      "message": "Module format error",
+      "cause": "Module built for different kernel",
+      "solutions": [
+        {
+          "approach": "Rebuild module",
+          "code": "# Module must be compiled for current kernel\nuname -r\n# Rebuild with: make -C /lib/modules/$(uname -r)/build M=$(pwd)",
+          "when": "Kernel version mismatch"
+        },
+        {
+          "approach": "Install matching module",
+          "code": "sudo apt install linux-modules-$(uname -r)\nsudo apt install --reinstall linux-modules-extra-$(uname -r)",
+          "when": "Package install"
+        }
+      ]
+    },
+    {
+      "id": "module_in_use",
+      "pattern": "Module .* is in use|rmmod: ERROR: Module .* is in use",
+      "message": "Module in use",
+      "cause": "Module has dependencies or active users",
+      "solutions": [
+        {
+          "approach": "Check usage",
+          "code": "lsmod | grep modulename\n# Used by column shows dependencies",
+          "when": "See what's using it"
+        },
+        {
+          "approach": "Remove dependencies first",
+          "code": "sudo modprobe -r dependent_module\nsudo modprobe -r modulename",
+          "when": "Unload deps first"
+        },
+        {
+          "approach": "Force (dangerous)",
+          "code": "sudo rmmod -f modulename  # May crash system",
+          "when": "Last resort"
+        }
+      ]
+    },
+    {
+      "id": "unknown_symbol",
+      "pattern": "Unknown symbol|symbol.*undefined",
+      "message": "Missing dependency",
+      "cause": "Module requires another module not loaded",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "modinfo modulename | grep depends\nmodprobe -D modulename",
+          "when": "See dependencies"
+        },
+        {
+          "approach": "Load all deps",
+          "code": "# modprobe auto-loads dependencies\n# If manual loading needed:\nsudo modprobe dep1 && sudo modprobe dep2 && sudo modprobe modulename",
+          "when": "Manual loading"
+        }
+      ]
+    },
+    {
+      "id": "blacklisted",
+      "pattern": "blacklisted|blacklist|Module.*ignored",
+      "message": "Module blacklisted",
+      "cause": "Module blocked in blacklist config",
+      "solutions": [
+        {
+          "approach": "Check blacklist",
+          "code": "grep modulename /etc/modprobe.d/*.conf",
+          "when": "Find blacklist entry"
+        },
+        {
+          "approach": "Remove from blacklist",
+          "code": "# Edit /etc/modprobe.d/blacklist.conf\n# Remove or comment out: blacklist modulename",
+          "when": "Allow module"
+        },
+        {
+          "approach": "Force load",
+          "code": "sudo modprobe modulename --force",
+          "when": "Override blacklist"
+        }
+      ]
+    },
+    {
+      "id": "secure_boot",
+      "pattern": "required key not available|module verification failed|signature",
+      "message": "Secure boot blocking",
+      "cause": "Module not signed for Secure Boot",
+      "solutions": [
+        {
+          "approach": "Sign module",
+          "code": "# Sign with MOK key:\nsudo /usr/src/linux-headers-$(uname -r)/scripts/sign-file sha256 ./MOK.priv ./MOK.der module.ko",
+          "when": "Sign module"
+        },
+        {
+          "approach": "Disable Secure Boot",
+          "code": "# In BIOS/UEFI settings\n# Or: sudo mokutil --disable-validation",
+          "when": "Disable verification"
+        },
+        {
+          "approach": "Use DKMS",
+          "code": "# DKMS can auto-sign if MOK is enrolled\nsudo dkms install modulename/version",
+          "when": "DKMS signing"
+        }
+      ]
+    }
+  ]
+}

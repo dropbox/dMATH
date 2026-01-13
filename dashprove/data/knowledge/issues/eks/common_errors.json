@@ -1,0 +1,99 @@
+{
+  "tool": "eks",
+  "category": "aws_kubernetes",
+  "description": "Amazon Elastic Kubernetes Service - managed Kubernetes service",
+  "common_errors": [
+    {
+      "id": "cluster_unreachable",
+      "pattern": "Unable to connect to the server",
+      "regex": "(?i)unable to connect|connection refused|dial.*timeout|couldn't connect",
+      "cause": "EKS cluster API endpoint unreachable",
+      "solution": "Check VPC/subnet configuration, verify endpoint access settings (public/private), update kubeconfig with 'aws eks update-kubeconfig'",
+      "severity": "high",
+      "category": "connectivity"
+    },
+    {
+      "id": "auth_error",
+      "pattern": "Unauthorized",
+      "regex": "(?i)unauthorized|could not get token|error getting credentials|no valid credential",
+      "cause": "AWS authentication failed for EKS cluster",
+      "solution": "Verify IAM role/user has eks:DescribeCluster permission, check aws-auth ConfigMap for user mapping",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "nodegroup_failed",
+      "pattern": "NodeCreationFailure",
+      "regex": "(?i)NodeCreationFailure|node.*failed|instance.*launch.*failed|nodegroup.*degraded",
+      "cause": "Managed node group failed to launch instances",
+      "solution": "Check IAM role for node group, verify AMI availability in region, check EC2 service quotas, review subnet capacity",
+      "severity": "high",
+      "category": "compute"
+    },
+    {
+      "id": "addon_conflict",
+      "pattern": "addon conflict",
+      "regex": "(?i)addon.*conflict|coredns.*conflict|kube-proxy.*conflict|vpc-cni.*conflict",
+      "cause": "EKS addon conflicts with existing cluster component",
+      "solution": "Delete conflicting manual installation before enabling managed addon, use --resolve-conflicts flag",
+      "severity": "medium",
+      "category": "addons"
+    },
+    {
+      "id": "vpc_cni_error",
+      "pattern": "VPC CNI",
+      "regex": "(?i)vpc.*cni|eniconfig|ip.*exhaustion|insufficient.*ip|no.*ips.*available",
+      "cause": "VPC CNI plugin cannot allocate IP addresses",
+      "solution": "Use secondary CIDR ranges, enable prefix delegation, increase subnet size, use custom networking",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "cluster_version",
+      "pattern": "version",
+      "regex": "(?i)unsupported.*version|upgrade.*required|deprecated.*version|version.*skew",
+      "cause": "Kubernetes version unsupported or out of support window",
+      "solution": "Plan upgrade to supported version, review EKS version calendar, update node groups after control plane",
+      "severity": "medium",
+      "category": "version"
+    },
+    {
+      "id": "oidc_not_configured",
+      "pattern": "OIDC",
+      "regex": "(?i)oidc.*provider|irsa.*error|service.*account.*annotation|assume.*role.*web.*identity",
+      "cause": "OIDC provider not configured for IRSA (IAM Roles for Service Accounts)",
+      "solution": "Create OIDC provider: eksctl utils associate-iam-oidc-provider, annotate service accounts with IAM role ARN",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "security_group_error",
+      "pattern": "security group",
+      "regex": "(?i)security.*group|cluster.*security.*group|additional.*security.*group|ingress.*rule",
+      "cause": "Security group rules blocking required traffic",
+      "solution": "Ensure cluster security group allows node communication (443, 10250), add required ingress rules for applications",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "logging_not_enabled",
+      "pattern": "logging",
+      "regex": "(?i)logging.*not.*enabled|cloudwatch.*logs|audit.*log|api.*server.*log",
+      "cause": "EKS control plane logging not enabled",
+      "solution": "Enable logging via AWS Console or CLI: aws eks update-cluster-config --logging",
+      "severity": "low",
+      "category": "observability"
+    },
+    {
+      "id": "fargate_profile",
+      "pattern": "Fargate",
+      "regex": "(?i)fargate.*profile|fargate.*selector|no.*fargate.*profile|pod.*pending.*fargate",
+      "cause": "Pod cannot be scheduled on Fargate due to profile/selector mismatch",
+      "solution": "Create Fargate profile with matching namespace/labels, verify pod annotations for Fargate compatibility",
+      "severity": "medium",
+      "category": "compute"
+    }
+  ],
+  "related_tools": ["kubectl", "eksctl", "aws_cli", "helm"],
+  "documentation_url": "https://docs.aws.amazon.com/eks/"
+}

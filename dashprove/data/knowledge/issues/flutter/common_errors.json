@@ -1,0 +1,191 @@
+{
+  "tool": "flutter",
+  "version": "3.19.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sdk_not_found",
+      "pattern": "Flutter SDK|flutter not found|which flutter|PATH",
+      "message": "Flutter SDK not found",
+      "cause": "Flutter not in PATH or not installed",
+      "solutions": [
+        {
+          "approach": "Add to PATH",
+          "code": "export PATH=\"$PATH:$HOME/flutter/bin\"\necho 'export PATH=\"$PATH:$HOME/flutter/bin\"' >> ~/.zshrc",
+          "when": "SDK installed but not in PATH"
+        },
+        {
+          "approach": "Run doctor",
+          "code": "flutter doctor -v",
+          "when": "Check installation"
+        },
+        {
+          "approach": "Use FVM",
+          "code": "dart pub global activate fvm\nfvm install stable\nfvm use stable",
+          "when": "Version management"
+        }
+      ]
+    },
+    {
+      "id": "pub_get_error",
+      "pattern": "pub get|dependencies could not be resolved|version solving failed",
+      "message": "Dependency resolution failed",
+      "cause": "Conflicting package versions",
+      "solutions": [
+        {
+          "approach": "Upgrade packages",
+          "code": "flutter pub upgrade --major-versions",
+          "when": "Outdated dependencies"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "flutter pub cache clean\nflutter pub get",
+          "when": "Corrupted cache"
+        },
+        {
+          "approach": "Override dependency",
+          "code": "# pubspec.yaml\ndependency_overrides:\n  some_package: ^2.0.0",
+          "when": "Force specific version"
+        }
+      ]
+    },
+    {
+      "id": "gradle_error",
+      "pattern": "Gradle|gradle build failed|Android|compileSdkVersion",
+      "message": "Android Gradle build failed",
+      "cause": "Gradle or Android SDK configuration issue",
+      "solutions": [
+        {
+          "approach": "Update Gradle",
+          "code": "# android/gradle/wrapper/gradle-wrapper.properties\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-all.zip",
+          "when": "Gradle version"
+        },
+        {
+          "approach": "Update AGP",
+          "code": "# android/build.gradle\nbuildscript {\n    ext.kotlin_version = '1.9.22'\n    dependencies {\n        classpath 'com.android.tools.build:gradle:8.2.0'\n    }\n}",
+          "when": "Android Gradle Plugin"
+        },
+        {
+          "approach": "Clean build",
+          "code": "cd android && ./gradlew clean\nflutter clean\nflutter pub get",
+          "when": "Stale build"
+        }
+      ]
+    },
+    {
+      "id": "cocoapods_error",
+      "pattern": "CocoaPods|pod install|iOS|Podfile",
+      "message": "CocoaPods error",
+      "cause": "iOS dependency installation failed",
+      "solutions": [
+        {
+          "approach": "Install pods",
+          "code": "cd ios && pod install --repo-update",
+          "when": "Missing pods"
+        },
+        {
+          "approach": "Update CocoaPods",
+          "code": "sudo gem install cocoapods\npod setup",
+          "when": "Outdated CocoaPods"
+        },
+        {
+          "approach": "Clear and reinstall",
+          "code": "cd ios\nrm -rf Pods Podfile.lock\npod install",
+          "when": "Corrupted pods"
+        }
+      ]
+    },
+    {
+      "id": "build_runner_error",
+      "pattern": "build_runner|code generation|generated|part of",
+      "message": "Code generation failed",
+      "cause": "build_runner error or outdated generated code",
+      "solutions": [
+        {
+          "approach": "Run build_runner",
+          "code": "dart run build_runner build --delete-conflicting-outputs",
+          "when": "Generate code"
+        },
+        {
+          "approach": "Watch mode",
+          "code": "dart run build_runner watch",
+          "when": "Auto-regenerate"
+        },
+        {
+          "approach": "Clean generated",
+          "code": "dart run build_runner clean\ndart run build_runner build",
+          "when": "Stale generated code"
+        }
+      ]
+    },
+    {
+      "id": "null_safety_error",
+      "pattern": "null safety|non-nullable|Cannot run|sound null safety",
+      "message": "Null safety migration issue",
+      "cause": "Mixed null safety or unmigrated code",
+      "solutions": [
+        {
+          "approach": "Migrate to null safety",
+          "code": "dart migrate",
+          "when": "Need migration"
+        },
+        {
+          "approach": "Run without sound null safety",
+          "code": "flutter run --no-sound-null-safety",
+          "when": "Temporary workaround"
+        },
+        {
+          "approach": "Check SDK constraint",
+          "code": "# pubspec.yaml\nenvironment:\n  sdk: '>=3.0.0 <4.0.0'",
+          "when": "SDK version"
+        }
+      ]
+    },
+    {
+      "id": "render_error",
+      "pattern": "RenderFlex|overflow|BoxConstraints|unbounded|Vertical viewport",
+      "message": "Layout/render error",
+      "cause": "Widget layout constraints issue",
+      "solutions": [
+        {
+          "approach": "Wrap in Expanded",
+          "code": "Row(\n  children: [\n    Expanded(\n      child: Text('Long text...'),\n    ),\n  ],\n)",
+          "when": "RenderFlex overflow"
+        },
+        {
+          "approach": "Use ListView",
+          "code": "Column(\n  children: [\n    Expanded(\n      child: ListView(...),\n    ),\n  ],\n)",
+          "when": "Vertical viewport"
+        },
+        {
+          "approach": "Add constraints",
+          "code": "ConstrainedBox(\n  constraints: BoxConstraints(maxHeight: 200),\n  child: ListView(...),\n)",
+          "when": "Unbounded height"
+        }
+      ]
+    },
+    {
+      "id": "state_error",
+      "pattern": "setState|mounted|disposed|State object|lifecycle",
+      "message": "State management error",
+      "cause": "setState called after dispose or improper state handling",
+      "solutions": [
+        {
+          "approach": "Check mounted",
+          "code": "if (mounted) {\n  setState(() {\n    // update state\n  });\n}",
+          "when": "Async setState"
+        },
+        {
+          "approach": "Cancel subscriptions",
+          "code": "@override\nvoid dispose() {\n  _subscription.cancel();\n  _controller.dispose();\n  super.dispose();\n}",
+          "when": "Cleanup in dispose"
+        },
+        {
+          "approach": "Use state management",
+          "code": "// Consider Riverpod, Bloc, or Provider\n// for complex state management",
+          "when": "Complex state"
+        }
+      ]
+    }
+  ]
+}

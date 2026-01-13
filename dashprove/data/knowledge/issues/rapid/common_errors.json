@@ -1,0 +1,207 @@
+{
+  "tool": "rapid",
+  "version": "1.1.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "rapid_property_failed",
+      "pattern": "failed after \\d+ tests",
+      "message": "Property test failed",
+      "cause": "Rapid found counterexample that violates property",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "// Check test output for minimal failing input\n// rapid.Check(t, func(t *rapid.T) { ... })",
+          "when": "Need to debug failure"
+        },
+        {
+          "approach": "Add preconditions",
+          "code": "rapid.Check(t, func(t *rapid.T) {\n    x := rapid.Int().Draw(t, \"x\")\n    if x == 0 {\n        t.Skip()  // Skip invalid inputs\n    }\n})",
+          "when": "Property has preconditions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// The property test found a real bug",
+          "when": "Property is correct, code is wrong"
+        }
+      ]
+    },
+    {
+      "id": "rapid_generator_panic",
+      "pattern": "generator.*panicked",
+      "message": "Generator panicked",
+      "cause": "Custom generator threw panic during value generation",
+      "solutions": [
+        {
+          "approach": "Add bounds checks",
+          "code": "myGen := rapid.Custom(func(t *rapid.T) MyType {\n    size := rapid.IntRange(0, 100).Draw(t, \"size\")\n    if size <= 0 {\n        return MyType{}  // Handle edge case\n    }\n    // ...\n})",
+          "when": "Generator doesn't handle edge cases"
+        },
+        {
+          "approach": "Use built-in generators",
+          "code": "// Use rapid.SliceOf, rapid.MapOf instead of custom\nrapid.SliceOfN(rapid.Int(), 1, 10)  // 1-10 elements",
+          "when": "Custom generator not needed"
+        }
+      ]
+    },
+    {
+      "id": "rapid_shrink_failed",
+      "pattern": "failed to shrink",
+      "message": "Shrinking counterexample failed",
+      "cause": "Rapid couldn't minimize the failing input",
+      "solutions": [
+        {
+          "approach": "Use simpler generators",
+          "code": "// Simpler generators shrink better\nrapid.IntRange(0, 100)  // Instead of rapid.Int()",
+          "when": "Complex generators"
+        },
+        {
+          "approach": "Check shrink implementation",
+          "code": "// Custom generators should produce shrinkable values\n// Use rapid.Make for structs",
+          "when": "Custom generator doesn't shrink well"
+        }
+      ]
+    },
+    {
+      "id": "rapid_timeout",
+      "pattern": "deadline exceeded|test.*timeout",
+      "message": "Property test timed out",
+      "cause": "Test or shrinking took too long",
+      "solutions": [
+        {
+          "approach": "Reduce iterations",
+          "code": "rapid.Check(t, func(t *rapid.T) { ... },\n    rapid.Iterations(100),  // Reduce from default\n)",
+          "when": "Each iteration is slow"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "go test -timeout 5m ./...",
+          "when": "Need more time for thorough testing"
+        },
+        {
+          "approach": "Simplify property",
+          "code": "// Break complex property into simpler ones",
+          "when": "Property does too much"
+        }
+      ]
+    },
+    {
+      "id": "rapid_invalid_range",
+      "pattern": "invalid range|min > max",
+      "message": "Invalid range in generator",
+      "cause": "IntRange, FloatRange, etc. called with min > max",
+      "solutions": [
+        {
+          "approach": "Fix range bounds",
+          "code": "rapid.IntRange(0, 100)  // min <= max",
+          "when": "Static range"
+        },
+        {
+          "approach": "Ensure valid range",
+          "code": "min := rapid.Int().Draw(t, \"min\")\nmax := min + rapid.IntRange(0, 100).Draw(t, \"delta\")",
+          "when": "Dynamic range"
+        }
+      ]
+    },
+    {
+      "id": "rapid_flaky_test",
+      "pattern": "flaky|sometimes passes.*sometimes fails",
+      "message": "Flaky property test",
+      "cause": "Property depends on external state or timing",
+      "solutions": [
+        {
+          "approach": "Make deterministic",
+          "code": "// Use fixed seed for debugging\nrapid.Check(t, func(t *rapid.T) { ... },\n    rapid.Seed(12345),\n)",
+          "when": "Need reproducible failure"
+        },
+        {
+          "approach": "Remove external dependencies",
+          "code": "// Don't use time.Now(), random, network, filesystem\n// Use deterministic generators instead",
+          "when": "Property has side effects"
+        }
+      ]
+    },
+    {
+      "id": "rapid_no_tests_run",
+      "pattern": "no tests run|0 tests",
+      "message": "No property tests executed",
+      "cause": "Test function not recognized or all inputs filtered",
+      "solutions": [
+        {
+          "approach": "Use rapid.Check",
+          "code": "func TestMyProperty(t *testing.T) {\n    rapid.Check(t, func(t *rapid.T) {\n        // property\n    })\n}",
+          "when": "Using wrong test pattern"
+        },
+        {
+          "approach": "Reduce filtering",
+          "code": "// Don't t.Skip() too many inputs\n// Use constrained generators instead",
+          "when": "Most inputs filtered"
+        }
+      ]
+    },
+    {
+      "id": "rapid_state_machine_error",
+      "pattern": "state machine.*error|invalid state",
+      "message": "State machine test found invalid state",
+      "cause": "Model and implementation states diverged",
+      "solutions": [
+        {
+          "approach": "Check model correctness",
+          "code": "// Verify model state transitions match implementation\nfunc (s *State) Check(t *rapid.T) {\n    // Compare model vs implementation\n}",
+          "when": "Model may be wrong"
+        },
+        {
+          "approach": "Add state invariants",
+          "code": "func (s *State) Check(t *rapid.T) {\n    if s.model.Len() != s.impl.Len() {\n        t.Fatalf(\"length mismatch\")\n    }\n}",
+          "when": "Need stronger invariants"
+        },
+        {
+          "approach": "Fix implementation bug",
+          "code": "// State machine test found real bug in implementation",
+          "when": "Model is correct"
+        }
+      ]
+    },
+    {
+      "id": "rapid_max_recursion",
+      "pattern": "maximum recursion|stack overflow",
+      "message": "Generator hit recursion limit",
+      "cause": "Recursive generator created too deep structure",
+      "solutions": [
+        {
+          "approach": "Limit depth",
+          "code": "func treeGen(depth int) *rapid.Generator[*Tree] {\n    if depth <= 0 {\n        return rapid.Just(nil)  // Base case\n    }\n    return rapid.Custom(...)\n}",
+          "when": "Recursive generator"
+        },
+        {
+          "approach": "Use sized generator",
+          "code": "// Rapid controls size implicitly\nrapid.SliceOf(rapid.Int())  // Size controlled",
+          "when": "Collection generator"
+        }
+      ]
+    },
+    {
+      "id": "rapid_no_valid_value",
+      "pattern": "unable to generate.*value|no valid value",
+      "message": "Generator couldn't produce valid value",
+      "cause": "Filter or precondition too strict",
+      "solutions": [
+        {
+          "approach": "Relax constraints",
+          "code": "// Instead of filtering, generate valid values directly\nrapid.IntRange(1, 100)  // Instead of filtering out 0",
+          "when": "Filter rejects most values"
+        },
+        {
+          "approach": "Use OneOf",
+          "code": "rapid.OneOf(\n    rapid.Just(validValue1),\n    rapid.Just(validValue2),\n)",
+          "when": "Limited valid values"
+        },
+        {
+          "approach": "Custom generator",
+          "code": "rapid.Custom(func(t *rapid.T) MyType {\n    // Generate valid values directly\n})",
+          "when": "Complex constraints"
+        }
+      ]
+    }
+  ]
+}

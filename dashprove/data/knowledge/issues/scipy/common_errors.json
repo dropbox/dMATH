@@ -1,0 +1,168 @@
+{
+  "tool": "scipy",
+  "version": "1.12.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "convergence_error",
+      "pattern": "failed to converge|ConvergenceWarning|did not converge",
+      "message": "Optimization or solver failed to converge",
+      "cause": "Iterative algorithm didn't reach solution within limits",
+      "solutions": [
+        {
+          "approach": "Increase iterations",
+          "code": "result = optimize.minimize(f, x0, options={'maxiter': 10000})",
+          "when": "Near convergence"
+        },
+        {
+          "approach": "Better initial guess",
+          "code": "x0 = precompute_good_start()  # Use domain knowledge",
+          "when": "Starting point far from solution"
+        },
+        {
+          "approach": "Try different method",
+          "code": "result = optimize.minimize(f, x0, method='L-BFGS-B')",
+          "when": "Method unsuited to problem"
+        }
+      ]
+    },
+    {
+      "id": "linalg_singular",
+      "pattern": "singular matrix|LinAlgError|Matrix is singular",
+      "message": "Singular matrix error",
+      "cause": "Matrix is not invertible or poorly conditioned",
+      "solutions": [
+        {
+          "approach": "Use sparse solver",
+          "code": "from scipy.sparse.linalg import spsolve, gmres\nx = gmres(A, b)[0]",
+          "when": "Large sparse system"
+        },
+        {
+          "approach": "Add regularization",
+          "code": "from scipy.linalg import solve\nx = solve(A + reg * np.eye(n), b)",
+          "when": "Ill-conditioned matrix"
+        },
+        {
+          "approach": "Use least squares",
+          "code": "from scipy.linalg import lstsq\nx, res, rank, s = lstsq(A, b)",
+          "when": "Overdetermined system"
+        }
+      ]
+    },
+    {
+      "id": "integration_error",
+      "pattern": "IntegrationWarning|integral.*diverge|quadrature.*failed",
+      "message": "Numerical integration error",
+      "cause": "Integration algorithm encountered difficulties",
+      "solutions": [
+        {
+          "approach": "Increase precision",
+          "code": "result, err = integrate.quad(f, a, b, limit=100, epsrel=1e-10)",
+          "when": "Need higher accuracy"
+        },
+        {
+          "approach": "Handle singularities",
+          "code": "result = integrate.quad(f, a, b, points=[sing_point])",
+          "when": "Function has singularities"
+        },
+        {
+          "approach": "Use different method",
+          "code": "result = integrate.fixed_quad(f, a, b, n=20)",
+          "when": "Quad not suitable"
+        }
+      ]
+    },
+    {
+      "id": "interpolation_error",
+      "pattern": "interpolation.*error|x.*must be strictly increasing",
+      "message": "Interpolation error",
+      "cause": "Input data not suitable for interpolation",
+      "solutions": [
+        {
+          "approach": "Sort input",
+          "code": "idx = np.argsort(x)\nf = interpolate.interp1d(x[idx], y[idx])",
+          "when": "x not sorted"
+        },
+        {
+          "approach": "Remove duplicates",
+          "code": "unique_idx = np.unique(x, return_index=True)[1]\nf = interpolate.interp1d(x[unique_idx], y[unique_idx])",
+          "when": "Duplicate x values"
+        },
+        {
+          "approach": "Set bounds handling",
+          "code": "f = interpolate.interp1d(x, y, bounds_error=False, fill_value='extrapolate')",
+          "when": "Query outside range"
+        }
+      ]
+    },
+    {
+      "id": "sparse_format_error",
+      "pattern": "sparse format|CSR.*CSC|matrix format",
+      "message": "Sparse matrix format error",
+      "cause": "Operation requires specific sparse format",
+      "solutions": [
+        {
+          "approach": "Convert format",
+          "code": "A_csr = A.tocsr()  # or tocsc(), tolil()",
+          "when": "Need specific format"
+        },
+        {
+          "approach": "Create in right format",
+          "code": "A = sparse.csr_matrix((data, (row, col)), shape=(m, n))",
+          "when": "Building sparse matrix"
+        },
+        {
+          "approach": "Use appropriate method",
+          "code": "# CSR for row slicing, CSC for column slicing",
+          "when": "Performance optimization"
+        }
+      ]
+    },
+    {
+      "id": "ode_error",
+      "pattern": "ODEintWarning|integration.*successful.*false",
+      "message": "ODE solver error",
+      "cause": "ODE integration encountered stiffness or instability",
+      "solutions": [
+        {
+          "approach": "Use stiff solver",
+          "code": "result = integrate.solve_ivp(f, t_span, y0, method='BDF')",
+          "when": "ODE is stiff"
+        },
+        {
+          "approach": "Reduce step size",
+          "code": "result = integrate.solve_ivp(f, t_span, y0, max_step=0.01)",
+          "when": "Rapid dynamics"
+        },
+        {
+          "approach": "Adjust tolerances",
+          "code": "result = integrate.solve_ivp(f, t_span, y0, rtol=1e-8, atol=1e-10)",
+          "when": "Need higher accuracy"
+        }
+      ]
+    },
+    {
+      "id": "stats_error",
+      "pattern": "StatisticsWarning|sample size.*too small",
+      "message": "Statistical test error",
+      "cause": "Data insufficient or assumptions violated",
+      "solutions": [
+        {
+          "approach": "Check sample size",
+          "code": "if len(sample) < 20:\n    # Use nonparametric test",
+          "when": "Small sample size"
+        },
+        {
+          "approach": "Use nonparametric test",
+          "code": "stat, p = stats.mannwhitneyu(x, y)  # Instead of t-test",
+          "when": "Non-normal data"
+        },
+        {
+          "approach": "Bootstrap confidence interval",
+          "code": "result = stats.bootstrap((x,), np.mean, n_resamples=10000)",
+          "when": "Need robust estimate"
+        }
+      ]
+    }
+  ]
+}

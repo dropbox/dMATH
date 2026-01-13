@@ -1,0 +1,146 @@
+{
+  "tool": "code_contracts",
+  "version": "1.10.0",
+  "last_updated": "2025-12-23",
+  "description": "Microsoft Code Contracts for .NET design-by-contract programming",
+  "errors": [
+    {
+      "id": "contract_rewriter_missing",
+      "pattern": "contract rewriter.*not found|ccrewrite.*missing",
+      "message": "Code Contracts rewriter not installed or not in PATH",
+      "cause": "Contract rewriting tools not properly installed",
+      "solutions": [
+        {
+          "approach": "Install Code Contracts tools",
+          "code": "# Install via Visual Studio Installer\n# Or download from:\n# https://github.com/microsoft/CodeContracts\n\n# NuGet package for runtime:\nInstall-Package DotNet.Contracts",
+          "when": "Tools not installed"
+        },
+        {
+          "approach": "Configure project for contracts",
+          "code": "<!-- In .csproj file -->\n<PropertyGroup>\n  <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>\n  <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>\n</PropertyGroup>",
+          "when": "Project not configured"
+        },
+        {
+          "approach": "Use modern alternatives",
+          "code": "// Code Contracts is deprecated\n// Consider alternatives:\n// - ArgumentNullException.ThrowIfNull() (.NET 6+)\n// - Guard clauses libraries\n// - Nullable reference types",
+          "when": "On modern .NET"
+        }
+      ]
+    },
+    {
+      "id": "precondition_violation",
+      "pattern": "Precondition.*failed|Contract\\.Requires.*violated",
+      "message": "Method precondition violated by caller",
+      "cause": "Caller passed invalid arguments",
+      "solutions": [
+        {
+          "approach": "Check precondition definition",
+          "code": "public void Process(string input)\n{\n    Contract.Requires(!string.IsNullOrEmpty(input));\n    Contract.Requires(input.Length <= 100);\n    // ...\n}",
+          "when": "Need to understand requirement"
+        },
+        {
+          "approach": "Fix caller code",
+          "code": "// Validate before calling\nif (!string.IsNullOrEmpty(input) && input.Length <= 100)\n{\n    processor.Process(input);\n}\nelse\n{\n    // Handle invalid input\n}",
+          "when": "Caller violating contract"
+        },
+        {
+          "approach": "Use exception-based requires",
+          "code": "// For public APIs, use exception-throwing version\npublic void PublicMethod(string arg)\n{\n    Contract.Requires<ArgumentNullException>(arg != null);\n    Contract.Requires<ArgumentException>(arg.Length > 0);\n}",
+          "when": "Need specific exception type"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_violation",
+      "pattern": "Postcondition.*failed|Contract\\.Ensures.*violated",
+      "message": "Method postcondition not satisfied",
+      "cause": "Method implementation doesn't meet its contract",
+      "solutions": [
+        {
+          "approach": "Review postcondition",
+          "code": "public int Calculate(int x)\n{\n    Contract.Ensures(Contract.Result<int>() >= 0);\n    // Implementation must return non-negative\n    return Math.Max(0, x * 2);\n}",
+          "when": "Understanding what's guaranteed"
+        },
+        {
+          "approach": "Fix implementation",
+          "code": "// Ensure all code paths satisfy postcondition\npublic string GetName(int id)\n{\n    Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));\n    \n    var name = _repo.FindName(id);\n    return name ?? \"Unknown\";  // Never return null/empty\n}",
+          "when": "Implementation bug"
+        },
+        {
+          "approach": "Use OldValue correctly",
+          "code": "public void Increment()\n{\n    Contract.Ensures(Count == Contract.OldValue(Count) + 1);\n    Count++;\n}",
+          "when": "Comparing old and new values"
+        }
+      ]
+    },
+    {
+      "id": "invariant_violation",
+      "pattern": "Invariant.*failed|Contract\\.Invariant.*violated",
+      "message": "Object invariant violated",
+      "cause": "Object state is invalid after method execution",
+      "solutions": [
+        {
+          "approach": "Define invariant method",
+          "code": "[ContractInvariantMethod]\nprivate void ObjectInvariant()\n{\n    Contract.Invariant(_items != null);\n    Contract.Invariant(_count >= 0);\n    Contract.Invariant(_count <= _items.Length);\n}",
+          "when": "Setting up invariants"
+        },
+        {
+          "approach": "Fix state mutation",
+          "code": "// Ensure all methods maintain invariant\npublic void Remove()\n{\n    if (_count > 0)  // Maintain _count >= 0\n    {\n        _count--;\n    }\n}",
+          "when": "Method breaking invariant"
+        },
+        {
+          "approach": "Check constructor",
+          "code": "public MyClass()\n{\n    _items = new Item[10];  // Maintain _items != null\n    _count = 0;              // Maintain _count >= 0\n    // Invariant checked after constructor\n}",
+          "when": "Invariant violated at construction"
+        }
+      ]
+    },
+    {
+      "id": "static_checker_warning",
+      "pattern": "cccheck.*warning|static checker.*unproven",
+      "message": "Static checker cannot prove contract",
+      "cause": "Contract may be violated or checker lacks precision",
+      "solutions": [
+        {
+          "approach": "Add assume statements",
+          "code": "public void Process(Data data)\n{\n    // Help static checker with assumptions\n    Contract.Assume(data.Items != null);\n    foreach (var item in data.Items)\n    {\n        // ...\n    }\n}",
+          "when": "Checker lacks information"
+        },
+        {
+          "approach": "Strengthen preconditions",
+          "code": "public void Process(List<int> list)\n{\n    Contract.Requires(list != null);\n    Contract.Requires(list.Count > 0);\n    // Now checker knows list is non-null and non-empty\n    var first = list[0];\n}",
+          "when": "Need stronger input guarantees"
+        },
+        {
+          "approach": "Use assert for intermediate facts",
+          "code": "public int Sum(int[] arr)\n{\n    Contract.Requires(arr != null);\n    int sum = 0;\n    for (int i = 0; i < arr.Length; i++)\n    {\n        Contract.Assert(i >= 0 && i < arr.Length);\n        sum += arr[i];\n    }\n    return sum;\n}",
+          "when": "Loop verification needs help"
+        }
+      ]
+    },
+    {
+      "id": "interface_contract_missing",
+      "pattern": "interface.*no contract|missing.*contract class",
+      "message": "Interface is missing contract specification",
+      "cause": "Contracts for interfaces need separate contract class",
+      "solutions": [
+        {
+          "approach": "Create contract class",
+          "code": "[ContractClass(typeof(IServiceContract))]\npublic interface IService\n{\n    string Process(string input);\n}\n\n[ContractClassFor(typeof(IService))]\nabstract class IServiceContract : IService\n{\n    string IService.Process(string input)\n    {\n        Contract.Requires(!string.IsNullOrEmpty(input));\n        Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));\n        return default;\n    }\n}",
+          "when": "Interface has contracts"
+        },
+        {
+          "approach": "Check attribute placement",
+          "code": "// ContractClass goes on interface\n[ContractClass(typeof(IRepoContract))]\npublic interface IRepo { }\n\n// ContractClassFor goes on contract class\n[ContractClassFor(typeof(IRepo))]\nabstract class IRepoContract : IRepo { }",
+          "when": "Attributes in wrong place"
+        },
+        {
+          "approach": "Use abstract class instead",
+          "code": "// Simpler: use abstract class with contracts\npublic abstract class ServiceBase\n{\n    public string Process(string input)\n    {\n        Contract.Requires(!string.IsNullOrEmpty(input));\n        return ProcessCore(input);\n    }\n    protected abstract string ProcessCore(string input);\n}",
+          "when": "Can change design"
+        }
+      ]
+    }
+  ]
+}

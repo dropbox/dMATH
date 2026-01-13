@@ -1,0 +1,106 @@
+{
+  "tool": "htop",
+  "version": "3.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "io_stats_unavailable",
+      "pattern": "Cannot open /proc/(diskstats|iomem)|I/O stats not available",
+      "message": "Disk or IO metrics missing",
+      "cause": "Access to /proc or /sys requires elevated privileges or kernel support",
+      "solutions": [
+        {
+          "approach": "Run with sudo",
+          "code": "sudo htop",
+          "when": "Need per-disk I/O counters"
+        },
+        {
+          "approach": "Enable kernel accounting",
+          "code": "sudo sysctl vm.block_dump=0  # ensure diskstats enabled\\n# Ensure CONFIG_TASKSTATS and CONFIG_TASK_DELAY_ACCT enabled in kernel",
+          "when": "Kernel built without stats"
+        }
+      ]
+    },
+    {
+      "id": "sensors_missing",
+      "pattern": "no sensors data|/sys/class/hwmon not found",
+      "message": "CPU temperature or fan metrics not shown",
+      "cause": "lm-sensors not installed or sensors not configured",
+      "solutions": [
+        {
+          "approach": "Install sensors support",
+          "code": "sudo apt install lm-sensors && sudo sensors-detect",
+          "when": "Sensors modules not loaded"
+        },
+        {
+          "approach": "Enable sensors in htop",
+          "code": "F2 (Setup) -> Available Meters -> Add Temp/Volt sensors",
+          "when": "Meters not displayed"
+        }
+      ]
+    },
+    {
+      "id": "high_cpu",
+      "pattern": "htop.*uses 100% CPU|interface sluggish",
+      "message": "htop consuming noticeable CPU",
+      "cause": "Refresh interval too low or heavy meters enabled",
+      "solutions": [
+        {
+          "approach": "Increase delay",
+          "code": "htop -d 10  # delay in tenths of seconds",
+          "when": "Reduce update frequency"
+        },
+        {
+          "approach": "Disable costly meters",
+          "code": "F2 -> Disable per-core graphs / IO meters",
+          "when": "UI lag due to rendering"
+        },
+        {
+          "approach": "Use batch mode",
+          "code": "htop -b -n 5",
+          "when": "Need non-interactive snapshot"
+        }
+      ]
+    },
+    {
+      "id": "terminal_unknown",
+      "pattern": "TERM environment variable not set|unknown terminal",
+      "message": "Terminal type not recognized",
+      "cause": "TERM not exported or terminfo missing",
+      "solutions": [
+        {
+          "approach": "Export TERM",
+          "code": "export TERM=xterm-256color",
+          "when": "Running in minimal shells/cron"
+        },
+        {
+          "approach": "Install terminfo",
+          "code": "sudo apt install ncurses-term",
+          "when": "Terminfo entry absent"
+        }
+      ]
+    },
+    {
+      "id": "missing_ncurses",
+      "pattern": "error while loading shared libraries: libncursesw",
+      "message": "htop fails to start due to missing ncurses",
+      "cause": "ncurses library not installed or wrong architecture",
+      "solutions": [
+        {
+          "approach": "Install ncurses",
+          "code": "sudo apt install libncursesw6",
+          "when": "Debian/Ubuntu systems"
+        },
+        {
+          "approach": "Reinstall htop with dependencies",
+          "code": "sudo apk add htop  # Alpine\\nsudo yum install htop ncurses",
+          "when": "Package install incomplete"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://htop.dev/",
+    "https://github.com/htop-dev/htop"
+  ]
+}

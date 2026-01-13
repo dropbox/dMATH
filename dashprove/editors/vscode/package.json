@@ -1,0 +1,214 @@
+{
+  "name": "dashprove",
+  "displayName": "DashProve",
+  "description": "Language support for USL (Unified Specification Language) - formal verification made simple",
+  "version": "0.1.0",
+  "publisher": "dashprove",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "formal verification",
+    "theorem proving",
+    "specification language",
+    "model checking",
+    "contracts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dropbox/dMATH/dashprove"
+  },
+  "activationEvents": [
+    "onLanguage:usl",
+    "workspaceContains:**/*.usl"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "usl",
+        "aliases": [
+          "USL",
+          "Unified Specification Language"
+        ],
+        "extensions": [
+          ".usl"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/usl-light.svg",
+          "dark": "./icons/usl-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "usl",
+        "scopeName": "source.usl",
+        "path": "./syntaxes/usl.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "DashProve",
+      "properties": {
+        "dashprove.server.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the dashprove-lsp binary. Leave empty to use the bundled version or system PATH."
+        },
+        "dashprove.server.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments to pass to the language server."
+        },
+        "dashprove.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server."
+        },
+        "dashprove.verification.autoVerify": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically verify on save."
+        },
+        "dashprove.verification.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Verification timeout in milliseconds."
+        },
+        "dashprove.inlayHints.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inlay hints for type annotations."
+        },
+        "dashprove.codeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable code lenses for verification actions."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "dashprove.verify",
+        "title": "Verify Current File",
+        "category": "DashProve"
+      },
+      {
+        "command": "dashprove.verifyProperty",
+        "title": "Verify Property at Cursor",
+        "category": "DashProve"
+      },
+      {
+        "command": "dashprove.showBackendInfo",
+        "title": "Show Backend Information",
+        "category": "DashProve"
+      },
+      {
+        "command": "dashprove.restartServer",
+        "title": "Restart Language Server",
+        "category": "DashProve"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "dashprove.verifyProperty",
+          "when": "editorLangId == usl",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "dashprove.verify",
+          "when": "editorLangId == usl"
+        },
+        {
+          "command": "dashprove.verifyProperty",
+          "when": "editorLangId == usl"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "dashprove.verify",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorLangId == usl"
+      }
+    ],
+    "semanticTokenTypes": [
+      {
+        "id": "type",
+        "description": "A USL type definition"
+      },
+      {
+        "id": "property",
+        "description": "A theorem, invariant, or contract"
+      },
+      {
+        "id": "keyword",
+        "description": "A USL keyword"
+      },
+      {
+        "id": "quantifier",
+        "description": "A quantifier (forall, exists)"
+      },
+      {
+        "id": "operator",
+        "description": "A logical operator"
+      }
+    ],
+    "semanticTokenModifiers": [
+      {
+        "id": "proven",
+        "description": "A proven property"
+      },
+      {
+        "id": "unproven",
+        "description": "An unproven property"
+      },
+      {
+        "id": "failed",
+        "description": "A failed verification"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

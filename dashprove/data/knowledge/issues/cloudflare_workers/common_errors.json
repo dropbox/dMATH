@@ -1,0 +1,191 @@
+{
+  "tool": "cloudflare_workers",
+  "version": "3.22.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not authenticated|authentication.*failed|API token.*invalid|CLOUDFLARE_API_TOKEN",
+      "message": "Authentication error",
+      "cause": "Not logged in or token invalid",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "wrangler login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "API token",
+          "code": "export CLOUDFLARE_API_TOKEN=your-token\nwrangler deploy",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Check token",
+          "code": "wrangler whoami",
+          "when": "Verify auth"
+        }
+      ]
+    },
+    {
+      "id": "deploy_error",
+      "pattern": "deploy.*failed|upload.*error|Worker.*not found|script.*error",
+      "message": "Deployment error",
+      "cause": "Worker code or configuration error",
+      "solutions": [
+        {
+          "approach": "Check config",
+          "code": "# wrangler.toml:\nname = \"my-worker\"\nmain = \"src/index.js\"\ncompatibility_date = \"2024-01-01\"",
+          "when": "Config issue"
+        },
+        {
+          "approach": "Local test",
+          "code": "wrangler dev\ncurl http://localhost:8787/",
+          "when": "Test locally"
+        },
+        {
+          "approach": "Check syntax",
+          "code": "wrangler deploy --dry-run",
+          "when": "Validate before deploy"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "ReferenceError|TypeError|SyntaxError|Worker threw exception",
+      "message": "Worker runtime error",
+      "cause": "JavaScript error in worker code",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "wrangler tail\n# Real-time logs from production",
+          "when": "See error"
+        },
+        {
+          "approach": "Add error handling",
+          "code": "export default {\n  async fetch(request, env, ctx) {\n    try {\n      // Your code\n    } catch (e) {\n      return new Response(e.message, { status: 500 });\n    }\n  }\n}",
+          "when": "Better errors"
+        },
+        {
+          "approach": "Debug locally",
+          "code": "wrangler dev --local",
+          "when": "Local debugging"
+        }
+      ]
+    },
+    {
+      "id": "cpu_limit",
+      "pattern": "CPU time limit|exceeded.*limit|worker.*killed",
+      "message": "CPU time limit exceeded",
+      "cause": "Worker exceeded CPU time limit",
+      "solutions": [
+        {
+          "approach": "Optimize code",
+          "code": "// Reduce computational complexity\n// Use caching (KV, Cache API)\n// Split into multiple requests",
+          "when": "Code too slow"
+        },
+        {
+          "approach": "Use Unbound",
+          "code": "# wrangler.toml:\n[limits]\ncpu_ms = 30000  # 30 second CPU time (Unbound)",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Queue work",
+          "code": "// Use Queues for background processing\nawait env.MY_QUEUE.send({ data: 'process later' });",
+          "when": "Long processing"
+        }
+      ]
+    },
+    {
+      "id": "kv_error",
+      "pattern": "KV.*error|namespace.*not found|binding.*undefined",
+      "message": "KV namespace error",
+      "cause": "KV not bound or namespace missing",
+      "solutions": [
+        {
+          "approach": "Create namespace",
+          "code": "wrangler kv:namespace create MY_KV\n# Copy the id to wrangler.toml",
+          "when": "Namespace missing"
+        },
+        {
+          "approach": "Add binding",
+          "code": "# wrangler.toml:\n[[kv_namespaces]]\nbinding = \"MY_KV\"\nid = \"your-namespace-id\"",
+          "when": "Not bound"
+        },
+        {
+          "approach": "Use in code",
+          "code": "export default {\n  async fetch(request, env) {\n    const value = await env.MY_KV.get('key');\n    await env.MY_KV.put('key', 'value');\n  }\n}",
+          "when": "KV usage"
+        }
+      ]
+    },
+    {
+      "id": "d1_error",
+      "pattern": "D1.*error|database.*not found|SQL.*error|SQLITE",
+      "message": "D1 database error",
+      "cause": "D1 binding or SQL error",
+      "solutions": [
+        {
+          "approach": "Create database",
+          "code": "wrangler d1 create my-database\n# Copy id to wrangler.toml",
+          "when": "Database missing"
+        },
+        {
+          "approach": "Add binding",
+          "code": "# wrangler.toml:\n[[d1_databases]]\nbinding = \"DB\"\ndatabase_name = \"my-database\"\ndatabase_id = \"your-database-id\"",
+          "when": "Not bound"
+        },
+        {
+          "approach": "Run migrations",
+          "code": "wrangler d1 execute my-database --file=./schema.sql",
+          "when": "Schema not applied"
+        }
+      ]
+    },
+    {
+      "id": "r2_error",
+      "pattern": "R2.*error|bucket.*not found|S3.*error|object.*not found",
+      "message": "R2 storage error",
+      "cause": "R2 bucket not bound or object missing",
+      "solutions": [
+        {
+          "approach": "Create bucket",
+          "code": "wrangler r2 bucket create my-bucket",
+          "when": "Bucket missing"
+        },
+        {
+          "approach": "Add binding",
+          "code": "# wrangler.toml:\n[[r2_buckets]]\nbinding = \"BUCKET\"\nbucket_name = \"my-bucket\"",
+          "when": "Not bound"
+        },
+        {
+          "approach": "R2 usage",
+          "code": "export default {\n  async fetch(request, env) {\n    await env.BUCKET.put('file.txt', 'content');\n    const obj = await env.BUCKET.get('file.txt');\n    return new Response(obj.body);\n  }\n}",
+          "when": "R2 usage"
+        }
+      ]
+    },
+    {
+      "id": "route_error",
+      "pattern": "route.*not matched|pattern.*invalid|zone.*not found",
+      "message": "Route configuration error",
+      "cause": "Route pattern or zone misconfigured",
+      "solutions": [
+        {
+          "approach": "Add route",
+          "code": "# wrangler.toml:\n[env.production]\nroutes = [\n  { pattern = \"example.com/*\", zone_name = \"example.com\" }\n]",
+          "when": "No route configured"
+        },
+        {
+          "approach": "Custom domain",
+          "code": "# wrangler.toml:\n[env.production]\nroutes = [\n  { pattern = \"api.example.com/*\", custom_domain = true }\n]",
+          "when": "Custom domain"
+        },
+        {
+          "approach": "workers.dev",
+          "code": "# Use workers.dev subdomain:\n# your-worker.your-subdomain.workers.dev",
+          "when": "No custom domain"
+        }
+      ]
+    }
+  ]
+}

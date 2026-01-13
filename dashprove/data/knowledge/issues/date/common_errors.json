@@ -1,0 +1,145 @@
+{
+  "tool": "date",
+  "version": "coreutils 8.x / BSD",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_date",
+      "pattern": "date:.*invalid date|date:.*illegal time format|not a valid",
+      "message": "Date string not recognized",
+      "cause": "Date format differs between GNU and BSD date",
+      "solutions": [
+        {
+          "approach": "GNU date format",
+          "code": "date -d '2024-01-15'  # GNU/Linux\ndate -d 'next monday'\ndate -d '1 hour ago'",
+          "when": "GNU coreutils (Linux)"
+        },
+        {
+          "approach": "BSD date format",
+          "code": "date -j -f '%Y-%m-%d' '2024-01-15' '+%s'  # macOS/BSD\ndate -v+1d  # Tomorrow (BSD)",
+          "when": "macOS/BSD"
+        },
+        {
+          "approach": "ISO format (portable)",
+          "code": "date '+%Y-%m-%dT%H:%M:%S%z'",
+          "when": "Cross-platform output"
+        }
+      ]
+    },
+    {
+      "id": "format_error",
+      "pattern": "date:.*format|date:.*conversion|%.*invalid",
+      "message": "Invalid format specifier",
+      "cause": "Unsupported or incorrect format code",
+      "solutions": [
+        {
+          "approach": "Common formats",
+          "code": "date '+%Y-%m-%d'     # 2024-01-15\ndate '+%H:%M:%S'     # 14:30:00\ndate '+%s'           # Unix timestamp\ndate '+%A, %B %d'    # Monday, January 15",
+          "when": "Standard formats"
+        },
+        {
+          "approach": "Check available",
+          "code": "man date  # See all format codes for your system",
+          "when": "Find valid codes"
+        },
+        {
+          "approach": "Escape percent",
+          "code": "date '+%%'  # Literal percent sign",
+          "when": "Need % in output"
+        }
+      ]
+    },
+    {
+      "id": "timezone_issue",
+      "pattern": "TZ|timezone|UTC|wrong time",
+      "message": "Timezone confusion",
+      "cause": "TZ variable or system timezone misconfigured",
+      "solutions": [
+        {
+          "approach": "Set timezone",
+          "code": "TZ='America/New_York' date\nTZ='UTC' date",
+          "when": "Specific timezone"
+        },
+        {
+          "approach": "Show UTC",
+          "code": "date -u  # Display UTC time",
+          "when": "Want UTC"
+        },
+        {
+          "approach": "Check current TZ",
+          "code": "date '+%Z %z'  # Show timezone name and offset",
+          "when": "Verify timezone"
+        }
+      ]
+    },
+    {
+      "id": "cannot_set",
+      "pattern": "date:.*cannot set|operation not permitted|permission denied",
+      "message": "Cannot change system date",
+      "cause": "Requires root privileges to set system time",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo date -s '2024-01-15 14:30:00'  # Linux\nsudo date 0115143024  # BSD: MMDDhhmmYY",
+          "when": "Set system time"
+        },
+        {
+          "approach": "Use NTP",
+          "code": "sudo ntpdate pool.ntp.org\n# Or: sudo timedatectl set-ntp true",
+          "when": "Sync from network"
+        },
+        {
+          "approach": "Just display",
+          "code": "date  # Display doesn't require root",
+          "when": "Only need to read"
+        }
+      ]
+    },
+    {
+      "id": "relative_date",
+      "pattern": "yesterday|tomorrow|ago|next.*not recognized",
+      "message": "Relative date not supported",
+      "cause": "BSD date doesn't support GNU relative dates",
+      "solutions": [
+        {
+          "approach": "GNU style",
+          "code": "date -d 'yesterday'\ndate -d '2 weeks ago'\ndate -d 'next friday'",
+          "when": "Linux"
+        },
+        {
+          "approach": "BSD style",
+          "code": "date -v-1d          # Yesterday\ndate -v+2w          # 2 weeks ahead\ndate -v+1m          # Next month",
+          "when": "macOS/BSD"
+        },
+        {
+          "approach": "Use gdate on macOS",
+          "code": "brew install coreutils\ngdate -d 'yesterday'  # GNU date on macOS",
+          "when": "Need GNU features on macOS"
+        }
+      ]
+    },
+    {
+      "id": "epoch_conversion",
+      "pattern": "timestamp|epoch|@.*not recognized",
+      "message": "Unix timestamp conversion issue",
+      "cause": "Different syntax for timestamp conversion",
+      "solutions": [
+        {
+          "approach": "GNU from epoch",
+          "code": "date -d @1705340000  # From timestamp (GNU)",
+          "when": "Linux"
+        },
+        {
+          "approach": "BSD from epoch",
+          "code": "date -r 1705340000  # From timestamp (BSD)",
+          "when": "macOS/BSD"
+        },
+        {
+          "approach": "To epoch",
+          "code": "date +%s  # Current time as epoch (both)",
+          "when": "Get timestamp"
+        }
+      ]
+    }
+  ]
+}

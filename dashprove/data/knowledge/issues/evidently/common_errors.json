@@ -1,0 +1,143 @@
+{
+  "tool": "evidently",
+  "version": "0.4.16",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "column_mapping_error",
+      "pattern": "(column.*mapping|ColumnMapping|target.*not found)",
+      "message": "Column mapping configuration error",
+      "cause": "Dataset columns don't match expected mapping",
+      "solutions": [
+        {
+          "approach": "Define column mapping",
+          "code": "from evidently import ColumnMapping\ncolumn_mapping = ColumnMapping(\n    target='label',\n    prediction='prediction',\n    numerical_features=['age', 'income'],\n    categorical_features=['gender', 'region']\n)",
+          "when": "Custom column names"
+        },
+        {
+          "approach": "Check column names",
+          "code": "print(reference_data.columns.tolist())\nprint(current_data.columns.tolist())",
+          "when": "Debugging mapping issues"
+        }
+      ]
+    },
+    {
+      "id": "no_reference_data",
+      "pattern": "(reference.*required|baseline.*data)",
+      "message": "Reference data required for drift detection",
+      "cause": "Drift metrics need baseline data to compare against",
+      "solutions": [
+        {
+          "approach": "Provide reference data",
+          "code": "report = Report(metrics=[DataDriftPreset()])\nreport.run(reference_data=train_df, current_data=prod_df)",
+          "when": "Running drift report"
+        },
+        {
+          "approach": "Use test suite",
+          "code": "suite = TestSuite(tests=[TestColumnDrift(column_name='feature')])\nsuite.run(reference_data=reference, current_data=current)",
+          "when": "Using test suite"
+        }
+      ]
+    },
+    {
+      "id": "missing_target_column",
+      "pattern": "(target.*column|label.*missing)",
+      "message": "Target column not found in data",
+      "cause": "Classification/regression metrics require target column",
+      "solutions": [
+        {
+          "approach": "Specify target in mapping",
+          "code": "column_mapping = ColumnMapping(target='actual_label')\nreport.run(reference_data=ref, current_data=cur, column_mapping=column_mapping)",
+          "when": "Target has different name"
+        },
+        {
+          "approach": "Use data-only metrics",
+          "code": "# Use DataDriftPreset instead of ClassificationPreset\nreport = Report(metrics=[DataDriftPreset()])",
+          "when": "No target available"
+        }
+      ]
+    },
+    {
+      "id": "insufficient_data",
+      "pattern": "(insufficient.*data|too few|sample.*size)",
+      "message": "Insufficient data for statistical tests",
+      "cause": "Statistical tests require minimum sample size",
+      "solutions": [
+        {
+          "approach": "Increase sample size",
+          "code": "# Ensure at least 30-100 samples per group\nassert len(reference_data) >= 100\nassert len(current_data) >= 100",
+          "when": "Data too small"
+        },
+        {
+          "approach": "Use different test",
+          "code": "from evidently.metrics import DataDriftTable\nmetric = DataDriftTable(stattest='psi')  # PSI works with smaller samples",
+          "when": "Default test inappropriate"
+        }
+      ]
+    },
+    {
+      "id": "metric_computation_error",
+      "pattern": "(metric.*failed|cannot compute|NaN)",
+      "message": "Metric computation failed",
+      "cause": "Data quality issues or incompatible data types",
+      "solutions": [
+        {
+          "approach": "Check data types",
+          "code": "print(reference_data.dtypes)\nprint(current_data.dtypes)\n# Ensure consistent types",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Handle missing values",
+          "code": "reference_data = reference_data.dropna()\ncurrent_data = current_data.dropna()",
+          "when": "Data has NaN values"
+        },
+        {
+          "approach": "Specify feature types",
+          "code": "column_mapping = ColumnMapping(\n    numerical_features=['col1', 'col2'],\n    categorical_features=['col3']\n)",
+          "when": "Auto-detection failing"
+        }
+      ]
+    },
+    {
+      "id": "report_save_error",
+      "pattern": "(save.*failed|export|html.*error)",
+      "message": "Failed to save report",
+      "cause": "File path or format issues",
+      "solutions": [
+        {
+          "approach": "Save as HTML",
+          "code": "report.save_html('report.html')",
+          "when": "Saving HTML report"
+        },
+        {
+          "approach": "Save as JSON",
+          "code": "report.save_json('report.json')",
+          "when": "Need programmatic access"
+        },
+        {
+          "approach": "Get as dict",
+          "code": "result = report.as_dict()\nprint(result)",
+          "when": "Want in-memory result"
+        }
+      ]
+    },
+    {
+      "id": "test_failed",
+      "pattern": "(TestSuite.*failed|test.*not passed)",
+      "message": "Data quality test failed",
+      "cause": "Data doesn't meet quality criteria",
+      "solutions": [
+        {
+          "approach": "Review test results",
+          "code": "suite.run(...)\nprint(suite.as_dict()['tests'])\n# Check which tests failed",
+          "when": "Understanding failures"
+        },
+        {
+          "approach": "Adjust thresholds",
+          "code": "from evidently.tests import TestColumnDrift\ntest = TestColumnDrift(column_name='feature', stattest_threshold=0.1)",
+          "when": "Threshold too strict"
+        }
+      ]
+    }
+  ]
+}

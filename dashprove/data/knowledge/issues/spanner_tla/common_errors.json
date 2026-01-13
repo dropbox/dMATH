@@ -1,0 +1,65 @@
+{
+  "tool_id": "spanner_tla",
+  "tool_name": "Spanner TLA+ Specification",
+  "description": "TLA+ specification of Google Spanner's distributed transaction protocol including TrueTime, Paxos groups, and lock-free read-only transactions",
+  "common_errors": [
+    {
+      "id": "truetime_uncertainty_violation",
+      "pattern": "TrueTime uncertainty window exceeded|timestamp ordering violation",
+      "category": "consistency",
+      "severity": "high",
+      "cause": "The TrueTime interval calculation in the model doesn't properly account for clock uncertainty bounds, causing potential timestamp ordering violations",
+      "solution": "Ensure commit_timestamp >= TrueTime.now().earliest + uncertainty_bound. Use Paxos leader leases to reduce uncertainty when possible.",
+      "example": "commit_timestamp = tt.now().latest  -- must wait for uncertainty to pass",
+      "related_concepts": ["external_consistency", "linearizability", "paxos_leader_lease"]
+    },
+    {
+      "id": "paxos_group_divergence",
+      "pattern": "Replica states diverged|Paxos log inconsistency",
+      "category": "replication",
+      "severity": "critical",
+      "cause": "Paxos replicas in a tablet group have inconsistent logs due to incorrect handling of leadership changes or missed prepare/accept phases",
+      "solution": "Verify Paxos invariant: all committed entries at log index i have the same value across all replicas. Use log catchup mechanism for lagging replicas.",
+      "related_concepts": ["multi_paxos", "log_replication", "leader_election"]
+    },
+    {
+      "id": "read_snapshot_stale",
+      "pattern": "Snapshot timestamp too old|Read could not be served at requested timestamp",
+      "category": "read_protocol",
+      "severity": "medium",
+      "cause": "Attempting to read at a timestamp older than the tablet's safe_time or garbage collection watermark",
+      "solution": "Choose read timestamp >= safe_time. For stale reads, ensure timestamp is within retention window. Use strong reads for latest data.",
+      "related_concepts": ["safe_time", "bounded_staleness", "strong_consistency"]
+    },
+    {
+      "id": "transaction_lock_contention",
+      "pattern": "Lock acquisition timeout|Deadlock detected between transactions",
+      "category": "concurrency",
+      "severity": "high",
+      "cause": "Multiple transactions attempting to acquire locks on overlapping key ranges in incompatible orders",
+      "solution": "Use wound-wait deadlock prevention (older transactions wound younger ones). Consider partitioning data to reduce contention.",
+      "related_concepts": ["two_phase_locking", "wound_wait", "transaction_priority"]
+    },
+    {
+      "id": "schema_change_divergence",
+      "pattern": "Schema version mismatch|Column family not found during scan",
+      "category": "schema",
+      "severity": "high",
+      "cause": "Schema changes not fully propagated to all Paxos groups, causing reads/writes to fail on tablets with old schema",
+      "solution": "Use schema-change Paxos to ensure atomic schema updates. Clients should retry with backoff during schema transitions.",
+      "related_concepts": ["online_schema_change", "schema_versioning", "split_brain_prevention"]
+    }
+  ],
+  "best_practices": [
+    "Model TrueTime as an interval [earliest, latest] rather than a single point in time",
+    "Include clock uncertainty bounds explicitly in the specification",
+    "Verify external consistency: if T1 commits before T2 starts, T1's commit timestamp < T2's commit timestamp",
+    "Model Paxos leader lease mechanism to understand how it reduces commit latency",
+    "Test with varying numbers of Paxos groups to catch sharding-related bugs"
+  ],
+  "references": [
+    "https://research.google/pubs/pub39966/",
+    "https://www.usenix.org/conference/osdi12/technical-sessions/presentation/corbett",
+    "https://cloud.google.com/spanner/docs/true-time-external-consistency"
+  ]
+}

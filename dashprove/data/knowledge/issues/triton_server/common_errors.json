@@ -1,0 +1,191 @@
+{
+  "tool": "triton_server",
+  "version": "24.01",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_load_error",
+      "pattern": "Failed to load|Model.*not found|UNAVAILABLE",
+      "message": "Cannot load model into Triton",
+      "cause": "Model configuration or files incorrect",
+      "solutions": [
+        {
+          "approach": "Check directory structure",
+          "code": "model_repository/\n  model_name/\n    config.pbtxt\n    1/\n      model.onnx",
+          "when": "Setting up model"
+        },
+        {
+          "approach": "Verify config.pbtxt",
+          "code": "name: \"model_name\"\nplatform: \"onnxruntime_onnx\"\ninput [ { name: \"input\" data_type: TYPE_FP32 dims: [-1, 224, 224, 3] } ]\noutput [ { name: \"output\" data_type: TYPE_FP32 dims: [-1, 1000] } ]",
+          "when": "ONNX model"
+        },
+        {
+          "approach": "Check model version",
+          "code": "# Ensure version directory (1/, 2/) contains model file",
+          "when": "Version directory empty"
+        }
+      ]
+    },
+    {
+      "id": "inference_error",
+      "pattern": "Inference failed|INTERNAL|Shape mismatch",
+      "message": "Model inference failed",
+      "cause": "Input data doesn't match model expectations",
+      "solutions": [
+        {
+          "approach": "Check input shapes",
+          "code": "import tritonclient.grpc as grpcclient\nclient = grpcclient.InferenceServerClient('localhost:8001')\nmetadata = client.get_model_metadata('model')\nprint(metadata)",
+          "when": "Checking expected input"
+        },
+        {
+          "approach": "Prepare input correctly",
+          "code": "inputs = [grpcclient.InferInput('input', [1, 224, 224, 3], 'FP32')]\ninputs[0].set_data_from_numpy(data)",
+          "when": "Setting input data"
+        },
+        {
+          "approach": "Match data type",
+          "code": "# Ensure numpy dtype matches model's expected TYPE_*",
+          "when": "Type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "gpu_error",
+      "pattern": "CUDA.*error|GPU.*not available|No GPU|device_id",
+      "message": "GPU configuration error",
+      "cause": "GPU not available or incorrect instance configuration",
+      "solutions": [
+        {
+          "approach": "Set GPU in config",
+          "code": "instance_group [ { count: 1 kind: KIND_GPU gpus: [ 0 ] } ]",
+          "when": "Using GPU"
+        },
+        {
+          "approach": "Use CPU fallback",
+          "code": "instance_group [ { count: 1 kind: KIND_CPU } ]",
+          "when": "No GPU available"
+        },
+        {
+          "approach": "Check GPU availability",
+          "code": "docker run --gpus all nvcr.io/nvidia/tritonserver:24.01-py3 nvidia-smi",
+          "when": "Verifying GPU access"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "Connection refused|Cannot connect|Unavailable",
+      "message": "Cannot connect to Triton server",
+      "cause": "Server not running or incorrect address",
+      "solutions": [
+        {
+          "approach": "Start server",
+          "code": "docker run --gpus all -p 8000:8000 -p 8001:8001 -p 8002:8002 \\\n  -v /path/to/models:/models \\\n  nvcr.io/nvidia/tritonserver:24.01-py3 \\\n  tritonserver --model-repository=/models",
+          "when": "Server not running"
+        },
+        {
+          "approach": "Check health",
+          "code": "curl localhost:8000/v2/health/ready",
+          "when": "Verifying server status"
+        },
+        {
+          "approach": "Use correct port",
+          "code": "# HTTP: 8000, gRPC: 8001, Metrics: 8002",
+          "when": "Wrong port"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "config.*error|Invalid config|parse error",
+      "message": "Model configuration error",
+      "cause": "config.pbtxt has syntax or semantic errors",
+      "solutions": [
+        {
+          "approach": "Use auto-complete",
+          "code": "tritonserver --model-repository=/models --strict-model-config=false",
+          "when": "Let Triton infer config"
+        },
+        {
+          "approach": "Validate config syntax",
+          "code": "# config.pbtxt uses protobuf text format",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Check required fields",
+          "code": "# Minimum: name, platform/backend, input, output",
+          "when": "Missing required fields"
+        }
+      ]
+    },
+    {
+      "id": "batching_error",
+      "pattern": "Batch.*error|Dynamic batching|max_batch_size",
+      "message": "Batching configuration error",
+      "cause": "Batching settings incompatible with model",
+      "solutions": [
+        {
+          "approach": "Disable batching",
+          "code": "max_batch_size: 0",
+          "when": "Model doesn't support batching"
+        },
+        {
+          "approach": "Enable dynamic batching",
+          "code": "max_batch_size: 32\ndynamic_batching { }",
+          "when": "Batching requests"
+        },
+        {
+          "approach": "Set preferred batch sizes",
+          "code": "dynamic_batching {\n  preferred_batch_size: [ 4, 8, 16 ]\n  max_queue_delay_microseconds: 100\n}",
+          "when": "Optimizing throughput"
+        }
+      ]
+    },
+    {
+      "id": "backend_error",
+      "pattern": "Backend.*error|Unknown backend|platform",
+      "message": "Model backend not available",
+      "cause": "Required backend not installed or incorrect platform specified",
+      "solutions": [
+        {
+          "approach": "Use correct platform",
+          "code": "platform: \"onnxruntime_onnx\"  # or tensorrt_plan, pytorch_libtorch, etc.",
+          "when": "ONNX model"
+        },
+        {
+          "approach": "Use backend instead",
+          "code": "backend: \"python\"  # For Python backend",
+          "when": "Custom Python model"
+        },
+        {
+          "approach": "Check available backends",
+          "code": "ls /opt/tritonserver/backends/",
+          "when": "Listing backends"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "Out of memory|OOM|Memory allocation",
+      "message": "Server ran out of memory",
+      "cause": "Model too large or too many instances",
+      "solutions": [
+        {
+          "approach": "Reduce instances",
+          "code": "instance_group [ { count: 1 kind: KIND_GPU } ]",
+          "when": "Too many instances"
+        },
+        {
+          "approach": "Use model priorities",
+          "code": "model_priority: 1  # Higher priority models loaded first",
+          "when": "Many models competing"
+        },
+        {
+          "approach": "Enable model unloading",
+          "code": "# Use model control API to load/unload models dynamically",
+          "when": "Managing memory"
+        }
+      ]
+    }
+  ]
+}

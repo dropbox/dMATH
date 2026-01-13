@@ -1,0 +1,191 @@
+{
+  "tool": "ansible",
+  "version": "2.16.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "host_unreachable",
+      "pattern": "UNREACHABLE|Connection refused|SSH|Permission denied",
+      "message": "Cannot connect to host",
+      "cause": "SSH connection failed, wrong credentials, or host down",
+      "solutions": [
+        {
+          "approach": "Check SSH connectivity",
+          "code": "ssh -vvv user@host\n# Test Ansible connection\nansible all -m ping -vvv",
+          "when": "Debug connection"
+        },
+        {
+          "approach": "Configure SSH key",
+          "code": "# In ansible.cfg\n[defaults]\nprivate_key_file = ~/.ssh/my_key\nremote_user = ubuntu",
+          "when": "Auth issue"
+        },
+        {
+          "approach": "Use become",
+          "code": "ansible-playbook playbook.yml --become --ask-become-pass",
+          "when": "Need sudo privileges"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "module .* not found|couldn't resolve module",
+      "message": "Ansible module not found",
+      "cause": "Module not installed or typo in name",
+      "solutions": [
+        {
+          "approach": "Install collection",
+          "code": "ansible-galaxy collection install community.general\nansible-galaxy collection install amazon.aws",
+          "when": "Module in collection"
+        },
+        {
+          "approach": "Check module name",
+          "code": "ansible-doc -l | grep <keyword>\nansible-doc <module-name>",
+          "when": "Verify module exists"
+        },
+        {
+          "approach": "Update collections",
+          "code": "ansible-galaxy collection install --upgrade community.general",
+          "when": "Need newer version"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error|YAML|indentation",
+      "message": "YAML syntax error in playbook",
+      "cause": "Invalid YAML formatting",
+      "solutions": [
+        {
+          "approach": "Lint playbook",
+          "code": "ansible-lint playbook.yml\nyamllint playbook.yml",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Validate syntax",
+          "code": "ansible-playbook playbook.yml --syntax-check",
+          "when": "Verify playbook"
+        },
+        {
+          "approach": "Fix indentation",
+          "code": "# Use 2 spaces for indentation\n- name: Task name\n  module_name:\n    param: value",
+          "when": "Indentation issue"
+        }
+      ]
+    },
+    {
+      "id": "undefined_variable",
+      "pattern": "undefined variable|is undefined|AnsibleUndefinedVariable",
+      "message": "Variable not defined",
+      "cause": "Variable referenced but not set",
+      "solutions": [
+        {
+          "approach": "Define in vars",
+          "code": "# In playbook\nvars:\n  my_var: value\n\n# Or in inventory\n[group:vars]\nmy_var=value",
+          "when": "Variable missing"
+        },
+        {
+          "approach": "Use default filter",
+          "code": "{{ my_var | default('fallback_value') }}",
+          "when": "Optional variable"
+        },
+        {
+          "approach": "Check variable precedence",
+          "code": "ansible-inventory --list\nansible -m debug -a \"var=hostvars\" host",
+          "when": "Variable may be overridden"
+        }
+      ]
+    },
+    {
+      "id": "task_failed",
+      "pattern": "FAILED|fatal|non-zero return code",
+      "message": "Task execution failed",
+      "cause": "Command failed on remote host",
+      "solutions": [
+        {
+          "approach": "Ignore errors",
+          "code": "- name: May fail\n  command: /bin/might-fail\n  ignore_errors: true",
+          "when": "Failure acceptable"
+        },
+        {
+          "approach": "Register and check",
+          "code": "- name: Check status\n  command: /bin/check\n  register: result\n  failed_when: result.rc not in [0, 1]",
+          "when": "Custom failure condition"
+        },
+        {
+          "approach": "Debug output",
+          "code": "- debug:\n    var: result\n    verbosity: 1",
+          "when": "See task output"
+        }
+      ]
+    },
+    {
+      "id": "handler_not_notified",
+      "pattern": "handler|notify|changed",
+      "message": "Handler not triggered",
+      "cause": "Task didn't change or notify name mismatch",
+      "solutions": [
+        {
+          "approach": "Check notify name",
+          "code": "- name: Update config\n  template:\n    src: config.j2\n    dest: /etc/app/config\n  notify: restart app\n\nhandlers:\n  - name: restart app  # Must match exactly\n    service:\n      name: app\n      state: restarted",
+          "when": "Name mismatch"
+        },
+        {
+          "approach": "Force handler",
+          "code": "- meta: flush_handlers",
+          "when": "Run handlers immediately"
+        },
+        {
+          "approach": "Check changed status",
+          "code": "- debug:\n    var: result.changed",
+          "when": "Task may not be changing"
+        }
+      ]
+    },
+    {
+      "id": "inventory_error",
+      "pattern": "inventory|host not found|unable to parse",
+      "message": "Inventory configuration error",
+      "cause": "Invalid inventory file or host not in inventory",
+      "solutions": [
+        {
+          "approach": "Check inventory",
+          "code": "ansible-inventory --list\nansible-inventory --graph",
+          "when": "Verify inventory"
+        },
+        {
+          "approach": "Use correct format",
+          "code": "# INI format\n[webservers]\nweb1 ansible_host=192.168.1.10\n\n# YAML format\nall:\n  children:\n    webservers:\n      hosts:\n        web1:\n          ansible_host: 192.168.1.10",
+          "when": "Format issue"
+        },
+        {
+          "approach": "Specify inventory",
+          "code": "ansible-playbook -i inventory.yml playbook.yml",
+          "when": "Using custom inventory"
+        }
+      ]
+    },
+    {
+      "id": "privilege_error",
+      "pattern": "sudo|permission denied|become",
+      "message": "Privilege escalation failed",
+      "cause": "Cannot become root or sudo password required",
+      "solutions": [
+        {
+          "approach": "Use become",
+          "code": "- name: Task needing root\n  apt:\n    name: nginx\n    state: present\n  become: true",
+          "when": "Task needs privileges"
+        },
+        {
+          "approach": "Provide sudo password",
+          "code": "ansible-playbook playbook.yml --ask-become-pass\n# Or in vars (not recommended)\nansible_become_pass: secret",
+          "when": "Sudo requires password"
+        },
+        {
+          "approach": "Configure sudoers",
+          "code": "# On target host, add to sudoers\nusername ALL=(ALL) NOPASSWD: ALL",
+          "when": "Passwordless sudo needed"
+        }
+      ]
+    }
+  ]
+}

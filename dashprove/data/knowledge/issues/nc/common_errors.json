@@ -1,0 +1,173 @@
+{
+  "tool": "nc",
+  "version": "netcat (GNU/BSD/nmap variants)",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|Connection timed out|No route to host",
+      "message": "Cannot connect to target",
+      "cause": "Port not listening, firewall, or network issue",
+      "solutions": [
+        {
+          "approach": "Test connectivity",
+          "code": "nc -zv host 80  # Test port 80\nnc -zv host 20-30  # Scan port range",
+          "when": "Check if port open"
+        },
+        {
+          "approach": "With timeout",
+          "code": "nc -w 5 host 80  # 5 second timeout",
+          "when": "Limit wait time"
+        },
+        {
+          "approach": "UDP mode",
+          "code": "nc -u host 53  # UDP connection",
+          "when": "UDP port"
+        }
+      ]
+    },
+    {
+      "id": "variant_differences",
+      "pattern": "invalid option|unknown option|usage:|differs",
+      "message": "Command syntax varies between netcat versions",
+      "cause": "GNU nc, BSD nc, and ncat have different options",
+      "solutions": [
+        {
+          "approach": "Check version",
+          "code": "nc -h 2>&1 | head -5  # Show help/version",
+          "when": "Identify variant"
+        },
+        {
+          "approach": "GNU/Traditional nc",
+          "code": "nc -l -p 8080          # Listen mode\nnc host 8080           # Connect mode",
+          "when": "Traditional netcat"
+        },
+        {
+          "approach": "BSD nc (macOS)",
+          "code": "nc -l 8080             # Listen (no -p needed)\nnc host 8080           # Connect",
+          "when": "BSD/macOS"
+        },
+        {
+          "approach": "ncat (nmap)",
+          "code": "ncat -l 8080           # Listen\nncat --ssl host 443    # TLS connection",
+          "when": "nmap's netcat"
+        }
+      ]
+    },
+    {
+      "id": "listen_mode",
+      "pattern": "listen|server|bind|already in use",
+      "message": "Cannot start listener",
+      "cause": "Port already in use or need elevated privileges",
+      "solutions": [
+        {
+          "approach": "Check port use",
+          "code": "lsof -i :8080  # What's using port",
+          "when": "Port in use"
+        },
+        {
+          "approach": "Different port",
+          "code": "nc -l 8081  # Try different port",
+          "when": "Port taken"
+        },
+        {
+          "approach": "Privileged ports",
+          "code": "sudo nc -l 80  # Ports < 1024 need root",
+          "when": "Low port number"
+        },
+        {
+          "approach": "Keep listening",
+          "code": "nc -lk 8080  # Keep listening after client disconnects",
+          "when": "Persistent listener"
+        }
+      ]
+    },
+    {
+      "id": "file_transfer",
+      "pattern": "transfer|send.*file|receive.*file",
+      "message": "Transferring files with nc",
+      "cause": "Need to send/receive files",
+      "solutions": [
+        {
+          "approach": "Send file",
+          "code": "# Receiver:\nnc -l 8080 > received_file\n# Sender:\nnc host 8080 < file_to_send",
+          "when": "Simple file transfer"
+        },
+        {
+          "approach": "With compression",
+          "code": "# Receiver:\nnc -l 8080 | gunzip > file\n# Sender:\ngzip -c file | nc host 8080",
+          "when": "Compress in transit"
+        },
+        {
+          "approach": "Directory tar",
+          "code": "# Receiver:\nnc -l 8080 | tar xvf -\n# Sender:\ntar cvf - directory | nc host 8080",
+          "when": "Send directory"
+        }
+      ]
+    },
+    {
+      "id": "hanging",
+      "pattern": "hang|stuck|doesn't exit|waiting",
+      "message": "nc doesn't exit after transfer",
+      "cause": "nc waits for EOF or connection close",
+      "solutions": [
+        {
+          "approach": "Use timeout",
+          "code": "nc -w 3 host 80 < request.txt",
+          "when": "Set timeout"
+        },
+        {
+          "approach": "Send EOF",
+          "code": "# Ctrl+D sends EOF to nc",
+          "when": "Interactive mode"
+        },
+        {
+          "approach": "Close on EOF",
+          "code": "nc -q 1 host 80 < request.txt  # Quit 1s after EOF",
+          "when": "GNU nc"
+        }
+      ]
+    },
+    {
+      "id": "http_request",
+      "pattern": "HTTP|GET|request|web",
+      "message": "Making HTTP requests with nc",
+      "cause": "Testing HTTP manually",
+      "solutions": [
+        {
+          "approach": "GET request",
+          "code": "printf 'GET / HTTP/1.1\\r\\nHost: example.com\\r\\n\\r\\n' | nc example.com 80",
+          "when": "Basic GET"
+        },
+        {
+          "approach": "HTTPS with ncat",
+          "code": "printf 'GET / HTTP/1.1\\r\\nHost: example.com\\r\\n\\r\\n' | ncat --ssl example.com 443",
+          "when": "TLS connection"
+        },
+        {
+          "approach": "Use curl instead",
+          "code": "curl -v http://example.com/",
+          "when": "Easier HTTP testing"
+        }
+      ]
+    },
+    {
+      "id": "proxy_tunnel",
+      "pattern": "proxy|tunnel|forward|relay",
+      "message": "Creating tunnels/proxies",
+      "cause": "Port forwarding needs",
+      "solutions": [
+        {
+          "approach": "Simple relay",
+          "code": "# Create named pipe:\nmkfifo backpipe\nnc -l 8080 < backpipe | nc target 80 > backpipe",
+          "when": "Port forwarding"
+        },
+        {
+          "approach": "Use socat instead",
+          "code": "socat TCP-LISTEN:8080,fork TCP:target:80",
+          "when": "Better for proxies"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+{
+  "tool": "socketio",
+  "category": "realtime",
+  "common_errors": [
+    {
+      "error": "CORS_ERROR",
+      "pattern": "CORS.*blocked|Access-Control-Allow-Origin|cross-origin request",
+      "severity": "high",
+      "causes": [
+        "CORS not configured on server",
+        "Origin not in allowed list",
+        "Credentials mode mismatch",
+        "Preflight request failing"
+      ],
+      "solutions": [
+        "Configure CORS: io = new Server(server, { cors: { origin: 'http://localhost:3000' } })",
+        "Allow multiple origins: cors: { origin: ['http://localhost:3000', 'https://app.com'] }",
+        "For development: cors: { origin: '*' }",
+        "Add credentials: cors: { origin: true, credentials: true }"
+      ]
+    },
+    {
+      "error": "CONNECTION_TIMEOUT",
+      "pattern": "timeout.*connecting|connect_error|TransportError",
+      "severity": "high",
+      "causes": [
+        "Server not running",
+        "Wrong connection URL",
+        "Firewall blocking WebSocket",
+        "Proxy not configured for WebSocket"
+      ],
+      "solutions": [
+        "Verify server is running on expected port",
+        "Check URL: io('http://localhost:3000')",
+        "Configure proxy for WebSocket upgrade",
+        "Test with polling only: transports: ['polling']"
+      ]
+    },
+    {
+      "error": "WEBSOCKET_UPGRADE_FAILED",
+      "pattern": "websocket.*failed|upgrade.*error|HTTP.*101",
+      "severity": "high",
+      "causes": [
+        "Load balancer not supporting WebSocket",
+        "Proxy not forwarding upgrade headers",
+        "Server not handling upgrade",
+        "Firewall blocking WebSocket protocol"
+      ],
+      "solutions": [
+        "Configure nginx: proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade;",
+        "Use sticky sessions with load balancer",
+        "Enable WebSocket on ALB/ELB",
+        "Fallback to polling if WebSocket unavailable"
+      ]
+    },
+    {
+      "error": "NAMESPACE_NOT_FOUND",
+      "pattern": "namespace.*not found|Invalid namespace|nsp.*undefined",
+      "severity": "medium",
+      "causes": [
+        "Namespace not created on server",
+        "Typo in namespace path",
+        "Connecting before namespace setup",
+        "Dynamic namespace not matching"
+      ],
+      "solutions": [
+        "Create namespace: io.of('/chat')",
+        "Verify path: io('/chat') client matches io.of('/chat') server",
+        "Use dynamic namespaces: io.of(/^\\/user-\\d+$/)",
+        "Default namespace is '/': io() or io.of('/')"
+      ]
+    },
+    {
+      "error": "ROOM_BROADCAST_NOT_WORKING",
+      "pattern": "room.*not receiving|broadcast.*failing|emit to room.*not working",
+      "severity": "medium",
+      "causes": [
+        "Socket not joined to room",
+        "Wrong room name",
+        "Broadcasting to self (use broadcast)",
+        "Room left but not re-joined"
+      ],
+      "solutions": [
+        "Join room: socket.join('room-name')",
+        "Broadcast to room: io.to('room').emit('event', data)",
+        "Exclude sender: socket.to('room').emit('event', data)",
+        "Check room membership: socket.rooms"
+      ]
+    },
+    {
+      "error": "AUTHENTICATION_FAILED",
+      "pattern": "authentication.*failed|unauthorized|auth.*error",
+      "severity": "high",
+      "causes": [
+        "Missing auth token",
+        "Invalid token",
+        "Middleware rejecting connection",
+        "Token not sent in handshake"
+      ],
+      "solutions": [
+        "Send auth: io({ auth: { token: 'jwt-token' } })",
+        "Verify in middleware: io.use((socket, next) => { if (valid) next(); else next(new Error('unauthorized')); })",
+        "Access token: socket.handshake.auth.token",
+        "Use extraHeaders for HTTP header auth"
+      ]
+    },
+    {
+      "error": "MEMORY_LEAK",
+      "pattern": "memory.*leak|listeners.*accumulating|EventEmitter.*warning",
+      "severity": "high",
+      "causes": [
+        "Not removing event listeners",
+        "Socket not cleaned up on disconnect",
+        "Duplicate event handlers",
+        "References held after disconnect"
+      ],
+      "solutions": [
+        "Remove listeners on disconnect: socket.off('event')",
+        "Use socket.once for one-time events",
+        "Clean up in React useEffect cleanup",
+        "Remove all listeners: socket.removeAllListeners()"
+      ]
+    },
+    {
+      "error": "MESSAGE_NOT_RECEIVED",
+      "pattern": "event.*not received|emit.*not working|message.*lost",
+      "severity": "medium",
+      "causes": [
+        "Event name mismatch",
+        "Socket not connected",
+        "Client disconnected before receive",
+        "Different namespaces"
+      ],
+      "solutions": [
+        "Verify event names match exactly (case-sensitive)",
+        "Check connected state: socket.connected",
+        "Add error handling: socket.on('error', handler)",
+        "Use acknowledgments: socket.emit('event', data, callback)"
+      ]
+    },
+    {
+      "error": "SCALING_SESSION_ISSUE",
+      "pattern": "session.*invalid|socket.*not found|adapter.*error",
+      "severity": "high",
+      "causes": [
+        "Multiple servers without adapter",
+        "Sticky sessions not configured",
+        "Redis adapter not connected",
+        "Session affinity breaking"
+      ],
+      "solutions": [
+        "Use Redis adapter: io.adapter(createAdapter(pubClient, subClient))",
+        "Enable sticky sessions in load balancer",
+        "Verify Redis connection",
+        "Use socket.io-redis or socket.io-cluster-adapter"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use namespaces for logical separation",
+    "Implement reconnection handling",
+    "Add authentication middleware",
+    "Use Redis adapter for scaling",
+    "Clean up listeners on disconnect",
+    "Use acknowledgments for critical messages",
+    "Monitor connection metrics"
+  ],
+  "related_tools": ["ws", "websocket", "pusher", "ably"]
+}

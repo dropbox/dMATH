@@ -1,0 +1,131 @@
+{
+  "id": "mirai",
+  "name": "MIRAI",
+  "category": "rust_formal_verification",
+  "subcategory": "abstract_interpretation",
+
+  "description": "Abstract interpreter for Rust from Meta",
+  "long_description": "MIRAI is a static analysis tool for Rust developed by Meta (Facebook). It uses abstract interpretation to analyze Rust MIR and detect runtime errors, panics, and security vulnerabilities. MIRAI integrates with Rust's tag analysis for information flow tracking.",
+
+  "capabilities": [
+    "panic_detection",
+    "constant_propagation",
+    "taint_analysis",
+    "information_flow",
+    "buffer_overflow",
+    "integer_overflow",
+    "tag_analysis"
+  ],
+  "property_types": ["assertion", "precondition", "tag"],
+  "input_languages": ["rust"],
+  "output_formats": ["diagnostic", "warning", "json"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install mirai"},
+      {"type": "source", "url": "https://github.com/facebookexperimental/MIRAI"}
+    ],
+    "dependencies": ["rust-nightly", "z3"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/facebookexperimental/MIRAI",
+    "tutorial": "https://github.com/facebookexperimental/MIRAI/blob/main/documentation/Overview.md",
+    "api_reference": "https://github.com/facebookexperimental/MIRAI/tree/main/documentation",
+    "examples": "https://github.com/facebookexperimental/MIRAI/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "precondition",
+      "description": "Add function precondition",
+      "syntax": "mirai_annotations::precondition!(condition)",
+      "when_to_use": "To specify what callers must ensure",
+      "examples": ["precondition!(x > 0);"]
+    },
+    {
+      "name": "postcondition",
+      "description": "Add function postcondition",
+      "syntax": "mirai_annotations::postcondition!(condition)",
+      "when_to_use": "To specify what function guarantees",
+      "examples": ["postcondition!(result >= 0);"]
+    },
+    {
+      "name": "verify",
+      "description": "Assert property for verification",
+      "syntax": "mirai_annotations::verify!(condition)",
+      "when_to_use": "For verification-time assertions",
+      "examples": ["verify!(index < len);"]
+    },
+    {
+      "name": "add_tag",
+      "description": "Add taint/tag to value",
+      "syntax": "mirai_annotations::add_tag!(value, Tag)",
+      "when_to_use": "For information flow tracking",
+      "examples": ["add_tag!(user_input, Tainted);"]
+    },
+    {
+      "name": "check_tag",
+      "description": "Check if value has tag",
+      "syntax": "mirai_annotations::does_not_have_tag!(value, Tag)",
+      "when_to_use": "To verify data flow properties",
+      "examples": ["does_not_have_tag!(sanitized, Tainted);"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "possible panic",
+      "meaning": "Code path may panic at runtime",
+      "common_causes": ["Unwrap on None/Err", "Index out of bounds", "Division by zero"],
+      "fixes": ["Add explicit checks", "Use safer alternatives", "Add preconditions"]
+    },
+    {
+      "pattern": "precondition not satisfied",
+      "meaning": "Caller doesn't guarantee required condition",
+      "common_causes": ["Missing validation", "Incorrect calling context"],
+      "fixes": ["Add validation before call", "Propagate precondition upward"]
+    },
+    {
+      "pattern": "tag .* flows to",
+      "meaning": "Tainted data reaches sensitive sink",
+      "common_causes": ["Missing sanitization", "Information leak"],
+      "fixes": ["Add sanitization step", "Add tag removal"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["assertion", "contract", "taint"],
+    "cli_command": "dashprove verify --backend mirai"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Handles medium to large codebases",
+    "memory_usage": "4-16GB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["kani", "miri", "infer"],
+    "advantages": [
+      "Taint analysis support",
+      "Fast abstract interpretation",
+      "Good for security auditing",
+      "No false negatives for covered checks"
+    ],
+    "disadvantages": [
+      "May have false positives",
+      "Requires annotation for full benefit",
+      "Nightly Rust dependency"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.1.8",
+    "last_updated": "2025-12-20",
+    "maintainer": "Meta",
+    "license": "MIT"
+  }
+}

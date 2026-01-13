@@ -1,0 +1,181 @@
+{
+  "tool": "coverage_py",
+  "version": "7.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_coverage_data",
+      "pattern": "No data to report|Coverage.py warning: No data",
+      "message": "No coverage data collected",
+      "cause": "Coverage not running during tests or wrong source",
+      "solutions": [
+        {
+          "approach": "Run with coverage",
+          "code": "coverage run -m pytest tests/",
+          "when": "Forgot coverage run"
+        },
+        {
+          "approach": "Check source path",
+          "code": "coverage run --source=src -m pytest",
+          "when": "Source not being tracked"
+        },
+        {
+          "approach": "Check branch",
+          "code": "coverage run --branch -m pytest",
+          "when": "Want branch coverage"
+        }
+      ]
+    },
+    {
+      "id": "missing_coverage",
+      "pattern": "Missing.*%|TOTAL.*\\d+%",
+      "message": "Code not fully covered",
+      "cause": "Some code paths not executed by tests",
+      "solutions": [
+        {
+          "approach": "View HTML report",
+          "code": "coverage html && open htmlcov/index.html",
+          "when": "Need to see uncovered lines"
+        },
+        {
+          "approach": "Add tests",
+          "code": "def test_edge_case():\n    assert func(edge_value) == expected",
+          "when": "Missing test for path"
+        },
+        {
+          "approach": "Exclude from coverage",
+          "code": "# pragma: no cover",
+          "when": "Code intentionally untested"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "CoverageWarning: Module .* was never imported",
+      "message": "Module not imported during test",
+      "cause": "Module path wrong or not imported",
+      "solutions": [
+        {
+          "approach": "Check source path",
+          "code": "coverage run --source=my_package -m pytest",
+          "when": "Package not found"
+        },
+        {
+          "approach": "Add __init__.py",
+          "code": "# Ensure package has __init__.py",
+          "when": "Missing init file"
+        },
+        {
+          "approach": "Check PYTHONPATH",
+          "code": "PYTHONPATH=src coverage run -m pytest",
+          "when": "Source not in path"
+        }
+      ]
+    },
+    {
+      "id": "multiprocess_issue",
+      "pattern": "parallel|subprocess|multiprocessing",
+      "message": "Coverage not tracking subprocesses",
+      "cause": "Spawned processes not collecting coverage",
+      "solutions": [
+        {
+          "approach": "Use concurrency",
+          "code": "coverage run --concurrency=multiprocessing -m pytest",
+          "when": "Using multiprocessing"
+        },
+        {
+          "approach": "Combine data",
+          "code": "coverage combine && coverage report",
+          "when": "Have multiple .coverage files"
+        },
+        {
+          "approach": "Configure in setup",
+          "code": "# In pyproject.toml:\n[tool.coverage.run]\nconcurrency = [\"multiprocessing\"]",
+          "when": "Consistent config needed"
+        }
+      ]
+    },
+    {
+      "id": "exclude_pattern",
+      "pattern": "exclude|pragma: no cover",
+      "message": "Lines being excluded from coverage",
+      "cause": "Exclusion patterns matching code",
+      "solutions": [
+        {
+          "approach": "Check excludes",
+          "code": "# In pyproject.toml:\n[tool.coverage.report]\nexclude_lines = [\"pragma: no cover\", \"def __repr__\"]",
+          "when": "Too much excluded"
+        },
+        {
+          "approach": "Use pragma",
+          "code": "if TYPE_CHECKING:  # pragma: no cover\n    from typing import ...",
+          "when": "Exclude type hints"
+        }
+      ]
+    },
+    {
+      "id": "branch_miss",
+      "pattern": "branch.*partial|→",
+      "message": "Branch not fully covered",
+      "cause": "Only one branch of conditional taken",
+      "solutions": [
+        {
+          "approach": "Test both branches",
+          "code": "def test_true_branch():\n    assert func(True) == 'yes'\n\ndef test_false_branch():\n    assert func(False) == 'no'",
+          "when": "Missing branch test"
+        },
+        {
+          "approach": "View branch report",
+          "code": "coverage report --show-missing",
+          "when": "See which branches missed"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "Configuration error|Invalid configuration",
+      "message": "Invalid coverage configuration",
+      "cause": "pyproject.toml or .coveragerc has errors",
+      "solutions": [
+        {
+          "approach": "Check config syntax",
+          "code": "# Validate pyproject.toml format",
+          "when": "TOML syntax error"
+        },
+        {
+          "approach": "Use correct section",
+          "code": "[tool.coverage.run]\nsource = [\"src\"]\n\n[tool.coverage.report]\nfail_under = 80",
+          "when": "Wrong section names"
+        },
+        {
+          "approach": "Debug config",
+          "code": "coverage debug config",
+          "when": "Need to see loaded config"
+        }
+      ]
+    },
+    {
+      "id": "fail_under",
+      "pattern": "Coverage failure|FAIL Required",
+      "message": "Coverage below required threshold",
+      "cause": "Coverage percentage lower than fail_under",
+      "solutions": [
+        {
+          "approach": "Add more tests",
+          "code": "# Write tests for uncovered code",
+          "when": "Coverage genuinely low"
+        },
+        {
+          "approach": "Adjust threshold",
+          "code": "[tool.coverage.report]\nfail_under = 70  # Lower temporarily",
+          "when": "Threshold too aggressive"
+        },
+        {
+          "approach": "Exclude untestable",
+          "code": "omit = [\"*/migrations/*\", \"*/tests/*\"]",
+          "when": "Generated code included"
+        }
+      ]
+    }
+  ]
+}

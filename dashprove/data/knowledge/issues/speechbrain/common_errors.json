@@ -1,0 +1,190 @@
+{
+  "tool": "speechbrain",
+  "version": "1.0.0",
+  "last_updated": "2025-12-22",
+  "description": "Open-source all-in-one speech toolkit for ASR, TTS, speaker recognition, and more",
+  "errors": [
+    {
+      "id": "recipe_not_found",
+      "pattern": "Recipe.*not found|yaml.*missing",
+      "message": "Training recipe or config not found",
+      "cause": "Path to recipe YAML incorrect",
+      "solutions": [
+        {
+          "approach": "Clone recipes",
+          "code": "git clone https://github.com/speechbrain/speechbrain\ncd speechbrain/recipes/LibriSpeech/ASR/transformer",
+          "when": "Need official recipes"
+        },
+        {
+          "approach": "Check YAML path",
+          "code": "python train.py train.yaml --data_folder /path/to/data",
+          "when": "YAML file not found"
+        },
+        {
+          "approach": "Use HuggingFace model",
+          "code": "from speechbrain.inference.ASR import EncoderDecoderASR\nasr = EncoderDecoderASR.from_hparams('speechbrain/asr-transformer-transformerlm-librispeech')",
+          "when": "Just need pretrained model"
+        }
+      ]
+    },
+    {
+      "id": "data_preparation_error",
+      "pattern": "prepare_.*failed|csv.*not found",
+      "message": "Data preparation failed",
+      "cause": "Dataset format or path issue",
+      "solutions": [
+        {
+          "approach": "Check data folder structure",
+          "code": "# LibriSpeech structure:\n# data_folder/\n#   train-clean-100/\n#   dev-clean/\n#   test-clean/",
+          "when": "Standard dataset"
+        },
+        {
+          "approach": "Create custom CSV",
+          "code": "# CSV format: ID, duration, wav, spk_id, wrd\n# Example: utt1, 3.5, /path/audio.wav, spk1, hello world",
+          "when": "Custom dataset"
+        },
+        {
+          "approach": "Run data preparation",
+          "code": "# In YAML: data_folder: /path/to/data\n# data_prepare.py creates CSV files automatically",
+          "when": "CSV files missing"
+        }
+      ]
+    },
+    {
+      "id": "cuda_memory_error",
+      "pattern": "CUDA out of memory|RuntimeError.*allocate",
+      "message": "GPU out of memory",
+      "cause": "Batch size too large or model too big",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "# In YAML:\nbatch_size: 4\ngrad_accumulation_factor: 4  # Effective batch = 16",
+          "when": "OOM during training"
+        },
+        {
+          "approach": "Enable dynamic batching",
+          "code": "# In YAML:\ndynamic_batching: True\nmax_batch_length: 200  # Seconds of audio per batch",
+          "when": "Variable length audio"
+        },
+        {
+          "approach": "Use mixed precision",
+          "code": "python train.py train.yaml --precision fp16",
+          "when": "GPU supports FP16"
+        }
+      ]
+    },
+    {
+      "id": "pretrained_loading_error",
+      "pattern": "from_hparams.*failed|pretrained.*not found",
+      "message": "Failed to load pretrained model",
+      "cause": "Model name incorrect or download failed",
+      "solutions": [
+        {
+          "approach": "Check model name",
+          "code": "# List models at: huggingface.co/speechbrain\n# Example: 'speechbrain/asr-wav2vec2-librispeech'",
+          "when": "Wrong model name"
+        },
+        {
+          "approach": "Download manually",
+          "code": "from huggingface_hub import snapshot_download\nsnapshot_download('speechbrain/asr-transformer-transformerlm-librispeech', local_dir='./model')",
+          "when": "Network issues"
+        },
+        {
+          "approach": "Specify savedir",
+          "code": "asr = EncoderDecoderASR.from_hparams(source='speechbrain/...', savedir='./pretrained')",
+          "when": "Custom download location"
+        }
+      ]
+    },
+    {
+      "id": "tokenizer_error",
+      "pattern": "SentencePiece.*error|tokenizer.*not found",
+      "message": "Tokenizer initialization failed",
+      "cause": "Tokenizer model missing or incompatible",
+      "solutions": [
+        {
+          "approach": "Train tokenizer",
+          "code": "# In YAML:\nsentencepiece:\n  vocab_size: 5000\n  model_type: unigram",
+          "when": "Need custom tokenizer"
+        },
+        {
+          "approach": "Use pretrained tokenizer",
+          "code": "# Point to existing tokenizer:\ntokenizer_file: /path/to/tokenizer.model",
+          "when": "Use existing tokenizer"
+        }
+      ]
+    },
+    {
+      "id": "augmentation_error",
+      "pattern": "augmentation.*failed|AddNoise.*error",
+      "message": "Data augmentation failed",
+      "cause": "Augmentation config or noise data issue",
+      "solutions": [
+        {
+          "approach": "Check noise data path",
+          "code": "# In YAML:\naddnoise:\n  noise_folder: /path/to/noise/data",
+          "when": "Noise augmentation"
+        },
+        {
+          "approach": "Disable augmentation",
+          "code": "# Comment out augmentation in YAML to debug:\n# augmentation: !ref <augmentation_pipeline>",
+          "when": "Debug training issues"
+        }
+      ]
+    },
+    {
+      "id": "distributed_error",
+      "pattern": "DDP.*error|distributed.*failed",
+      "message": "Distributed training error",
+      "cause": "Multi-GPU configuration issue",
+      "solutions": [
+        {
+          "approach": "Use SpeechBrain distributed launcher",
+          "code": "python -m torch.distributed.launch --nproc_per_node=4 train.py train.yaml --distributed_launch",
+          "when": "Multi-GPU training"
+        },
+        {
+          "approach": "Check CUDA visibility",
+          "code": "export CUDA_VISIBLE_DEVICES=0,1,2,3",
+          "when": "Specific GPUs"
+        }
+      ]
+    },
+    {
+      "id": "wer_calculation_error",
+      "pattern": "WER.*error|ErrorRateStats.*failed",
+      "message": "WER calculation failed",
+      "cause": "Prediction/reference format mismatch",
+      "solutions": [
+        {
+          "approach": "Check text format",
+          "code": "# Both predictions and references should be strings\n# Tokenization should match",
+          "when": "Format mismatch"
+        },
+        {
+          "approach": "Use standard metrics",
+          "code": "from speechbrain.utils.metric_stats import ErrorRateStats\nwer = ErrorRateStats()\nwer.append(ids, predictions, targets)",
+          "when": "Manual WER calculation"
+        }
+      ]
+    },
+    {
+      "id": "speaker_verification_error",
+      "pattern": "ECAPA.*error|speaker.*embedding.*failed",
+      "message": "Speaker verification/embedding error",
+      "cause": "Speaker model configuration issue",
+      "solutions": [
+        {
+          "approach": "Use pretrained ECAPA",
+          "code": "from speechbrain.inference.speaker import SpeakerRecognition\nverifier = SpeakerRecognition.from_hparams('speechbrain/spkrec-ecapa-voxceleb')",
+          "when": "Speaker verification task"
+        },
+        {
+          "approach": "Check audio length",
+          "code": "# ECAPA-TDNN expects audio >= 1 second\n# Pad shorter clips",
+          "when": "Short audio clips"
+        }
+      ]
+    }
+  ]
+}

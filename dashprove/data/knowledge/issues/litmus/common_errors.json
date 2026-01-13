@@ -1,0 +1,215 @@
+{
+  "tool": "litmus",
+  "version": "3.6.1",
+  "last_updated": "2025-12-22",
+  "description": "Cloud-native chaos engineering framework for Kubernetes (CNCF incubating)",
+  "errors": [
+    {
+      "id": "installation_error",
+      "pattern": "helm.*install.*failed|litmus.*not found",
+      "message": "Litmus installation failed",
+      "cause": "Helm chart or prerequisites missing",
+      "solutions": [
+        {
+          "approach": "Install with Helm",
+          "code": "helm repo add litmuschaos https://litmuschaos.github.io/litmus-helm/\nhelm install chaos litmuschaos/litmus --namespace=litmus --create-namespace",
+          "when": "First installation"
+        },
+        {
+          "approach": "Install CRDs",
+          "code": "kubectl apply -f https://raw.githubusercontent.com/litmuschaos/litmus/master/mkdocs/docs/litmus-operator-v3.6.1.yaml",
+          "when": "Operator-based install"
+        },
+        {
+          "approach": "Check prerequisites",
+          "code": "# Requires:\n# - Kubernetes 1.17+\n# - Default StorageClass for MongoDB",
+          "when": "Verify requirements"
+        }
+      ]
+    },
+    {
+      "id": "experiment_not_found",
+      "pattern": "ChaosExperiment.*not found|experiment.*does not exist",
+      "message": "Chaos experiment CRD not found",
+      "cause": "Experiment not installed or wrong name",
+      "solutions": [
+        {
+          "approach": "Install experiment from hub",
+          "code": "kubectl apply -f https://hub.litmuschaos.io/api/chaos/3.6.1?file=charts/generic/pod-delete/experiment.yaml",
+          "when": "Experiment not installed"
+        },
+        {
+          "approach": "List available experiments",
+          "code": "kubectl get chaosexperiments -A",
+          "when": "Check installed experiments"
+        },
+        {
+          "approach": "Install experiment bundle",
+          "code": "kubectl apply -f https://hub.litmuschaos.io/api/chaos/3.6.1?file=charts/generic/experiments.yaml",
+          "when": "Install all generic experiments"
+        }
+      ]
+    },
+    {
+      "id": "rbac_error",
+      "pattern": "forbidden|serviceaccount.*error|rbac.*denied",
+      "message": "RBAC permission error",
+      "cause": "Service account lacks required permissions",
+      "solutions": [
+        {
+          "approach": "Apply RBAC for experiment",
+          "code": "kubectl apply -f https://hub.litmuschaos.io/api/chaos/3.6.1?file=charts/generic/pod-delete/rbac.yaml",
+          "when": "Missing experiment RBAC"
+        },
+        {
+          "approach": "Create service account",
+          "code": "kubectl create serviceaccount litmus-admin -n default\nkubectl create clusterrolebinding litmus-admin --clusterrole=cluster-admin --serviceaccount=default:litmus-admin",
+          "when": "Custom service account"
+        },
+        {
+          "approach": "Check service account in engine",
+          "code": "spec:\n  chaosServiceAccount: litmus-admin",
+          "when": "Engine using wrong SA"
+        }
+      ]
+    },
+    {
+      "id": "engine_failed",
+      "pattern": "ChaosEngine.*failed|engine.*error|runner.*failed",
+      "message": "Chaos engine execution failed",
+      "cause": "Engine configuration or runner pod issue",
+      "solutions": [
+        {
+          "approach": "Check runner pod logs",
+          "code": "kubectl logs -l app=chaos-runner -n default",
+          "when": "Debug engine failure"
+        },
+        {
+          "approach": "Verify engine spec",
+          "code": "apiVersion: litmuschaos.io/v1alpha1\nkind: ChaosEngine\nspec:\n  appinfo:\n    appns: default\n    applabel: app=nginx\n    appkind: deployment\n  chaosServiceAccount: litmus-admin\n  experiments:\n    - name: pod-delete",
+          "when": "Check engine configuration"
+        },
+        {
+          "approach": "Check experiment status",
+          "code": "kubectl describe chaosengine my-engine -n default",
+          "when": "Get detailed status"
+        }
+      ]
+    },
+    {
+      "id": "target_not_found",
+      "pattern": "no application found|target.*not found|selector.*empty",
+      "message": "Target application not found",
+      "cause": "Application selector doesn't match any pods",
+      "solutions": [
+        {
+          "approach": "Check pod labels",
+          "code": "kubectl get pods -l app=my-app -n default",
+          "when": "Verify target exists"
+        },
+        {
+          "approach": "Update appinfo",
+          "code": "spec:\n  appinfo:\n    appns: my-namespace\n    applabel: app=my-app\n    appkind: deployment",
+          "when": "Fix selector"
+        },
+        {
+          "approach": "Use annotationCheck",
+          "code": "spec:\n  annotationCheck: 'true'\n# Pod needs: chaos.litmus.io/allowed: \"true\"",
+          "when": "Annotation-based selection"
+        }
+      ]
+    },
+    {
+      "id": "probe_failure",
+      "pattern": "probe.*failed|steadyState.*failed|httpProbe.*error",
+      "message": "Probe validation failed",
+      "cause": "Application didn't meet probe conditions",
+      "solutions": [
+        {
+          "approach": "Check probe configuration",
+          "code": "spec:\n  experiments:\n    - name: pod-delete\n      spec:\n        probe:\n          - name: check-endpoint\n            type: httpProbe\n            httpProbe/inputs:\n              url: http://my-app:8080/health\n              insecureSkipVerify: false\n              responseTimeout: 5000\n              method:\n                get:\n                  criteria: ==\n                  responseCode: '200'",
+          "when": "HTTP probe configuration"
+        },
+        {
+          "approach": "Adjust probe timing",
+          "code": "runProperties:\n  probeTimeout: 60\n  interval: 5\n  retry: 3",
+          "when": "Probe timing issues"
+        },
+        {
+          "approach": "Check probe mode",
+          "code": "mode: SOT  # Start of Test, EOT, Edge, Continuous",
+          "when": "When probe should run"
+        }
+      ]
+    },
+    {
+      "id": "chaos_result_error",
+      "pattern": "ChaosResult.*failed|verdict.*fail",
+      "message": "Chaos experiment verdict: fail",
+      "cause": "Experiment or probes failed",
+      "solutions": [
+        {
+          "approach": "Check chaos result",
+          "code": "kubectl get chaosresult -n default\nkubectl describe chaosresult my-engine-pod-delete -n default",
+          "when": "Get failure details"
+        },
+        {
+          "approach": "Review experiment logs",
+          "code": "kubectl logs -l chaosUID=<uid> -n default --all-containers",
+          "when": "Debug experiment execution"
+        },
+        {
+          "approach": "Check helper pod",
+          "code": "kubectl logs <experiment-helper-pod> -n default",
+          "when": "Helper pod logs"
+        }
+      ]
+    },
+    {
+      "id": "mongodb_error",
+      "pattern": "mongodb.*connection.*failed|database.*error",
+      "message": "Litmus portal MongoDB connection failed",
+      "cause": "MongoDB not running or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check MongoDB pod",
+          "code": "kubectl get pods -n litmus -l app=mongo",
+          "when": "Verify MongoDB running"
+        },
+        {
+          "approach": "Check PVC",
+          "code": "kubectl get pvc -n litmus\n# Ensure default StorageClass exists",
+          "when": "Storage issues"
+        },
+        {
+          "approach": "Use external MongoDB",
+          "code": "helm install chaos litmuschaos/litmus \\\n  --set portal.server.mongodbURL=mongodb://external-mongo:27017",
+          "when": "External database"
+        }
+      ]
+    },
+    {
+      "id": "cleanup_stuck",
+      "pattern": "cleanup.*failed|engine.*terminating|finalizer.*stuck",
+      "message": "Chaos resources stuck in terminating state",
+      "cause": "Finalizers preventing deletion",
+      "solutions": [
+        {
+          "approach": "Remove finalizers",
+          "code": "kubectl patch chaosengine my-engine -p '{\"metadata\":{\"finalizers\":[]}}' --type=merge -n default",
+          "when": "Engine stuck deleting"
+        },
+        {
+          "approach": "Force delete all chaos resources",
+          "code": "kubectl delete chaosengine,chaosresult --all -n default --force --grace-period=0",
+          "when": "Clean slate needed"
+        },
+        {
+          "approach": "Delete runner pods",
+          "code": "kubectl delete pods -l app=chaos-runner -n default",
+          "when": "Runner pods stuck"
+        }
+      ]
+    }
+  ]
+}

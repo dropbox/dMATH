@@ -1,0 +1,122 @@
+{
+  "id": "cbmc",
+  "name": "CBMC",
+  "category": "model_checker",
+  "subcategory": "bounded",
+
+  "description": "Bounded model checker for C/C++ programs",
+  "long_description": "CBMC (C Bounded Model Checker) is a tool for checking properties of C/C++ programs using bounded model checking. It can verify memory safety, assertions, and user-specified properties by unwinding loops to a bound and encoding the program as a SAT/SMT formula.",
+
+  "capabilities": [
+    "bounded_model_checking",
+    "assertion_checking",
+    "memory_safety",
+    "pointer_analysis",
+    "array_bounds",
+    "undefined_behavior_detection"
+  ],
+  "property_types": ["assertion", "memory_safety", "bounds", "pointer"],
+  "input_languages": ["c", "cpp", "goto_binary"],
+  "output_formats": ["counterexample_trace", "xml_report", "json_report"],
+
+  "installation": {
+    "methods": [
+      {"type": "apt", "command": "apt install cbmc"},
+      {"type": "brew", "command": "brew install cbmc"},
+      {"type": "source", "url": "https://github.com/diffblue/cbmc"}
+    ],
+    "dependencies": ["minisat", "z3"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://www.cprover.org/cbmc/",
+    "tutorial": "https://www.cprover.org/cbmc/doc/tutorial/",
+    "api_reference": "https://www.cprover.org/cbmc/doc/manual/",
+    "examples": "https://github.com/diffblue/cbmc/tree/develop/regression"
+  },
+
+  "tactics": [
+    {
+      "name": "unwind",
+      "description": "Loop unwinding bound",
+      "syntax": "--unwind N",
+      "when_to_use": "To set loop bound",
+      "examples": ["cbmc --unwind 10 program.c"]
+    },
+    {
+      "name": "unwinding-assertions",
+      "description": "Check unwinding sufficient",
+      "syntax": "--unwinding-assertions",
+      "when_to_use": "To ensure bound is enough",
+      "examples": ["cbmc --unwind 10 --unwinding-assertions program.c"]
+    },
+    {
+      "name": "bounds-check",
+      "description": "Array bounds checking",
+      "syntax": "--bounds-check",
+      "when_to_use": "To find buffer overflows",
+      "examples": ["cbmc --bounds-check program.c"]
+    },
+    {
+      "name": "pointer-check",
+      "description": "Pointer validity checking",
+      "syntax": "--pointer-check",
+      "when_to_use": "To find pointer errors",
+      "examples": ["cbmc --pointer-check program.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "VERIFICATION FAILED",
+      "meaning": "Property violated",
+      "common_causes": ["Bug in code", "Insufficient unwinding"],
+      "fixes": ["Fix bug", "Increase unwind bound"]
+    },
+    {
+      "pattern": "unwinding assertion loop",
+      "meaning": "Loop bound insufficient",
+      "common_causes": ["Loops need more iterations"],
+      "fixes": ["Increase --unwind value"]
+    },
+    {
+      "pattern": "array bounds violated",
+      "meaning": "Buffer overflow detected",
+      "common_causes": ["Off-by-one error", "Missing bounds check"],
+      "fixes": ["Add bounds checking", "Fix array indexing"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["assertion", "safety"],
+    "cli_command": "dashprove verify --backend cbmc"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "Good for bounded verification",
+    "memory_usage": "Proportional to unwind depth"
+  },
+
+  "comparisons": {
+    "similar_tools": ["esbmc", "klee", "seahorn"],
+    "advantages": [
+      "Mature C/C++ support",
+      "Bit-precise semantics",
+      "Industrial adoption"
+    ],
+    "disadvantages": [
+      "Bounded verification only",
+      "Can be slow on large programs"
+    ]
+  },
+
+  "metadata": {
+    "version": "5.95.1",
+    "last_updated": "2025-12-22",
+    "maintainer": "Diffblue and Oxford University",
+    "license": "BSD-4"
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "tool": "turmoil",
+  "version": "0.6.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "simulation_timeout",
+      "pattern": "simulation.*timed.*out|deadline.*exceeded|test.*hung",
+      "message": "Turmoil simulation timed out",
+      "cause": "Test took too long or is stuck in infinite loop",
+      "solutions": [
+        {
+          "approach": "Set appropriate timeout",
+          "code": "let mut sim = Builder::new().build();\nsim.set_max_message_latency(Duration::from_millis(100));\nsim.run_for(Duration::from_secs(60));  // Set max runtime",
+          "when": "Need bounded runtime"
+        },
+        {
+          "approach": "Check for deadlocks",
+          "code": "// Add timeout to async operations\ntokio::time::timeout(\n    Duration::from_secs(5),\n    async_operation()\n).await?",
+          "when": "Operations hanging"
+        },
+        {
+          "approach": "Reduce test complexity",
+          "code": "// Use fewer hosts and messages\nlet mut sim = Builder::new()\n    .simulation_duration(Duration::from_secs(30))\n    .build();\nfor i in 0..3 {  // Instead of 100\n    sim.host(format!(\"node{}\", i), node_fn);\n}",
+          "when": "Test too complex"
+        }
+      ]
+    },
+    {
+      "id": "network_partition_bug",
+      "pattern": "partition|network.*unreachable|connection.*failed",
+      "message": "Bug triggered by simulated network partition",
+      "cause": "Application doesn't handle network partitions correctly",
+      "solutions": [
+        {
+          "approach": "Test partition scenarios",
+          "code": "sim.partition(\"node1\", \"node2\");  // Isolate nodes\nsim.run_until_idle();\nsim.repair(\"node1\", \"node2\");    // Heal partition\nsim.run_until_idle();\n// Verify system recovered",
+          "when": "Testing partition tolerance"
+        },
+        {
+          "approach": "Add connection retry",
+          "code": "async fn connect_with_retry(addr: &str) -> Result<TcpStream> {\n    for attempt in 1..=MAX_RETRIES {\n        match TcpStream::connect(addr).await {\n            Ok(stream) => return Ok(stream),\n            Err(_) if attempt < MAX_RETRIES => {\n                tokio::time::sleep(Duration::from_millis(100 * attempt)).await;\n            }\n            Err(e) => return Err(e),\n        }\n    }\n}",
+          "when": "Connections failing during partition"
+        },
+        {
+          "approach": "Implement leader election",
+          "code": "// Use fencing tokens during partition healing\nasync fn acquire_leadership(token: &mut FenceToken) -> bool {\n    let new_token = generate_token();\n    if new_token > *token {\n        *token = new_token;\n        true\n    } else {\n        false\n    }\n}",
+          "when": "Split-brain after partition"
+        }
+      ]
+    },
+    {
+      "id": "message_loss",
+      "pattern": "message.*lost|packet.*dropped|delivery.*failed",
+      "message": "Messages lost during simulation",
+      "cause": "Application assumes reliable delivery",
+      "solutions": [
+        {
+          "approach": "Configure message loss",
+          "code": "let mut sim = Builder::new()\n    .fail_rate(0.1)  // 10% message loss\n    .build();",
+          "when": "Testing unreliable network"
+        },
+        {
+          "approach": "Implement acknowledgments",
+          "code": "async fn send_reliable(socket: &UdpSocket, msg: &[u8], addr: &str) {\n    loop {\n        socket.send_to(msg, addr).await?;\n        match timeout(Duration::from_secs(1), recv_ack()).await {\n            Ok(_) => break,\n            Err(_) => continue,  // Retry on timeout\n        }\n    }\n}",
+          "when": "Need reliable delivery"
+        },
+        {
+          "approach": "Use sequence numbers",
+          "code": "struct ReliableChannel {\n    next_seq: u64,\n    pending_acks: HashMap<u64, Message>,\n}\nimpl ReliableChannel {\n    async fn send(&mut self, msg: Message) {\n        let seq = self.next_seq;\n        self.next_seq += 1;\n        self.pending_acks.insert(seq, msg.clone());\n        self.transmit(seq, msg).await;\n    }\n}",
+          "when": "Need ordering guarantees"
+        }
+      ]
+    },
+    {
+      "id": "clock_skew_bug",
+      "pattern": "clock.*skew|timestamp.*wrong|time.*drift",
+      "message": "Bug triggered by simulated clock skew",
+      "cause": "Application assumes synchronized clocks",
+      "solutions": [
+        {
+          "approach": "Use logical clocks",
+          "code": "use std::sync::atomic::{AtomicU64, Ordering};\nstatic LOGICAL_CLOCK: AtomicU64 = AtomicU64::new(0);\nfn tick() -> u64 {\n    LOGICAL_CLOCK.fetch_add(1, Ordering::SeqCst)\n}",
+          "when": "Need event ordering"
+        },
+        {
+          "approach": "Add clock tolerance",
+          "code": "const CLOCK_SKEW_MS: i64 = 5000;  // 5 seconds\nfn is_valid_timestamp(ts: i64, now: i64) -> bool {\n    (now - CLOCK_SKEW_MS..=now + CLOCK_SKEW_MS).contains(&ts)\n}",
+          "when": "Comparing timestamps across nodes"
+        },
+        {
+          "approach": "Use vector clocks",
+          "code": "#[derive(Clone)]\nstruct VectorClock {\n    clocks: HashMap<NodeId, u64>,\n}\nimpl VectorClock {\n    fn merge(&mut self, other: &VectorClock) {\n        for (id, &time) in &other.clocks {\n            let entry = self.clocks.entry(*id).or_insert(0);\n            *entry = (*entry).max(time);\n        }\n    }\n}",
+          "when": "Need causality tracking"
+        }
+      ]
+    },
+    {
+      "id": "host_crash_recovery",
+      "pattern": "host.*crashed|recovery.*failed|state.*lost",
+      "message": "Simulated host crash revealed recovery bug",
+      "cause": "Application doesn't recover from crashes correctly",
+      "solutions": [
+        {
+          "approach": "Test crash scenarios",
+          "code": "sim.crash(\"node1\");  // Kill node\nsim.run_until_idle();\nsim.bounce(\"node1\", node_fn);  // Restart\nsim.run_until_idle();\n// Verify state is consistent",
+          "when": "Testing crash recovery"
+        },
+        {
+          "approach": "Persist state atomically",
+          "code": "async fn save_state(state: &State) -> Result<()> {\n    // Write to temp file first\n    let temp_path = format!(\"{}.tmp\", STATE_PATH);\n    write_file(&temp_path, &serialize(state)?).await?;\n    // Atomic rename\n    rename(&temp_path, STATE_PATH).await?;\n    Ok(())\n}",
+          "when": "State corruption on crash"
+        },
+        {
+          "approach": "Use write-ahead log",
+          "code": "async fn apply_change(wal: &mut Wal, change: Change) -> Result<()> {\n    // Log first, apply second\n    wal.append(&change).await?;\n    wal.sync().await?;\n    state.apply(change);\n    Ok(())\n}",
+          "when": "Need durability"
+        }
+      ]
+    },
+    {
+      "id": "async_runtime_mismatch",
+      "pattern": "runtime.*error|tokio.*panic|executor.*not.*found",
+      "message": "Async runtime configuration issue",
+      "cause": "Turmoil simulation runtime not properly configured",
+      "solutions": [
+        {
+          "approach": "Use turmoil runtime",
+          "code": "#[test]\nfn my_simulation_test() {\n    let mut sim = Builder::new().build();\n    sim.client(\"client\", async {\n        // Use turmoil's async runtime\n        turmoil::net::TcpStream::connect(\"server:8080\").await?;\n        Ok(())\n    });\n    sim.run();\n}",
+          "when": "Using wrong async APIs"
+        },
+        {
+          "approach": "Use turmoil networking",
+          "code": "use turmoil::net::{TcpListener, TcpStream};\n// NOT tokio::net\nasync fn server() {\n    let listener = TcpListener::bind(\"0.0.0.0:8080\").await?;\n    while let Ok((stream, _)) = listener.accept().await {\n        handle(stream);\n    }\n}",
+          "when": "Using tokio::net instead"
+        },
+        {
+          "approach": "Check feature flags",
+          "code": "# Cargo.toml\n[dev-dependencies]\nturmoil = { version = \"0.6\", features = [\"tracing\"] }",
+          "when": "Missing features"
+        }
+      ]
+    },
+    {
+      "id": "determinism_violation",
+      "pattern": "non-deterministic|different.*results|seed.*inconsistent",
+      "message": "Simulation not deterministic",
+      "cause": "Using random or system time without turmoil APIs",
+      "solutions": [
+        {
+          "approach": "Use deterministic random",
+          "code": "use turmoil::rand::Rng;\n// In test:\nlet mut rng = turmoil::rand::thread_rng();\nlet value = rng.gen_range(0..100);",
+          "when": "Need random values"
+        },
+        {
+          "approach": "Use simulation time",
+          "code": "// Use turmoil's time\nturmoil::time::sleep(Duration::from_secs(1)).await;\nlet now = turmoil::time::Instant::now();",
+          "when": "Need time values"
+        },
+        {
+          "approach": "Set seed for reproducibility",
+          "code": "let mut sim = Builder::new()\n    .seed(12345)  // Fixed seed for reproducibility\n    .build();",
+          "when": "Reproducing specific run"
+        }
+      ]
+    },
+    {
+      "id": "latency_injection",
+      "pattern": "latency|slow.*response|delay.*exceeded",
+      "message": "Bug triggered by simulated network latency",
+      "cause": "Application doesn't handle slow networks",
+      "solutions": [
+        {
+          "approach": "Configure latency",
+          "code": "let mut sim = Builder::new()\n    .min_message_latency(Duration::from_millis(10))\n    .max_message_latency(Duration::from_millis(500))\n    .build();",
+          "when": "Testing with latency"
+        },
+        {
+          "approach": "Add timeouts",
+          "code": "async fn request_with_timeout(req: Request) -> Result<Response> {\n    tokio::time::timeout(\n        Duration::from_secs(5),\n        send_request(req)\n    ).await?\n}",
+          "when": "Operations hanging on slow network"
+        },
+        {
+          "approach": "Implement backoff",
+          "code": "async fn retry_with_backoff<F, T>(f: F) -> Result<T>\nwhere F: Fn() -> impl Future<Output = Result<T>> {\n    let mut delay = Duration::from_millis(100);\n    for _ in 0..MAX_RETRIES {\n        match f().await {\n            Ok(v) => return Ok(v),\n            Err(_) => {\n                turmoil::time::sleep(delay).await;\n                delay *= 2;\n            }\n        }\n    }\n    Err(\"max retries exceeded\")\n}",
+          "when": "Retrying on timeout"
+        }
+      ]
+    },
+    {
+      "id": "host_discovery_failure",
+      "pattern": "host.*not.*found|DNS.*lookup.*failed|address.*resolution",
+      "message": "Host discovery failed in simulation",
+      "cause": "DNS or host configuration not set up in simulation",
+      "solutions": [
+        {
+          "approach": "Register hosts before use",
+          "code": "let mut sim = Builder::new().build();\nsim.host(\"server\", server_fn);  // Register first\nsim.client(\"client\", async {\n    // Now can connect to \"server\"\n    let stream = TcpStream::connect(\"server:8080\").await?;\n    Ok(())\n});",
+          "when": "Host not registered"
+        },
+        {
+          "approach": "Use IP addresses",
+          "code": "// Use direct IP if DNS issues\nsim.host(\"192.168.1.1\", server_fn);\nsim.client(\"client\", async {\n    TcpStream::connect(\"192.168.1.1:8080\").await?;\n    Ok(())\n});",
+          "when": "DNS not working"
+        }
+      ]
+    },
+    {
+      "id": "channel_exhaustion",
+      "pattern": "channel.*full|buffer.*exhausted|backpressure",
+      "message": "Message buffers exhausted",
+      "cause": "Too many messages in flight",
+      "solutions": [
+        {
+          "approach": "Apply backpressure",
+          "code": "use tokio::sync::Semaphore;\nlet sem = Arc::new(Semaphore::new(MAX_IN_FLIGHT));\nasync fn send_with_backpressure(msg: Message) {\n    let _permit = sem.acquire().await.unwrap();\n    send(msg).await;\n}",
+          "when": "Need flow control"
+        },
+        {
+          "approach": "Use bounded channels",
+          "code": "let (tx, rx) = tokio::sync::mpsc::channel(100);\n// Sender will await when channel full\ntx.send(msg).await?;",
+          "when": "Unbounded queue growing"
+        },
+        {
+          "approach": "Batch messages",
+          "code": "let mut batch = Vec::new();\nwhile let Ok(msg) = rx.try_recv() {\n    batch.push(msg);\n    if batch.len() >= BATCH_SIZE { break; }\n}\nif !batch.is_empty() {\n    send_batch(batch).await;\n}",
+          "when": "High message rate"
+        }
+      ]
+    }
+  ]
+}

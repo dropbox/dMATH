@@ -1,0 +1,145 @@
+{
+  "tool": "nom",
+  "version": "7.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "incomplete_error",
+      "pattern": "Incomplete|Needed.*more data|streaming.*incomplete",
+      "message": "Parser needs more input",
+      "cause": "Streaming parser didn't receive enough data",
+      "solutions": [
+        {
+          "approach": "Use complete combinators",
+          "code": "use nom::combinator::complete;\nlet parser = complete(tag(\"hello\"));",
+          "when": "Not streaming"
+        },
+        {
+          "approach": "Buffer more input",
+          "code": "// For streaming: accumulate data until parser succeeds\nloop {\n    match parser(&buffer) {\n        Ok((remaining, result)) => break,\n        Err(Err::Incomplete(_)) => buffer.extend(read_more()),\n        Err(e) => return Err(e),\n    }\n}",
+          "when": "Streaming use case"
+        },
+        {
+          "approach": "Use all_consuming",
+          "code": "use nom::combinator::all_consuming;\nlet result = all_consuming(my_parser)(input)?;",
+          "when": "Ensure full parse"
+        }
+      ]
+    },
+    {
+      "id": "type_mismatch",
+      "pattern": "expected.*found|type mismatch|cannot infer type|trait.*not implemented",
+      "message": "Type inference failed",
+      "cause": "Parser return types don't match or generic bounds missing",
+      "solutions": [
+        {
+          "approach": "Annotate types",
+          "code": "fn my_parser(input: &str) -> IResult<&str, MyType> {\n    // explicit return type helps inference\n}",
+          "when": "Type inference fails"
+        },
+        {
+          "approach": "Use turbofish",
+          "code": "let (input, num) = digit1::<_, nom::error::Error<_>>(input)?;",
+          "when": "Generic error type"
+        },
+        {
+          "approach": "Map parser output",
+          "code": "map(digit1, |s: &str| s.parse::<u32>().unwrap())(input)",
+          "when": "Transform result type"
+        }
+      ]
+    },
+    {
+      "id": "error_conversion",
+      "pattern": "cannot convert.*Error|FromExternalError|error type.*mismatch",
+      "message": "Error type conversion failed",
+      "cause": "Custom error type doesn't implement required traits",
+      "solutions": [
+        {
+          "approach": "Use VerboseError",
+          "code": "use nom::error::VerboseError;\nfn parser(input: &str) -> IResult<&str, Output, VerboseError<&str>> { ... }",
+          "when": "Better error messages"
+        },
+        {
+          "approach": "Implement FromExternalError",
+          "code": "impl<I> FromExternalError<I, ParseIntError> for MyError {\n    fn from_external_error(input: I, kind: ErrorKind, e: ParseIntError) -> Self { ... }\n}",
+          "when": "Custom error type"
+        },
+        {
+          "approach": "Use map_res with context",
+          "code": "context(\"parsing number\", map_res(digit1, str::parse::<u32>))",
+          "when": "Add error context"
+        }
+      ]
+    },
+    {
+      "id": "combinator_misuse",
+      "pattern": "parser returns.*but.*expected|wrong combinator|alt.*branches",
+      "message": "Wrong combinator for use case",
+      "cause": "Combinator doesn't match intended parsing behavior",
+      "solutions": [
+        {
+          "approach": "Choose right combinator",
+          "code": "// many0: 0+ matches, many1: 1+ matches\n// opt: 0 or 1 match\n// alt: try alternatives in order\n// preceded/terminated/delimited: extract middle",
+          "when": "Learning combinators"
+        },
+        {
+          "approach": "Use tuple for sequence",
+          "code": "let (input, (a, b, c)) = tuple((parser_a, parser_b, parser_c))(input)?;",
+          "when": "Sequential parsing"
+        },
+        {
+          "approach": "Use separated_list",
+          "code": "separated_list0(char(','), digit1)(input)",
+          "when": "Comma-separated values"
+        }
+      ]
+    },
+    {
+      "id": "infinite_loop",
+      "pattern": "infinite loop|stack overflow|many0.*empty",
+      "message": "Parser enters infinite loop",
+      "cause": "many0/many1 with parser that can match empty string",
+      "solutions": [
+        {
+          "approach": "Ensure progress",
+          "code": "// Don't use many0 with opt or parsers that match empty\n// BAD: many0(opt(char('a')))\n// GOOD: many0(char('a'))",
+          "when": "many0 with opt"
+        },
+        {
+          "approach": "Use many_till",
+          "code": "many_till(any_char, tag(\"end\"))",
+          "when": "Need terminator"
+        },
+        {
+          "approach": "Add minimum consumption",
+          "code": "verify(take_while(|c| c != '\\n'), |s: &str| !s.is_empty())",
+          "when": "Ensure non-empty"
+        }
+      ]
+    },
+    {
+      "id": "lifetime_error",
+      "pattern": "lifetime.*mismatch|borrowed value.*not live|temporary value.*dropped",
+      "message": "Lifetime error in parser",
+      "cause": "Parsed data doesn't live long enough",
+      "solutions": [
+        {
+          "approach": "Return owned data",
+          "code": "map(alpha1, |s: &str| s.to_string())",
+          "when": "Need owned String"
+        },
+        {
+          "approach": "Use same lifetime",
+          "code": "fn parser<'a>(input: &'a str) -> IResult<&'a str, &'a str> { ... }",
+          "when": "Borrowing input"
+        },
+        {
+          "approach": "Clone when needed",
+          "code": "let result = parser(input)?.1.to_owned();\ndrop(input);  // now result is independent",
+          "when": "Separate lifetimes"
+        }
+      ]
+    }
+  ]
+}

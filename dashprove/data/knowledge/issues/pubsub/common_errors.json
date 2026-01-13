@@ -1,0 +1,99 @@
+{
+  "tool": "pubsub",
+  "category": "gcp_messaging",
+  "description": "Google Cloud Pub/Sub - messaging and event streaming service",
+  "common_errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied",
+      "regex": "(?i)permission.*denied|403|not.*authorized|iam.*error",
+      "cause": "IAM permissions missing for Pub/Sub operation",
+      "solution": "Grant roles/pubsub.publisher for publish, roles/pubsub.subscriber for subscribe",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "topic_not_found",
+      "pattern": "Topic not found",
+      "regex": "(?i)topic.*not.*found|does.*not.*exist|404.*topic",
+      "cause": "Pub/Sub topic does not exist",
+      "solution": "Create topic with 'gcloud pubsub topics create', verify topic name and project",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "subscription_not_found",
+      "pattern": "Subscription not found",
+      "regex": "(?i)subscription.*not.*found|does.*not.*exist|404.*subscription",
+      "cause": "Pub/Sub subscription does not exist",
+      "solution": "Create subscription with 'gcloud pubsub subscriptions create', verify subscription name",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "Quota exceeded",
+      "regex": "(?i)quota.*exceeded|rate.*limit|throughput.*exceeded|too.*many.*requests",
+      "cause": "Pub/Sub quota or rate limit exceeded",
+      "solution": "Request quota increase, implement exponential backoff, batch messages",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "message_too_large",
+      "pattern": "Message too large",
+      "regex": "(?i)message.*too.*large|payload.*exceeded|10.*mb|size.*limit",
+      "cause": "Message size exceeds 10 MB limit",
+      "solution": "Compress message payload, store large data in GCS and send reference, split into multiple messages",
+      "severity": "medium",
+      "category": "messages"
+    },
+    {
+      "id": "ack_deadline",
+      "pattern": "Ack deadline",
+      "regex": "(?i)ack.*deadline|acknowledge.*timeout|message.*redelivered|nack",
+      "cause": "Message not acknowledged before deadline",
+      "solution": "Increase ack deadline (max 600s), extend deadline during processing with modifyAckDeadline, optimize processing time",
+      "severity": "medium",
+      "category": "processing"
+    },
+    {
+      "id": "push_endpoint",
+      "pattern": "Push endpoint",
+      "regex": "(?i)push.*endpoint|push.*failed|endpoint.*error|webhook.*error",
+      "cause": "Push subscription endpoint unreachable or error",
+      "solution": "Verify endpoint URL is publicly accessible, check endpoint returns 2xx, review Cloud Pub/Sub push configuration",
+      "severity": "high",
+      "category": "push"
+    },
+    {
+      "id": "dead_letter",
+      "pattern": "Dead letter",
+      "regex": "(?i)dead.*letter|dlq|max.*delivery.*attempts|undeliverable",
+      "cause": "Message sent to dead-letter topic after max delivery attempts",
+      "solution": "Monitor dead-letter topic, investigate processing failures, adjust max delivery attempts",
+      "severity": "medium",
+      "category": "dlq"
+    },
+    {
+      "id": "ordering_error",
+      "pattern": "Ordering",
+      "regex": "(?i)ordering.*key|message.*ordering|out.*of.*order|sequence.*error",
+      "cause": "Message ordering violation or configuration issue",
+      "solution": "Enable message ordering on subscription, use same ordering key for related messages",
+      "severity": "medium",
+      "category": "ordering"
+    },
+    {
+      "id": "schema_validation",
+      "pattern": "Schema",
+      "regex": "(?i)schema.*validation|invalid.*schema|schema.*not.*found|encoding.*error",
+      "cause": "Message schema validation failed",
+      "solution": "Verify message conforms to schema, check schema registry, validate encoding (JSON, AVRO, Protocol Buffers)",
+      "severity": "medium",
+      "category": "schema"
+    }
+  ],
+  "related_tools": ["gcloud", "cloud_run", "cloud_functions", "dataflow"],
+  "documentation_url": "https://cloud.google.com/pubsub/docs"
+}

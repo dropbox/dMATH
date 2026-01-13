@@ -1,0 +1,168 @@
+{
+  "tool": "bedrock2",
+  "version": "0.0.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "separation_logic_failed",
+      "pattern": "sep.*failed|cannot.*separate",
+      "message": "Separation logic proof failed",
+      "cause": "Cannot prove memory separation or frame rule",
+      "solutions": [
+        {
+          "approach": "Use seplog tactics",
+          "code": "seplog.  (* Automated separation logic solver *)",
+          "when": "Standard separation logic goal"
+        },
+        {
+          "approach": "Cancel matching conjuncts",
+          "code": "cancel.  (* Remove identical parts *)",
+          "when": "Frame obvious but not simplified"
+        },
+        {
+          "approach": "Unfold predicates",
+          "code": "unfold ptsto.  (* See memory structure *)",
+          "when": "Need to inspect memory layout"
+        }
+      ]
+    },
+    {
+      "id": "compiler_correctness_failed",
+      "pattern": "compilation.*incorrect|semantics.*mismatch",
+      "message": "Compiler correctness proof failed",
+      "cause": "Compiled code doesn't preserve source semantics",
+      "solutions": [
+        {
+          "approach": "Check source specification",
+          "code": "(* Verify source spec is correct *)",
+          "when": "Source spec may be wrong"
+        },
+        {
+          "approach": "Verify instruction selection",
+          "code": "(* Check RISC-V instruction choice *)",
+          "when": "Wrong instruction generated"
+        },
+        {
+          "approach": "Use pipeline_proofs",
+          "code": "eapply compile_prog_correct.",
+          "when": "Need full pipeline correctness"
+        }
+      ]
+    },
+    {
+      "id": "word_operation_error",
+      "pattern": "word.*overflow|cannot.*coerce.*word",
+      "message": "Machine word operation error",
+      "cause": "Word arithmetic or coercion failed",
+      "solutions": [
+        {
+          "approach": "Use word lemmas",
+          "code": "apply word.unsigned_of_Z.",
+          "when": "Converting between Z and word"
+        },
+        {
+          "approach": "Check word size",
+          "code": "(* 32-bit vs 64-bit word width *)",
+          "when": "Word size mismatch"
+        },
+        {
+          "approach": "Handle overflow",
+          "code": "apply word.wrap_unsigned.",
+          "when": "Arithmetic overflow"
+        }
+      ]
+    },
+    {
+      "id": "risc_v_semantics_error",
+      "pattern": "RISC-V.*semantics|instruction.*undefined",
+      "message": "RISC-V instruction semantics error",
+      "cause": "RISC-V instruction semantics don't match",
+      "solutions": [
+        {
+          "approach": "Check instruction encoding",
+          "code": "(* Verify instruction format is correct *)",
+          "when": "Encoding bug"
+        },
+        {
+          "approach": "Use riscv_seplog",
+          "code": "riscv_seplog.  (* RISC-V specific tactics *)",
+          "when": "RISC-V separation logic goal"
+        },
+        {
+          "approach": "Verify register usage",
+          "code": "(* Check x0-x31 register conventions *)",
+          "when": "Register misuse"
+        }
+      ]
+    },
+    {
+      "id": "loop_verification_failed",
+      "pattern": "loop.*invariant|measure.*not decreasing",
+      "message": "Loop verification failed",
+      "cause": "Loop invariant or termination measure insufficient",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "while (cond) invariant (P * R) measure (e) { ... }",
+          "when": "Invariant too weak"
+        },
+        {
+          "approach": "Fix termination measure",
+          "code": "measure (word.unsigned (limit - i))",
+          "when": "Measure doesn't decrease"
+        },
+        {
+          "approach": "Add loop precondition",
+          "code": "(* Ensure loop entered with invariant *)",
+          "when": "Invariant not established initially"
+        }
+      ]
+    },
+    {
+      "id": "memory_model_mismatch",
+      "pattern": "memory.*model.*incompatible|alignment.*violation",
+      "message": "Memory model mismatch",
+      "cause": "Memory access doesn't match bedrock2's memory model",
+      "solutions": [
+        {
+          "approach": "Check alignment",
+          "code": "(* Word-aligned: addr mod 4 = 0 *)",
+          "when": "Unaligned memory access"
+        },
+        {
+          "approach": "Use correct load/store",
+          "code": "load4, store4  (* 32-bit *) or load1, store1  (* 8-bit *)",
+          "when": "Wrong memory operation size"
+        },
+        {
+          "approach": "Verify address computation",
+          "code": "(* Check pointer arithmetic *)",
+          "when": "Address calculation wrong"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Cannot find.*bedrock2|Coq.*version",
+      "message": "Build configuration error",
+      "cause": "bedrock2 or dependencies not found",
+      "solutions": [
+        {
+          "approach": "Install via opam",
+          "code": "opam repo add coq-released https://coq.inria.fr/opam/released && opam install coq-bedrock2",
+          "when": "Fresh installation"
+        },
+        {
+          "approach": "Clone and build",
+          "code": "git clone https://github.com/mit-plv/bedrock2 && cd bedrock2 && make",
+          "when": "Need development version"
+        },
+        {
+          "approach": "Check Coq version",
+          "code": "coqc --version  # bedrock2 requires specific Coq version",
+          "when": "Version incompatibility"
+        }
+      ]
+    }
+  ]
+}

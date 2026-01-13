@@ -1,0 +1,124 @@
+{
+  "id": "semver_checks",
+  "name": "cargo-semver-checks",
+  "category": "rust_static_analysis",
+  "subcategory": "api_compatibility",
+
+  "description": "Semantic versioning checker for Rust crates",
+  "long_description": "cargo-semver-checks detects breaking changes in Rust crate APIs by comparing against the last published version. It helps ensure that version bumps follow semantic versioning rules: patch for bugfixes, minor for new features, major for breaking changes.",
+
+  "capabilities": [
+    "breaking_change_detection",
+    "api_diff",
+    "semver_validation",
+    "function_signature_changes",
+    "type_changes",
+    "visibility_changes",
+    "trait_changes",
+    "baseline_comparison"
+  ],
+  "property_types": ["api_compatibility", "semver"],
+  "input_languages": ["rust"],
+  "output_formats": ["diagnostic", "json"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install cargo-semver-checks"},
+      {"type": "source", "url": "https://github.com/obi1kenobi/cargo-semver-checks"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/obi1kenobi/cargo-semver-checks",
+    "tutorial": "https://github.com/obi1kenobi/cargo-semver-checks#usage",
+    "api_reference": "https://docs.rs/cargo-semver-checks/latest/cargo_semver_checks/",
+    "examples": "https://github.com/obi1kenobi/cargo-semver-checks/tree/main/test_crates"
+  },
+
+  "tactics": [
+    {
+      "name": "check",
+      "description": "Check for breaking changes",
+      "syntax": "cargo semver-checks",
+      "when_to_use": "Before publishing new version",
+      "examples": ["cargo semver-checks", "cargo semver-checks check-release"]
+    },
+    {
+      "name": "baseline",
+      "description": "Compare against specific version",
+      "syntax": "cargo semver-checks --baseline-version X.Y.Z",
+      "when_to_use": "Checking against non-latest version",
+      "examples": ["cargo semver-checks --baseline-version 1.0.0"]
+    },
+    {
+      "name": "release_type",
+      "description": "Set expected release type",
+      "syntax": "cargo semver-checks --release-type major|minor|patch",
+      "when_to_use": "Validating planned version bump",
+      "examples": ["cargo semver-checks --release-type minor"]
+    },
+    {
+      "name": "workspace",
+      "description": "Check entire workspace",
+      "syntax": "cargo semver-checks --workspace",
+      "when_to_use": "Multi-crate projects",
+      "examples": ["cargo semver-checks --workspace"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "function_missing",
+      "meaning": "Public function was removed",
+      "common_causes": ["Intentional removal", "Accidental deletion"],
+      "fixes": ["Restore function or bump major version"]
+    },
+    {
+      "pattern": "function_parameter_count_changed",
+      "meaning": "Function signature changed",
+      "common_causes": ["API evolution"],
+      "fixes": ["Add default parameter or bump major"]
+    },
+    {
+      "pattern": "struct_field_missing",
+      "meaning": "Public struct field removed",
+      "common_causes": ["Refactoring"],
+      "fixes": ["Use #[non_exhaustive] or bump major"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["api_compatibility"],
+    "cli_command": "dashprove verify --backend semver-checks"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds",
+    "scalability": "Handles large crates",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cargo-public-api", "rust-semverver"],
+    "advantages": [
+      "Extensive lint collection",
+      "Clear error messages",
+      "Active development",
+      "CI-friendly"
+    ],
+    "disadvantages": [
+      "Requires baseline to compare",
+      "Some edge cases not covered"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.28.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Predrag Gruevski",
+    "license": "MIT/Apache-2.0"
+  }
+}

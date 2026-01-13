@@ -1,0 +1,122 @@
+{
+  "id": "loom",
+  "name": "Loom",
+  "category": "rust_concurrency",
+  "subcategory": "model_checker",
+
+  "description": "Concurrency permutation testing for Rust",
+  "long_description": "Loom is a testing tool for concurrent Rust code. It runs tests under a permutation of possible concurrent executions, exploring different thread interleavings and memory orderings to find bugs that would be rare in normal testing. Loom is essential for testing lock-free data structures.",
+
+  "capabilities": [
+    "thread_interleaving",
+    "memory_ordering",
+    "atomic_verification",
+    "deadlock_detection",
+    "race_detection",
+    "lock_free_testing"
+  ],
+  "property_types": ["concurrency_test", "assertion"],
+  "input_languages": ["rust"],
+  "output_formats": ["diagnostic", "trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add loom --dev"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://docs.rs/loom",
+    "tutorial": "https://github.com/tokio-rs/loom#getting-started",
+    "api_reference": "https://docs.rs/loom/latest/loom/",
+    "examples": "https://github.com/tokio-rs/loom/tree/master/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "model",
+      "description": "Run test under all permutations",
+      "syntax": "loom::model(|| { ... })",
+      "when_to_use": "For any concurrent test",
+      "examples": ["loom::model(|| { let arc = Arc::new(...); })"]
+    },
+    {
+      "name": "thread_spawn",
+      "description": "Spawn loom-tracked thread",
+      "syntax": "loom::thread::spawn(|| { ... })",
+      "when_to_use": "Instead of std::thread::spawn in tests",
+      "examples": ["let t = loom::thread::spawn(move || { ... });"]
+    },
+    {
+      "name": "atomic",
+      "description": "Use loom atomics",
+      "syntax": "loom::sync::atomic::AtomicUsize",
+      "when_to_use": "Replace std atomics in tested code",
+      "examples": ["use loom::sync::atomic::{AtomicUsize, Ordering};"]
+    },
+    {
+      "name": "cfg_loom",
+      "description": "Conditional compilation for loom",
+      "syntax": "#[cfg(loom)]",
+      "when_to_use": "To swap std/loom types",
+      "examples": ["#[cfg(loom)]\nuse loom::sync::Arc;\n#[cfg(not(loom))]\nuse std::sync::Arc;"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "deadlock",
+      "meaning": "Threads blocked forever",
+      "common_causes": ["Lock ordering violation", "Missing unlock"],
+      "fixes": ["Establish lock ordering", "Use RAII guards"]
+    },
+    {
+      "pattern": "assertion failed",
+      "meaning": "Concurrent invariant violated",
+      "common_causes": ["Missing synchronization", "Wrong memory ordering"],
+      "fixes": ["Add barriers", "Use stronger ordering"]
+    },
+    {
+      "pattern": "exceeded max branches",
+      "meaning": "State space too large",
+      "common_causes": ["Too many threads", "Unbounded loops"],
+      "fixes": ["Simplify test", "Reduce thread count"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["concurrency_test"],
+    "cli_command": "dashprove verify --backend loom"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours depending on state space",
+    "scalability": "Best for small concurrent units",
+    "memory_usage": "Varies with state space"
+  },
+
+  "comparisons": {
+    "similar_tools": ["shuttle", "tsan", "cdschecker"],
+    "advantages": [
+      "Exhaustive exploration",
+      "Memory ordering aware",
+      "Integrates with Rust ecosystem",
+      "Good error messages"
+    ],
+    "disadvantages": [
+      "State space explosion",
+      "Requires test adaptation",
+      "Only tests, not production code"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.7.1",
+    "last_updated": "2025-12-20",
+    "maintainer": "Tokio Team",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "tool": "mkdir",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "file_exists",
+      "pattern": "File exists|cannot create|already exists",
+      "message": "Directory already exists",
+      "cause": "Attempting to create existing directory",
+      "solutions": [
+        {
+          "approach": "Use -p flag",
+          "code": "mkdir -p directory  # No error if exists",
+          "when": "Idempotent"
+        },
+        {
+          "approach": "Check first",
+          "code": "[ -d directory ] || mkdir directory",
+          "when": "Conditional"
+        },
+        {
+          "approach": "File blocking",
+          "code": "ls -la directory  # Is it a file not dir?\nrm directory && mkdir directory",
+          "when": "File exists"
+        }
+      ]
+    },
+    {
+      "id": "no_such_file",
+      "pattern": "No such file or directory|cannot create|parent.*missing",
+      "message": "Parent directory doesn't exist",
+      "cause": "Intermediate directories missing",
+      "solutions": [
+        {
+          "approach": "Create parents",
+          "code": "mkdir -p path/to/new/directory",
+          "when": "Auto-create parents"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la path/to/",
+          "when": "Verify path"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot create",
+      "message": "Cannot create directory",
+      "cause": "No write permission on parent directory",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo mkdir /opt/myapp",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check parent",
+          "code": "ls -ld parent_directory/",
+          "when": "Verify perms"
+        },
+        {
+          "approach": "Fix parent",
+          "code": "chmod u+w parent_directory/",
+          "when": "Add write"
+        }
+      ]
+    },
+    {
+      "id": "set_permissions",
+      "pattern": "mode|permissions|chmod after|wrong permissions",
+      "message": "Want specific permissions",
+      "cause": "Default permissions from umask",
+      "solutions": [
+        {
+          "approach": "Set mode",
+          "code": "mkdir -m 755 directory\nmkdir -m 700 private_dir",
+          "when": "Specific perms"
+        },
+        {
+          "approach": "Check umask",
+          "code": "umask  # Shows default mask\numask 022  # Set mask",
+          "when": "Default perms"
+        },
+        {
+          "approach": "Set after",
+          "code": "mkdir directory && chmod 700 directory",
+          "when": "Change after"
+        }
+      ]
+    },
+    {
+      "id": "verbose_output",
+      "pattern": "verbose|confirm|created",
+      "message": "Want confirmation of creation",
+      "cause": "Want to see what was created",
+      "solutions": [
+        {
+          "approach": "Verbose",
+          "code": "mkdir -v directory\nmkdir -pv path/to/dir",
+          "when": "Show created"
+        },
+        {
+          "approach": "Echo status",
+          "code": "mkdir directory && echo 'Created directory'",
+          "when": "Custom message"
+        }
+      ]
+    },
+    {
+      "id": "no_space",
+      "pattern": "No space left|cannot create|disk full",
+      "message": "Disk full",
+      "cause": "No space for new inode",
+      "solutions": [
+        {
+          "approach": "Check space",
+          "code": "df -h .\ndf -i .  # Check inodes",
+          "when": "Verify space"
+        },
+        {
+          "approach": "Free space",
+          "code": "du -sh * | sort -h | tail",
+          "when": "Find large items"
+        },
+        {
+          "approach": "Different location",
+          "code": "mkdir /mnt/external/directory",
+          "when": "Other disk"
+        }
+      ]
+    }
+  ]
+}

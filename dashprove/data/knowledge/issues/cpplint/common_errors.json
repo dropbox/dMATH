@@ -1,0 +1,227 @@
+{
+  "tool": "cpplint",
+  "version": "1.6.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "line_too_long",
+      "pattern": "Lines should be <= \\d+ characters|line too long",
+      "message": "Line exceeds maximum length",
+      "cause": "Line longer than configured limit (default 80)",
+      "solutions": [
+        {
+          "approach": "Break line at operator",
+          "code": "int result = longFunctionName(\n    argument1,\n    argument2);",
+          "when": "Long function call"
+        },
+        {
+          "approach": "Change line length limit",
+          "code": "cpplint --linelength=120 file.cpp",
+          "when": "80 chars too restrictive"
+        },
+        {
+          "approach": "Configure in CPPLINT.cfg",
+          "code": "linelength=120",
+          "when": "Project-wide setting"
+        }
+      ]
+    },
+    {
+      "id": "whitespace_tabs",
+      "pattern": "Tab found|use spaces|whitespace/tab",
+      "message": "Tab character found instead of spaces",
+      "cause": "Google style requires spaces, not tabs",
+      "solutions": [
+        {
+          "approach": "Convert tabs to spaces",
+          "code": "expand -t 2 file.cpp > file_fixed.cpp",
+          "when": "Convert existing file"
+        },
+        {
+          "approach": "Configure editor",
+          "code": "// .editorconfig:\n[*.cpp]\nindent_style = space\nindent_size = 2",
+          "when": "Prevent future tabs"
+        },
+        {
+          "approach": "Filter this check",
+          "code": "cpplint --filter=-whitespace/tab file.cpp",
+          "when": "Allow tabs"
+        }
+      ]
+    },
+    {
+      "id": "include_order",
+      "pattern": "Include.*wrong|include order|should be.*before",
+      "message": "Include order violates style guide",
+      "cause": "Headers not in Google style order",
+      "solutions": [
+        {
+          "approach": "Order includes correctly",
+          "code": "// 1. Related header\n#include \"myclass.h\"\n// 2. C system headers\n#include <stdio.h>\n// 3. C++ headers\n#include <string>\n// 4. Other libraries\n#include \"other/lib.h\"",
+          "when": "Fix order manually"
+        },
+        {
+          "approach": "Use include-what-you-use",
+          "code": "include-what-you-use file.cpp",
+          "when": "Automated fixing"
+        },
+        {
+          "approach": "Disable check",
+          "code": "cpplint --filter=-build/include_order file.cpp",
+          "when": "Different style preferred"
+        }
+      ]
+    },
+    {
+      "id": "c_style_cast",
+      "pattern": "C-style cast|Using C-style cast",
+      "message": "C-style cast used instead of C++ cast",
+      "cause": "(Type)value instead of static_cast<Type>(value)",
+      "solutions": [
+        {
+          "approach": "Use static_cast",
+          "code": "int x = static_cast<int>(doubleValue);",
+          "when": "Safe conversions"
+        },
+        {
+          "approach": "Use const_cast",
+          "code": "char* p = const_cast<char*>(constStr);",
+          "when": "Remove const"
+        },
+        {
+          "approach": "Use reinterpret_cast",
+          "code": "auto* ptr = reinterpret_cast<NewType*>(rawPtr);",
+          "when": "Low-level cast"
+        },
+        {
+          "approach": "Use dynamic_cast",
+          "code": "Derived* d = dynamic_cast<Derived*>(basePtr);",
+          "when": "Polymorphic cast"
+        }
+      ]
+    },
+    {
+      "id": "missing_copyright",
+      "pattern": "No copyright|legal/copyright",
+      "message": "File missing copyright notice",
+      "cause": "No copyright header at top of file",
+      "solutions": [
+        {
+          "approach": "Add copyright header",
+          "code": "// Copyright 2025 Company Name. All rights reserved.\n// SPDX-License-Identifier: Apache-2.0",
+          "when": "Add proper header"
+        },
+        {
+          "approach": "Disable check",
+          "code": "cpplint --filter=-legal/copyright file.cpp",
+          "when": "Internal code"
+        },
+        {
+          "approach": "Add to CPPLINT.cfg",
+          "code": "filter=-legal/copyright",
+          "when": "Project-wide disable"
+        }
+      ]
+    },
+    {
+      "id": "braces_placement",
+      "pattern": "brace|\\{ should|should be on",
+      "message": "Brace placement incorrect",
+      "cause": "Opening brace not on same line as statement",
+      "solutions": [
+        {
+          "approach": "Use K&R style",
+          "code": "if (condition) {\n  // body\n}",
+          "when": "Google style (brace on same line)"
+        },
+        {
+          "approach": "Filter check",
+          "code": "cpplint --filter=-whitespace/braces file.cpp",
+          "when": "Prefer different style"
+        }
+      ]
+    },
+    {
+      "id": "namespace_comment",
+      "pattern": "namespace.*comment|// namespace",
+      "message": "Missing or wrong namespace closing comment",
+      "cause": "Closing brace of namespace should have comment",
+      "solutions": [
+        {
+          "approach": "Add namespace comment",
+          "code": "namespace foo {\n...\n}  // namespace foo",
+          "when": "Named namespace"
+        },
+        {
+          "approach": "For anonymous namespace",
+          "code": "namespace {\n...\n}  // namespace",
+          "when": "Anonymous namespace"
+        }
+      ]
+    },
+    {
+      "id": "header_guard",
+      "pattern": "ifndef.*wrong|header guard|HEADER_H_",
+      "message": "Header guard incorrect or missing",
+      "cause": "Missing or non-standard include guard",
+      "solutions": [
+        {
+          "approach": "Use standard guard format",
+          "code": "#ifndef PROJECT_PATH_FILE_H_\n#define PROJECT_PATH_FILE_H_\n...\n#endif  // PROJECT_PATH_FILE_H_",
+          "when": "Add proper guard"
+        },
+        {
+          "approach": "Use pragma once",
+          "code": "#pragma once  // Note: not Google style",
+          "when": "Non-Google project"
+        },
+        {
+          "approach": "Set root directory",
+          "code": "cpplint --root=src file.h",
+          "when": "Fix guard path calculation"
+        }
+      ]
+    },
+    {
+      "id": "explicit_constructor",
+      "pattern": "Single-parameter constructor|explicit",
+      "message": "Single-parameter constructor should be explicit",
+      "cause": "Constructor allows implicit conversion",
+      "solutions": [
+        {
+          "approach": "Add explicit keyword",
+          "code": "class Foo {\n  explicit Foo(int x);\n};",
+          "when": "Prevent implicit conversion"
+        },
+        {
+          "approach": "Allow if intentional",
+          "code": "// NOLINTNEXTLINE(runtime/explicit)",
+          "when": "Implicit conversion desired"
+        }
+      ]
+    },
+    {
+      "id": "runtime_int",
+      "pattern": "runtime/int|Use int16/int32|avoid short|long",
+      "message": "Use stdint.h types instead of short/long",
+      "cause": "Size of short/long is platform-dependent",
+      "solutions": [
+        {
+          "approach": "Use fixed-width types",
+          "code": "#include <cstdint>\nint32_t x;  // instead of int\nint64_t y;  // instead of long long",
+          "when": "Need specific size"
+        },
+        {
+          "approach": "Use size_t for sizes",
+          "code": "for (size_t i = 0; i < vec.size(); ++i)",
+          "when": "Loop indices/sizes"
+        },
+        {
+          "approach": "Disable check",
+          "code": "cpplint --filter=-runtime/int file.cpp",
+          "when": "Platform-specific code"
+        }
+      ]
+    }
+  ]
+}

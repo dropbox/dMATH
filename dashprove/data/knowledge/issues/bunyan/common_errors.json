@@ -1,0 +1,107 @@
+{
+  "tool": "bunyan",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "stream_error",
+      "pattern": "stream error|ENOENT.*log file|cannot open stream",
+      "message": "Log stream failed to open",
+      "cause": "Directory doesn't exist or permission denied",
+      "solutions": [
+        {
+          "approach": "Create directory",
+          "code": "const fs = require('fs');\nfs.mkdirSync('./logs', { recursive: true });",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Use rotating file stream",
+          "code": "const RotatingFileStream = require('bunyan-rotating-file-stream');\nstreams: [{ type: 'rotating-file', path: './logs/app.log' }]",
+          "when": "Need log rotation"
+        },
+        {
+          "approach": "Write to stdout",
+          "code": "streams: [{ stream: process.stdout }]",
+          "when": "Container/cloud deployment"
+        }
+      ]
+    },
+    {
+      "id": "serializer_cycle",
+      "pattern": "cycle detected|circular reference|Cannot stringify",
+      "message": "Circular reference in logged object",
+      "cause": "Object contains reference to itself or parent",
+      "solutions": [
+        {
+          "approach": "Use safe serializer",
+          "code": "serializers: {\n  req: bunyan.stdSerializers.req,\n  res: bunyan.stdSerializers.res,\n  err: bunyan.stdSerializers.err\n}",
+          "when": "Logging HTTP objects"
+        },
+        {
+          "approach": "Extract needed fields",
+          "code": "log.info({ userId: user.id, action: 'login' }, 'User logged in');",
+          "when": "Complex object logged"
+        }
+      ]
+    },
+    {
+      "id": "cli_parse_error",
+      "pattern": "bunyan: error|Cannot read log|Invalid JSON",
+      "message": "bunyan CLI cannot parse log file",
+      "cause": "Log file contains non-JSON lines or corruption",
+      "solutions": [
+        {
+          "approach": "Filter valid JSON",
+          "code": "grep '^{' app.log | bunyan",
+          "when": "Mixed content in log file"
+        },
+        {
+          "approach": "Use strict mode",
+          "code": "bunyan --strict app.log",
+          "when": "Skip invalid entries"
+        },
+        {
+          "approach": "Check log format",
+          "code": "Ensure all log output is JSON (no console.log mixed in)",
+          "when": "Non-bunyan output mixed in"
+        }
+      ]
+    },
+    {
+      "id": "level_val_error",
+      "pattern": "level value.*invalid|unknown level|resolveLevel",
+      "message": "Invalid log level specified",
+      "cause": "Level string not recognized or typo",
+      "solutions": [
+        {
+          "approach": "Use standard level",
+          "code": "// trace=10, debug=20, info=30, warn=40, error=50, fatal=60\nlog.info('message');",
+          "when": "Using non-standard level"
+        },
+        {
+          "approach": "Use numeric level",
+          "code": "level: bunyan.INFO  // or level: 30",
+          "when": "Prefer explicit numeric"
+        }
+      ]
+    },
+    {
+      "id": "missing_name",
+      "pattern": "options.name.*required|missing required.*name|Cannot create logger",
+      "message": "Logger name not provided",
+      "cause": "bunyan requires a name for each logger",
+      "solutions": [
+        {
+          "approach": "Add name option",
+          "code": "const log = bunyan.createLogger({ name: 'myapp' });",
+          "when": "Creating logger"
+        },
+        {
+          "approach": "Use child loggers",
+          "code": "const childLog = log.child({ component: 'auth' });",
+          "when": "Component-specific logging"
+        }
+      ]
+    }
+  ]
+}

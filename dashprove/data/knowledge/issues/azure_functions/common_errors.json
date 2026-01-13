@@ -1,0 +1,201 @@
+{
+  "tool": "azure_functions",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "Function.*timed out|timeout|Timeout value.*exceeded",
+      "message": "Azure Function execution timed out",
+      "cause": "Execution exceeded timeout (default 5min, max 10min for Consumption)",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "// host.json\n{\n  \"functionTimeout\": \"00:10:00\"\n}\n\n// For Consumption plan max is 10 min\n// Premium/Dedicated can go up to unlimited",
+          "when": "Function needs more time"
+        },
+        {
+          "approach": "Use Premium plan",
+          "code": "az functionapp plan create --name myPlan --resource-group myRG \\\n  --sku EP1 --is-linux",
+          "when": "Need timeout > 10 min"
+        },
+        {
+          "approach": "Use Durable Functions",
+          "code": "[FunctionName(\"Orchestrator\")]\npublic static async Task RunOrchestrator(\n    [OrchestrationTrigger] IDurableOrchestrationContext ctx)\n{\n    await ctx.CallActivityAsync(\"LongTask\", null);\n}",
+          "when": "Task needs hours to complete"
+        }
+      ]
+    },
+    {
+      "id": "cold_start",
+      "pattern": "cold start|slow start|Function Host is not running",
+      "message": "Cold start causing high latency",
+      "cause": "New function app instance being initialized",
+      "solutions": [
+        {
+          "approach": "Use Premium plan",
+          "code": "az functionapp plan create --name myPlan --resource-group myRG --sku EP1\n\n# Pre-warmed instances always ready",
+          "when": "Need consistent latency"
+        },
+        {
+          "approach": "Enable Always On",
+          "code": "az functionapp config set --name myFunc --resource-group myRG --always-on true\n\n# Requires App Service plan (not Consumption)",
+          "when": "Using App Service plan"
+        },
+        {
+          "approach": "Optimize dependencies",
+          "code": "// Use dependency injection\nbuilder.Services.AddSingleton<IMyService, MyService>();\n\n// Services initialized once, reused",
+          "when": "Heavy initialization code"
+        },
+        {
+          "approach": "Pre-warm with timer",
+          "code": "[FunctionName(\"Warmup\")]\npublic static void Run([TimerTrigger(\"0 */5 * * * *\")] TimerInfo timer)\n{\n    // Keep app warm\n}",
+          "when": "Consumption plan, infrequent traffic"
+        }
+      ]
+    },
+    {
+      "id": "binding_error",
+      "pattern": "binding|Unable to resolve|No binding found|trigger not found",
+      "message": "Function binding configuration error",
+      "cause": "Incorrect binding attributes or missing extensions",
+      "solutions": [
+        {
+          "approach": "Install extensions",
+          "code": "func extensions install\n\n// Or in .csproj\n<PackageReference Include=\"Microsoft.Azure.WebJobs.Extensions.Storage\" Version=\"5.0.0\" />",
+          "when": "Extension not installed"
+        },
+        {
+          "approach": "Check function.json",
+          "code": "{\n  \"bindings\": [\n    {\n      \"type\": \"httpTrigger\",\n      \"direction\": \"in\",\n      \"name\": \"req\",\n      \"methods\": [\"get\", \"post\"]\n    }\n  ]\n}",
+          "when": "Non-C# languages, check JSON config"
+        },
+        {
+          "approach": "Verify attribute syntax",
+          "code": "[FunctionName(\"MyFunc\")]\npublic static async Task<IActionResult> Run(\n    [HttpTrigger(AuthorizationLevel.Function, \"get\")] HttpRequest req,\n    [Blob(\"container/{name}\")] Stream blob)",
+          "when": "C# attribute binding"
+        }
+      ]
+    },
+    {
+      "id": "connection_string",
+      "pattern": "AzureWebJobsStorage|connection string|Storage account|DefaultEndpointsProtocol",
+      "message": "Missing or invalid storage connection string",
+      "cause": "AzureWebJobsStorage not configured or invalid",
+      "solutions": [
+        {
+          "approach": "Set connection string",
+          "code": "az functionapp config appsettings set \\\n  --name myFunc --resource-group myRG \\\n  --settings AzureWebJobsStorage=\"DefaultEndpointsProtocol=https;...\"",
+          "when": "Connection string not configured"
+        },
+        {
+          "approach": "Use managed identity",
+          "code": "// host.json\n{\n  \"extensions\": {\n    \"blobs\": {\n      \"maxDegreeOfParallelism\": 8\n    }\n  }\n}\n\n// Connection format: __serviceUri for identity",
+          "when": "Want to avoid connection strings"
+        },
+        {
+          "approach": "Check local.settings.json",
+          "code": "{\n  \"IsEncrypted\": false,\n  \"Values\": {\n    \"AzureWebJobsStorage\": \"UseDevelopmentStorage=true\",\n    \"FUNCTIONS_WORKER_RUNTIME\": \"dotnet\"\n  }\n}",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "host_error",
+      "pattern": "Host Error|A ScriptHost error|Failed to start|Host did not start",
+      "message": "Function host failed to start",
+      "cause": "Configuration error, dependency issue, or startup exception",
+      "solutions": [
+        {
+          "approach": "Check Application Insights",
+          "code": "// Query logs\ntraces\n| where message contains \"error\" or severityLevel >= 3\n| order by timestamp desc",
+          "when": "Need to diagnose startup"
+        },
+        {
+          "approach": "Validate host.json",
+          "code": "{\n  \"version\": \"2.0\",\n  \"logging\": {\n    \"applicationInsights\": {\n      \"samplingSettings\": {\n        \"isEnabled\": true\n      }\n    }\n  }\n}",
+          "when": "Invalid host.json"
+        },
+        {
+          "approach": "Check runtime version",
+          "code": "az functionapp config set --name myFunc --resource-group myRG \\\n  --net-framework-version v6.0\n\n// Or check FUNCTIONS_EXTENSION_VERSION\naz functionapp config appsettings list --name myFunc --resource-group myRG",
+          "when": "Runtime version mismatch"
+        },
+        {
+          "approach": "Clear deployment",
+          "code": "# Force clean deployment\naz functionapp deployment source config-zip \\\n  --name myFunc --resource-group myRG --src publish.zip",
+          "when": "Stale deployment files"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemory|MemoryLimitExceeded|System.OutOfMemoryException",
+      "message": "Function ran out of memory",
+      "cause": "Memory usage exceeded plan limit (Consumption: 1.5GB, Premium: up to 14GB)",
+      "solutions": [
+        {
+          "approach": "Use Premium plan",
+          "code": "az functionapp plan create --name myPlan --resource-group myRG \\\n  --sku EP2  # 7GB memory",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Stream data",
+          "code": "await foreach (var item in blobClient.DownloadStreamingAsync())\n{\n    // Process chunks\n}",
+          "when": "Loading large files"
+        },
+        {
+          "approach": "Dispose objects",
+          "code": "using (var client = new HttpClient())\n{\n    // Use and dispose\n}\n\n// Or use IHttpClientFactory",
+          "when": "Memory leaks"
+        }
+      ]
+    },
+    {
+      "id": "scaling_error",
+      "pattern": "scale out|scale controller|too many instances|429|Throttl",
+      "message": "Function scaling issues or throttling",
+      "cause": "Scale limits reached or controller overwhelmed",
+      "solutions": [
+        {
+          "approach": "Set scale limits",
+          "code": "// host.json\n{\n  \"extensions\": {\n    \"http\": {\n      \"maxConcurrentRequests\": 100,\n      \"maxOutstandingRequests\": 200\n    }\n  }\n}\n\naz functionapp config set --name myFunc --resource-group myRG \\\n  --function-app-scale-limit 10",
+          "when": "Runaway scaling"
+        },
+        {
+          "approach": "Use queue batching",
+          "code": "// host.json\n{\n  \"extensions\": {\n    \"queues\": {\n      \"batchSize\": 16,\n      \"newBatchThreshold\": 8\n    }\n  }\n}",
+          "when": "Queue-triggered functions"
+        },
+        {
+          "approach": "Implement backoff",
+          "code": "public class RetryPolicy : IRetryPolicy\n{\n    public TimeSpan GetNextDelay(Exception exception, int retryCount)\n    {\n        return TimeSpan.FromSeconds(Math.Pow(2, retryCount));\n    }\n}",
+          "when": "Client-side retry needed"
+        }
+      ]
+    },
+    {
+      "id": "deployment_failed",
+      "pattern": "Deployment failed|publish failed|Zip deployment|SCM_DO_BUILD_DURING_DEPLOYMENT",
+      "message": "Function deployment failed",
+      "cause": "Build error, package issue, or deployment slot problem",
+      "solutions": [
+        {
+          "approach": "Check deployment logs",
+          "code": "az webapp log deployment list --name myFunc --resource-group myRG\n\n# Or Kudu logs\nhttps://myFunc.scm.azurewebsites.net/api/deployments",
+          "when": "Need deployment details"
+        },
+        {
+          "approach": "Enable remote build",
+          "code": "az functionapp config appsettings set --name myFunc --resource-group myRG \\\n  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true\n\n# Or disable for pre-built packages\naz functionapp config appsettings set --name myFunc --resource-group myRG \\\n  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false",
+          "when": "Build configuration mismatch"
+        },
+        {
+          "approach": "Use deployment slots",
+          "code": "az functionapp deployment slot create --name myFunc --resource-group myRG --slot staging\naz functionapp deployment source config-zip \\\n  --name myFunc --resource-group myRG --slot staging --src pkg.zip\naz functionapp deployment slot swap \\\n  --name myFunc --resource-group myRG --slot staging",
+          "when": "Reduce deployment risk"
+        }
+      ]
+    }
+  ]
+}

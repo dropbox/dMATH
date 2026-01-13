@@ -1,0 +1,168 @@
+{
+  "tool": "vst",
+  "version": "2.13",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "precondition_not_satisfied",
+      "pattern": "PRECONDITION.*not satisfied|Unable to prove.*PRE",
+      "message": "Function precondition not provable",
+      "cause": "Cannot prove that precondition holds at call site",
+      "solutions": [
+        {
+          "approach": "Strengthen caller's precondition",
+          "code": "DECLARE _caller\n  PRE [ ... ] PROP(/* add needed facts */) ...",
+          "when": "Caller needs stronger assumptions"
+        },
+        {
+          "approach": "Use entailer",
+          "code": "entailer!.  (* Simplify and check *)",
+          "when": "Precondition should follow from context"
+        },
+        {
+          "approach": "Add forward",
+          "code": "forward.  (* Progress through statement *)",
+          "when": "Need to establish facts from earlier code"
+        }
+      ]
+    },
+    {
+      "id": "memory_assertion_failed",
+      "pattern": "data_at.*failed|mapsto.*cannot.*prove",
+      "message": "Memory assertion failed",
+      "cause": "Cannot prove memory layout matches specification",
+      "solutions": [
+        {
+          "approach": "Use sep_apply",
+          "code": "sep_apply data_at_data_at_.",
+          "when": "Need to transform memory predicates"
+        },
+        {
+          "approach": "Check alignment",
+          "code": "assert_PROP (isptr p).  (* Verify pointer valid *)",
+          "when": "Pointer may be null or misaligned"
+        },
+        {
+          "approach": "Unfold definition",
+          "code": "unfold data_at.  (* See memory layout *)",
+          "when": "Need to inspect structure layout"
+        }
+      ]
+    },
+    {
+      "id": "forward_failed",
+      "pattern": "forward failed|Cannot.*apply.*forward",
+      "message": "Forward tactic failed",
+      "cause": "Cannot symbolically execute next statement",
+      "solutions": [
+        {
+          "approach": "Prove subgoals first",
+          "code": "forward.  (* May generate subgoals *)\n- (* solve subgoal *)",
+          "when": "Forward generates unprovable subgoals"
+        },
+        {
+          "approach": "Use forward_if for branches",
+          "code": "forward_if (PROP ... LOCAL ... SEP ...).",
+          "when": "Statement is conditional"
+        },
+        {
+          "approach": "Use forward_call for functions",
+          "code": "forward_call (arg1, arg2, ...).",
+          "when": "Statement is function call"
+        }
+      ]
+    },
+    {
+      "id": "semax_body_not_found",
+      "pattern": "semax_body.*not found|Cannot find.*funspec",
+      "message": "Function specification not found",
+      "cause": "Function lacks specification or spec not imported",
+      "solutions": [
+        {
+          "approach": "Define funspec",
+          "code": "Definition my_func_spec := DECLARE _my_func\n  WITH ...\n  PRE [ ... ]\n    PROP(...) LOCAL(...) SEP(...)\n  POST [ ... ]\n    PROP(...) LOCAL(...) SEP(...)",
+          "when": "Function needs specification"
+        },
+        {
+          "approach": "Import specs",
+          "code": "Require Import my_module_spec.",
+          "when": "Spec in another module"
+        },
+        {
+          "approach": "Add to Gprog",
+          "code": "Definition Gprog := ... ++ [my_func_spec] ++ ...",
+          "when": "Spec not in global program"
+        }
+      ]
+    },
+    {
+      "id": "clightgen_error",
+      "pattern": "clightgen.*error|Cannot parse.*\\.c",
+      "message": "C to Clight conversion failed",
+      "cause": "CompCert's clightgen cannot process C file",
+      "solutions": [
+        {
+          "approach": "Use supported C subset",
+          "code": "/* Avoid VLAs, complex designated initializers */",
+          "when": "C code uses unsupported features"
+        },
+        {
+          "approach": "Include headers",
+          "code": "clightgen -normalize -I/path/to/includes file.c",
+          "when": "Missing header files"
+        },
+        {
+          "approach": "Check CompCert version",
+          "code": "ccomp --version  # Match VST's expected version",
+          "when": "CompCert version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "frame_rule_failed",
+      "pattern": "frame.*failed|Cannot.*separate",
+      "message": "Separation logic frame rule failed",
+      "cause": "Cannot separate frame from pre/postcondition",
+      "solutions": [
+        {
+          "approach": "Cancel separating conjuncts",
+          "code": "cancel.  (* Remove matching parts *)",
+          "when": "Frame should be obvious"
+        },
+        {
+          "approach": "Rewrite assertions",
+          "code": "rewrite data_at_isptr.  (* Convert predicates *)",
+          "when": "Predicates in wrong form"
+        },
+        {
+          "approach": "Use sep_apply",
+          "code": "sep_apply (data_at_data_at_ sh t p).",
+          "when": "Need to transform memory predicates"
+        }
+      ]
+    },
+    {
+      "id": "opaque_error",
+      "pattern": "Cannot unfold.*opaque|Definition.*opaque",
+      "message": "Cannot unfold opaque definition",
+      "cause": "Definition marked opaque, cannot see inside",
+      "solutions": [
+        {
+          "approach": "Use provided lemmas",
+          "code": "(* Look for _eq or _spec lemmas *)",
+          "when": "Lemmas expose needed properties"
+        },
+        {
+          "approach": "Make transparent temporarily",
+          "code": "Transparent my_def.  (* then Opaque after *)",
+          "when": "Need to unfold for proof"
+        },
+        {
+          "approach": "Redefine as transparent",
+          "code": "Definition my_def := ... .  (* not Qed *)",
+          "when": "Definition should be transparent"
+        }
+      ]
+    }
+  ]
+}

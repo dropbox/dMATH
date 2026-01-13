@@ -1,0 +1,76 @@
+{
+  "tool": "buildkite",
+  "category": "ci_cd",
+  "common_errors": [
+    {
+      "pattern": "No agents matched the step|waiting for agent",
+      "meaning": "No agent available for job",
+      "causes": ["Agent not running", "Queue mismatch", "Agent tags don't match"],
+      "solutions": ["Start agent: buildkite-agent start", "Check agents.queue matches step queue", "Verify agent tags match step targeting"]
+    },
+    {
+      "pattern": "pipeline.yml.*not found|Unable to find.*pipeline",
+      "meaning": "Pipeline definition missing",
+      "causes": [".buildkite/pipeline.yml not found", "Wrong path", "Not in repo"],
+      "solutions": ["Create .buildkite/pipeline.yml", "Check pipeline upload path in web UI", "Ensure file is committed"]
+    },
+    {
+      "pattern": "yaml.*parse error|invalid pipeline",
+      "meaning": "Invalid pipeline YAML",
+      "causes": ["YAML syntax error", "Invalid key", "Indentation wrong"],
+      "solutions": ["Validate YAML locally", "Use pipeline upload --dry-run", "Check for tabs vs spaces"]
+    },
+    {
+      "pattern": "hook.*failed|pre-command.*error",
+      "meaning": "Agent hook failed",
+      "causes": ["Hook script error", "Permission denied", "Hook not executable"],
+      "solutions": ["Check hooks in agent hooks-path", "chmod +x hook scripts", "Test hooks locally"]
+    },
+    {
+      "pattern": "checkout.*failed|fatal: Could not read from remote",
+      "meaning": "Git checkout failed",
+      "causes": ["SSH key not configured", "Deploy key missing", "Network issue"],
+      "solutions": ["Add SSH key to agent", "Configure deploy key in repo settings", "Check git-ssh-command in environment"]
+    },
+    {
+      "pattern": "artifact.*not found|upload.*failed",
+      "meaning": "Artifact operation failed",
+      "causes": ["Path doesn't exist", "No files match glob", "Storage error"],
+      "solutions": ["Verify artifact path exists", "Check glob pattern", "Ensure artifact bucket is configured"]
+    },
+    {
+      "pattern": "timeout|job timed out|cancelled due to inactivity",
+      "meaning": "Job exceeded time limit",
+      "causes": ["Default timeout hit", "Step stuck", "No output for too long"],
+      "solutions": ["Set timeout_in_minutes on step", "Add periodic output to prevent inactivity timeout", "Debug stuck process"]
+    },
+    {
+      "pattern": "block step.*expired|manual step.*timed out",
+      "meaning": "Manual/block step timeout",
+      "causes": ["No one clicked Unblock", "Block timeout reached", "Step expired"],
+      "solutions": ["Unblock in UI before timeout", "Set longer timeout on block", "Use automatic concurrency groups instead"]
+    },
+    {
+      "pattern": "plugin.*not found|invalid plugin",
+      "meaning": "Plugin error",
+      "causes": ["Plugin doesn't exist", "Version invalid", "Plugin syntax error"],
+      "solutions": ["Check plugin name/version on buildkite.com", "Ensure plugin repo accessible", "Review plugin configuration format"]
+    },
+    {
+      "pattern": "environment variable.*not set|secret.*not found",
+      "meaning": "Missing environment variable",
+      "causes": ["Env var not configured", "Secret not in cluster", "Wrong pipeline"],
+      "solutions": ["Set in pipeline env or agent env", "Add to pipeline environment in UI", "Use secrets manager integration"]
+    }
+  ],
+  "debugging_commands": [
+    "buildkite-agent start --debug",
+    "buildkite-agent pipeline upload --dry-run",
+    "buildkite-agent artifact upload/download",
+    "buildkite-agent meta-data get/set"
+  ],
+  "documentation_urls": [
+    "https://buildkite.com/docs",
+    "https://github.com/buildkite/agent"
+  ]
+}

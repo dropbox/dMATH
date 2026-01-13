@@ -1,0 +1,168 @@
+{
+  "tool": "go_elle",
+  "version": "0.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cycle_detected",
+      "pattern": "cycle detected|dependency cycle",
+      "message": "Cyclic dependency detected in transaction history",
+      "cause": "Transactions have a cyclic dependency indicating a consistency violation",
+      "solutions": [
+        {
+          "approach": "Examine cycle details",
+          "code": "elle.Check(history, elle.WithVerbose(true))\n// Outputs: T1 -ww-> T2 -wr-> T3 -rw-> T1",
+          "when": "Need to understand violation"
+        },
+        {
+          "approach": "Check isolation level",
+          "code": "// Cycles indicate serialization anomalies\n// rw-rw cycles: G2 (anti-dependency)\n// ww-wr cycles: G1c (circular information flow)",
+          "when": "Unexpected cycle type"
+        },
+        {
+          "approach": "Verify timestamp ordering",
+          "code": "// Ensure operations have monotonic timestamps\nop := elle.Operation{\n    Time: time.Now().UnixNano(),\n    // ...\n}",
+          "when": "Clock skew causing false positives"
+        }
+      ]
+    },
+    {
+      "id": "history_parse_error",
+      "pattern": "failed to parse history|invalid operation format",
+      "message": "Cannot parse operation history",
+      "cause": "History format does not match expected schema",
+      "solutions": [
+        {
+          "approach": "Use correct operation format",
+          "code": "op := elle.Operation{\n    Type:   elle.Invoke,  // or elle.Return\n    Key:    \"x\",\n    Value:  1,\n    TxnID:  \"tx-001\",\n}",
+          "when": "Operation fields missing"
+        },
+        {
+          "approach": "Match invoke/return pairs",
+          "code": "// Every invoke must have a matching return\ninvoke := elle.Operation{Type: elle.Invoke, TxnID: \"tx-001\"}\nret := elle.Operation{Type: elle.Return, TxnID: \"tx-001\"}",
+          "when": "Unpaired operations"
+        },
+        {
+          "approach": "Validate history before check",
+          "code": "if err := elle.ValidateHistory(history); err != nil {\n    log.Fatal(err)\n}",
+          "when": "Debugging history format"
+        }
+      ]
+    },
+    {
+      "id": "g0_anomaly",
+      "pattern": "G0.*anomaly|dirty write",
+      "message": "G0 anomaly (dirty write) detected",
+      "cause": "Transaction wrote over uncommitted data from another transaction",
+      "solutions": [
+        {
+          "approach": "Use write locks",
+          "code": "// System must prevent dirty writes\n// This is a fundamental consistency bug",
+          "when": "Database has dirty write bug"
+        },
+        {
+          "approach": "Verify transaction boundaries",
+          "code": "// Ensure writes are within transaction\ndb.Begin()\ndb.Put(key, value)  // Inside transaction\ndb.Commit()",
+          "when": "Writes outside transaction"
+        },
+        {
+          "approach": "Check commit protocol",
+          "code": "// Verify 2PC or similar is working\n// G0 indicates fundamental protocol failure",
+          "when": "Commit protocol broken"
+        }
+      ]
+    },
+    {
+      "id": "g1a_anomaly",
+      "pattern": "G1a.*anomaly|aborted read",
+      "message": "G1a anomaly (aborted read) detected",
+      "cause": "Transaction read data from a transaction that later aborted",
+      "solutions": [
+        {
+          "approach": "Implement proper MVCC",
+          "code": "// Reads should only see committed versions\n// Aborted transactions must not be visible",
+          "when": "MVCC implementation bug"
+        },
+        {
+          "approach": "Check rollback mechanism",
+          "code": "// Verify aborted writes are properly rolled back\ndb.Begin()\ndb.Put(key, value)\ndb.Rollback()  // Must undo the Put",
+          "when": "Rollback not undoing writes"
+        },
+        {
+          "approach": "Add read validation",
+          "code": "// Validate reads at commit time\n// Abort if read from uncommitted transaction",
+          "when": "Using optimistic concurrency"
+        }
+      ]
+    },
+    {
+      "id": "g2_anomaly",
+      "pattern": "G2.*anomaly|anti.?dependency",
+      "message": "G2 anomaly (anti-dependency cycle) detected",
+      "cause": "Read-write dependency cycle found (weaker than serializable)",
+      "solutions": [
+        {
+          "approach": "Upgrade isolation level",
+          "code": "// G2 is allowed under Snapshot Isolation\n// Use Serializable for strict ordering\ndb.SetIsolationLevel(sql.LevelSerializable)",
+          "when": "Need serializable isolation"
+        },
+        {
+          "approach": "Use serializable snapshot isolation",
+          "code": "// SSI detects and aborts G2-causing transactions\n// PostgreSQL SERIALIZABLE does this",
+          "when": "Performance concerns with S2PL"
+        },
+        {
+          "approach": "Analyze dependency graph",
+          "code": "result := elle.Check(history)\nfor _, cycle := range result.Cycles {\n    fmt.Printf(\"Cycle: %v\\n\", cycle.Edges)\n}",
+          "when": "Understanding violation pattern"
+        }
+      ]
+    },
+    {
+      "id": "version_mismatch",
+      "pattern": "version.*mismatch|unexpected version",
+      "message": "Version mismatch in list-append model",
+      "cause": "Appended values do not match expected version sequence",
+      "solutions": [
+        {
+          "approach": "Check append semantics",
+          "code": "// List-append expects: read [1,2], append 3 -> [1,2,3]\n// Not: append 3 -> [1,3,2] (wrong order)",
+          "when": "Append ordering wrong"
+        },
+        {
+          "approach": "Verify atomicity",
+          "code": "// Append must be atomic read-modify-write\ncurrent := db.Get(key)\ndb.Put(key, append(current, newVal))",
+          "when": "Non-atomic append"
+        },
+        {
+          "approach": "Use CAS for appends",
+          "code": "for {\n    old := db.Get(key)\n    new := append(old, val)\n    if db.CAS(key, old, new) {\n        break\n    }\n}",
+          "when": "Concurrent append conflicts"
+        }
+      ]
+    },
+    {
+      "id": "timeout_incomplete_history",
+      "pattern": "incomplete history|pending operations",
+      "message": "History has incomplete (pending) operations",
+      "cause": "Some operations did not complete before history ended",
+      "solutions": [
+        {
+          "approach": "Wait for completions",
+          "code": "// Ensure all operations complete\nfor _, op := range pendingOps {\n    op.Wait()\n}",
+          "when": "Test ended too early"
+        },
+        {
+          "approach": "Handle timeouts as unknown",
+          "code": "// Mark timed-out operations as :info\nop.Type = elle.Info  // Unknown outcome",
+          "when": "Operations truly unknown"
+        },
+        {
+          "approach": "Use linearizability-safe unknown handling",
+          "code": "result := elle.Check(history, elle.WithUnknownOps(elle.Pessimistic))\n// Treats unknown ops pessimistically",
+          "when": "Want conservative analysis"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "typespec",
+  "version": "0.54",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "parse_error",
+      "pattern": "Parse error|Unexpected token|Expected.*found|Syntax error",
+      "message": "TypeSpec syntax error",
+      "cause": "Invalid TypeSpec syntax in .tsp file",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "tsp compile main.tsp --pretty  # Shows formatted errors",
+          "when": "Syntax validation"
+        },
+        {
+          "approach": "Common fixes",
+          "code": "// Models use 'model' not 'type'\nmodel User {\n  name: string;\n  age: int32;  // Not 'int' or 'number'\n}",
+          "when": "TypeSpec syntax"
+        },
+        {
+          "approach": "Use VS Code extension",
+          "code": "# Install TypeSpec for VS Code\ncode --install-extension microsoft.typespec-vscode",
+          "when": "IDE support"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "Cannot find module|Import.*failed|Could not resolve|Library.*not found",
+      "message": "Import resolution failed",
+      "cause": "Library not installed or wrong import path",
+      "solutions": [
+        {
+          "approach": "Install library",
+          "code": "npm install @typespec/http @typespec/rest @typespec/openapi3",
+          "when": "Missing dependency"
+        },
+        {
+          "approach": "Check import",
+          "code": "import \"@typespec/http\";\nimport \"@typespec/rest\";\nusing TypeSpec.Http;",
+          "when": "Import syntax"
+        },
+        {
+          "approach": "Init project",
+          "code": "tsp init\ntsp install",
+          "when": "New project setup"
+        }
+      ]
+    },
+    {
+      "id": "emitter_error",
+      "pattern": "Emitter.*error|No emitter|Output.*failed|@typespec/openapi3.*error",
+      "message": "Emitter configuration error",
+      "cause": "Emitter not installed or misconfigured",
+      "solutions": [
+        {
+          "approach": "Install emitter",
+          "code": "npm install @typespec/openapi3\n# or\nnpm install @typespec/json-schema",
+          "when": "Missing emitter"
+        },
+        {
+          "approach": "Configure tspconfig",
+          "code": "{\n  \"emit\": [\"@typespec/openapi3\"],\n  \"options\": {\n    \"@typespec/openapi3\": {\n      \"output-file\": \"openapi.yaml\"\n    }\n  }\n}",
+          "when": "tspconfig.yaml setup"
+        },
+        {
+          "approach": "CLI emit",
+          "code": "tsp compile . --emit @typespec/openapi3",
+          "when": "Command line emit"
+        }
+      ]
+    },
+    {
+      "id": "decorator_error",
+      "pattern": "Unknown decorator|Decorator.*not found|@\\w+.*invalid|Cannot apply decorator",
+      "message": "Unknown or invalid decorator",
+      "cause": "Decorator not imported or wrong usage",
+      "solutions": [
+        {
+          "approach": "Import namespace",
+          "code": "import \"@typespec/http\";\nusing TypeSpec.Http;\n\n@route(\"/users\")\nnamespace Users { ... }",
+          "when": "Decorator not in scope"
+        },
+        {
+          "approach": "Check target",
+          "code": "// @route applies to namespaces/interfaces\n// @path applies to operation parameters\n@route(\"/users/{id}\")\nop getUser(@path id: string): User;",
+          "when": "Wrong decorator target"
+        },
+        {
+          "approach": "List decorators",
+          "code": "// Common decorators:\n// @route, @get, @post, @path, @query, @header, @body\n// @doc, @summary, @error, @format",
+          "when": "Reference"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type.*incompatible|Cannot assign|Expected.*but got|Type mismatch",
+      "message": "Type compatibility error",
+      "cause": "Type mismatch between expected and provided types",
+      "solutions": [
+        {
+          "approach": "Use correct scalar",
+          "code": "// TypeSpec scalars:\n// string, boolean, int8-64, uint8-64, float32-64\n// bytes, plainDate, plainTime, utcDateTime",
+          "when": "Wrong scalar type"
+        },
+        {
+          "approach": "Model spread",
+          "code": "model CreateUser {\n  ...User;  // Spread base model\n  password: string;\n}",
+          "when": "Extend model"
+        },
+        {
+          "approach": "Union types",
+          "code": "model Response {\n  status: 200 | 400 | 500;\n  data: User | Error;\n}",
+          "when": "Multiple types"
+        }
+      ]
+    },
+    {
+      "id": "versioning_error",
+      "pattern": "Version.*error|@added.*invalid|Versioning conflict|Timeline.*inconsistent",
+      "message": "API versioning error",
+      "cause": "Inconsistent version decorators or timeline",
+      "solutions": [
+        {
+          "approach": "Setup versions",
+          "code": "import \"@typespec/versioning\";\nusing TypeSpec.Versioning;\n\n@versioned(Versions)\nnamespace MyApi {\n  enum Versions { v1, v2 }\n}",
+          "when": "Enable versioning"
+        },
+        {
+          "approach": "Version decorators",
+          "code": "@added(Versions.v2)\nmodel NewFeature { ... }\n\n@removed(Versions.v2)\nmodel DeprecatedThing { ... }",
+          "when": "Mark version changes"
+        },
+        {
+          "approach": "Emit version",
+          "code": "tsp compile . --emit @typespec/openapi3 --option \"@typespec/openapi3.output-file=api-v2.yaml\" --option \"version=v2\"",
+          "when": "Generate specific version"
+        }
+      ]
+    }
+  ]
+}

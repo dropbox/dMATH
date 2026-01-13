@@ -1,0 +1,99 @@
+{
+  "tool": "efs",
+  "category": "aws_storage",
+  "description": "Amazon Elastic File System - scalable NFS file storage",
+  "common_errors": [
+    {
+      "id": "mount_failed",
+      "pattern": "mount.nfs",
+      "regex": "(?i)mount.*failed|connection.*timed.*out|mount\\.nfs|no.*route.*to.*host",
+      "cause": "Cannot mount EFS file system",
+      "solution": "Check security group allows NFS (port 2049), verify mount target exists in VPC subnet, install amazon-efs-utils",
+      "severity": "high",
+      "category": "mounting"
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied",
+      "regex": "(?i)permission.*denied|access.*denied|operation.*not.*permitted",
+      "cause": "File system access permissions deny operation",
+      "solution": "Check POSIX permissions, review EFS access point configuration, verify IAM authorization policy",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "access_point_error",
+      "pattern": "AccessPointNotFound",
+      "regex": "(?i)access.*point.*not.*found|invalid.*access.*point|access.*point.*error",
+      "cause": "EFS access point does not exist or is misconfigured",
+      "solution": "Verify access point ID, create access point with correct POSIX user/path configuration",
+      "severity": "medium",
+      "category": "access"
+    },
+    {
+      "id": "file_system_limit",
+      "pattern": "FileSystemLimitExceeded",
+      "regex": "(?i)file.*system.*limit|too.*many.*file.*systems|quota.*exceeded",
+      "cause": "Account EFS file system limit exceeded",
+      "solution": "Delete unused file systems, request quota increase via Service Quotas",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "throughput_limit",
+      "pattern": "ThroughputLimitExceeded",
+      "regex": "(?i)throughput.*limit|burst.*credits|provisioned.*throughput|BurstCreditBalance",
+      "cause": "File system throughput credits exhausted",
+      "solution": "Monitor BurstCreditBalance metric, switch to Provisioned throughput mode, increase provisioned throughput",
+      "severity": "high",
+      "category": "performance"
+    },
+    {
+      "id": "mount_target_error",
+      "pattern": "MountTargetNotFound",
+      "regex": "(?i)mount.*target.*not.*found|no.*mount.*target|subnet.*error",
+      "cause": "Mount target does not exist in subnet",
+      "solution": "Create mount target in each VPC subnet where instances need access",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "security_group_error",
+      "pattern": "network error",
+      "regex": "(?i)security.*group|port.*2049|nfs.*blocked|inbound.*rule",
+      "cause": "Security group blocking NFS traffic",
+      "solution": "Add inbound rule for NFS (TCP 2049) from instance security group to mount target security group",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "encryption_error",
+      "pattern": "KMS",
+      "regex": "(?i)kms.*error|encryption.*failed|cannot.*decrypt|key.*access",
+      "cause": "KMS key access issue for encrypted file system",
+      "solution": "Verify KMS key policy allows EFS service, ensure key exists and is enabled",
+      "severity": "high",
+      "category": "security"
+    },
+    {
+      "id": "stale_file_handle",
+      "pattern": "Stale file handle",
+      "regex": "(?i)stale.*file.*handle|ESTALE|file.*handle.*expired",
+      "cause": "File handle became invalid (file system unmounted/remounted)",
+      "solution": "Close and reopen files, remount file system, implement reconnection logic in application",
+      "severity": "medium",
+      "category": "mounting"
+    },
+    {
+      "id": "io_error",
+      "pattern": "Input/output error",
+      "regex": "(?i)input.*output.*error|i/o.*error|EIO|io.*timeout",
+      "cause": "File system I/O operation failed",
+      "solution": "Check file system status, review CloudWatch metrics, verify network connectivity to mount target",
+      "severity": "high",
+      "category": "io"
+    }
+  ],
+  "related_tools": ["aws_cli", "ec2", "mount", "cloudwatch"],
+  "documentation_url": "https://docs.aws.amazon.com/efs/"
+}

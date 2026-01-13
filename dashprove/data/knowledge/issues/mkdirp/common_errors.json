@@ -1,0 +1,102 @@
+{
+  "tool": "mkdirp",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "mkdirp_v1_breaking",
+      "pattern": "mkdirp is not a function|mkdirp\\(\\).*then|callback not working",
+      "severity": "error",
+      "causes": [
+        "mkdirp v1+ returns Promise, not callback",
+        "v0.x used callback API",
+        "Sync method renamed"
+      ],
+      "solutions": [
+        "v1+: await mkdirp('/path/to/dir')",
+        "v1+: mkdirp.sync('/path/to/dir') for sync",
+        "For v0.x callback style: npm i mkdirp@0.5",
+        "Or use fs.mkdir with { recursive: true } (Node 10+)"
+      ]
+    },
+    {
+      "id": "mkdirp_eacces",
+      "pattern": "EACCES|permission denied|cannot create directory",
+      "severity": "error",
+      "causes": [
+        "No write permission on parent directory",
+        "Protected system path",
+        "Different user ownership"
+      ],
+      "solutions": [
+        "Check permissions on parent directories",
+        "Run with appropriate user/privileges",
+        "Use opts.mode to set permissions: mkdirp(path, { mode: 0o755 })",
+        "Verify path is writeable before calling"
+      ]
+    },
+    {
+      "id": "mkdirp_eexist_file",
+      "pattern": "EEXIST|not a directory|file exists at path",
+      "severity": "error",
+      "causes": [
+        "File (not directory) exists at path",
+        "Intermediate path component is a file",
+        "Symlink to file in path"
+      ],
+      "solutions": [
+        "Check path doesn't have file conflicts",
+        "Remove conflicting file first",
+        "Use different directory path",
+        "Check for symlinks that point to files"
+      ]
+    },
+    {
+      "id": "mkdirp_enoent_windows",
+      "pattern": "ENOENT.*Windows|invalid path|device.*not ready",
+      "severity": "error",
+      "causes": [
+        "Invalid Windows path (drive not available)",
+        "UNC path issues",
+        "Path too long"
+      ],
+      "solutions": [
+        "Check drive letter exists and is accessible",
+        "Use path.win32 for Windows-specific paths",
+        "Enable long paths on Windows 10+",
+        "Shorten directory path if > 260 chars"
+      ]
+    },
+    {
+      "id": "mkdirp_race_condition",
+      "pattern": "EEXIST during create|race condition|concurrent mkdirp",
+      "severity": "warning",
+      "causes": [
+        "Multiple processes creating same directory",
+        "Parallel mkdirp calls on same path",
+        "Race between check and create"
+      ],
+      "solutions": [
+        "mkdirp handles EEXIST internally",
+        "Don't pre-check with existsSync",
+        "For guaranteed isolation, use file locks",
+        "EEXIST on directory is typically safe to ignore"
+      ]
+    },
+    {
+      "id": "mkdirp_native_alternative",
+      "pattern": "should I use mkdirp|native mkdir recursive|fs\\.mkdir",
+      "severity": "info",
+      "causes": [
+        "Node 10.12+ has fs.mkdir recursive option",
+        "Native solution might be preferred",
+        "Reducing dependencies"
+      ],
+      "solutions": [
+        "Node 10.12+: fs.mkdirSync(path, { recursive: true })",
+        "Or: await fs.promises.mkdir(path, { recursive: true })",
+        "mkdirp still useful for older Node or extra features",
+        "fs-extra's ensureDir is another option"
+      ]
+    }
+  ]
+}

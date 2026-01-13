@@ -1,0 +1,120 @@
+{
+  "id": "tlaplus_etcd",
+  "name": "etcd TLA+ Specifications",
+  "category": "tlaplus_specifications",
+  "subcategory": "distributed_kv",
+
+  "description": "TLA+ specifications for etcd distributed key-value store using Raft",
+  "long_description": "etcd is a distributed key-value store that uses Raft for consensus. The TLA+ specifications cover the Raft implementation, linearizable reads, watch notifications, and lease mechanisms. etcd's specs have been used to verify correctness and have found subtle bugs in edge cases. etcd is used by Kubernetes for cluster state storage.",
+
+  "capabilities": [
+    "raft_consensus",
+    "linearizable_reads",
+    "watch_notifications",
+    "lease_management",
+    "range_queries"
+  ],
+  "property_types": ["safety", "linearizability", "liveness"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/etcd-io/etcd",
+    "raft": "https://github.com/etcd-io/raft",
+    "contrib": "https://github.com/etcd-io/etcd/tree/main/contrib/raftexample"
+  },
+
+  "documentation": {
+    "official": "https://etcd.io/docs/",
+    "raft_design": "https://etcd.io/docs/current/learning/design-overview/",
+    "linearizability": "https://etcd.io/docs/current/learning/api/#linearizable-reads"
+  },
+
+  "specifications": [
+    {
+      "name": "EtcdRaft",
+      "description": "etcd's Raft implementation",
+      "properties": ["election_safety", "log_matching", "leader_completeness"]
+    },
+    {
+      "name": "LinearizableRead",
+      "description": "ReadIndex protocol for linearizable reads",
+      "properties": ["linearizability", "read_freshness"]
+    },
+    {
+      "name": "WatchNotification",
+      "description": "Watch event delivery guarantees",
+      "properties": ["event_ordering", "no_missed_events"]
+    },
+    {
+      "name": "LeaseGrant",
+      "description": "Lease mechanism for TTL-based keys",
+      "properties": ["lease_expiry", "lease_renewal"]
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "Linearizability",
+      "description": "All operations appear to execute atomically at some point",
+      "tla_formula": "Operations are linearizable with respect to real time"
+    },
+    {
+      "name": "WatchOrdering",
+      "description": "Watch events are delivered in revision order",
+      "tla_formula": "\\A e1, e2 \\in WatchEvents : e1.revision < e2.revision => e1 delivered before e2"
+    },
+    {
+      "name": "LeaseExpiry",
+      "description": "Keys are deleted when their lease expires",
+      "tla_formula": "\\A k \\in Keys : lease[k].expired => k \\notin store"
+    },
+    {
+      "name": "SnapshotIsolation",
+      "description": "Range queries see consistent snapshot",
+      "tla_formula": "Range query sees all keys at same revision"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "store", "type": "Key -> Value", "description": "Key-value store"},
+    {"name": "revision", "type": "Nat", "description": "Global revision counter"},
+    {"name": "leases", "type": "LeaseID -> Lease", "description": "Active leases"},
+    {"name": "watches", "type": "Set(Watch)", "description": "Active watches"},
+    {"name": "raftLog", "type": "Seq(Entry)", "description": "Raft log"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Node": "{n1, n2, n3}",
+      "Key": "{k1, k2}",
+      "Value": "{v1, v2}",
+      "MaxRevision": "5"
+    },
+    "invariants": ["TypeOK", "Linearizability", "WatchOrdering"],
+    "expected_states": "Millions"
+  },
+
+  "read_modes": [
+    {"name": "Serializable", "description": "Reads may be stale but consistent"},
+    {"name": "Linearizable", "description": "Reads reflect all prior writes via ReadIndex"},
+    {"name": "ReadIndex", "description": "Leader confirms commit index before read"}
+  ],
+
+  "related_specs": ["raft", "consul", "zookeeper"],
+
+  "used_by": [
+    "Kubernetes (cluster state)",
+    "CoreDNS (service discovery)",
+    "Rook (storage orchestration)",
+    "Vitess (database sharding)"
+  ],
+
+  "metadata": {
+    "version": "3.5.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "etcd Authors",
+    "license": "Apache-2.0"
+  }
+}

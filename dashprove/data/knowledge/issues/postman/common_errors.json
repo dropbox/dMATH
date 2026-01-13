@@ -1,0 +1,270 @@
+{
+  "tool": "postman",
+  "version": "10.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "ECONNREFUSED|connect ECONNREFUSED|Could not send request",
+      "message": "Connection refused to target server",
+      "cause": "Server not running or wrong port/host",
+      "solutions": [
+        {
+          "approach": "Verify server is running",
+          "code": "curl http://localhost:3000/health  # Test server is up",
+          "when": "Local development"
+        },
+        {
+          "approach": "Check URL and port",
+          "code": "// Verify URL in request is correct\n// Common: localhost vs 127.0.0.1, http vs https, port number",
+          "when": "Wrong endpoint"
+        },
+        {
+          "approach": "Check firewall/network",
+          "code": "// Disable VPN\n// Check Windows Firewall/iptables\n// Try from different network",
+          "when": "Network blocking"
+        }
+      ]
+    },
+    {
+      "id": "ssl_certificate_error",
+      "pattern": "SSL certificate|CERT_|certificate verify failed|self signed certificate",
+      "message": "SSL/TLS certificate error",
+      "cause": "Invalid or self-signed certificate",
+      "solutions": [
+        {
+          "approach": "Disable SSL verification (dev only)",
+          "code": "Settings → General → SSL certificate verification → OFF",
+          "when": "Local/dev environment"
+        },
+        {
+          "approach": "Add custom CA certificate",
+          "code": "Settings → Certificates → CA Certificates → Add",
+          "when": "Corporate proxy/internal CA"
+        },
+        {
+          "approach": "Use client certificate",
+          "code": "Settings → Certificates → Client Certificates → Add\n// Add PFX/PEM file",
+          "when": "Mutual TLS required"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "ETIMEDOUT|socket hang up|request timeout|Error: timeout",
+      "message": "Request timed out",
+      "cause": "Server took too long to respond",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "Settings → General → Request timeout in ms → 60000",
+          "when": "Slow endpoint"
+        },
+        {
+          "approach": "Set per-request timeout",
+          "code": "// In Pre-request Script:\npm.request.timeout = 120000;",
+          "when": "Specific slow request"
+        },
+        {
+          "approach": "Check server performance",
+          "code": "// Monitor server logs\n// Profile endpoint\n// Check database queries",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "cors_error",
+      "pattern": "CORS|Access-Control-Allow-Origin|blocked by CORS",
+      "message": "CORS policy blocking request",
+      "cause": "Browser security blocking cross-origin request",
+      "solutions": [
+        {
+          "approach": "Use Postman desktop app",
+          "code": "// Postman desktop bypasses CORS\n// CORS only applies to browser-based requests",
+          "when": "Using web version"
+        },
+        {
+          "approach": "Configure server CORS",
+          "code": "// Add header: Access-Control-Allow-Origin: *\n// Or specific origin",
+          "when": "Control server"
+        },
+        {
+          "approach": "Use Postman Interceptor",
+          "code": "// Install Postman Interceptor browser extension\n// Captures cookies and bypasses some restrictions",
+          "when": "Need browser context"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "401|Unauthorized|authentication failed|invalid token",
+      "message": "Authentication failed",
+      "cause": "Missing or invalid credentials",
+      "solutions": [
+        {
+          "approach": "Check Authorization header",
+          "code": "Authorization: Bearer {{access_token}}",
+          "when": "Token auth"
+        },
+        {
+          "approach": "Refresh token",
+          "code": "// In Pre-request Script:\nif (pm.environment.get('token_expires') < Date.now()) {\n    // Call refresh endpoint\n}",
+          "when": "Token expired"
+        },
+        {
+          "approach": "Use OAuth 2.0 helper",
+          "code": "Authorization tab → Type: OAuth 2.0 → Get New Access Token",
+          "when": "OAuth flow"
+        },
+        {
+          "approach": "Check environment variables",
+          "code": "{{api_key}} → Verify value in environment",
+          "when": "Variables not set"
+        }
+      ]
+    },
+    {
+      "id": "variable_unresolved",
+      "pattern": "unresolved variable|\\{\\{.*\\}\\}|variable not found",
+      "message": "Environment variable not resolved",
+      "cause": "Variable not defined in active environment",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "// Click environment quick look (eye icon)\n// Add: base_url = https://api.example.com",
+          "when": "Variable missing"
+        },
+        {
+          "approach": "Select correct environment",
+          "code": "// Use environment dropdown in top-right\n// Make sure correct env is selected",
+          "when": "Wrong environment"
+        },
+        {
+          "approach": "Set in Pre-request Script",
+          "code": "pm.environment.set('timestamp', Date.now());\npm.environment.set('uuid', require('uuid').v4());",
+          "when": "Dynamic value"
+        }
+      ]
+    },
+    {
+      "id": "test_assertion_failed",
+      "pattern": "AssertionError|expected|to equal|test failed",
+      "message": "Test assertion failed",
+      "cause": "Response didn't match expected value",
+      "solutions": [
+        {
+          "approach": "Debug response",
+          "code": "// In Tests tab:\nconsole.log(pm.response.json());\nconsole.log(pm.response.headers);",
+          "when": "Understanding response"
+        },
+        {
+          "approach": "Fix assertion",
+          "code": "pm.test('Status is 200', () => {\n    pm.response.to.have.status(200);\n});\npm.test('Has data', () => {\n    const json = pm.response.json();\n    pm.expect(json.data).to.exist;\n});",
+          "when": "Update test"
+        },
+        {
+          "approach": "Use includes for partial match",
+          "code": "pm.expect(pm.response.text()).to.include('success');",
+          "when": "Don't need exact match"
+        }
+      ]
+    },
+    {
+      "id": "json_parse_error",
+      "pattern": "JSONError|Unexpected token|JSON.parse|not valid JSON",
+      "message": "Invalid JSON in response or request",
+      "cause": "Malformed JSON data",
+      "solutions": [
+        {
+          "approach": "Check Content-Type",
+          "code": "Content-Type: application/json",
+          "when": "Response not JSON"
+        },
+        {
+          "approach": "Validate request body",
+          "code": "// Use Postman's JSON beautify\n// Check for trailing commas, missing quotes",
+          "when": "Request body invalid"
+        },
+        {
+          "approach": "Handle non-JSON response",
+          "code": "pm.test('Response is text', () => {\n    const text = pm.response.text();\n    console.log(text);\n});",
+          "when": "Server returns non-JSON"
+        }
+      ]
+    },
+    {
+      "id": "collection_runner_failed",
+      "pattern": "Collection run failed|iteration failed|runner error",
+      "message": "Collection runner encountered error",
+      "cause": "Issue running collection tests",
+      "solutions": [
+        {
+          "approach": "Check request order",
+          "code": "// Ensure dependent requests run first\n// Use folder ordering or Run manually",
+          "when": "Dependency issues"
+        },
+        {
+          "approach": "Set delay between requests",
+          "code": "Collection Runner → Delay: 500ms",
+          "when": "Rate limiting"
+        },
+        {
+          "approach": "Use data file for iterations",
+          "code": "// CSV or JSON data file\n// Reference: {{dataVar}}\nCollection Runner → Data → Select file",
+          "when": "Multiple test cases"
+        }
+      ]
+    },
+    {
+      "id": "request_body_missing",
+      "pattern": "missing.*body|body required|request body cannot be empty",
+      "message": "Required request body missing",
+      "cause": "POST/PUT request without body",
+      "solutions": [
+        {
+          "approach": "Add JSON body",
+          "code": "Body tab → raw → JSON → {\n    \"field\": \"value\"\n}",
+          "when": "JSON endpoint"
+        },
+        {
+          "approach": "Add form data",
+          "code": "Body tab → form-data → key: file, value: (select file)",
+          "when": "File upload"
+        },
+        {
+          "approach": "Add x-www-form-urlencoded",
+          "code": "Body tab → x-www-form-urlencoded → key: value pairs",
+          "when": "Form submission"
+        }
+      ]
+    },
+    {
+      "id": "newman_cli_error",
+      "pattern": "newman.*error|collection not found|environment.*not found",
+      "message": "Newman CLI error",
+      "cause": "Issue running Postman collection via Newman",
+      "solutions": [
+        {
+          "approach": "Export collection correctly",
+          "code": "postman collection export --collection 'My Collection' --path ./collection.json",
+          "when": "Collection file issue"
+        },
+        {
+          "approach": "Include environment",
+          "code": "newman run collection.json -e environment.json",
+          "when": "Environment needed"
+        },
+        {
+          "approach": "Check Newman version",
+          "code": "npm install -g newman@latest\nnewman --version",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Use reporters",
+          "code": "newman run collection.json -r cli,html --reporter-html-export report.html",
+          "when": "Need detailed output"
+        }
+      ]
+    }
+  ]
+}

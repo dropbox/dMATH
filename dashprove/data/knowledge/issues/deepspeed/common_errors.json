@@ -1,0 +1,191 @@
+{
+  "tool": "deepspeed",
+  "version": "0.14.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "nccl_error",
+      "pattern": "NCCL error",
+      "message": "NCCL communication failure",
+      "cause": "GPU communication failed between nodes/ranks",
+      "solutions": [
+        {
+          "approach": "Check network interface",
+          "code": "export NCCL_SOCKET_IFNAME=eth0",
+          "when": "Multi-node with wrong network interface"
+        },
+        {
+          "approach": "Enable NCCL debug",
+          "code": "export NCCL_DEBUG=INFO\nexport NCCL_DEBUG_SUBSYS=ALL",
+          "when": "Need detailed error info"
+        },
+        {
+          "approach": "Use IB verbs",
+          "code": "export NCCL_IB_DISABLE=0",
+          "when": "InfiniBand available but not used"
+        }
+      ]
+    },
+    {
+      "id": "oom_error",
+      "pattern": "CUDA out of memory",
+      "message": "GPU memory exhausted",
+      "cause": "Model/batch too large or memory fragmentation",
+      "solutions": [
+        {
+          "approach": "Enable ZeRO stage 3",
+          "code": "{\n  \"zero_optimization\": {\n    \"stage\": 3,\n    \"offload_param\": {\"device\": \"cpu\"}\n  }\n}",
+          "when": "Model parameters don't fit"
+        },
+        {
+          "approach": "Enable activation checkpointing",
+          "code": "{\n  \"activation_checkpointing\": {\n    \"partition_activations\": true,\n    \"contiguous_memory_optimization\": true\n  }\n}",
+          "when": "Activations use too much memory"
+        },
+        {
+          "approach": "Reduce micro batch size",
+          "code": "{\n  \"train_micro_batch_size_per_gpu\": 1,\n  \"gradient_accumulation_steps\": 64\n}",
+          "when": "Batch too large"
+        }
+      ]
+    },
+    {
+      "id": "zero_init_error",
+      "pattern": "ZeRO.*initialization.*error",
+      "message": "ZeRO initialization failed",
+      "cause": "Model not compatible with ZeRO or config issue",
+      "solutions": [
+        {
+          "approach": "Use ZeRO init context",
+          "code": "with deepspeed.zero.Init():\n    model = MyModel()",
+          "when": "Model initialized outside DeepSpeed"
+        },
+        {
+          "approach": "Disable ZeRO for specific params",
+          "code": "param.ds_status = ZeroParamStatus.NOT_AVAILABLE",
+          "when": "Some params shouldn't use ZeRO"
+        },
+        {
+          "approach": "Check config compatibility",
+          "code": "# ZeRO stage 3 requires careful handling of tied weights",
+          "when": "Model has parameter sharing"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_error",
+      "pattern": "Checkpoint.*error|save_checkpoint.*failed",
+      "message": "Checkpoint save/load failed",
+      "cause": "Disk full, permission denied, or rank mismatch",
+      "solutions": [
+        {
+          "approach": "Save on rank 0 only",
+          "code": "if deepspeed.comm.get_rank() == 0:\n    model_engine.save_checkpoint(path)",
+          "when": "All ranks trying to save"
+        },
+        {
+          "approach": "Use tag for versioning",
+          "code": "model_engine.save_checkpoint(path, tag='step_1000')",
+          "when": "Need multiple checkpoints"
+        },
+        {
+          "approach": "Check disk space",
+          "code": "# ZeRO checkpoints can be very large",
+          "when": "Disk might be full"
+        }
+      ]
+    },
+    {
+      "id": "launcher_error",
+      "pattern": "deepspeed.launcher.*error",
+      "message": "DeepSpeed launcher failed",
+      "cause": "SSH config, hostname resolution, or launcher config issue",
+      "solutions": [
+        {
+          "approach": "Check hostfile",
+          "code": "# hostfile format:\nworker-0 slots=8\nworker-1 slots=8",
+          "when": "Multi-node launch failing"
+        },
+        {
+          "approach": "Use pdsh",
+          "code": "export PDSH_RCMD_TYPE=ssh",
+          "when": "Default launcher not working"
+        },
+        {
+          "approach": "Check SSH keys",
+          "code": "ssh-copy-id user@worker-1",
+          "when": "SSH authentication failing"
+        }
+      ]
+    },
+    {
+      "id": "optimizer_state_error",
+      "pattern": "Optimizer state.*error",
+      "message": "Optimizer state mismatch",
+      "cause": "Resuming with different ZeRO config or world size",
+      "solutions": [
+        {
+          "approach": "Match world size",
+          "code": "# Resume with same number of GPUs as checkpoint",
+          "when": "World size changed"
+        },
+        {
+          "approach": "Convert checkpoint",
+          "code": "python zero_to_fp32.py checkpoint_dir output.pt",
+          "when": "Need to convert ZeRO checkpoint"
+        },
+        {
+          "approach": "Reset optimizer",
+          "code": "model_engine.load_checkpoint(path, load_optimizer_states=False)",
+          "when": "Only need model weights"
+        }
+      ]
+    },
+    {
+      "id": "gradient_overflow",
+      "pattern": "Gradient overflow detected",
+      "message": "FP16 gradient overflow",
+      "cause": "Learning rate too high or loss explosion",
+      "solutions": [
+        {
+          "approach": "Enable gradient clipping",
+          "code": "{\n  \"gradient_clipping\": 1.0\n}",
+          "when": "Gradients too large"
+        },
+        {
+          "approach": "Reduce learning rate",
+          "code": "{\n  \"scheduler\": {\n    \"type\": \"WarmupLR\",\n    \"params\": {\"warmup_min_lr\": 0, \"warmup_max_lr\": 1e-5}\n  }\n}",
+          "when": "LR causing instability"
+        },
+        {
+          "approach": "Use BF16 instead",
+          "code": "{\n  \"bf16\": {\"enabled\": true},\n  \"fp16\": {\"enabled\": false}\n}",
+          "when": "Have Ampere+ GPUs"
+        }
+      ]
+    },
+    {
+      "id": "pipeline_parallel_error",
+      "pattern": "Pipeline.*error|pp_rank",
+      "message": "Pipeline parallelism error",
+      "cause": "Uneven layer distribution or micro batch config",
+      "solutions": [
+        {
+          "approach": "Balance layers",
+          "code": "{\n  \"pipeline\": {\n    \"pipe_partitioned\": true,\n    \"grad_partitioned\": true\n  }\n}",
+          "when": "Layers unevenly distributed"
+        },
+        {
+          "approach": "Adjust micro batches",
+          "code": "# micro_batches should be >= pipeline_parallel_size",
+          "when": "Not enough micro batches for pipeline"
+        },
+        {
+          "approach": "Check model partitioning",
+          "code": "from deepspeed.pipe import PipelineModule\nmodel = PipelineModule(layers, num_stages=4)",
+          "when": "Model not properly partitioned"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,243 @@
+{
+  "tool": "flake8",
+  "version": "7.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "e501_line_too_long",
+      "pattern": "E501|line too long",
+      "message": "Line too long (E501)",
+      "cause": "Line exceeds max-line-length (default 79)",
+      "solutions": [
+        {
+          "approach": "Break the line",
+          "code": "# Instead of:\nresult = very_long_function_name(argument_one, argument_two, argument_three)\n\n# Use implicit continuation:\nresult = very_long_function_name(\n    argument_one,\n    argument_two,\n    argument_three,\n)",
+          "when": "Function calls"
+        },
+        {
+          "approach": "Configure max length",
+          "code": "# In setup.cfg or .flake8:\n[flake8]\nmax-line-length = 120\n\n# Or pyproject.toml (with Flake8-pyproject):\n[tool.flake8]\nmax-line-length = 120",
+          "when": "Want longer lines"
+        },
+        {
+          "approach": "Ignore for specific lines",
+          "code": "long_url = \"https://example.com/very/long/path\"  # noqa: E501",
+          "when": "Unavoidable long line"
+        }
+      ]
+    },
+    {
+      "id": "e302_expected_blank_lines",
+      "pattern": "E302|expected 2 blank lines",
+      "message": "Expected 2 blank lines (E302)",
+      "cause": "Missing blank lines before function/class definition",
+      "solutions": [
+        {
+          "approach": "Add blank lines",
+          "code": "class MyClass:\n    pass\n\n\ndef my_function():  # Two blank lines before\n    pass\n\n\nclass AnotherClass:  # Two blank lines before\n    pass",
+          "when": "Top-level definitions"
+        },
+        {
+          "approach": "Methods need one blank line",
+          "code": "class MyClass:\n    def method_one(self):\n        pass\n\n    def method_two(self):  # One blank line before\n        pass",
+          "when": "Class methods"
+        }
+      ]
+    },
+    {
+      "id": "e303_too_many_blank_lines",
+      "pattern": "E303|too many blank lines",
+      "message": "Too many blank lines (E303)",
+      "cause": "More than 2 blank lines between code",
+      "solutions": [
+        {
+          "approach": "Remove extra blank lines",
+          "code": "# Instead of:\ndef func1():\n    pass\n\n\n\n\ndef func2():  # Too many blanks!\n    pass\n\n# Use:\ndef func1():\n    pass\n\n\ndef func2():  # Exactly 2 blanks\n    pass",
+          "when": "Extra whitespace"
+        }
+      ]
+    },
+    {
+      "id": "e401_multiple_imports",
+      "pattern": "E401|multiple imports on one line",
+      "message": "Multiple imports on one line (E401)",
+      "cause": "Multiple modules imported in single import statement",
+      "solutions": [
+        {
+          "approach": "Separate imports",
+          "code": "# Instead of:\nimport os, sys\n\n# Use:\nimport os\nimport sys",
+          "when": "Separate module imports"
+        },
+        {
+          "approach": "Group from imports",
+          "code": "# This is OK:\nfrom typing import List, Dict, Optional\n\n# But not:\nimport os, sys  # This is E401",
+          "when": "From imports"
+        }
+      ]
+    },
+    {
+      "id": "f401_imported_unused",
+      "pattern": "F401|imported but unused",
+      "message": "Module imported but unused (F401)",
+      "cause": "Import statement for unused module",
+      "solutions": [
+        {
+          "approach": "Remove unused import",
+          "code": "# Delete the line\n# import unused_module",
+          "when": "Actually unused"
+        },
+        {
+          "approach": "Mark as intentional",
+          "code": "# For re-exports:\nfrom module import Something  # noqa: F401\n\n# Or in __init__.py:\nfrom .submodule import public_func  # noqa: F401",
+          "when": "Re-exporting"
+        },
+        {
+          "approach": "Use TYPE_CHECKING",
+          "code": "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from heavy_module import TypeOnly",
+          "when": "Type hints only"
+        }
+      ]
+    },
+    {
+      "id": "f811_redefinition",
+      "pattern": "F811|redefinition of unused",
+      "message": "Redefinition of unused name (F811)",
+      "cause": "Name defined but overwritten before use",
+      "solutions": [
+        {
+          "approach": "Remove duplicate definition",
+          "code": "# Instead of:\ndef process():\n    pass\n\ndef process():  # F811!\n    return True\n\n# Keep only one:\ndef process():\n    return True",
+          "when": "Accidental duplicate"
+        },
+        {
+          "approach": "Different names",
+          "code": "# If both needed:\ndef process_v1():\n    pass\n\ndef process_v2():\n    return True",
+          "when": "Both versions needed"
+        }
+      ]
+    },
+    {
+      "id": "f821_undefined_name",
+      "pattern": "F821|undefined name",
+      "message": "Undefined name (F821)",
+      "cause": "Variable used before definition",
+      "solutions": [
+        {
+          "approach": "Define variable",
+          "code": "# Instead of:\nresult = undefined_variable + 1  # F821!\n\n# Define first:\nundefined_variable = 0\nresult = undefined_variable + 1",
+          "when": "Missing definition"
+        },
+        {
+          "approach": "Add import",
+          "code": "# If it's from a module:\nfrom module import missing_name",
+          "when": "Missing import"
+        },
+        {
+          "approach": "Fix typo",
+          "code": "# Check spelling:\nmy_varible = 1  # Typo\nprint(my_variable)  # F821 - different spelling!",
+          "when": "Typo in name"
+        }
+      ]
+    },
+    {
+      "id": "w291_trailing_whitespace",
+      "pattern": "W291|trailing whitespace",
+      "message": "Trailing whitespace (W291)",
+      "cause": "Spaces or tabs at end of line",
+      "solutions": [
+        {
+          "approach": "Remove trailing whitespace",
+          "code": "# Configure editor to strip on save\n# VSCode: \"files.trimTrailingWhitespace\": true\n# vim: autocmd BufWritePre * %s/\\s\\+$//e",
+          "when": "Manual cleanup"
+        },
+        {
+          "approach": "Use formatter",
+          "code": "# Use Black or Ruff to auto-fix:\nblack .\n# Or:\nruff format .",
+          "when": "Automated cleanup"
+        }
+      ]
+    },
+    {
+      "id": "w503_line_break_before_operator",
+      "pattern": "W503|line break before binary operator",
+      "message": "Line break before binary operator (W503)",
+      "cause": "Line continuation before operator (now preferred)",
+      "solutions": [
+        {
+          "approach": "Ignore W503",
+          "code": "# W503 is considered wrong by PEP 8 now\n# In .flake8:\n[flake8]\nignore = W503\nextend-ignore = W503",
+          "when": "Using modern style"
+        },
+        {
+          "approach": "Or ignore W504",
+          "code": "# If you prefer break after operator:\n[flake8]\nignore = W504\n\n# Then write:\nresult = (first_value +\n          second_value)",
+          "when": "Prefer old style"
+        }
+      ]
+    },
+    {
+      "id": "e999_syntax_error",
+      "pattern": "E999|SyntaxError",
+      "message": "Syntax error in file (E999)",
+      "cause": "Python syntax error",
+      "solutions": [
+        {
+          "approach": "Fix syntax",
+          "code": "# Common issues:\n# Missing colon:\ndef func()  # Error!\n    pass\n\n# Should be:\ndef func():  # Colon required\n    pass",
+          "when": "Syntax mistake"
+        },
+        {
+          "approach": "Check Python version",
+          "code": "# If using newer syntax:\nmatch value:  # Python 3.10+\n    case 1: ...\n\n# May error on older Python\n# Configure flake8 for version:\n# No direct option, use pyupgrade",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "c901_complexity",
+      "pattern": "C901|too complex",
+      "message": "Function too complex (C901)",
+      "cause": "Cyclomatic complexity exceeds threshold",
+      "solutions": [
+        {
+          "approach": "Extract functions",
+          "code": "# Instead of one complex function:\ndef process(data):\n    # 50 lines of complex logic\n\n# Split into smaller functions:\ndef process(data):\n    validated = _validate(data)\n    transformed = _transform(validated)\n    return _finalize(transformed)\n\ndef _validate(data): ...\ndef _transform(data): ...\ndef _finalize(data): ...",
+          "when": "Function too long"
+        },
+        {
+          "approach": "Reduce branches",
+          "code": "# Use early returns:\ndef process(data):\n    if not data:\n        return None\n    if data.cached:\n        return data.cache\n    # Main logic without deep nesting",
+          "when": "Many if/else"
+        },
+        {
+          "approach": "Configure threshold",
+          "code": "# In .flake8:\n[flake8]\nmax-complexity = 15",
+          "when": "Higher limit needed"
+        }
+      ]
+    },
+    {
+      "id": "configuration",
+      "pattern": "config|setup\\.cfg|\\.flake8|pyproject",
+      "message": "Flake8 configuration",
+      "cause": "Need to configure flake8 options",
+      "solutions": [
+        {
+          "approach": "Use .flake8 file",
+          "code": "[flake8]\nmax-line-length = 120\nexclude = .git,__pycache__,build,dist\nignore = E203,W503\nper-file-ignores =\n    __init__.py: F401\n    tests/*: S101",
+          "when": ".flake8 config file"
+        },
+        {
+          "approach": "Use setup.cfg",
+          "code": "# In setup.cfg:\n[flake8]\nmax-line-length = 120\nexclude = .git,__pycache__",
+          "when": "setup.cfg config"
+        },
+        {
+          "approach": "Use pyproject.toml",
+          "code": "# Requires flake8-pyproject plugin:\n# pip install flake8-pyproject\n\n[tool.flake8]\nmax-line-length = 120\nexclude = [\".git\", \"__pycache__\"]",
+          "when": "pyproject.toml config"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "tool": "cachegrind",
+  "version": "3.22",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "valgrind_missing",
+      "pattern": "cachegrind: command not found|failed to start tool 'cachegrind'",
+      "message": "Cachegrind binary not available",
+      "cause": "Valgrind not installed or built without cachegrind",
+      "solutions": [
+        {
+          "approach": "Install valgrind",
+          "code": "sudo apt install valgrind",
+          "when": "Distro packages"
+        },
+        {
+          "approach": "Verify valgrind build",
+          "code": "valgrind --tool=cachegrind --version",
+          "when": "Check tool compiled in"
+        }
+      ]
+    },
+    {
+      "id": "output_not_found",
+      "pattern": "cg_annotate: can't open cachegrind\\.out|No such file",
+      "message": "Cachegrind output file missing",
+      "cause": "Program crashed or output path wrong",
+      "solutions": [
+        {
+          "approach": "Set explicit output",
+          "code": "valgrind --tool=cachegrind --cachegrind-out-file=/tmp/cachegrind.out.%p ./app",
+          "when": "Current directory unwritable"
+        },
+        {
+          "approach": "Ensure graceful exit",
+          "code": "# Avoid killing process; allow cachegrind to flush results",
+          "when": "Process terminated early"
+        }
+      ]
+    },
+    {
+      "id": "no_symbols",
+      "pattern": "\\?\\? \\(\\)",
+      "message": "Functions show as ?? in reports",
+      "cause": "Binary stripped of debug symbols",
+      "solutions": [
+        {
+          "approach": "Rebuild with debug info",
+          "code": "CFLAGS='-O2 -g' make",
+          "when": "Need readable function names"
+        },
+        {
+          "approach": "Install debug packages",
+          "code": "sudo dnf debuginfo-install <package>",
+          "when": "Using distro binaries"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_arch",
+      "pattern": "valgrind: this arch is not supported|Unexpected word size",
+      "message": "Cachegrind cannot run on target architecture",
+      "cause": "Valgrind lacks support for CPU or binary is 32/64-bit mismatched",
+      "solutions": [
+        {
+          "approach": "Use supported architecture",
+          "code": "# x86_64 and aarch64 are widely supported; others may not be",
+          "when": "Running on unsupported CPU"
+        },
+        {
+          "approach": "Cross-run via qemu or perf",
+          "code": "perf stat -d ./app",
+          "when": "Need approximate cache stats on unsupported arch"
+        }
+      ]
+    },
+    {
+      "id": "large_overhead",
+      "pattern": "program too slow under cachegrind|took too long",
+      "message": "Cachegrind overhead unacceptable",
+      "cause": "Instruction-level simulation is heavy",
+      "solutions": [
+        {
+          "approach": "Limit region",
+          "code": "valgrind --tool=cachegrind --instr-atstart=no ./app\\n# Trigger collection in code with CALLGRIND_START_INSTRUMENTATION()",
+          "when": "Need to focus on hot path"
+        },
+        {
+          "approach": "Sample with perf instead",
+          "code": "perf record -e cache-misses,cache-references ./app",
+          "when": "Need lower overhead cache metrics"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://valgrind.org/docs/manual/cg-manual.html",
+    "https://valgrind.org/docs/manual/cg-manual.html#cg-manual-options"
+  ]
+}

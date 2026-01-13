@@ -1,0 +1,191 @@
+{
+  "tool": "kustomize",
+  "version": "5.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "resource_not_found",
+      "pattern": "resource .* not found|unable to find|accumulating resources",
+      "message": "Resource file not found",
+      "cause": "File path wrong or resource not listed in kustomization.yaml",
+      "solutions": [
+        {
+          "approach": "Check file paths",
+          "code": "# Ensure files exist and paths match kustomization.yaml\nls -la *.yaml",
+          "when": "File may be missing"
+        },
+        {
+          "approach": "Add resource to kustomization",
+          "code": "resources:\n  - deployment.yaml\n  - service.yaml",
+          "when": "Resource not listed"
+        },
+        {
+          "approach": "Use relative paths",
+          "code": "# Paths relative to kustomization.yaml\nresources:\n  - ./base/deployment.yaml",
+          "when": "Path format wrong"
+        }
+      ]
+    },
+    {
+      "id": "patch_conflict",
+      "pattern": "patch|conflict|strategic merge|json6902",
+      "message": "Patch application failed",
+      "cause": "Patch target doesn't match or syntax error",
+      "solutions": [
+        {
+          "approach": "Check patch target",
+          "code": "patchesStrategicMerge:\n  - |-\n    apiVersion: apps/v1\n    kind: Deployment\n    metadata:\n      name: exact-name-here",
+          "when": "Patch must match resource"
+        },
+        {
+          "approach": "Use JSON patch",
+          "code": "patchesJson6902:\n  - target:\n      group: apps\n      version: v1\n      kind: Deployment\n      name: my-deploy\n    patch: |-\n      - op: replace\n        path: /spec/replicas\n        value: 3",
+          "when": "Need precise patching"
+        },
+        {
+          "approach": "Validate patch syntax",
+          "code": "kustomize build . --enable-alpha-plugins",
+          "when": "Check for errors"
+        }
+      ]
+    },
+    {
+      "id": "overlay_error",
+      "pattern": "overlay|base|multiple matches",
+      "message": "Overlay configuration error",
+      "cause": "Base path wrong or resource conflict",
+      "solutions": [
+        {
+          "approach": "Check base reference",
+          "code": "resources:\n  - ../../base\n# Or for remote base\nresources:\n  - github.com/org/repo//path?ref=v1.0.0",
+          "when": "Base path may be wrong"
+        },
+        {
+          "approach": "Use namespace prefix",
+          "code": "namespace: my-namespace\nnamePrefix: staging-",
+          "when": "Avoid resource conflicts"
+        },
+        {
+          "approach": "Build incrementally",
+          "code": "kustomize build base/\nkustomize build overlays/staging/",
+          "when": "Debug layer by layer"
+        }
+      ]
+    },
+    {
+      "id": "generator_error",
+      "pattern": "configMapGenerator|secretGenerator|generator",
+      "message": "Generator failed",
+      "cause": "File not found or invalid generator config",
+      "solutions": [
+        {
+          "approach": "Check file exists",
+          "code": "configMapGenerator:\n  - name: my-config\n    files:\n      - config.properties  # File must exist",
+          "when": "Source file missing"
+        },
+        {
+          "approach": "Use literals",
+          "code": "configMapGenerator:\n  - name: my-config\n    literals:\n      - KEY=value\n      - ANOTHER_KEY=value2",
+          "when": "Define inline values"
+        },
+        {
+          "approach": "Set behavior",
+          "code": "configMapGenerator:\n  - name: my-config\n    behavior: replace  # create, replace, merge",
+          "when": "Control generation behavior"
+        }
+      ]
+    },
+    {
+      "id": "transformer_error",
+      "pattern": "transformer|images|replicas",
+      "message": "Transformer configuration error",
+      "cause": "Invalid transformer syntax or target not found",
+      "solutions": [
+        {
+          "approach": "Fix images syntax",
+          "code": "images:\n  - name: my-image\n    newName: registry.io/my-image\n    newTag: v2.0.0",
+          "when": "Image transformation"
+        },
+        {
+          "approach": "Set replicas",
+          "code": "replicas:\n  - name: my-deployment\n    count: 3",
+          "when": "Scale deployments"
+        },
+        {
+          "approach": "Use nameReference",
+          "code": "configurations:\n  - nameReference.yaml",
+          "when": "Custom name references"
+        }
+      ]
+    },
+    {
+      "id": "invalid_yaml",
+      "pattern": "yaml|parse|invalid|unmarshal",
+      "message": "Invalid YAML syntax",
+      "cause": "YAML formatting error",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "yq eval '.' kustomization.yaml",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Check indentation",
+          "code": "# Use 2 spaces, not tabs\nresources:\n  - deployment.yaml",
+          "when": "Indentation issue"
+        },
+        {
+          "approach": "Quote special chars",
+          "code": "literals:\n  - \"key: value\"  # Colon in value needs quotes",
+          "when": "Special characters"
+        }
+      ]
+    },
+    {
+      "id": "remote_resource_error",
+      "pattern": "remote|url|git|https",
+      "message": "Remote resource fetch failed",
+      "cause": "URL invalid, auth required, or network issue",
+      "solutions": [
+        {
+          "approach": "Check URL format",
+          "code": "resources:\n  - github.com/org/repo//path?ref=main\n# Or\n  - https://raw.githubusercontent.com/org/repo/main/file.yaml",
+          "when": "URL syntax may be wrong"
+        },
+        {
+          "approach": "Use ref for version",
+          "code": "resources:\n  - github.com/org/repo//path?ref=v1.2.3",
+          "when": "Pin to specific version"
+        },
+        {
+          "approach": "Clone locally",
+          "code": "# If remote fails, clone and use local path\ngit clone <repo>\nresources:\n  - ../repo/path",
+          "when": "Auth or network issues"
+        }
+      ]
+    },
+    {
+      "id": "component_error",
+      "pattern": "component|kind: Component",
+      "message": "Component configuration error",
+      "cause": "Component not properly structured or referenced",
+      "solutions": [
+        {
+          "approach": "Define component",
+          "code": "# In component/kustomization.yaml\napiVersion: kustomize.config.k8s.io/v1alpha1\nkind: Component",
+          "when": "Component needs correct kind"
+        },
+        {
+          "approach": "Reference component",
+          "code": "# In overlay kustomization.yaml\ncomponents:\n  - ../../components/monitoring",
+          "when": "Include component"
+        },
+        {
+          "approach": "Check alpha features",
+          "code": "kustomize build --enable-alpha-plugins .",
+          "when": "Component may need alpha flag"
+        }
+      ]
+    }
+  ]
+}

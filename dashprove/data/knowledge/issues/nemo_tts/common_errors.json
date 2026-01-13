@@ -1,0 +1,191 @@
+{
+  "tool": "nemo_tts",
+  "version": "1.23.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "checkpoint_load_error",
+      "pattern": "Checkpoint.*not found|load.*checkpoint.*failed",
+      "message": "Cannot load TTS checkpoint",
+      "cause": "Invalid path, version mismatch, or corrupted file",
+      "solutions": [
+        {
+          "approach": "Use from_pretrained",
+          "code": "from nemo.collections.tts.models import FastPitchModel\nmodel = FastPitchModel.from_pretrained('tts_en_fastpitch')",
+          "when": "Loading pretrained model"
+        },
+        {
+          "approach": "Check file path",
+          "code": "model = FastPitchModel.restore_from('/path/to/model.nemo')",
+          "when": "Loading local checkpoint"
+        },
+        {
+          "approach": "Update NeMo version",
+          "code": "pip install --upgrade nemo_toolkit[all]",
+          "when": "Checkpoint from newer version"
+        }
+      ]
+    },
+    {
+      "id": "audio_quality_error",
+      "pattern": "Audio.*quality.*poor|garbled.*output",
+      "message": "Generated audio has poor quality",
+      "cause": "Model misconfigured, wrong vocoder, or input issues",
+      "solutions": [
+        {
+          "approach": "Match sample rate",
+          "code": "# Ensure vocoder sample rate matches TTS output\nmodel.sample_rate  # Check expected rate",
+          "when": "Sample rate mismatch"
+        },
+        {
+          "approach": "Use compatible vocoder",
+          "code": "from nemo.collections.tts.models import HifiGanModel\nvocoder = HifiGanModel.from_pretrained('tts_en_hifigan')",
+          "when": "Wrong vocoder for TTS model"
+        },
+        {
+          "approach": "Normalize text",
+          "code": "from nemo_text_processing.text_normalization import Normalizer\nnormalizer = Normalizer(input_case='cased')\ntext = normalizer.normalize(text)",
+          "when": "Text has numbers/abbreviations"
+        }
+      ]
+    },
+    {
+      "id": "phonemizer_error",
+      "pattern": "Phonemizer.*error|g2p.*failed",
+      "message": "Grapheme-to-phoneme conversion failed",
+      "cause": "Missing G2P model, unsupported language, or invalid input",
+      "solutions": [
+        {
+          "approach": "Install phonemizer",
+          "code": "pip install phonemizer\napt-get install espeak-ng",
+          "when": "Missing phonemizer"
+        },
+        {
+          "approach": "Use IPA output",
+          "code": "model = FastPitchModel.from_pretrained('tts_en_fastpitch')\n# Model handles G2P internally",
+          "when": "Using pretrained with G2P"
+        },
+        {
+          "approach": "Clean input text",
+          "code": "import re\ntext = re.sub(r'[^a-zA-Z\\s]', '', text)",
+          "when": "Special characters causing issues"
+        }
+      ]
+    },
+    {
+      "id": "oom_error",
+      "pattern": "CUDA out of memory|OOM",
+      "message": "GPU out of memory during synthesis",
+      "cause": "Input too long or batch too large",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "# Process one sentence at a time",
+          "when": "Batch synthesis fails"
+        },
+        {
+          "approach": "Chunk long text",
+          "code": "sentences = text.split('.')\nfor sent in sentences:\n    audio = model.generate_audio(sent)",
+          "when": "Single input too long"
+        },
+        {
+          "approach": "Use CPU",
+          "code": "model = model.cpu()\naudio = model.generate_audio(text)",
+          "when": "GPU memory limited"
+        }
+      ]
+    },
+    {
+      "id": "duration_error",
+      "pattern": "Duration.*error|alignment.*failed",
+      "message": "Duration prediction failed",
+      "cause": "Invalid input, missing durations, or model issue",
+      "solutions": [
+        {
+          "approach": "Provide explicit durations",
+          "code": "# Use forced alignment to get durations",
+          "when": "Training with external durations"
+        },
+        {
+          "approach": "Check input format",
+          "code": "# Ensure text is properly tokenized",
+          "when": "Tokenization issue"
+        },
+        {
+          "approach": "Use attention-based model",
+          "code": "model = Tacotron2Model.from_pretrained('tts_en_tacotron2')",
+          "when": "Don't have duration labels"
+        }
+      ]
+    },
+    {
+      "id": "spectrogram_error",
+      "pattern": "Spectrogram.*error|mel.*failed",
+      "message": "Spectrogram generation failed",
+      "cause": "Audio processing configuration mismatch",
+      "solutions": [
+        {
+          "approach": "Match audio config",
+          "code": "# Ensure n_fft, hop_length match between TTS and vocoder",
+          "when": "Config mismatch"
+        },
+        {
+          "approach": "Check frequency range",
+          "code": "# Verify fmin/fmax settings",
+          "when": "Mel bin configuration wrong"
+        },
+        {
+          "approach": "Use same preprocessing",
+          "code": "from nemo.collections.tts.torch.data import TTSDataset\n# Use NeMo's built-in preprocessing",
+          "when": "Custom preprocessing fails"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "Export.*failed|ONNX.*error",
+      "message": "Model export failed",
+      "cause": "Unsupported operations or export configuration",
+      "solutions": [
+        {
+          "approach": "Export to ONNX",
+          "code": "model.export('model.onnx')",
+          "when": "Need ONNX format"
+        },
+        {
+          "approach": "Use TorchScript",
+          "code": "scripted = model.to_torchscript()",
+          "when": "ONNX has issues"
+        },
+        {
+          "approach": "Export with dynamic axes",
+          "code": "model.export('model.onnx', dynamic_axes={'text': {0: 'batch', 1: 'seq'}})",
+          "when": "Need dynamic shapes"
+        }
+      ]
+    },
+    {
+      "id": "speaker_embedding_error",
+      "pattern": "Speaker.*embedding.*error|speaker_id.*not found",
+      "message": "Multi-speaker configuration error",
+      "cause": "Missing speaker embedding or invalid speaker ID",
+      "solutions": [
+        {
+          "approach": "List available speakers",
+          "code": "model.speakers  # List speaker IDs",
+          "when": "Need to see valid speaker IDs"
+        },
+        {
+          "approach": "Set speaker ID",
+          "code": "audio = model.generate_audio(text, speaker_id=1)",
+          "when": "Multi-speaker model"
+        },
+        {
+          "approach": "Use speaker embedding",
+          "code": "speaker_embedding = speaker_encoder(reference_audio)\naudio = model.generate_audio(text, speaker_embedding=speaker_embedding)",
+          "when": "Using speaker encoder"
+        }
+      ]
+    }
+  ]
+}

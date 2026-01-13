@@ -1,0 +1,161 @@
+{
+  "tool": "roslyn_analyzers",
+  "version": "4.8.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "ca1000_generic_method",
+      "pattern": "CA1000|Do not declare static members|generic types",
+      "message": "Do not declare static members on generic types",
+      "cause": "Static members on generic types cause confusing behavior",
+      "solutions": [
+        {
+          "approach": "Move to non-generic class",
+          "code": "// Before: MyClass<T>.Create()\n// After: MyClassFactory.Create<T>()",
+          "when": "Factory method pattern"
+        },
+        {
+          "approach": "Suppress if intentional",
+          "code": "[SuppressMessage(\"Design\", \"CA1000\")]",
+          "when": "Design is intentional"
+        }
+      ]
+    },
+    {
+      "id": "ca1062_validate_args",
+      "pattern": "CA1062|Validate arguments|null check",
+      "message": "Validate arguments of public methods",
+      "cause": "Public method parameter not validated for null",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "public void Method(string arg)\n{\n    ArgumentNullException.ThrowIfNull(arg);\n    // use arg\n}",
+          "when": "Parameter should not be null"
+        },
+        {
+          "approach": "Use nullable annotation",
+          "code": "public void Method(string? arg)\n{\n    if (arg is null) return;\n}",
+          "when": "Null is valid input"
+        }
+      ]
+    },
+    {
+      "id": "ca1822_mark_static",
+      "pattern": "CA1822|Mark members as static|does not access instance",
+      "message": "Mark members as static",
+      "cause": "Method doesn't access instance data",
+      "solutions": [
+        {
+          "approach": "Make static",
+          "code": "private static int Calculate(int x) => x * 2;",
+          "when": "Method is truly stateless"
+        },
+        {
+          "approach": "Suppress for interface impl",
+          "code": "[SuppressMessage(\"Performance\", \"CA1822\")]",
+          "when": "Required by interface"
+        }
+      ]
+    },
+    {
+      "id": "ca2007_task_await",
+      "pattern": "CA2007|ConfigureAwait|Do not directly await",
+      "message": "Do not directly await a Task",
+      "cause": "Should use ConfigureAwait(false) in library code",
+      "solutions": [
+        {
+          "approach": "Add ConfigureAwait",
+          "code": "await task.ConfigureAwait(false);",
+          "when": "In library code"
+        },
+        {
+          "approach": "Disable for app code",
+          "code": "// In .editorconfig:\n[*.cs]\ndotnet_diagnostic.CA2007.severity = none",
+          "when": "In application code"
+        }
+      ]
+    },
+    {
+      "id": "ca2227_collection_readonly",
+      "pattern": "CA2227|Collection properties|should be read only",
+      "message": "Collection properties should be read only",
+      "cause": "Collection property has public setter",
+      "solutions": [
+        {
+          "approach": "Remove setter",
+          "code": "public IList<string> Items { get; } = new List<string>();",
+          "when": "Collection initialized in constructor"
+        },
+        {
+          "approach": "Use init accessor",
+          "code": "public IList<string> Items { get; init; } = new();",
+          "when": "Set only at construction"
+        }
+      ]
+    },
+    {
+      "id": "ide0058_unused_value",
+      "pattern": "IDE0058|Expression value is never used|unused",
+      "message": "Expression value is never used",
+      "cause": "Return value of expression is discarded",
+      "solutions": [
+        {
+          "approach": "Use discard",
+          "code": "_ = SomeMethod();",
+          "when": "Intentionally ignoring"
+        },
+        {
+          "approach": "Use the value",
+          "code": "var result = SomeMethod();\nif (!result) throw new Exception();",
+          "when": "Should check result"
+        }
+      ]
+    },
+    {
+      "id": "analyzer_crash",
+      "pattern": "AD0001|Analyzer.*threw|Exception.*analyzer",
+      "message": "Analyzer threw an exception",
+      "cause": "Bug in analyzer or incompatible code",
+      "solutions": [
+        {
+          "approach": "Update analyzer package",
+          "code": "dotnet add package Microsoft.CodeAnalysis.NetAnalyzers --version latest",
+          "when": "Bug may be fixed"
+        },
+        {
+          "approach": "Disable specific analyzer",
+          "code": "// In .editorconfig:\ndotnet_diagnostic.CAXXXX.severity = none",
+          "when": "Analyzer is buggy"
+        },
+        {
+          "approach": "Report bug",
+          "code": "# Report to https://github.com/dotnet/roslyn-analyzers/issues",
+          "when": "Bug not yet reported"
+        }
+      ]
+    },
+    {
+      "id": "editorconfig_not_applied",
+      "pattern": "EditorConfig|rules not applied|severity not changed",
+      "message": "EditorConfig rules not being applied",
+      "cause": "EditorConfig file not in correct location or format",
+      "solutions": [
+        {
+          "approach": "Check file location",
+          "code": "# .editorconfig must be in solution root or project directory",
+          "when": "File in wrong location"
+        },
+        {
+          "approach": "Add root marker",
+          "code": "# At top of .editorconfig:\nroot = true",
+          "when": "Inheriting from parent"
+        },
+        {
+          "approach": "Verify syntax",
+          "code": "[*.cs]\ndotnet_diagnostic.CA1000.severity = warning",
+          "when": "Syntax incorrect"
+        }
+      ]
+    }
+  ]
+}

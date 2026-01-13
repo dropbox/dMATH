@@ -1,0 +1,109 @@
+{
+  "id": "tlaplus_kafka",
+  "name": "Kafka TLA+ Specifications",
+  "category": "tlaplus_specifications",
+  "subcategory": "distributed_messaging",
+
+  "description": "TLA+ specifications for Apache Kafka replication and KRaft consensus",
+  "long_description": "Apache Kafka has multiple TLA+ specifications covering different aspects of the system. The main specifications cover KRaft (Kafka Raft) consensus protocol that replaced Zookeeper, log replication, and exactly-once semantics. These specs were used to verify correctness of Kafka's design and have found real bugs before production deployment.",
+
+  "capabilities": [
+    "replication_verification",
+    "consensus_specification",
+    "exactly_once_semantics",
+    "leader_election",
+    "log_compaction"
+  ],
+  "property_types": ["safety", "liveness", "exactly_once"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "kraft": "https://github.com/apache/kafka/tree/trunk/raft/src/main/resources",
+    "replication": "https://github.com/hachikuji/kafka-specification",
+    "kip_500": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-500"
+  },
+
+  "documentation": {
+    "official": "https://kafka.apache.org/documentation/",
+    "kraft_kip": "https://cwiki.apache.org/confluence/display/KAFKA/KIP-500",
+    "replication_protocol": "https://kafka.apache.org/documentation/#replication"
+  },
+
+  "specifications": [
+    {
+      "name": "KRaftReplication",
+      "description": "KRaft log replication protocol",
+      "file": "raft/src/main/resources/common/message/KRaftReplication.tla",
+      "properties": ["safety", "leader_completeness", "log_matching"]
+    },
+    {
+      "name": "KRaftLeaderElection",
+      "description": "KRaft leader election protocol",
+      "file": "raft/src/main/resources/common/message/LeaderElection.tla",
+      "properties": ["election_safety", "leader_uniqueness"]
+    },
+    {
+      "name": "ReplicaStateMachine",
+      "description": "Replica state machine specification",
+      "properties": ["ISR_management", "high_watermark", "leader_epoch"]
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "ReplicaConsistency",
+      "description": "All ISR replicas have identical committed logs",
+      "tla_formula": "All replicas in ISR have matching committed entries"
+    },
+    {
+      "name": "LeaderEpochMonotonicity",
+      "description": "Leader epochs always increase",
+      "tla_formula": "\\A e1, e2 \\in LeaderEpoch : e2 follows e1 => e2 > e1"
+    },
+    {
+      "name": "HighWatermarkSafety",
+      "description": "High watermark only advances when replicas have caught up",
+      "tla_formula": "HW advances only when min(ISR offsets) increases"
+    },
+    {
+      "name": "ExactlyOnce",
+      "description": "Idempotent producer guarantees exactly-once delivery",
+      "tla_formula": "Each message is committed exactly once with sequence numbers"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "log", "type": "Seq(Record)", "description": "Partition log"},
+    {"name": "highWatermark", "type": "Nat", "description": "Committed offset"},
+    {"name": "leaderEpoch", "type": "Nat", "description": "Current leader epoch"},
+    {"name": "isr", "type": "Set(Replica)", "description": "In-sync replicas"},
+    {"name": "leader", "type": "Replica", "description": "Current partition leader"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Replica": "{r1, r2, r3}",
+      "Value": "{v1, v2}",
+      "MaxOffset": "5"
+    },
+    "invariants": ["TypeOK", "ReplicaConsistency", "HighWatermarkSafety"],
+    "expected_states": "Millions"
+  },
+
+  "bugs_found": [
+    "KIP-320: Incorrect leader epoch handling during unclean leader election",
+    "KAFKA-6361: Replica divergence after unclean election",
+    "KAFKA-7061: High watermark advancement race condition"
+  ],
+
+  "related_specs": ["raft", "paxos", "zab", "elasticsearch"],
+
+  "metadata": {
+    "version": "3.7.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Apache Kafka",
+    "license": "Apache-2.0"
+  }
+}

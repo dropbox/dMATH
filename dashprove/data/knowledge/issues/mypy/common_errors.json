@@ -1,0 +1,224 @@
+{
+  "tool": "mypy",
+  "version": "1.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "incompatible_types",
+      "pattern": "Incompatible types in assignment",
+      "message": "Incompatible types in assignment (expression has type X, variable has type Y)",
+      "cause": "Assigning value of wrong type to variable",
+      "solutions": [
+        {
+          "approach": "Fix the type",
+          "code": "x: int = 42  # not 'x: int = \"hello\"'",
+          "when": "Assignment is genuinely wrong"
+        },
+        {
+          "approach": "Use Union",
+          "code": "x: int | str = value  # or Union[int, str]",
+          "when": "Variable can hold multiple types"
+        },
+        {
+          "approach": "Use cast",
+          "code": "from typing import cast\nx = cast(int, value)",
+          "when": "You know better than mypy (use sparingly)"
+        },
+        {
+          "approach": "Add type guard",
+          "code": "if isinstance(value, int):\n    x: int = value",
+          "when": "Need runtime type narrowing"
+        }
+      ]
+    },
+    {
+      "id": "missing_return",
+      "pattern": "Missing return statement",
+      "message": "Missing return statement",
+      "cause": "Function declares return type but doesn't always return",
+      "solutions": [
+        {
+          "approach": "Add return statement",
+          "code": "def f() -> int:\n    return 0  # Add missing return",
+          "when": "Forgot to return value"
+        },
+        {
+          "approach": "Return None explicitly",
+          "code": "def f() -> int | None:\n    if cond:\n        return 42\n    return None",
+          "when": "Function may not return a value"
+        },
+        {
+          "approach": "Use NoReturn",
+          "code": "from typing import NoReturn\ndef fail() -> NoReturn:\n    raise Exception()",
+          "when": "Function never returns normally"
+        }
+      ]
+    },
+    {
+      "id": "item_none",
+      "pattern": "Item .* of .* has no attribute",
+      "message": "None has no attribute X",
+      "cause": "Accessing attribute on possibly-None value",
+      "solutions": [
+        {
+          "approach": "Add None check",
+          "code": "if x is not None:\n    x.method()",
+          "when": "Value may be None"
+        },
+        {
+          "approach": "Use assert",
+          "code": "assert x is not None\nx.method()",
+          "when": "You know it's not None"
+        },
+        {
+          "approach": "Use Optional",
+          "code": "x: str | None = get_value()\nresult = x.upper() if x else ''",
+          "when": "Need to handle None case"
+        }
+      ]
+    },
+    {
+      "id": "argument_type",
+      "pattern": "Argument .* has incompatible type",
+      "message": "Argument has incompatible type",
+      "cause": "Function called with wrong argument type",
+      "solutions": [
+        {
+          "approach": "Fix argument type",
+          "code": "func(int(value))  # Convert to expected type",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Check function signature",
+          "code": "# reveal_type(func)  # See expected types",
+          "when": "Unsure of expected types"
+        },
+        {
+          "approach": "Use overload",
+          "code": "@overload\ndef func(x: int) -> int: ...\n@overload\ndef func(x: str) -> str: ...",
+          "when": "Function accepts multiple types"
+        }
+      ]
+    },
+    {
+      "id": "no_attribute",
+      "pattern": "has no attribute",
+      "message": "Type X has no attribute Y",
+      "cause": "Accessing nonexistent attribute",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "# Typo in attribute name?",
+          "when": "Attribute name misspelled"
+        },
+        {
+          "approach": "Import the type",
+          "code": "from module import Type\nx: Type = ...",
+          "when": "Using wrong type"
+        },
+        {
+          "approach": "Use Protocol",
+          "code": "class HasMethod(Protocol):\n    def method(self) -> None: ...",
+          "when": "Need structural typing"
+        },
+        {
+          "approach": "Add stub",
+          "code": "# Create .pyi stub file for untyped library",
+          "when": "Library lacks type annotations"
+        }
+      ]
+    },
+    {
+      "id": "cannot_infer",
+      "pattern": "Need type annotation",
+      "message": "Need type annotation for variable",
+      "cause": "Mypy cannot infer variable type",
+      "solutions": [
+        {
+          "approach": "Add annotation",
+          "code": "x: list[int] = []",
+          "when": "Empty container needs type"
+        },
+        {
+          "approach": "Use generic",
+          "code": "from typing import TypeVar\nT = TypeVar('T')\ndef first(xs: list[T]) -> T: ...",
+          "when": "Function should be generic"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "Cannot find implementation or library stub",
+      "message": "Cannot find module",
+      "cause": "Module not found or not typed",
+      "solutions": [
+        {
+          "approach": "Install stubs",
+          "code": "pip install types-requests  # For requests library",
+          "when": "Stubs available separately"
+        },
+        {
+          "approach": "Ignore import",
+          "code": "import untyped_module  # type: ignore",
+          "when": "No stubs available"
+        },
+        {
+          "approach": "Create stub",
+          "code": "# Create untyped_module.pyi in same directory",
+          "when": "Want to add types yourself"
+        },
+        {
+          "approach": "Configure mypy",
+          "code": "[mypy-untyped_module.*]\nignore_missing_imports = True",
+          "when": "Want to ignore specific modules"
+        }
+      ]
+    },
+    {
+      "id": "override_error",
+      "pattern": "Signature .* incompatible with supertype",
+      "message": "Method signature incompatible",
+      "cause": "Overriding method has incompatible signature",
+      "solutions": [
+        {
+          "approach": "Match parent signature",
+          "code": "def method(self, x: int) -> str:  # Match parent",
+          "when": "Override should match parent"
+        },
+        {
+          "approach": "Use covariant return",
+          "code": "# Return type can be more specific (covariant)",
+          "when": "Want narrower return type"
+        },
+        {
+          "approach": "Use contravariant args",
+          "code": "# Argument types can be more general (contravariant)",
+          "when": "Want wider argument types"
+        }
+      ]
+    },
+    {
+      "id": "callable_error",
+      "pattern": "is not callable",
+      "message": "Object is not callable",
+      "cause": "Trying to call non-callable object",
+      "solutions": [
+        {
+          "approach": "Add __call__",
+          "code": "class Obj:\n    def __call__(self) -> int: ...",
+          "when": "Object should be callable"
+        },
+        {
+          "approach": "Fix type annotation",
+          "code": "f: Callable[[int], str] = func",
+          "when": "Variable should be callable"
+        },
+        {
+          "approach": "Check the type",
+          "code": "# reveal_type(obj)  # Is it really callable?",
+          "when": "Unsure of actual type"
+        }
+      ]
+    }
+  ]
+}

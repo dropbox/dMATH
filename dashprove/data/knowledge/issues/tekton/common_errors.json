@@ -1,0 +1,76 @@
+{
+  "tool": "tekton",
+  "category": "ci_cd",
+  "common_errors": [
+    {
+      "pattern": "PipelineRun.*failed|TaskRun.*failed",
+      "meaning": "Pipeline or task execution failed",
+      "causes": ["Step error", "Container crash", "Invalid configuration"],
+      "solutions": ["Check: tkn pipelinerun logs <name>", "Describe: kubectl describe pipelinerun <name>", "Review step containers for errors"]
+    },
+    {
+      "pattern": "resource.*not found|unable to find",
+      "meaning": "Referenced resource doesn't exist",
+      "causes": ["Pipeline/Task not created", "Wrong namespace", "Typo in name"],
+      "solutions": ["Verify resource exists: kubectl get pipelines", "Check namespace: -n <namespace>", "Create missing resources first"]
+    },
+    {
+      "pattern": "invalid.*param|parameter.*required",
+      "meaning": "Pipeline parameter error",
+      "causes": ["Missing required parameter", "Wrong param type", "Invalid default"],
+      "solutions": ["Check task/pipeline params definition", "Pass all required params in PipelineRun", "Verify param types match"]
+    },
+    {
+      "pattern": "workspace.*not provided|workspace.*not bound",
+      "meaning": "Workspace configuration missing",
+      "causes": ["Workspace not passed to task", "PVC not created", "Volume binding failed"],
+      "solutions": ["Add workspaces to PipelineRun", "Create PVC for workspace", "Check workspace mapping in pipeline"]
+    },
+    {
+      "pattern": "container.*ImagePullBackOff|ErrImagePull",
+      "meaning": "Cannot pull container image",
+      "causes": ["Image doesn't exist", "Private registry auth", "Network issue"],
+      "solutions": ["Verify image exists", "Add imagePullSecrets", "Check service account has pull access"]
+    },
+    {
+      "pattern": "step.*exceeded timeout|pipeline.*timed out",
+      "meaning": "Execution timeout exceeded",
+      "causes": ["Default timeout too short", "Task hanging", "Resource contention"],
+      "solutions": ["Set timeout in TaskRun/PipelineRun spec", "Check for infinite loops", "Increase resource limits"]
+    },
+    {
+      "pattern": "result.*not found|result.*type mismatch",
+      "meaning": "Task result error",
+      "causes": ["Result not written", "Wrong result name", "Type doesn't match"],
+      "solutions": ["Ensure step writes to $(results.name.path)", "Check result names match between tasks", "Verify array vs string type"]
+    },
+    {
+      "pattern": "serviceaccount.*denied|RBAC.*forbidden",
+      "meaning": "Permission denied",
+      "causes": ["ServiceAccount missing permissions", "RBAC not configured", "PodSecurityPolicy blocking"],
+      "solutions": ["Create appropriate ClusterRole/Role", "Bind role to tekton service account", "Check PodSecurityPolicy"]
+    },
+    {
+      "pattern": "affinity.*pod.*anti-affinity|pending.*unschedulable",
+      "meaning": "Pod cannot be scheduled",
+      "causes": ["No nodes available", "Resource constraints", "Node selector mismatch"],
+      "solutions": ["Check cluster capacity", "Review resource requests/limits", "Verify node labels match selector"]
+    },
+    {
+      "pattern": "finally.*failed|finally task.*error",
+      "meaning": "Finally task failed",
+      "causes": ["Cleanup task error", "Context not available", "Previous failure context"],
+      "solutions": ["Check finally task logs", "Use onError: continue if appropriate", "Verify finally doesn't depend on failed context"]
+    }
+  ],
+  "debugging_commands": [
+    "tkn pipelinerun logs <name> -f",
+    "tkn taskrun describe <name>",
+    "kubectl get pipelineruns,taskruns",
+    "tkn pipeline start <name> --showlog"
+  ],
+  "documentation_urls": [
+    "https://tekton.dev/docs/",
+    "https://github.com/tektoncd/pipeline"
+  ]
+}

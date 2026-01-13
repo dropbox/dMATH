@@ -1,0 +1,227 @@
+{
+  "tool": "jmeter",
+  "version": "5.6.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "java_not_found",
+      "pattern": "JAVA_HOME.*not set|java.*not found|No Java.*found",
+      "message": "Java not found or JAVA_HOME not set",
+      "cause": "JMeter requires Java 8+ but Java is not configured",
+      "solutions": [
+        {
+          "approach": "Set JAVA_HOME",
+          "code": "export JAVA_HOME=/usr/lib/jvm/java-11-openjdk\nexport PATH=$JAVA_HOME/bin:$PATH",
+          "when": "Java installed but not configured"
+        },
+        {
+          "approach": "Install Java",
+          "code": "# Ubuntu/Debian:\nsudo apt install openjdk-11-jdk\n# macOS:\nbrew install openjdk@11",
+          "when": "Java not installed"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemoryError|heap space|GC overhead",
+      "message": "JMeter ran out of memory",
+      "cause": "JVM heap size too small for test",
+      "solutions": [
+        {
+          "approach": "Increase heap size",
+          "code": "# Edit bin/jmeter or jmeter.bat:\nHEAP=\"-Xms1g -Xmx4g\"\n# Or via command line:\nJVM_ARGS=\"-Xms2g -Xmx8g\" jmeter -n -t test.jmx",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Use distributed testing",
+          "code": "jmeter -n -t test.jmx -R server1,server2,server3",
+          "when": "Large-scale test"
+        },
+        {
+          "approach": "Optimize test plan",
+          "code": "# Remove listeners during load test\n# Use Simple Data Writer instead of View Results Tree\n# Enable CSV output only",
+          "when": "Reduce memory usage"
+        }
+      ]
+    },
+    {
+      "id": "connection_timeout",
+      "pattern": "Connection timed out|ConnectTimeoutException|connect.*timeout",
+      "message": "Connection timeout to target server",
+      "cause": "Server unreachable or too slow to respond",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "<!-- In HTTP Request Defaults or sampler: -->\n<stringProp name=\"HTTPSampler.connect_timeout\">30000</stringProp>\n<stringProp name=\"HTTPSampler.response_timeout\">60000</stringProp>",
+          "when": "Slow server"
+        },
+        {
+          "approach": "Check server availability",
+          "code": "curl -v http://target-server:port/",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Use HTTP Request Defaults",
+          "code": "# Add HTTP Request Defaults config element\n# Set Connect Timeout and Response Timeout",
+          "when": "Set globally"
+        }
+      ]
+    },
+    {
+      "id": "ssl_handshake_error",
+      "pattern": "SSL.*handshake|PKIX.*path|certificate.*untrusted",
+      "message": "SSL/TLS handshake failed",
+      "cause": "Invalid or untrusted SSL certificate",
+      "solutions": [
+        {
+          "approach": "Disable SSL verification",
+          "code": "# jmeter.properties:\nhttps.default.protocol=TLSv1.2\nhttpclient.ssl.validation.disabled=true",
+          "when": "Testing environment"
+        },
+        {
+          "approach": "Import certificate",
+          "code": "keytool -import -alias server -keystore $JAVA_HOME/lib/security/cacerts -file server.crt",
+          "when": "Trust specific cert"
+        },
+        {
+          "approach": "Use Keystore Configuration",
+          "code": "# Add Keystore Configuration element\n# Set path to client certificate if mutual TLS",
+          "when": "Client auth required"
+        }
+      ]
+    },
+    {
+      "id": "response_assertion_failed",
+      "pattern": "Assertion failure|Response Assertion.*failed|expected.*but was",
+      "message": "Response assertion failed",
+      "cause": "Response doesn't match expected pattern",
+      "solutions": [
+        {
+          "approach": "Check assertion pattern",
+          "code": "# Use View Results Tree to see actual response\n# Adjust pattern to match actual content",
+          "when": "Wrong expected value"
+        },
+        {
+          "approach": "Use correct assertion type",
+          "code": "# Response Assertion options:\n# - Contains (substring match)\n# - Matches (regex)\n# - Equals (exact match)\n# - Substring (faster than contains)",
+          "when": "Wrong match type"
+        },
+        {
+          "approach": "Handle dynamic content",
+          "code": "<!-- Use regex to handle variable parts: -->\n<stringProp name=\"Assertion.test_strings\">\"status\":\"success\"</stringProp>",
+          "when": "Dynamic response"
+        }
+      ]
+    },
+    {
+      "id": "variable_not_found",
+      "pattern": "\\$\\{.*\\}|Variable.*undefined|variable.*not defined",
+      "message": "JMeter variable not defined",
+      "cause": "Referencing variable that doesn't exist",
+      "solutions": [
+        {
+          "approach": "Define variable",
+          "code": "# Add User Defined Variables:\n<elementProp name=\"myvar\" elementType=\"Argument\">\n  <stringProp name=\"Argument.name\">myvar</stringProp>\n  <stringProp name=\"Argument.value\">value</stringProp>\n</elementProp>",
+          "when": "Static variable"
+        },
+        {
+          "approach": "Use extractor",
+          "code": "# Add JSON Extractor or RegEx Extractor\n# after the request that contains the value",
+          "when": "Extract from response"
+        },
+        {
+          "approach": "Check variable scope",
+          "code": "# Variables are scoped to thread group\n# Use __setProperty() for cross-thread sharing",
+          "when": "Scope issue"
+        }
+      ]
+    },
+    {
+      "id": "csv_file_not_found",
+      "pattern": "CSV.*not found|File not found|Cannot read.*csv",
+      "message": "CSV data file not found",
+      "cause": "CSV Data Set Config points to missing file",
+      "solutions": [
+        {
+          "approach": "Use absolute path",
+          "code": "<stringProp name=\"filename\">/full/path/to/data.csv</stringProp>",
+          "when": "Path issue"
+        },
+        {
+          "approach": "Use relative path with base",
+          "code": "# Place CSV in same directory as .jmx file\n<stringProp name=\"filename\">data.csv</stringProp>",
+          "when": "Portable test"
+        },
+        {
+          "approach": "Use JMeter property",
+          "code": "<stringProp name=\"filename\">${__P(data.dir,.)}/data.csv</stringProp>\n# Run: jmeter -Jdata.dir=/path/to/data -n -t test.jmx",
+          "when": "Configurable path"
+        }
+      ]
+    },
+    {
+      "id": "too_many_open_files",
+      "pattern": "Too many open files|ulimit|file descriptor",
+      "message": "File descriptor limit exceeded",
+      "cause": "System limit on open files reached",
+      "solutions": [
+        {
+          "approach": "Increase ulimit",
+          "code": "ulimit -n 65535\n# Permanent: add to /etc/security/limits.conf:\n# * soft nofile 65535\n# * hard nofile 65535",
+          "when": "Linux/macOS"
+        },
+        {
+          "approach": "Reduce concurrent users",
+          "code": "# Reduce number of threads in Thread Group\n# Use ramp-up period",
+          "when": "Cannot change system limits"
+        }
+      ]
+    },
+    {
+      "id": "no_http_response",
+      "pattern": "Non HTTP response|connection reset|Connection refused",
+      "message": "Non-HTTP response received",
+      "cause": "Server not responding with HTTP or connection closed",
+      "solutions": [
+        {
+          "approach": "Check server capacity",
+          "code": "# Reduce load:\n# - Decrease number of threads\n# - Increase ramp-up time\n# - Add think time (timers)",
+          "when": "Server overloaded"
+        },
+        {
+          "approach": "Use HTTP connection pool",
+          "code": "# jmeter.properties:\nhttpclient4.retrycount=3\nhttpclient.parameters.file=httpclient.parameters",
+          "when": "Connection issues"
+        },
+        {
+          "approach": "Enable keep-alive",
+          "code": "<!-- In HTTP Request: -->\n<boolProp name=\"HTTPSampler.use_keepalive\">true</boolProp>",
+          "when": "Reduce connections"
+        }
+      ]
+    },
+    {
+      "id": "plugin_not_found",
+      "pattern": "Plugin.*not found|ClassNotFoundException.*plugin|cannot find symbol",
+      "message": "JMeter plugin not found",
+      "cause": "Required plugin JAR missing from lib/ext",
+      "solutions": [
+        {
+          "approach": "Install via Plugins Manager",
+          "code": "# Download plugins-manager.jar to lib/ext\n# Run JMeter > Options > Plugins Manager\n# Install required plugin",
+          "when": "Use GUI"
+        },
+        {
+          "approach": "Manual installation",
+          "code": "# Download plugin JAR\ncp plugin.jar $JMETER_HOME/lib/ext/\n# Restart JMeter",
+          "when": "CLI install"
+        },
+        {
+          "approach": "Use command line",
+          "code": "./bin/PluginsManagerCMD.sh install jpgc-graphs-basic,jpgc-casutg",
+          "when": "Automated install"
+        }
+      ]
+    }
+  ]
+}

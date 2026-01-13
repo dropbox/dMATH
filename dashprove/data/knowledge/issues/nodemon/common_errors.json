@@ -1,0 +1,119 @@
+{
+  "tool": "nodemon",
+  "category": "process_management",
+  "common_errors": [
+    {
+      "pattern": "nodemon: command not found|not recognized",
+      "meaning": "Nodemon not installed or not in PATH",
+      "causes": [
+        "Not installed globally or locally",
+        "Node bin directory not in PATH",
+        "npm link not run"
+      ],
+      "solutions": [
+        "Install globally: npm install -g nodemon",
+        "Or locally: npm install --save-dev nodemon",
+        "Use with npx: npx nodemon app.js",
+        "Add to package.json scripts: \"dev\": \"nodemon app.js\""
+      ]
+    },
+    {
+      "pattern": "app crashed.*waiting for file changes",
+      "meaning": "Application crashed but nodemon keeps watching",
+      "causes": [
+        "Unhandled exception in app",
+        "Syntax error",
+        "Missing dependency"
+      ],
+      "solutions": [
+        "Check error message above crash notification",
+        "Fix the error and save file to trigger restart",
+        "Run directly with node to see full error"
+      ]
+    },
+    {
+      "pattern": "ENOSPC|no space left on device|too many open files",
+      "meaning": "File watcher resource limit exceeded",
+      "causes": [
+        "Watching too many files (node_modules)",
+        "System inotify limit reached",
+        "Large codebase without ignore config"
+      ],
+      "solutions": [
+        "Ignore node_modules: nodemon --ignore node_modules/",
+        "Increase inotify limit: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf",
+        "Add nodemon.json with ignore patterns"
+      ]
+    },
+    {
+      "pattern": "clean exit.*waiting for changes",
+      "meaning": "Script exited without keeping process alive",
+      "causes": [
+        "Script runs and completes (not a server)",
+        "Server not binding to port",
+        "Process exiting immediately"
+      ],
+      "solutions": [
+        "Use --exec for non-server scripts: nodemon --exec 'node script.js'",
+        "Add -L (legacy) for polling mode if needed",
+        "Ensure server listens on port to stay alive"
+      ]
+    },
+    {
+      "pattern": "restarting due to changes|too many restarts",
+      "meaning": "Restart loop from generated/written files",
+      "causes": [
+        "Build output triggering watch",
+        "Log files being watched",
+        "Compiled assets triggering restart"
+      ],
+      "solutions": [
+        "Add to nodemon.json ignore: [\"dist/*\", \"*.log\", \"build/*\"]",
+        "Use --ignore flag: nodemon --ignore dist/",
+        "Watch only specific extensions: --ext js,json"
+      ]
+    },
+    {
+      "pattern": "spawn ENOENT|Cannot find module",
+      "meaning": "Nodemon can't execute script",
+      "causes": [
+        "Wrong interpreter",
+        "Script path incorrect",
+        "Missing TypeScript/CoffeeScript compiler"
+      ],
+      "solutions": [
+        "For TypeScript: nodemon --exec ts-node src/index.ts",
+        "Or use tsx: nodemon --exec tsx src/index.ts",
+        "Check execMap in nodemon.json for extension mapping"
+      ]
+    },
+    {
+      "pattern": "events.*connection refused|port not available",
+      "meaning": "Port conflict during restart",
+      "causes": [
+        "Previous instance not fully terminated",
+        "Graceful shutdown not implemented",
+        "Port held by orphaned process"
+      ],
+      "solutions": [
+        "Add --delay 1 for delay between restart",
+        "Implement SIGTERM handler in app for graceful shutdown",
+        "Use --signal SIGINT for different signal"
+      ]
+    },
+    {
+      "pattern": "verbose.*not watching|no files to watch",
+      "meaning": "Nodemon has nothing to watch",
+      "causes": [
+        "Watch path doesn't exist",
+        "All files ignored",
+        "Wrong working directory"
+      ],
+      "solutions": [
+        "Specify watch directories: nodemon --watch src/",
+        "Check ignore patterns aren't too broad",
+        "Use -V for verbose output to see what's watched"
+      ]
+    }
+  ]
+}

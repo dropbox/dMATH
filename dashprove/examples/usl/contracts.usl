@@ -1,0 +1,63 @@
+// Contract Examples
+// Demonstrates pre/post conditions (compiles to Kani)
+
+// Type for a bounded stack
+type Stack = {
+    elements: List<Int>,
+    capacity: Int
+}
+
+// Contract: push onto stack
+contract Stack::push(self: Stack, value: Int) -> Result<Stack> {
+    requires {
+        self.elements.len() < self.capacity
+    }
+    ensures {
+        result.elements.len() == self.elements.len() + 1
+    }
+    ensures {
+        result.elements.last() == value
+    }
+    ensures_err {
+        self.elements.len() >= self.capacity
+    }
+}
+
+// Contract: pop from stack
+contract Stack::pop(self: Stack) -> Result<Int> {
+    requires {
+        self.elements.len() > 0
+    }
+    ensures {
+        result == self.elements.last()
+    }
+    ensures_err {
+        self.elements.len() == 0
+    }
+}
+
+// Contract: safe division
+contract divide(x: Int, y: Int) -> Result<Int> {
+    requires {
+        y != 0
+    }
+    ensures {
+        result * y == x
+    }
+    ensures_err {
+        y == 0
+    }
+}
+
+// Contract: array bounds
+contract Array::get(self: Array, index: Int) -> Result<Int> {
+    requires {
+        index >= 0 and index < self.len()
+    }
+    ensures {
+        result == self.elements.at(index)
+    }
+    ensures_err {
+        index < 0 or index >= self.len()
+    }
+}

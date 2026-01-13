@@ -1,0 +1,191 @@
+{
+  "tool": "keycloak",
+  "version": "23.0.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "realm_error",
+      "pattern": "realm.*not found|Realm does not exist|invalid_realm",
+      "message": "Realm not found",
+      "cause": "Realm doesn't exist or wrong name",
+      "solutions": [
+        {
+          "approach": "Check realm",
+          "code": "# Keycloak Admin Console > Select realm dropdown\n# Realm names are case-sensitive",
+          "when": "Verify realm"
+        },
+        {
+          "approach": "Create realm",
+          "code": "# Admin Console > Master realm dropdown > Create Realm\n# Or import realm JSON",
+          "when": "Create realm"
+        },
+        {
+          "approach": "Realm URL",
+          "code": "// Correct URL format:\n// https://keycloak.example.com/realms/{realm-name}\n// NOT /auth/realms/ (old format)",
+          "when": "URL format"
+        }
+      ]
+    },
+    {
+      "id": "client_error",
+      "pattern": "invalid_client|Client.*not found|unauthorized_client|client_not_found",
+      "message": "Client error",
+      "cause": "Client not configured correctly",
+      "solutions": [
+        {
+          "approach": "Check client ID",
+          "code": "# Admin Console > Clients > Your Client\n# Client ID is case-sensitive",
+          "when": "Verify client"
+        },
+        {
+          "approach": "Create client",
+          "code": "# Admin Console > Clients > Create client\n# Client type: OpenID Connect\n# Client ID: your-app",
+          "when": "Create client"
+        },
+        {
+          "approach": "Client secret",
+          "code": "# For confidential clients:\n# Admin Console > Clients > Your Client > Credentials\n# Copy Client Secret",
+          "when": "Get secret"
+        }
+      ]
+    },
+    {
+      "id": "redirect_error",
+      "pattern": "invalid_redirect_uri|redirect.*not valid|URI mismatch",
+      "message": "Invalid redirect URI",
+      "cause": "Redirect URI not in allowed list",
+      "solutions": [
+        {
+          "approach": "Add redirect",
+          "code": "# Admin Console > Clients > Your Client > Settings\n# Valid Redirect URIs: http://localhost:3000/*\n# Use wildcard for subpaths",
+          "when": "Add URI"
+        },
+        {
+          "approach": "Exact match",
+          "code": "// Must match exactly (trailing slash matters):\n// Configured: http://localhost:3000/callback\n// Request must use: http://localhost:3000/callback",
+          "when": "Match URI"
+        },
+        {
+          "approach": "Web origins",
+          "code": "# Also set Web Origins for CORS:\n# Web Origins: http://localhost:3000\n# Or use + to allow all redirect URIs",
+          "when": "CORS config"
+        }
+      ]
+    },
+    {
+      "id": "token_error",
+      "pattern": "invalid_token|Token.*expired|JWT.*invalid|token_not_active",
+      "message": "Token error",
+      "cause": "Invalid or expired token",
+      "solutions": [
+        {
+          "approach": "Refresh token",
+          "code": "// Exchange refresh token for new access token:\nconst response = await fetch(`${keycloakUrl}/realms/${realm}/protocol/openid-connect/token`, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n  body: new URLSearchParams({\n    grant_type: 'refresh_token',\n    client_id: 'your-client',\n    refresh_token: refreshToken\n  })\n});",
+          "when": "Refresh token"
+        },
+        {
+          "approach": "Token lifespan",
+          "code": "# Admin Console > Realm Settings > Tokens\n# Adjust: Access Token Lifespan, Refresh Token Lifespan",
+          "when": "Extend lifetime"
+        },
+        {
+          "approach": "Verify token",
+          "code": "// Verify token on backend:\nconst jwt = require('jsonwebtoken');\nconst jwksClient = require('jwks-rsa');\n\nconst client = jwksClient({\n  jwksUri: `${keycloakUrl}/realms/${realm}/protocol/openid-connect/certs`\n});",
+          "when": "Verify"
+        }
+      ]
+    },
+    {
+      "id": "login_error",
+      "pattern": "Invalid.*credentials|Invalid username|Account.*disabled|User.*locked",
+      "message": "Login error",
+      "cause": "Invalid credentials or account issue",
+      "solutions": [
+        {
+          "approach": "Check user",
+          "code": "# Admin Console > Users > Search\n# Check: Enabled, Email Verified, Required Actions",
+          "when": "Verify user"
+        },
+        {
+          "approach": "Reset password",
+          "code": "# Admin Console > Users > User > Credentials\n# Set new password or send reset email",
+          "when": "Reset password"
+        },
+        {
+          "approach": "Brute force",
+          "code": "# Admin Console > Realm Settings > Security Defenses\n# Brute Force Detection: may have locked account\n# Users > User > Sessions > Unlock",
+          "when": "Account locked"
+        }
+      ]
+    },
+    {
+      "id": "role_error",
+      "pattern": "access_denied|Forbidden|role.*not found|insufficient.*scope",
+      "message": "Role/permission error",
+      "cause": "User missing required role",
+      "solutions": [
+        {
+          "approach": "Assign role",
+          "code": "# Admin Console > Users > User > Role Mappings\n# Assign realm roles or client roles",
+          "when": "Add role"
+        },
+        {
+          "approach": "Create role",
+          "code": "# Admin Console > Realm roles > Create role\n# Or: Clients > Client > Roles > Create role",
+          "when": "Create role"
+        },
+        {
+          "approach": "Token claims",
+          "code": "# Admin Console > Client Scopes > roles > Mappers\n# Ensure roles are included in token",
+          "when": "Include roles"
+        }
+      ]
+    },
+    {
+      "id": "idp_error",
+      "pattern": "Identity provider.*error|IDP.*not found|federation.*failed",
+      "message": "Identity Provider error",
+      "cause": "Social/enterprise IdP configuration issue",
+      "solutions": [
+        {
+          "approach": "Configure IdP",
+          "code": "# Admin Console > Identity Providers > Add provider\n# Configure: Client ID, Secret, Redirect URI from IdP",
+          "when": "Add IdP"
+        },
+        {
+          "approach": "Mapper",
+          "code": "# Admin Console > Identity Providers > Provider > Mappers\n# Map IdP attributes to Keycloak user attributes",
+          "when": "Map attributes"
+        },
+        {
+          "approach": "First login",
+          "code": "# Admin Console > Authentication > First Broker Login\n# Configure: Review profile, Link existing, Create user",
+          "when": "First login flow"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection.*refused|timeout|ECONNREFUSED|502|503",
+      "message": "Connection error",
+      "cause": "Keycloak server not running",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "curl https://keycloak.example.com/health/ready",
+          "when": "Health check"
+        },
+        {
+          "approach": "Start server",
+          "code": "# Dev mode:\nbin/kc.sh start-dev\n\n# Production:\nbin/kc.sh start --hostname=keycloak.example.com",
+          "when": "Start Keycloak"
+        },
+        {
+          "approach": "Docker",
+          "code": "docker run -p 8080:8080 \\\n  -e KEYCLOAK_ADMIN=admin \\\n  -e KEYCLOAK_ADMIN_PASSWORD=admin \\\n  quay.io/keycloak/keycloak start-dev",
+          "when": "Docker start"
+        }
+      ]
+    }
+  ]
+}

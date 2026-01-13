@@ -1,0 +1,140 @@
+{
+  "tool": "tail",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "tail_f_not_updating",
+      "pattern": "tail -f.*not updating|no output|stuck|not following",
+      "message": "tail -f not showing new content",
+      "cause": "File renamed, buffering, or inode change",
+      "solutions": [
+        {
+          "approach": "Follow by name",
+          "code": "tail -F logfile.log  # Follow name, not inode",
+          "when": "Log rotation"
+        },
+        {
+          "approach": "Retry on missing",
+          "code": "tail --retry -f logfile.log",
+          "when": "File recreated"
+        },
+        {
+          "approach": "Check buffering",
+          "code": "# Application may buffer output\nstdbuf -oL command | tail -f\n# Or flush logs in application",
+          "when": "Buffered writes"
+        }
+      ]
+    },
+    {
+      "id": "wrong_line_count",
+      "pattern": "wrong.*lines|too many|not enough",
+      "message": "Unexpected number of lines",
+      "cause": "Wrong -n argument or incomplete lines",
+      "solutions": [
+        {
+          "approach": "Specify lines",
+          "code": "tail -n 50 file.txt  # Last 50 lines\ntail -50 file.txt    # Same, shorter",
+          "when": "Explicit count"
+        },
+        {
+          "approach": "From line N",
+          "code": "tail -n +100 file.txt  # From line 100 onwards",
+          "when": "Skip beginning"
+        },
+        {
+          "approach": "Byte mode",
+          "code": "tail -c 1000 file.txt  # Last 1000 bytes",
+          "when": "Binary/bytes"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot open|cannot read",
+      "message": "Cannot read file",
+      "cause": "Insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo tail -f /var/log/auth.log",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Add to group",
+          "code": "sudo usermod -aG adm $USER  # For log files",
+          "when": "Permanent access"
+        }
+      ]
+    },
+    {
+      "id": "file_rotated",
+      "pattern": "file truncated|inode changed|file has been replaced",
+      "message": "File was rotated/truncated",
+      "cause": "Log rotation replaced the file",
+      "solutions": [
+        {
+          "approach": "Use -F",
+          "code": "tail -F logfile.log  # Capital F follows name",
+          "when": "Log rotation"
+        },
+        {
+          "approach": "Watch multiple",
+          "code": "tail -F /var/log/syslog /var/log/auth.log",
+          "when": "Multiple logs"
+        },
+        {
+          "approach": "Use multitail",
+          "code": "multitail /var/log/syslog /var/log/auth.log",
+          "when": "Better tool"
+        }
+      ]
+    },
+    {
+      "id": "binary_file",
+      "pattern": "Binary file|non-printable|garbage output",
+      "message": "Binary content in output",
+      "cause": "Binary data in file",
+      "solutions": [
+        {
+          "approach": "Hex dump",
+          "code": "tail -c 100 file.bin | xxd",
+          "when": "View binary"
+        },
+        {
+          "approach": "Filter binary",
+          "code": "tail -f logfile | strings",
+          "when": "Extract text"
+        },
+        {
+          "approach": "Check type",
+          "code": "file filename",
+          "when": "Verify format"
+        }
+      ]
+    },
+    {
+      "id": "slow_large_file",
+      "pattern": "slow|takes long|large file",
+      "message": "Slow on large files",
+      "cause": "Large file seeking issues",
+      "solutions": [
+        {
+          "approach": "Use bytes",
+          "code": "tail -c 10000 largefile.log  # Much faster",
+          "when": "Approx lines OK"
+        },
+        {
+          "approach": "GNU tail optimized",
+          "code": "# GNU tail is optimized for large files\n# Seeks to end instead of reading whole file",
+          "when": "Use GNU version"
+        },
+        {
+          "approach": "Combine tools",
+          "code": "tail -c 100000 file.log | tail -n 100",
+          "when": "Two-stage approach"
+        }
+      ]
+    }
+  ]
+}

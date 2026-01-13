@@ -1,0 +1,122 @@
+{
+  "tool": "pdf_lib",
+  "version": "1.17.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "corrupted_pdf",
+      "pattern": "Failed to parse PDF|invalid PDF|corrupted file|No PDF header",
+      "message": "PDF file is corrupted or invalid",
+      "cause": "File is not a valid PDF or is damaged",
+      "solutions": [
+        {
+          "approach": "Verify file",
+          "code": "// Check file starts with %PDF\nconst bytes = fs.readFileSync('file.pdf');\nif (!bytes.slice(0, 5).toString().startsWith('%PDF')) throw new Error('Invalid PDF');",
+          "when": "File may be corrupted"
+        },
+        {
+          "approach": "Use ignoreEncryption",
+          "code": "const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });",
+          "when": "Password-protected PDF"
+        },
+        {
+          "approach": "Try repair tools",
+          "code": "// Use qpdf or mutool to repair: qpdf --qdf input.pdf output.pdf",
+          "when": "PDF is recoverable"
+        }
+      ]
+    },
+    {
+      "id": "font_embedding",
+      "pattern": "Cannot embed font|font not embeddable|subsetting failed",
+      "message": "Font cannot be embedded in PDF",
+      "cause": "Font license restricts embedding or font format unsupported",
+      "solutions": [
+        {
+          "approach": "Use standard fonts",
+          "code": "const font = await pdfDoc.embedFont(StandardFonts.Helvetica);",
+          "when": "Standard font sufficient"
+        },
+        {
+          "approach": "Embed custom font",
+          "code": "const fontBytes = fs.readFileSync('./fonts/OpenSans.ttf');\nconst font = await pdfDoc.embedFont(fontBytes);",
+          "when": "Custom TTF/OTF font"
+        },
+        {
+          "approach": "Check font license",
+          "code": "// Some fonts don't allow embedding - use open-source alternative",
+          "when": "Commercial font restrictions"
+        }
+      ]
+    },
+    {
+      "id": "image_format_unsupported",
+      "pattern": "Unsupported image format|cannot embed.*image|invalid image",
+      "message": "Image format not supported",
+      "cause": "pdf-lib only supports PNG and JPEG directly",
+      "solutions": [
+        {
+          "approach": "Embed PNG",
+          "code": "const pngBytes = fs.readFileSync('image.png');\nconst image = await pdfDoc.embedPng(pngBytes);",
+          "when": "PNG image"
+        },
+        {
+          "approach": "Embed JPEG",
+          "code": "const jpgBytes = fs.readFileSync('image.jpg');\nconst image = await pdfDoc.embedJpg(jpgBytes);",
+          "when": "JPEG image"
+        },
+        {
+          "approach": "Convert other formats",
+          "code": "// Use sharp to convert: sharp('image.webp').png().toBuffer()",
+          "when": "SVG, WebP, GIF etc"
+        }
+      ]
+    },
+    {
+      "id": "page_index_error",
+      "pattern": "index out of.*range|no page at index|invalid page number",
+      "message": "Page index does not exist",
+      "cause": "Accessing page beyond document length",
+      "solutions": [
+        {
+          "approach": "Check page count",
+          "code": "const pageCount = pdfDoc.getPageCount();\nif (index < pageCount) { page = pdfDoc.getPage(index); }",
+          "when": "Validating page access"
+        },
+        {
+          "approach": "Use getPages()",
+          "code": "const pages = pdfDoc.getPages();\nfor (const page of pages) { ... }",
+          "when": "Iterating all pages"
+        },
+        {
+          "approach": "Add pages if needed",
+          "code": "while (pdfDoc.getPageCount() < requiredIndex) { pdfDoc.addPage(); }",
+          "when": "Need more pages"
+        }
+      ]
+    },
+    {
+      "id": "coordinate_system",
+      "pattern": "content appears in wrong position|upside down|off page",
+      "message": "Content positioned incorrectly",
+      "cause": "PDF uses bottom-left origin coordinate system",
+      "solutions": [
+        {
+          "approach": "Use correct origin",
+          "code": "// PDF origin is bottom-left, y increases upward\npage.drawText('Hello', { x: 50, y: page.getHeight() - 50 });",
+          "when": "Positioning from top"
+        },
+        {
+          "approach": "Get page dimensions",
+          "code": "const { width, height } = page.getSize();\nconst yFromTop = height - desiredY;",
+          "when": "Converting coordinates"
+        },
+        {
+          "approach": "Check rotation",
+          "code": "const rotation = page.getRotation().angle;\n// Adjust coordinates based on rotation",
+          "when": "Rotated pages"
+        }
+      ]
+    }
+  ]
+}

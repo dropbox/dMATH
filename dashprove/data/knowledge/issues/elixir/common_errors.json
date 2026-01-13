@@ -1,0 +1,168 @@
+{
+  "tool": "elixir",
+  "version": "1.16.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_function",
+      "pattern": "undefined function|is undefined or private",
+      "message": "Undefined or private function",
+      "cause": "Function doesn't exist or isn't exported",
+      "solutions": [
+        {
+          "approach": "Define the function",
+          "code": "def my_function(arg), do: ...",
+          "when": "Function not defined"
+        },
+        {
+          "approach": "Make public",
+          "code": "def instead of defp  # Public vs private",
+          "when": "Function is private"
+        },
+        {
+          "approach": "Import or alias",
+          "code": "import OtherModule, only: [fun: 1]\nalias OtherModule",
+          "when": "Function in another module"
+        }
+      ]
+    },
+    {
+      "id": "match_error",
+      "pattern": "MatchError|no match of right hand side",
+      "message": "Pattern match failed",
+      "cause": "Pattern on left side of = doesn't match right side value",
+      "solutions": [
+        {
+          "approach": "Use case for fallback",
+          "code": "case value do\n  {:ok, result} -> result\n  {:error, _} -> default\nend",
+          "when": "Value may not match pattern"
+        },
+        {
+          "approach": "Add pattern clause",
+          "code": "def f({:ok, x}), do: x\ndef f({:error, _}), do: nil",
+          "when": "Function head pattern too specific"
+        },
+        {
+          "approach": "Use with for chaining",
+          "code": "with {:ok, a} <- step1(),\n     {:ok, b} <- step2(a) do\n  {:ok, b}\nelse\n  {:error, reason} -> {:error, reason}\nend",
+          "when": "Multiple fallible operations"
+        }
+      ]
+    },
+    {
+      "id": "function_clause_error",
+      "pattern": "FunctionClauseError|no function clause matching",
+      "message": "No matching function clause",
+      "cause": "Arguments don't match any function definition",
+      "solutions": [
+        {
+          "approach": "Add catch-all clause",
+          "code": "def f(x) when is_integer(x), do: x\ndef f(_), do: :default",
+          "when": "Need default behavior"
+        },
+        {
+          "approach": "Check argument types",
+          "code": "# Ensure caller passes expected types",
+          "when": "Wrong argument type"
+        },
+        {
+          "approach": "Use guards appropriately",
+          "code": "def f(x) when is_list(x), do: ...\ndef f(x) when is_map(x), do: ...",
+          "when": "Different behavior per type"
+        }
+      ]
+    },
+    {
+      "id": "protocol_not_implemented",
+      "pattern": "Protocol\\.UndefinedError|protocol.*not implemented",
+      "message": "Protocol not implemented for type",
+      "cause": "Type lacks implementation of required protocol",
+      "solutions": [
+        {
+          "approach": "Implement protocol",
+          "code": "defimpl MyProtocol, for: MyStruct do\n  def my_func(data), do: ...\nend",
+          "when": "Custom type needs protocol"
+        },
+        {
+          "approach": "Use Any fallback",
+          "code": "@fallback_to_any true  # In defprotocol",
+          "when": "Want default implementation"
+        },
+        {
+          "approach": "Derive protocol",
+          "code": "@derive [Jason.Encoder]\ndefstruct [:field]",
+          "when": "Standard derivation exists"
+        }
+      ]
+    },
+    {
+      "id": "genserver_timeout",
+      "pattern": "GenServer.*timeout|call.*timed out",
+      "message": "GenServer call timed out",
+      "cause": "GenServer didn't respond within timeout (default 5s)",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "GenServer.call(pid, :msg, 30_000)  # 30 second timeout",
+          "when": "Operation legitimately slow"
+        },
+        {
+          "approach": "Use cast for async",
+          "code": "GenServer.cast(pid, :msg)  # Fire and forget",
+          "when": "Don't need response"
+        },
+        {
+          "approach": "Check server health",
+          "code": "Process.alive?(pid)  # Verify server running",
+          "when": "Server may have crashed"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "CompileError|cannot compile",
+      "message": "Compilation error",
+      "cause": "Syntax or semantic error prevents compilation",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "# Ensure do/end, fn/end properly closed",
+          "when": "Missing keyword"
+        },
+        {
+          "approach": "Check module attributes",
+          "code": "@moduledoc, @doc, @spec  # Must be before function",
+          "when": "Misplaced attribute"
+        },
+        {
+          "approach": "Require module first",
+          "code": "require Logger  # For macros",
+          "when": "Using macro before require"
+        }
+      ]
+    },
+    {
+      "id": "deps_error",
+      "pattern": "Could not find.*hex package|dependency.*failed",
+      "message": "Dependency resolution error",
+      "cause": "Mix can't resolve or fetch dependencies",
+      "solutions": [
+        {
+          "approach": "Update hex",
+          "code": "mix local.hex --force",
+          "when": "Hex outdated"
+        },
+        {
+          "approach": "Clean and refetch",
+          "code": "rm -rf deps _build && mix deps.get",
+          "when": "Corrupted deps"
+        },
+        {
+          "approach": "Check version constraints",
+          "code": "{:dep, \"~> 1.0\"}  # Check compatible versions",
+          "when": "Version conflict"
+        }
+      ]
+    }
+  ]
+}

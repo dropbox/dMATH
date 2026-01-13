@@ -1,0 +1,71 @@
+{
+  "tool": "lsmod",
+  "version": "kmod",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_listed",
+      "pattern": "not listed|not loaded|not showing",
+      "message": "Module not showing",
+      "cause": "Module not loaded or built-in",
+      "solutions": [
+        {
+          "approach": "Load module",
+          "code": "sudo modprobe modulename\nlsmod | grep modulename",
+          "when": "Module not loaded"
+        },
+        {
+          "approach": "Check if built-in",
+          "code": "# Built-in modules don't appear in lsmod\ncat /lib/modules/$(uname -r)/modules.builtin | grep modulename",
+          "when": "May be built-in"
+        },
+        {
+          "approach": "Check kernel config",
+          "code": "cat /boot/config-$(uname -r) | grep -i modulename\n# y = built-in, m = module, not set = disabled",
+          "when": "See compile options"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "lsmod: command not found",
+      "message": "kmod not installed",
+      "cause": "kmod package missing",
+      "solutions": [
+        {
+          "approach": "Install kmod",
+          "code": "sudo apt install kmod",
+          "when": "Install package"
+        },
+        {
+          "approach": "Alternative",
+          "code": "cat /proc/modules",
+          "when": "Direct proc access"
+        }
+      ]
+    },
+    {
+      "id": "understanding_output",
+      "pattern": "Used by|Size|columns",
+      "message": "Understanding output",
+      "cause": "Reading lsmod output",
+      "solutions": [
+        {
+          "approach": "Column meanings",
+          "code": "# Module: Name of loaded module\n# Size: Memory used in bytes\n# Used by: Reference count and dependent modules\nlsmod | head -5",
+          "when": "Reference"
+        },
+        {
+          "approach": "Filter output",
+          "code": "lsmod | grep -i usb\nlsmod | grep -i video",
+          "when": "Find specific modules"
+        },
+        {
+          "approach": "Detailed info",
+          "code": "modinfo modulename  # Full module details",
+          "when": "More information"
+        }
+      ]
+    }
+  ]
+}

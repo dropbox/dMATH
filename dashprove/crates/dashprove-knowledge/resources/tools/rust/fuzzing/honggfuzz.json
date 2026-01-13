@@ -1,0 +1,133 @@
+{
+  "id": "honggfuzz",
+  "name": "Honggfuzz",
+  "category": "rust_fuzzing",
+  "subcategory": "coverage_guided",
+
+  "description": "Security-oriented fuzzer with hardware feedback support",
+  "long_description": "Honggfuzz is a security-oriented, feedback-driven fuzzer developed by Google. It supports hardware-based coverage (Intel BTS, Intel PT) for high-performance fuzzing. honggfuzz-rs provides Rust integration with automatic instrumentation and persistent mode support.",
+
+  "capabilities": [
+    "coverage_guided_fuzzing",
+    "hardware_feedback",
+    "crash_detection",
+    "hang_detection",
+    "persistent_mode",
+    "parallel_fuzzing",
+    "intel_pt_support",
+    "intel_bts_support",
+    "code_coverage_tracking"
+  ],
+  "property_types": ["fuzz_target", "property_based"],
+  "input_languages": ["rust"],
+  "output_formats": ["crash_artifact", "corpus", "coverage_stats"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install honggfuzz"},
+      {"type": "source", "url": "https://github.com/rust-fuzz/honggfuzz-rs"}
+    ],
+    "dependencies": ["rust-nightly", "clang", "llvm", "libbfd", "libunwind"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://honggfuzz.dev/",
+    "tutorial": "https://rust-fuzz.github.io/book/honggfuzz.html",
+    "api_reference": "https://docs.rs/honggfuzz/latest/honggfuzz/",
+    "examples": "https://github.com/rust-fuzz/honggfuzz-rs/tree/master/example"
+  },
+
+  "tactics": [
+    {
+      "name": "run",
+      "description": "Run fuzzer",
+      "syntax": "cargo hfuzz run TARGET",
+      "when_to_use": "Active fuzzing",
+      "examples": ["cargo hfuzz run fuzz_parser", "HFUZZ_RUN_ARGS=\"-t 10\" cargo hfuzz run target"]
+    },
+    {
+      "name": "build",
+      "description": "Build instrumented binary",
+      "syntax": "cargo hfuzz build",
+      "when_to_use": "Compile with fuzzing instrumentation",
+      "examples": ["cargo hfuzz build", "cargo hfuzz build --release"]
+    },
+    {
+      "name": "clean",
+      "description": "Clean fuzzing artifacts",
+      "syntax": "cargo hfuzz clean",
+      "when_to_use": "Reset fuzzing state",
+      "examples": ["cargo hfuzz clean"]
+    },
+    {
+      "name": "threads",
+      "description": "Multi-threaded fuzzing",
+      "syntax": "HFUZZ_RUN_ARGS=\"-n THREADS\"",
+      "when_to_use": "Parallel fuzzing on multi-core",
+      "examples": ["HFUZZ_RUN_ARGS=\"-n 8\" cargo hfuzz run target"]
+    },
+    {
+      "name": "timeout",
+      "description": "Set execution timeout",
+      "syntax": "HFUZZ_RUN_ARGS=\"-t SECONDS\"",
+      "when_to_use": "Detect hangs and slow inputs",
+      "examples": ["HFUZZ_RUN_ARGS=\"-t 5\" cargo hfuzz run target"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CRASH_",
+      "meaning": "Input causing crash",
+      "common_causes": ["Memory corruption", "Panic", "Abort"],
+      "fixes": ["Analyze crash input", "Fix vulnerability"]
+    },
+    {
+      "pattern": "TIMEOUT_",
+      "meaning": "Input causing timeout",
+      "common_causes": ["Infinite loop", "Slow algorithm"],
+      "fixes": ["Add bounds", "Optimize algorithm"]
+    },
+    {
+      "pattern": "SIGABRT",
+      "meaning": "Program aborted",
+      "common_causes": ["Assertion failure", "Explicit abort"],
+      "fixes": ["Handle error case", "Fix assertion"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["fuzz_target", "property_based"],
+    "cli_command": "dashprove verify --backend honggfuzz"
+  },
+
+  "performance": {
+    "typical_runtime": "Continuous (hours to days)",
+    "scalability": "Excellent with hardware feedback",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["libfuzzer", "afl", "bolero"],
+    "advantages": [
+      "Hardware-based coverage (Intel PT/BTS)",
+      "Built-in multi-threading",
+      "Low false positive rate",
+      "Good for security testing"
+    ],
+    "disadvantages": [
+      "Linux-focused (hardware features)",
+      "More complex than cargo-fuzz",
+      "Larger dependency footprint"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.5.55",
+    "last_updated": "2025-12-20",
+    "maintainer": "Google/Rust Fuzz Project",
+    "license": "Apache-2.0"
+  }
+}

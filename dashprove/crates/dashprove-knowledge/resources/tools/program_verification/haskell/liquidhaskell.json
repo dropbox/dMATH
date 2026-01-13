@@ -1,0 +1,106 @@
+{
+  "id": "liquidhaskell",
+  "name": "Liquid Haskell",
+  "category": "program_verifier",
+  "subcategory": "haskell",
+
+  "description": "Refinement types for Haskell via SMT solving",
+  "long_description": "Liquid Haskell extends Haskell with refinement types that enable compile-time verification of correctness properties. Type annotations specify logical predicates that are automatically verified using SMT solving. It supports termination checking and can verify properties like bounds checking, sortedness, and more.",
+
+  "capabilities": [
+    "refinement_types",
+    "smt_verification",
+    "termination_checking",
+    "type_inference",
+    "abstract_refinements"
+  ],
+  "property_types": ["refinement", "measure", "invariant"],
+  "input_languages": ["haskell"],
+  "output_formats": ["safe/unsafe", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "cabal", "command": "cabal install liquidhaskell"},
+      {"type": "stack", "command": "stack install liquidhaskell"}
+    ],
+    "dependencies": ["ghc", "z3"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://ucsd-progsys.github.io/liquidhaskell/",
+    "tutorial": "https://ucsd-progsys.github.io/liquidhaskell-tutorial/",
+    "blog": "https://ucsd-progsys.github.io/liquidhaskell-blog/"
+  },
+
+  "tactics": [
+    {
+      "name": "type_signature",
+      "description": "Refinement type annotation",
+      "syntax": "{-@ f :: {v:Int | v > 0} -> Int @-}",
+      "when_to_use": "To specify refined types",
+      "examples": ["{-@ abs :: Int -> {v:Int | v >= 0} @-}"]
+    },
+    {
+      "name": "measure",
+      "description": "Define measure for ADTs",
+      "syntax": "{-@ measure len @-}",
+      "when_to_use": "To refine by ADT properties",
+      "examples": ["{-@ measure len :: [a] -> Nat @-}"]
+    },
+    {
+      "name": "invariant",
+      "description": "Type invariant",
+      "syntax": "{-@ invariant {v:[a] | len v >= 0} @-}",
+      "when_to_use": "For global invariants",
+      "examples": ["{-@ invariant {v:Int | v /= 0} @-}"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Liquid Type Mismatch",
+      "meaning": "Refinement type check failed",
+      "common_causes": ["Missing constraint", "Logic error"],
+      "fixes": ["Strengthen precondition", "Fix implementation"]
+    },
+    {
+      "pattern": "UNSAFE",
+      "meaning": "Verification failed",
+      "common_causes": ["Property violation"],
+      "fixes": ["Analyze counterexample"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["refinement", "termination"],
+    "cli_command": "dashprove verify --backend liquidhaskell"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Good for Haskell libraries",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["fstar", "stainless", "dafny"],
+    "advantages": [
+      "Native Haskell integration",
+      "Type inference",
+      "Abstract refinements"
+    ],
+    "disadvantages": [
+      "GHC version sensitivity",
+      "Complex error messages"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.9.2.5",
+    "last_updated": "2025-12-21",
+    "maintainer": "UCSD Programming Systems",
+    "license": "BSD-3-Clause"
+  }
+}

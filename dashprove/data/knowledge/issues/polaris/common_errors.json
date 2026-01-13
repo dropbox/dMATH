@@ -1,0 +1,234 @@
+{
+  "tool": "polaris",
+  "version": "8.5.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cpu_limits_missing",
+      "pattern": "cpuLimitsMissing|CPU limits.*not set",
+      "message": "Container does not have CPU limits",
+      "cause": "resources.limits.cpu not specified",
+      "solutions": [
+        {
+          "approach": "Set CPU limits",
+          "code": "resources:\n  limits:\n    cpu: \"1\"\n  requests:\n    cpu: \"100m\"",
+          "when": "Standard workload"
+        },
+        {
+          "approach": "Use VPA for auto-tuning",
+          "code": "apiVersion: autoscaling.k8s.io/v1\nkind: VerticalPodAutoscaler\nmetadata:\n  name: my-app-vpa\nspec:\n  targetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: my-app\n  updatePolicy:\n    updateMode: Auto",
+          "when": "Uncertain about resource needs"
+        }
+      ]
+    },
+    {
+      "id": "memory_limits_missing",
+      "pattern": "memoryLimitsMissing|Memory limits.*not set",
+      "message": "Container does not have memory limits",
+      "cause": "resources.limits.memory not specified",
+      "solutions": [
+        {
+          "approach": "Set memory limits",
+          "code": "resources:\n  limits:\n    memory: \"512Mi\"\n  requests:\n    memory: \"256Mi\"",
+          "when": "Standard workload"
+        },
+        {
+          "approach": "Match requests and limits",
+          "code": "resources:\n  limits:\n    memory: \"256Mi\"\n  requests:\n    memory: \"256Mi\"",
+          "when": "Guaranteed QoS class"
+        }
+      ]
+    },
+    {
+      "id": "cpu_requests_missing",
+      "pattern": "cpuRequestsMissing|CPU requests.*not set",
+      "message": "Container does not have CPU requests",
+      "cause": "resources.requests.cpu not specified",
+      "solutions": [
+        {
+          "approach": "Set CPU requests",
+          "code": "resources:\n  requests:\n    cpu: \"100m\"",
+          "when": "Need scheduler to consider CPU"
+        },
+        {
+          "approach": "Use namespace defaults",
+          "code": "apiVersion: v1\nkind: LimitRange\nmetadata:\n  name: cpu-defaults\nspec:\n  limits:\n  - defaultRequest:\n      cpu: \"100m\"\n    type: Container",
+          "when": "Set namespace-wide defaults"
+        }
+      ]
+    },
+    {
+      "id": "memory_requests_missing",
+      "pattern": "memoryRequestsMissing|Memory requests.*not set",
+      "message": "Container does not have memory requests",
+      "cause": "resources.requests.memory not specified",
+      "solutions": [
+        {
+          "approach": "Set memory requests",
+          "code": "resources:\n  requests:\n    memory: \"128Mi\"",
+          "when": "Need scheduler to consider memory"
+        }
+      ]
+    },
+    {
+      "id": "image_pull_policy",
+      "pattern": "pullPolicyNotAlways|imagePullPolicy.*not Always",
+      "message": "Image pull policy is not Always",
+      "cause": "imagePullPolicy not set to Always with mutable tag",
+      "solutions": [
+        {
+          "approach": "Set pull policy to Always",
+          "code": "imagePullPolicy: Always",
+          "when": "Using mutable tags (dev/staging)"
+        },
+        {
+          "approach": "Use immutable tag",
+          "code": "image: myapp:v1.2.3  # Immutable version\nimagePullPolicy: IfNotPresent",
+          "when": "Using version tags"
+        },
+        {
+          "approach": "Use digest",
+          "code": "image: myapp@sha256:abc123...\nimagePullPolicy: IfNotPresent",
+          "when": "Maximum reproducibility"
+        }
+      ]
+    },
+    {
+      "id": "tag_not_specified",
+      "pattern": "tagNotSpecified|image.*tag.*missing",
+      "message": "Image tag not specified",
+      "cause": "Image reference missing tag (defaults to :latest)",
+      "solutions": [
+        {
+          "approach": "Add version tag",
+          "code": "image: nginx:1.25.3",
+          "when": "Use specific version"
+        },
+        {
+          "approach": "Add digest",
+          "code": "image: nginx@sha256:...",
+          "when": "Maximum reproducibility"
+        }
+      ]
+    },
+    {
+      "id": "host_port_set",
+      "pattern": "hostPortSet|hostPort.*specified",
+      "message": "Container uses host port",
+      "cause": "ports.hostPort specified, binding to host",
+      "solutions": [
+        {
+          "approach": "Remove host port",
+          "code": "ports:\n- containerPort: 8080\n  # Remove hostPort",
+          "when": "Use Service for exposure"
+        },
+        {
+          "approach": "Use NodePort service",
+          "code": "apiVersion: v1\nkind: Service\nspec:\n  type: NodePort\n  ports:\n  - port: 8080\n    nodePort: 30080",
+          "when": "Need external access"
+        }
+      ]
+    },
+    {
+      "id": "dangerous_capabilities",
+      "pattern": "dangerousCapabilities|capabilities.*dangerous",
+      "message": "Container has dangerous capabilities",
+      "cause": "capabilities.add includes NET_RAW, SYS_ADMIN, etc.",
+      "solutions": [
+        {
+          "approach": "Drop dangerous capabilities",
+          "code": "securityContext:\n  capabilities:\n    drop: [\"ALL\", \"NET_RAW\"]",
+          "when": "Don't need raw network access"
+        },
+        {
+          "approach": "Use minimal capabilities",
+          "code": "securityContext:\n  capabilities:\n    drop: [\"ALL\"]\n    add: [\"NET_BIND_SERVICE\"]",
+          "when": "Need to bind low ports only"
+        }
+      ]
+    },
+    {
+      "id": "insecure_capabilities",
+      "pattern": "insecureCapabilities|capabilities.*insecure",
+      "message": "Container has insecure capabilities",
+      "cause": "Container has capabilities that could be exploited",
+      "solutions": [
+        {
+          "approach": "Drop all capabilities",
+          "code": "securityContext:\n  capabilities:\n    drop: [\"ALL\"]",
+          "when": "Container doesn't need capabilities"
+        }
+      ]
+    },
+    {
+      "id": "privilege_escalation_allowed",
+      "pattern": "privilegeEscalationAllowed|allowPrivilegeEscalation.*true",
+      "message": "Container allows privilege escalation",
+      "cause": "allowPrivilegeEscalation not explicitly set to false",
+      "solutions": [
+        {
+          "approach": "Disable privilege escalation",
+          "code": "securityContext:\n  allowPrivilegeEscalation: false",
+          "when": "Container doesn't use setuid"
+        }
+      ]
+    },
+    {
+      "id": "not_read_only_root",
+      "pattern": "notReadOnlyRootFilesystem|readOnlyRootFilesystem.*false",
+      "message": "Root filesystem is not read-only",
+      "cause": "readOnlyRootFilesystem not set to true",
+      "solutions": [
+        {
+          "approach": "Enable read-only root",
+          "code": "securityContext:\n  readOnlyRootFilesystem: true",
+          "when": "Container doesn't write to root FS"
+        },
+        {
+          "approach": "Add writable volumes",
+          "code": "volumeMounts:\n- name: tmp\n  mountPath: /tmp\n- name: var-run\n  mountPath: /var/run\nvolumes:\n- name: tmp\n  emptyDir: {}\n- name: var-run\n  emptyDir: {}",
+          "when": "Container needs writable directories"
+        }
+      ]
+    },
+    {
+      "id": "runs_as_root",
+      "pattern": "runAsRootAllowed|runAsNonRoot.*false",
+      "message": "Container can run as root",
+      "cause": "runAsNonRoot not set to true",
+      "solutions": [
+        {
+          "approach": "Set non-root user",
+          "code": "securityContext:\n  runAsNonRoot: true\n  runAsUser: 1000",
+          "when": "Container can run as non-root"
+        }
+      ]
+    },
+    {
+      "id": "liveness_probe_missing",
+      "pattern": "livenessProbeMissing|liveness probe.*missing",
+      "message": "Container missing liveness probe",
+      "cause": "livenessProbe not configured",
+      "solutions": [
+        {
+          "approach": "Add liveness probe",
+          "code": "livenessProbe:\n  httpGet:\n    path: /healthz\n    port: 8080\n  initialDelaySeconds: 15\n  periodSeconds: 20",
+          "when": "Container has health endpoint"
+        }
+      ]
+    },
+    {
+      "id": "readiness_probe_missing",
+      "pattern": "readinessProbeMissing|readiness probe.*missing",
+      "message": "Container missing readiness probe",
+      "cause": "readinessProbe not configured",
+      "solutions": [
+        {
+          "approach": "Add readiness probe",
+          "code": "readinessProbe:\n  httpGet:\n    path: /ready\n    port: 8080\n  initialDelaySeconds: 5\n  periodSeconds: 10",
+          "when": "Container needs time to be ready"
+        }
+      ]
+    }
+  ]
+}

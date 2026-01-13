@@ -1,0 +1,102 @@
+{
+  "tool": "fast_glob",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "fast_glob_no_results",
+      "pattern": "empty array|no matches|glob returned nothing",
+      "severity": "warning",
+      "causes": [
+        "Pattern doesn't match file structure",
+        "Working directory wrong",
+        "Files in ignored directories"
+      ],
+      "solutions": [
+        "Verify cwd option or use absolute patterns",
+        "Test simpler pattern: fg.sync('**/*')",
+        "Check ignore option isn't excluding files",
+        "Use { dot: true } for dotfiles"
+      ]
+    },
+    {
+      "id": "fast_glob_windows_backslash",
+      "pattern": "ENOENT.*\\\\|backslash in pattern|Windows path error",
+      "severity": "error",
+      "causes": [
+        "Using Windows backslash in pattern",
+        "Path.join() on Windows adds backslashes",
+        "Template literal with Windows paths"
+      ],
+      "solutions": [
+        "Always use forward slashes in patterns",
+        "Convert: pattern.replace(/\\\\/g, '/')",
+        "Use fg.convertPathToPattern() helper",
+        "Avoid path.join() for glob patterns"
+      ]
+    },
+    {
+      "id": "fast_glob_negation_order",
+      "pattern": "negation not working|!pattern ignored|exclude fails",
+      "severity": "warning",
+      "causes": [
+        "Negation pattern must come after positive",
+        "Using wrong negation syntax",
+        "Negation scope doesn't match"
+      ],
+      "solutions": [
+        "Pattern order: ['src/**/*.js', '!src/vendor/**']",
+        "Negation starts with !",
+        "Or use ignore option: { ignore: ['vendor/**'] }",
+        "ignore option often clearer than negation"
+      ]
+    },
+    {
+      "id": "fast_glob_symlink_error",
+      "pattern": "ELOOP|symlink.*circular|too many levels of symbolic links",
+      "severity": "error",
+      "causes": [
+        "Circular symbolic link in directory tree",
+        "Symlinks enabled following loops",
+        "Broken symlink causing issues"
+      ],
+      "solutions": [
+        "Use { followSymbolicLinks: false }",
+        "Fix circular symlinks in filesystem",
+        "Use { throwErrorOnBrokenSymbolicLink: false }",
+        "Check filesystem for problematic symlinks"
+      ]
+    },
+    {
+      "id": "fast_glob_too_slow",
+      "pattern": "glob taking too long|timeout|hanging",
+      "severity": "warning",
+      "causes": [
+        "Scanning too many files/directories",
+        "node_modules included in pattern",
+        "Network drive or slow filesystem"
+      ],
+      "solutions": [
+        "Add { ignore: ['**/node_modules/**'] }",
+        "Use more specific pattern to reduce scope",
+        "Use { deep: N } to limit depth",
+        "Enable { onlyFiles: true } if directories not needed"
+      ]
+    },
+    {
+      "id": "fast_glob_stats_missing",
+      "pattern": "stats undefined|cannot read.*stats|stat property missing",
+      "severity": "warning",
+      "causes": [
+        "Stats not requested in options",
+        "Using wrong API for stats",
+        "File deleted between glob and stat"
+      ],
+      "solutions": [
+        "Use { stats: true } to include stats",
+        "Access via entry.stats for size, mtime, etc.",
+        "Use { objectMode: true } with stats option",
+        "Handle ENOENT if files can be deleted"
+      ]
+    }
+  ]
+}

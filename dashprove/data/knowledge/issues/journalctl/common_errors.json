@@ -1,0 +1,168 @@
+{
+  "tool": "journalctl",
+  "version": "256",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "No journal files were found|permission denied|access denied",
+      "message": "No journal files found or permission denied",
+      "cause": "User not in appropriate groups or no journals exist",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo journalctl",
+          "when": "Need root access"
+        },
+        {
+          "approach": "Add to groups",
+          "code": "sudo usermod -a -G systemd-journal $USER",
+          "when": "Grant permanent access"
+        },
+        {
+          "approach": "Check journal location",
+          "code": "ls -la /var/log/journal/",
+          "when": "Verify journals exist"
+        }
+      ]
+    },
+    {
+      "id": "journal_corrupted",
+      "pattern": "Corrupted.*journal|journal.*unclean|damaged",
+      "message": "Journal file corrupted",
+      "cause": "Journal damaged from crash or disk issues",
+      "solutions": [
+        {
+          "approach": "Verify journal",
+          "code": "journalctl --verify",
+          "when": "Check integrity"
+        },
+        {
+          "approach": "Vacuum logs",
+          "code": "sudo journalctl --vacuum-size=500M",
+          "when": "Clear old/corrupted entries"
+        },
+        {
+          "approach": "Rotate journal",
+          "code": "sudo journalctl --rotate",
+          "when": "Start fresh log file"
+        }
+      ]
+    },
+    {
+      "id": "no_entries",
+      "pattern": "No entries|No data|-- No entries --",
+      "message": "No journal entries found",
+      "cause": "Filter too restrictive or service didn't log",
+      "solutions": [
+        {
+          "approach": "Broaden filter",
+          "code": "journalctl -u service --since 'yesterday'",
+          "when": "Expand time range"
+        },
+        {
+          "approach": "Check unit name",
+          "code": "systemctl list-units | grep servicename",
+          "when": "Verify unit exists"
+        },
+        {
+          "approach": "Remove filters",
+          "code": "journalctl (no filters)",
+          "when": "See all logs"
+        }
+      ]
+    },
+    {
+      "id": "disk_full",
+      "pattern": "No space left|disk.*full|failed to write",
+      "message": "Journal disk full",
+      "cause": "Journal consuming too much disk space",
+      "solutions": [
+        {
+          "approach": "Vacuum by size",
+          "code": "sudo journalctl --vacuum-size=100M",
+          "when": "Reduce to specific size"
+        },
+        {
+          "approach": "Vacuum by time",
+          "code": "sudo journalctl --vacuum-time=7d",
+          "when": "Keep only recent"
+        },
+        {
+          "approach": "Configure limits",
+          "code": "SystemMaxUse=500M in /etc/systemd/journald.conf",
+          "when": "Permanent limit"
+        }
+      ]
+    },
+    {
+      "id": "timestamp_confusion",
+      "pattern": "Failed to parse|invalid time|time.*specification",
+      "message": "Invalid time specification",
+      "cause": "Incorrect --since or --until format",
+      "solutions": [
+        {
+          "approach": "Use relative time",
+          "code": "journalctl --since '1 hour ago'",
+          "when": "Recent logs"
+        },
+        {
+          "approach": "Use absolute time",
+          "code": "journalctl --since '2024-01-15 10:00:00'",
+          "when": "Specific datetime"
+        },
+        {
+          "approach": "Use keywords",
+          "code": "journalctl --since today --until now",
+          "when": "Common intervals"
+        }
+      ]
+    },
+    {
+      "id": "unit_not_found",
+      "pattern": "Unknown journal entry|unit.*not found|No data",
+      "message": "Unit not found in journal",
+      "cause": "Service name incorrect or not logging to journal",
+      "solutions": [
+        {
+          "approach": "List units",
+          "code": "systemctl list-units --type=service",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Search pattern",
+          "code": "journalctl | grep -i servicename",
+          "when": "Service might use different name"
+        },
+        {
+          "approach": "Check syslog identifier",
+          "code": "journalctl -t identifier",
+          "when": "Service uses custom identifier"
+        }
+      ]
+    },
+    {
+      "id": "binary_data",
+      "pattern": "blob.*data|binary.*output|[blob]",
+      "message": "Binary data in journal",
+      "cause": "Log contains non-text data",
+      "solutions": [
+        {
+          "approach": "Use JSON output",
+          "code": "journalctl -o json-pretty",
+          "when": "See all fields"
+        },
+        {
+          "approach": "Show specific fields",
+          "code": "journalctl -o cat",
+          "when": "Just message text"
+        },
+        {
+          "approach": "Export binary",
+          "code": "journalctl -o export",
+          "when": "Full binary export"
+        }
+      ]
+    }
+  ]
+}

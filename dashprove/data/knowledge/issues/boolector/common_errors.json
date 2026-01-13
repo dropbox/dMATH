@@ -1,0 +1,186 @@
+{
+  "tool": "boolector",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT",
+      "message": "Solver timeout",
+      "cause": "Boolector could not solve within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "boolector -t 300 file.smt2",
+          "when": "Problem may be solvable with more time"
+        },
+        {
+          "approach": "Try different engine",
+          "code": "boolector -E aigprop file.smt2",
+          "when": "Default engine inefficient for this problem"
+        },
+        {
+          "approach": "Simplify bitvector widths",
+          "code": "(declare-fun x () (_ BitVec 16))  ; instead of 64",
+          "when": "Can reduce precision without losing soundness"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_logic",
+      "pattern": "unsupported logic",
+      "message": "Logic not supported",
+      "cause": "Boolector only supports QF_BV, QF_ABV, QF_AUFBV",
+      "solutions": [
+        {
+          "approach": "Use supported logic",
+          "code": "(set-logic QF_BV)",
+          "when": "Problem is quantifier-free bitvector"
+        },
+        {
+          "approach": "Remove quantifiers",
+          "code": "(* Skolemize or instantiate quantifiers *)",
+          "when": "Problem has quantifiers"
+        },
+        {
+          "approach": "Use different solver",
+          "code": "(* Try Z3, CVC5 for richer logics *)",
+          "when": "Need integers, reals, or quantifiers"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "parse error",
+      "message": "Parse error at line N",
+      "cause": "SMT-LIB syntax error",
+      "solutions": [
+        {
+          "approach": "Check bitvector literal syntax",
+          "code": "#b1010  ; binary literal\n#x0A    ; hex literal",
+          "when": "Wrong bitvector format"
+        },
+        {
+          "approach": "Check extraction syntax",
+          "code": "((_ extract 7 0) x)  ; extract bits 7 down to 0",
+          "when": "Wrong extract notation"
+        },
+        {
+          "approach": "Check bitvector operation syntax",
+          "code": "(bvadd x y)  ; not (+ x y) for bitvectors",
+          "when": "Using arithmetic ops on bitvectors"
+        }
+      ]
+    },
+    {
+      "id": "width_mismatch",
+      "pattern": "bit-width mismatch",
+      "message": "Bitvector width mismatch",
+      "cause": "Operating on bitvectors of different widths",
+      "solutions": [
+        {
+          "approach": "Use zero extension",
+          "code": "((_ zero_extend 16) x)  ; extend 16-bit to 32-bit",
+          "when": "Need to widen bitvector"
+        },
+        {
+          "approach": "Use sign extension",
+          "code": "((_ sign_extend 16) x)  ; preserve sign",
+          "when": "Working with signed values"
+        },
+        {
+          "approach": "Use extraction",
+          "code": "((_ extract 15 0) x)  ; truncate to 16 bits",
+          "when": "Need to narrow bitvector"
+        },
+        {
+          "approach": "Check declarations",
+          "code": "(declare-fun x () (_ BitVec 32))\n(declare-fun y () (_ BitVec 32))",
+          "when": "Variables declared with different widths"
+        }
+      ]
+    },
+    {
+      "id": "division_by_zero",
+      "pattern": "division by zero",
+      "message": "Potential division by zero",
+      "cause": "Bitvector division with possible zero divisor",
+      "solutions": [
+        {
+          "approach": "Guard division",
+          "code": "(ite (= y (_ bv0 32)) (_ bv0 32) (bvudiv x y))",
+          "when": "Want defined behavior on zero"
+        },
+        {
+          "approach": "Assert non-zero",
+          "code": "(assert (not (= divisor (_ bv0 32))))",
+          "when": "Can assume non-zero"
+        },
+        {
+          "approach": "Use Boolector semantics",
+          "code": "(* bvudiv x 0 = all-ones in Boolector *)",
+          "when": "Accept tool-specific semantics"
+        }
+      ]
+    },
+    {
+      "id": "array_bounds",
+      "pattern": "array index",
+      "message": "Array index out of bounds",
+      "cause": "Array access with invalid index",
+      "solutions": [
+        {
+          "approach": "Bound the index",
+          "code": "(assert (bvult idx size))",
+          "when": "Index should be within bounds"
+        },
+        {
+          "approach": "Use modular indexing",
+          "code": "(select arr (bvurem idx size))",
+          "when": "Want wrap-around behavior"
+        }
+      ]
+    },
+    {
+      "id": "model_incomplete",
+      "pattern": "model not available",
+      "message": "Cannot get model",
+      "cause": "Model requested when result was unsat",
+      "solutions": [
+        {
+          "approach": "Check result first",
+          "code": "(check-sat)\n; if sat, then (get-model)",
+          "when": "Forgot to check satisfiability"
+        },
+        {
+          "approach": "Enable model generation",
+          "code": "boolector -m file.smt2",
+          "when": "Model generation disabled"
+        }
+      ]
+    },
+    {
+      "id": "memory_exhausted",
+      "pattern": "out of memory",
+      "message": "Memory exhausted",
+      "cause": "Problem too large for available memory",
+      "solutions": [
+        {
+          "approach": "Reduce bitvector widths",
+          "code": "(* Use 32-bit instead of 64-bit where possible *)",
+          "when": "Can reduce precision"
+        },
+        {
+          "approach": "Simplify problem structure",
+          "code": "(* Break into smaller subproblems *)",
+          "when": "Problem can be decomposed"
+        },
+        {
+          "approach": "Use incremental solving",
+          "code": "(push) (assert ...) (check-sat) (pop)",
+          "when": "Can solve incrementally"
+        }
+      ]
+    }
+  ]
+}

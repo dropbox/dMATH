@@ -1,0 +1,75 @@
+{
+  "tool": "chrono",
+  "category": "date_time",
+  "common_errors": [
+    {
+      "pattern": "ParseError|input not matching format|failed to parse date",
+      "meaning": "Date/time string does not match format spec",
+      "causes": [
+        "Format string tokens mismatch input",
+        "Timezone offset missing when %z expected",
+        "Locale-specific month/day names not supported"
+      ],
+      "solutions": [
+        "Match format exactly: NaiveDate::parse_from_str(\"2024-12-01\", \"%Y-%m-%d\")",
+        "Include offset when using DateTime::parse_from_str with %z/%:z",
+        "Use chrono-tz for named zones instead of parsing abbreviations"
+      ]
+    },
+    {
+      "pattern": "OutOfRange|value out of range|timestamp out of range",
+      "meaning": "Value cannot be represented by Chrono type",
+      "causes": [
+        "Unix timestamp outside i64 seconds range",
+        "Month/day/hour outside valid bounds",
+        "Nanoseconds > 999_999_999"
+      ],
+      "solutions": [
+        "Clamp or validate input before constructing DateTime",
+        "Use checked_add_signed/checked_sub_signed for arithmetic",
+        "Convert milliseconds carefully: NaiveDateTime::from_timestamp_millis(...)"
+      ]
+    },
+    {
+      "pattern": "ambiguous local time|local time not available",
+      "meaning": "Conversion through Local timezone failed",
+      "causes": [
+        "DST transition causing duplicate/invalid local time",
+        "Local timezone information missing or unsupported"
+      ],
+      "solutions": [
+        "Handle LocalResult variants instead of unwrap()",
+        "Use fixed offsets (FixedOffset) or chrono-tz named zones",
+        "Disambiguate with latest() or earliest() handling"
+      ]
+    },
+    {
+      "pattern": "formatting failed|format error|invalid format string",
+      "meaning": "Formatter token invalid for provided type",
+      "causes": [
+        "Using timezone directives on Naive types",
+        "Mismatched %s/%Q tokens for chrono version",
+        "Custom format string contains invalid escapes"
+      ],
+      "solutions": [
+        "Use DateTime<FixedOffset> when formatting with %z/%:z",
+        "Avoid timezone tokens on NaiveDate/NaiveDateTime",
+        "Verify format string against Chrono docs"
+      ]
+    },
+    {
+      "pattern": "chrono-tz data not found|unknown time zone",
+      "meaning": "Named timezone lookup failed",
+      "causes": [
+        "Missing chrono-tz feature/dependency",
+        "Using abbreviation instead of IANA zone name",
+        "Stripped timezone data in minimal builds"
+      ],
+      "solutions": [
+        "Add chrono-tz dependency and use Tz enum: \"Europe/Berlin\".parse()",
+        "Use full IANA names (America/New_York)",
+        "Ensure compiled binary includes tz data when cross-compiling"
+      ]
+    }
+  ]
+}

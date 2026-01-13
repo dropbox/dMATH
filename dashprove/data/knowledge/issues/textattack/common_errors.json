@@ -1,0 +1,143 @@
+{
+  "tool": "textattack",
+  "version": "0.3.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_wrapper_error",
+      "pattern": "(ModelWrapper|wrapper|model.*not compatible)",
+      "message": "Model must be wrapped for TextAttack",
+      "cause": "TextAttack requires models wrapped in ModelWrapper",
+      "solutions": [
+        {
+          "approach": "Wrap HuggingFace model",
+          "code": "from textattack.models.wrappers import HuggingFaceModelWrapper\nmodel = HuggingFaceModelWrapper(model, tokenizer)",
+          "when": "Using HuggingFace transformers"
+        },
+        {
+          "approach": "Wrap PyTorch model",
+          "code": "from textattack.models.wrappers import PyTorchModelWrapper\nmodel_wrapper = PyTorchModelWrapper(model, tokenizer)",
+          "when": "Using PyTorch model"
+        },
+        {
+          "approach": "Create custom wrapper",
+          "code": "from textattack.models.wrappers import ModelWrapper\nclass CustomWrapper(ModelWrapper):\n    def __call__(self, text_input_list):\n        # Return list of scores/logits\n        return model.predict(text_input_list)",
+          "when": "Custom model interface"
+        }
+      ]
+    },
+    {
+      "id": "attack_not_successful",
+      "pattern": "(attack.*failed|no adversarial|unsuccessful)",
+      "message": "Attack could not find adversarial example",
+      "cause": "Model is robust or attack constraints too tight",
+      "solutions": [
+        {
+          "approach": "Try different attack",
+          "code": "from textattack.attack_recipes import TextFoolerJin2019, PWWSRen2019\n# TextFooler is often effective\nattack = TextFoolerJin2019.build(model_wrapper)\nresult = attack.attack(text, ground_truth_label)",
+          "when": "Current attack not working"
+        },
+        {
+          "approach": "Relax constraints",
+          "code": "from textattack.constraints.semantics import WordEmbeddingDistance\nattack = attack_recipe.build(model_wrapper)\nattack.constraints = [c for c in attack.constraints \n    if not isinstance(c, WordEmbeddingDistance)]",
+          "when": "Semantic constraints too strict"
+        },
+        {
+          "approach": "Increase query budget",
+          "code": "attack.goal_function.query_budget = 500  # Increase from default",
+          "when": "Attack hitting query limit"
+        }
+      ]
+    },
+    {
+      "id": "tokenization_error",
+      "pattern": "(tokenizer|tokenization|vocab|unknown token)",
+      "message": "Tokenization error",
+      "cause": "Tokenizer incompatibility or missing vocabulary",
+      "solutions": [
+        {
+          "approach": "Set correct tokenizer",
+          "code": "from transformers import AutoTokenizer\ntokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')\nmodel_wrapper = HuggingFaceModelWrapper(model, tokenizer)",
+          "when": "Tokenizer mismatch"
+        },
+        {
+          "approach": "Handle special tokens",
+          "code": "tokenizer = AutoTokenizer.from_pretrained(model_name)\ntokenizer.pad_token = tokenizer.eos_token  # For GPT-style models",
+          "when": "Missing pad token"
+        }
+      ]
+    },
+    {
+      "id": "dataset_error",
+      "pattern": "(dataset|load.*data|AttackedText)",
+      "message": "Dataset loading or format error",
+      "cause": "Dataset format incompatible with TextAttack",
+      "solutions": [
+        {
+          "approach": "Load built-in dataset",
+          "code": "from textattack.datasets import HuggingFaceDataset\ndataset = HuggingFaceDataset('glue', 'sst2', 'test')",
+          "when": "Using standard dataset"
+        },
+        {
+          "approach": "Create custom dataset",
+          "code": "from textattack.datasets import Dataset\n# List of (text, label) tuples\ndata = [('This is great', 1), ('This is bad', 0)]\ndataset = Dataset(data)",
+          "when": "Using custom data"
+        }
+      ]
+    },
+    {
+      "id": "transformation_error",
+      "pattern": "(transformation|word.*swap|perturbation)",
+      "message": "Transformation application error",
+      "cause": "Transformation couldn't modify text",
+      "solutions": [
+        {
+          "approach": "Check transformation",
+          "code": "from textattack.transformations import WordSwapEmbedding\ntransformation = WordSwapEmbedding(max_candidates=50)\n# Apply to text\nfrom textattack.shared import AttackedText\ntext = AttackedText('The movie was great')\ntransformed = transformation(text)",
+          "when": "Testing transformations"
+        },
+        {
+          "approach": "Use composite transformation",
+          "code": "from textattack.transformations import CompositeTransformation\ntransformation = CompositeTransformation([\n    WordSwapEmbedding(),\n    WordSwapWordNet()\n])",
+          "when": "Single transformation insufficient"
+        }
+      ]
+    },
+    {
+      "id": "constraint_error",
+      "pattern": "(constraint|semantic|grammatical)",
+      "message": "Constraint check error",
+      "cause": "Constraint configuration issue",
+      "solutions": [
+        {
+          "approach": "Configure USE constraint",
+          "code": "from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder\nuse_constraint = UniversalSentenceEncoder(\n    threshold=0.840845057,\n    metric='cosine'\n)",
+          "when": "Using semantic similarity"
+        },
+        {
+          "approach": "Use grammar checker",
+          "code": "from textattack.constraints.grammaticality import LanguageTool\ngrammar = LanguageTool()",
+          "when": "Enforcing grammar"
+        }
+      ]
+    },
+    {
+      "id": "batch_attack_error",
+      "pattern": "(batch|parallel|AttackArgs)",
+      "message": "Batch attack configuration error",
+      "cause": "Attack arguments misconfigured",
+      "solutions": [
+        {
+          "approach": "Configure attack args",
+          "code": "from textattack import AttackArgs, Attacker\nattack_args = AttackArgs(\n    num_examples=100,\n    parallel=True,\n    num_workers_per_device=2,\n    log_to_csv='results.csv'\n)\nattacker = Attacker(attack, dataset, attack_args)\nattacker.attack_dataset()",
+          "when": "Running batch attacks"
+        },
+        {
+          "approach": "Disable parallelism",
+          "code": "attack_args = AttackArgs(\n    num_examples=100,\n    parallel=False  # Serial execution\n)",
+          "when": "Parallel causing issues"
+        }
+      ]
+    }
+  ]
+}

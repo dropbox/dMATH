@@ -1,0 +1,191 @@
+{
+  "tool": "argocd",
+  "version": "2.10.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sync_failed",
+      "pattern": "sync failed|ComparisonError|SyncError|OutOfSync",
+      "message": "Application sync failed",
+      "cause": "Manifests invalid, resource conflict, or cluster unreachable",
+      "solutions": [
+        {
+          "approach": "Check sync status",
+          "code": "argocd app get <app-name>\nargocd app sync <app-name> --dry-run",
+          "when": "Need to diagnose sync issue"
+        },
+        {
+          "approach": "Force sync",
+          "code": "argocd app sync <app-name> --force",
+          "when": "Resource stuck in bad state"
+        },
+        {
+          "approach": "Prune resources",
+          "code": "argocd app sync <app-name> --prune",
+          "when": "Old resources need deletion"
+        }
+      ]
+    },
+    {
+      "id": "health_degraded",
+      "pattern": "Degraded|Health.*degraded|Unhealthy",
+      "message": "Application health degraded",
+      "cause": "Pod crash, resource missing, or health check failing",
+      "solutions": [
+        {
+          "approach": "Check resource status",
+          "code": "argocd app resources <app-name>\nkubectl get pods -n <namespace> -l app.kubernetes.io/instance=<app-name>",
+          "when": "Need resource details"
+        },
+        {
+          "approach": "View pod logs",
+          "code": "argocd app logs <app-name> --follow",
+          "when": "Pod may be crashing"
+        },
+        {
+          "approach": "Check events",
+          "code": "kubectl get events -n <namespace> --sort-by='.lastTimestamp'",
+          "when": "Need cluster events"
+        }
+      ]
+    },
+    {
+      "id": "repo_connection_failed",
+      "pattern": "repository.*not accessible|authentication.*failed|connection refused",
+      "message": "Repository connection failed",
+      "cause": "Invalid credentials, network issue, or repo URL wrong",
+      "solutions": [
+        {
+          "approach": "Add repo with credentials",
+          "code": "argocd repo add <repo-url> --username <user> --password <token>",
+          "when": "Private repo authentication"
+        },
+        {
+          "approach": "Use SSH key",
+          "code": "argocd repo add <repo-url> --ssh-private-key-path ~/.ssh/id_rsa",
+          "when": "SSH authentication preferred"
+        },
+        {
+          "approach": "Check repo config",
+          "code": "argocd repo list\nargocd repo get <repo-url>",
+          "when": "Verify repo configuration"
+        }
+      ]
+    },
+    {
+      "id": "cluster_not_found",
+      "pattern": "cluster.*not found|server.*not found|unknown cluster",
+      "message": "Target cluster not found",
+      "cause": "Cluster not registered or connection lost",
+      "solutions": [
+        {
+          "approach": "Add cluster",
+          "code": "argocd cluster add <context-name>",
+          "when": "Cluster not registered"
+        },
+        {
+          "approach": "List clusters",
+          "code": "argocd cluster list",
+          "when": "Verify cluster registration"
+        },
+        {
+          "approach": "Check kubeconfig",
+          "code": "kubectl config get-contexts\nkubectl cluster-info",
+          "when": "Cluster may be unreachable"
+        }
+      ]
+    },
+    {
+      "id": "manifest_generation_error",
+      "pattern": "manifest generation|helm template|kustomize build|jsonnet",
+      "message": "Manifest generation failed",
+      "cause": "Invalid Helm chart, Kustomize overlay, or Jsonnet syntax",
+      "solutions": [
+        {
+          "approach": "Test locally",
+          "code": "helm template <chart-path>\nkustomize build <path>",
+          "when": "Test manifest generation locally"
+        },
+        {
+          "approach": "Check parameters",
+          "code": "argocd app get <app-name> -o yaml | grep -A20 spec:",
+          "when": "Review app parameters"
+        },
+        {
+          "approach": "Debug with diff",
+          "code": "argocd app diff <app-name>",
+          "when": "Compare desired vs live state"
+        }
+      ]
+    },
+    {
+      "id": "resource_hooks_failed",
+      "pattern": "PreSync.*failed|PostSync.*failed|hook.*failed",
+      "message": "Resource hook failed",
+      "cause": "Hook job/pod failed or timed out",
+      "solutions": [
+        {
+          "approach": "Check hook logs",
+          "code": "kubectl logs job/<hook-name> -n <namespace>",
+          "when": "Hook job failed"
+        },
+        {
+          "approach": "Delete stuck hooks",
+          "code": "argocd app sync <app-name> --force --prune",
+          "when": "Hook resources stuck"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "metadata:\n  annotations:\n    argocd.argoproj.io/hook-delete-policy: HookSucceeded\n    argocd.argoproj.io/sync-wave: \"0\"",
+          "when": "Hook needs more time"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "permission denied|forbidden|RBAC|Unauthorized",
+      "message": "Permission denied",
+      "cause": "ArgoCD service account lacks permissions",
+      "solutions": [
+        {
+          "approach": "Create namespace-scoped RBAC",
+          "code": "apiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata:\n  name: argocd-admin\n  namespace: <namespace>\nroleRef:\n  apiGroup: rbac.authorization.k8s.io\n  kind: ClusterRole\n  name: admin\nsubjects:\n- kind: ServiceAccount\n  name: argocd-application-controller\n  namespace: argocd",
+          "when": "Need namespace access"
+        },
+        {
+          "approach": "Check project permissions",
+          "code": "argocd proj get <project>\nargocd proj role list <project>",
+          "when": "Project may restrict access"
+        },
+        {
+          "approach": "Update cluster credentials",
+          "code": "argocd cluster add <context> --service-account argocd-manager",
+          "when": "Cluster service account issue"
+        }
+      ]
+    },
+    {
+      "id": "app_not_found",
+      "pattern": "application.*not found|app.*does not exist",
+      "message": "Application not found",
+      "cause": "Application not created or in different project",
+      "solutions": [
+        {
+          "approach": "List all apps",
+          "code": "argocd app list --project '*'",
+          "when": "Find application"
+        },
+        {
+          "approach": "Create application",
+          "code": "argocd app create <app-name> \\\n  --repo <repo-url> \\\n  --path <path> \\\n  --dest-server https://kubernetes.default.svc \\\n  --dest-namespace <namespace>",
+          "when": "Application not created"
+        },
+        {
+          "approach": "Check project filter",
+          "code": "argocd app list --project <project-name>",
+          "when": "App may be in different project"
+        }
+      ]
+    }
+  ]
+}

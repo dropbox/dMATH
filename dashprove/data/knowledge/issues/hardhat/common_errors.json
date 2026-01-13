@@ -1,0 +1,191 @@
+{
+  "tool": "hardhat",
+  "version": "2.19.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "compilation_error",
+      "pattern": "HardhatError|Compilation failed|ParserError",
+      "message": "Contract compilation failed",
+      "cause": "Solidity syntax error or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Install dependencies",
+          "code": "npm install @openzeppelin/contracts",
+          "when": "Missing npm packages"
+        },
+        {
+          "approach": "Set Solidity version",
+          "code": "// In hardhat.config.js: solidity: \"0.8.19\"",
+          "when": "Compiler version mismatch"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "npx hardhat clean",
+          "when": "Stale compilation artifacts"
+        }
+      ]
+    },
+    {
+      "id": "test_failed",
+      "pattern": "AssertionError|Test failed|expected .* to equal",
+      "message": "Test assertion failed",
+      "cause": "Expected value doesn't match actual",
+      "solutions": [
+        {
+          "approach": "Check assertion",
+          "code": "expect(await contract.value()).to.equal(expected);",
+          "when": "Values differ"
+        },
+        {
+          "approach": "Add console logging",
+          "code": "import \"hardhat/console.sol\";\nconsole.log(\"value:\", value);",
+          "when": "Need to debug values"
+        },
+        {
+          "approach": "Check async/await",
+          "code": "const result = await contract.method();",
+          "when": "Forgetting to await promise"
+        }
+      ]
+    },
+    {
+      "id": "nonce_error",
+      "pattern": "nonce too low|Nonce already used",
+      "message": "Transaction nonce error",
+      "cause": "Nonce already used or network out of sync",
+      "solutions": [
+        {
+          "approach": "Reset Hardhat network",
+          "code": "npx hardhat node --reset",
+          "when": "Local network state is stale"
+        },
+        {
+          "approach": "Wait for confirmation",
+          "code": "await tx.wait();  // Wait before next tx",
+          "when": "Sending transactions too fast"
+        },
+        {
+          "approach": "Reset MetaMask",
+          "code": "// Settings > Advanced > Reset Account",
+          "when": "MetaMask nonce out of sync"
+        }
+      ]
+    },
+    {
+      "id": "gas_estimation_failed",
+      "pattern": "cannot estimate gas|Gas estimation failed",
+      "message": "Transaction would fail",
+      "cause": "Transaction will revert, so gas cannot be estimated",
+      "solutions": [
+        {
+          "approach": "Check require conditions",
+          "code": "// Review require() statements in target function",
+          "when": "Precondition not met"
+        },
+        {
+          "approach": "Increase allowance",
+          "code": "await token.approve(spender, amount);",
+          "when": "ERC20 allowance too low"
+        },
+        {
+          "approach": "Force gas limit",
+          "code": "await contract.method({ gasLimit: 500000 });",
+          "when": "Need to see actual revert reason"
+        }
+      ]
+    },
+    {
+      "id": "contract_not_deployed",
+      "pattern": "contract not deployed|call revert exception|CALL_EXCEPTION",
+      "message": "Contract not found at address",
+      "cause": "Calling address with no contract code",
+      "solutions": [
+        {
+          "approach": "Deploy first",
+          "code": "const Contract = await ethers.getContractFactory(\"MyContract\");\nconst contract = await Contract.deploy();",
+          "when": "Contract needs deployment"
+        },
+        {
+          "approach": "Check network",
+          "code": "npx hardhat run script.js --network localhost",
+          "when": "Wrong network selected"
+        },
+        {
+          "approach": "Verify address",
+          "code": "console.log(\"Contract at:\", contract.address);",
+          "when": "Address is incorrect"
+        }
+      ]
+    },
+    {
+      "id": "out_of_gas",
+      "pattern": "out of gas|transaction ran out of gas",
+      "message": "Transaction exceeded gas limit",
+      "cause": "Function uses more gas than limit allows",
+      "solutions": [
+        {
+          "approach": "Increase gas limit",
+          "code": "await contract.method({ gasLimit: 10000000 });",
+          "when": "Need more gas"
+        },
+        {
+          "approach": "Optimize function",
+          "code": "// Reduce storage writes, batch operations",
+          "when": "Function is inefficient"
+        },
+        {
+          "approach": "Use call batching",
+          "code": "// Use Multicall for multiple reads",
+          "when": "Many small calls"
+        }
+      ]
+    },
+    {
+      "id": "signer_error",
+      "pattern": "unknown account|Signer required|no signer",
+      "message": "No signer available for transaction",
+      "cause": "Transaction needs signing but no signer configured",
+      "solutions": [
+        {
+          "approach": "Get signers",
+          "code": "const [deployer] = await ethers.getSigners();\nawait contract.connect(deployer).method();",
+          "when": "Need to specify signer"
+        },
+        {
+          "approach": "Configure accounts",
+          "code": "// In hardhat.config.js: accounts: [PRIVATE_KEY]",
+          "when": "Using external network"
+        },
+        {
+          "approach": "Use hardhat accounts",
+          "code": "npx hardhat accounts",
+          "when": "Check available accounts"
+        }
+      ]
+    },
+    {
+      "id": "network_error",
+      "pattern": "could not detect network|connection refused|ECONNREFUSED",
+      "message": "Cannot connect to network",
+      "cause": "RPC endpoint unavailable or misconfigured",
+      "solutions": [
+        {
+          "approach": "Start local node",
+          "code": "npx hardhat node",
+          "when": "Local node not running"
+        },
+        {
+          "approach": "Check RPC URL",
+          "code": "// In hardhat.config.js: url: process.env.RPC_URL",
+          "when": "URL is wrong"
+        },
+        {
+          "approach": "Use default network",
+          "code": "// Run without --network flag for in-process",
+          "when": "Testing locally"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "tool": "robolectric",
+  "version": "4.11.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "sdk_not_found",
+      "pattern": "SDK .* not found|No supported SDK|Could not find SDK",
+      "message": "Robolectric SDK not available",
+      "cause": "Required Android SDK version not downloaded",
+      "solutions": [
+        {
+          "approach": "Add SDK dependency",
+          "code": "testImplementation 'org.robolectric:android-all:13-robolectric-9030017'",
+          "when": "Specific SDK needed"
+        },
+        {
+          "approach": "Configure SDK in test",
+          "code": "@Config(sdk = [Build.VERSION_CODES.TIRAMISU])\nclass MyTest { ... }",
+          "when": "Pin SDK version"
+        },
+        {
+          "approach": "Set default SDK",
+          "code": "// In robolectric.properties:\nsdk=33",
+          "when": "Project-wide default"
+        }
+      ]
+    },
+    {
+      "id": "activity_not_created",
+      "pattern": "Activity.*not created|ActivityController.*null|No activity",
+      "message": "Activity lifecycle not properly managed",
+      "cause": "Activity not created or already destroyed",
+      "solutions": [
+        {
+          "approach": "Use ActivityScenario",
+          "code": "@Test fun test() {\n    ActivityScenario.launch(MainActivity::class.java).use { scenario ->\n        scenario.onActivity { activity ->\n            // Test code here\n        }\n    }\n}",
+          "when": "Modern approach"
+        },
+        {
+          "approach": "Use controller lifecycle",
+          "code": "val controller = Robolectric.buildActivity(MainActivity::class.java)\n    .create()\n    .start()\n    .resume()\nval activity = controller.get()",
+          "when": "Need lifecycle control"
+        },
+        {
+          "approach": "Clean up after test",
+          "code": "@After fun tearDown() {\n    Robolectric.reset()\n}",
+          "when": "State leaking between tests"
+        }
+      ]
+    },
+    {
+      "id": "shadow_not_found",
+      "pattern": "No shadow.*for|Shadow.*not registered|Could not find shadow",
+      "message": "Shadow class not available",
+      "cause": "Trying to use shadow for unshadowed class",
+      "solutions": [
+        {
+          "approach": "Check shadow exists",
+          "code": "// Use Shadows utility\nval shadowView = Shadows.shadowOf(view)",
+          "when": "Standard shadow"
+        },
+        {
+          "approach": "Create custom shadow",
+          "code": "@Implements(ThirdPartyClass::class)\nclass ShadowThirdPartyClass {\n    @Implementation\n    fun methodToShadow() { ... }\n}",
+          "when": "Need custom behavior"
+        },
+        {
+          "approach": "Register custom shadow",
+          "code": "@Config(shadows = [ShadowThirdPartyClass::class])\nclass MyTest { ... }",
+          "when": "Using custom shadow"
+        }
+      ]
+    },
+    {
+      "id": "looper_idle",
+      "pattern": "Main looper.*not idle|Looper.*paused|RuntimeException.*Looper",
+      "message": "Main looper not in expected state",
+      "cause": "Async tasks on main thread not completed",
+      "solutions": [
+        {
+          "approach": "Idle main looper",
+          "code": "Robolectric.flushForegroundThreadScheduler()\nShadowLooper.idleMainLooper()",
+          "when": "Pending main thread tasks"
+        },
+        {
+          "approach": "Run to end of tasks",
+          "code": "ShadowLooper.runMainLooperToEndOfTasks()",
+          "when": "Run all pending work"
+        },
+        {
+          "approach": "Advance time",
+          "code": "ShadowLooper.idleMainLooper(1000, TimeUnit.MILLISECONDS)",
+          "when": "Time-delayed tasks"
+        },
+        {
+          "approach": "Use PAUSED looper mode",
+          "code": "@LooperMode(LooperMode.Mode.PAUSED)\nclass MyTest { ... }",
+          "when": "Explicit control needed"
+        }
+      ]
+    },
+    {
+      "id": "resource_not_found",
+      "pattern": "Resource.*not found|No resource found|NotFoundException",
+      "message": "Android resource not found",
+      "cause": "Resource ID doesn't exist in test environment",
+      "solutions": [
+        {
+          "approach": "Check package name",
+          "code": "@Config(packageName = \"com.example.myapp\")\nclass MyTest { ... }",
+          "when": "Wrong package"
+        },
+        {
+          "approach": "Add resource to test",
+          "code": "// In src/test/resources/values/strings.xml:\n<string name=\"test_string\">Test Value</string>",
+          "when": "Test-specific resource"
+        },
+        {
+          "approach": "Use application context",
+          "code": "val context = ApplicationProvider.getApplicationContext<Context>()\ncontext.getString(R.string.my_string)",
+          "when": "Getting resources"
+        }
+      ]
+    },
+    {
+      "id": "native_method_not_found",
+      "pattern": "UnsatisfiedLinkError|Native method not found|JNI.*error",
+      "message": "Native method not implemented",
+      "cause": "Native code can't run in JVM environment",
+      "solutions": [
+        {
+          "approach": "Shadow native class",
+          "code": "@Implements(NativeClass::class)\nclass ShadowNativeClass {\n    @Implementation\n    fun nativeMethod(): Int = 42  // Mock implementation\n}",
+          "when": "Can mock behavior"
+        },
+        {
+          "approach": "Use NativeShadow",
+          "code": "@Config(shadows = [MyShadow::class])\n// With @Implements pointing to native class",
+          "when": "Need shadow"
+        },
+        {
+          "approach": "Skip test on JVM",
+          "code": "@Test\nfun testNativeFeature() {\n    Assume.assumeTrue(\"Not on JVM\", !isJvm())\n    // Test code\n}",
+          "when": "Can't mock"
+        }
+      ]
+    },
+    {
+      "id": "manifest_not_found",
+      "pattern": "No AndroidManifest.xml|Manifest.*not found|package name not specified",
+      "message": "Android manifest not found",
+      "cause": "Robolectric can't locate manifest file",
+      "solutions": [
+        {
+          "approach": "Configure manifest location",
+          "code": "@Config(manifest = Config.NONE)\nclass MyTest { ... }",
+          "when": "No manifest needed"
+        },
+        {
+          "approach": "Set manifest path",
+          "code": "// In robolectric.properties:\nmanifest=src/main/AndroidManifest.xml",
+          "when": "Custom location"
+        },
+        {
+          "approach": "Use application class",
+          "code": "@Config(application = TestApplication::class)\nclass MyTest { ... }",
+          "when": "Custom application"
+        }
+      ]
+    },
+    {
+      "id": "instrumentation_null",
+      "pattern": "Instrumentation.*null|No instrumentation|InstrumentationRegistry.*null",
+      "message": "Instrumentation not available",
+      "cause": "Mixing Robolectric with instrumentation APIs",
+      "solutions": [
+        {
+          "approach": "Use Robolectric APIs",
+          "code": "// Instead of InstrumentationRegistry:\nval context = ApplicationProvider.getApplicationContext<Context>()",
+          "when": "Getting context"
+        },
+        {
+          "approach": "Use RuntimeEnvironment",
+          "code": "val app = RuntimeEnvironment.getApplication()",
+          "when": "Getting application"
+        },
+        {
+          "approach": "Check test type",
+          "code": "// Ensure using testImplementation, not androidTestImplementation\n// Robolectric runs in src/test, not src/androidTest",
+          "when": "Wrong test location"
+        }
+      ]
+    },
+    {
+      "id": "content_provider_not_registered",
+      "pattern": "ContentProvider.*not registered|Unknown authority|Provider not found",
+      "message": "ContentProvider not available",
+      "cause": "Provider not registered in Robolectric",
+      "solutions": [
+        {
+          "approach": "Register provider",
+          "code": "ProviderInfo info = new ProviderInfo();\ninfo.authority = \"com.example.provider\";\nRobolectric.buildContentProvider(MyProvider.class)\n    .create(info);",
+          "when": "Custom provider"
+        },
+        {
+          "approach": "Use ContentProviderController",
+          "code": "ContentProviderController.of(MyProvider())\n    .create()\n    .get()",
+          "when": "Modern approach"
+        },
+        {
+          "approach": "Mock provider",
+          "code": "// Use MockContentResolver for simpler testing\nval resolver = MockContentResolver()\nresolver.addProvider(authority, mockProvider)",
+          "when": "Don't need real provider"
+        }
+      ]
+    },
+    {
+      "id": "view_not_attached",
+      "pattern": "View.*not attached|No window token|IllegalStateException.*attached",
+      "message": "View not attached to window",
+      "cause": "Trying to use view before it's attached",
+      "solutions": [
+        {
+          "approach": "Attach view manually",
+          "code": "val view = LayoutInflater.from(context).inflate(R.layout.my_view, null)\nval activity = Robolectric.buildActivity(Activity::class.java).setup().get()\nactivity.setContentView(view)",
+          "when": "Need window token"
+        },
+        {
+          "approach": "Use activity context",
+          "code": "scenario.onActivity { activity ->\n    val view = activity.findViewById<View>(R.id.my_view)\n    // View is attached\n}",
+          "when": "Testing views"
+        }
+      ]
+    }
+  ]
+}

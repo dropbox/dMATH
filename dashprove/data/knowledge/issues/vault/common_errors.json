@@ -1,0 +1,99 @@
+{
+  "tool": "vault",
+  "category": "secrets_management",
+  "description": "HashiCorp Vault - secrets management and data protection",
+  "common_errors": [
+    {
+      "id": "vault_sealed",
+      "pattern": "Vault is sealed",
+      "regex": "(?i)vault is sealed|sealed.*true|standby.*true",
+      "cause": "Vault server is in sealed state and cannot process requests",
+      "solution": "Unseal the vault using 'vault operator unseal' with the required number of unseal keys",
+      "severity": "high",
+      "category": "operational"
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "permission denied",
+      "regex": "(?i)permission denied|403.*forbidden|policy.*denied",
+      "cause": "Token lacks the required policy permissions for the requested operation",
+      "solution": "Check token policies with 'vault token lookup', ensure the path is allowed in the policy",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "token_expired",
+      "pattern": "token expired",
+      "regex": "(?i)token.*expired|token.*invalid|lease.*expired",
+      "cause": "Authentication token has exceeded its TTL",
+      "solution": "Renew the token with 'vault token renew' or obtain a new token via login",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "secret_not_found",
+      "pattern": "No value found at",
+      "regex": "(?i)no value found at|secret.*not found|path.*does not exist",
+      "cause": "The specified secret path does not exist or has no data",
+      "solution": "Verify the secret path, check if KV version (v1 vs v2) requires '/data/' in path",
+      "severity": "low",
+      "category": "data"
+    },
+    {
+      "id": "kv_version_mismatch",
+      "pattern": "check mount for KV version",
+      "regex": "(?i)check.*kv.*version|kv.*v1.*v2|secret.*metadata",
+      "cause": "Using wrong path format for KV secrets engine version",
+      "solution": "For KV v2, use 'secret/data/mypath' instead of 'secret/mypath'; check version with 'vault secrets list -detailed'",
+      "severity": "medium",
+      "category": "configuration"
+    },
+    {
+      "id": "tls_error",
+      "pattern": "x509: certificate",
+      "regex": "(?i)x509.*certificate|tls.*handshake|certificate.*verify",
+      "cause": "TLS certificate validation failure",
+      "solution": "Set VAULT_CACERT for custom CA, or use VAULT_SKIP_VERIFY=true for testing (not production)",
+      "severity": "high",
+      "category": "network"
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "connection refused",
+      "regex": "(?i)connection refused|dial.*tcp|cannot connect",
+      "cause": "Cannot establish connection to Vault server",
+      "solution": "Check VAULT_ADDR is correct, ensure Vault server is running, verify firewall rules",
+      "severity": "high",
+      "category": "network"
+    },
+    {
+      "id": "storage_backend_error",
+      "pattern": "storage backend",
+      "regex": "(?i)storage.*backend|backend.*error|raft.*error",
+      "cause": "Issue with Vault's storage backend (Consul, Raft, etc.)",
+      "solution": "Check storage backend connectivity, review Vault logs, ensure backend is healthy",
+      "severity": "critical",
+      "category": "operational"
+    },
+    {
+      "id": "policy_parse_error",
+      "pattern": "policy parse error",
+      "regex": "(?i)policy.*parse|invalid.*policy|hcl.*error",
+      "cause": "Syntax error in HCL policy file",
+      "solution": "Validate policy syntax with 'vault policy fmt', check HCL formatting",
+      "severity": "medium",
+      "category": "configuration"
+    },
+    {
+      "id": "auth_method_error",
+      "pattern": "authentication failed",
+      "regex": "(?i)authentication failed|login.*failed|ldap.*error|oidc.*error",
+      "cause": "Authentication method configuration or credential issue",
+      "solution": "Verify auth method is enabled and configured correctly, check external identity provider",
+      "severity": "high",
+      "category": "authentication"
+    }
+  ],
+  "related_tools": ["consul", "terraform", "nomad", "boundary"],
+  "documentation_url": "https://developer.hashicorp.com/vault/docs"
+}

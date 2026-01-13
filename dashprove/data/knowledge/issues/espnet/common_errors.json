@@ -1,0 +1,218 @@
+{
+  "tool": "espnet",
+  "version": "202402",
+  "last_updated": "2025-12-22",
+  "description": "End-to-end speech processing toolkit for ASR, TTS, speech translation, and more",
+  "errors": [
+    {
+      "id": "kaldi_not_found",
+      "pattern": "KALDI_ROOT.*not set|kaldi.*not found",
+      "message": "Kaldi installation not found",
+      "cause": "ESPnet requires Kaldi for data preparation",
+      "solutions": [
+        {
+          "approach": "Install Kaldi",
+          "code": "cd tools && make kaldi",
+          "when": "First ESPnet setup"
+        },
+        {
+          "approach": "Use ESPnet2 (Kaldi-free)",
+          "code": "# ESPnet2 recipes don't require Kaldi\n# Use egs2/ instead of egs/",
+          "when": "Want Kaldi-free pipeline"
+        },
+        {
+          "approach": "Set KALDI_ROOT manually",
+          "code": "export KALDI_ROOT=/path/to/kaldi",
+          "when": "Kaldi installed elsewhere"
+        }
+      ]
+    },
+    {
+      "id": "cuda_memory_error",
+      "pattern": "CUDA out of memory|RuntimeError.*allocate",
+      "message": "GPU out of memory",
+      "cause": "Batch size too large or model too big",
+      "solutions": [
+        {
+          "approach": "Reduce batch bins",
+          "code": "# In config: batch_bins: 1000000  # Reduce from 2000000",
+          "when": "OOM during training"
+        },
+        {
+          "approach": "Enable gradient accumulation",
+          "code": "accum_grad: 4  # Effective batch = batch_size * 4",
+          "when": "Need larger effective batch"
+        },
+        {
+          "approach": "Use mixed precision",
+          "code": "use_amp: true",
+          "when": "GPU supports FP16"
+        }
+      ]
+    },
+    {
+      "id": "data_prep_error",
+      "pattern": "data.*preparation.*failed|run.sh.*stage.*error",
+      "message": "Data preparation stage failed",
+      "cause": "Dataset path or format issue",
+      "solutions": [
+        {
+          "approach": "Check data directory",
+          "code": "# Ensure data has: wav.scp, text, utt2spk, spk2utt\n# wav.scp: uttid /path/to/audio.wav",
+          "when": "Missing files"
+        },
+        {
+          "approach": "Run specific stage",
+          "code": "./run.sh --stage 1 --stop-stage 1  # Run only data prep",
+          "when": "Debug specific stage"
+        },
+        {
+          "approach": "Check dump directory",
+          "code": "ls dump/raw/train/  # Verify features extracted",
+          "when": "Features not created"
+        }
+      ]
+    },
+    {
+      "id": "bpe_training_error",
+      "pattern": "sentencepiece.*failed|bpe.*not found",
+      "message": "BPE tokenizer training failed",
+      "cause": "Text corpus or sentencepiece issue",
+      "solutions": [
+        {
+          "approach": "Train BPE manually",
+          "code": "# In config:\ntoken_type: bpe\nbpemodel: data/token_list/bpe_unigram5000/bpe.model",
+          "when": "Custom BPE"
+        },
+        {
+          "approach": "Use character tokens",
+          "code": "token_type: char  # No BPE needed",
+          "when": "Simpler tokenization"
+        },
+        {
+          "approach": "Check text file",
+          "code": "# Ensure text file is UTF-8, one utterance per line\niconv -f UTF-8 -t UTF-8 text > text_clean",
+          "when": "Encoding issues"
+        }
+      ]
+    },
+    {
+      "id": "encoder_error",
+      "pattern": "Conformer.*error|Transformer.*dimension",
+      "message": "Encoder architecture error",
+      "cause": "Model configuration mismatch",
+      "solutions": [
+        {
+          "approach": "Check attention dimensions",
+          "code": "# encoder_conf:\n#   attention_heads: 4\n#   linear_units: 2048\n#   output_size: 256  # Must be divisible by attention_heads",
+          "when": "Dimension mismatch"
+        },
+        {
+          "approach": "Use standard config",
+          "code": "asr_config: conf/train_asr_conformer.yaml  # Use pretested config",
+          "when": "Custom config issues"
+        }
+      ]
+    },
+    {
+      "id": "inference_error",
+      "pattern": "decode.*failed|beam.*search.*error",
+      "message": "Inference/decoding error",
+      "cause": "Model/decoder configuration issue",
+      "solutions": [
+        {
+          "approach": "Check model path",
+          "code": "--asr_model_file exp/asr_train/valid.acc.ave.pth",
+          "when": "Model not found"
+        },
+        {
+          "approach": "Reduce beam size",
+          "code": "--beam_size 5  # Reduce from 20",
+          "when": "Memory issues during decode"
+        },
+        {
+          "approach": "Use streaming inference",
+          "code": "from espnet2.bin.asr_inference_streaming import Speech2TextStreaming",
+          "when": "Real-time ASR needed"
+        }
+      ]
+    },
+    {
+      "id": "lm_error",
+      "pattern": "language_model.*error|lm_train.*failed",
+      "message": "Language model training/loading error",
+      "cause": "LM configuration or compatibility issue",
+      "solutions": [
+        {
+          "approach": "Skip LM training",
+          "code": "./run.sh --skip_lm_train true",
+          "when": "LM not needed"
+        },
+        {
+          "approach": "Check token compatibility",
+          "code": "# LM token_list must match ASR token_list",
+          "when": "Token mismatch"
+        },
+        {
+          "approach": "Use external LM",
+          "code": "--lm_file path/to/external_lm.pth --lm_config path/to/lm_config.yaml",
+          "when": "Pretrained LM"
+        }
+      ]
+    },
+    {
+      "id": "tts_error",
+      "pattern": "TTS.*error|vocoder.*failed",
+      "message": "Text-to-speech error",
+      "cause": "TTS model or vocoder issue",
+      "solutions": [
+        {
+          "approach": "Use pretrained TTS",
+          "code": "from espnet2.bin.tts_inference import Text2Speech\ntts = Text2Speech.from_pretrained('kan-bayashi/ljspeech_vits')",
+          "when": "Quick TTS inference"
+        },
+        {
+          "approach": "Check vocoder",
+          "code": "# Ensure vocoder sample rate matches TTS\n--vocoder_file parallel_wavegan.v1",
+          "when": "Vocoder mismatch"
+        }
+      ]
+    },
+    {
+      "id": "huggingface_error",
+      "pattern": "from_pretrained.*failed|HuggingFace.*error",
+      "message": "HuggingFace model loading failed",
+      "cause": "Model name or network issue",
+      "solutions": [
+        {
+          "approach": "Check model name",
+          "code": "# List models: huggingface.co/espnet\n# Example: 'espnet/kan-bayashi_ljspeech_vits'",
+          "when": "Wrong model name"
+        },
+        {
+          "approach": "Download manually",
+          "code": "from huggingface_hub import snapshot_download\nsnapshot_download('espnet/model_name', local_dir='./model')",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "specaug_error",
+      "pattern": "SpecAugment.*error|specaug.*dimension",
+      "message": "SpecAugment configuration error",
+      "cause": "Augmentation parameters incompatible with input",
+      "solutions": [
+        {
+          "approach": "Adjust specaug parameters",
+          "code": "specaug_conf:\n  freq_mask_width_range: [0, 27]\n  time_mask_width_range: [0, 100]",
+          "when": "Default values too large"
+        },
+        {
+          "approach": "Disable specaug",
+          "code": "use_specaug: false",
+          "when": "Debug training issues"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "execa",
+  "version": "8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "esm_import_error",
+      "pattern": "ERR_REQUIRE_ESM|Must use import|Cannot use require",
+      "message": "Module import error",
+      "cause": "execa is ESM-only since v6",
+      "solutions": [
+        {
+          "approach": "Use ESM import",
+          "code": "import { execa, execaSync } from 'execa';",
+          "when": "ES modules"
+        },
+        {
+          "approach": "Dynamic import in CJS",
+          "code": "const { execa } = await import('execa');",
+          "when": "CommonJS"
+        },
+        {
+          "approach": "Use v5 for CJS",
+          "code": "npm install execa@5\n// Then: const execa = require('execa');",
+          "when": "Need CommonJS"
+        }
+      ]
+    },
+    {
+      "id": "command_failed",
+      "pattern": "Command failed|exited with code|non-zero exit|ExecaError",
+      "message": "Command returned non-zero exit code",
+      "cause": "Executed command failed",
+      "solutions": [
+        {
+          "approach": "Handle error",
+          "code": "try {\n  await execa('failing-command');\n} catch (error) {\n  console.log(error.exitCode);\n  console.log(error.stderr);\n  console.log(error.command);\n}",
+          "when": "Catch failure"
+        },
+        {
+          "approach": "Ignore exit code",
+          "code": "const { exitCode, stdout } = await execa('command', { reject: false });\nif (exitCode !== 0) {\n  console.log('Failed but continuing');\n}",
+          "when": "Don't throw"
+        },
+        {
+          "approach": "Check specific codes",
+          "code": "try {\n  await execa('grep', ['pattern', 'file.txt']);\n} catch (error) {\n  if (error.exitCode === 1) {\n    console.log('Pattern not found (normal)');\n  } else {\n    throw error;\n  }\n}",
+          "when": "Expected failures"
+        }
+      ]
+    },
+    {
+      "id": "shell_expansion",
+      "pattern": "glob not expanding|wildcard literal|\\* not working|env var not substituted",
+      "message": "Shell features not working",
+      "cause": "execa doesn't use shell by default",
+      "solutions": [
+        {
+          "approach": "Enable shell mode",
+          "code": "await execa('echo $HOME', { shell: true });\nawait execa('ls *.js', { shell: true });",
+          "when": "Need shell features"
+        },
+        {
+          "approach": "Use execaCommand",
+          "code": "import { execaCommand } from 'execa';\nawait execaCommand('ls -la | grep test', { shell: true });",
+          "when": "Command string"
+        },
+        {
+          "approach": "Pass env explicitly",
+          "code": "await execa('echo', [process.env.HOME]);\n// Or use template literal\nawait execa`echo ${process.env.HOME}`;",
+          "when": "Environment vars"
+        }
+      ]
+    },
+    {
+      "id": "stdin_issues",
+      "pattern": "stdin.*undefined|input not received|EPIPE|stream error",
+      "message": "Stdin not working correctly",
+      "cause": "Input not properly provided to command",
+      "solutions": [
+        {
+          "approach": "Use input option",
+          "code": "const { stdout } = await execa('cat', { input: 'Hello World' });",
+          "when": "String input"
+        },
+        {
+          "approach": "Pipe from file",
+          "code": "import { createReadStream } from 'fs';\nconst { stdout } = await execa('wc', ['-l'], {\n  stdin: createReadStream('file.txt')\n});",
+          "when": "File input"
+        },
+        {
+          "approach": "Chain commands",
+          "code": "const { stdout } = await execa('grep', ['pattern'], {\n  input: (await execa('cat', ['file.txt'])).stdout\n});",
+          "when": "Pipe between"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timed out|ETIMEDOUT|timeout.*exceeded|killed",
+      "message": "Command timed out",
+      "cause": "Command exceeded timeout limit",
+      "solutions": [
+        {
+          "approach": "Set timeout",
+          "code": "try {\n  await execa('long-command', { timeout: 30000 });  // 30 seconds\n} catch (error) {\n  if (error.timedOut) {\n    console.log('Command timed out');\n  }\n}",
+          "when": "Add timeout"
+        },
+        {
+          "approach": "Use AbortController",
+          "code": "const controller = new AbortController();\nsetTimeout(() => controller.abort(), 5000);\n\ntry {\n  await execa('command', { signal: controller.signal });\n} catch (error) {\n  if (error.isCanceled) {\n    console.log('Aborted');\n  }\n}",
+          "when": "Manual cancellation"
+        },
+        {
+          "approach": "Force kill",
+          "code": "await execa('command', {\n  timeout: 10000,\n  forceKillAfterDelay: 5000  // SIGKILL 5s after SIGTERM\n});",
+          "when": "Force termination"
+        }
+      ]
+    },
+    {
+      "id": "encoding_issues",
+      "pattern": "buffer|encoding|binary|garbled output|unicode",
+      "message": "Output encoding problems",
+      "cause": "Binary output or wrong encoding",
+      "solutions": [
+        {
+          "approach": "Get buffer output",
+          "code": "const { stdout } = await execa('command', { encoding: null });\nconsole.log(stdout);  // Buffer",
+          "when": "Binary data"
+        },
+        {
+          "approach": "Specify encoding",
+          "code": "const { stdout } = await execa('command', { encoding: 'utf8' });",
+          "when": "Text encoding"
+        },
+        {
+          "approach": "Disable output",
+          "code": "await execa('command', { stdout: 'ignore', stderr: 'ignore' });",
+          "when": "Don't need output"
+        }
+      ]
+    },
+    {
+      "id": "path_not_found",
+      "pattern": "ENOENT|spawn.*ENOENT|command not found|not recognized",
+      "message": "Executable not found",
+      "cause": "Command not in PATH or doesn't exist",
+      "solutions": [
+        {
+          "approach": "Use full path",
+          "code": "await execa('/usr/local/bin/node', ['script.js']);",
+          "when": "Known location"
+        },
+        {
+          "approach": "Extend PATH",
+          "code": "await execa('command', {\n  env: {\n    ...process.env,\n    PATH: `/custom/bin:${process.env.PATH}`\n  }\n});",
+          "when": "Custom PATH"
+        },
+        {
+          "approach": "Use preferLocal",
+          "code": "await execa('tsc', { preferLocal: true });\n// Looks in node_modules/.bin first",
+          "when": "Local npm binaries"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "tool": "gopls",
+  "version": "0.16+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_found",
+      "pattern": "go.mod file not found|module.*not found|outside module",
+      "message": "Go module not found",
+      "cause": "No go.mod or working outside module",
+      "solutions": [
+        {
+          "approach": "Initialize module",
+          "code": "go mod init modulename",
+          "when": "New project"
+        },
+        {
+          "approach": "Open correct directory",
+          "code": "// Open folder containing go.mod",
+          "when": "Wrong directory"
+        },
+        {
+          "approach": "Set GOWORK",
+          "code": "go work init ./module1 ./module2",
+          "when": "Multi-module workspace"
+        }
+      ]
+    },
+    {
+      "id": "workspace_error",
+      "pattern": "workspace.*error|go.work.*invalid|multiple modules",
+      "message": "Go workspace error",
+      "cause": "Invalid go.work or multiple modules without workspace",
+      "solutions": [
+        {
+          "approach": "Create go.work",
+          "code": "go work init\ngo work use ./module1 ./module2",
+          "when": "Multi-module project"
+        },
+        {
+          "approach": "Fix go.work syntax",
+          "code": "go 1.21\n\nuse (\n\t./module1\n\t./module2\n)",
+          "when": "Invalid syntax"
+        },
+        {
+          "approach": "Disable workspace",
+          "code": "GOWORK=off gopls",
+          "when": "Single module mode"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "could not import|package.*not found|unresolved import",
+      "message": "Import cannot be resolved",
+      "cause": "Package not installed or path wrong",
+      "solutions": [
+        {
+          "approach": "Download dependencies",
+          "code": "go mod download",
+          "when": "Dependencies not fetched"
+        },
+        {
+          "approach": "Tidy modules",
+          "code": "go mod tidy",
+          "when": "go.sum out of sync"
+        },
+        {
+          "approach": "Check import path",
+          "code": "// Ensure import path matches module path",
+          "when": "Wrong import path"
+        }
+      ]
+    },
+    {
+      "id": "build_tags",
+      "pattern": "build constraint|build tag|\\+build|//go:build",
+      "message": "Build constraint filtering file",
+      "cause": "File has build tags that exclude current platform",
+      "solutions": [
+        {
+          "approach": "Configure build flags",
+          "code": "\"gopls\": { \"build.buildFlags\": [\"-tags=integration\"] }",
+          "when": "Need specific tag"
+        },
+        {
+          "approach": "Set GOOS/GOARCH",
+          "code": "\"go.toolsEnvVars\": { \"GOOS\": \"linux\" }",
+          "when": "Cross-platform"
+        },
+        {
+          "approach": "Add to editor settings",
+          "code": "gopls.env = { \"GOFLAGS\": \"-tags=test\" }",
+          "when": "Project-wide tags"
+        }
+      ]
+    },
+    {
+      "id": "generics_error",
+      "pattern": "type parameter|generic.*not supported|type constraint",
+      "message": "Generics handling error",
+      "cause": "Generics syntax or gopls version issue",
+      "solutions": [
+        {
+          "approach": "Update gopls",
+          "code": "go install golang.org/x/tools/gopls@latest",
+          "when": "Old gopls version"
+        },
+        {
+          "approach": "Check Go version",
+          "code": "go version  # Need 1.18+",
+          "when": "Go version too old"
+        },
+        {
+          "approach": "Fix syntax",
+          "code": "func Foo[T any](x T) T { ... }",
+          "when": "Invalid generic syntax"
+        }
+      ]
+    },
+    {
+      "id": "slow_analysis",
+      "pattern": "slow|analyzing|memory.*high|loading",
+      "message": "Analysis slow or high memory",
+      "cause": "Large codebase or many dependencies",
+      "solutions": [
+        {
+          "approach": "Disable deep analysis",
+          "code": "\"gopls\": { \"analyses\": { \"unusedparams\": false } }",
+          "when": "Reduce analysis load"
+        },
+        {
+          "approach": "Set memory limit",
+          "code": "\"gopls\": { \"memoryMode\": \"DegradeClosed\" }",
+          "when": "Memory constrained"
+        },
+        {
+          "approach": "Wait for initial analysis",
+          "code": "// First load takes time for large projects",
+          "when": "Initial load"
+        }
+      ]
+    },
+    {
+      "id": "diagnostics_wrong",
+      "pattern": "false.*error|diagnostic.*incorrect|not an error",
+      "message": "Incorrect diagnostics",
+      "cause": "Build cache or gopls state stale",
+      "solutions": [
+        {
+          "approach": "Restart gopls",
+          "code": "// Restart Language Server from editor",
+          "when": "State corrupted"
+        },
+        {
+          "approach": "Clear build cache",
+          "code": "go clean -cache",
+          "when": "Build cache stale"
+        },
+        {
+          "approach": "Tidy modules",
+          "code": "go mod tidy",
+          "when": "Module state inconsistent"
+        }
+      ]
+    },
+    {
+      "id": "completion_missing",
+      "pattern": "completion.*not showing|autocomplete.*empty|no suggestions",
+      "message": "Code completion not working",
+      "cause": "gopls not finding symbols",
+      "solutions": [
+        {
+          "approach": "Check gopls is running",
+          "code": "// Verify LSP client connected",
+          "when": "gopls not started"
+        },
+        {
+          "approach": "Enable full completion",
+          "code": "\"gopls\": { \"completionDocumentation\": true, \"completeUnimported\": true }",
+          "when": "Limited completion"
+        },
+        {
+          "approach": "Wait for analysis",
+          "code": "// Completion requires analysis to complete",
+          "when": "Still loading"
+        }
+      ]
+    },
+    {
+      "id": "formatting_differs",
+      "pattern": "format.*different|gofmt.*gopls|formatting.*inconsistent",
+      "message": "Formatting differs from gofmt",
+      "cause": "gopls and gofmt version mismatch",
+      "solutions": [
+        {
+          "approach": "Use goimports",
+          "code": "\"gopls\": { \"local\": \"yourmodule\" }",
+          "when": "Import grouping"
+        },
+        {
+          "approach": "Update tools",
+          "code": "go install golang.org/x/tools/gopls@latest\ngo install golang.org/x/tools/cmd/goimports@latest",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "cgo_error",
+      "pattern": "cgo|C\\.|CGO_ENABLED|gcc",
+      "message": "CGO-related error",
+      "cause": "CGO disabled or missing C compiler",
+      "solutions": [
+        {
+          "approach": "Enable CGO",
+          "code": "\"go.toolsEnvVars\": { \"CGO_ENABLED\": \"1\" }",
+          "when": "CGO disabled"
+        },
+        {
+          "approach": "Install C compiler",
+          "code": "# macOS: xcode-select --install\n# Linux: sudo apt install gcc",
+          "when": "No C compiler"
+        },
+        {
+          "approach": "Set CC",
+          "code": "export CC=clang",
+          "when": "Wrong C compiler"
+        }
+      ]
+    }
+  ]
+}

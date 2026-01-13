@@ -1,0 +1,210 @@
+{
+  "tool": "chaos_mesh",
+  "version": "2.6.3",
+  "last_updated": "2025-12-22",
+  "description": "Cloud-native chaos engineering platform for Kubernetes",
+  "errors": [
+    {
+      "id": "installation_error",
+      "pattern": "helm.*install.*failed|chaos-mesh.*not found",
+      "message": "Chaos Mesh installation failed",
+      "cause": "Helm chart installation issue or missing CRDs",
+      "solutions": [
+        {
+          "approach": "Install with Helm",
+          "code": "helm repo add chaos-mesh https://charts.chaos-mesh.org\nhelm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-mesh --create-namespace",
+          "when": "First installation"
+        },
+        {
+          "approach": "Install CRDs separately",
+          "code": "kubectl apply -f https://mirrors.chaos-mesh.org/v2.6.3/crd.yaml",
+          "when": "CRD installation failed"
+        },
+        {
+          "approach": "Check namespace",
+          "code": "kubectl get pods -n chaos-mesh",
+          "when": "Verify installation"
+        }
+      ]
+    },
+    {
+      "id": "rbac_permission_error",
+      "pattern": "forbidden|RBAC.*denied|ServiceAccount.*error",
+      "message": "RBAC permission denied",
+      "cause": "Chaos Mesh lacks permissions to modify target resources",
+      "solutions": [
+        {
+          "approach": "Install with cluster-admin",
+          "code": "helm install chaos-mesh chaos-mesh/chaos-mesh \\\n  --set controllerManager.enableFilterNamespace=false",
+          "when": "Need full cluster access"
+        },
+        {
+          "approach": "Scope to namespace",
+          "code": "helm install chaos-mesh chaos-mesh/chaos-mesh \\\n  --set controllerManager.targetNamespace=my-app",
+          "when": "Limit to specific namespace"
+        },
+        {
+          "approach": "Check service account",
+          "code": "kubectl describe clusterrolebinding chaos-mesh",
+          "when": "Debug RBAC issues"
+        }
+      ]
+    },
+    {
+      "id": "pod_not_found",
+      "pattern": "no pods matched|selector.*empty|target.*not found",
+      "message": "No pods matched selector",
+      "cause": "Label selector doesn't match any pods",
+      "solutions": [
+        {
+          "approach": "Check pod labels",
+          "code": "kubectl get pods -l app=my-app --show-labels",
+          "when": "Verify target pods exist"
+        },
+        {
+          "approach": "Fix selector in chaos spec",
+          "code": "selector:\n  namespaces:\n    - default\n  labelSelectors:\n    app: my-app",
+          "when": "Selector misconfigured"
+        },
+        {
+          "approach": "Use annotation selector",
+          "code": "selector:\n  annotationSelectors:\n    chaos-mesh.org/target: \"true\"",
+          "when": "Label selection not suitable"
+        }
+      ]
+    },
+    {
+      "id": "network_chaos_error",
+      "pattern": "NetworkChaos.*failed|tc.*error|iptables.*error",
+      "message": "Network chaos injection failed",
+      "cause": "Missing capabilities or CNI incompatibility",
+      "solutions": [
+        {
+          "approach": "Enable privileged mode",
+          "code": "helm upgrade chaos-mesh chaos-mesh/chaos-mesh \\\n  --set chaosDaemon.privileged=true",
+          "when": "Default permissions insufficient"
+        },
+        {
+          "approach": "Check CNI compatibility",
+          "code": "# Chaos Mesh works best with Calico, Flannel\n# May have issues with some service meshes",
+          "when": "CNI-related issues"
+        },
+        {
+          "approach": "Use DNS chaos instead",
+          "code": "kind: DNSChaos\nspec:\n  action: error\n  patterns:\n    - google.com",
+          "when": "tc/iptables not working"
+        }
+      ]
+    },
+    {
+      "id": "io_chaos_error",
+      "pattern": "IOChaos.*failed|fuse.*error|mount.*failed",
+      "message": "IO chaos injection failed",
+      "cause": "FUSE mounting issues or missing kernel modules",
+      "solutions": [
+        {
+          "approach": "Enable IO chaos",
+          "code": "helm upgrade chaos-mesh chaos-mesh/chaos-mesh \\\n  --set chaosDaemon.runtime=containerd \\\n  --set chaosDaemon.socketPath=/run/containerd/containerd.sock",
+          "when": "Configure container runtime"
+        },
+        {
+          "approach": "Check volume mounts",
+          "code": "# IO Chaos requires specific volume configuration\n# Target containers need /dev/fuse access",
+          "when": "FUSE not available"
+        },
+        {
+          "approach": "Use stress chaos instead",
+          "code": "kind: StressChaos\nspec:\n  stressors:\n    io:\n      workers: 4",
+          "when": "IOChaos not supported"
+        }
+      ]
+    },
+    {
+      "id": "stress_chaos_error",
+      "pattern": "StressChaos.*failed|stress-ng.*error",
+      "message": "Stress chaos injection failed",
+      "cause": "Resource limits or missing stress-ng",
+      "solutions": [
+        {
+          "approach": "Configure resource limits",
+          "code": "spec:\n  stressors:\n    cpu:\n      workers: 2\n      load: 50  # Percentage",
+          "when": "CPU stress failing"
+        },
+        {
+          "approach": "Check container resources",
+          "code": "# Target container needs sufficient resource limits\n# stress-ng may be killed by OOM killer",
+          "when": "Memory stress failing"
+        }
+      ]
+    },
+    {
+      "id": "dashboard_access_error",
+      "pattern": "dashboard.*403|unauthorized|token.*invalid",
+      "message": "Cannot access Chaos Mesh dashboard",
+      "cause": "Authentication not configured properly",
+      "solutions": [
+        {
+          "approach": "Port forward dashboard",
+          "code": "kubectl port-forward -n chaos-mesh svc/chaos-dashboard 2333:2333",
+          "when": "Access dashboard locally"
+        },
+        {
+          "approach": "Create RBAC token",
+          "code": "kubectl create token account-cluster-manager-chaos -n chaos-mesh",
+          "when": "Need dashboard token"
+        },
+        {
+          "approach": "Disable auth for testing",
+          "code": "helm upgrade chaos-mesh chaos-mesh/chaos-mesh \\\n  --set dashboard.securityMode=false",
+          "when": "Development environment only"
+        }
+      ]
+    },
+    {
+      "id": "experiment_stuck",
+      "pattern": "experiment.*pending|chaos.*not injected|status.*unknown",
+      "message": "Chaos experiment stuck or not injecting",
+      "cause": "Controller or daemon issues",
+      "solutions": [
+        {
+          "approach": "Check controller logs",
+          "code": "kubectl logs -n chaos-mesh -l app.kubernetes.io/component=controller-manager",
+          "when": "Debug experiment status"
+        },
+        {
+          "approach": "Check daemon logs",
+          "code": "kubectl logs -n chaos-mesh -l app.kubernetes.io/component=chaos-daemon",
+          "when": "Injection not happening"
+        },
+        {
+          "approach": "Restart chaos-mesh",
+          "code": "kubectl rollout restart deployment -n chaos-mesh chaos-controller-manager",
+          "when": "Controller seems stuck"
+        }
+      ]
+    },
+    {
+      "id": "cleanup_failed",
+      "pattern": "cleanup.*failed|chaos.*not removed|pod.*stuck",
+      "message": "Chaos cleanup failed, effects persist",
+      "cause": "Chaos artifacts not properly removed",
+      "solutions": [
+        {
+          "approach": "Delete chaos resource",
+          "code": "kubectl delete networkchaos my-chaos -n default",
+          "when": "Normal cleanup"
+        },
+        {
+          "approach": "Force delete with finalizer removal",
+          "code": "kubectl patch networkchaos my-chaos -p '{\"metadata\":{\"finalizers\":[]}}' --type=merge",
+          "when": "Resource stuck deleting"
+        },
+        {
+          "approach": "Restart affected pods",
+          "code": "kubectl rollout restart deployment my-app",
+          "when": "Effects persist after deletion"
+        }
+      ]
+    }
+  ]
+}

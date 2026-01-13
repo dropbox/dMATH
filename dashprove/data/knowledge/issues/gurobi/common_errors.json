@@ -1,0 +1,122 @@
+{
+  "version": "11.x",
+  "errors": [
+    {
+      "id": "infeasible_or_unbounded",
+      "pattern": "Infeasible or unbounded",
+      "message": "Model is infeasible or unbounded",
+      "cause": "Constraints conflict or objective grows without bound",
+      "solutions": [
+        {
+          "approach": "Run feasibility relaxation",
+          "code": "m.feasRelaxS(violationobj=True)",
+          "when": "Need minimal constraint relaxations"
+        },
+        {
+          "approach": "Compute IIS to locate conflicts",
+          "code": "m.computeIIS(); m.write(\"model.ilp\")",
+          "when": "Identify irreducible inconsistent set"
+        },
+        {
+          "approach": "Add bounds to free variables",
+          "code": "x.lb = 0; x.ub = 1e6",
+          "when": "Variables missing bounds in objective direction"
+        }
+      ]
+    },
+    {
+      "id": "numerical",
+      "pattern": "Numerical trouble|ill-conditioned",
+      "message": "Solver reports numerical instability",
+      "cause": "Coefficients have large range or constraints nearly dependent",
+      "solutions": [
+        {
+          "approach": "Scale model data",
+          "code": "costs = [c/1000 for c in costs]",
+          "when": "Large coefficients cause conditioning issues"
+        },
+        {
+          "approach": "Tighten tolerances carefully",
+          "code": "m.setParam(\"FeasibilityTol\", 1e-7)",
+          "when": "Need stricter feasibility"
+        },
+        {
+          "approach": "Use numeric focus",
+          "code": "m.setParam(\"NumericFocus\", 3)",
+          "when": "Gurobi should prioritize numerical stability"
+        }
+      ]
+    },
+    {
+      "id": "license_error",
+      "pattern": "License not found|Failed to retrieve license",
+      "message": "License is missing or expired",
+      "cause": "GRB_LICENSE_FILE not set, token server unreachable, or expired license",
+      "solutions": [
+        {
+          "approach": "Set license file location",
+          "code": "export GRB_LICENSE_FILE=/path/gurobi.lic",
+          "when": "Local license file available"
+        },
+        {
+          "approach": "Check token server connectivity",
+          "code": "grbprobe",
+          "when": "Floating license uses network server"
+        },
+        {
+          "approach": "Renew or request new license",
+          "code": "gurobi_cl --new-license",
+          "when": "Academic/temporary license expired"
+        }
+      ]
+    },
+    {
+      "id": "qp_not_psd",
+      "pattern": "Q matrix is not positive semi-definite|non-convex quadratic",
+      "message": "Quadratic model is non-convex",
+      "cause": "Quadratic objective or constraints violate convexity requirements",
+      "solutions": [
+        {
+          "approach": "Enable non-convex handling",
+          "code": "m.setParam(\"NonConvex\", 2)",
+          "when": "Need to allow non-convex QP"
+        },
+        {
+          "approach": "Reformulate as linear or convex model",
+          "code": "% introduce auxiliary variables and linearize products",
+          "when": "Prefer convex approximation"
+        },
+        {
+          "approach": "Check sign of quadratic coefficients",
+          "code": "% ensure Hessian is PSD",
+          "when": "Accidental negative diagonal entries"
+        }
+      ]
+    },
+    {
+      "id": "time_limit",
+      "pattern": "Time limit reached",
+      "message": "Solver stopped at time limit without optimality proof",
+      "cause": "Optimization takes longer than allowed time",
+      "solutions": [
+        {
+          "approach": "Increase time limit or MIPGap",
+          "code": "m.setParam(\"TimeLimit\", 600); m.setParam(\"MIPGap\", 0.02)",
+          "when": "Acceptable to trade precision for runtime"
+        },
+        {
+          "approach": "Provide warm start/heuristic solution",
+          "code": "for v,val in incumbent.items(): v.start = val",
+          "when": "Good incumbent accelerates search"
+        },
+        {
+          "approach": "Use presolve and cuts aggressively",
+          "code": "m.setParam(\"Presolve\", 2); m.setParam(\"Cuts\", 2)",
+          "when": "Need stronger reductions before branching"
+        }
+      ]
+    }
+  ],
+  "tool": "gurobi",
+  "last_updated": "2025-12-23"
+}

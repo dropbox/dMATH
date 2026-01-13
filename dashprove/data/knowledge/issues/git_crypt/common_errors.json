@@ -1,0 +1,106 @@
+{
+  "tool": "git_crypt",
+  "version": "0.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_initialized",
+      "pattern": "not in a git-crypt repository|Repository is not encrypted",
+      "message": "git-crypt not initialized",
+      "cause": "git-crypt init has not been run in this repository",
+      "solutions": [
+        {
+          "approach": "Initialize",
+          "code": "git-crypt init",
+          "when": "Starting encryption on new repo"
+        },
+        {
+          "approach": "Clone already initialized repo",
+          "code": "git clone <url> && cd repo && git-crypt unlock",
+          "when": "Repository was already set up elsewhere"
+        }
+      ]
+    },
+    {
+      "id": "missing_key",
+      "pattern": "gpg: decryption failed: No secret key|repository key not available",
+      "message": "Cannot unlock repository",
+      "cause": "GPG private key not imported or wrong key added",
+      "solutions": [
+        {
+          "approach": "Import key",
+          "code": "gpg --import /path/to/key.asc",
+          "when": "Key not present on machine"
+        },
+        {
+          "approach": "Refresh gpg-agent",
+          "code": "gpgconf --kill gpg-agent && gpg --card-status",
+          "when": "Agent cached stale state"
+        },
+        {
+          "approach": "Confirm user added",
+          "code": "git-crypt export-key - | gpg --list-packets",
+          "when": "Ensure correct recipient key"
+        }
+      ]
+    },
+    {
+      "id": "user_not_added",
+      "pattern": "no key for user|not authorized to decrypt",
+      "message": "User not authorized for git-crypt",
+      "cause": "User's GPG key not added to repository",
+      "solutions": [
+        {
+          "approach": "Add user key",
+          "code": "git-crypt add-gpg-user user@example.com",
+          "when": "Onboard new collaborator"
+        },
+        {
+          "approach": "Export symmetric key for CI",
+          "code": "git-crypt export-key /tmp/git-crypt-key",
+          "when": "Automations need decrypt access"
+        }
+      ]
+    },
+    {
+      "id": "patterns_missing",
+      "pattern": "no files matched .gitattributes|files not encrypted",
+      "message": "Sensitive files remain unencrypted",
+      "cause": "git attributes not configured for paths",
+      "solutions": [
+        {
+          "approach": "Add attributes",
+          "code": "echo 'secrets/** filter=git-crypt diff=git-crypt' >> .gitattributes",
+          "when": "Encrypt specific directories"
+        },
+        {
+          "approach": "Re-add files",
+          "code": "git add -u && git commit -m 'Apply git-crypt attributes'",
+          "when": "Existing files were already committed"
+        }
+      ]
+    },
+    {
+      "id": "binary_incompatibility",
+      "pattern": "git-crypt: incompatible repository version",
+      "message": "Different git-crypt versions on collaborators",
+      "cause": "Using outdated binary against repository initialized with newer version",
+      "solutions": [
+        {
+          "approach": "Upgrade git-crypt",
+          "code": "brew upgrade git-crypt  # or apt-get install --only-upgrade git-crypt",
+          "when": "Local binary older than repo version"
+        },
+        {
+          "approach": "Reinitialize with older version",
+          "code": "# Only if all collaborators agree; prefer upgrading instead",
+          "when": "Pinned to legacy environments"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://github.com/AGWA/git-crypt",
+    "https://www.agwa.name/projects/git-crypt/"
+  ]
+}

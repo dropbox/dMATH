@@ -1,0 +1,166 @@
+{
+  "tool": "reluval",
+  "version": "latest",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Verification timed out",
+      "cause": "Symbolic interval analysis too slow",
+      "solutions": [
+        {
+          "approach": "Reduce epsilon",
+          "code": "./network_test <net> <spec> 0.01",
+          "when": "Perturbation too large"
+        },
+        {
+          "approach": "Use fewer threads",
+          "code": "export OMP_NUM_THREADS=4",
+          "when": "Parallel overhead"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "# Modify timeout in source",
+          "when": "May succeed with more time"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Out of memory",
+      "cause": "Interval refinement requires too much memory",
+      "solutions": [
+        {
+          "approach": "Reduce split depth",
+          "code": "# Limit interval splitting",
+          "when": "Too many intervals"
+        },
+        {
+          "approach": "Smaller network",
+          "code": "# Verify smaller sub-network",
+          "when": "Network too large"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "parse",
+      "message": "Network file parse error",
+      "cause": "Invalid network format",
+      "solutions": [
+        {
+          "approach": "Check NNet format",
+          "code": "# First line: num_layers, num_inputs, num_outputs, max_layer_size",
+          "when": "Header wrong"
+        },
+        {
+          "approach": "Check weight format",
+          "code": "# Weights are comma-separated",
+          "when": "Weight format error"
+        },
+        {
+          "approach": "Verify dimensions",
+          "code": "# Layer dimensions must be consistent",
+          "when": "Dimension error"
+        }
+      ]
+    },
+    {
+      "id": "unsafe",
+      "pattern": "UNSAFE",
+      "message": "Property violation found",
+      "cause": "Found adversarial input",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "# Examine reported adversarial",
+          "when": "Understanding attack"
+        },
+        {
+          "approach": "Verify on original",
+          "code": "# Confirm with forward pass",
+          "when": "Validating result"
+        },
+        {
+          "approach": "Retrain network",
+          "code": "# Use adversarial training",
+          "when": "Improving robustness"
+        }
+      ]
+    },
+    {
+      "id": "spec_error",
+      "pattern": "specification",
+      "message": "Invalid property specification",
+      "cause": "Property file format error",
+      "solutions": [
+        {
+          "approach": "Check spec format",
+          "code": "# Input bounds on first line, output on second",
+          "when": "Format error"
+        },
+        {
+          "approach": "Check bounds order",
+          "code": "# lower,upper format for each dimension",
+          "when": "Bound order wrong"
+        }
+      ]
+    },
+    {
+      "id": "numerical_error",
+      "pattern": "nan|inf",
+      "message": "Numerical error",
+      "cause": "Interval computation overflow",
+      "solutions": [
+        {
+          "approach": "Check network weights",
+          "code": "# Ensure weights are bounded",
+          "when": "Large weights"
+        },
+        {
+          "approach": "Normalize inputs",
+          "code": "# Scale inputs to [0,1] or [-1,1]",
+          "when": "Input range issue"
+        }
+      ]
+    },
+    {
+      "id": "split_error",
+      "pattern": "split",
+      "message": "Interval split error",
+      "cause": "Cannot refine intervals further",
+      "solutions": [
+        {
+          "approach": "Use smarter splitting",
+          "code": "# Gradient-guided splitting",
+          "when": "Random split ineffective"
+        },
+        {
+          "approach": "Check interval validity",
+          "code": "# Ensure lb <= ub",
+          "when": "Invalid interval"
+        }
+      ]
+    },
+    {
+      "id": "verified",
+      "pattern": "SAFE",
+      "message": "Property verified",
+      "cause": "Network satisfies property",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "# Verified within given epsilon",
+          "when": "Want confirmation"
+        },
+        {
+          "approach": "Try larger epsilon",
+          "code": "# Test robustness at larger perturbation",
+          "when": "Want stronger guarantee"
+        }
+      ]
+    }
+  ]
+}

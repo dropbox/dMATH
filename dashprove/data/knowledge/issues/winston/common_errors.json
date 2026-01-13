@@ -1,0 +1,122 @@
+{
+  "tool": "winston",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_transports",
+      "pattern": "no transports|Logger has no transport|must have at least one transport",
+      "message": "Logger created without any transports",
+      "cause": "Logger instantiated without transport configuration",
+      "solutions": [
+        {
+          "approach": "Add console transport",
+          "code": "const logger = winston.createLogger({\n  transports: [new winston.transports.Console()]\n});",
+          "when": "Basic console logging needed"
+        },
+        {
+          "approach": "Use default logger",
+          "code": "winston.add(new winston.transports.Console());",
+          "when": "Using default logger"
+        },
+        {
+          "approach": "Add file transport",
+          "code": "transports: [new winston.transports.File({ filename: 'app.log' })]",
+          "when": "File logging needed"
+        }
+      ]
+    },
+    {
+      "id": "format_error",
+      "pattern": "format is not a function|invalid format|Cannot read.*format",
+      "message": "Invalid format configuration",
+      "cause": "Format not properly imported or configured",
+      "solutions": [
+        {
+          "approach": "Import format correctly",
+          "code": "const { format } = require('winston');\nformat: format.combine(format.timestamp(), format.json())",
+          "when": "Format import missing"
+        },
+        {
+          "approach": "Use simple format",
+          "code": "format: winston.format.simple()",
+          "when": "Basic format needed"
+        },
+        {
+          "approach": "Custom format",
+          "code": "format: format.printf(({ level, message, timestamp }) => `${timestamp} ${level}: ${message}`)",
+          "when": "Custom output format"
+        }
+      ]
+    },
+    {
+      "id": "file_permission",
+      "pattern": "EACCES|permission denied|cannot open log file|EPERM",
+      "message": "Cannot write to log file",
+      "cause": "Insufficient permissions or directory doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create directory first",
+          "code": "const fs = require('fs');\nfs.mkdirSync('logs', { recursive: true });",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "chmod 755 logs/ && chown appuser:appuser logs/",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Use temp directory",
+          "code": "filename: path.join(os.tmpdir(), 'app.log')",
+          "when": "Writing to restricted location"
+        }
+      ]
+    },
+    {
+      "id": "circular_reference",
+      "pattern": "Converting circular structure|circular reference|cyclic object",
+      "message": "Cannot serialize object with circular references",
+      "cause": "Logging object that contains circular references",
+      "solutions": [
+        {
+          "approach": "Use safe stringify",
+          "code": "const { format } = require('winston');\nformat.combine(format.errors({ stack: true }), format.json({ replacer: (k, v) => (typeof v === 'object' && v !== null) ? '[Object]' : v }))",
+          "when": "Circular refs in logged objects"
+        },
+        {
+          "approach": "Clone object before logging",
+          "code": "logger.info('data', JSON.parse(JSON.stringify(circularObj, getCircularReplacer())))",
+          "when": "Need full object logged"
+        },
+        {
+          "approach": "Log specific properties",
+          "code": "logger.info('user', { id: user.id, name: user.name })",
+          "when": "Only need subset of data"
+        }
+      ]
+    },
+    {
+      "id": "level_undefined",
+      "pattern": "level.*undefined|unknown level|invalid log level",
+      "message": "Invalid or undefined log level",
+      "cause": "Using level not defined in levels configuration",
+      "solutions": [
+        {
+          "approach": "Use standard level",
+          "code": "logger.info('message');  // error, warn, info, http, verbose, debug, silly",
+          "when": "Using custom level name"
+        },
+        {
+          "approach": "Define custom levels",
+          "code": "levels: { fatal: 0, error: 1, warn: 2, info: 3, debug: 4, trace: 5 }",
+          "when": "Need custom level hierarchy"
+        },
+        {
+          "approach": "Check level setting",
+          "code": "level: process.env.LOG_LEVEL || 'info'",
+          "when": "Environment variable not set"
+        }
+      ]
+    }
+  ]
+}

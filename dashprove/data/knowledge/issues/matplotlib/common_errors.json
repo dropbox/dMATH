@@ -1,0 +1,168 @@
+{
+  "tool": "matplotlib",
+  "version": "3.8.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "backend_error",
+      "pattern": "backend.*not.*available|cannot.*display|UserWarning.*Agg",
+      "message": "Display backend error",
+      "cause": "No display or incompatible backend",
+      "solutions": [
+        {
+          "approach": "Use non-GUI backend",
+          "code": "import matplotlib\nmatplotlib.use('Agg')  # Before importing pyplot\nimport matplotlib.pyplot as plt",
+          "when": "Headless environment"
+        },
+        {
+          "approach": "Save to file instead",
+          "code": "plt.savefig('plot.png', dpi=300)\nplt.close()",
+          "when": "Don't need interactive display"
+        },
+        {
+          "approach": "Use inline for Jupyter",
+          "code": "%matplotlib inline",
+          "when": "Using Jupyter notebook"
+        }
+      ]
+    },
+    {
+      "id": "dimension_error",
+      "pattern": "x and y must have same|shapes.*not.*aligned",
+      "message": "Data dimension mismatch",
+      "cause": "X and Y arrays have different lengths",
+      "solutions": [
+        {
+          "approach": "Check lengths",
+          "code": "print(f'x: {len(x)}, y: {len(y)}')",
+          "when": "Debug dimension"
+        },
+        {
+          "approach": "Truncate to common length",
+          "code": "min_len = min(len(x), len(y))\nplt.plot(x[:min_len], y[:min_len])",
+          "when": "One array longer"
+        },
+        {
+          "approach": "Use index",
+          "code": "plt.plot(range(len(y)), y)",
+          "when": "Don't have x values"
+        }
+      ]
+    },
+    {
+      "id": "figure_too_many",
+      "pattern": "RuntimeWarning.*figures.*memory|more than.*figures",
+      "message": "Too many open figures",
+      "cause": "Creating figures without closing them",
+      "solutions": [
+        {
+          "approach": "Close figures",
+          "code": "plt.close('all')  # Close all\nplt.close(fig)  # Close specific",
+          "when": "Creating many plots"
+        },
+        {
+          "approach": "Reuse figure",
+          "code": "fig, ax = plt.subplots()\nax.clear()  # Clear and reuse",
+          "when": "Updating plots"
+        },
+        {
+          "approach": "Use context manager",
+          "code": "with plt.figure() as fig:\n    plt.plot(...)\n    plt.savefig(...)",
+          "when": "Temporary figure"
+        }
+      ]
+    },
+    {
+      "id": "empty_plot",
+      "pattern": "No artists|nothing to plot|empty",
+      "message": "Plot appears empty",
+      "cause": "Data not added to axes or limits wrong",
+      "solutions": [
+        {
+          "approach": "Check data",
+          "code": "print(f'Data: {x}, {y}')",
+          "when": "Data may be empty"
+        },
+        {
+          "approach": "Adjust limits",
+          "code": "ax.autoscale()\nax.set_xlim(x.min(), x.max())",
+          "when": "Wrong axis limits"
+        },
+        {
+          "approach": "Check NaN/Inf",
+          "code": "print(f'NaN: {np.isnan(y).sum()}, Inf: {np.isinf(y).sum()}')",
+          "when": "Data may be invalid"
+        }
+      ]
+    },
+    {
+      "id": "color_error",
+      "pattern": "Invalid RGBA|color.*not.*recognized",
+      "message": "Invalid color specification",
+      "cause": "Color string or value not recognized",
+      "solutions": [
+        {
+          "approach": "Use named color",
+          "code": "plt.plot(x, y, color='blue')\n# Or 'tab:blue', 'C0', '#1f77b4'",
+          "when": "Simple color"
+        },
+        {
+          "approach": "Use RGB tuple",
+          "code": "plt.plot(x, y, color=(0.1, 0.2, 0.5))  # RGB 0-1",
+          "when": "Custom color"
+        },
+        {
+          "approach": "Use colormap",
+          "code": "colors = plt.cm.viridis(np.linspace(0, 1, n))",
+          "when": "Multiple colors"
+        }
+      ]
+    },
+    {
+      "id": "latex_error",
+      "pattern": "LaTeX.*not found|mathtext.*error|usetex",
+      "message": "LaTeX rendering error",
+      "cause": "LaTeX not installed or mathtext syntax error",
+      "solutions": [
+        {
+          "approach": "Use mathtext instead",
+          "code": "plt.title(r'$\\alpha^2 + \\beta^2$')  # Built-in mathtext",
+          "when": "Don't need full LaTeX"
+        },
+        {
+          "approach": "Disable usetex",
+          "code": "plt.rcParams['text.usetex'] = False",
+          "when": "LaTeX not installed"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "plt.xlabel('Price (\\$)')  # Escape $",
+          "when": "Accidental LaTeX"
+        }
+      ]
+    },
+    {
+      "id": "subplot_error",
+      "pattern": "invalid shape|subplot.*index|nrows.*ncols",
+      "message": "Subplot configuration error",
+      "cause": "Invalid subplot layout or index",
+      "solutions": [
+        {
+          "approach": "Use subplots()",
+          "code": "fig, axes = plt.subplots(2, 3)  # 2 rows, 3 cols\naxes[0, 1].plot(...)",
+          "when": "Multiple subplots"
+        },
+        {
+          "approach": "Check index",
+          "code": "ax = fig.add_subplot(2, 2, 1)  # 1-indexed!",
+          "when": "Using add_subplot"
+        },
+        {
+          "approach": "Flatten axes",
+          "code": "fig, axes = plt.subplots(2, 2)\nfor ax in axes.flatten():\n    ax.plot(...)",
+          "when": "Iterating subplots"
+        }
+      ]
+    }
+  ]
+}

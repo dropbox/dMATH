@@ -1,0 +1,133 @@
+{
+  "tool": "ragas",
+  "version": "0.1.21",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "dataset_format_error",
+      "pattern": "(Dataset|column|question|contexts|answer)",
+      "message": "Dataset format error",
+      "cause": "Dataset missing required columns for RAGAS evaluation",
+      "solutions": [
+        {
+          "approach": "Create correct format",
+          "code": "from datasets import Dataset\ndata = {\n    'question': ['What is AI?'],\n    'contexts': [['AI is artificial intelligence.']],\n    'answer': ['AI stands for artificial intelligence.'],\n    'ground_truth': ['Artificial Intelligence']  # Optional\n}\ndataset = Dataset.from_dict(data)",
+          "when": "Creating dataset"
+        },
+        {
+          "approach": "Add missing columns",
+          "code": "# contexts must be list of lists\ndataset = dataset.map(\n    lambda x: {'contexts': [x['context']] if isinstance(x['context'], str) else x['context']}\n)",
+          "when": "Fixing contexts format"
+        }
+      ]
+    },
+    {
+      "id": "llm_not_configured",
+      "pattern": "(LLM|OpenAI|model.*not|API.*key)",
+      "message": "LLM not configured for evaluation",
+      "cause": "RAGAS metrics require LLM access",
+      "solutions": [
+        {
+          "approach": "Set OpenAI key",
+          "code": "import os\nos.environ['OPENAI_API_KEY'] = 'your-key'\nfrom ragas import evaluate\nresult = evaluate(dataset, metrics=[faithfulness, answer_relevancy])",
+          "when": "Using OpenAI"
+        },
+        {
+          "approach": "Use custom LLM",
+          "code": "from ragas.llms import LangchainLLMWrapper\nfrom langchain_openai import ChatOpenAI\nllm = LangchainLLMWrapper(ChatOpenAI(model='gpt-4'))\nfrom ragas.metrics import faithfulness\nfaithfulness.llm = llm",
+          "when": "Custom LLM config"
+        }
+      ]
+    },
+    {
+      "id": "metric_error",
+      "pattern": "(metric|faithfulness|relevancy|score.*failed)",
+      "message": "Metric computation error",
+      "cause": "Metric couldn't be computed for samples",
+      "solutions": [
+        {
+          "approach": "Select appropriate metrics",
+          "code": "from ragas.metrics import (\n    faithfulness,\n    answer_relevancy,\n    context_precision,\n    context_recall\n)\nresult = evaluate(\n    dataset,\n    metrics=[faithfulness, answer_relevancy]\n)",
+          "when": "Choosing metrics"
+        },
+        {
+          "approach": "Handle missing ground truth",
+          "code": "# Some metrics need ground_truth\nfrom ragas.metrics import context_precision, faithfulness\n# faithfulness doesn't need ground_truth\n# context_recall needs ground_truth\nresult = evaluate(dataset, metrics=[faithfulness])",
+          "when": "No ground truth available"
+        }
+      ]
+    },
+    {
+      "id": "embedding_error",
+      "pattern": "(embedding|vector|similarity)",
+      "message": "Embedding computation error",
+      "cause": "Embeddings required for semantic similarity metrics",
+      "solutions": [
+        {
+          "approach": "Configure embeddings",
+          "code": "from ragas.embeddings import LangchainEmbeddingsWrapper\nfrom langchain_openai import OpenAIEmbeddings\nembeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())\nfrom ragas.metrics import answer_relevancy\nanswer_relevancy.embeddings = embeddings",
+          "when": "Setting embeddings"
+        },
+        {
+          "approach": "Use HuggingFace embeddings",
+          "code": "from langchain_huggingface import HuggingFaceEmbeddings\nembeddings = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')",
+          "when": "Local embeddings"
+        }
+      ]
+    },
+    {
+      "id": "empty_context_error",
+      "pattern": "(empty.*context|no.*context|contexts.*empty)",
+      "message": "Empty or missing contexts",
+      "cause": "Evaluation samples have empty context lists",
+      "solutions": [
+        {
+          "approach": "Filter empty contexts",
+          "code": "dataset = dataset.filter(\n    lambda x: len(x['contexts']) > 0 and all(c for c in x['contexts'])\n)",
+          "when": "Removing empty samples"
+        },
+        {
+          "approach": "Use answer-only metrics",
+          "code": "from ragas.metrics import answer_similarity\n# Doesn't need contexts\nresult = evaluate(dataset, metrics=[answer_similarity])",
+          "when": "No contexts available"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "(async|await|event loop)",
+      "message": "Async evaluation error",
+      "cause": "RAGAS uses async internally",
+      "solutions": [
+        {
+          "approach": "Run in event loop",
+          "code": "import asyncio\nfrom ragas import evaluate\n# In Jupyter\nresult = await evaluate(dataset, metrics=metrics)\n# In script\nresult = asyncio.run(evaluate(dataset, metrics=metrics))",
+          "when": "Event loop issues"
+        },
+        {
+          "approach": "Use sync wrapper",
+          "code": "from ragas import evaluate\n# evaluate() handles async internally\nresult = evaluate(dataset, metrics=metrics)",
+          "when": "Simpler usage"
+        }
+      ]
+    },
+    {
+      "id": "batch_size_error",
+      "pattern": "(batch|memory|OOM)",
+      "message": "Batch processing error",
+      "cause": "Too many samples processed at once",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "result = evaluate(\n    dataset,\n    metrics=metrics,\n    batch_size=5  # Process fewer at once\n)",
+          "when": "Memory issues"
+        },
+        {
+          "approach": "Process in chunks",
+          "code": "from datasets import concatenate_datasets\nresults = []\nfor i in range(0, len(dataset), 10):\n    chunk = dataset.select(range(i, min(i+10, len(dataset))))\n    results.append(evaluate(chunk, metrics=metrics))",
+          "when": "Large dataset"
+        }
+      ]
+    }
+  ]
+}

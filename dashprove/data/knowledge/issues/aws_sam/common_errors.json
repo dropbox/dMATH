@@ -1,0 +1,101 @@
+{
+  "tool": "aws_sam",
+  "version": "1.121",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "credentials_missing",
+      "pattern": "Unable to locate credentials|AccessDenied|ExpiredToken",
+      "message": "AWS credentials not configured",
+      "cause": "No valid AWS access keys configured for SAM CLI",
+      "solutions": [
+        {
+          "approach": "Configure credentials",
+          "code": "aws configure",
+          "when": "First-time setup"
+        },
+        {
+          "approach": "Use profile",
+          "code": "sam deploy --profile dev --region us-east-1",
+          "when": "Multiple accounts/profiles"
+        }
+      ]
+    },
+    {
+      "id": "docker_unavailable",
+      "pattern": "Docker.*is not running|Cannot connect to the Docker daemon",
+      "message": "Local emulation fails",
+      "cause": "SAM local requires Docker daemon for build/run",
+      "solutions": [
+        {
+          "approach": "Start Docker",
+          "code": "open /Applications/Docker.app  # macOS\\nsudo systemctl start docker",
+          "when": "Docker service stopped"
+        },
+        {
+          "approach": "Use --skip-pull-image",
+          "code": "sam local start-api --skip-pull-image",
+          "when": "Cached runtime images already present"
+        }
+      ]
+    },
+    {
+      "id": "s3_bucket_missing",
+      "pattern": "Unable to upload artifact|S3 bucket .* does not exist|No default S3 bucket",
+      "message": "Deployment bucket not configured",
+      "cause": "sam deploy requires an S3 bucket to stage artifacts",
+      "solutions": [
+        {
+          "approach": "Guided deploy",
+          "code": "sam deploy --guided",
+          "when": "Let SAM create/manage bucket"
+        },
+        {
+          "approach": "Specify bucket",
+          "code": "sam package --s3-bucket my-sam-artifacts --output-template-file out.yaml\\nsam deploy --template-file out.yaml --stack-name myapp",
+          "when": "Using existing bucket"
+        }
+      ]
+    },
+    {
+      "id": "runtime_image_missing",
+      "pattern": "Image .* not found|Runtime .* is not supported locally",
+      "message": "Build fails due to missing runtime image",
+      "cause": "Required Lambda runtime container not available",
+      "solutions": [
+        {
+          "approach": "Pull image",
+          "code": "docker pull public.ecr.aws/sam/emulation-nodejs20:latest",
+          "when": "Need specific runtime locally"
+        },
+        {
+          "approach": "Use --use-container",
+          "code": "sam build --use-container",
+          "when": "Match AWS Lambda build environment"
+        }
+      ]
+    },
+    {
+      "id": "template_invalid",
+      "pattern": "Template provided at .* is invalid|Error: Unable to load template",
+      "message": "template.yaml failed validation",
+      "cause": "YAML syntax errors or invalid SAM resource configuration",
+      "solutions": [
+        {
+          "approach": "Validate template",
+          "code": "sam validate",
+          "when": "Before build/deploy"
+        },
+        {
+          "approach": "Use linter",
+          "code": "cfn-lint template.yaml",
+          "when": "Check CloudFormation semantics"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html",
+    "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli.html"
+  ]
+}

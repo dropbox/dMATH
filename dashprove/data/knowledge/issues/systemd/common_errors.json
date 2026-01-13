@@ -1,0 +1,168 @@
+{
+  "tool": "systemd",
+  "version": "256",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unit_not_found",
+      "pattern": "Unit.*not found|No such file or directory.*service",
+      "message": "Unit not found",
+      "cause": "Service unit file doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check unit name",
+          "code": "systemctl list-unit-files | grep servicename",
+          "when": "Verify unit exists"
+        },
+        {
+          "approach": "Create unit file",
+          "code": "sudo systemctl edit --force --full servicename.service",
+          "when": "Need to create service"
+        },
+        {
+          "approach": "Reload daemon",
+          "code": "sudo systemctl daemon-reload",
+          "when": "Just added unit file"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_start",
+      "pattern": "failed to start|Job.*failed|Main process exited.*code=exited",
+      "message": "Service failed to start",
+      "cause": "Service executable failed or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "journalctl -u servicename -e",
+          "when": "See error details"
+        },
+        {
+          "approach": "Check status",
+          "code": "systemctl status servicename",
+          "when": "See current state"
+        },
+        {
+          "approach": "Test manually",
+          "code": "Run ExecStart command manually to see error",
+          "when": "Debug executable"
+        }
+      ]
+    },
+    {
+      "id": "dependency_failed",
+      "pattern": "dependency failed|Job.*dependency|Requires.*failed",
+      "message": "Dependency failed",
+      "cause": "Required service failed to start",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "systemctl list-dependencies servicename",
+          "when": "See what's required"
+        },
+        {
+          "approach": "Start dependency first",
+          "code": "systemctl start required-service",
+          "when": "Start prerequisite"
+        },
+        {
+          "approach": "Use Wants instead",
+          "code": "Change Requires= to Wants= in unit file",
+          "when": "Dependency optional"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Access denied|Operation not permitted",
+      "message": "Permission denied",
+      "cause": "Service running as wrong user or SELinux/AppArmor blocking",
+      "solutions": [
+        {
+          "approach": "Set correct user",
+          "code": "User=correct_user in unit [Service] section",
+          "when": "Wrong user"
+        },
+        {
+          "approach": "Check SELinux",
+          "code": "ausearch -m AVC -ts recent | audit2allow",
+          "when": "SELinux blocking"
+        },
+        {
+          "approach": "Fix file permissions",
+          "code": "chown -R serviceuser:servicegroup /path/to/files",
+          "when": "File permission issue"
+        }
+      ]
+    },
+    {
+      "id": "timeout_starting",
+      "pattern": "Timed out.*start|Job.*timed out|TimeoutStartSec",
+      "message": "Service start timed out",
+      "cause": "Service didn't signal readiness in time",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "TimeoutStartSec=300 in unit file",
+          "when": "Service needs more time"
+        },
+        {
+          "approach": "Use Type=simple",
+          "code": "Type=simple if service doesn't notify",
+          "when": "Wrong service type"
+        },
+        {
+          "approach": "Add sd_notify",
+          "code": "Use sd_notify(0, \"READY=1\") in service with Type=notify",
+          "when": "Service needs to signal ready"
+        }
+      ]
+    },
+    {
+      "id": "masked_unit",
+      "pattern": "Unit.*masked|Cannot.*masked",
+      "message": "Unit is masked",
+      "cause": "Unit explicitly disabled by masking",
+      "solutions": [
+        {
+          "approach": "Unmask unit",
+          "code": "sudo systemctl unmask servicename",
+          "when": "Want to enable service"
+        },
+        {
+          "approach": "Check mask status",
+          "code": "systemctl is-enabled servicename",
+          "when": "Verify if masked"
+        },
+        {
+          "approach": "Find who masked",
+          "code": "ls -la /etc/systemd/system/servicename.service",
+          "when": "See mask symlink"
+        }
+      ]
+    },
+    {
+      "id": "start_limit_hit",
+      "pattern": "start-limit-hit|Start request repeated too quickly|start limit exceeded",
+      "message": "Start limit exceeded",
+      "cause": "Service crashed too many times",
+      "solutions": [
+        {
+          "approach": "Reset failure count",
+          "code": "sudo systemctl reset-failed servicename",
+          "when": "Clear failure counter"
+        },
+        {
+          "approach": "Adjust limits",
+          "code": "StartLimitIntervalSec=0 in unit file",
+          "when": "Disable rate limiting"
+        },
+        {
+          "approach": "Fix underlying issue",
+          "code": "Check journalctl -u servicename for actual error",
+          "when": "Service has bug"
+        }
+      ]
+    }
+  ]
+}

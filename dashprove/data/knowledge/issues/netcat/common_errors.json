@@ -1,0 +1,168 @@
+{
+  "tool": "netcat",
+  "version": "1.226",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|refused",
+      "message": "Connection refused",
+      "cause": "No service listening on target port",
+      "solutions": [
+        {
+          "approach": "Check service running",
+          "code": "ss -tlnp | grep :PORT",
+          "when": "Verify listener exists"
+        },
+        {
+          "approach": "Start listener",
+          "code": "nc -l -p PORT",
+          "when": "Create listener first"
+        },
+        {
+          "approach": "Check firewall",
+          "code": "sudo iptables -L -n | grep PORT",
+          "when": "Firewall may block"
+        }
+      ]
+    },
+    {
+      "id": "address_in_use",
+      "pattern": "Address already in use|Can't grab.*socket",
+      "message": "Address already in use",
+      "cause": "Port already bound by another process",
+      "solutions": [
+        {
+          "approach": "Find process",
+          "code": "lsof -i :PORT",
+          "when": "See what's using port"
+        },
+        {
+          "approach": "Use different port",
+          "code": "nc -l -p ANOTHER_PORT",
+          "when": "Change port"
+        },
+        {
+          "approach": "Enable reuse",
+          "code": "nc -l -k -p PORT  (keep listening)",
+          "when": "Reusable listener"
+        }
+      ]
+    },
+    {
+      "id": "connection_timeout",
+      "pattern": "Connection timed out|timeout",
+      "message": "Connection timed out",
+      "cause": "Host unreachable or firewall dropping packets",
+      "solutions": [
+        {
+          "approach": "Set timeout",
+          "code": "nc -w 5 host port",
+          "when": "Limit wait time"
+        },
+        {
+          "approach": "Test connectivity",
+          "code": "ping host",
+          "when": "Check basic reachability"
+        },
+        {
+          "approach": "Use verbose",
+          "code": "nc -v host port",
+          "when": "See connection details"
+        }
+      ]
+    },
+    {
+      "id": "unknown_option",
+      "pattern": "invalid option|unknown option|nc:.*illegal",
+      "message": "Invalid option",
+      "cause": "Different netcat variants have different options",
+      "solutions": [
+        {
+          "approach": "Check variant",
+          "code": "nc -h  # or  man nc",
+          "when": "See available options"
+        },
+        {
+          "approach": "OpenBSD nc",
+          "code": "nc -l PORT  (not -l -p PORT)",
+          "when": "OpenBSD style"
+        },
+        {
+          "approach": "GNU netcat",
+          "code": "nc -l -p PORT",
+          "when": "GNU/traditional style"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied_port",
+      "pattern": "Permission denied|bind.*failed|privileged port",
+      "message": "Permission denied (privileged port)",
+      "cause": "Binding to port < 1024 requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo nc -l -p 80",
+          "when": "Need low port"
+        },
+        {
+          "approach": "Use high port",
+          "code": "nc -l -p 8080",
+          "when": "Change to unprivileged port"
+        },
+        {
+          "approach": "Use capabilities",
+          "code": "sudo setcap CAP_NET_BIND_SERVICE=+ep $(which nc)",
+          "when": "Grant capability"
+        }
+      ]
+    },
+    {
+      "id": "no_udp_response",
+      "pattern": "no response|UDP.*silent",
+      "message": "No UDP response",
+      "cause": "UDP is connectionless, no response means nothing",
+      "solutions": [
+        {
+          "approach": "Use UDP mode",
+          "code": "nc -u host port",
+          "when": "UDP connection"
+        },
+        {
+          "approach": "Expect no response",
+          "code": "UDP doesn't confirm receipt; use -v for local errors",
+          "when": "Understanding UDP"
+        },
+        {
+          "approach": "Test with listener",
+          "code": "nc -u -l -p PORT  (UDP listener)",
+          "when": "Verify receipt"
+        }
+      ]
+    },
+    {
+      "id": "stdin_closed",
+      "pattern": "EOF|closed|connection closed",
+      "message": "Connection closed on EOF",
+      "cause": "Netcat closes when stdin ends",
+      "solutions": [
+        {
+          "approach": "Keep open",
+          "code": "nc -k -l -p PORT",
+          "when": "Persistent listener"
+        },
+        {
+          "approach": "Use sleep",
+          "code": "sleep 10 | nc host port",
+          "when": "Keep connection open"
+        },
+        {
+          "approach": "Interactive mode",
+          "code": "nc -q -1 host port",
+          "when": "Wait after EOF"
+        }
+      ]
+    }
+  ]
+}

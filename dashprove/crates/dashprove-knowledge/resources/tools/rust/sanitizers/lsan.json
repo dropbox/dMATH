@@ -1,0 +1,112 @@
+{
+  "id": "lsan",
+  "name": "LeakSanitizer (LSAN)",
+  "category": "rust_sanitizers",
+  "subcategory": "memory",
+
+  "description": "Memory leak detector for heap allocations",
+  "long_description": "LeakSanitizer (LSAN) detects memory leaks - heap memory that was allocated but not freed before program exit. While Rust's ownership system prevents most leaks, LSAN can find leaks from FFI code, reference cycles, or intentional mem::forget usage.",
+
+  "capabilities": [
+    "leak_detection",
+    "allocation_tracking",
+    "stack_trace_at_alloc",
+    "suppressions",
+    "integration_with_asan"
+  ],
+  "property_types": ["runtime_check"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["diagnostic", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "rustup +nightly component add rust-src llvm-tools-preview"}
+    ],
+    "dependencies": ["rust-nightly", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://clang.llvm.org/docs/LeakSanitizer.html",
+    "tutorial": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#leaksanitizer",
+    "api_reference": "https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer",
+    "examples": "https://doc.rust-lang.org/beta/unstable-book/compiler-flags/sanitizer.html#leaksanitizer"
+  },
+
+  "tactics": [
+    {
+      "name": "enable",
+      "description": "Enable LSAN for Rust",
+      "syntax": "RUSTFLAGS=\"-Zsanitizer=leak\" cargo +nightly run/test",
+      "when_to_use": "Detecting memory leaks",
+      "examples": ["RUSTFLAGS=\"-Zsanitizer=leak\" cargo +nightly test"]
+    },
+    {
+      "name": "with_asan",
+      "description": "Use LSAN with ASAN",
+      "syntax": "ASAN_OPTIONS=detect_leaks=1",
+      "when_to_use": "Combined memory checking",
+      "examples": ["RUSTFLAGS=\"-Zsanitizer=address\" ASAN_OPTIONS=detect_leaks=1 cargo +nightly test"]
+    },
+    {
+      "name": "suppressions",
+      "description": "Suppress known leaks",
+      "syntax": "LSAN_OPTIONS=suppressions=FILE",
+      "when_to_use": "Ignoring intentional leaks",
+      "examples": ["LSAN_OPTIONS=suppressions=lsan.supp ./my_program"]
+    },
+    {
+      "name": "print_suppressions",
+      "description": "Generate suppression entries",
+      "syntax": "LSAN_OPTIONS=print_suppressions=1",
+      "when_to_use": "Creating suppression file",
+      "examples": ["LSAN_OPTIONS=print_suppressions=1 ./my_program"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "detected memory leaks",
+      "meaning": "Memory allocated but not freed",
+      "common_causes": ["FFI memory not freed", "Reference cycle", "mem::forget"],
+      "fixes": ["Free memory", "Break cycle", "Use weak references"]
+    },
+    {
+      "pattern": "Direct leak",
+      "meaning": "Memory directly reachable but not freed",
+      "common_causes": ["Forgot to free allocation"],
+      "fixes": ["Add deallocation"]
+    },
+    {
+      "pattern": "Indirect leak",
+      "meaning": "Memory reachable from leaked memory",
+      "common_causes": ["Nested allocation in leaked struct"],
+      "fixes": ["Fix root leak"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["runtime_check"],
+    "cli_command": "dashprove verify --backend lsan"
+  },
+
+  "performance": {
+    "typical_runtime": "Minimal overhead",
+    "scalability": "Works on any size program",
+    "memory_usage": "Slight increase for tracking"
+  },
+
+  "comparisons": {
+    "similar_tools": ["valgrind", "asan", "heaptrack"],
+    "advantages": ["Very low overhead", "Works with ASAN", "Good stack traces"],
+    "disadvantages": ["Only detects at exit", "May miss transient leaks", "Requires nightly"]
+  },
+
+  "metadata": {
+    "version": "LLVM 17+",
+    "last_updated": "2025-12-20",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0"
+  }
+}

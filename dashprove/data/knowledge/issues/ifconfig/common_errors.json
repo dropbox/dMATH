@@ -1,0 +1,110 @@
+{
+  "tool": "ifconfig",
+  "version": "net-tools",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|SIOCSIF.*: Operation not permitted",
+      "message": "Need root privileges",
+      "cause": "Network configuration requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo ifconfig eth0 192.168.1.100 netmask 255.255.255.0\nsudo ifconfig eth0 up",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "device_not_found",
+      "pattern": "Device not found|error fetching interface information|No such device",
+      "message": "Interface not found",
+      "cause": "Interface name wrong or not present",
+      "solutions": [
+        {
+          "approach": "List interfaces",
+          "code": "ifconfig -a  # Show all, including down\nip link show",
+          "when": "Find correct name"
+        },
+        {
+          "approach": "Modern naming",
+          "code": "# Predictable names: ens33, enp0s3, wlp2s0\n# Old names: eth0, wlan0",
+          "when": "Check naming"
+        }
+      ]
+    },
+    {
+      "id": "no_inet_address",
+      "pattern": "no inet address|inet addr missing",
+      "message": "No IP assigned",
+      "cause": "Interface has no IP address",
+      "solutions": [
+        {
+          "approach": "Assign IP",
+          "code": "sudo ifconfig eth0 192.168.1.100 netmask 255.255.255.0",
+          "when": "Static IP"
+        },
+        {
+          "approach": "Use DHCP",
+          "code": "sudo dhclient eth0",
+          "when": "Get from DHCP"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "ifconfig: command not found",
+      "message": "net-tools not installed",
+      "cause": "Package not installed (modern systems)",
+      "solutions": [
+        {
+          "approach": "Install net-tools",
+          "code": "sudo apt install net-tools  # Debian\nsudo yum install net-tools  # RHEL",
+          "when": "Install legacy tools"
+        },
+        {
+          "approach": "Use ip instead",
+          "code": "# Modern equivalents:\nip addr show          # ifconfig\nip addr show eth0     # ifconfig eth0\nip link set eth0 up   # ifconfig eth0 up\nip addr add 192.168.1.100/24 dev eth0  # ifconfig eth0 ...",
+          "when": "Recommended"
+        }
+      ]
+    },
+    {
+      "id": "deprecated_warning",
+      "pattern": "DEPRECATED|obsolete|use.*ip",
+      "message": "Command deprecated",
+      "cause": "ifconfig is legacy",
+      "solutions": [
+        {
+          "approach": "Learn ip command",
+          "code": "ip a               # ip addr show\nip link            # ip link show\nip r               # ip route\nip n               # ip neigh (arp)",
+          "when": "Modern tools"
+        }
+      ]
+    },
+    {
+      "id": "promisc_mode",
+      "pattern": "promisc|promiscuous|PROMISC",
+      "message": "Promiscuous mode",
+      "cause": "Interface capturing all packets",
+      "solutions": [
+        {
+          "approach": "Enable promisc",
+          "code": "sudo ifconfig eth0 promisc",
+          "when": "Packet capture"
+        },
+        {
+          "approach": "Disable promisc",
+          "code": "sudo ifconfig eth0 -promisc",
+          "when": "Normal mode"
+        },
+        {
+          "approach": "Using ip",
+          "code": "sudo ip link set eth0 promisc on\nsudo ip link set eth0 promisc off",
+          "when": "Modern method"
+        }
+      ]
+    }
+  ]
+}

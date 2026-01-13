@@ -1,0 +1,76 @@
+{
+  "tool": "cloudformation",
+  "category": "cloud_cli",
+  "common_errors": [
+    {
+      "pattern": "Template format error",
+      "meaning": "Invalid CloudFormation template syntax",
+      "causes": ["YAML/JSON syntax error", "Missing required section", "Invalid intrinsic function"],
+      "solutions": ["Validate template: aws cloudformation validate-template", "Check YAML indentation", "Verify intrinsic function syntax"]
+    },
+    {
+      "pattern": "Unresolved resource dependencies",
+      "meaning": "Resource dependency cannot be resolved",
+      "causes": ["Missing DependsOn", "Circular dependency", "Reference to non-existent resource"],
+      "solutions": ["Add explicit DependsOn", "Break circular reference", "Verify Ref/GetAtt targets exist"]
+    },
+    {
+      "pattern": "UPDATE_ROLLBACK_FAILED",
+      "meaning": "Stack update failed and rollback also failed",
+      "causes": ["Resource in invalid state", "Manual changes to resources", "Resource deletion failed"],
+      "solutions": ["Continue rollback with skip resources", "Fix resources manually", "Use continue-update-rollback"]
+    },
+    {
+      "pattern": "DELETE_FAILED",
+      "meaning": "Stack deletion failed",
+      "causes": ["Resource cannot be deleted", "Non-empty S3 bucket", "Protected resource"],
+      "solutions": ["Empty S3 buckets first", "Remove deletion protection", "Retain or manually delete resource"]
+    },
+    {
+      "pattern": "Resource limit exceeded",
+      "meaning": "CloudFormation resource limit hit",
+      "causes": ["500 resources per stack limit", "200 parameters limit", "60 outputs limit"],
+      "solutions": ["Use nested stacks", "Reduce resources per stack", "Use StackSets for multi-account"]
+    },
+    {
+      "pattern": "does not exist",
+      "meaning": "Referenced resource doesn't exist",
+      "causes": ["Typo in resource name", "Resource in different stack", "Resource not yet created"],
+      "solutions": ["Check resource logical ID", "Use cross-stack exports", "Verify creation order with DependsOn"]
+    },
+    {
+      "pattern": "Property validation failure",
+      "meaning": "Resource property value invalid",
+      "causes": ["Wrong type", "Value out of range", "Missing required property"],
+      "solutions": ["Check property type in docs", "Verify value constraints", "Add required properties"]
+    },
+    {
+      "pattern": "Access Denied.*cloudformation",
+      "meaning": "IAM permission denied for CloudFormation",
+      "causes": ["Missing cloudformation: permission", "Missing resource: permission", "SCP blocks"],
+      "solutions": ["Grant cloudformation permissions", "Grant permissions for resources being created", "Check organization SCPs"]
+    },
+    {
+      "pattern": "Circular dependency",
+      "meaning": "Resources have circular dependency",
+      "causes": ["Mutual Ref/GetAtt", "Security group ingress rules", "IAM role and policy"],
+      "solutions": ["Break cycle with explicit DependsOn", "Use security group egress rules", "Separate inline and managed policies"]
+    },
+    {
+      "pattern": "Rate exceeded",
+      "meaning": "CloudFormation API rate limit hit",
+      "causes": ["Too many concurrent operations", "Rapid describe calls", "Large stack operations"],
+      "solutions": ["Implement exponential backoff", "Reduce concurrent stacks", "Use change sets to batch"]
+    }
+  ],
+  "debugging_commands": [
+    "aws cloudformation validate-template --template-body file://template.yaml",
+    "aws cloudformation describe-stack-events --stack-name <name>",
+    "aws cloudformation describe-stack-resources --stack-name <name>",
+    "aws cloudformation detect-stack-drift --stack-name <name>"
+  ],
+  "documentation_urls": [
+    "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/",
+    "https://github.com/aws-cloudformation/cfn-lint"
+  ]
+}

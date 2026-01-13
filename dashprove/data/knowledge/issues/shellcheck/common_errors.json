@@ -1,0 +1,253 @@
+{
+  "tool": "shellcheck",
+  "version": "0.10",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sc2086_word_splitting",
+      "pattern": "SC2086|Double quote to prevent globbing and word splitting",
+      "message": "Variable not double-quoted",
+      "cause": "Unquoted variable may undergo word splitting and globbing",
+      "solutions": [
+        {
+          "approach": "Quote variable",
+          "code": "# Wrong:\necho $var\n# Right:\necho \"$var\"",
+          "when": "Variable contains spaces or special chars"
+        },
+        {
+          "approach": "Disable if intentional",
+          "code": "# shellcheck disable=SC2086\necho $var",
+          "when": "Word splitting is intended"
+        }
+      ]
+    },
+    {
+      "id": "sc2034_unused_variable",
+      "pattern": "SC2034|appears unused",
+      "message": "Variable appears unused",
+      "cause": "Variable is assigned but never referenced",
+      "solutions": [
+        {
+          "approach": "Use the variable",
+          "code": "# Ensure variable is used somewhere",
+          "when": "Forgot to use it"
+        },
+        {
+          "approach": "Export for child processes",
+          "code": "export MY_VAR=\"value\"",
+          "when": "Used by child scripts"
+        },
+        {
+          "approach": "Mark as external",
+          "code": "# shellcheck disable=SC2034\nREADME_VAR=\"used elsewhere\"",
+          "when": "Used by sourcing script"
+        }
+      ]
+    },
+    {
+      "id": "sc2006_backticks",
+      "pattern": "SC2006|Use \\$\\(\\.\\.\\) instead of legacy backticks",
+      "message": "Using deprecated backtick syntax",
+      "cause": "Legacy command substitution syntax",
+      "solutions": [
+        {
+          "approach": "Use $() syntax",
+          "code": "# Wrong:\nresult=`command`\n# Right:\nresult=$(command)",
+          "when": "Any command substitution"
+        },
+        {
+          "approach": "Nested commands",
+          "code": "# $() nests cleanly:\nresult=$(echo $(date))",
+          "when": "Nested substitution"
+        }
+      ]
+    },
+    {
+      "id": "sc2164_cd_failure",
+      "pattern": "SC2164|Use cd.*\\|\\| exit",
+      "message": "cd without failure check",
+      "cause": "cd might fail, leaving script in wrong directory",
+      "solutions": [
+        {
+          "approach": "Handle cd failure",
+          "code": "cd /some/dir || exit 1",
+          "when": "Critical directory change"
+        },
+        {
+          "approach": "Use subshell",
+          "code": "(\n  cd /some/dir || exit 1\n  command\n)",
+          "when": "Temporary directory change"
+        },
+        {
+          "approach": "Set errexit",
+          "code": "set -e\ncd /some/dir",
+          "when": "Script uses errexit globally"
+        }
+      ]
+    },
+    {
+      "id": "sc2155_export_declare",
+      "pattern": "SC2155|Declare and assign separately",
+      "message": "Declare/export masking return value",
+      "cause": "local/export assignment masks command exit status",
+      "solutions": [
+        {
+          "approach": "Separate declaration",
+          "code": "# Wrong:\nlocal var=$(command)\n# Right:\nlocal var\nvar=$(command)",
+          "when": "Need to check exit status"
+        },
+        {
+          "approach": "Check status explicitly",
+          "code": "local output\nif ! output=$(command); then\n  echo \"Command failed\"\nfi",
+          "when": "Error handling needed"
+        }
+      ]
+    },
+    {
+      "id": "sc2039_bash_specific",
+      "pattern": "SC2039|In POSIX sh.*not supported",
+      "message": "Bash-specific feature in sh script",
+      "cause": "Using bash features with #!/bin/sh shebang",
+      "solutions": [
+        {
+          "approach": "Use bash shebang",
+          "code": "#!/bin/bash\n# or\n#!/usr/bin/env bash",
+          "when": "Bash features needed"
+        },
+        {
+          "approach": "Use POSIX equivalent",
+          "code": "# Bash: [[ $var == pattern ]]\n# POSIX: [ \"$var\" = \"pattern\" ]",
+          "when": "Need POSIX compatibility"
+        },
+        {
+          "approach": "Specify shell directive",
+          "code": "# shellcheck shell=bash",
+          "when": "File lacks shebang"
+        }
+      ]
+    },
+    {
+      "id": "sc2012_ls_parsing",
+      "pattern": "SC2012|Use find instead of ls",
+      "message": "Parsing ls output",
+      "cause": "ls output is not reliable for parsing",
+      "solutions": [
+        {
+          "approach": "Use glob",
+          "code": "# Wrong:\nfor f in $(ls *.txt); do\n# Right:\nfor f in *.txt; do",
+          "when": "Simple iteration"
+        },
+        {
+          "approach": "Use find",
+          "code": "find . -name '*.txt' -exec command {} \\;",
+          "when": "Recursive or complex matching"
+        },
+        {
+          "approach": "Use find with while",
+          "code": "find . -name '*.txt' -print0 | while IFS= read -r -d '' file; do\n  echo \"$file\"\ndone",
+          "when": "Need loop body"
+        }
+      ]
+    },
+    {
+      "id": "sc2129_redirections",
+      "pattern": "SC2129|Consider using.*>>.*instead of",
+      "message": "Multiple redirections to same file",
+      "cause": "Inefficient file handling",
+      "solutions": [
+        {
+          "approach": "Group redirections",
+          "code": "# Wrong:\necho a >> file\necho b >> file\n# Right:\n{\n  echo a\n  echo b\n} >> file",
+          "when": "Multiple writes to same file"
+        },
+        {
+          "approach": "Use exec",
+          "code": "exec >> file\necho a\necho b",
+          "when": "All output to same file"
+        }
+      ]
+    },
+    {
+      "id": "sc2148_missing_shebang",
+      "pattern": "SC2148|Tips depend on target shell",
+      "message": "Missing or invalid shebang",
+      "cause": "Shell type cannot be determined",
+      "solutions": [
+        {
+          "approach": "Add bash shebang",
+          "code": "#!/bin/bash",
+          "when": "Bash script"
+        },
+        {
+          "approach": "Add POSIX shebang",
+          "code": "#!/bin/sh",
+          "when": "POSIX script"
+        },
+        {
+          "approach": "Add directive",
+          "code": "# shellcheck shell=bash",
+          "when": "Sourced file without shebang"
+        }
+      ]
+    },
+    {
+      "id": "sc2162_read_r",
+      "pattern": "SC2162|read without -r",
+      "message": "read without -r will mangle backslashes",
+      "cause": "Backslashes interpreted as escape sequences",
+      "solutions": [
+        {
+          "approach": "Use -r flag",
+          "code": "# Wrong:\nread line\n# Right:\nread -r line",
+          "when": "Reading user input"
+        },
+        {
+          "approach": "With IFS",
+          "code": "IFS= read -r line",
+          "when": "Preserve whitespace"
+        }
+      ]
+    },
+    {
+      "id": "sc2181_exit_status",
+      "pattern": "SC2181|Check exit code directly",
+      "message": "Using $? instead of direct check",
+      "cause": "$? can be overwritten before check",
+      "solutions": [
+        {
+          "approach": "Direct check",
+          "code": "# Wrong:\ncommand\nif [ $? -eq 0 ]; then\n# Right:\nif command; then",
+          "when": "Checking success"
+        },
+        {
+          "approach": "Negated check",
+          "code": "if ! command; then\n  echo \"Failed\"\nfi",
+          "when": "Checking failure"
+        }
+      ]
+    },
+    {
+      "id": "sc1091_source_not_found",
+      "pattern": "SC1091|Not following.*source",
+      "message": "Sourced file not found",
+      "cause": "ShellCheck cannot find sourced file",
+      "solutions": [
+        {
+          "approach": "Specify source path",
+          "code": "# shellcheck source=./lib.sh\nsource ./lib.sh",
+          "when": "Path is dynamic"
+        },
+        {
+          "approach": "Use external directive",
+          "code": "# shellcheck source=/dev/null\nsource \"$DYNAMIC_PATH\"",
+          "when": "Path determined at runtime"
+        },
+        {
+          "approach": "Use -P flag",
+          "code": "shellcheck -P ./scripts script.sh",
+          "when": "Sources in different directory"
+        }
+      ]
+    }
+  ]
+}

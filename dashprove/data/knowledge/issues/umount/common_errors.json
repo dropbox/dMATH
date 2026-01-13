@@ -1,0 +1,122 @@
+{
+  "tool": "umount",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "device_busy",
+      "pattern": "device is busy|target is busy|busy",
+      "message": "Cannot unmount - device is busy",
+      "cause": "Files open or process using filesystem",
+      "solutions": [
+        {
+          "approach": "Find what's using it",
+          "code": "lsof +f -- /mnt\nfuser -m /mnt",
+          "when": "Identify process"
+        },
+        {
+          "approach": "Kill processes",
+          "code": "fuser -km /mnt  # Kill processes using mount",
+          "when": "Force stop processes"
+        },
+        {
+          "approach": "Lazy unmount",
+          "code": "sudo umount -l /mnt  # Detach now, cleanup later",
+          "when": "Defer unmount"
+        },
+        {
+          "approach": "Force unmount",
+          "code": "sudo umount -f /mnt  # Force (may cause data loss)",
+          "when": "Network mount hung"
+        },
+        {
+          "approach": "Change directory",
+          "code": "cd /  # Leave the mounted directory first",
+          "when": "Shell is in mounted dir"
+        }
+      ]
+    },
+    {
+      "id": "not_mounted",
+      "pattern": "not mounted|not.*mount.*point|no.*mounted",
+      "message": "Target is not mounted",
+      "cause": "Filesystem already unmounted or wrong path",
+      "solutions": [
+        {
+          "approach": "Check mounts",
+          "code": "mount | grep /mnt\ndf -h",
+          "when": "Verify mount status"
+        },
+        {
+          "approach": "Use device or path",
+          "code": "sudo umount /dev/sdb1\n# or\nsudo umount /mnt/point",
+          "when": "Correct target"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "only root|permission denied|not permitted",
+      "message": "Unmount requires root",
+      "cause": "Most unmount operations need root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo umount /mnt",
+          "when": "Need root"
+        },
+        {
+          "approach": "User mount option",
+          "code": "# If mounted with 'user' option in fstab,\n# same user can unmount without sudo",
+          "when": "User-mounted filesystem"
+        },
+        {
+          "approach": "Use udisks",
+          "code": "udisksctl unmount -b /dev/sdb1",
+          "when": "Desktop systems"
+        }
+      ]
+    },
+    {
+      "id": "nfs_hung",
+      "pattern": "NFS|nfs.*hang|stale.*handle|server not responding",
+      "message": "NFS mount hung",
+      "cause": "NFS server unreachable",
+      "solutions": [
+        {
+          "approach": "Force unmount",
+          "code": "sudo umount -f /mnt/nfs",
+          "when": "Force for network mounts"
+        },
+        {
+          "approach": "Lazy unmount",
+          "code": "sudo umount -l /mnt/nfs",
+          "when": "Detach immediately"
+        },
+        {
+          "approach": "Kill nfs processes",
+          "code": "sudo systemctl restart nfs-common\nsudo umount -f /mnt/nfs",
+          "when": "Restart NFS services"
+        }
+      ]
+    },
+    {
+      "id": "unmount_all",
+      "pattern": "all|multiple|recursive",
+      "message": "Unmount multiple filesystems",
+      "cause": "Need to unmount several mounts",
+      "solutions": [
+        {
+          "approach": "Unmount all of type",
+          "code": "sudo umount -a -t nfs  # All NFS mounts\nsudo umount -a -t ext4 # All ext4",
+          "when": "By filesystem type"
+        },
+        {
+          "approach": "Recursive unmount",
+          "code": "sudo umount -R /mnt  # Unmount and submounts",
+          "when": "Nested mounts"
+        }
+      ]
+    }
+  ]
+}

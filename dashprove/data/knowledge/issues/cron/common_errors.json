@@ -1,0 +1,168 @@
+{
+  "tool": "cron",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "bad_minute",
+      "pattern": "bad minute|errors in crontab|unexpected.*value",
+      "message": "Invalid crontab entry",
+      "cause": "Syntax error in cron schedule",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "* * * * * command  (min hour dom mon dow)",
+          "when": "Verify 5 time fields"
+        },
+        {
+          "approach": "Use ranges",
+          "code": "0-59 for minute, 0-23 for hour, 1-31 for day, 1-12 for month, 0-7 for dow",
+          "when": "Values out of range"
+        },
+        {
+          "approach": "Use crontab.guru",
+          "code": "Visit crontab.guru to validate",
+          "when": "Complex schedule"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "command not found|No such file",
+      "message": "Command not found in cron",
+      "cause": "PATH not set in cron environment",
+      "solutions": [
+        {
+          "approach": "Use full path",
+          "code": "/usr/bin/python3 /path/to/script.py",
+          "when": "Always use absolute paths"
+        },
+        {
+          "approach": "Set PATH in crontab",
+          "code": "PATH=/usr/local/bin:/usr/bin:/bin",
+          "when": "Add PATH at top of crontab"
+        },
+        {
+          "approach": "Wrapper script",
+          "code": "#!/bin/bash\\nsource ~/.bashrc\\nexec my_command",
+          "when": "Need full environment"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|not allowed|cron.*deny",
+      "message": "Permission denied for cron",
+      "cause": "User not allowed to use cron",
+      "solutions": [
+        {
+          "approach": "Check allow/deny",
+          "code": "cat /etc/cron.allow /etc/cron.deny",
+          "when": "User may be blocked"
+        },
+        {
+          "approach": "Add to allow",
+          "code": "echo username | sudo tee -a /etc/cron.allow",
+          "when": "Need cron access"
+        },
+        {
+          "approach": "Use systemd timer",
+          "code": "systemctl enable --user mytimer.timer",
+          "when": "Alternative to cron"
+        }
+      ]
+    },
+    {
+      "id": "mail_issues",
+      "pattern": "MAILTO|mail.*error|cannot.*send",
+      "message": "Cron mail delivery issues",
+      "cause": "MTA not configured or MAILTO not set",
+      "solutions": [
+        {
+          "approach": "Disable mail",
+          "code": "MAILTO=\"\"  at top of crontab",
+          "when": "Don't want email"
+        },
+        {
+          "approach": "Set email address",
+          "code": "MAILTO=\"user@example.com\"",
+          "when": "Send to specific address"
+        },
+        {
+          "approach": "Redirect output",
+          "code": "* * * * * command > /var/log/cron.log 2>&1",
+          "when": "Log instead of email"
+        }
+      ]
+    },
+    {
+      "id": "percent_sign",
+      "pattern": "unexpected EOF|percent.*sign",
+      "message": "Percent sign issue",
+      "cause": "% has special meaning in crontab (newline)",
+      "solutions": [
+        {
+          "approach": "Escape percent",
+          "code": "* * * * * date +\\%Y-\\%m-\\%d",
+          "when": "Using date format"
+        },
+        {
+          "approach": "Use script",
+          "code": "Put command with % in separate script",
+          "when": "Complex command"
+        },
+        {
+          "approach": "Single quotes in script",
+          "code": "#!/bin/bash\\ndate '+%Y-%m-%d'",
+          "when": "In wrapper script"
+        }
+      ]
+    },
+    {
+      "id": "environment_variables",
+      "pattern": "environment|variable.*not set|undefined.*variable",
+      "message": "Environment variable not set",
+      "cause": "Cron runs with minimal environment",
+      "solutions": [
+        {
+          "approach": "Set in crontab",
+          "code": "SHELL=/bin/bash\\nPATH=/usr/bin:/bin\\nHOME=/home/user",
+          "when": "Set at top of crontab"
+        },
+        {
+          "approach": "Source profile",
+          "code": "* * * * * . ~/.profile; command",
+          "when": "Need user profile"
+        },
+        {
+          "approach": "Pass explicitly",
+          "code": "* * * * * env VAR=value command",
+          "when": "Set specific variable"
+        }
+      ]
+    },
+    {
+      "id": "timing_issues",
+      "pattern": "runs multiple times|doesn't run|timing",
+      "message": "Job timing issues",
+      "cause": "DST transitions or time misunderstanding",
+      "solutions": [
+        {
+          "approach": "Use UTC",
+          "code": "TZ=UTC in crontab",
+          "when": "Avoid DST issues"
+        },
+        {
+          "approach": "Check with select",
+          "code": "systemctl list-timers (if using systemd)",
+          "when": "See next run time"
+        },
+        {
+          "approach": "Add flock",
+          "code": "* * * * * flock -n /tmp/job.lock command",
+          "when": "Prevent overlapping runs"
+        }
+      ]
+    }
+  ]
+}

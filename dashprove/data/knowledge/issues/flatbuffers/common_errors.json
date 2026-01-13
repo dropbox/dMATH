@@ -1,0 +1,118 @@
+{
+  "tool": "flatbuffers",
+  "category": "serialization",
+  "common_errors": [
+    {
+      "pattern": "FlatBuffers: field .* is not set|null field",
+      "meaning": "Accessing unset optional field",
+      "causes": [
+        "Field not populated when building",
+        "Reading deprecated/removed field",
+        "Schema version mismatch"
+      ],
+      "solutions": [
+        "Check if field exists before access: if (obj.field() != null)",
+        "Use default value in schema: field_name:int = 0;",
+        "Set field explicitly during building"
+      ]
+    },
+    {
+      "pattern": "Buffer underflow|Invalid offset|Invalid buffer",
+      "meaning": "Corrupted or invalid FlatBuffer data",
+      "causes": [
+        "Buffer truncated",
+        "Not a FlatBuffer",
+        "Schema/data mismatch"
+      ],
+      "solutions": [
+        "Use verifier: Verifier.verify(buffer)",
+        "Ensure complete buffer received",
+        "Check buffer is built with correct schema"
+      ]
+    },
+    {
+      "pattern": "Struct must be serialized inline|nested buffer",
+      "meaning": "Struct serialization error",
+      "causes": [
+        "Trying to store struct in wrong order",
+        "Structs must be built bottom-up",
+        "Nested tables not finished"
+      ],
+      "solutions": [
+        "Build nested objects first, then parent",
+        "Call finish() on nested builders",
+        "Structs are inline: create before parent table"
+      ]
+    },
+    {
+      "pattern": "Unknown union type|invalid union|union not set",
+      "meaning": "Union type handling error",
+      "causes": [
+        "Union type enum mismatch",
+        "Forgot to set union type field",
+        "Reading union with wrong type"
+      ],
+      "solutions": [
+        "Set both type and value: builder.addFieldType(type); builder.addField(offset)",
+        "Use generated union accessor methods",
+        "Check type before reading: switch(obj.fieldType())"
+      ]
+    },
+    {
+      "pattern": "Vector already finished|cannot modify after finish",
+      "meaning": "Attempting to modify finished buffer",
+      "causes": [
+        "Calling methods after finish()",
+        "Reusing builder without reset",
+        "Trying to add to completed vector"
+      ],
+      "solutions": [
+        "Create new builder for new buffer",
+        "Call builder.clear() to reset",
+        "Build all data before calling finish()"
+      ]
+    },
+    {
+      "pattern": "flatc.*error|schema compilation failed",
+      "meaning": "FlatBuffers schema compiler error",
+      "causes": [
+        "Syntax error in .fbs file",
+        "Circular dependencies",
+        "Invalid attribute"
+      ],
+      "solutions": [
+        "Check syntax: table, struct, enum keywords",
+        "Define types before referencing",
+        "Use include for multi-file schemas"
+      ]
+    },
+    {
+      "pattern": "Alignment.*error|misaligned access",
+      "meaning": "Data alignment issue",
+      "causes": [
+        "Buffer not properly aligned",
+        "Modifying buffer bytes directly",
+        "Platform-specific alignment requirements"
+      ],
+      "solutions": [
+        "Don't modify buffer bytes directly",
+        "Use builder APIs only",
+        "Ensure buffer start is aligned"
+      ]
+    },
+    {
+      "pattern": "cannot convert|type mismatch|wrong type",
+      "meaning": "Type conversion error",
+      "causes": [
+        "Reading int as string or vice versa",
+        "Schema changed field type",
+        "Endianness issue"
+      ],
+      "solutions": [
+        "Use correct accessor method for type",
+        "FlatBuffers is little-endian by default",
+        "Regenerate code if schema changed"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "behave",
+  "version": "1.2.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_step",
+      "pattern": "NotImplementedError|You can implement step definitions",
+      "message": "Step definition not implemented",
+      "cause": "No matching step definition for Gherkin step",
+      "solutions": [
+        {
+          "approach": "Create step file",
+          "code": "# features/steps/my_steps.py\nfrom behave import given, when, then\n\n@given('I have {count:d} items')\ndef step_impl(context, count):\n    context.items = count",
+          "when": "Creating new step"
+        },
+        {
+          "approach": "Check step pattern",
+          "code": "# Use {name:Type} for parameters\n@when('user \"{name}\" logs in')\ndef step_impl(context, name):\n    context.user = name",
+          "when": "Pattern doesn't match"
+        },
+        {
+          "approach": "Generate snippets",
+          "code": "behave --dry-run",
+          "when": "See all undefined steps"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "ImportError|ModuleNotFoundError",
+      "message": "Module import failed",
+      "cause": "Python module not found or import path wrong",
+      "solutions": [
+        {
+          "approach": "Add environment.py",
+          "code": "# features/environment.py\nimport sys\nsys.path.insert(0, 'src')",
+          "when": "Need to add to path"
+        },
+        {
+          "approach": "Install dependencies",
+          "code": "pip install -e .",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Check __init__.py",
+          "code": "# Ensure features/steps/__init__.py exists",
+          "when": "Package structure issue"
+        }
+      ]
+    },
+    {
+      "id": "context_attribute",
+      "pattern": "AttributeError: 'Context' object has no attribute",
+      "message": "Context attribute not set",
+      "cause": "Accessing context attribute that wasn't initialized",
+      "solutions": [
+        {
+          "approach": "Initialize in hook",
+          "code": "# environment.py\ndef before_scenario(context, scenario):\n    context.data = {}",
+          "when": "Need shared state"
+        },
+        {
+          "approach": "Check step order",
+          "code": "# Given step must set context.items before When uses it",
+          "when": "Step ordering issue"
+        },
+        {
+          "approach": "Use getattr",
+          "code": "items = getattr(context, 'items', [])",
+          "when": "Attribute may not exist"
+        }
+      ]
+    },
+    {
+      "id": "table_parsing",
+      "pattern": "table\\.rows|context\\.table",
+      "message": "Table data access error",
+      "cause": "Incorrect way to access DataTable",
+      "solutions": [
+        {
+          "approach": "Iterate rows",
+          "code": "@given('users')\ndef step_impl(context):\n    for row in context.table:\n        print(row['name'], row['email'])",
+          "when": "Table with headers"
+        },
+        {
+          "approach": "Access headings",
+          "code": "headings = context.table.headings\nfor row in context.table.rows:\n    print(row.cells)",
+          "when": "Need both headers and rows"
+        },
+        {
+          "approach": "Convert to dict",
+          "code": "data = [dict(row.as_dict()) for row in context.table]",
+          "when": "Need list of dicts"
+        }
+      ]
+    },
+    {
+      "id": "feature_not_found",
+      "pattern": "No feature files found|FileNotFoundError",
+      "message": "Feature files not found",
+      "cause": "No .feature files in expected location",
+      "solutions": [
+        {
+          "approach": "Check directory",
+          "code": "behave features/",
+          "when": "Specify features directory"
+        },
+        {
+          "approach": "Use tag filter",
+          "code": "behave --tags=@smoke",
+          "when": "Run subset of features"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "# Files must end in .feature",
+          "when": "Wrong extension"
+        }
+      ]
+    },
+    {
+      "id": "hook_error",
+      "pattern": "Error in before_|Error in after_",
+      "message": "Hook execution failed",
+      "cause": "Before/after hook raised exception",
+      "solutions": [
+        {
+          "approach": "Add try/except",
+          "code": "def after_scenario(context, scenario):\n    try:\n        context.browser.quit()\n    except Exception:\n        pass",
+          "when": "Cleanup may fail"
+        },
+        {
+          "approach": "Check hook signature",
+          "code": "def before_feature(context, feature):\n    # Both args required",
+          "when": "Wrong hook signature"
+        },
+        {
+          "approach": "Use tags in hooks",
+          "code": "def before_scenario(context, scenario):\n    if 'browser' in scenario.tags:\n        context.browser = create_browser()",
+          "when": "Conditional hooks"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError|assert.*failed",
+      "message": "Assertion failed in step",
+      "cause": "Expected condition not met",
+      "solutions": [
+        {
+          "approach": "Use better assertions",
+          "code": "from hamcrest import assert_that, equal_to\nassert_that(actual, equal_to(expected))",
+          "when": "Better error messages"
+        },
+        {
+          "approach": "Add context",
+          "code": "assert result == expected, f'Expected {expected}, got {result}'",
+          "when": "Need debugging info"
+        },
+        {
+          "approach": "Check preconditions",
+          "code": "# Verify Given steps ran correctly",
+          "when": "Setup may have failed"
+        }
+      ]
+    },
+    {
+      "id": "encoding_error",
+      "pattern": "UnicodeDecodeError|UnicodeEncodeError",
+      "message": "Character encoding error",
+      "cause": "Feature file or data has encoding issues",
+      "solutions": [
+        {
+          "approach": "Save as UTF-8",
+          "code": "# Ensure .feature files are UTF-8 encoded",
+          "when": "File encoding wrong"
+        },
+        {
+          "approach": "Set locale",
+          "code": "export LANG=en_US.UTF-8",
+          "when": "System locale issue"
+        },
+        {
+          "approach": "Handle in code",
+          "code": "text.encode('utf-8', errors='replace')",
+          "when": "Data has bad chars"
+        }
+      ]
+    }
+  ]
+}

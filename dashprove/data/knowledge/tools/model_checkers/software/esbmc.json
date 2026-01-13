@@ -1,0 +1,108 @@
+{
+  "id": "esbmc",
+  "name": "ESBMC",
+  "category": "model_checker",
+  "subcategory": "bounded",
+
+  "description": "Efficient SMT-based bounded model checker",
+  "long_description": "ESBMC (Efficient SMT-Based Context-Bounded Model Checker) is a context-bounded model checker for C/C++, CUDA, and Kotlin. It uses various SMT solvers as backends and supports multi-threaded program verification.",
+
+  "capabilities": [
+    "bounded_model_checking",
+    "context_bounded_verification",
+    "concurrency_verification",
+    "memory_safety",
+    "k_induction",
+    "incremental_bmc"
+  ],
+  "property_types": ["assertion", "memory_safety", "concurrency", "overflow"],
+  "input_languages": ["c", "cpp", "cuda", "kotlin"],
+  "output_formats": ["counterexample_trace", "witness"],
+
+  "installation": {
+    "methods": [
+      {"type": "docker", "command": "docker pull esbmc/esbmc"},
+      {"type": "source", "url": "https://github.com/esbmc/esbmc"}
+    ],
+    "dependencies": ["z3", "boolector", "cmake"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://esbmc.org/",
+    "tutorial": "https://esbmc.org/documentation",
+    "api_reference": "https://github.com/esbmc/esbmc/wiki",
+    "examples": "https://github.com/esbmc/esbmc/tree/master/regression"
+  },
+
+  "tactics": [
+    {
+      "name": "unwind",
+      "description": "Loop unwinding bound",
+      "syntax": "--unwind N",
+      "when_to_use": "Set loop bound",
+      "examples": ["esbmc --unwind 10 program.c"]
+    },
+    {
+      "name": "k-induction",
+      "description": "K-induction proof",
+      "syntax": "--k-induction",
+      "when_to_use": "For unbounded verification",
+      "examples": ["esbmc --k-induction program.c"]
+    },
+    {
+      "name": "context-bound",
+      "description": "Context switch bound",
+      "syntax": "--context-bound N",
+      "when_to_use": "For concurrent programs",
+      "examples": ["esbmc --context-bound 2 concurrent.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "VERIFICATION FAILED",
+      "meaning": "Property violated",
+      "common_causes": ["Bug in program"],
+      "fixes": ["Examine counterexample"]
+    },
+    {
+      "pattern": "VERIFICATION SUCCESSFUL",
+      "meaning": "Property holds within bounds",
+      "common_causes": [],
+      "fixes": []
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["safety", "assertion", "concurrency"],
+    "cli_command": "dashprove verify --backend esbmc"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "Good for bounded verification",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cbmc", "divine", "cpachecker"],
+    "advantages": [
+      "Multiple SMT backends",
+      "Concurrency support",
+      "K-induction"
+    ],
+    "disadvantages": [
+      "Bounded by default",
+      "Complex configuration"
+    ]
+  },
+
+  "metadata": {
+    "version": "7.4",
+    "last_updated": "2025-12-22",
+    "maintainer": "ESBMC Team",
+    "license": "Apache-2.0"
+  }
+}

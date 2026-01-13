@@ -1,0 +1,55 @@
+{
+  "tool": "bull",
+  "category": "task_queue",
+  "description": "Node.js Redis-based queue",
+  "errors": [
+    {
+      "pattern": "ECONNREFUSED.*6379|Redis connection.*failed",
+      "meaning": "Cannot connect to Redis",
+      "causes": ["Redis not running", "Wrong host/port", "Firewall blocking"],
+      "solutions": ["Start Redis server", "Check connection config", "Verify network access"]
+    },
+    {
+      "pattern": "ERR unknown command.*`MEMORY`|COMMAND",
+      "meaning": "Redis version too old",
+      "causes": ["Redis < 4.0", "Missing commands in Redis config", "Cluster mode limitations"],
+      "solutions": ["Upgrade Redis to 4.0+", "Check Redis version: redis-cli INFO", "Use compatible Redis features"]
+    },
+    {
+      "pattern": "Missing process handler|No process function",
+      "meaning": "Worker processor not defined",
+      "causes": ["queue.process() not called", "Worker not initialized", "Wrong queue instance"],
+      "solutions": ["Add queue.process(callback)", "Ensure worker file is running", "Check queue name matches"]
+    },
+    {
+      "pattern": "Job.*stalled|stalled jobs",
+      "meaning": "Job processor didn't respond in time",
+      "causes": ["Long-running job without progress", "Process crashed", "Lock expired"],
+      "solutions": ["Use job.progress() for long jobs", "Increase stalledInterval", "Handle stalled event"]
+    },
+    {
+      "pattern": "Maximum call stack|heap out of memory",
+      "meaning": "Memory issue in job processing",
+      "causes": ["Processing too many jobs", "Memory leak in processor", "Large job data"],
+      "solutions": ["Limit concurrent jobs", "Fix memory leak", "Reduce job data size"]
+    },
+    {
+      "pattern": "ERR max number of clients reached",
+      "meaning": "Redis connection limit exceeded",
+      "causes": ["Too many queue instances", "Connections not closed", "Redis maxclients too low"],
+      "solutions": ["Increase Redis maxclients", "Reuse queue instances", "Close queues when done"]
+    },
+    {
+      "pattern": "Job failed.*attempts.*exhausted",
+      "meaning": "Job exceeded retry attempts",
+      "causes": ["Persistent failure", "External service issue", "Bug in processor"],
+      "solutions": ["Check job failure logs", "Increase attempts config", "Fix processor code"]
+    },
+    {
+      "pattern": "Missing lock for job",
+      "meaning": "Job lock was lost",
+      "causes": ["Lock expired during processing", "Redis restarted", "Network partition"],
+      "solutions": ["Increase lockDuration", "Handle lock extension", "Use lockRenewTime"]
+    }
+  ]
+}

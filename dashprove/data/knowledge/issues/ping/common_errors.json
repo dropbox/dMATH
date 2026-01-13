@@ -1,0 +1,145 @@
+{
+  "tool": "ping",
+  "version": "iputils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unknown_host",
+      "pattern": "unknown host|cannot resolve|Name or service not known|Temporary failure in name resolution",
+      "message": "DNS resolution failed",
+      "cause": "Invalid hostname or DNS unavailable",
+      "solutions": [
+        {
+          "approach": "Check DNS",
+          "code": "dig example.com\nnslookup example.com",
+          "when": "Verify resolution"
+        },
+        {
+          "approach": "Use IP",
+          "code": "ping 8.8.8.8  # Test with known IP",
+          "when": "Bypass DNS"
+        },
+        {
+          "approach": "Check resolv.conf",
+          "code": "cat /etc/resolv.conf\n# Try: nameserver 8.8.8.8",
+          "when": "DNS misconfigured"
+        }
+      ]
+    },
+    {
+      "id": "destination_unreachable",
+      "pattern": "Destination Host Unreachable|Network is unreachable|No route to host|Destination Net Unreachable",
+      "message": "No network path to host",
+      "cause": "Routing issue or host not on network",
+      "solutions": [
+        {
+          "approach": "Check route",
+          "code": "ip route get 192.168.1.1\nroute -n\nnetstat -rn",
+          "when": "Verify routing"
+        },
+        {
+          "approach": "Check gateway",
+          "code": "ping $(ip route | grep default | awk '{print $3}')",
+          "when": "Gateway reachable?"
+        },
+        {
+          "approach": "Check interface",
+          "code": "ip addr show\nifconfig",
+          "when": "Interface up?"
+        }
+      ]
+    },
+    {
+      "id": "request_timeout",
+      "pattern": "Request timed out|no answer|100% packet loss|time out|Request timeout",
+      "message": "No response from host",
+      "cause": "Host down, ICMP blocked, or network issue",
+      "solutions": [
+        {
+          "approach": "Check firewall",
+          "code": "# Host may block ICMP\n# Try TCP connect instead:\nnc -zv host 22\nnc -zv host 80",
+          "when": "ICMP blocked"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "ping -W 5 host  # 5 second timeout",
+          "when": "Slow network"
+        },
+        {
+          "approach": "Trace route",
+          "code": "traceroute host\nmtr host",
+          "when": "Find where it fails"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Operation not permitted|permission denied|socket: Permission denied",
+      "message": "Insufficient privileges",
+      "cause": "Raw socket access denied",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo ping host",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Set capabilities",
+          "code": "sudo setcap cap_net_raw+ep /bin/ping",
+          "when": "Non-root ping"
+        },
+        {
+          "approach": "Check sysctl",
+          "code": "# Allow non-root ping:\nsudo sysctl -w net.ipv4.ping_group_range='0 2147483647'",
+          "when": "Linux sysctl"
+        }
+      ]
+    },
+    {
+      "id": "packet_too_large",
+      "pattern": "Frag needed|Message too long|packet size.*too large",
+      "message": "Packet exceeds MTU",
+      "cause": "Packet size larger than path MTU",
+      "solutions": [
+        {
+          "approach": "Find MTU",
+          "code": "# Find path MTU:\nping -M do -s 1472 host  # DF bit set, 1472 + 28 = 1500",
+          "when": "MTU discovery"
+        },
+        {
+          "approach": "Smaller packets",
+          "code": "ping -s 64 host  # Small packets",
+          "when": "Known MTU issue"
+        },
+        {
+          "approach": "Allow fragmentation",
+          "code": "ping -M dont -s 2000 host",
+          "when": "Allow fragment"
+        }
+      ]
+    },
+    {
+      "id": "broadcast_flood",
+      "pattern": "Do you want to ping broadcast|WARNING.*broadcast|Flood.*not allowed",
+      "message": "Broadcast ping warning",
+      "cause": "Attempting to ping broadcast address",
+      "solutions": [
+        {
+          "approach": "Allow broadcast",
+          "code": "ping -b 192.168.1.255",
+          "when": "Intentional broadcast"
+        },
+        {
+          "approach": "Use unicast",
+          "code": "ping 192.168.1.1  # Single host",
+          "when": "Wrong address"
+        },
+        {
+          "approach": "Scan network",
+          "code": "nmap -sn 192.168.1.0/24  # Proper network scan",
+          "when": "Find hosts"
+        }
+      ]
+    }
+  ]
+}

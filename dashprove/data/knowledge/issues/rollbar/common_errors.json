@@ -1,0 +1,181 @@
+{
+  "tool": "rollbar",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "access_token_invalid",
+      "pattern": "invalid.*token|403|unauthorized",
+      "message": "Invalid access token",
+      "cause": "Wrong token or token for wrong scope",
+      "solutions": [
+        {
+          "approach": "Use correct token type",
+          "code": "# Post server items: post_server_item token\n# Post client items: post_client_item token\n# Read: read token\n# Write: write token",
+          "when": "Token scope mismatch"
+        },
+        {
+          "approach": "Verify project token",
+          "code": "# Each project has its own tokens\n# Check Settings > Project Access Tokens",
+          "when": "Wrong project token"
+        },
+        {
+          "approach": "Check environment",
+          "code": "// Token should match environment\nRollbar.init({\n  accessToken: process.env.ROLLBAR_TOKEN,\n  environment: 'production'\n});",
+          "when": "Environment mismatch"
+        }
+      ]
+    },
+    {
+      "id": "events_not_appearing",
+      "pattern": "not appearing|missing.*errors|not sending",
+      "message": "Events not appearing in Rollbar",
+      "cause": "SDK not initialized or events filtered",
+      "solutions": [
+        {
+          "approach": "Check initialization",
+          "code": "const rollbar = new Rollbar({\n  accessToken: 'TOKEN',\n  captureUncaught: true,\n  captureUnhandledRejections: true\n});",
+          "when": "SDK not capturing"
+        },
+        {
+          "approach": "Check rate limits",
+          "code": "# Free tier: 5,000 events/month\n# Check usage in Settings > Usage",
+          "when": "Quota exceeded"
+        },
+        {
+          "approach": "Verify environment filter",
+          "code": "// Check if environment is being filtered in dashboard\n// Settings > Notifications & Integrations > Filters",
+          "when": "Environment filtered"
+        },
+        {
+          "approach": "Manual test",
+          "code": "rollbar.error('Test error from application');",
+          "when": "Verify connection"
+        }
+      ]
+    },
+    {
+      "id": "source_maps_not_working",
+      "pattern": "source.*map|minified|stack trace.*wrong",
+      "message": "Source maps not working",
+      "cause": "Source maps not uploaded or misconfigured",
+      "solutions": [
+        {
+          "approach": "Upload source maps",
+          "code": "# Using rollbar-cli:\nrollbar-sourcemaps upload \\\n  --access-token $TOKEN \\\n  --version $VERSION \\\n  --path ./dist",
+          "when": "Source maps not uploaded"
+        },
+        {
+          "approach": "Configure code version",
+          "code": "Rollbar.init({\n  accessToken: 'TOKEN',\n  codeVersion: process.env.GIT_SHA\n});",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Check source map format",
+          "code": "# Ensure source maps include sources\n# sourceMappingURL comment at end of minified file",
+          "when": "Invalid source maps"
+        }
+      ]
+    },
+    {
+      "id": "too_many_items",
+      "pattern": "too many|rate limit|throttle",
+      "message": "Too many items being sent",
+      "cause": "High error volume or repeated errors",
+      "solutions": [
+        {
+          "approach": "Filter noisy errors",
+          "code": "Rollbar.init({\n  checkIgnore: (isUncaught, args, payload) => {\n    return payload.body.message.includes('ignore-this');\n  }\n});",
+          "when": "Noisy errors"
+        },
+        {
+          "approach": "Rate limiting",
+          "code": "Rollbar.init({\n  maxItems: 10,  // Per page load\n  itemsPerMinute: 60\n});",
+          "when": "High volume"
+        },
+        {
+          "approach": "Sample errors",
+          "code": "Rollbar.init({\n  transform: (payload) => {\n    if (Math.random() > 0.1) return false;  // 10% sample\n    return payload;\n  }\n});",
+          "when": "Need sampling"
+        }
+      ]
+    },
+    {
+      "id": "person_tracking_issues",
+      "pattern": "person.*not showing|user.*missing",
+      "message": "Person/user data not showing",
+      "cause": "Person data not being sent",
+      "solutions": [
+        {
+          "approach": "Configure person",
+          "code": "Rollbar.configure({\n  payload: {\n    person: {\n      id: user.id,\n      email: user.email,\n      username: user.name\n    }\n  }\n});",
+          "when": "User logged in"
+        },
+        {
+          "approach": "Clear person on logout",
+          "code": "Rollbar.configure({ payload: { person: null } });",
+          "when": "User logs out"
+        }
+      ]
+    },
+    {
+      "id": "sensitive_data_exposure",
+      "pattern": "sensitive|PII|scrub",
+      "message": "Sensitive data in error reports",
+      "cause": "PII or secrets being captured",
+      "solutions": [
+        {
+          "approach": "Configure scrubbing",
+          "code": "Rollbar.init({\n  scrubFields: ['password', 'ssn', 'credit_card', 'secret'],\n  scrubPaths: ['body.message']\n});",
+          "when": "Scrub specific fields"
+        },
+        {
+          "approach": "Transform payload",
+          "code": "Rollbar.init({\n  transform: (payload) => {\n    delete payload.body.request.headers.authorization;\n    return payload;\n  }\n});",
+          "when": "Custom scrubbing"
+        },
+        {
+          "approach": "Server-side scrubbing",
+          "code": "# Configure in dashboard:\n# Settings > Project > Data Scrubbing",
+          "when": "Blanket scrubbing"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_errors",
+      "pattern": "duplicate|fingerprint|grouping",
+      "message": "Errors not grouping correctly",
+      "cause": "Fingerprinting not matching related errors",
+      "solutions": [
+        {
+          "approach": "Custom fingerprint",
+          "code": "rollbar.error('Error', {\n  fingerprint: 'payment-failed-' + errorCode\n});",
+          "when": "Control grouping"
+        },
+        {
+          "approach": "Custom grouping rules",
+          "code": "# In dashboard:\n# Settings > Grouping Rules\n# Define patterns for grouping",
+          "when": "Dashboard rules"
+        }
+      ]
+    },
+    {
+      "id": "cors_errors",
+      "pattern": "CORS|cross-origin|blocked",
+      "message": "CORS errors not being captured",
+      "cause": "Cross-origin errors sanitized by browser",
+      "solutions": [
+        {
+          "approach": "Add CORS headers",
+          "code": "# On script server, add header:\n# Access-Control-Allow-Origin: *",
+          "when": "Control the script server"
+        },
+        {
+          "approach": "Use crossorigin attribute",
+          "code": "<script src=\"app.js\" crossorigin=\"anonymous\"></script>",
+          "when": "Loading third-party scripts"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "iptables",
+  "version": "1.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted|must be root",
+      "message": "Permission denied",
+      "cause": "Not running as root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo iptables -L",
+          "when": "Need root privileges"
+        },
+        {
+          "approach": "Check capabilities",
+          "code": "setcap cap_net_admin=ep /usr/sbin/iptables",
+          "when": "Grant specific capability"
+        },
+        {
+          "approach": "Run as root",
+          "code": "su -c 'iptables -L'",
+          "when": "Switch to root"
+        }
+      ]
+    },
+    {
+      "id": "chain_not_found",
+      "pattern": "No chain.*by that name|Chain.*doesn't exist",
+      "message": "Chain doesn't exist",
+      "cause": "Referencing non-existent chain",
+      "solutions": [
+        {
+          "approach": "Create chain",
+          "code": "iptables -N MYCHAIN",
+          "when": "Need custom chain"
+        },
+        {
+          "approach": "List chains",
+          "code": "iptables -L -n | grep Chain",
+          "when": "See available chains"
+        },
+        {
+          "approach": "Check table",
+          "code": "iptables -t nat -L  # Chain might be in different table",
+          "when": "Wrong table"
+        }
+      ]
+    },
+    {
+      "id": "bad_rule_number",
+      "pattern": "Bad rule.*number|Invalid rule number|no rule",
+      "message": "Bad rule number",
+      "cause": "Rule number doesn't exist",
+      "solutions": [
+        {
+          "approach": "List with line numbers",
+          "code": "iptables -L --line-numbers",
+          "when": "Find valid numbers"
+        },
+        {
+          "approach": "Delete by spec",
+          "code": "iptables -D INPUT -p tcp --dport 80 -j ACCEPT",
+          "when": "Delete by matching rule"
+        },
+        {
+          "approach": "Flush entire chain",
+          "code": "iptables -F INPUT",
+          "when": "Clear all rules"
+        }
+      ]
+    },
+    {
+      "id": "module_not_loaded",
+      "pattern": "No such file or directory|Unknown.*match|couldn't load match",
+      "message": "Module not loaded",
+      "cause": "Required netfilter module not available",
+      "solutions": [
+        {
+          "approach": "Load module",
+          "code": "modprobe xt_conntrack",
+          "when": "Module exists but not loaded"
+        },
+        {
+          "approach": "Install iptables extensions",
+          "code": "apt install iptables-persistent",
+          "when": "Module not installed"
+        },
+        {
+          "approach": "Check module availability",
+          "code": "find /lib/modules -name 'xt_*' | grep modulename",
+          "when": "Verify module exists"
+        }
+      ]
+    },
+    {
+      "id": "protocol_required",
+      "pattern": "--protocol.*required|Protocol.*required|--dport.*needs",
+      "message": "Protocol required for port specification",
+      "cause": "Specifying port without protocol",
+      "solutions": [
+        {
+          "approach": "Add protocol",
+          "code": "iptables -A INPUT -p tcp --dport 80 -j ACCEPT",
+          "when": "TCP port"
+        },
+        {
+          "approach": "Use multiport",
+          "code": "iptables -A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT",
+          "when": "Multiple ports"
+        },
+        {
+          "approach": "Both protocols",
+          "code": "iptables -A INPUT -p tcp --dport 53 -j ACCEPT\niptables -A INPUT -p udp --dport 53 -j ACCEPT",
+          "when": "Need both TCP and UDP"
+        }
+      ]
+    },
+    {
+      "id": "invalid_interface",
+      "pattern": "interface.*doesn't exist|No such device|bad.*interface",
+      "message": "Invalid interface",
+      "cause": "Network interface doesn't exist",
+      "solutions": [
+        {
+          "approach": "List interfaces",
+          "code": "ip link show",
+          "when": "Find valid interface names"
+        },
+        {
+          "approach": "Use wildcard",
+          "code": "iptables -A INPUT -i eth+ -j ACCEPT",
+          "when": "Match multiple interfaces"
+        },
+        {
+          "approach": "Wait for interface",
+          "code": "Use if-up.d scripts to apply rules when interface comes up",
+          "when": "Interface created later"
+        }
+      ]
+    },
+    {
+      "id": "table_not_found",
+      "pattern": "Table.*not exist|can't initialize.*table",
+      "message": "Table doesn't exist",
+      "cause": "Wrong table name or module not loaded",
+      "solutions": [
+        {
+          "approach": "Use valid table",
+          "code": "filter, nat, mangle, raw, security",
+          "when": "Check table name"
+        },
+        {
+          "approach": "Load table module",
+          "code": "modprobe iptable_nat",
+          "when": "Module not loaded"
+        },
+        {
+          "approach": "Check kernel support",
+          "code": "cat /proc/net/ip_tables_names",
+          "when": "See available tables"
+        }
+      ]
+    }
+  ]
+}

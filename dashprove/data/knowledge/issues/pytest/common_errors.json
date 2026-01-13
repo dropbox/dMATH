@@ -1,0 +1,181 @@
+{
+  "tool": "pytest",
+  "version": "8.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "collection_error",
+      "pattern": "ERROR collecting.*",
+      "message": "Collection error - pytest cannot find or parse test files",
+      "cause": "Test file has syntax errors, import failures, or naming issues",
+      "solutions": [
+        {
+          "approach": "Check file naming",
+          "code": "# Rename to test_*.py or *_test.py",
+          "when": "File doesn't match pytest's discovery pattern"
+        },
+        {
+          "approach": "Fix import errors",
+          "code": "# Check PYTHONPATH or use pytest --import-mode=importlib",
+          "when": "Module cannot be imported"
+        },
+        {
+          "approach": "Check syntax",
+          "code": "python -m py_compile test_file.py",
+          "when": "File has Python syntax errors"
+        }
+      ]
+    },
+    {
+      "id": "fixture_not_found",
+      "pattern": "fixture '.*' not found",
+      "message": "Fixture not found error",
+      "cause": "Test function requests a fixture that doesn't exist or isn't in scope",
+      "solutions": [
+        {
+          "approach": "Define fixture in conftest.py",
+          "code": "@pytest.fixture\ndef my_fixture():\n    return setup_value",
+          "when": "Fixture needs to be shared across files"
+        },
+        {
+          "approach": "Check fixture scope",
+          "code": "@pytest.fixture(scope='module')  # or session, class, function",
+          "when": "Fixture exists but scope doesn't match"
+        },
+        {
+          "approach": "Import fixture from plugin",
+          "code": "pytest_plugins = ['my_fixtures']",
+          "when": "Fixture is in a plugin or external module"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError: assert.*",
+      "message": "Assertion failed in test",
+      "cause": "Test assertion evaluated to False",
+      "solutions": [
+        {
+          "approach": "Use pytest assertion introspection",
+          "code": "assert actual == expected  # pytest shows detailed diff",
+          "when": "Need more information about failure"
+        },
+        {
+          "approach": "Use pytest.approx for floats",
+          "code": "assert 0.1 + 0.2 == pytest.approx(0.3)",
+          "when": "Comparing floating-point numbers"
+        },
+        {
+          "approach": "Add custom message",
+          "code": "assert condition, f'Expected {expected}, got {actual}'",
+          "when": "Need context-specific error message"
+        }
+      ]
+    },
+    {
+      "id": "parametrize_error",
+      "pattern": "In test_.*: indirect fixture .* doesn't exist",
+      "message": "Parametrize indirect fixture error",
+      "cause": "Using indirect=True but fixture name doesn't match parameter name",
+      "solutions": [
+        {
+          "approach": "Match fixture name to parameter",
+          "code": "@pytest.mark.parametrize('my_fixture', [1, 2], indirect=True)",
+          "when": "Using indirect parametrization"
+        },
+        {
+          "approach": "Use ids for clarity",
+          "code": "@pytest.mark.parametrize('input,expected', cases, ids=lambda x: str(x))",
+          "when": "Need readable test IDs"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Timeout >.*s",
+      "message": "Test timeout exceeded",
+      "cause": "Test took longer than configured timeout",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "@pytest.mark.timeout(60)  # seconds",
+          "when": "Test legitimately needs more time"
+        },
+        {
+          "approach": "Fix infinite loop",
+          "code": "# Review test logic for infinite loops or blocking calls",
+          "when": "Test has a bug causing it to hang"
+        },
+        {
+          "approach": "Mock slow operations",
+          "code": "@pytest.fixture\ndef mock_slow_api(mocker):\n    mocker.patch('module.slow_call', return_value=cached_value)",
+          "when": "Test calls slow external services"
+        }
+      ]
+    },
+    {
+      "id": "skip_test",
+      "pattern": "SKIPPED.*",
+      "message": "Test was skipped",
+      "cause": "Test marked as skipped or skip condition met",
+      "solutions": [
+        {
+          "approach": "Check skip reason",
+          "code": "pytest -rs  # show skip reasons",
+          "when": "Need to understand why test skipped"
+        },
+        {
+          "approach": "Use skipif for conditions",
+          "code": "@pytest.mark.skipif(sys.platform == 'win32', reason='Unix only')",
+          "when": "Skip based on environment"
+        },
+        {
+          "approach": "Use xfail for known failures",
+          "code": "@pytest.mark.xfail(reason='Bug #123')",
+          "when": "Test fails due to known issue"
+        }
+      ]
+    },
+    {
+      "id": "import_mismatch",
+      "pattern": "ImportMismatchError",
+      "message": "Import path mismatch error",
+      "cause": "Same module imported from different paths",
+      "solutions": [
+        {
+          "approach": "Use importlib mode",
+          "code": "pytest --import-mode=importlib",
+          "when": "Using src layout or complex imports"
+        },
+        {
+          "approach": "Clear pycache",
+          "code": "find . -type d -name __pycache__ -exec rm -rf {} +",
+          "when": "Stale bytecode causing issues"
+        },
+        {
+          "approach": "Check PYTHONPATH",
+          "code": "# Ensure consistent PYTHONPATH",
+          "when": "Multiple directories on path"
+        }
+      ]
+    },
+    {
+      "id": "deprecation_warning",
+      "pattern": "PytestDeprecationWarning",
+      "message": "Deprecated pytest feature usage",
+      "cause": "Using deprecated pytest API that will be removed",
+      "solutions": [
+        {
+          "approach": "Update to new API",
+          "code": "# Check pytest changelog for migration guide",
+          "when": "Need to update deprecated code"
+        },
+        {
+          "approach": "Suppress temporarily",
+          "code": "filterwarnings = ['ignore::pytest.PytestDeprecationWarning']",
+          "when": "Can't update immediately"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "mirai",
+  "version": "1.1.8",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "possible_panic",
+      "pattern": "possible panic",
+      "message": "Code path may panic",
+      "cause": "MIRAI detected a potential panic (unwrap, index, assert, etc.)",
+      "solutions": [
+        {
+          "approach": "Handle Option/Result",
+          "code": "value.unwrap_or_default()  // or match/if-let",
+          "when": "Using unwrap() on possibly-None"
+        },
+        {
+          "approach": "Add bounds check",
+          "code": "if index < slice.len() { slice[index] }",
+          "when": "Array indexing may be out of bounds"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "#[requires(condition)]\nfn my_fn(...) { ... }",
+          "when": "Panic only possible with invalid input"
+        }
+      ]
+    },
+    {
+      "id": "possible_overflow",
+      "pattern": "possible arithmetic overflow",
+      "message": "Integer operation may overflow",
+      "cause": "Addition, subtraction, or multiplication may exceed type bounds",
+      "solutions": [
+        {
+          "approach": "Use checked arithmetic",
+          "code": "a.checked_add(b)?",
+          "when": "Overflow should return error"
+        },
+        {
+          "approach": "Use saturating arithmetic",
+          "code": "a.saturating_add(b)",
+          "when": "Clamping is acceptable"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "#[requires(a <= i32::MAX - b)]\nfn add(a: i32, b: i32) -> i32 { a + b }",
+          "when": "Caller should guarantee no overflow"
+        }
+      ]
+    },
+    {
+      "id": "unreachable_call",
+      "pattern": "call to unreachable",
+      "message": "unreachable!() may be reached",
+      "cause": "Code marked unreachable may actually execute",
+      "solutions": [
+        {
+          "approach": "Review control flow",
+          "code": "// Check if all cases are truly handled",
+          "when": "Logic may be wrong"
+        },
+        {
+          "approach": "Add verify annotation",
+          "code": "verify!(condition);  // MIRAI assertion",
+          "when": "Help MIRAI understand invariant"
+        },
+        {
+          "approach": "Use proper error handling",
+          "code": "return Err(MyError)  // Instead of unreachable!()",
+          "when": "Case is actually possible"
+        }
+      ]
+    },
+    {
+      "id": "precondition_violated",
+      "pattern": "precondition .* not satisfied",
+      "message": "Function precondition may not hold",
+      "cause": "Caller may not satisfy #[requires] annotation",
+      "solutions": [
+        {
+          "approach": "Establish precondition",
+          "code": "// Ensure condition before calling\nassert!(precondition);\ncall_fn(...)",
+          "when": "Can verify condition"
+        },
+        {
+          "approach": "Propagate requirement",
+          "code": "#[requires(condition)]\nfn caller(...) { ... }",
+          "when": "Push to outer caller"
+        },
+        {
+          "approach": "Use assume",
+          "code": "assume!(condition);  // For external guarantees",
+          "when": "Know condition holds from external knowledge"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_violated",
+      "pattern": "postcondition .* not satisfied",
+      "message": "Function postcondition may not hold",
+      "cause": "Function body doesn't establish #[ensures] annotation",
+      "solutions": [
+        {
+          "approach": "Fix implementation",
+          "code": "// Ensure return value satisfies postcondition",
+          "when": "Implementation has bug"
+        },
+        {
+          "approach": "Fix postcondition",
+          "code": "#[ensures(correct_condition)]",
+          "when": "Postcondition was too strong"
+        },
+        {
+          "approach": "Add intermediate verification",
+          "code": "verify!(intermediate_property);",
+          "when": "Help MIRAI see property holds"
+        }
+      ]
+    },
+    {
+      "id": "abstract_value_imprecision",
+      "pattern": "abstract value too imprecise",
+      "message": "MIRAI cannot precisely track value",
+      "cause": "Value comes from complex computation or external source",
+      "solutions": [
+        {
+          "approach": "Add tag functions",
+          "code": "let x = mirai_annotations::tag!(value, kind);",
+          "when": "Help track value provenance"
+        },
+        {
+          "approach": "Use verify!/assume!",
+          "code": "verify!(constraint_on_value);",
+          "when": "Add constraint MIRAI can use"
+        },
+        {
+          "approach": "Simplify computation",
+          "code": "// Break complex expression into steps",
+          "when": "Can restructure code"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported |feature not implemented",
+      "message": "MIRAI doesn't support this Rust feature",
+      "cause": "Code uses feature MIRAI cannot analyze",
+      "solutions": [
+        {
+          "approach": "Use foreign_contracts",
+          "code": "mirai_annotations::foreign_contracts!(\n    fn external_fn(x: T) -> U;\n);",
+          "when": "External function"
+        },
+        {
+          "approach": "Add stub",
+          "code": "// Conditional compilation for MIRAI",
+          "when": "Can provide simplified version"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "analysis timeout|analysis incomplete",
+      "message": "MIRAI analysis timed out",
+      "cause": "Function too complex for analysis in time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "MIRAI_FLAGS=\"--max_time_limit=300\" cargo mirai",
+          "when": "Just needs more time"
+        },
+        {
+          "approach": "Add annotations to guide",
+          "code": "verify!(bound_on_loop_iterations);",
+          "when": "Help MIRAI bound analysis"
+        },
+        {
+          "approach": "Decompose function",
+          "code": "// Split into smaller, independently analyzed functions",
+          "when": "Function does too much"
+        }
+      ]
+    }
+  ]
+}

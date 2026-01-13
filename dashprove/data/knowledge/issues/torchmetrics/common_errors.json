@@ -1,0 +1,186 @@
+{
+  "tool": "torchmetrics",
+  "version": "1.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "shape_mismatch",
+      "pattern": "Shape mismatch|Expected.*shape|preds and target.*different",
+      "message": "Prediction and target tensor shapes don't match",
+      "cause": "Tensor dimensions incompatible for metric computation",
+      "solutions": [
+        {
+          "approach": "Check shapes",
+          "code": "print(f'preds: {preds.shape}, target: {target.shape}')",
+          "when": "Debugging shape issue"
+        },
+        {
+          "approach": "Adjust classification format",
+          "code": "# For multiclass: preds (N, C), target (N,)\n# For binary: preds (N,), target (N,)",
+          "when": "Classification metrics"
+        },
+        {
+          "approach": "Squeeze/unsqueeze tensors",
+          "code": "preds = preds.squeeze()\ntarget = target.squeeze()",
+          "when": "Extra dimensions"
+        }
+      ]
+    },
+    {
+      "id": "device_mismatch",
+      "pattern": "device.*mismatch|Expected.*cuda|tensor on different device",
+      "message": "Tensors on different devices",
+      "cause": "Predictions and targets not on same device as metric",
+      "solutions": [
+        {
+          "approach": "Move metric to device",
+          "code": "metric = Accuracy(task='binary').to(device)\npreds = preds.to(device)\ntarget = target.to(device)",
+          "when": "Using GPU"
+        },
+        {
+          "approach": "Create on correct device",
+          "code": "metric = Accuracy(task='binary', device='cuda')",
+          "when": "Initializing metric"
+        }
+      ]
+    },
+    {
+      "id": "num_classes_error",
+      "pattern": "num_classes|Number of classes|Class.*mismatch",
+      "message": "Number of classes mismatch",
+      "cause": "Metric num_classes doesn't match actual data",
+      "solutions": [
+        {
+          "approach": "Specify num_classes",
+          "code": "metric = Accuracy(task='multiclass', num_classes=10)",
+          "when": "Multiclass classification"
+        },
+        {
+          "approach": "Infer from data",
+          "code": "num_classes = target.max().item() + 1\nmetric = F1Score(task='multiclass', num_classes=num_classes)",
+          "when": "Unknown class count"
+        },
+        {
+          "approach": "Check target encoding",
+          "code": "# Ensure target uses 0-indexed class labels",
+          "when": "Labels start from 1"
+        }
+      ]
+    },
+    {
+      "id": "task_type_error",
+      "pattern": "task.*required|Unknown task|Invalid task type",
+      "message": "Task type not specified or invalid",
+      "cause": "Missing or incorrect task argument",
+      "solutions": [
+        {
+          "approach": "Specify binary task",
+          "code": "metric = Accuracy(task='binary')",
+          "when": "Two-class classification"
+        },
+        {
+          "approach": "Specify multiclass task",
+          "code": "metric = Accuracy(task='multiclass', num_classes=10)",
+          "when": "Multiple classes"
+        },
+        {
+          "approach": "Specify multilabel task",
+          "code": "metric = Accuracy(task='multilabel', num_labels=5)",
+          "when": "Multiple labels per sample"
+        }
+      ]
+    },
+    {
+      "id": "state_error",
+      "pattern": "State.*error|Cannot update|Metric not initialized",
+      "message": "Metric state error",
+      "cause": "Metric state corrupted or not properly initialized",
+      "solutions": [
+        {
+          "approach": "Reset before epoch",
+          "code": "metric.reset()\nfor batch in dataloader:\n    metric.update(preds, target)",
+          "when": "Starting new epoch"
+        },
+        {
+          "approach": "Use functional API",
+          "code": "from torchmetrics.functional import accuracy\nacc = accuracy(preds, target, task='binary')",
+          "when": "One-off computation"
+        },
+        {
+          "approach": "Clone metric",
+          "code": "metric_copy = metric.clone()",
+          "when": "Need independent state"
+        }
+      ]
+    },
+    {
+      "id": "average_error",
+      "pattern": "average.*invalid|Unknown average|macro.*micro",
+      "message": "Invalid averaging mode",
+      "cause": "Averaging parameter incorrect for metric type",
+      "solutions": [
+        {
+          "approach": "Use macro average",
+          "code": "metric = F1Score(task='multiclass', num_classes=10, average='macro')",
+          "when": "Unweighted average across classes"
+        },
+        {
+          "approach": "Use micro average",
+          "code": "metric = F1Score(task='multiclass', num_classes=10, average='micro')",
+          "when": "Global average"
+        },
+        {
+          "approach": "Get per-class scores",
+          "code": "metric = F1Score(task='multiclass', num_classes=10, average=None)",
+          "when": "Individual class scores"
+        }
+      ]
+    },
+    {
+      "id": "sync_error",
+      "pattern": "sync.*error|DDP.*error|dist.*not initialized",
+      "message": "Distributed sync error",
+      "cause": "Distributed training sync failed",
+      "solutions": [
+        {
+          "approach": "Disable sync",
+          "code": "metric = Accuracy(task='binary', sync_on_compute=False)",
+          "when": "Single GPU or debugging"
+        },
+        {
+          "approach": "Initialize process group",
+          "code": "torch.distributed.init_process_group(backend='nccl')",
+          "when": "DDP not initialized"
+        },
+        {
+          "approach": "Manual sync",
+          "code": "metric.sync()",
+          "when": "Control sync timing"
+        }
+      ]
+    },
+    {
+      "id": "collection_error",
+      "pattern": "MetricCollection|Cannot add metric|Key.*exists",
+      "message": "MetricCollection error",
+      "cause": "Error adding or using metrics in collection",
+      "solutions": [
+        {
+          "approach": "Create collection",
+          "code": "from torchmetrics import MetricCollection\nmetrics = MetricCollection([\n    Accuracy(task='binary'),\n    F1Score(task='binary')\n])",
+          "when": "Grouping metrics"
+        },
+        {
+          "approach": "Use prefix",
+          "code": "train_metrics = metrics.clone(prefix='train_')\nval_metrics = metrics.clone(prefix='val_')",
+          "when": "Same metrics for train/val"
+        },
+        {
+          "approach": "Access individual metrics",
+          "code": "acc = metrics['Accuracy']\nmetrics['Accuracy'].reset()",
+          "when": "Per-metric operations"
+        }
+      ]
+    }
+  ]
+}

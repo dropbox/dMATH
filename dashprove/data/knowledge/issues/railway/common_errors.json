@@ -1,0 +1,191 @@
+{
+  "tool": "railway",
+  "version": "3.5.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not logged in|authentication.*failed|RAILWAY_TOKEN|unauthorized",
+      "message": "Authentication error",
+      "cause": "Not logged in or token invalid",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "railway login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Token auth",
+          "code": "export RAILWAY_TOKEN=your-token\nrailway deploy",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Check auth",
+          "code": "railway whoami",
+          "when": "Verify auth"
+        }
+      ]
+    },
+    {
+      "id": "deploy_error",
+      "pattern": "deploy.*failed|build.*error|no Dockerfile|nixpacks.*failed",
+      "message": "Deployment error",
+      "cause": "Build or configuration error",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "railway logs",
+          "when": "See error"
+        },
+        {
+          "approach": "Specify start",
+          "code": "# railway.json or environment:\n# Set START_COMMAND=npm start\n# Or use Procfile: web: npm start",
+          "when": "Start command missing"
+        },
+        {
+          "approach": "Use Dockerfile",
+          "code": "# Railway auto-detects Dockerfile\n# Or use nixpacks.toml for custom build",
+          "when": "Custom build"
+        }
+      ]
+    },
+    {
+      "id": "env_error",
+      "pattern": "environment.*undefined|Missing.*variable|process.env",
+      "message": "Missing environment variable",
+      "cause": "Env var not set",
+      "solutions": [
+        {
+          "approach": "Set variable",
+          "code": "railway variables set API_KEY=value",
+          "when": "Add variable"
+        },
+        {
+          "approach": "Link service",
+          "code": "railway link\n# Links local project to Railway service",
+          "when": "Not linked"
+        },
+        {
+          "approach": "View variables",
+          "code": "railway variables",
+          "when": "List variables"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "DATABASE_URL.*not set|connection.*refused|postgres.*failed",
+      "message": "Database connection error",
+      "cause": "Database not provisioned or misconfigured",
+      "solutions": [
+        {
+          "approach": "Add database",
+          "code": "# Add PostgreSQL/MySQL/Redis from Railway dashboard\n# Variables auto-added: DATABASE_URL, PGHOST, etc.",
+          "when": "No database"
+        },
+        {
+          "approach": "Check connection",
+          "code": "railway connect postgres\n# Opens psql shell",
+          "when": "Test connection"
+        },
+        {
+          "approach": "Reference variable",
+          "code": "# Railway provides: ${{Postgres.DATABASE_URL}}\n# Reference in service variables",
+          "when": "Variable reference"
+        }
+      ]
+    },
+    {
+      "id": "port_error",
+      "pattern": "PORT.*undefined|cannot bind|EADDRINUSE|no open ports",
+      "message": "Port configuration error",
+      "cause": "App not using Railway-provided PORT",
+      "solutions": [
+        {
+          "approach": "Use PORT env",
+          "code": "const port = process.env.PORT || 3000;\napp.listen(port);",
+          "when": "Node.js"
+        },
+        {
+          "approach": "Python",
+          "code": "import os\nport = int(os.environ.get('PORT', 8000))\napp.run(host='0.0.0.0', port=port)",
+          "when": "Python"
+        },
+        {
+          "approach": "Set PORT",
+          "code": "railway variables set PORT=8080",
+          "when": "Custom port"
+        }
+      ]
+    },
+    {
+      "id": "domain_error",
+      "pattern": "domain.*failed|DNS.*error|certificate.*error",
+      "message": "Custom domain error",
+      "cause": "Domain not configured correctly",
+      "solutions": [
+        {
+          "approach": "Generate domain",
+          "code": "railway domain\n# Generates *.up.railway.app domain",
+          "when": "No domain"
+        },
+        {
+          "approach": "Custom domain",
+          "code": "# Add custom domain in Railway dashboard\n# Configure DNS CNAME to your-app.up.railway.app",
+          "when": "Custom domain"
+        },
+        {
+          "approach": "Verify DNS",
+          "code": "dig CNAME example.com",
+          "when": "Check DNS"
+        }
+      ]
+    },
+    {
+      "id": "resource_error",
+      "pattern": "resource.*limit|memory.*exceeded|OOM|credit.*exhausted",
+      "message": "Resource limit error",
+      "cause": "Usage limits exceeded",
+      "solutions": [
+        {
+          "approach": "Check usage",
+          "code": "railway status",
+          "when": "View usage"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Upgrade to Pro plan in Railway dashboard",
+          "when": "Need more resources"
+        },
+        {
+          "approach": "Optimize app",
+          "code": "# Reduce memory usage, optimize build size",
+          "when": "Resource efficiency"
+        }
+      ]
+    },
+    {
+      "id": "health_check_error",
+      "pattern": "health check.*failed|unhealthy|restart.*loop",
+      "message": "Health check failed",
+      "cause": "App not responding or crashing",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "railway logs --tail",
+          "when": "See crash reason"
+        },
+        {
+          "approach": "Add health endpoint",
+          "code": "app.get('/health', (req, res) => res.status(200).send('OK'));",
+          "when": "No health endpoint"
+        },
+        {
+          "approach": "Run locally",
+          "code": "railway run npm start\n# Run with Railway env vars locally",
+          "when": "Test locally"
+        }
+      ]
+    }
+  ]
+}

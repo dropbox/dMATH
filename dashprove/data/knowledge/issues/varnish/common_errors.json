@@ -1,0 +1,150 @@
+{
+  "tool": "varnish",
+  "category": "caching",
+  "common_errors": [
+    {
+      "error": "BACKEND_FETCH_FAILED",
+      "pattern": "FetchError|Backend fetch failed|Error: backend.*unhealthy",
+      "severity": "critical",
+      "causes": [
+        "Backend server down or unreachable",
+        "Backend health check failing",
+        "Firewall blocking Varnish to backend connection",
+        "Backend timeout exceeded"
+      ],
+      "solutions": [
+        "Check backend health: varnishadm backend.list",
+        "Verify backend connectivity: curl -I http://backend:port",
+        "Increase backend timeouts in VCL: .connect_timeout, .first_byte_timeout",
+        "Review backend probe configuration: .probe { .url = \"/health\"; }"
+      ]
+    },
+    {
+      "error": "VCL_COMPILATION_ERROR",
+      "pattern": "VCL compilation failed|Message from VCC-compiler|Symbol not found",
+      "severity": "high",
+      "causes": [
+        "Syntax error in VCL file",
+        "Undefined backend reference",
+        "Missing vcl_recv or required subroutine",
+        "Version mismatch (VCL 4.0 vs 4.1 syntax)"
+      ],
+      "solutions": [
+        "Validate VCL: varnishd -C -f /etc/varnish/default.vcl",
+        "Check VCL version declaration: vcl 4.1;",
+        "Ensure all backends defined before use",
+        "Review Varnish version compatibility for VCL syntax"
+      ]
+    },
+    {
+      "error": "STORAGE_FULL",
+      "pattern": "storage.*full|Ran out of storage|nuked.*objects",
+      "severity": "high",
+      "causes": [
+        "Malloc storage size limit reached",
+        "Too many large objects cached",
+        "TTL too long causing object accumulation",
+        "Memory fragmentation"
+      ],
+      "solutions": [
+        "Increase storage: -s malloc,4G or -s file,/var/cache/varnish,10G",
+        "Tune TTL values in VCL: set beresp.ttl = 1h;",
+        "Use Grace mode for stale content: set beresp.grace = 24h;",
+        "Monitor with varnishstat: MAIN.n_lru_nuked"
+      ]
+    },
+    {
+      "error": "THREAD_POOL_EXHAUSTED",
+      "pattern": "Thread pool.*queue|dropping request|503 Service Unavailable",
+      "severity": "critical",
+      "causes": [
+        "Too many concurrent connections",
+        "Slow backend causing thread blocking",
+        "Thread pool min/max misconfigured",
+        "Request queue overflow"
+      ],
+      "solutions": [
+        "Increase thread pool: -p thread_pool_max=4000 -p thread_pool_min=100",
+        "Add more thread pools: -p thread_pools=4",
+        "Tune queue depth: -p thread_queue_limit=100",
+        "Investigate slow backends causing thread starvation"
+      ]
+    },
+    {
+      "error": "HIT_FOR_PASS",
+      "pattern": "hit-for-pass|HFP",
+      "severity": "medium",
+      "causes": [
+        "Backend response marked uncacheable",
+        "Set-Cookie header in response",
+        "Cache-Control: private or no-store",
+        "Beresp.uncacheable set in VCL"
+      ],
+      "solutions": [
+        "Remove or handle Set-Cookie: unset beresp.http.Set-Cookie;",
+        "Override Cache-Control: set beresp.ttl = 1h;",
+        "Use return(deliver) after setting cacheability",
+        "Check builtin.vcl for default uncacheable conditions"
+      ]
+    },
+    {
+      "error": "PURGE_FORBIDDEN",
+      "pattern": "405 Not Allowed|PURGE.*forbidden|Error 405",
+      "severity": "medium",
+      "causes": [
+        "PURGE method not configured in VCL",
+        "Client IP not in ACL for purge",
+        "Missing vcl_purge subroutine"
+      ],
+      "solutions": [
+        "Add purge ACL: acl purge { \"localhost\"; \"10.0.0.0\"/8; }",
+        "Configure vcl_recv for PURGE: if (req.method == \"PURGE\") { ... }",
+        "Add vcl_purge subroutine returning synth(200, \"Purged\")",
+        "Use ban instead: varnishadm ban req.url ~ \"pattern\""
+      ]
+    },
+    {
+      "error": "ESI_ERROR",
+      "pattern": "ESI.*error|esi:include failed|XML parsing error",
+      "severity": "medium",
+      "causes": [
+        "Invalid ESI syntax in response",
+        "ESI src URL returning error",
+        "ESI processing not enabled",
+        "Nested ESI depth exceeded"
+      ],
+      "solutions": [
+        "Enable ESI: set beresp.do_esi = true;",
+        "Validate ESI markup: <esi:include src=\"/fragment\" />",
+        "Set max ESI depth: -p feature=+esi_disable_xml_check",
+        "Handle ESI errors gracefully with onerror=\"continue\""
+      ]
+    },
+    {
+      "error": "HASH_COLLISION",
+      "pattern": "Duplicate.*hash|Object already exists",
+      "severity": "low",
+      "causes": [
+        "Different requests producing same hash",
+        "Missing Vary header consideration",
+        "vcl_hash not including all variant factors"
+      ],
+      "solutions": [
+        "Add Vary headers: set beresp.http.Vary = \"Accept-Encoding\";",
+        "Extend vcl_hash: hash_data(req.http.Accept-Language);",
+        "Include host in hash: hash_data(req.http.host);",
+        "Review hash composition for uniqueness"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use varnishlog and varnishncsa for debugging",
+    "Implement proper health probes for backends",
+    "Use Grace mode for high availability",
+    "Set appropriate TTLs based on content type",
+    "Monitor hit rate with varnishstat",
+    "Use bans sparingly (prefer explicit purge)",
+    "Test VCL changes with varnishd -C before reload"
+  ],
+  "related_tools": ["haproxy", "nginx", "caddy", "traefik"]
+}

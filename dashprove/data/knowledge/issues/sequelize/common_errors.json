@@ -1,0 +1,135 @@
+{
+  "tool": "sequelize",
+  "category": "orm",
+  "common_errors": [
+    {
+      "id": "sequelize_connection_refused",
+      "pattern": "ECONNREFUSED|Connection refused|connect ETIMEDOUT",
+      "severity": "error",
+      "causes": [
+        "Database server not running",
+        "Incorrect host/port configuration",
+        "Firewall blocking connection",
+        "SSL/TLS configuration mismatch"
+      ],
+      "solutions": [
+        "Verify database server is running and accessible",
+        "Check host, port, and database name in config",
+        "Configure dialectOptions.ssl for cloud databases",
+        "Use connection pooling with appropriate limits"
+      ]
+    },
+    {
+      "id": "sequelize_model_not_initialized",
+      "pattern": "Model not initialized|model is not associated|Cannot read properties of undefined",
+      "severity": "error",
+      "causes": [
+        "Model defined but not initialized with sequelize.define()",
+        "Circular dependency between models",
+        "Model associations defined before models initialized"
+      ],
+      "solutions": [
+        "Call sequelize.sync() or model.init() before using",
+        "Define associations in separate file loaded after models",
+        "Use sequelize.models to access initialized models",
+        "Check model import order in index.js"
+      ]
+    },
+    {
+      "id": "sequelize_validation_error",
+      "pattern": "SequelizeValidationError|Validation error|notNull Violation",
+      "severity": "error",
+      "causes": [
+        "Required field is null or missing",
+        "Value fails model validation (isEmail, len, etc.)",
+        "Unique constraint would be violated"
+      ],
+      "solutions": [
+        "Provide all required fields in create/update",
+        "Check validation rules in model definition",
+        "Handle SequelizeValidationError in try-catch",
+        "Use allowNull: true for optional fields"
+      ]
+    },
+    {
+      "id": "sequelize_foreign_key_constraint",
+      "pattern": "SequelizeForeignKeyConstraintError|foreign key constraint fails|violates foreign key",
+      "severity": "error",
+      "causes": [
+        "Referenced record doesn't exist",
+        "Attempting to delete parent with children",
+        "Wrong foreign key value"
+      ],
+      "solutions": [
+        "Create parent record before child",
+        "Use onDelete: 'CASCADE' for automatic deletion",
+        "Use onDelete: 'SET NULL' with allowNull: true",
+        "Verify referenced ID exists before insert"
+      ]
+    },
+    {
+      "id": "sequelize_eager_loading_error",
+      "pattern": "EagerLoadingError|is not associated|include.*unknown",
+      "severity": "error",
+      "causes": [
+        "Include references non-associated model",
+        "Association not defined between models",
+        "Using wrong alias in include"
+      ],
+      "solutions": [
+        "Define association: Model.hasMany(), Model.belongsTo()",
+        "Use correct alias: { model: X, as: 'alias' }",
+        "Check association exists before querying",
+        "Verify association defined in both directions if needed"
+      ]
+    },
+    {
+      "id": "sequelize_migration_error",
+      "pattern": "SequelizeMeta.*already exists|migration.*failed|column.*already exists",
+      "severity": "error",
+      "causes": [
+        "Migration previously ran but failed midway",
+        "Schema manually modified out of sync",
+        "Migration file modified after running"
+      ],
+      "solutions": [
+        "Use sequelize-cli db:migrate:undo to rollback",
+        "Fix migration then re-run",
+        "Check SequelizeMeta table for applied migrations",
+        "Never modify already-run migrations in production"
+      ]
+    },
+    {
+      "id": "sequelize_unique_constraint",
+      "pattern": "SequelizeUniqueConstraintError|duplicate key|Duplicate entry",
+      "severity": "error",
+      "causes": [
+        "Inserting duplicate value in unique column",
+        "Race condition on upsert",
+        "Composite unique key violation"
+      ],
+      "solutions": [
+        "Use findOrCreate() for conditional inserts",
+        "Use upsert() for insert-or-update",
+        "Add unique constraint validation before save",
+        "Handle error and return existing record"
+      ]
+    },
+    {
+      "id": "sequelize_pool_exhausted",
+      "pattern": "ResourceRequest timed out|pool exhausted|too many connections",
+      "severity": "error",
+      "causes": [
+        "Connection pool limit reached",
+        "Connections not being released",
+        "Long-running transactions holding connections"
+      ],
+      "solutions": [
+        "Increase pool.max in connection options",
+        "Ensure transactions are committed/rolled back",
+        "Use connection.release() or close sequelize properly",
+        "Monitor active connections with pool.acquire/release events"
+      ]
+    }
+  ]
+}

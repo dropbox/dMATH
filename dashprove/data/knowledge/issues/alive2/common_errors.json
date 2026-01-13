@@ -1,0 +1,66 @@
+{
+  "tool_id": "alive2",
+  "tool_name": "Alive2",
+  "description": "Automated verification tool for LLVM IR transformations, proving that compiler optimizations are correct or finding counterexamples",
+  "common_errors": [
+    {
+      "id": "transformation_incorrect",
+      "pattern": "Transformation doesn't verify|ERROR: Value mismatch|Source and target disagree",
+      "category": "verification",
+      "severity": "critical",
+      "cause": "The LLVM optimization being verified actually has a bug - it transforms code incorrectly for some inputs",
+      "solution": "Examine the counterexample to understand the bug. Check for undefined behavior assumptions. Review poison/undef value handling. Fix the transformation or add preconditions.",
+      "example": "// Counterexample: src returns 5, tgt returns 6 for input x=3",
+      "related_concepts": ["counterexample", "refinement_checking", "compiler_correctness"]
+    },
+    {
+      "id": "timeout_complex_transform",
+      "pattern": "timeout|verification took too long|SMT solver timeout",
+      "category": "performance",
+      "severity": "medium",
+      "cause": "Transformation involves complex arithmetic, loops, or memory operations that exceed SMT solver capabilities",
+      "solution": "Simplify the test case. Use --smt-to to increase timeout. Try different solver strategies. Break into smaller transformations. Use bounded verification.",
+      "example": "alive-tv --smt-to 300 input.ll output.ll",
+      "related_concepts": ["smt_timeout", "solver_strategy", "bounded_verification"]
+    },
+    {
+      "id": "poison_undef_mismatch",
+      "pattern": "Undefined behavior triggered|poison value|undef behavior differs",
+      "category": "semantics",
+      "severity": "high",
+      "cause": "Source and target handle undefined values differently, which may or may not be a real bug depending on context",
+      "solution": "Analyze if UB is reachable in practice. Check nsw/nuw flags. Review freeze instruction usage. Source UB should imply target UB (refinement).",
+      "related_concepts": ["poison_value", "undefined_behavior", "nsw_nuw_flags"]
+    },
+    {
+      "id": "memory_model_issue",
+      "pattern": "Memory access differs|aliasing violation|memory model error",
+      "category": "memory",
+      "severity": "high",
+      "cause": "Transformation changes memory access patterns in ways that violate LLVM memory model semantics",
+      "solution": "Check noalias/restrict attributes. Verify load/store ordering. Review pointer provenance. Ensure memory model assumptions are valid.",
+      "related_concepts": ["llvm_memory_model", "aliasing", "pointer_provenance"]
+    },
+    {
+      "id": "unsupported_instruction",
+      "pattern": "unsupported instruction|cannot verify|instruction not implemented",
+      "category": "coverage",
+      "severity": "low",
+      "cause": "Alive2 doesn't support certain LLVM instructions or intrinsics used in the transformation",
+      "solution": "Check Alive2 supported instruction list. Simplify IR to avoid unsupported features. Consider contributing support upstream. Use manual review for unsupported parts.",
+      "related_concepts": ["instruction_support", "llvm_intrinsics", "alive2_limitations"]
+    }
+  ],
+  "best_practices": [
+    "Test optimizations before committing to LLVM",
+    "Start with small test cases to isolate issues",
+    "Use alive-tv for translation validation of opt passes",
+    "Check both poison and undef value semantics",
+    "Review counterexamples carefully - they may reveal real bugs"
+  ],
+  "references": [
+    "https://alive2.llvm.org/",
+    "https://github.com/AliveToolkit/alive2",
+    "https://dl.acm.org/doi/10.1145/3453483.3454030"
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "quick",
+  "version": "7.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "spec_not_running",
+      "pattern": "0 tests|no specs found|QuickSpec.*not discovered",
+      "message": "Quick specs not being executed",
+      "cause": "QuickSpec subclass not discovered or spec() not called",
+      "solutions": [
+        {
+          "approach": "Inherit from QuickSpec",
+          "code": "class MySpec: QuickSpec {\n    override class func spec() { ... }\n}",
+          "when": "Missing inheritance"
+        },
+        {
+          "approach": "Override spec() class method",
+          "code": "override class func spec() {\n    describe(\"...\") { ... }\n}",
+          "when": "spec() not overridden"
+        },
+        {
+          "approach": "Check test target membership",
+          "code": "// Ensure file is in test target, not main target",
+          "when": "Wrong target"
+        }
+      ]
+    },
+    {
+      "id": "nested_describe_error",
+      "pattern": "nested.*error|context.*not allowed|describe.*inside",
+      "message": "Invalid nesting of describe/context blocks",
+      "cause": "Incorrect nesting or calling describe outside spec()",
+      "solutions": [
+        {
+          "approach": "Use proper nesting",
+          "code": "describe(\"Outer\") {\n    context(\"when...\") {\n        it(\"should...\") { ... }\n    }\n}",
+          "when": "Fix nesting structure"
+        },
+        {
+          "approach": "Keep describe at top level",
+          "code": "override class func spec() {\n    describe(\"feature\") { ... }\n}",
+          "when": "describe at wrong scope"
+        },
+        {
+          "approach": "Use context for conditions",
+          "code": "context(\"given precondition\") { ... }",
+          "when": "Need conditional grouping"
+        }
+      ]
+    },
+    {
+      "id": "beforeeach_order",
+      "pattern": "beforeEach.*order|setup.*not called|beforeSuite",
+      "message": "Setup hooks executing in wrong order",
+      "cause": "Misunderstanding of beforeEach/beforeAll execution order",
+      "solutions": [
+        {
+          "approach": "Use beforeEach for per-test setup",
+          "code": "beforeEach {\n    sut = SystemUnderTest()\n}",
+          "when": "Need fresh state per test"
+        },
+        {
+          "approach": "Use beforeAll for one-time setup",
+          "code": "beforeAll {\n    expensiveSetup()\n}",
+          "when": "Shared expensive setup"
+        },
+        {
+          "approach": "Understand nesting",
+          "code": "// Outer beforeEach runs before inner beforeEach",
+          "when": "Multiple nested beforeEach"
+        }
+      ]
+    },
+    {
+      "id": "async_spec_error",
+      "pattern": "async.*not supported|await.*error|closure.*cannot be async",
+      "message": "Async code in Quick spec",
+      "cause": "Quick closures don't support async/await directly",
+      "solutions": [
+        {
+          "approach": "Use waitUntil",
+          "code": "it(\"async test\") {\n    waitUntil { done in\n        asyncFunction { done() }\n    }\n}",
+          "when": "Callback-based async"
+        },
+        {
+          "approach": "Use toEventually from Nimble",
+          "code": "expect(asyncValue).toEventually(equal(expected))",
+          "when": "Polling for condition"
+        },
+        {
+          "approach": "Use AsyncSpec (Quick 7+)",
+          "code": "class MySpec: AsyncSpec {\n    override class func spec() {\n        it(\"async\") { await asyncFunction() }\n    }\n}",
+          "when": "Quick 7.0+ available"
+        }
+      ]
+    },
+    {
+      "id": "shared_example_error",
+      "pattern": "shared.*not found|itBehavesLike.*missing|sharedExamples",
+      "message": "Shared example not found",
+      "cause": "Referenced shared example not defined or name mismatch",
+      "solutions": [
+        {
+          "approach": "Define shared examples",
+          "code": "sharedExamples(\"behaves like collection\") { context in\n    it(\"has count\") { ... }\n}",
+          "when": "Shared example not defined"
+        },
+        {
+          "approach": "Match names exactly",
+          "code": "itBehavesLike(\"behaves like collection\")  // Must match",
+          "when": "Name typo"
+        },
+        {
+          "approach": "Pass context",
+          "code": "itBehavesLike(\"shared\") { [\"key\": value] }",
+          "when": "Need to pass data"
+        }
+      ]
+    },
+    {
+      "id": "pending_test",
+      "pattern": "pending|Pending:",
+      "message": "Test marked as pending",
+      "cause": "Test intentionally skipped with pending()",
+      "solutions": [
+        {
+          "approach": "Implement the test",
+          "code": "it(\"should work\") { /* implement */ }",
+          "when": "Ready to implement"
+        },
+        {
+          "approach": "Use xit to skip",
+          "code": "xit(\"skipped test\") { ... }",
+          "when": "Intentionally skip"
+        },
+        {
+          "approach": "Use pending with reason",
+          "code": "pending(\"needs backend API\")",
+          "when": "Document why pending"
+        }
+      ]
+    },
+    {
+      "id": "fit_fdescribe_focused",
+      "pattern": "focused|fit\\(|fdescribe\\(",
+      "message": "Focused tests detected - other tests skipped",
+      "cause": "fit() or fdescribe() focuses on subset of tests",
+      "solutions": [
+        {
+          "approach": "Remove focus prefix",
+          "code": "it(\"test\") { }  // Not fit(\"test\")",
+          "when": "Done debugging"
+        },
+        {
+          "approach": "Use git pre-commit hook",
+          "code": "grep -r 'fit\\|fdescribe' Tests/ && exit 1",
+          "when": "Prevent committing focused tests"
+        },
+        {
+          "approach": "CI check for focused tests",
+          "code": "# Fail CI if focused tests found",
+          "when": "Block focused tests in CI"
+        }
+      ]
+    },
+    {
+      "id": "nimble_import_missing",
+      "pattern": "expect.*not found|Nimble.*missing|toEqual.*undefined",
+      "message": "Nimble matchers not available",
+      "cause": "Nimble not imported or not linked to test target",
+      "solutions": [
+        {
+          "approach": "Import Nimble",
+          "code": "import Quick\nimport Nimble",
+          "when": "Missing import"
+        },
+        {
+          "approach": "Add Nimble dependency",
+          "code": ".package(url: \"https://github.com/Quick/Nimble.git\", from: \"12.0.0\")",
+          "when": "SPM missing dependency"
+        },
+        {
+          "approach": "Link to test target",
+          "code": ".testTarget(name: \"Tests\", dependencies: [\"Quick\", \"Nimble\"])",
+          "when": "Not linked"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "tool": "avro",
+  "category": "serialization",
+  "common_errors": [
+    {
+      "pattern": "SchemaParseException|Invalid schema",
+      "meaning": "Avro schema definition invalid",
+      "causes": [
+        "Invalid JSON in schema",
+        "Unknown type name",
+        "Missing required schema field"
+      ],
+      "solutions": [
+        "Validate JSON syntax",
+        "Check type is primitive or defined: null, boolean, int, long, float, double, bytes, string",
+        "For named types, ensure defined before use or use full name"
+      ]
+    },
+    {
+      "pattern": "AvroTypeException|not in union|cannot encode",
+      "meaning": "Data doesn't match schema",
+      "causes": [
+        "Value type doesn't match field type",
+        "Union type not matching any branch",
+        "Null in non-nullable field"
+      ],
+      "solutions": [
+        "Check data matches schema type exactly",
+        "For nullable fields: use union ['null', 'string']",
+        "Union order matters: first match wins"
+      ]
+    },
+    {
+      "pattern": "incompatible schema|reader schema|writer schema",
+      "meaning": "Schema evolution compatibility error",
+      "causes": [
+        "Reader schema missing required field",
+        "Type changed incompatibly",
+        "Field removed without default"
+      ],
+      "solutions": [
+        "Add default values for new fields",
+        "Old fields should have defaults before removal",
+        "Use schema registry for compatibility checks"
+      ]
+    },
+    {
+      "pattern": "unknown union branch|union position out of range",
+      "meaning": "Union index error during deserialization",
+      "causes": [
+        "Data written with different union definition",
+        "Schema mismatch between writer and reader",
+        "Corrupted union tag"
+      ],
+      "solutions": [
+        "Ensure reader schema compatible with writer",
+        "Check union branch order unchanged",
+        "Validate data against expected schema"
+      ]
+    },
+    {
+      "pattern": "codec.*not supported|invalid codec|snappy|deflate",
+      "meaning": "Compression codec unavailable",
+      "causes": [
+        "Snappy/deflate codec not installed",
+        "Codec name misspelled",
+        "Reading file with unavailable codec"
+      ],
+      "solutions": [
+        "Python: pip install python-snappy for snappy",
+        "Use 'null' codec for no compression",
+        "Check installed codecs: avro.datafile.VALID_CODECS"
+      ]
+    },
+    {
+      "pattern": "not a valid Avro file|magic bytes",
+      "meaning": "File is not Avro format",
+      "causes": [
+        "File doesn't have Avro magic bytes (Obj\\x01)",
+        "Plain JSON not Avro container",
+        "File corrupted or truncated"
+      ],
+      "solutions": [
+        "Avro container files start with 'Obj\\x01'",
+        "Use DatumReader for raw Avro (no container)",
+        "Use DataFileReader for .avro container files"
+      ]
+    },
+    {
+      "pattern": "FieldNotFound|no field named|missing field",
+      "meaning": "Schema field lookup failed",
+      "causes": [
+        "Field name typo",
+        "Field removed from schema",
+        "Accessing field not in record"
+      ],
+      "solutions": [
+        "Check field name spelling (case-sensitive)",
+        "Verify field exists in schema version",
+        "Use get() with default for optional access"
+      ]
+    },
+    {
+      "pattern": "OverflowError|integer out of range|long too large",
+      "meaning": "Value exceeds Avro type range",
+      "causes": [
+        "Int32 overflow (use long for > 2^31)",
+        "Long overflow (use bytes + logical type)",
+        "Timestamp precision issue"
+      ],
+      "solutions": [
+        "Use 'long' type for large integers",
+        "Use 'bytes' with 'decimal' logical type for big numbers",
+        "Check logical type precision settings"
+      ]
+    }
+  ]
+}

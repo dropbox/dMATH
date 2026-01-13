@@ -1,0 +1,145 @@
+{
+  "tool": "tmux",
+  "version": "3.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "server_not_running",
+      "pattern": "no server running|can't connect|server not found|failed to connect",
+      "message": "tmux server not running",
+      "cause": "No tmux sessions exist or socket issue",
+      "solutions": [
+        {
+          "approach": "Start new",
+          "code": "tmux new -s main",
+          "when": "Create session"
+        },
+        {
+          "approach": "List sessions",
+          "code": "tmux ls  # Shows running sessions",
+          "when": "Check existing"
+        },
+        {
+          "approach": "Specify socket",
+          "code": "tmux -L mysocket new\ntmux -L mysocket attach",
+          "when": "Custom socket"
+        }
+      ]
+    },
+    {
+      "id": "session_not_found",
+      "pattern": "session not found|can't find session|no session",
+      "message": "Session doesn't exist",
+      "cause": "Wrong session name or session ended",
+      "solutions": [
+        {
+          "approach": "List sessions",
+          "code": "tmux list-sessions",
+          "when": "Find sessions"
+        },
+        {
+          "approach": "Attach any",
+          "code": "tmux attach  # Attaches to most recent",
+          "when": "Default attach"
+        },
+        {
+          "approach": "Create if missing",
+          "code": "tmux new-session -A -s myname",
+          "when": "Attach or create"
+        }
+      ]
+    },
+    {
+      "id": "nested_session",
+      "pattern": "sessions should be nested|already in tmux|$TMUX.*set",
+      "message": "Already inside tmux session",
+      "cause": "Trying to start tmux inside tmux",
+      "solutions": [
+        {
+          "approach": "Force nest",
+          "code": "unset TMUX && tmux new",
+          "when": "Intentional nesting"
+        },
+        {
+          "approach": "New window",
+          "code": "tmux new-window  # Or: Ctrl-b c",
+          "when": "Create window instead"
+        },
+        {
+          "approach": "Switch session",
+          "code": "tmux switch-client -t other  # Or: Ctrl-b s",
+          "when": "Change session"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "configuration.*error|parse error|tmux.conf.*error|bad.*option",
+      "message": "Configuration file error",
+      "cause": "Invalid option or syntax in tmux.conf",
+      "solutions": [
+        {
+          "approach": "Test config",
+          "code": "tmux source-file ~/.tmux.conf  # Shows errors",
+          "when": "Reload config"
+        },
+        {
+          "approach": "Check version",
+          "code": "tmux -V  # Some options version-specific\n# mode-mouse removed in 2.1",
+          "when": "Version compatibility"
+        },
+        {
+          "approach": "Skip config",
+          "code": "tmux -f /dev/null new",
+          "when": "Test without config"
+        }
+      ]
+    },
+    {
+      "id": "terminal_issue",
+      "pattern": "terminal.*unknown|missing.*terminfo|TERM.*error|screen.*not found",
+      "message": "Terminal type issue",
+      "cause": "TERM environment variable or terminfo issue",
+      "solutions": [
+        {
+          "approach": "Set TERM",
+          "code": "export TERM=xterm-256color\ntmux new",
+          "when": "Before starting"
+        },
+        {
+          "approach": "tmux.conf setting",
+          "code": "set -g default-terminal \"screen-256color\"\nset -ga terminal-overrides \",xterm-256color:Tc\"",
+          "when": "Config option"
+        },
+        {
+          "approach": "Install terminfo",
+          "code": "# On Debian/Ubuntu:\nsudo apt-get install ncurses-term",
+          "when": "Missing terminfo"
+        }
+      ]
+    },
+    {
+      "id": "copy_paste",
+      "pattern": "copy.*not working|paste.*empty|clipboard|buffer",
+      "message": "Copy/paste not working",
+      "cause": "System clipboard integration not configured",
+      "solutions": [
+        {
+          "approach": "macOS clipboard",
+          "code": "# tmux.conf:\nset -g default-command \"reattach-to-user-namespace -l $SHELL\"\nbind-key -T copy-mode-vi y send -X copy-pipe-and-cancel \"pbcopy\"",
+          "when": "macOS"
+        },
+        {
+          "approach": "Linux clipboard",
+          "code": "# tmux.conf:\nbind-key -T copy-mode-vi y send -X copy-pipe-and-cancel \"xclip -selection clipboard\"",
+          "when": "Linux X11"
+        },
+        {
+          "approach": "Use tmux buffer",
+          "code": "# Ctrl-b ] to paste from tmux buffer\ntmux show-buffer\ntmux list-buffers",
+          "when": "Internal buffer"
+        }
+      ]
+    }
+  ]
+}

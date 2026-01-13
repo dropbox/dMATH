@@ -1,0 +1,130 @@
+{
+  "tool": "pact",
+  "category": "contract_testing",
+  "common_errors": [
+    {
+      "id": "pact_verification_failed",
+      "pattern": "Pact verification failed|Verification failures|Expected .* but got",
+      "severity": "error",
+      "causes": [
+        "Provider implementation doesn't match consumer expectations",
+        "API response schema changed",
+        "Missing or incorrect response headers"
+      ],
+      "solutions": [
+        "Update provider to match consumer contract",
+        "Regenerate pact if consumer requirements changed",
+        "Use provider states to set up correct test data",
+        "Check response body matches expected structure exactly"
+      ]
+    },
+    {
+      "id": "pact_provider_state_not_found",
+      "pattern": "Provider state .* not found|No provider state handler",
+      "severity": "error",
+      "causes": [
+        "Missing @State handler for expected provider state",
+        "State name mismatch between consumer and provider",
+        "Provider state handler not registered"
+      ],
+      "solutions": [
+        "Add @State(\"state name\") method to provider test",
+        "Ensure state names match exactly (case-sensitive)",
+        "Register state handlers with PactVerificationContext"
+      ]
+    },
+    {
+      "id": "pact_broker_publish_failed",
+      "pattern": "Failed to publish pact|Pact Broker error|401 Unauthorized",
+      "severity": "error",
+      "causes": [
+        "Incorrect Pact Broker URL or credentials",
+        "Pact Broker not accessible from CI environment",
+        "Invalid pact file format"
+      ],
+      "solutions": [
+        "Verify PACT_BROKER_BASE_URL environment variable",
+        "Set PACT_BROKER_TOKEN or username/password",
+        "Check network access to Pact Broker",
+        "Validate pact JSON format before publishing"
+      ]
+    },
+    {
+      "id": "pact_matching_rules_failed",
+      "pattern": "Matching rules failed|Matcher.*failed|type mismatch",
+      "severity": "error",
+      "causes": [
+        "Response type doesn't match matcher expectation",
+        "Regex matcher pattern doesn't match actual value",
+        "Array matcher min/max bounds violated"
+      ],
+      "solutions": [
+        "Use appropriate matchers (type, regex, date, etc.)",
+        "Test regex patterns against actual values",
+        "Use eachLike() for arrays with flexible length",
+        "Verify nullability expectations match actual responses"
+      ]
+    },
+    {
+      "id": "pact_missing_interactions",
+      "pattern": "Missing interactions|No matching interaction found",
+      "severity": "error",
+      "causes": [
+        "Consumer test didn't record all required interactions",
+        "Request doesn't match any defined interaction",
+        "HTTP method or path mismatch"
+      ],
+      "solutions": [
+        "Add interaction for each API call in consumer test",
+        "Verify request path, method, and headers match exactly",
+        "Use matchers for dynamic request parts",
+        "Check interaction descriptions for uniqueness"
+      ]
+    },
+    {
+      "id": "pact_pending_pacts",
+      "pattern": "Pending pact|pact is pending",
+      "severity": "warning",
+      "causes": [
+        "New consumer pact not yet verified by provider",
+        "WIP (Work In Progress) pact feature enabled"
+      ],
+      "solutions": [
+        "Run provider verification against pending pacts",
+        "Configure pending pact support in provider tests",
+        "Use can-i-deploy to check deployment readiness"
+      ]
+    },
+    {
+      "id": "pact_version_mismatch",
+      "pattern": "Pact version mismatch|Unsupported pact specification",
+      "severity": "error",
+      "causes": [
+        "Consumer and provider using different Pact versions",
+        "Pact file version not supported by verifier",
+        "Library version incompatibility"
+      ],
+      "solutions": [
+        "Align Pact library versions across services",
+        "Upgrade to Pact v4 specification",
+        "Check pact.specification.version in consumer"
+      ]
+    },
+    {
+      "id": "pact_can_i_deploy_failed",
+      "pattern": "can-i-deploy.*failed|Computer says no|cannot be deployed",
+      "severity": "error",
+      "causes": [
+        "Not all consumer pacts verified for target environment",
+        "Provider verification failed for deployed version",
+        "Missing verification results in Pact Broker"
+      ],
+      "solutions": [
+        "Run provider verification with --publish-verification-results",
+        "Check Pact Broker for verification status",
+        "Use --retry-while-unknown for async verification",
+        "Tag versions correctly after deployment"
+      ]
+    }
+  ]
+}

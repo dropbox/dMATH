@@ -1,0 +1,171 @@
+{
+  "tool": "pre_commit",
+  "version": "3.6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_not_found",
+      "pattern": "No .pre-commit-config.yaml|config.*not found|Cannot find",
+      "message": "Pre-commit configuration file not found",
+      "cause": "Missing .pre-commit-config.yaml in project root",
+      "solutions": [
+        {
+          "approach": "Create config",
+          "code": "# .pre-commit-config.yaml\nrepos:\n  - repo: https://github.com/pre-commit/pre-commit-hooks\n    rev: v4.5.0\n    hooks:\n      - id: trailing-whitespace\n      - id: end-of-file-fixer",
+          "when": "New setup"
+        },
+        {
+          "approach": "Sample configs",
+          "code": "pre-commit sample-config > .pre-commit-config.yaml",
+          "when": "Generate sample"
+        }
+      ]
+    },
+    {
+      "id": "hook_failed",
+      "pattern": "hook.*failed|returned exit code|Failed",
+      "message": "Pre-commit hook failed",
+      "cause": "Hook returned non-zero exit code",
+      "solutions": [
+        {
+          "approach": "Run specific hook",
+          "code": "pre-commit run <hook-id> --files <file>",
+          "when": "Debug specific hook"
+        },
+        {
+          "approach": "Run all hooks",
+          "code": "pre-commit run --all-files",
+          "when": "Test all files"
+        },
+        {
+          "approach": "Skip hooks",
+          "code": "git commit --no-verify -m \"message\"",
+          "when": "Emergency bypass"
+        },
+        {
+          "approach": "Skip specific hook",
+          "code": "SKIP=flake8 git commit -m \"message\"",
+          "when": "Skip one hook"
+        }
+      ]
+    },
+    {
+      "id": "rev_not_found",
+      "pattern": "rev.*not found|Invalid rev|tag.*not exist",
+      "message": "Repository revision not found",
+      "cause": "Specified rev/tag doesn't exist in repo",
+      "solutions": [
+        {
+          "approach": "Update revs",
+          "code": "pre-commit autoupdate",
+          "when": "Update to latest"
+        },
+        {
+          "approach": "Check available tags",
+          "code": "# Visit repo to find valid tags",
+          "when": "Find valid rev"
+        },
+        {
+          "approach": "Use commit SHA",
+          "code": "repos:\n  - repo: https://github.com/...\n    rev: abc123def456",
+          "when": "Pin to commit"
+        }
+      ]
+    },
+    {
+      "id": "hook_install_failed",
+      "pattern": "install.*failed|Could not find|pip.*error",
+      "message": "Hook installation failed",
+      "cause": "Unable to install hook dependencies",
+      "solutions": [
+        {
+          "approach": "Clean cache",
+          "code": "pre-commit clean\npre-commit install",
+          "when": "Cache corruption"
+        },
+        {
+          "approach": "Check Python version",
+          "code": "pre-commit run --verbose",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Specify language version",
+          "code": "repos:\n  - repo: ...\n    hooks:\n      - id: mypy\n        language_version: python3.11",
+          "when": "Need specific version"
+        }
+      ]
+    },
+    {
+      "id": "local_hook_error",
+      "pattern": "local.*error|entry.*not found|language.*error",
+      "message": "Local hook configuration error",
+      "cause": "Local hook entry or language misconfigured",
+      "solutions": [
+        {
+          "approach": "Define local hook",
+          "code": "repos:\n  - repo: local\n    hooks:\n      - id: my-hook\n        name: My Hook\n        entry: ./scripts/lint.sh\n        language: script\n        files: \\.py$",
+          "when": "Local script hook"
+        },
+        {
+          "approach": "System hook",
+          "code": "repos:\n  - repo: local\n    hooks:\n      - id: eslint\n        name: ESLint\n        entry: npx eslint --fix\n        language: system\n        files: \\.(js|ts)$",
+          "when": "Use system command"
+        }
+      ]
+    },
+    {
+      "id": "ci_cache_issue",
+      "pattern": "cache.*error|cached.*failed|ENOENT.*cache",
+      "message": "Pre-commit cache issue in CI",
+      "cause": "Cache not restored or corrupted",
+      "solutions": [
+        {
+          "approach": "Cache pre-commit",
+          "code": "- uses: actions/cache@v3\n  with:\n    path: ~/.cache/pre-commit\n    key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}",
+          "when": "GitHub Actions"
+        },
+        {
+          "approach": "Use action",
+          "code": "- uses: pre-commit/action@v3.0.0",
+          "when": "Official action"
+        }
+      ]
+    },
+    {
+      "id": "files_not_matching",
+      "pattern": "No files matched|files.*pattern|exclude",
+      "message": "No files match hook patterns",
+      "cause": "files/exclude patterns don't match staged files",
+      "solutions": [
+        {
+          "approach": "Check patterns",
+          "code": "repos:\n  - repo: ...\n    hooks:\n      - id: black\n        files: \\.py$\n        exclude: ^migrations/",
+          "when": "Adjust patterns"
+        },
+        {
+          "approach": "Run on all files",
+          "code": "pre-commit run --all-files",
+          "when": "Test patterns"
+        }
+      ]
+    },
+    {
+      "id": "yaml_syntax_error",
+      "pattern": "YAML.*error|parsing.*failed|Invalid YAML",
+      "message": "YAML syntax error in config",
+      "cause": "Invalid YAML in .pre-commit-config.yaml",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "python -c \"import yaml; yaml.safe_load(open('.pre-commit-config.yaml'))\"",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Use YAML validator",
+          "code": "yamllint .pre-commit-config.yaml",
+          "when": "Find errors"
+        }
+      ]
+    }
+  ]
+}

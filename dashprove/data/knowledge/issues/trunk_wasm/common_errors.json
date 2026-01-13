@@ -1,0 +1,171 @@
+{
+  "tool": "trunk_wasm",
+  "version": "0.18.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "target_not_installed",
+      "pattern": "wasm32.*target|target not installed|can't find crate",
+      "message": "WebAssembly target not installed",
+      "cause": "wasm32-unknown-unknown target missing",
+      "solutions": [
+        {
+          "approach": "Install target",
+          "code": "rustup target add wasm32-unknown-unknown",
+          "when": "Missing target"
+        },
+        {
+          "approach": "Check installation",
+          "code": "rustup target list --installed | grep wasm32",
+          "when": "Verify"
+        }
+      ]
+    },
+    {
+      "id": "wasm_bindgen_missing",
+      "pattern": "wasm-bindgen.*not found|wasm-bindgen-cli|version mismatch",
+      "message": "wasm-bindgen CLI not found or version mismatch",
+      "cause": "wasm-bindgen-cli not installed or wrong version",
+      "solutions": [
+        {
+          "approach": "Install matching version",
+          "code": "cargo install wasm-bindgen-cli --version 0.2.92",
+          "when": "Match Cargo.toml version"
+        },
+        {
+          "approach": "Let trunk install",
+          "code": "# Trunk auto-installs tools when missing",
+          "when": "Auto-install"
+        },
+        {
+          "approach": "Check version",
+          "code": "wasm-bindgen --version\ngrep wasm-bindgen Cargo.toml",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "index_html_missing",
+      "pattern": "index.html.*not found|no index|entry point",
+      "message": "index.html not found",
+      "cause": "Missing index.html entry point",
+      "solutions": [
+        {
+          "approach": "Create index.html",
+          "code": "<!DOCTYPE html>\n<html>\n<head>\n    <link data-trunk rel=\"rust\" data-wasm-opt=\"z\" />\n</head>\n<body></body>\n</html>",
+          "when": "Create entry"
+        },
+        {
+          "approach": "Specify path",
+          "code": "trunk serve index.html\ntrunk serve --config Trunk.toml",
+          "when": "Non-default location"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "build failed|compilation error|error\\[E",
+      "message": "Rust compilation failed",
+      "cause": "Rust code compilation error",
+      "solutions": [
+        {
+          "approach": "Check cargo build",
+          "code": "cargo build --target wasm32-unknown-unknown",
+          "when": "Debug compilation"
+        },
+        {
+          "approach": "Enable features",
+          "code": "<!-- index.html -->\n<link data-trunk rel=\"rust\" data-cargo-features=\"web\" />",
+          "when": "Missing features"
+        },
+        {
+          "approach": "Verbose output",
+          "code": "trunk build --verbose",
+          "when": "Debug build"
+        }
+      ]
+    },
+    {
+      "id": "asset_error",
+      "pattern": "asset.*not found|copy.*failed|static.*error",
+      "message": "Asset processing error",
+      "cause": "Static asset not found or copy failed",
+      "solutions": [
+        {
+          "approach": "Check asset paths",
+          "code": "<!-- index.html -->\n<link data-trunk rel=\"copy-dir\" href=\"assets\" />",
+          "when": "Copy directory"
+        },
+        {
+          "approach": "Use correct rel",
+          "code": "<!-- Different asset types -->\n<link data-trunk rel=\"css\" href=\"style.css\" />\n<link data-trunk rel=\"sass\" href=\"style.scss\" />\n<link data-trunk rel=\"icon\" href=\"favicon.ico\" />",
+          "when": "Different asset types"
+        }
+      ]
+    },
+    {
+      "id": "serve_error",
+      "pattern": "serve.*failed|address.*in use|bind.*error",
+      "message": "Dev server failed to start",
+      "cause": "Port in use or bind error",
+      "solutions": [
+        {
+          "approach": "Change port",
+          "code": "trunk serve --port 8081",
+          "when": "Port in use"
+        },
+        {
+          "approach": "Change address",
+          "code": "trunk serve --address 0.0.0.0",
+          "when": "Bind address issue"
+        },
+        {
+          "approach": "Kill existing process",
+          "code": "lsof -i :8080 | grep LISTEN | awk '{print $2}' | xargs kill",
+          "when": "Previous process running"
+        }
+      ]
+    },
+    {
+      "id": "proxy_error",
+      "pattern": "proxy.*error|backend.*unreachable|ECONNREFUSED",
+      "message": "Proxy configuration error",
+      "cause": "Backend server not reachable",
+      "solutions": [
+        {
+          "approach": "Configure proxy",
+          "code": "# Trunk.toml\n[[proxy]]\nbackend = \"http://localhost:3000/api\"",
+          "when": "Add proxy"
+        },
+        {
+          "approach": "Check backend",
+          "code": "curl http://localhost:3000/api/health",
+          "when": "Verify backend running"
+        }
+      ]
+    },
+    {
+      "id": "wasm_opt_error",
+      "pattern": "wasm-opt.*error|optimization.*failed|wasm-opt not found",
+      "message": "wasm-opt optimization failed",
+      "cause": "wasm-opt not installed or failed",
+      "solutions": [
+        {
+          "approach": "Install wasm-opt",
+          "code": "# Part of binaryen\nbrew install binaryen  # macOS\napt install binaryen   # Ubuntu",
+          "when": "Install wasm-opt"
+        },
+        {
+          "approach": "Skip optimization",
+          "code": "<!-- Skip in dev -->\n<link data-trunk rel=\"rust\" />",
+          "when": "Dev mode"
+        },
+        {
+          "approach": "Set opt level",
+          "code": "<link data-trunk rel=\"rust\" data-wasm-opt=\"z\" />",
+          "when": "Size optimization"
+        }
+      ]
+    }
+  ]
+}

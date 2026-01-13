@@ -1,0 +1,139 @@
+{
+  "id": "proptest",
+  "name": "Proptest",
+  "category": "rust_pbt",
+  "subcategory": "property_testing",
+
+  "description": "Property-based testing framework inspired by Hypothesis",
+  "long_description": "Proptest is a property testing framework for Rust inspired by the Python Hypothesis library. It allows you to test that certain properties hold for arbitrary inputs. When a failing input is found, proptest automatically shrinks it to a minimal failing case. It's more powerful than QuickCheck-style testing.",
+
+  "capabilities": [
+    "property_testing",
+    "arbitrary_input_generation",
+    "automatic_shrinking",
+    "regex_string_generation",
+    "collection_strategies",
+    "recursive_types",
+    "failure_persistence",
+    "replay_failing_cases"
+  ],
+  "property_types": ["property_based", "invariant"],
+  "input_languages": ["rust"],
+  "output_formats": ["failing_input", "shrunk_case", "test_stats"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add proptest --dev"},
+      {"type": "source", "url": "https://github.com/proptest-rs/proptest"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://proptest-rs.github.io/proptest/intro.html",
+    "tutorial": "https://proptest-rs.github.io/proptest/proptest/getting-started.html",
+    "api_reference": "https://docs.rs/proptest/latest/proptest/",
+    "examples": "https://github.com/proptest-rs/proptest/tree/master/proptest/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "proptest",
+      "description": "Define property test",
+      "syntax": "proptest! { #[test] fn test_name(input in strategy) { ... } }",
+      "when_to_use": "Testing properties with generated inputs",
+      "examples": ["proptest! { #[test] fn test_sort(v in vec(any::<i32>(), 0..100)) { prop_assert!(is_sorted(&sort(&v))); } }"]
+    },
+    {
+      "name": "any",
+      "description": "Generate arbitrary values",
+      "syntax": "any::<T>()",
+      "when_to_use": "Generating any value of a type",
+      "examples": ["any::<u32>()", "any::<String>()", "any::<(i32, bool)>()"]
+    },
+    {
+      "name": "prop_filter",
+      "description": "Filter generated values",
+      "syntax": "strategy.prop_filter(\"reason\", |x| predicate(x))",
+      "when_to_use": "Restricting inputs to valid values",
+      "examples": ["(0i32..100).prop_filter(\"non-zero\", |&x| x != 0)"]
+    },
+    {
+      "name": "prop_map",
+      "description": "Transform generated values",
+      "syntax": "strategy.prop_map(|x| transform(x))",
+      "when_to_use": "Deriving complex types from simple ones",
+      "examples": ["any::<u32>().prop_map(|x| MyStruct { value: x })"]
+    },
+    {
+      "name": "regex",
+      "description": "Generate strings matching regex",
+      "syntax": "\"[a-z]{1,10}\"",
+      "when_to_use": "Generating structured strings",
+      "examples": ["\"[a-zA-Z][a-zA-Z0-9]{0,20}\"", "\"[0-9]{3}-[0-9]{4}\""]
+    },
+    {
+      "name": "prop_oneof",
+      "description": "Choose from multiple strategies",
+      "syntax": "prop_oneof![strategy1, strategy2, ...]",
+      "when_to_use": "Testing multiple input variants",
+      "examples": ["prop_oneof![Just(Action::Add), Just(Action::Remove), any::<Action>()]"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "proptest: Aborting shrinking after",
+      "meaning": "Shrinking reached time limit",
+      "common_causes": ["Complex input structure", "Slow test"],
+      "fixes": ["Increase shrink time", "Simplify test"]
+    },
+    {
+      "pattern": "Test failed: ",
+      "meaning": "Property violated",
+      "common_causes": ["Bug in code under test", "Property too strict"],
+      "fixes": ["Fix bug", "Relax property if too strict"]
+    },
+    {
+      "pattern": "minimal failing input:",
+      "meaning": "Shrunk to minimal case",
+      "common_causes": ["Proptest found and minimized failure"],
+      "fixes": ["Use minimal case to debug"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["property_based", "invariant"],
+    "cli_command": "dashprove verify --backend proptest"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Default 256 test cases",
+    "memory_usage": "Low to moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["quickcheck", "bolero", "arbitrary"],
+    "advantages": [
+      "Powerful shrinking",
+      "Regex string generation",
+      "Failure persistence",
+      "Good documentation"
+    ],
+    "disadvantages": [
+      "Slower than QuickCheck",
+      "Macro-heavy API",
+      "Compile time overhead"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.4.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Proptest Contributors",
+    "license": "MIT/Apache-2.0"
+  }
+}

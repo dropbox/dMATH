@@ -1,0 +1,145 @@
+{
+  "tool": "pandoc",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "latex_not_found",
+      "pattern": "pdflatex not found|xelatex not found|LaTeX.*not installed|tectonic not found",
+      "message": "PDF engine not available",
+      "cause": "LaTeX distribution not installed for PDF output",
+      "solutions": [
+        {
+          "approach": "Install TeX Live",
+          "code": "# macOS: brew install --cask mactex\n# Ubuntu: apt install texlive-xetex",
+          "when": "Need full LaTeX"
+        },
+        {
+          "approach": "Use tectonic",
+          "code": "pandoc input.md -o output.pdf --pdf-engine=tectonic",
+          "when": "Minimal LaTeX needed"
+        },
+        {
+          "approach": "Use wkhtmltopdf",
+          "code": "pandoc input.md -o output.pdf --pdf-engine=wkhtmltopdf",
+          "when": "HTML-based PDF"
+        }
+      ]
+    },
+    {
+      "id": "unicode_error",
+      "pattern": "Unicode.*not set up|character.*not defined|missing font",
+      "message": "Unicode characters not rendering",
+      "cause": "PDF engine doesn't support needed characters",
+      "solutions": [
+        {
+          "approach": "Use XeLaTeX",
+          "code": "pandoc input.md -o output.pdf --pdf-engine=xelatex",
+          "when": "Unicode/non-Latin text"
+        },
+        {
+          "approach": "Specify font",
+          "code": "pandoc input.md -o output.pdf --pdf-engine=xelatex -V mainfont=\"Noto Sans\"",
+          "when": "Need specific font"
+        },
+        {
+          "approach": "Use LuaLaTeX",
+          "code": "pandoc input.md -o output.pdf --pdf-engine=lualatex",
+          "when": "Complex typography"
+        }
+      ]
+    },
+    {
+      "id": "filter_not_found",
+      "pattern": "Could not find executable|filter.*not found|pandoc-.*not in PATH",
+      "message": "Pandoc filter not available",
+      "cause": "Filter executable not installed or not in PATH",
+      "solutions": [
+        {
+          "approach": "Install filter",
+          "code": "pip install pandoc-citeproc\n# or: cabal install pandoc-crossref",
+          "when": "Filter not installed"
+        },
+        {
+          "approach": "Use full path",
+          "code": "pandoc input.md -F /path/to/filter -o output.pdf",
+          "when": "Filter not in PATH"
+        },
+        {
+          "approach": "Use Lua filter",
+          "code": "pandoc input.md --lua-filter=myfilter.lua -o output.pdf",
+          "when": "Lua filter preferred"
+        }
+      ]
+    },
+    {
+      "id": "template_error",
+      "pattern": "Could not find template|template.*not found|invalid template",
+      "message": "Template file missing or invalid",
+      "cause": "Custom template path wrong or template syntax error",
+      "solutions": [
+        {
+          "approach": "Use default template",
+          "code": "pandoc -D latex > default.latex  # extract default template",
+          "when": "Need to customize default"
+        },
+        {
+          "approach": "Check template path",
+          "code": "pandoc input.md --template=./templates/custom.latex -o out.pdf",
+          "when": "Custom template"
+        },
+        {
+          "approach": "Place in data dir",
+          "code": "mkdir -p ~/.pandoc/templates && cp template.tex ~/.pandoc/templates/",
+          "when": "Reusable template"
+        }
+      ]
+    },
+    {
+      "id": "image_not_found",
+      "pattern": "Could not find image|File.*not found|cannot embed image",
+      "message": "Referenced image not found",
+      "cause": "Image path relative to wrong directory or missing",
+      "solutions": [
+        {
+          "approach": "Use resource-path",
+          "code": "pandoc input.md --resource-path=./images -o output.pdf",
+          "when": "Images in subdirectory"
+        },
+        {
+          "approach": "Use absolute paths",
+          "code": "![caption](/absolute/path/to/image.png)",
+          "when": "Fix path in markdown"
+        },
+        {
+          "approach": "Set extract-media",
+          "code": "pandoc input.docx --extract-media=./media -o output.md",
+          "when": "Extracting from DOCX"
+        }
+      ]
+    },
+    {
+      "id": "citation_error",
+      "pattern": "bibliography.*not found|citeproc error|undefined citation",
+      "message": "Citation/bibliography error",
+      "cause": "Bibliography file missing or citation key undefined",
+      "solutions": [
+        {
+          "approach": "Specify bibliography",
+          "code": "pandoc input.md --bibliography=refs.bib --citeproc -o output.pdf",
+          "when": "Using citations"
+        },
+        {
+          "approach": "Check citation keys",
+          "code": "# Ensure @citationkey exists in .bib file",
+          "when": "Undefined citation warning"
+        },
+        {
+          "approach": "Use CSL style",
+          "code": "pandoc input.md --csl=chicago.csl --bibliography=refs.bib -o out.pdf",
+          "when": "Custom citation style"
+        }
+      ]
+    }
+  ]
+}

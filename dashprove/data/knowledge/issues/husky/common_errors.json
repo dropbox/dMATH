@@ -1,0 +1,148 @@
+{
+  "tool": "husky",
+  "version": "9.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_initialized",
+      "pattern": "husky.*not found|.husky directory|command not found.*husky",
+      "message": "Husky not initialized in project",
+      "cause": "Husky not installed or not initialized",
+      "solutions": [
+        {
+          "approach": "Initialize husky",
+          "code": "npx husky init",
+          "when": "Fresh setup"
+        },
+        {
+          "approach": "Install husky",
+          "code": "npm install husky --save-dev\nnpx husky init",
+          "when": "Not installed"
+        },
+        {
+          "approach": "Check prepare script",
+          "code": "// package.json\n\"scripts\": {\n  \"prepare\": \"husky\"\n}",
+          "when": "Missing prepare script"
+        }
+      ]
+    },
+    {
+      "id": "hook_not_executable",
+      "pattern": "Permission denied|not executable|chmod",
+      "message": "Git hook not executable",
+      "cause": "Hook file missing executable permission",
+      "solutions": [
+        {
+          "approach": "Make executable",
+          "code": "chmod +x .husky/pre-commit",
+          "when": "Fix permissions"
+        },
+        {
+          "approach": "Recreate hook",
+          "code": "echo 'npm test' > .husky/pre-commit",
+          "when": "Create new hook"
+        }
+      ]
+    },
+    {
+      "id": "hook_failed",
+      "pattern": "husky.*pre-commit.*failed|hook.*exit code|Command failed",
+      "message": "Git hook command failed",
+      "cause": "Command in hook returned non-zero exit code",
+      "solutions": [
+        {
+          "approach": "Check hook content",
+          "code": "cat .husky/pre-commit",
+          "when": "Debug hook"
+        },
+        {
+          "approach": "Run command manually",
+          "code": "# Run the command from hook directly\nnpm run lint",
+          "when": "Test hook command"
+        },
+        {
+          "approach": "Skip hook temporarily",
+          "code": "git commit --no-verify -m \"message\"",
+          "when": "Emergency bypass"
+        }
+      ]
+    },
+    {
+      "id": "ci_skip",
+      "pattern": "CI.*husky|HUSKY=0|skipping hooks",
+      "message": "Hooks being skipped in CI",
+      "cause": "CI environment variable disabling hooks",
+      "solutions": [
+        {
+          "approach": "Use prepare script",
+          "code": "// package.json - prepare runs after npm install\n\"scripts\": {\n  \"prepare\": \"husky\"\n}",
+          "when": "Standard CI setup"
+        },
+        {
+          "approach": "Explicit skip",
+          "code": "# In CI:\nHUSKY=0 npm ci",
+          "when": "Intentional CI skip"
+        }
+      ]
+    },
+    {
+      "id": "git_not_found",
+      "pattern": "not a git repository|git.*not found|\\.git",
+      "message": "Git repository not found",
+      "cause": "Husky requires a git repository",
+      "solutions": [
+        {
+          "approach": "Initialize git",
+          "code": "git init",
+          "when": "New project"
+        },
+        {
+          "approach": "Check directory",
+          "code": "# Ensure running from repo root with .git directory",
+          "when": "Wrong directory"
+        }
+      ]
+    },
+    {
+      "id": "legacy_config",
+      "pattern": "husky.config|deprecated|v4|\\.huskyrc",
+      "message": "Using deprecated Husky v4 configuration",
+      "cause": "Old configuration format not compatible with v9",
+      "solutions": [
+        {
+          "approach": "Migrate to v9",
+          "code": "# Remove old config\nrm .huskyrc.json\n# Create new hooks\nnpx husky init\necho 'npm test' > .husky/pre-commit",
+          "when": "Upgrade from v4"
+        },
+        {
+          "approach": "Remove old hooks",
+          "code": "rm -rf .husky.local\n# Also remove husky config from package.json",
+          "when": "Clean up"
+        }
+      ]
+    },
+    {
+      "id": "postinstall_error",
+      "pattern": "postinstall.*husky|prepare.*failed|ERR.*husky",
+      "message": "Husky setup failed during npm install",
+      "cause": "Prepare script failed",
+      "solutions": [
+        {
+          "approach": "Check node version",
+          "code": "node --version  # Requires Node 18+",
+          "when": "Node version issue"
+        },
+        {
+          "approach": "Run prepare manually",
+          "code": "npm run prepare",
+          "when": "Debug prepare script"
+        },
+        {
+          "approach": "Skip in CI",
+          "code": "// package.json\n\"scripts\": {\n  \"prepare\": \"node -e \\\"if (process.env.CI !== 'true') require('husky')\\\"\"\n}",
+          "when": "Skip in CI"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+{
+  "tool": "gcp_functions",
+  "version": "2nd gen",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "deadline exceeded|Function execution took|timeout",
+      "message": "Cloud Function execution timed out",
+      "cause": "Execution exceeded timeout limit (default 60s, max 60min for 2nd gen)",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "gcloud functions deploy myFunc --timeout=540s\n\n# Or in code:\n# functions-framework timeout configuration",
+          "when": "Function needs more time"
+        },
+        {
+          "approach": "Use Cloud Run",
+          "code": "# 2nd gen functions run on Cloud Run\ngcloud functions deploy myFunc --gen2 --timeout=3600s",
+          "when": "Need timeout > 9 min (1st gen)"
+        },
+        {
+          "approach": "Optimize external calls",
+          "code": "// Add timeout to HTTP requests\nconst {default: fetch} = await import('node-fetch');\nawait fetch(url, { timeout: 5000 });",
+          "when": "External API causing delay"
+        },
+        {
+          "approach": "Use Cloud Tasks",
+          "code": "// Offload long tasks to Cloud Tasks\nconst {CloudTasksClient} = require('@google-cloud/tasks');\nawait client.createTask({parent: queuePath, task});",
+          "when": "Task exceeds max timeout"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "Memory limit|out of memory|Killed|memory allocation",
+      "message": "Cloud Function exceeded memory limit",
+      "cause": "Function used more memory than allocated (128MB-32GB)",
+      "solutions": [
+        {
+          "approach": "Increase memory",
+          "code": "gcloud functions deploy myFunc --memory=1024MB",
+          "when": "Function needs more memory"
+        },
+        {
+          "approach": "Stream large files",
+          "code": "const {Storage} = require('@google-cloud/storage');\nconst file = storage.bucket('b').file('f');\nconst stream = file.createReadStream();\nstream.pipe(transform).pipe(output);",
+          "when": "Processing large files from GCS"
+        },
+        {
+          "approach": "Use /tmp wisely",
+          "code": "// 10GB available in /tmp for 2nd gen\nfs.writeFileSync('/tmp/data', buffer);",
+          "when": "Need temp storage"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|PERMISSION_DENIED|403|does not have|iam.serviceAccounts.actAs",
+      "message": "Cloud Function lacks required permissions",
+      "cause": "Service account missing IAM roles",
+      "solutions": [
+        {
+          "approach": "Grant IAM role",
+          "code": "gcloud projects add-iam-policy-binding PROJECT \\\n  --member=\"serviceAccount:PROJECT@appspot.gserviceaccount.com\" \\\n  --role=\"roles/storage.objectViewer\"",
+          "when": "Missing service permissions"
+        },
+        {
+          "approach": "Use custom service account",
+          "code": "gcloud functions deploy myFunc \\\n  --service-account=custom-sa@project.iam.gserviceaccount.com",
+          "when": "Need different permissions than default"
+        },
+        {
+          "approach": "Grant invoker permission",
+          "code": "gcloud functions add-invoker-policy-binding myFunc \\\n  --member=\"allUsers\"  # Or specific service account",
+          "when": "Caller can't invoke function"
+        }
+      ]
+    },
+    {
+      "id": "cold_start",
+      "pattern": "cold start|Function took.*to start|instance startup",
+      "message": "Cold start causing high latency",
+      "cause": "New function instance being initialized",
+      "solutions": [
+        {
+          "approach": "Set minimum instances",
+          "code": "gcloud functions deploy myFunc --min-instances=1",
+          "when": "Need consistent latency"
+        },
+        {
+          "approach": "Reduce dependencies",
+          "code": "# Use tree-shaking bundler\nnpx esbuild src/index.js --bundle --platform=node --outfile=dist/index.js",
+          "when": "Large node_modules"
+        },
+        {
+          "approach": "Use global scope",
+          "code": "// Initialize clients outside handler\nconst db = new Firestore();\n\nexports.handler = async (req, res) => {\n  // db already initialized\n};",
+          "when": "Repeated client initialization"
+        },
+        {
+          "approach": "Use 2nd gen",
+          "code": "gcloud functions deploy myFunc --gen2",
+          "when": "1st gen cold starts too slow"
+        }
+      ]
+    },
+    {
+      "id": "deployment_failed",
+      "pattern": "Deployment failure|Build failed|could not create|OperationError",
+      "message": "Function deployment failed",
+      "cause": "Build error, invalid configuration, or quota exceeded",
+      "solutions": [
+        {
+          "approach": "Check build logs",
+          "code": "gcloud builds list --limit=1\ngcloud builds log BUILD_ID",
+          "when": "Need deployment details"
+        },
+        {
+          "approach": "Verify package.json",
+          "code": "// Ensure engines field matches runtime\n{\n  \"engines\": { \"node\": \"20\" },\n  \"main\": \"index.js\"\n}",
+          "when": "Node.js version mismatch"
+        },
+        {
+          "approach": "Check entry point",
+          "code": "gcloud functions deploy myFunc --entry-point=myHandler\n\n// In code:\nexports.myHandler = (req, res) => { ... };",
+          "when": "Handler not found"
+        },
+        {
+          "approach": "Enable required APIs",
+          "code": "gcloud services enable cloudfunctions.googleapis.com\ngcloud services enable cloudbuild.googleapis.com",
+          "when": "APIs not enabled"
+        }
+      ]
+    },
+    {
+      "id": "vpc_egress",
+      "pattern": "VPC connector|Serverless VPC Access|ETIMEDOUT|egress",
+      "message": "Function cannot reach VPC resources or internet",
+      "cause": "VPC connector misconfigured or missing",
+      "solutions": [
+        {
+          "approach": "Create VPC connector",
+          "code": "gcloud compute networks vpc-access connectors create myconnector \\\n  --region=us-central1 --network=default --range=10.8.0.0/28\n\ngcloud functions deploy myFunc --vpc-connector=myconnector",
+          "when": "Need VPC access"
+        },
+        {
+          "approach": "Configure egress",
+          "code": "gcloud functions deploy myFunc \\\n  --vpc-connector=myconnector \\\n  --egress-settings=all-traffic  # or private-ranges-only",
+          "when": "Need internet from VPC"
+        },
+        {
+          "approach": "Check firewall rules",
+          "code": "gcloud compute firewall-rules create allow-functions \\\n  --network=default --allow=tcp:443 \\\n  --source-ranges=10.8.0.0/28",
+          "when": "Firewall blocking traffic"
+        }
+      ]
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "Quota exceeded|RESOURCE_EXHAUSTED|429|rateLimitExceeded",
+      "message": "Cloud Functions quota exceeded",
+      "cause": "Hit rate limits on invocations, deployments, or resources",
+      "solutions": [
+        {
+          "approach": "Check quotas",
+          "code": "gcloud compute project-info describe --project=PROJECT",
+          "when": "Need to see current limits"
+        },
+        {
+          "approach": "Request increase",
+          "code": "# Request via Cloud Console > IAM & Admin > Quotas",
+          "when": "Legitimate traffic exceeds quota"
+        },
+        {
+          "approach": "Set max instances",
+          "code": "gcloud functions deploy myFunc --max-instances=100",
+          "when": "Runaway scaling"
+        },
+        {
+          "approach": "Add concurrency",
+          "code": "# 2nd gen only\ngcloud functions deploy myFunc --gen2 --concurrency=80",
+          "when": "Need more throughput per instance"
+        }
+      ]
+    },
+    {
+      "id": "cors_error",
+      "pattern": "CORS|Access-Control-Allow-Origin|blocked by CORS|preflight",
+      "message": "CORS policy blocking requests",
+      "cause": "Function not returning proper CORS headers",
+      "solutions": [
+        {
+          "approach": "Add CORS headers",
+          "code": "exports.handler = (req, res) => {\n  res.set('Access-Control-Allow-Origin', '*');\n  \n  if (req.method === 'OPTIONS') {\n    res.set('Access-Control-Allow-Methods', 'GET, POST');\n    res.set('Access-Control-Allow-Headers', 'Content-Type');\n    res.status(204).send('');\n    return;\n  }\n  // Handle actual request\n};",
+          "when": "Browser requests blocked"
+        },
+        {
+          "approach": "Use cors middleware",
+          "code": "const cors = require('cors')({origin: true});\n\nexports.handler = (req, res) => {\n  cors(req, res, () => {\n    // Your logic\n  });\n};",
+          "when": "Need flexible CORS handling"
+        }
+      ]
+    }
+  ]
+}

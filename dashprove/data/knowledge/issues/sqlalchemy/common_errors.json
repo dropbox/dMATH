@@ -1,0 +1,134 @@
+{
+  "tool": "sqlalchemy",
+  "category": "orm",
+  "common_errors": [
+    {
+      "id": "sqlalchemy_detached_instance",
+      "pattern": "DetachedInstanceError|is not bound to a Session",
+      "severity": "error",
+      "causes": [
+        "Accessing lazy-loaded attribute after session closed",
+        "Object expired and session no longer available",
+        "Using object outside of session scope"
+      ],
+      "solutions": [
+        "Use eager loading: joinedload(), selectinload()",
+        "Access attributes within session context",
+        "Use expire_on_commit=False for read-after-commit",
+        "Merge object into new session: session.merge(obj)"
+      ]
+    },
+    {
+      "id": "sqlalchemy_integrity_error",
+      "pattern": "IntegrityError|UNIQUE constraint failed|duplicate key|violates foreign key",
+      "severity": "error",
+      "causes": [
+        "Unique constraint violation",
+        "Foreign key reference to non-existent record",
+        "NOT NULL constraint violation"
+      ],
+      "solutions": [
+        "Use session.merge() for upsert behavior",
+        "Check exists before insert for unique values",
+        "Create parent records before children",
+        "Wrap in try-except for constraint violations"
+      ]
+    },
+    {
+      "id": "sqlalchemy_multiple_rows_returned",
+      "pattern": "MultipleResultsFound|multiple rows returned|one\\(\\) returned more than one",
+      "severity": "error",
+      "causes": [
+        "Query returned multiple rows but one() expected single",
+        "Missing filter conditions",
+        "Data integrity issue with duplicate records"
+      ],
+      "solutions": [
+        "Use first() instead of one() if multiple okay",
+        "Add more specific filter conditions",
+        "Use one_or_none() if zero results acceptable",
+        "Add unique constraint to prevent duplicates"
+      ]
+    },
+    {
+      "id": "sqlalchemy_no_result_found",
+      "pattern": "NoResultFound|one\\(\\) returned no rows",
+      "severity": "error",
+      "causes": [
+        "Query filter matches no records",
+        "Expected record was deleted",
+        "Wrong filter conditions"
+      ],
+      "solutions": [
+        "Use one_or_none() to return None instead of error",
+        "Use first() which returns None for no results",
+        "Verify filter conditions are correct",
+        "Handle NoResultFound exception appropriately"
+      ]
+    },
+    {
+      "id": "sqlalchemy_invalid_request_state",
+      "pattern": "InvalidRequestError|object is already attached|transaction is closed",
+      "severity": "error",
+      "causes": [
+        "Adding object already in another session",
+        "Modifying after transaction committed/rolled back",
+        "Session in invalid state after error"
+      ],
+      "solutions": [
+        "Use session.expunge() before adding to new session",
+        "Create new session after transaction error",
+        "Use scoped_session for thread-local sessions",
+        "Check session.is_active before operations"
+      ]
+    },
+    {
+      "id": "sqlalchemy_lazy_load_no_parent",
+      "pattern": "lazy load operation.*cannot proceed|Parent instance.*not bound",
+      "severity": "error",
+      "causes": [
+        "Lazy loading attempted outside async context",
+        "Session not bound when accessing relationship",
+        "Using sync relationship in async context"
+      ],
+      "solutions": [
+        "Use selectinload() or joinedload() for eager loading",
+        "In async: use AsyncSession with lazy='selectin'",
+        "Access relationships within session context manager",
+        "Use relationship(lazy='joined') for always-eager"
+      ]
+    },
+    {
+      "id": "sqlalchemy_connection_pool_timeout",
+      "pattern": "TimeoutError|QueuePool limit|Pool size limit reached",
+      "severity": "error",
+      "causes": [
+        "All connections in pool are in use",
+        "Connections not being returned to pool",
+        "Pool size too small for workload"
+      ],
+      "solutions": [
+        "Increase pool_size and max_overflow in create_engine",
+        "Ensure sessions are closed after use (use context manager)",
+        "Set pool_timeout to raise error faster",
+        "Use pool_pre_ping=True to handle stale connections"
+      ]
+    },
+    {
+      "id": "sqlalchemy_async_greenlet",
+      "pattern": "MissingGreenlet|greenlet_spawn has not been called",
+      "severity": "error",
+      "causes": [
+        "Synchronous operation in async context without greenlet",
+        "Missing run_sync() wrapper for sync code",
+        "Lazy loading triggered in async context"
+      ],
+      "solutions": [
+        "Use async session methods (execute, scalars)",
+        "Wrap sync code with await greenlet_spawn()",
+        "Use selectinload/joinedload instead of lazy loading",
+        "Configure relationship with lazy='selectin' for async"
+      ]
+    }
+  ]
+}

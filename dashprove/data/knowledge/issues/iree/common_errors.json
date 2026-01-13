@@ -1,0 +1,115 @@
+{
+  "tool": "iree",
+  "version": "2.5.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "import_error",
+      "pattern": "(import|iree.*compiler|mlir)",
+      "message": "Model import error",
+      "cause": "Failed to import model to MLIR",
+      "solutions": [
+        {
+          "approach": "Import from TF/JAX",
+          "code": "import iree.compiler as ireec\nflatbuffer = ireec.compile_str(\n    mlir_module,\n    target_backends=['llvm-cpu']\n)",
+          "when": "Compiling MLIR"
+        },
+        {
+          "approach": "Import ONNX",
+          "code": "# Use iree-import-onnx\n# iree-import-onnx model.onnx -o model.mlir\nimport subprocess\nsubprocess.run(['iree-import-onnx', 'model.onnx', '-o', 'model.mlir'])",
+          "when": "Importing ONNX"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "(compile|target.*backend|lowering)",
+      "message": "Compilation failed",
+      "cause": "Failed to compile for target backend",
+      "solutions": [
+        {
+          "approach": "Compile for CPU",
+          "code": "import iree.compiler as ireec\nflatbuffer = ireec.compile_file(\n    'model.mlir',\n    target_backends=['llvm-cpu'],\n    input_type='mhlo'\n)",
+          "when": "CPU compilation"
+        },
+        {
+          "approach": "Compile for GPU",
+          "code": "flatbuffer = ireec.compile_file(\n    'model.mlir',\n    target_backends=['vulkan-spirv', 'cuda'],\n    input_type='mhlo'\n)",
+          "when": "GPU compilation"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "(runtime|execute|invoke|vmfb)",
+      "message": "Runtime execution error",
+      "cause": "Failed to execute compiled module",
+      "solutions": [
+        {
+          "approach": "Create runtime",
+          "code": "import iree.runtime as ireert\nconfig = ireert.Config('local-task')\nctx = ireert.SystemContext(config=config)\nvm_module = ireert.VmModule.from_flatbuffer(\n    ctx.instance, flatbuffer\n)\nctx.add_module(vm_module)",
+          "when": "Setting up runtime"
+        },
+        {
+          "approach": "Execute function",
+          "code": "invoke = ctx.modules.module['main']\nresult = invoke(input_array)",
+          "when": "Running inference"
+        }
+      ]
+    },
+    {
+      "id": "shape_error",
+      "pattern": "(shape|dimension|dynamic)",
+      "message": "Shape mismatch or dynamic shape error",
+      "cause": "Input shape doesn't match compiled shape",
+      "solutions": [
+        {
+          "approach": "Check shapes",
+          "code": "# List function signatures\nfor name in ctx.modules.module:\n    print(f'{name}: {ctx.modules.module[name].reflection}')",
+          "when": "Finding expected shapes"
+        },
+        {
+          "approach": "Handle dynamic shapes",
+          "code": "# Compile with dynamic shapes\nflatbuffer = ireec.compile_file(\n    'model.mlir',\n    target_backends=['llvm-cpu'],\n    extra_args=['--iree-hal-target-backends=llvm-cpu']\n)",
+          "when": "Dynamic batch size"
+        }
+      ]
+    },
+    {
+      "id": "device_error",
+      "pattern": "(device|HAL|driver|vulkan|cuda)",
+      "message": "Device initialization error",
+      "cause": "Target device not available",
+      "solutions": [
+        {
+          "approach": "List devices",
+          "code": "import iree.runtime as ireert\nprint(ireert.query_available_drivers())\n# ['local-task', 'vulkan', 'cuda', ...]",
+          "when": "Finding available devices"
+        },
+        {
+          "approach": "Select device",
+          "code": "config = ireert.Config('vulkan')  # or 'cuda', 'local-task'\nctx = ireert.SystemContext(config=config)",
+          "when": "Specifying device"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "(memory|allocation|buffer|OOM)",
+      "message": "Memory allocation error",
+      "cause": "Insufficient memory for model",
+      "solutions": [
+        {
+          "approach": "Use CPU fallback",
+          "code": "config = ireert.Config('local-task')  # CPU backend\nctx = ireert.SystemContext(config=config)",
+          "when": "GPU memory insufficient"
+        },
+        {
+          "approach": "Optimize compilation",
+          "code": "flatbuffer = ireec.compile_file(\n    'model.mlir',\n    target_backends=['llvm-cpu'],\n    extra_args=['--iree-flow-enable-fuse-padding-into-linalg-ops']\n)",
+          "when": "Optimizing memory"
+        }
+      ]
+    }
+  ]
+}

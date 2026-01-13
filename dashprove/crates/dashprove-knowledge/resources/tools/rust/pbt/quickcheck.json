@@ -1,0 +1,131 @@
+{
+  "id": "quickcheck",
+  "name": "QuickCheck",
+  "category": "rust_pbt",
+  "subcategory": "property_testing",
+
+  "description": "Property-based testing inspired by Haskell QuickCheck",
+  "long_description": "QuickCheck is a Rust library for property-based testing inspired by the original Haskell QuickCheck. It generates random test cases and checks that properties hold for all generated inputs. When a failure is found, QuickCheck shrinks the input to find a minimal failing case.",
+
+  "capabilities": [
+    "property_testing",
+    "arbitrary_trait",
+    "automatic_shrinking",
+    "testable_trait",
+    "configurable_iterations",
+    "custom_generators",
+    "quickcheck_macros"
+  ],
+  "property_types": ["property_based", "invariant"],
+  "input_languages": ["rust"],
+  "output_formats": ["failing_input", "shrunk_case", "pass_count"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add quickcheck quickcheck_macros --dev"},
+      {"type": "source", "url": "https://github.com/BurntSushi/quickcheck"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://docs.rs/quickcheck/latest/quickcheck/",
+    "tutorial": "https://docs.rs/quickcheck/latest/quickcheck/#example",
+    "api_reference": "https://docs.rs/quickcheck/latest/quickcheck/",
+    "examples": "https://github.com/BurntSushi/quickcheck/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "quickcheck",
+      "description": "Define property test with macro",
+      "syntax": "#[quickcheck] fn prop_name(input: T) -> bool { ... }",
+      "when_to_use": "Simple property tests",
+      "examples": ["#[quickcheck] fn prop_reverse(xs: Vec<i32>) -> bool { xs == reverse(&reverse(&xs)) }"]
+    },
+    {
+      "name": "arbitrary",
+      "description": "Implement custom generator",
+      "syntax": "impl Arbitrary for T { fn arbitrary(g: &mut Gen) -> T { ... } }",
+      "when_to_use": "Custom type generation",
+      "examples": ["impl Arbitrary for Point { fn arbitrary(g: &mut Gen) -> Point { Point { x: i32::arbitrary(g), y: i32::arbitrary(g) } } }"]
+    },
+    {
+      "name": "shrink",
+      "description": "Implement custom shrinking",
+      "syntax": "fn shrink(&self) -> Box<dyn Iterator<Item = Self>>",
+      "when_to_use": "Better minimal failing cases for custom types",
+      "examples": ["fn shrink(&self) -> Box<dyn Iterator<Item = Self>> { Box::new(self.value.shrink().map(|v| MyType { value: v })) }"]
+    },
+    {
+      "name": "testable",
+      "description": "Use TestResult for conditional testing",
+      "syntax": "fn prop(x: T) -> TestResult { if precond { TestResult::from_bool(check) } else { TestResult::discard() } }",
+      "when_to_use": "Tests with preconditions",
+      "examples": ["fn prop_div(x: i32, y: i32) -> TestResult { if y == 0 { TestResult::discard() } else { TestResult::from_bool(x / y * y + x % y == x) } }"]
+    },
+    {
+      "name": "gen_range",
+      "description": "Generate in range",
+      "syntax": "g.gen_range(low..high)",
+      "when_to_use": "Bounded value generation",
+      "examples": ["let x: i32 = g.gen_range(0..100);"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "[quickcheck] TEST FAILED",
+      "meaning": "Property test found failure",
+      "common_causes": ["Bug in implementation", "Incorrect property"],
+      "fixes": ["Fix bug", "Correct property definition"]
+    },
+    {
+      "pattern": "shrunk to:",
+      "meaning": "Minimal failing input found",
+      "common_causes": ["QuickCheck minimized the failing case"],
+      "fixes": ["Use shrunk input for debugging"]
+    },
+    {
+      "pattern": "passed",
+      "meaning": "All test cases passed",
+      "common_causes": ["Property holds for tested cases"],
+      "fixes": ["Consider more test cases if needed"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["property_based", "invariant"],
+    "cli_command": "dashprove verify --backend quickcheck"
+  },
+
+  "performance": {
+    "typical_runtime": "Milliseconds to seconds",
+    "scalability": "Default 100 test cases",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["proptest", "bolero", "arbitrary"],
+    "advantages": [
+      "Fast execution",
+      "Simple API",
+      "Good macro support",
+      "Lightweight"
+    ],
+    "disadvantages": [
+      "Less powerful shrinking than proptest",
+      "No regex string generation",
+      "Simpler generator combinators"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.0.3",
+    "last_updated": "2025-12-20",
+    "maintainer": "Andrew Gallant",
+    "license": "MIT/Unlicense"
+  }
+}

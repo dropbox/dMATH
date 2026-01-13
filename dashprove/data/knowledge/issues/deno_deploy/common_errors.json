@@ -1,0 +1,176 @@
+{
+  "tool": "deno_deploy",
+  "version": "1.40.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "deploy_error",
+      "pattern": "Deploy failed|deployment.*error|DEPLOY_ERROR",
+      "message": "Deno Deploy deployment failed",
+      "cause": "Error during deployment process",
+      "solutions": [
+        {
+          "approach": "Check entry point",
+          "code": "deployctl deploy --project=my-project main.ts",
+          "when": "Specify entry point"
+        },
+        {
+          "approach": "Check imports",
+          "code": "# Ensure all imports use https:// or npm: specifiers",
+          "when": "Import resolution"
+        },
+        {
+          "approach": "Verbose deploy",
+          "code": "deployctl deploy --dry-run",
+          "when": "Preview deployment"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "Not authenticated|DENO_DEPLOY_TOKEN|authentication failed",
+      "message": "Authentication failed",
+      "cause": "Missing or invalid Deno Deploy token",
+      "solutions": [
+        {
+          "approach": "Set token",
+          "code": "export DENO_DEPLOY_TOKEN=your_token\ndeployctl deploy",
+          "when": "CI environment"
+        },
+        {
+          "approach": "Interactive auth",
+          "code": "deployctl login",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "Import.*failed|Module not found|Cannot resolve",
+      "message": "Module import error",
+      "cause": "Unable to resolve module import",
+      "solutions": [
+        {
+          "approach": "Use deno.land/x",
+          "code": "import { serve } from \"https://deno.land/std@0.208.0/http/server.ts\";",
+          "when": "Standard library"
+        },
+        {
+          "approach": "Use npm specifier",
+          "code": "import express from \"npm:express@4\";",
+          "when": "npm package"
+        },
+        {
+          "approach": "Add import map",
+          "code": "// deno.json\n{\n  \"imports\": {\n    \"std/\": \"https://deno.land/std@0.208.0/\"\n  }\n}",
+          "when": "Import mapping"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "Runtime error|Uncaught|unhandled rejection",
+      "message": "Runtime error in deployed code",
+      "cause": "JavaScript/TypeScript runtime error",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "deployctl logs --project=my-project",
+          "when": "View deployment logs"
+        },
+        {
+          "approach": "Test locally",
+          "code": "deno run --allow-net main.ts",
+          "when": "Local testing"
+        },
+        {
+          "approach": "Add error handling",
+          "code": "Deno.serve((req) => {\n  try {\n    // handler\n  } catch (e) {\n    return new Response(e.message, { status: 500 });\n  }\n});",
+          "when": "Error handling"
+        }
+      ]
+    },
+    {
+      "id": "permission_error",
+      "pattern": "Permission denied|--allow|Requires permission",
+      "message": "Permission not available",
+      "cause": "Deno Deploy has limited permissions",
+      "solutions": [
+        {
+          "approach": "Use allowed APIs",
+          "code": "// Deno Deploy automatically allows:\n// - Network fetch\n// - KV storage\n// - Limited Deno APIs",
+          "when": "Permission model"
+        },
+        {
+          "approach": "Use Deno KV",
+          "code": "const kv = await Deno.openKv();\nawait kv.set([\"key\"], \"value\");",
+          "when": "Persistent storage"
+        },
+        {
+          "approach": "Test permissions locally",
+          "code": "deno run --allow-read --allow-net main.ts",
+          "when": "Local testing"
+        }
+      ]
+    },
+    {
+      "id": "kv_error",
+      "pattern": "KV.*error|openKv.*failed|database.*error",
+      "message": "Deno KV error",
+      "cause": "Deno KV operation failed",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "const kv = await Deno.openKv();\nconst result = await kv.get([\"users\", \"123\"]);",
+          "when": "Basic KV operations"
+        },
+        {
+          "approach": "Handle conflicts",
+          "code": "const result = await kv.atomic()\n  .check({ key: [\"counter\"], versionstamp: existing.versionstamp })\n  .set([\"counter\"], newValue)\n  .commit();",
+          "when": "Atomic operations"
+        }
+      ]
+    },
+    {
+      "id": "env_var_error",
+      "pattern": "Environment variable|env.*not found|undefined.*env",
+      "message": "Environment variable not set",
+      "cause": "Expected env var not available",
+      "solutions": [
+        {
+          "approach": "Set in dashboard",
+          "code": "# Set env vars in Deno Deploy dashboard",
+          "when": "Production vars"
+        },
+        {
+          "approach": "Access env",
+          "code": "const apiKey = Deno.env.get(\"API_KEY\");",
+          "when": "Read env var"
+        },
+        {
+          "approach": "Local env file",
+          "code": "// .env\nAPI_KEY=secret\n\n// Run with:\ndeno run --env main.ts",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "project_not_found",
+      "pattern": "Project not found|project.*does not exist|unknown project",
+      "message": "Deno Deploy project not found",
+      "cause": "Project name doesn't exist or typo",
+      "solutions": [
+        {
+          "approach": "Create project",
+          "code": "# Create at dash.deno.com or:\ndeployctl deploy --project=my-new-project main.ts",
+          "when": "New project"
+        },
+        {
+          "approach": "List projects",
+          "code": "deployctl projects list",
+          "when": "Find project name"
+        }
+      ]
+    }
+  ]
+}

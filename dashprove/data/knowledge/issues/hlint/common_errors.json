@@ -1,0 +1,138 @@
+{
+  "tool": "hlint",
+  "version": "3.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "use_map",
+      "pattern": "Use map|\\[.*\\|.*<-.*\\]",
+      "message": "Suggest using map instead of list comprehension",
+      "cause": "List comprehension can be simplified to map",
+      "solutions": [
+        {
+          "approach": "Apply suggestion",
+          "code": "map f xs  -- instead of [f x | x <- xs]",
+          "when": "Simple transformation"
+        },
+        {
+          "approach": "Ignore if clearer",
+          "code": "{- hlint ignore \"Use map\" -}",
+          "when": "Comprehension is more readable"
+        }
+      ]
+    },
+    {
+      "id": "eta_reduce",
+      "pattern": "Eta reduce|\\\\x -> f x",
+      "message": "Suggest eta reduction",
+      "cause": "Function can be simplified by removing argument",
+      "solutions": [
+        {
+          "approach": "Apply reduction",
+          "code": "f  -- instead of \\x -> f x",
+          "when": "Eta reduction appropriate"
+        },
+        {
+          "approach": "Keep for clarity",
+          "code": "{- hlint ignore \"Eta reduce\" -}",
+          "when": "Explicit lambda clearer"
+        }
+      ]
+    },
+    {
+      "id": "redundant_bracket",
+      "pattern": "Redundant bracket|unnecessary parentheses",
+      "message": "Remove redundant parentheses",
+      "cause": "Parentheses not needed due to precedence",
+      "solutions": [
+        {
+          "approach": "Remove brackets",
+          "code": "f x + g y  -- instead of (f x) + (g y)",
+          "when": "Precedence is standard"
+        },
+        {
+          "approach": "Keep for clarity",
+          "code": "{- hlint ignore \"Redundant bracket\" -}",
+          "when": "Parens improve readability"
+        }
+      ]
+    },
+    {
+      "id": "use_concatmap",
+      "pattern": "Use concatMap|concat.*map",
+      "message": "Use concatMap instead of concat . map",
+      "cause": "Composition can be simplified",
+      "solutions": [
+        {
+          "approach": "Use concatMap",
+          "code": "concatMap f xs  -- instead of concat (map f xs)",
+          "when": "Flattening mapped lists"
+        },
+        {
+          "approach": "Use bind",
+          "code": "xs >>= f  -- Monad instance for []",
+          "when": "Prefer monadic style"
+        }
+      ]
+    },
+    {
+      "id": "use_fold",
+      "pattern": "Use fold|explicit recursion",
+      "message": "Consider using fold",
+      "cause": "Explicit recursion can use standard fold",
+      "solutions": [
+        {
+          "approach": "Use foldl'",
+          "code": "foldl' (+) 0 xs  -- strict left fold",
+          "when": "Accumulating strict result"
+        },
+        {
+          "approach": "Use foldr",
+          "code": "foldr (:) [] xs  -- right fold for lists",
+          "when": "Building lazy structure"
+        }
+      ]
+    },
+    {
+      "id": "use_fromMaybe",
+      "pattern": "Use fromMaybe|maybe.*id",
+      "message": "Use fromMaybe for default value",
+      "cause": "Pattern can be simplified with fromMaybe",
+      "solutions": [
+        {
+          "approach": "Use fromMaybe",
+          "code": "fromMaybe default mx  -- instead of maybe default id mx",
+          "when": "Extracting with default"
+        },
+        {
+          "approach": "Use pattern match",
+          "code": "case mx of Just x -> x; Nothing -> default",
+          "when": "Need explicit control flow"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "Parse error|Could not parse",
+      "message": "HLint failed to parse file",
+      "cause": "File contains syntax HLint doesn't understand",
+      "solutions": [
+        {
+          "approach": "Add language pragmas",
+          "code": "{-# LANGUAGE TypeFamilies #-}  -- at top of file",
+          "when": "Using language extensions"
+        },
+        {
+          "approach": "Update hlint",
+          "code": "stack install hlint  -- or cabal install hlint",
+          "when": "Using newer GHC features"
+        },
+        {
+          "approach": "Use hlint.yaml",
+          "code": "- extensions:\n  - TypeFamilies\n  - GADTs",
+          "when": "Project-wide extensions"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "id": "marabou",
+  "name": "Marabou",
+  "category": "neural_network_verification",
+  "subcategory": "verifier",
+
+  "description": "SMT-based neural network verifier",
+  "long_description": "Marabou is an SMT-based tool for verifying deep neural networks. It can verify properties like robustness, safety, and reachability for networks with ReLU and other piecewise-linear activations. Marabou extends SMT solving with native support for neural network constraints.",
+
+  "capabilities": [
+    "robustness_verification",
+    "reachability_analysis",
+    "input_output_properties",
+    "relu_networks",
+    "piecewise_linear",
+    "counterexample_generation"
+  ],
+  "property_types": ["property", "robustness", "reachability"],
+  "input_languages": ["nnet", "onnx", "tensorflow"],
+  "output_formats": ["sat/unsat", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install maraboupy"},
+      {"type": "source", "url": "https://github.com/NeuralNetworkVerification/Marabou"}
+    ],
+    "dependencies": ["boost", "openblas"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/NeuralNetworkVerification/Marabou",
+    "tutorial": "https://github.com/NeuralNetworkVerification/Marabou/tree/master/maraboupy",
+    "api_reference": "https://neuralnetworkverification.github.io/Marabou/",
+    "examples": "https://github.com/NeuralNetworkVerification/Marabou/tree/master/resources"
+  },
+
+  "tactics": [
+    {
+      "name": "solve",
+      "description": "Solve verification query",
+      "syntax": "network.solve(options)",
+      "when_to_use": "Main verification call",
+      "examples": ["vals, stats = network.solve()"]
+    },
+    {
+      "name": "setLowerBound",
+      "description": "Set input lower bound",
+      "syntax": "network.setLowerBound(var, bound)",
+      "when_to_use": "To constrain input domain",
+      "examples": ["network.setLowerBound(inputVar, 0.0)"]
+    },
+    {
+      "name": "setUpperBound",
+      "description": "Set input upper bound",
+      "syntax": "network.setUpperBound(var, bound)",
+      "when_to_use": "To constrain input domain",
+      "examples": ["network.setUpperBound(inputVar, 1.0)"]
+    },
+    {
+      "name": "addEquation",
+      "description": "Add linear constraint",
+      "syntax": "network.addEquation(eq)",
+      "when_to_use": "For output properties",
+      "examples": ["eq = MarabouUtils.Equation()\neq.addAddend(1, outputVar)\neq.setScalar(0.5)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "UNSAT",
+      "meaning": "Property verified (no counterexample exists)",
+      "common_causes": ["Property holds for all inputs"],
+      "fixes": ["No fix needed - property verified"]
+    },
+    {
+      "pattern": "SAT",
+      "meaning": "Property violated (counterexample found)",
+      "common_causes": ["Network doesn't satisfy property"],
+      "fixes": ["Retrain network", "Relax property", "Use adversarial training"]
+    },
+    {
+      "pattern": "TIMEOUT",
+      "meaning": "Verification didn't complete",
+      "common_causes": ["Network too large", "Property too complex"],
+      "fixes": ["Increase timeout", "Simplify network", "Use abstraction"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["nn_property", "robustness"],
+    "cli_command": "dashprove verify --backend marabou"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "Handles networks up to ~10K nodes",
+    "memory_usage": "4-64GB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["crown", "eran", "verinet", "nnenum"],
+    "advantages": [
+      "Complete verification",
+      "Good counterexamples",
+      "Active development",
+      "Python API"
+    ],
+    "disadvantages": [
+      "Slower than incomplete methods",
+      "Limited to piecewise-linear"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.0.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Stanford/Hebrew University",
+    "license": "BSD"
+  }
+}

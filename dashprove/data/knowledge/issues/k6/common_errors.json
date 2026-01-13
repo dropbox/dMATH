@@ -1,0 +1,191 @@
+{
+  "tool": "k6",
+  "version": "0.48.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "threshold_exceeded",
+      "pattern": "threshold.*crossed|threshold.*failed",
+      "message": "Performance threshold exceeded",
+      "cause": "Response time, error rate, or other metric exceeded limit",
+      "solutions": [
+        {
+          "approach": "Adjust threshold",
+          "code": "export const options = {\n  thresholds: {\n    http_req_duration: ['p(95)<500'],  // Increase limit\n  },\n};",
+          "when": "Threshold too strict"
+        },
+        {
+          "approach": "Investigate bottleneck",
+          "code": "// Check response times per endpoint",
+          "when": "Performance issue"
+        },
+        {
+          "approach": "Scale infrastructure",
+          "code": "// Add capacity to handle load",
+          "when": "System at capacity"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "connection refused|ECONNREFUSED|dial tcp",
+      "message": "Cannot connect to server",
+      "cause": "Server not running or wrong URL",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl http://localhost:3000/health",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check URL",
+          "code": "const response = http.get('http://correct-host:port/api');",
+          "when": "Wrong URL in script"
+        },
+        {
+          "approach": "Add retries",
+          "code": "export const options = {\n  httpDebug: 'full',\n};",
+          "when": "Intermittent failures"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "cannot find module|import.*failed|GoError",
+      "message": "Module import failed",
+      "cause": "k6 extension not available or path wrong",
+      "solutions": [
+        {
+          "approach": "Use built-in modules",
+          "code": "import http from 'k6/http';\nimport { check } from 'k6';",
+          "when": "Using core k6"
+        },
+        {
+          "approach": "Build with extension",
+          "code": "xk6 build --with github.com/grafana/xk6-browser",
+          "when": "Need k6 extension"
+        },
+        {
+          "approach": "Bundle dependencies",
+          "code": "// Use webpack to bundle npm modules",
+          "when": "Using npm packages"
+        }
+      ]
+    },
+    {
+      "id": "check_failed",
+      "pattern": "check.*failed|checks\\.{.*}: 0%",
+      "message": "Response validation failed",
+      "cause": "Response didn't meet check criteria",
+      "solutions": [
+        {
+          "approach": "Debug response",
+          "code": "console.log(response.status, response.body);",
+          "when": "Need to see response"
+        },
+        {
+          "approach": "Fix check",
+          "code": "check(response, {\n  'status is 200': (r) => r.status === 200,\n  'body contains data': (r) => r.body.includes('expected'),\n});",
+          "when": "Check criteria wrong"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "if (response.status !== 200) {\n  console.error(`Error: ${response.status}`);\n}",
+          "when": "Need error handling"
+        }
+      ]
+    },
+    {
+      "id": "vus_exceeded",
+      "pattern": "running at max|context deadline exceeded|too many open files",
+      "message": "Resource limits exceeded",
+      "cause": "Too many VUs or connections for machine",
+      "solutions": [
+        {
+          "approach": "Increase file limits",
+          "code": "ulimit -n 10000",
+          "when": "Hit file descriptor limit"
+        },
+        {
+          "approach": "Reduce VUs",
+          "code": "export const options = {\n  vus: 100,  // Reduce from higher number\n  duration: '30s',\n};",
+          "when": "Machine can't handle load"
+        },
+        {
+          "approach": "Use distributed",
+          "code": "// Use k6 Cloud or multiple machines",
+          "when": "Need more capacity"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "request timeout|context deadline exceeded",
+      "message": "Request timed out",
+      "cause": "Server too slow or request too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "const response = http.get(url, { timeout: '60s' });",
+          "when": "Request legitimately slow"
+        },
+        {
+          "approach": "Check server",
+          "code": "// Investigate server-side delays",
+          "when": "Server performance issue"
+        },
+        {
+          "approach": "Optimize request",
+          "code": "// Reduce payload size or use pagination",
+          "when": "Request too heavy"
+        }
+      ]
+    },
+    {
+      "id": "json_parse_error",
+      "pattern": "json: cannot unmarshal|invalid JSON",
+      "message": "JSON parsing failed",
+      "cause": "Response body is not valid JSON",
+      "solutions": [
+        {
+          "approach": "Check content type",
+          "code": "console.log(response.headers['Content-Type']);",
+          "when": "Not getting JSON response"
+        },
+        {
+          "approach": "Handle HTML error",
+          "code": "if (response.headers['Content-Type'].includes('html')) {\n  console.error('Got HTML instead of JSON');\n}",
+          "when": "Getting error page"
+        },
+        {
+          "approach": "Safe parse",
+          "code": "let data;\ntry {\n  data = response.json();\n} catch (e) {\n  console.error('Parse error:', response.body);\n}",
+          "when": "Need graceful handling"
+        }
+      ]
+    },
+    {
+      "id": "script_error",
+      "pattern": "SyntaxError|ReferenceError|TypeError",
+      "message": "JavaScript error in script",
+      "cause": "Bug in k6 test script",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "// k6 uses ES6 modules, not CommonJS",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Fix undefined",
+          "code": "const value = data?.property ?? 'default';",
+          "when": "Accessing undefined"
+        },
+        {
+          "approach": "Debug locally",
+          "code": "k6 run --http-debug=full script.js",
+          "when": "Need more info"
+        }
+      ]
+    }
+  ]
+}

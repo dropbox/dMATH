@@ -1,0 +1,145 @@
+{
+  "tool": "bluebird",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unhandled_rejection",
+      "pattern": "Unhandled rejection|UnhandledPromiseRejection|Warning.*promise",
+      "message": "Promise rejection not caught",
+      "cause": "Promise rejected without .catch() handler",
+      "solutions": [
+        {
+          "approach": "Add catch handler",
+          "code": "promise\n  .then(result => handle(result))\n  .catch(err => console.error(err));",
+          "when": "Individual promise"
+        },
+        {
+          "approach": "Global rejection handler",
+          "code": "Promise.onPossiblyUnhandledRejection((err) => {\n  console.error('Unhandled:', err);\n});",
+          "when": "Catch-all"
+        },
+        {
+          "approach": "Use finally",
+          "code": "promise\n  .then(handle)\n  .catch(handleError)\n  .finally(() => cleanup());",
+          "when": "Cleanup needed"
+        }
+      ]
+    },
+    {
+      "id": "cancellation_error",
+      "pattern": "CancellationError|Promise was cancelled|cancellation token",
+      "message": "Promise was cancelled",
+      "cause": "Promise.cancel() called on cancellable promise",
+      "solutions": [
+        {
+          "approach": "Handle cancellation",
+          "code": "const promise = new Promise((resolve, reject, onCancel) => {\n  const timer = setTimeout(resolve, 1000);\n  onCancel(() => clearTimeout(timer));\n}).cancellable();\n\npromise.cancel();",
+          "when": "Using cancellation"
+        },
+        {
+          "approach": "Check if cancelled",
+          "code": "promise.catch(Promise.CancellationError, () => {\n  console.log('Operation cancelled');\n});",
+          "when": "Specific handling"
+        },
+        {
+          "approach": "Disable cancellation",
+          "code": "// Don't call .cancellable() if you don't need it\nconst promise = doAsyncWork();",
+          "when": "Not needed"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "TimeoutError|operation timed out|Promise timeout",
+      "message": "Promise timed out",
+      "cause": ".timeout() exceeded specified duration",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "promise.timeout(30000);  // 30 seconds",
+          "when": "Too short"
+        },
+        {
+          "approach": "Handle timeout specifically",
+          "code": "promise\n  .timeout(5000)\n  .catch(Promise.TimeoutError, () => {\n    console.log('Operation timed out, retrying...');\n    return retry();\n  });",
+          "when": "Retry on timeout"
+        },
+        {
+          "approach": "Custom timeout message",
+          "code": "promise.timeout(5000, 'Database query took too long');",
+          "when": "Better error message"
+        }
+      ]
+    },
+    {
+      "id": "promisify_error",
+      "pattern": "promisify.*error|callback.*not.*function|expects callback",
+      "message": "Promisification failed",
+      "cause": "Function doesn't follow Node callback convention",
+      "solutions": [
+        {
+          "approach": "Standard promisify",
+          "code": "const readFileAsync = Promise.promisify(fs.readFile);\nconst data = await readFileAsync('file.txt', 'utf8');",
+          "when": "Node-style callback"
+        },
+        {
+          "approach": "Promisify all",
+          "code": "const fs = Promise.promisifyAll(require('fs'));\nawait fs.readFileAsync('file.txt');  // Async suffix",
+          "when": "Entire module"
+        },
+        {
+          "approach": "Multi-arg callback",
+          "code": "const fn = Promise.promisify(multiArgFn, { multiArgs: true });\nconst [arg1, arg2] = await fn();",
+          "when": "Multiple return values"
+        }
+      ]
+    },
+    {
+      "id": "map_concurrency",
+      "pattern": "too many open|EMFILE|ECONNRESET|rate limit|throttle",
+      "message": "Too many concurrent operations",
+      "cause": "Promise.map running unlimited parallel operations",
+      "solutions": [
+        {
+          "approach": "Limit concurrency",
+          "code": "await Promise.map(items, process, { concurrency: 10 });",
+          "when": "File/network limits"
+        },
+        {
+          "approach": "Use mapSeries",
+          "code": "await Promise.mapSeries(items, process);  // One at a time",
+          "when": "Sequential needed"
+        },
+        {
+          "approach": "Dynamic concurrency",
+          "code": "const concurrency = process.env.NODE_ENV === 'test' ? 1 : 50;\nawait Promise.map(items, fn, { concurrency });",
+          "when": "Environment-based"
+        }
+      ]
+    },
+    {
+      "id": "aggregate_error",
+      "pattern": "AggregateError|some promises rejected|Promise.some|Promise.any",
+      "message": "Multiple promises rejected",
+      "cause": "Promise.some/any couldn't get enough resolved promises",
+      "solutions": [
+        {
+          "approach": "Handle aggregate",
+          "code": "Promise.some(promises, 2)\n  .catch(Promise.AggregateError, (err) => {\n    err.forEach(e => console.log(e));\n  });",
+          "when": "Need some to succeed"
+        },
+        {
+          "approach": "Use settle instead",
+          "code": "const results = await Promise.settle(promises);\nconst fulfilled = results.filter(r => r.isFulfilled());\nconst rejected = results.filter(r => r.isRejected());",
+          "when": "Inspect all results"
+        },
+        {
+          "approach": "Filter working sources",
+          "code": "const results = await Promise.map(sources, s => s.fetch().reflect());\nconst valid = results.filter(r => r.isFulfilled()).map(r => r.value());",
+          "when": "Best effort"
+        }
+      ]
+    }
+  ]
+}

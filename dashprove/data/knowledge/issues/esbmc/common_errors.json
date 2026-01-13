@@ -1,0 +1,201 @@
+{
+  "tool": "esbmc",
+  "version": "7.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "VERIFICATION FAILED",
+      "message": "Property violation found",
+      "cause": "ESBMC found counterexample violating property",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "esbmc --show-counter-example program.c",
+          "when": "Need to see failing path"
+        },
+        {
+          "approach": "Add assumptions",
+          "code": "__ESBMC_assume(condition);",
+          "when": "Missing preconditions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Counterexample reveals real bug",
+          "when": "Found genuine issue"
+        }
+      ]
+    },
+    {
+      "id": "verification_unknown",
+      "pattern": "VERIFICATION UNKNOWN",
+      "message": "Verification inconclusive",
+      "cause": "ESBMC could not determine property truth",
+      "solutions": [
+        {
+          "approach": "Increase bounds",
+          "code": "esbmc --unwind 50 --unwinding-assertions program.c",
+          "when": "Need deeper loop exploration"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "esbmc --timeout 600 program.c",
+          "when": "Solver needs more time"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "esbmc --cvc4 program.c  # or --boolector, --z3",
+          "when": "Default solver struggling"
+        },
+        {
+          "approach": "Use k-induction",
+          "code": "esbmc --k-induction program.c",
+          "when": "Can prove with induction"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|Solver timeout",
+      "message": "Verification timed out",
+      "cause": "SMT solver query exceeded time limit",
+      "solutions": [
+        {
+          "approach": "Reduce bounds",
+          "code": "esbmc --unwind 10 program.c",
+          "when": "Smaller bounds sufficient"
+        },
+        {
+          "approach": "Use incremental BMC",
+          "code": "esbmc --incremental-bmc program.c",
+          "when": "Finding shortest counterexample"
+        },
+        {
+          "approach": "Simplify formula",
+          "code": "esbmc --no-slice program.c",
+          "when": "Slicing causing issues"
+        },
+        {
+          "approach": "Change encoding",
+          "code": "esbmc --floatbv program.c  # or --fixedbv",
+          "when": "Float encoding expensive"
+        }
+      ]
+    },
+    {
+      "id": "memory_safety",
+      "pattern": "array bounds violated|dereference failure",
+      "message": "Memory safety violation detected",
+      "cause": "Out-of-bounds access or invalid pointer dereference",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "esbmc --memory-leak-check --bounds-check program.c",
+          "when": "Enable all memory checks"
+        },
+        {
+          "approach": "Fix array access",
+          "code": "if (i < size) { arr[i]; }",
+          "when": "Missing bounds check"
+        },
+        {
+          "approach": "Validate pointers",
+          "code": "if (ptr != NULL) { *ptr; }",
+          "when": "Null dereference detected"
+        }
+      ]
+    },
+    {
+      "id": "overflow",
+      "pattern": "arithmetic overflow|overflow on",
+      "message": "Integer overflow detected",
+      "cause": "Arithmetic operation exceeds type bounds",
+      "solutions": [
+        {
+          "approach": "Enable overflow checks",
+          "code": "esbmc --overflow-check program.c",
+          "when": "Want overflow detection"
+        },
+        {
+          "approach": "Use wraparound semantics",
+          "code": "esbmc --no-overflow-check program.c",
+          "when": "Wraparound is intended"
+        },
+        {
+          "approach": "Fix arithmetic",
+          "code": "if (a <= MAX - b) { a + b; }",
+          "when": "Overflow is a bug"
+        }
+      ]
+    },
+    {
+      "id": "division_zero",
+      "pattern": "division by zero",
+      "message": "Division by zero detected",
+      "cause": "Divisor can be zero on some path",
+      "solutions": [
+        {
+          "approach": "Check divisor",
+          "code": "if (divisor != 0) { x / divisor; }",
+          "when": "Division should be guarded"
+        },
+        {
+          "approach": "Add assumption",
+          "code": "__ESBMC_assume(divisor != 0);",
+          "when": "Caller guarantees non-zero"
+        },
+        {
+          "approach": "Disable check",
+          "code": "esbmc --no-div-by-zero-check program.c",
+          "when": "Check not relevant"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "Parsing|syntax error|parse error",
+      "message": "C/C++ parsing failed",
+      "cause": "Invalid syntax or unsupported language feature",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "gcc -fsyntax-only program.c",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Use C++ frontend",
+          "code": "esbmc program.cpp --cpp",
+          "when": "Verifying C++ code"
+        },
+        {
+          "approach": "Add includes",
+          "code": "esbmc -I/path/to/headers program.c",
+          "when": "Missing headers"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_intrinsic",
+      "pattern": "unsupported intrinsic|builtin .* not supported",
+      "message": "Unsupported compiler intrinsic",
+      "cause": "Code uses intrinsic ESBMC doesn't model",
+      "solutions": [
+        {
+          "approach": "Use nondet replacement",
+          "code": "#define __builtin_xxx() nondet_int()",
+          "when": "Can abstract intrinsic"
+        },
+        {
+          "approach": "Implement stub",
+          "code": "int __builtin_xxx() { return some_value; }",
+          "when": "Know expected behavior"
+        },
+        {
+          "approach": "Report feature request",
+          "code": "// File issue at github.com/esbmc/esbmc",
+          "when": "Intrinsic should be supported"
+        }
+      ]
+    }
+  ]
+}

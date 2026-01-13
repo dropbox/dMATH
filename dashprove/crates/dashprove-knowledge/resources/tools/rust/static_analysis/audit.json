@@ -1,0 +1,125 @@
+{
+  "id": "audit",
+  "name": "cargo-audit",
+  "category": "rust_static_analysis",
+  "subcategory": "security",
+
+  "description": "Audit Cargo.lock for crates with known security vulnerabilities",
+  "long_description": "cargo-audit checks your Cargo.lock file against the RustSec Advisory Database to find crates with known security vulnerabilities. It's essential for maintaining secure Rust applications and should be run in CI pipelines.",
+
+  "capabilities": [
+    "vulnerability_scanning",
+    "cve_detection",
+    "rustsec_database",
+    "ci_integration",
+    "json_output",
+    "fix_suggestions",
+    "ignore_list",
+    "yanked_detection"
+  ],
+  "property_types": ["security", "vulnerability"],
+  "input_languages": ["rust"],
+  "output_formats": ["text", "json", "markdown"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install cargo-audit"},
+      {"type": "source", "url": "https://github.com/rustsec/rustsec/tree/main/cargo-audit"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://rustsec.org/",
+    "tutorial": "https://github.com/rustsec/rustsec/tree/main/cargo-audit#usage",
+    "api_reference": "https://rustsec.org/advisories/",
+    "examples": "https://github.com/rustsec/rustsec/tree/main/cargo-audit#example"
+  },
+
+  "tactics": [
+    {
+      "name": "audit",
+      "description": "Scan for vulnerabilities",
+      "syntax": "cargo audit",
+      "when_to_use": "Regular security checks",
+      "examples": ["cargo audit", "cargo audit --deny warnings"]
+    },
+    {
+      "name": "fix",
+      "description": "Attempt to fix vulnerabilities",
+      "syntax": "cargo audit fix",
+      "when_to_use": "Automated patching",
+      "examples": ["cargo audit fix", "cargo audit fix --dry-run"]
+    },
+    {
+      "name": "ignore",
+      "description": "Ignore specific advisory",
+      "syntax": "cargo audit --ignore RUSTSEC-XXXX-XXXX",
+      "when_to_use": "When vulnerability doesn't apply",
+      "examples": ["cargo audit --ignore RUSTSEC-2021-0001"]
+    },
+    {
+      "name": "json",
+      "description": "JSON output for CI",
+      "syntax": "cargo audit --json",
+      "when_to_use": "CI integration",
+      "examples": ["cargo audit --json > audit.json"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "RUSTSEC-",
+      "meaning": "Known vulnerability found",
+      "common_causes": ["Outdated dependency"],
+      "fixes": ["Update dependency", "Apply fix if available"]
+    },
+    {
+      "pattern": "Crate:    ",
+      "meaning": "Vulnerable crate identified",
+      "common_causes": ["Dependency has CVE"],
+      "fixes": ["cargo update CRATE"]
+    },
+    {
+      "pattern": "warning: unsound",
+      "meaning": "Unsoundness issue",
+      "common_causes": ["API design flaw"],
+      "fixes": ["Update or replace crate"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security"],
+    "cli_command": "dashprove verify --backend audit"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds",
+    "scalability": "Fast on any size",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cargo-deny", "cargo-vet", "dependabot"],
+    "advantages": [
+      "Official RustSec database",
+      "Auto-fix support",
+      "Fast execution",
+      "Good CI integration"
+    ],
+    "disadvantages": [
+      "Only known CVEs",
+      "Database may lag",
+      "Doesn't find new vulns"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.18.3",
+    "last_updated": "2025-12-20",
+    "maintainer": "RustSec",
+    "license": "MIT/Apache-2.0"
+  }
+}

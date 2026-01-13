@@ -1,0 +1,150 @@
+{
+  "tool": "msw",
+  "category": "api_mocking",
+  "common_errors": [
+    {
+      "error": "SERVICE_WORKER_NOT_FOUND",
+      "pattern": "Service Worker.*not found|mockServiceWorker\\.js.*404|Failed to register",
+      "severity": "high",
+      "causes": [
+        "Service worker file not in public folder",
+        "Wrong path to service worker",
+        "Build process not copying file",
+        "Browser blocking service worker"
+      ],
+      "solutions": [
+        "Run: npx msw init public/ --save",
+        "Verify mockServiceWorker.js in public folder",
+        "Add to build: copy mockServiceWorker.js",
+        "Check browser console for registration errors"
+      ]
+    },
+    {
+      "error": "REQUEST_NOT_MOCKED",
+      "pattern": "request.*not.*mocked|no matching request handler|passthrough",
+      "severity": "medium",
+      "causes": [
+        "Handler URL doesn't match request",
+        "Method mismatch (GET vs POST)",
+        "Request made before handlers registered",
+        "URL encoding issues"
+      ],
+      "solutions": [
+        "Check handler URL matches exactly",
+        "Verify HTTP method in handler",
+        "Start worker before making requests",
+        "Use wildcard for dynamic paths: /api/:id"
+      ]
+    },
+    {
+      "error": "WORKER_NOT_STARTED",
+      "pattern": "worker.*not started|MSW.*not enabled|handlers not active",
+      "severity": "high",
+      "causes": [
+        "Worker.start() not called",
+        "Start called after requests",
+        "Conditional start not executed",
+        "Server not started for Node"
+      ],
+      "solutions": [
+        "Browser: await worker.start()",
+        "Node: server.listen()",
+        "Call in test setup: beforeAll(() => server.listen())",
+        "Ensure start resolves before tests"
+      ]
+    },
+    {
+      "error": "CORS_ERROR",
+      "pattern": "CORS.*error|cross-origin|Access-Control",
+      "severity": "medium",
+      "causes": [
+        "MSW not intercepting CORS preflight",
+        "Service worker scope mismatch",
+        "OPTIONS request not handled",
+        "Browser blocking cross-origin"
+      ],
+      "solutions": [
+        "MSW handles CORS automatically for intercepted requests",
+        "Check service worker scope includes request URL",
+        "Verify worker is running: worker.printHandlers()",
+        "Add OPTIONS handler if needed"
+      ]
+    },
+    {
+      "error": "NETWORK_ERROR_SIMULATION",
+      "pattern": "network error.*unexpected|HttpResponse\\.error|response.*error",
+      "severity": "low",
+      "causes": [
+        "Intentional network error simulation",
+        "Handler returning error incorrectly",
+        "Timing issue in error handling"
+      ],
+      "solutions": [
+        "Use HttpResponse.error() for network errors",
+        "Use HttpResponse.json(error, { status: 500 }) for HTTP errors",
+        "Differentiate network vs HTTP errors in tests",
+        "Add error handling in component"
+      ]
+    },
+    {
+      "error": "STALE_HANDLERS",
+      "pattern": "handler.*not updated|old response|runtime handler.*not working",
+      "severity": "medium",
+      "causes": [
+        "Hot reload not updating handlers",
+        "Test isolation not reset",
+        "server.use not adding handler",
+        "Handler order priority"
+      ],
+      "solutions": [
+        "Call server.resetHandlers() in afterEach",
+        "Use server.use() for test-specific handlers",
+        "Restart worker after handler changes",
+        "Later handlers take priority over earlier"
+      ]
+    },
+    {
+      "error": "DELAY_NOT_WORKING",
+      "pattern": "delay.*not working|response.*immediate|timing.*wrong",
+      "severity": "low",
+      "causes": [
+        "Delay syntax changed in v2",
+        "Using wrong delay function",
+        "Test timeout shorter than delay"
+      ],
+      "solutions": [
+        "MSW v2: await delay(ms) in handler",
+        "MSW v1: res(ctx.delay(ms))",
+        "Increase test timeout for delayed responses",
+        "Use 'real' mode: delay('real')"
+      ]
+    },
+    {
+      "error": "REQUEST_BODY_PARSING",
+      "pattern": "body.*undefined|request\\.json.*error|Cannot read.*body",
+      "severity": "medium",
+      "causes": [
+        "Body not awaited",
+        "Wrong content-type",
+        "Body already consumed",
+        "FormData handling"
+      ],
+      "solutions": [
+        "Await body: const data = await request.json()",
+        "Check content-type matches body format",
+        "Clone request if need body multiple times",
+        "Use request.formData() for FormData"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Initialize MSW before app code runs",
+    "Use server.resetHandlers() between tests",
+    "Match handler URLs exactly or use wildcards",
+    "Test error scenarios with HttpResponse.error()",
+    "Use response delay for loading state tests",
+    "Keep handlers close to tests using them",
+    "Use passthrough() for unmocked requests"
+  ],
+  "related_tools": ["nock", "wiremock", "miragejs", "json_server"]
+}

@@ -1,0 +1,206 @@
+{
+  "tool": "lm_eval_harness",
+  "version": "0.4.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_not_found",
+      "pattern": "Can't load model|Model not found|OSError.*model",
+      "message": "Cannot load specified model",
+      "cause": "Model path or name is incorrect, or model not downloaded",
+      "solutions": [
+        {
+          "approach": "Check model name",
+          "code": "lm_eval --model hf --model_args pretrained=meta-llama/Llama-2-7b-hf",
+          "when": "Using HuggingFace model"
+        },
+        {
+          "approach": "Authenticate with HuggingFace",
+          "code": "huggingface-cli login",
+          "when": "Model requires authentication"
+        },
+        {
+          "approach": "Use local path",
+          "code": "lm_eval --model hf --model_args pretrained=/path/to/model",
+          "when": "Model is stored locally"
+        },
+        {
+          "approach": "Check model exists",
+          "code": "from huggingface_hub import model_info\nmodel_info('model-name')",
+          "when": "Verifying model availability"
+        }
+      ]
+    },
+    {
+      "id": "cuda_oom",
+      "pattern": "CUDA out of memory|OOM|RuntimeError.*memory",
+      "message": "GPU memory exhausted",
+      "cause": "Model or batch size too large for available GPU memory",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "lm_eval --batch_size 1",
+          "when": "Default batch size is too large"
+        },
+        {
+          "approach": "Use quantization",
+          "code": "lm_eval --model hf --model_args pretrained=model,load_in_8bit=True",
+          "when": "Model too large for GPU"
+        },
+        {
+          "approach": "Use CPU offloading",
+          "code": "lm_eval --model hf --model_args pretrained=model,device_map=auto",
+          "when": "Model can be split across devices"
+        },
+        {
+          "approach": "Use smaller model",
+          "code": "# Try 7B instead of 70B variant",
+          "when": "Accuracy tradeoff is acceptable"
+        }
+      ]
+    },
+    {
+      "id": "task_not_found",
+      "pattern": "Task not found|Unknown task|KeyError.*task",
+      "message": "Evaluation task does not exist",
+      "cause": "Task name is incorrect or not registered",
+      "solutions": [
+        {
+          "approach": "List available tasks",
+          "code": "lm_eval --tasks list",
+          "when": "Unsure of task names"
+        },
+        {
+          "approach": "Check task spelling",
+          "code": "lm_eval --tasks hellaswag  # Not HellaSwag",
+          "when": "Task name may have different casing"
+        },
+        {
+          "approach": "Use task group",
+          "code": "lm_eval --tasks mmlu  # Runs all MMLU subtasks",
+          "when": "Want to run task family"
+        },
+        {
+          "approach": "Register custom task",
+          "code": "from lm_eval.tasks import TaskRegistry\nTaskRegistry.register(MyTask)",
+          "when": "Using custom evaluation"
+        }
+      ]
+    },
+    {
+      "id": "tokenizer_error",
+      "pattern": "Tokenizer error|Can't load tokenizer|TokenizerFast",
+      "message": "Failed to load model tokenizer",
+      "cause": "Tokenizer configuration missing or incompatible",
+      "solutions": [
+        {
+          "approach": "Specify tokenizer explicitly",
+          "code": "lm_eval --model hf --model_args pretrained=model,tokenizer=tokenizer_name",
+          "when": "Model and tokenizer are separate"
+        },
+        {
+          "approach": "Use slow tokenizer",
+          "code": "lm_eval --model hf --model_args pretrained=model,use_fast=False",
+          "when": "Fast tokenizer has issues"
+        },
+        {
+          "approach": "Trust remote code",
+          "code": "lm_eval --model hf --model_args pretrained=model,trust_remote_code=True",
+          "when": "Custom model requires remote code"
+        }
+      ]
+    },
+    {
+      "id": "output_path_error",
+      "pattern": "Permission denied|Cannot write|FileNotFoundError.*output",
+      "message": "Cannot write results to output path",
+      "cause": "Output directory doesn't exist or lacks permissions",
+      "solutions": [
+        {
+          "approach": "Create output directory",
+          "code": "mkdir -p results && lm_eval --output_path results/",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "chmod 755 results/",
+          "when": "Permission denied"
+        },
+        {
+          "approach": "Use different path",
+          "code": "lm_eval --output_path ~/lm_eval_results/",
+          "when": "Current path is problematic"
+        }
+      ]
+    },
+    {
+      "id": "api_timeout",
+      "pattern": "API timeout|ReadTimeout|Connection.*timeout",
+      "message": "API request timed out",
+      "cause": "API-based model evaluation timed out",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "export LM_EVAL_TIMEOUT=300",
+          "when": "Complex prompts need more time"
+        },
+        {
+          "approach": "Reduce request rate",
+          "code": "lm_eval --model openai-completions --model_args rate_limit=10",
+          "when": "Too many concurrent requests"
+        },
+        {
+          "approach": "Check API status",
+          "code": "# Check provider status page",
+          "when": "Provider may be down"
+        }
+      ]
+    },
+    {
+      "id": "missing_dependency",
+      "pattern": "ModuleNotFoundError|ImportError|No module named",
+      "message": "Required Python package not installed",
+      "cause": "Evaluation task or model requires additional dependencies",
+      "solutions": [
+        {
+          "approach": "Install missing package",
+          "code": "pip install package_name",
+          "when": "Specific package is missing"
+        },
+        {
+          "approach": "Install with extras",
+          "code": "pip install lm-eval[vllm,api]",
+          "when": "Need optional dependencies"
+        },
+        {
+          "approach": "Check task requirements",
+          "code": "# Some tasks need: pip install datasets sentencepiece",
+          "when": "Task has specific requirements"
+        }
+      ]
+    },
+    {
+      "id": "num_fewshot_error",
+      "pattern": "num_fewshot|few-shot|context length exceeded",
+      "message": "Few-shot examples exceed context length",
+      "cause": "Too many few-shot examples for model's context window",
+      "solutions": [
+        {
+          "approach": "Reduce few-shot count",
+          "code": "lm_eval --num_fewshot 3",
+          "when": "Default is too many examples"
+        },
+        {
+          "approach": "Use zero-shot",
+          "code": "lm_eval --num_fewshot 0",
+          "when": "Context is very limited"
+        },
+        {
+          "approach": "Truncate examples",
+          "code": "lm_eval --model hf --model_args pretrained=model,max_length=4096",
+          "when": "Willing to truncate context"
+        }
+      ]
+    }
+  ]
+}

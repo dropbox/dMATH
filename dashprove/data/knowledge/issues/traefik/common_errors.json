@@ -1,0 +1,64 @@
+{
+  "tool": "traefik",
+  "category": "api_gateway",
+  "common_errors": [
+    {
+      "pattern": "404 page not found|no router|router not found",
+      "meaning": "No matching route for request",
+      "causes": ["Router rule misconfigured", "Service not discovered", "Host header mismatch"],
+      "solutions": ["Check router rule syntax: Host(`example.com`)", "Verify service discovery (Docker labels, K8s Ingress)", "Use traefik dashboard to inspect routes"]
+    },
+    {
+      "pattern": "502 Bad Gateway|bad gateway",
+      "meaning": "Backend service unavailable",
+      "causes": ["Service down", "Wrong port", "Network unreachable"],
+      "solutions": ["Verify backend is running", "Check loadBalancer.server.port", "Ensure network connectivity"]
+    },
+    {
+      "pattern": "certificate.*error|TLS.*failed|ACME",
+      "meaning": "TLS/certificate issue",
+      "causes": ["ACME challenge failed", "Certificate expired", "Wrong certificate resolver"],
+      "solutions": ["Check ACME logs: traefik log --level=DEBUG", "Verify DNS propagation for DNS challenge", "Check certificatesResolvers config"]
+    },
+    {
+      "pattern": "middleware.*not found|invalid middleware",
+      "meaning": "Referenced middleware doesn't exist",
+      "causes": ["Typo in middleware name", "Middleware not defined", "Namespace mismatch (K8s)"],
+      "solutions": ["Check middleware name matches definition", "Define middleware in same namespace or use namespace@provider", "View middlewares in dashboard"]
+    },
+    {
+      "pattern": "entrypoint.*not found|no entrypoints",
+      "meaning": "Missing or misconfigured entrypoint",
+      "causes": ["Entrypoint not defined", "Port not exposed", "Static config missing"],
+      "solutions": ["Define entrypoints in static config", "Expose ports in Docker/K8s", "Check --entrypoints CLI args"]
+    },
+    {
+      "pattern": "provider.*error|docker.*error|kubernetes.*error",
+      "meaning": "Provider configuration issue",
+      "causes": ["Cannot connect to Docker/K8s API", "Permission denied", "Endpoint misconfigured"],
+      "solutions": ["Mount Docker socket: -v /var/run/docker.sock:/var/run/docker.sock", "Check K8s RBAC permissions", "Verify provider endpoint URL"]
+    },
+    {
+      "pattern": "rate limit|too many requests",
+      "meaning": "Request rate limiting triggered",
+      "causes": ["rateLimit middleware active", "Too many requests from IP", "Burst limit exceeded"],
+      "solutions": ["Adjust average/burst in rateLimit middleware", "Check sourceCriterion for IP extraction", "Consider increasing limits"]
+    },
+    {
+      "pattern": "circular|redirect loop",
+      "meaning": "Redirect loop detected",
+      "causes": ["HTTP to HTTPS redirect + backend redirect", "Middleware chain creates loop", "X-Forwarded headers misconfigured"],
+      "solutions": ["Use redirectScheme only at edge", "Check X-Forwarded-Proto handling", "Verify passHostHeader setting"]
+    }
+  ],
+  "debugging_commands": [
+    "traefik healthcheck",
+    "curl -s http://localhost:8080/api/rawdata",
+    "traefik --log.level=DEBUG",
+    "kubectl logs -l app.kubernetes.io/name=traefik"
+  ],
+  "documentation_urls": [
+    "https://doc.traefik.io/traefik/",
+    "https://github.com/traefik/traefik"
+  ]
+}

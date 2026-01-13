@@ -1,0 +1,145 @@
+{
+  "tool": "wget",
+  "version": "1.21",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "ssl_certificate_error",
+      "pattern": "ERROR.*certificate|cannot verify.*certificate|unable to locally verify|self-signed certificate",
+      "message": "SSL certificate verification failed",
+      "cause": "Certificate untrusted, expired, or self-signed",
+      "solutions": [
+        {
+          "approach": "Skip verification",
+          "code": "wget --no-check-certificate https://example.com",
+          "when": "Development only"
+        },
+        {
+          "approach": "Specify CA",
+          "code": "wget --ca-certificate=/path/to/ca.crt https://example.com",
+          "when": "Custom CA"
+        },
+        {
+          "approach": "Update CA bundle",
+          "code": "# Ubuntu/Debian\nsudo update-ca-certificates\n# RHEL/CentOS\nsudo update-ca-trust",
+          "when": "System CA outdated"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|failed.*Connecting|No route to host|Network is unreachable",
+      "message": "Cannot connect to server",
+      "cause": "Server not running, firewall, or network issue",
+      "solutions": [
+        {
+          "approach": "Verbose output",
+          "code": "wget -v https://example.com",
+          "when": "Debug connection"
+        },
+        {
+          "approach": "Use proxy",
+          "code": "wget -e use_proxy=yes -e http_proxy=http://proxy:8080 https://example.com",
+          "when": "Through proxy"
+        },
+        {
+          "approach": "Retry",
+          "code": "wget --tries=5 --waitretry=10 https://example.com",
+          "when": "Transient errors"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Read error.*timed out|Connection timed out|Timeout|giving up",
+      "message": "Request timed out",
+      "cause": "Server slow or connection timeout",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "wget --timeout=60 --dns-timeout=30 --connect-timeout=30 --read-timeout=60 https://example.com",
+          "when": "Extend limits"
+        },
+        {
+          "approach": "Continue download",
+          "code": "wget -c https://example.com/largefile.zip",
+          "when": "Resume partial"
+        },
+        {
+          "approach": "Background retry",
+          "code": "wget -b --tries=0 --continue https://example.com/file.iso",
+          "when": "Long downloads"
+        }
+      ]
+    },
+    {
+      "id": "http_error",
+      "pattern": "ERROR 4[0-9]{2}|ERROR 5[0-9]{2}|HTTP.*error|awaiting response.*4|awaiting response.*5",
+      "message": "HTTP error response",
+      "cause": "Server returned error status code",
+      "solutions": [
+        {
+          "approach": "Debug headers",
+          "code": "wget -S https://example.com  # Show server response headers",
+          "when": "Inspect response"
+        },
+        {
+          "approach": "Add auth",
+          "code": "wget --user=username --password=password https://example.com\n# Or: wget --header='Authorization: Bearer TOKEN' https://example.com",
+          "when": "401 error"
+        },
+        {
+          "approach": "Set User-Agent",
+          "code": "wget --user-agent='Mozilla/5.0 (compatible)' https://example.com",
+          "when": "403 error (bot blocked)"
+        }
+      ]
+    },
+    {
+      "id": "recursive_depth",
+      "pattern": "Maximum recursion depth|Recursion depth|depth.*exceeded",
+      "message": "Recursion depth limit reached",
+      "cause": "Recursive download hit depth limit",
+      "solutions": [
+        {
+          "approach": "Increase depth",
+          "code": "wget -r -l 10 https://example.com/  # Depth 10",
+          "when": "Need deeper"
+        },
+        {
+          "approach": "Limit scope",
+          "code": "wget -r -np -nd https://example.com/docs/\n# -np: no parent dirs, -nd: no directories",
+          "when": "Single directory"
+        },
+        {
+          "approach": "Domain filter",
+          "code": "wget -r -D example.com https://example.com/",
+          "when": "Stay on domain"
+        }
+      ]
+    },
+    {
+      "id": "disk_full",
+      "pattern": "No space left|Disk quota|Cannot write|write error",
+      "message": "Disk space exhausted",
+      "cause": "Insufficient disk space for download",
+      "solutions": [
+        {
+          "approach": "Check space",
+          "code": "df -h .\ndu -sh *",
+          "when": "Verify space"
+        },
+        {
+          "approach": "Set quota",
+          "code": "wget -Q 1G https://example.com/  # Max 1GB total",
+          "when": "Limit download size"
+        },
+        {
+          "approach": "Different location",
+          "code": "wget -P /mnt/external/ https://example.com/largefile.zip",
+          "when": "Use other disk"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "tool": "temporal",
+  "category": "workflow_engine",
+  "common_errors": [
+    {
+      "error": "SERVER_UNAVAILABLE",
+      "pattern": "connection refused|Server is unavailable|context deadline exceeded|UNAVAILABLE",
+      "severity": "critical",
+      "causes": [
+        "Temporal server not running",
+        "Wrong server address",
+        "Network connectivity issues",
+        "TLS configuration mismatch"
+      ],
+      "solutions": [
+        "Start server: temporal server start-dev",
+        "Verify address: temporal.io:7233 or localhost:7233",
+        "Check server health: grpcurl -plaintext localhost:7233 list",
+        "For TLS: ensure certs match and client configured correctly"
+      ]
+    },
+    {
+      "error": "NAMESPACE_NOT_FOUND",
+      "pattern": "Namespace.*not found|namespace not registered|NamespaceNotFound",
+      "severity": "high",
+      "causes": [
+        "Namespace not created",
+        "Typo in namespace name",
+        "Namespace deleted",
+        "Case sensitivity mismatch"
+      ],
+      "solutions": [
+        "Create namespace: temporal operator namespace create myns",
+        "List namespaces: temporal operator namespace list",
+        "Use default namespace for testing",
+        "Check namespace spelling (case-sensitive)"
+      ]
+    },
+    {
+      "error": "WORKFLOW_EXECUTION_ALREADY_STARTED",
+      "pattern": "Workflow execution already running|WorkflowExecutionAlreadyStarted",
+      "severity": "medium",
+      "causes": [
+        "Duplicate workflow ID",
+        "Previous execution not completed",
+        "ID reuse policy mismatch"
+      ],
+      "solutions": [
+        "Use unique workflow IDs: uuid or business key",
+        "Set WorkflowIdReusePolicy: ALLOW_DUPLICATE_FAILED_ONLY",
+        "Terminate previous: temporal workflow terminate --workflow-id wfid",
+        "Query workflow state before starting"
+      ]
+    },
+    {
+      "error": "ACTIVITY_TASK_TIMEOUT",
+      "pattern": "activity.*timed out|ActivityTaskTimedOut|ScheduleToStart.*timeout",
+      "severity": "high",
+      "causes": [
+        "Activity took too long",
+        "No workers polling for task queue",
+        "Worker crashed during activity",
+        "Timeout configuration too short"
+      ],
+      "solutions": [
+        "Increase timeout: ActivityOptions { StartToCloseTimeout: 5*time.Minute }",
+        "Ensure workers running: temporal task-queue describe -tq myqueue",
+        "Implement heartbeating for long activities",
+        "Check worker logs for errors"
+      ]
+    },
+    {
+      "error": "WORKFLOW_TASK_TIMEOUT",
+      "pattern": "WorkflowTaskTimedOut|workflow task.*timed out",
+      "severity": "critical",
+      "causes": [
+        "Workflow code taking too long",
+        "Non-deterministic workflow code",
+        "Worker not polling workflow task queue",
+        "Infinite loop in workflow"
+      ],
+      "solutions": [
+        "Check for non-determinism: random, time.Now(), external calls",
+        "Use deterministic versions: workflow.Now(), workflow.SideEffect()",
+        "Verify workers registered for task queue",
+        "Review workflow code for loops without yield"
+      ]
+    },
+    {
+      "error": "NON_DETERMINISTIC_ERROR",
+      "pattern": "non-deterministic|nondeterminism detected|history mismatch|EventHistoryMismatch",
+      "severity": "critical",
+      "causes": [
+        "Workflow code changed between replays",
+        "Using non-deterministic operations (random, time)",
+        "Conditional logic based on external state",
+        "Version not used for code changes"
+      ],
+      "solutions": [
+        "Use workflow.GetVersion() for backward-compatible changes",
+        "Replace time.Now() with workflow.Now()",
+        "Use workflow.SideEffect() for non-deterministic operations",
+        "Reset workflow if change is unavoidable: temporal workflow reset"
+      ]
+    },
+    {
+      "error": "TASK_QUEUE_NOT_FOUND",
+      "pattern": "No workers.*task queue|task queue.*no pollers|PollWorkflowTaskQueue.*no tasks",
+      "severity": "high",
+      "causes": [
+        "Workers not started",
+        "Wrong task queue name",
+        "Workers crashed",
+        "Task queue typo"
+      ],
+      "solutions": [
+        "Start worker: worker.Run(worker.InterruptCh())",
+        "Verify task queue name matches workflow registration",
+        "Check worker health: temporal task-queue describe -tq myqueue",
+        "Review worker startup logs"
+      ]
+    },
+    {
+      "error": "PAYLOAD_SIZE_EXCEEDED",
+      "pattern": "payload size.*exceeded|message size exceeds|size limit exceeded",
+      "severity": "medium",
+      "causes": [
+        "Input/output data too large",
+        "Large activity results",
+        "Accumulated history size"
+      ],
+      "solutions": [
+        "Use data converter for compression",
+        "Store large data externally (S3, database)",
+        "Pass references instead of data",
+        "Split into multiple activities"
+      ]
+    },
+    {
+      "error": "SEARCH_ATTRIBUTE_NOT_REGISTERED",
+      "pattern": "search attribute.*not registered|unknown search attribute|InvalidSearchAttributes",
+      "severity": "medium",
+      "causes": [
+        "Custom search attribute not created",
+        "Typo in attribute name",
+        "Wrong attribute type"
+      ],
+      "solutions": [
+        "Create attribute: temporal operator search-attribute create --name MyAttr --type Keyword",
+        "List attributes: temporal operator search-attribute list",
+        "Use correct type: Text, Keyword, Int, Double, Bool, Datetime"
+      ]
+    },
+    {
+      "error": "CHILD_WORKFLOW_FAILURE",
+      "pattern": "child workflow.*failed|ChildWorkflowExecutionFailed",
+      "severity": "medium",
+      "causes": [
+        "Child workflow threw exception",
+        "Child workflow timed out",
+        "Parent cancelled child",
+        "Child worker not available"
+      ],
+      "solutions": [
+        "Check child workflow history for root cause",
+        "Set ParentClosePolicy appropriately",
+        "Implement retry policy for child workflows",
+        "Ensure child task queue has workers"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use workflow.GetVersion() for all code changes",
+    "Keep workflow code deterministic",
+    "Set appropriate timeouts and retry policies",
+    "Use heartbeating for long-running activities",
+    "Store large data externally, pass references",
+    "Use search attributes for workflow discoverability",
+    "Implement proper error handling and compensation logic"
+  ],
+  "related_tools": ["cadence", "airflow", "prefect", "dagster"]
+}

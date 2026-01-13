@@ -1,0 +1,191 @@
+{
+  "tool": "helm",
+  "version": "3.14.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "chart_not_found",
+      "pattern": "chart .* not found|failed to download|no chart",
+      "message": "Chart not found",
+      "cause": "Repository not added, chart name wrong, or network issue",
+      "solutions": [
+        {
+          "approach": "Add repository",
+          "code": "helm repo add <repo-name> <repo-url>\nhelm repo update",
+          "when": "Repository not configured"
+        },
+        {
+          "approach": "Search for chart",
+          "code": "helm search repo <keyword>\nhelm search hub <keyword>",
+          "when": "Unsure of chart name"
+        },
+        {
+          "approach": "Check repo connectivity",
+          "code": "helm repo list\nhelm repo update",
+          "when": "Network or auth issue"
+        }
+      ]
+    },
+    {
+      "id": "release_already_exists",
+      "pattern": "cannot re-use a name|release .* already exists",
+      "message": "Release name already exists",
+      "cause": "Attempting to install with name already in use",
+      "solutions": [
+        {
+          "approach": "Upgrade instead",
+          "code": "helm upgrade <release> <chart> --install",
+          "when": "Want to update existing release"
+        },
+        {
+          "approach": "Use different name",
+          "code": "helm install <new-release-name> <chart>",
+          "when": "Need separate installation"
+        },
+        {
+          "approach": "Delete existing first",
+          "code": "helm uninstall <release>\nhelm install <release> <chart>",
+          "when": "Want to replace completely"
+        }
+      ]
+    },
+    {
+      "id": "values_error",
+      "pattern": "values|cannot load|yaml|invalid format",
+      "message": "Values file error",
+      "cause": "Invalid YAML syntax or wrong values structure",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "yq eval '.' values.yaml",
+          "when": "Check YAML syntax"
+        },
+        {
+          "approach": "Show default values",
+          "code": "helm show values <chart>",
+          "when": "See expected structure"
+        },
+        {
+          "approach": "Test template rendering",
+          "code": "helm template <release> <chart> -f values.yaml",
+          "when": "Preview generated manifests"
+        }
+      ]
+    },
+    {
+      "id": "kubernetes_connection",
+      "pattern": "Kubernetes cluster unreachable|connection refused|no configuration",
+      "message": "Cannot connect to Kubernetes",
+      "cause": "kubeconfig invalid or cluster unreachable",
+      "solutions": [
+        {
+          "approach": "Check kubeconfig",
+          "code": "kubectl config current-context\nkubectl cluster-info",
+          "when": "Verify cluster connection"
+        },
+        {
+          "approach": "Set kubeconfig",
+          "code": "export KUBECONFIG=/path/to/kubeconfig",
+          "when": "Use different config"
+        },
+        {
+          "approach": "Specify context",
+          "code": "helm install <release> <chart> --kube-context <context>",
+          "when": "Use specific cluster"
+        }
+      ]
+    },
+    {
+      "id": "upgrade_failed",
+      "pattern": "UPGRADE FAILED|upgrade.*failed|another operation",
+      "message": "Helm upgrade failed",
+      "cause": "Resource conflict, pending operation, or invalid state",
+      "solutions": [
+        {
+          "approach": "Check release status",
+          "code": "helm status <release>\nhelm history <release>",
+          "when": "Diagnose release state"
+        },
+        {
+          "approach": "Rollback to previous",
+          "code": "helm rollback <release> <revision>",
+          "when": "Revert to working state"
+        },
+        {
+          "approach": "Force upgrade",
+          "code": "helm upgrade <release> <chart> --force",
+          "when": "Override stuck state"
+        }
+      ]
+    },
+    {
+      "id": "dependency_error",
+      "pattern": "dependencies|Chart.yaml|requirements",
+      "message": "Chart dependency error",
+      "cause": "Dependencies not downloaded or version mismatch",
+      "solutions": [
+        {
+          "approach": "Build dependencies",
+          "code": "helm dependency build <chart-path>",
+          "when": "Download missing deps"
+        },
+        {
+          "approach": "Update dependencies",
+          "code": "helm dependency update <chart-path>",
+          "when": "Get latest versions"
+        },
+        {
+          "approach": "List dependencies",
+          "code": "helm dependency list <chart-path>",
+          "when": "Check dependency status"
+        }
+      ]
+    },
+    {
+      "id": "template_error",
+      "pattern": "template|render|parse|execution error",
+      "message": "Template rendering error",
+      "cause": "Go template syntax error or missing value",
+      "solutions": [
+        {
+          "approach": "Debug template",
+          "code": "helm template <release> <chart> --debug",
+          "when": "See detailed errors"
+        },
+        {
+          "approach": "Lint chart",
+          "code": "helm lint <chart-path>",
+          "when": "Check chart structure"
+        },
+        {
+          "approach": "Test with dry-run",
+          "code": "helm install <release> <chart> --dry-run --debug",
+          "when": "Preview without installing"
+        }
+      ]
+    },
+    {
+      "id": "namespace_error",
+      "pattern": "namespace.*not found|forbidden",
+      "message": "Namespace issue",
+      "cause": "Namespace doesn't exist or no permission",
+      "solutions": [
+        {
+          "approach": "Create namespace",
+          "code": "helm install <release> <chart> -n <namespace> --create-namespace",
+          "when": "Auto-create namespace"
+        },
+        {
+          "approach": "Check RBAC",
+          "code": "kubectl auth can-i create deployments -n <namespace>",
+          "when": "Verify permissions"
+        },
+        {
+          "approach": "List namespaces",
+          "code": "kubectl get namespaces",
+          "when": "Find correct namespace"
+        }
+      ]
+    }
+  ]
+}

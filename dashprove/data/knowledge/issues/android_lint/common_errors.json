@@ -1,0 +1,278 @@
+{
+  "tool": "android_lint",
+  "version": "8.2.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "hardcoded_text",
+      "pattern": "HardcodedText|Hardcoded string",
+      "message": "Hardcoded text should use string resource",
+      "cause": "Text directly in layout instead of @string reference",
+      "solutions": [
+        {
+          "approach": "Extract to string resource",
+          "code": "<!-- In strings.xml -->\n<string name=\"button_label\">Click me</string>\n\n<!-- In layout -->\nandroid:text=\"@string/button_label\"",
+          "when": "User-facing text"
+        },
+        {
+          "approach": "Suppress for tools",
+          "code": "tools:text=\"Preview text\"",
+          "when": "Design-time only"
+        },
+        {
+          "approach": "Use lint baseline",
+          "code": "android {\n    lint {\n        baseline = file(\"lint-baseline.xml\")\n    }\n}",
+          "when": "Legacy code"
+        }
+      ]
+    },
+    {
+      "id": "missing_permission",
+      "pattern": "MissingPermission|permission is required",
+      "message": "Missing required permission",
+      "cause": "API call requires permission not declared in manifest",
+      "solutions": [
+        {
+          "approach": "Add permission to manifest",
+          "code": "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "when": "Permission needed"
+        },
+        {
+          "approach": "Check permission at runtime",
+          "code": "if (checkSelfPermission(Manifest.permission.CAMERA) == PERMISSION_GRANTED) {\n    openCamera()\n}",
+          "when": "Dangerous permission"
+        },
+        {
+          "approach": "Suppress with annotation",
+          "code": "@SuppressLint(\"MissingPermission\")\nfun useLocation() { ... }",
+          "when": "Permission checked elsewhere"
+        }
+      ]
+    },
+    {
+      "id": "deprecated_api",
+      "pattern": "Deprecated|is deprecated|Use.*instead",
+      "message": "Using deprecated API",
+      "cause": "API marked deprecated and may be removed",
+      "solutions": [
+        {
+          "approach": "Use replacement API",
+          "code": "// Instead of getColor(int):\nContextCompat.getColor(context, R.color.my_color)",
+          "when": "Replacement available"
+        },
+        {
+          "approach": "Use compat library",
+          "code": "implementation 'androidx.core:core-ktx:1.12.0'\n// Then use compat methods",
+          "when": "Backward compatible"
+        },
+        {
+          "approach": "Suppress if intentional",
+          "code": "@Suppress(\"DEPRECATION\")\nfun oldMethod() { ... }",
+          "when": "Must support old API"
+        }
+      ]
+    },
+    {
+      "id": "missing_translation",
+      "pattern": "MissingTranslation|not translated|Missing .* translation",
+      "message": "String not translated to all locales",
+      "cause": "String exists in base strings.xml but missing in translation",
+      "solutions": [
+        {
+          "approach": "Add translation",
+          "code": "<!-- In values-es/strings.xml -->\n<string name=\"hello\">Hola</string>",
+          "when": "Should translate"
+        },
+        {
+          "approach": "Mark untranslatable",
+          "code": "<string name=\"app_name\" translatable=\"false\">MyApp</string>",
+          "when": "Shouldn't translate"
+        },
+        {
+          "approach": "Configure lint",
+          "code": "android {\n    lint {\n        disable 'MissingTranslation'\n    }\n}",
+          "when": "Single language app"
+        }
+      ]
+    },
+    {
+      "id": "unused_resources",
+      "pattern": "UnusedResources|resource .* appears to be unused",
+      "message": "Resource is not used anywhere",
+      "cause": "Drawable, string, or other resource not referenced",
+      "solutions": [
+        {
+          "approach": "Remove unused resource",
+          "code": "// Delete the unused file or string",
+          "when": "Truly unused"
+        },
+        {
+          "approach": "Mark as used",
+          "code": "<!-- In lint.xml or build.gradle -->\n<issue id=\"UnusedResources\" severity=\"ignore\"/>",
+          "when": "Used dynamically"
+        },
+        {
+          "approach": "Use shrinkResources",
+          "code": "buildTypes {\n    release {\n        shrinkResources true\n        minifyEnabled true\n    }\n}",
+          "when": "Auto-remove in release"
+        }
+      ]
+    },
+    {
+      "id": "missing_constraints",
+      "pattern": "MissingConstraints|not constrained|layout_constraint",
+      "message": "View missing constraints in ConstraintLayout",
+      "cause": "View doesn't have both horizontal and vertical constraints",
+      "solutions": [
+        {
+          "approach": "Add horizontal constraint",
+          "code": "app:layout_constraintStart_toStartOf=\"parent\"\napp:layout_constraintEnd_toEndOf=\"parent\"",
+          "when": "Missing horizontal"
+        },
+        {
+          "approach": "Add vertical constraint",
+          "code": "app:layout_constraintTop_toTopOf=\"parent\"\napp:layout_constraintBottom_toBottomOf=\"parent\"",
+          "when": "Missing vertical"
+        },
+        {
+          "approach": "Use chains",
+          "code": "app:layout_constraintHorizontal_chainStyle=\"packed\"",
+          "when": "Multiple views"
+        }
+      ]
+    },
+    {
+      "id": "overdraw",
+      "pattern": "Overdraw|background.*redundant|unnecessary background",
+      "message": "Possible overdraw detected",
+      "cause": "Multiple overlapping backgrounds cause GPU waste",
+      "solutions": [
+        {
+          "approach": "Remove redundant background",
+          "code": "<!-- Remove android:background from child if parent has it -->",
+          "when": "Parent already has background"
+        },
+        {
+          "approach": "Use theme window background",
+          "code": "<style name=\"Theme.MyApp\">\n    <item name=\"android:windowBackground\">@color/background</item>\n</style>\n<!-- Remove background from root layout -->",
+          "when": "Full-screen background"
+        }
+      ]
+    },
+    {
+      "id": "inefficient_weight",
+      "pattern": "InefficientWeight|layout_weight.*wrap_content|Nested weights",
+      "message": "Inefficient use of layout_weight",
+      "cause": "Weight with wrap_content causes double measurement",
+      "solutions": [
+        {
+          "approach": "Use 0dp with weight",
+          "code": "android:layout_width=\"0dp\"\nandroid:layout_weight=\"1\"",
+          "when": "Horizontal LinearLayout"
+        },
+        {
+          "approach": "Use ConstraintLayout instead",
+          "code": "app:layout_constraintWidth_percent=\"0.5\"",
+          "when": "Complex weight distribution"
+        },
+        {
+          "approach": "Flatten hierarchy",
+          "code": "<!-- Avoid nested LinearLayouts with weights -->",
+          "when": "Nested weights"
+        }
+      ]
+    },
+    {
+      "id": "security_set_javascript_enabled",
+      "pattern": "SetJavaScriptEnabled|JavaScript.*security|XSS",
+      "message": "JavaScript enabled in WebView may pose security risk",
+      "cause": "WebView with JS can execute malicious scripts",
+      "solutions": [
+        {
+          "approach": "Disable if not needed",
+          "code": "webView.settings.javaScriptEnabled = false",
+          "when": "Static content only"
+        },
+        {
+          "approach": "Validate URLs",
+          "code": "webView.webViewClient = object : WebViewClient() {\n    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {\n        return !isAllowedUrl(url)\n    }\n}",
+          "when": "Need JavaScript"
+        },
+        {
+          "approach": "Suppress with justification",
+          "code": "@SuppressLint(\"SetJavaScriptEnabled\")  // Required for feature X, URLs validated",
+          "when": "Intentional and safe"
+        }
+      ]
+    },
+    {
+      "id": "exported_receiver",
+      "pattern": "ExportedReceiver|BroadcastReceiver.*exported",
+      "message": "Exported receiver may be security risk",
+      "cause": "Receiver can be triggered by other apps",
+      "solutions": [
+        {
+          "approach": "Add permission",
+          "code": "<receiver android:exported=\"true\"\n    android:permission=\"com.example.CUSTOM_PERMISSION\">",
+          "when": "Must be exported"
+        },
+        {
+          "approach": "Set exported false",
+          "code": "<receiver android:exported=\"false\">",
+          "when": "Internal use only"
+        },
+        {
+          "approach": "Use intent filter permission",
+          "code": "<receiver>\n    <intent-filter>\n        <action android:name=\"com.example.INTERNAL_ACTION\"/>\n    </intent-filter>\n</receiver>",
+          "when": "Specific intents"
+        }
+      ]
+    },
+    {
+      "id": "leak_detector",
+      "pattern": "Leak|Activity.*context|potential memory leak",
+      "message": "Potential memory leak",
+      "cause": "Storing Activity context in static field or long-lived object",
+      "solutions": [
+        {
+          "approach": "Use application context",
+          "code": "class MySingleton(context: Context) {\n    private val appContext = context.applicationContext\n}",
+          "when": "Don't need Activity"
+        },
+        {
+          "approach": "Use weak reference",
+          "code": "private val activityRef = WeakReference(activity)",
+          "when": "Need Activity temporarily"
+        },
+        {
+          "approach": "Clear in lifecycle",
+          "code": "override fun onDestroy() {\n    myCallback = null  // Clear references\n    super.onDestroy()\n}",
+          "when": "Callback pattern"
+        }
+      ]
+    },
+    {
+      "id": "api_level_incompatibility",
+      "pattern": "NewApi|requires API level|Call requires API",
+      "message": "API call not available on min SDK version",
+      "cause": "Using API introduced after minSdkVersion",
+      "solutions": [
+        {
+          "approach": "Add version check",
+          "code": "if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {\n    createNotificationChannel()\n}",
+          "when": "Feature is optional"
+        },
+        {
+          "approach": "Use AndroidX compat",
+          "code": "NotificationManagerCompat.from(context).createNotificationChannel(...)",
+          "when": "Compat available"
+        },
+        {
+          "approach": "Use RequiresApi annotation",
+          "code": "@RequiresApi(Build.VERSION_CODES.O)\nfun createChannel() { ... }",
+          "when": "Method requires API level"
+        }
+      ]
+    }
+  ]
+}

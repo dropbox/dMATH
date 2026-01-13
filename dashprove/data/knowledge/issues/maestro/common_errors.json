@@ -1,0 +1,288 @@
+{
+  "tool": "maestro",
+  "version": "1.36.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "element_not_found",
+      "pattern": "Unable to find|Element .* not found|No matching element",
+      "message": "Element not found on screen",
+      "cause": "Selector doesn't match any visible element",
+      "solutions": [
+        {
+          "approach": "Use Maestro Studio",
+          "code": "maestro studio\n# Opens visual inspector to find correct selectors",
+          "when": "Find correct selector"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "- extendedWaitUntil:\n    visible: \"Login Button\"\n    timeout: 10000",
+          "when": "Element loads slowly"
+        },
+        {
+          "approach": "Use different selector",
+          "code": "# By text:\n- tapOn: \"Submit\"\n\n# By id:\n- tapOn:\n    id: \"submit_button\"\n\n# By accessibility:\n- tapOn:\n    accessibilityLabel: \"Submit Button\"",
+          "when": "Wrong selector"
+        },
+        {
+          "approach": "Scroll to element",
+          "code": "- scrollUntilVisible:\n    element: \"Target Element\"\n    direction: DOWN",
+          "when": "Element off screen"
+        }
+      ]
+    },
+    {
+      "id": "app_not_installed",
+      "pattern": "App .* is not installed|Could not find app|Package not found",
+      "message": "Application not installed",
+      "cause": "Target app not on device/simulator",
+      "solutions": [
+        {
+          "approach": "Add appId to flow",
+          "code": "appId: com.example.myapp\n---\n- launchApp",
+          "when": "Specify app"
+        },
+        {
+          "approach": "Install app first",
+          "code": "adb install app.apk  # Android\nxcrun simctl install booted app.app  # iOS Simulator",
+          "when": "Manual install"
+        },
+        {
+          "approach": "Check package name",
+          "code": "adb shell pm list packages | grep example\n# Find exact package name",
+          "when": "Wrong package"
+        }
+      ]
+    },
+    {
+      "id": "device_not_found",
+      "pattern": "No device found|Device .* not available|Unable to connect",
+      "message": "No device/emulator connected",
+      "cause": "No running device or emulator found",
+      "solutions": [
+        {
+          "approach": "Start emulator",
+          "code": "emulator -avd Pixel_4_API_31\n# Or:\nmkdir -p ~/.android && touch ~/.android/repositories.cfg\nsdkmanager --list",
+          "when": "Android emulator"
+        },
+        {
+          "approach": "Start iOS simulator",
+          "code": "open -a Simulator\n# Or via xcrun:\nxcrun simctl boot \"iPhone 14\"",
+          "when": "iOS simulator"
+        },
+        {
+          "approach": "Check connected devices",
+          "code": "adb devices  # Android\nxcrun simctl list devices | grep Booted  # iOS",
+          "when": "Verify connection"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "Assertion failed|Expected .* but found|does not match",
+      "message": "Test assertion failed",
+      "cause": "Screen content didn't match expected",
+      "solutions": [
+        {
+          "approach": "Debug with screenshots",
+          "code": "- takeScreenshot: debug_${timestamp}",
+          "when": "See actual state"
+        },
+        {
+          "approach": "Use contains for partial match",
+          "code": "- assertVisible:\n    text: \"Welcome\"  # Partial text match",
+          "when": "Flexible matching"
+        },
+        {
+          "approach": "Add retry",
+          "code": "- assertVisible:\n    text: \"Success\"\n    timeout: 5000\n    retryTapIfNoChange: true",
+          "when": "Flaky test"
+        }
+      ]
+    },
+    {
+      "id": "yaml_syntax_error",
+      "pattern": "YAML.*error|Invalid flow|Parsing error|Unexpected token",
+      "message": "Invalid YAML syntax in flow",
+      "cause": "Flow file has syntax errors",
+      "solutions": [
+        {
+          "approach": "Check indentation",
+          "code": "# Correct:\n- tapOn: \"Button\"\n- inputText: \"Hello\"\n\n# Wrong:\n-tapOn: \"Button\"  # Missing space after -\n  - inputText: \"Hello\"  # Wrong indentation",
+          "when": "Indentation error"
+        },
+        {
+          "approach": "Quote special characters",
+          "code": "# Quote strings with special chars:\n- tapOn: \"Price: $10\"\n- assertVisible:\n    text: \"100%\"",
+          "when": "Special characters"
+        },
+        {
+          "approach": "Validate YAML",
+          "code": "# Online: https://yamlvalidator.com/\n# Or: python -c \"import yaml; yaml.safe_load(open('flow.yaml'))\"",
+          "when": "Check syntax"
+        }
+      ]
+    },
+    {
+      "id": "tap_failed",
+      "pattern": "Failed to tap|Tap.*not performed|Could not tap",
+      "message": "Tap action failed",
+      "cause": "Element not tappable or overlapped",
+      "solutions": [
+        {
+          "approach": "Wait before tap",
+          "code": "- waitForAnimationToEnd\n- tapOn: \"Button\"",
+          "when": "Animation running"
+        },
+        {
+          "approach": "Use coordinates",
+          "code": "- tapOn:\n    point: \"50%,80%\"",
+          "when": "Fallback to coordinates"
+        },
+        {
+          "approach": "Retry tap",
+          "code": "- tapOn:\n    id: \"button\"\n    retryTapIfNoChange: true",
+          "when": "First tap fails"
+        },
+        {
+          "approach": "Long press",
+          "code": "- longPressOn: \"Element\"",
+          "when": "Tap doesn't work"
+        }
+      ]
+    },
+    {
+      "id": "input_text_failed",
+      "pattern": "Failed to input|Could not type|Input text failed",
+      "message": "Text input failed",
+      "cause": "Field not accepting input",
+      "solutions": [
+        {
+          "approach": "Tap field first",
+          "code": "- tapOn:\n    id: \"input_field\"\n- inputText: \"Hello World\"",
+          "when": "Focus field first"
+        },
+        {
+          "approach": "Clear then type",
+          "code": "- tapOn:\n    id: \"input_field\"\n- clearState\n- inputText: \"New Text\"",
+          "when": "Clear existing text"
+        },
+        {
+          "approach": "Use eraseText",
+          "code": "- tapOn: \"TextField\"\n- eraseText: 20\n- inputText: \"New Value\"",
+          "when": "Replace text"
+        }
+      ]
+    },
+    {
+      "id": "network_timeout",
+      "pattern": "Network.*timeout|Connection timeout|Request failed",
+      "message": "Network request timed out",
+      "cause": "API call taking too long",
+      "solutions": [
+        {
+          "approach": "Wait for network idle",
+          "code": "- tapOn: \"Submit\"\n- extendedWaitUntil:\n    visible: \"Success\"\n    timeout: 30000",
+          "when": "Wait for response"
+        },
+        {
+          "approach": "Mock network",
+          "code": "# Use Maestro Mock Server\nmaestro mock start\n# Configure responses in mock_server.yaml",
+          "when": "Control responses"
+        }
+      ]
+    },
+    {
+      "id": "subflow_not_found",
+      "pattern": "Subflow .* not found|Cannot run flow|File not found",
+      "message": "Referenced subflow file not found",
+      "cause": "runFlow references missing file",
+      "solutions": [
+        {
+          "approach": "Check file path",
+          "code": "# Use relative path from current flow:\n- runFlow: ./common/login.yaml\n\n# Or absolute:\n- runFlow: /flows/common/login.yaml",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Verify file exists",
+          "code": "ls -la flows/common/login.yaml",
+          "when": "File missing"
+        },
+        {
+          "approach": "Use correct extension",
+          "code": "- runFlow: login.yaml  # Not login.yml or login",
+          "when": "Wrong extension"
+        }
+      ]
+    },
+    {
+      "id": "env_variable_not_set",
+      "pattern": "Environment variable .* not set|\\$\\{.*\\}.*undefined",
+      "message": "Environment variable not defined",
+      "cause": "Flow references undefined environment variable",
+      "solutions": [
+        {
+          "approach": "Pass via CLI",
+          "code": "maestro test flow.yaml -e USERNAME=test -e PASSWORD=secret",
+          "when": "CLI parameters"
+        },
+        {
+          "approach": "Use .env file",
+          "code": "# In .env:\nUSERNAME=testuser\nPASSWORD=secret123\n\n# Then:\nmaestro test flow.yaml",
+          "when": "Environment file"
+        },
+        {
+          "approach": "Set default in flow",
+          "code": "env:\n  USERNAME: defaultUser\n  API_URL: https://api.example.com\n---\n- inputText: ${USERNAME}",
+          "when": "Default values"
+        }
+      ]
+    },
+    {
+      "id": "webview_not_supported",
+      "pattern": "WebView.*not supported|Cannot interact with web|Web context",
+      "message": "WebView interactions not supported",
+      "cause": "Maestro can't interact with WebView content",
+      "solutions": [
+        {
+          "approach": "Use evalScript",
+          "code": "- evalScript:\n    script: document.querySelector('#button').click()",
+          "when": "JavaScript interaction"
+        },
+        {
+          "approach": "Wait for native wrapper",
+          "code": "# If WebView has native wrapper:\n- tapOn:\n    id: \"webview_container\"\n- tapOn:\n    point: \"50%,30%\"",
+          "when": "Coordinates fallback"
+        },
+        {
+          "approach": "Test separately",
+          "code": "# Test WebView content with browser automation\n# Test native parts with Maestro",
+          "when": "Split approach"
+        }
+      ]
+    },
+    {
+      "id": "screenshot_failed",
+      "pattern": "Screenshot.*failed|Could not capture|Screen capture error",
+      "message": "Failed to capture screenshot",
+      "cause": "Screen capture permission or storage issue",
+      "solutions": [
+        {
+          "approach": "Check permissions",
+          "code": "# Android: Enable USB debugging\n# iOS: Trust computer when prompted",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Check output path",
+          "code": "- takeScreenshot: ./screenshots/test_${timestamp}",
+          "when": "Invalid path"
+        },
+        {
+          "approach": "Create directory",
+          "code": "mkdir -p ./screenshots\nmaestro test flow.yaml",
+          "when": "Directory missing"
+        }
+      ]
+    }
+  ]
+}

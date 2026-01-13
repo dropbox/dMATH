@@ -1,0 +1,120 @@
+{
+  "tool": "robustbench",
+  "version": "1.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_not_found",
+      "pattern": "(model.*not found|unknown model|invalid model_name)",
+      "message": "Requested model not in model zoo",
+      "cause": "Model name or threat model combination not available",
+      "solutions": [
+        {
+          "approach": "List available models",
+          "code": "from robustbench.utils import list_models\nmodels = list_models(dataset='cifar10', threat_model='Linf')\nprint(models)",
+          "when": "Finding available models"
+        },
+        {
+          "approach": "Check exact name",
+          "code": "# Model names are case-sensitive\nmodel = load_model(model_name='Carmon2019Unlabeled', dataset='cifar10', threat_model='Linf')",
+          "when": "Name might be wrong"
+        },
+        {
+          "approach": "Try different threat model",
+          "code": "# Available: Linf, L2, corruptions\nmodel = load_model(model_name='name', dataset='cifar10', threat_model='L2')",
+          "when": "Model not available for threat model"
+        }
+      ]
+    },
+    {
+      "id": "download_error",
+      "pattern": "(download|connection|timeout|HTTP)",
+      "message": "Failed to download model weights",
+      "cause": "Network issue or server unavailable",
+      "solutions": [
+        {
+          "approach": "Retry download",
+          "code": "import torch\ntorch.hub.set_dir('/path/to/cache')\nmodel = load_model('name', dataset='cifar10', threat_model='Linf')",
+          "when": "Temporary network issue"
+        },
+        {
+          "approach": "Manual download",
+          "code": "# Download from RobustBench GitHub releases\n# Place in ~/.cache/robustbench/models/",
+          "when": "Automated download failing"
+        }
+      ]
+    },
+    {
+      "id": "evaluation_error",
+      "pattern": "(benchmark|clean_accuracy|robust_accuracy)",
+      "message": "Benchmarking error",
+      "cause": "Data format or evaluation setup issue",
+      "solutions": [
+        {
+          "approach": "Use standard benchmark",
+          "code": "from robustbench.eval import benchmark\nclean_acc, robust_acc = benchmark(\n    model,\n    dataset='cifar10',\n    threat_model='Linf',\n    eps=8/255\n)",
+          "when": "Running standard evaluation"
+        },
+        {
+          "approach": "Check data format",
+          "code": "# Data should be normalized to [0,1]\n# CIFAR-10: (N, 3, 32, 32)\nfrom robustbench.data import load_cifar10\nx_test, y_test = load_cifar10(n_examples=1000)",
+          "when": "Using custom data"
+        }
+      ]
+    },
+    {
+      "id": "normalization_error",
+      "pattern": "(normalize|preprocessing|transform)",
+      "message": "Model normalization mismatch",
+      "cause": "Model expects specific input normalization",
+      "solutions": [
+        {
+          "approach": "Use model's preprocessing",
+          "code": "# RobustBench models handle their own normalization\n# Input should be in [0, 1]\nmodel = load_model('name', dataset='cifar10', threat_model='Linf')\noutput = model(x)  # x in [0, 1]",
+          "when": "Models handle normalization"
+        },
+        {
+          "approach": "Check model preprocessing",
+          "code": "# Some models have mu/sigma attributes\nprint(f'Mean: {model.mu}, Std: {model.sigma}')",
+          "when": "Debugging normalization"
+        }
+      ]
+    },
+    {
+      "id": "device_error",
+      "pattern": "(CUDA|device|GPU|cpu)",
+      "message": "Device placement error",
+      "cause": "Model and data on different devices",
+      "solutions": [
+        {
+          "approach": "Move to GPU",
+          "code": "device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')\nmodel = load_model('name', dataset='cifar10', threat_model='Linf').to(device)\nx = x.to(device)",
+          "when": "Using GPU"
+        },
+        {
+          "approach": "Force CPU",
+          "code": "model = load_model('name', dataset='cifar10', threat_model='Linf')\nmodel = model.cpu()\nmodel.eval()",
+          "when": "No GPU available"
+        }
+      ]
+    },
+    {
+      "id": "autoattack_error",
+      "pattern": "(AutoAttack|adversary|attack.*failed)",
+      "message": "AutoAttack evaluation error",
+      "cause": "Attack configuration or model compatibility issue",
+      "solutions": [
+        {
+          "approach": "Configure AutoAttack",
+          "code": "from autoattack import AutoAttack\nadversary = AutoAttack(\n    model, norm='Linf', eps=8/255,\n    version='standard'  # or 'plus', 'rand'\n)\nx_adv = adversary.run_standard_evaluation(x, y, bs=100)",
+          "when": "Running AutoAttack"
+        },
+        {
+          "approach": "Use subset of attacks",
+          "code": "adversary = AutoAttack(model, norm='Linf', eps=8/255)\nadversary.attacks_to_run = ['apgd-ce', 'apgd-t']  # Subset\nx_adv = adversary.run_standard_evaluation(x, y)",
+          "when": "Full attack too slow"
+        }
+      ]
+    }
+  ]
+}

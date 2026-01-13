@@ -1,0 +1,145 @@
+{
+  "tool": "chrono_tz",
+  "version": "0.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timezone_not_found",
+      "pattern": "Unknown timezone|Timezone.*not found|invalid timezone|No such timezone",
+      "message": "Timezone identifier not recognized",
+      "cause": "Invalid IANA timezone name or typo",
+      "solutions": [
+        {
+          "approach": "Use IANA names",
+          "code": "use chrono_tz::America::New_York;\nuse chrono_tz::Europe::London;\n// Not: EST, GMT, or abbreviations",
+          "when": "Use full names"
+        },
+        {
+          "approach": "Parse from string",
+          "code": "use chrono_tz::Tz;\nlet tz: Tz = \"America/New_York\".parse().unwrap();",
+          "when": "Dynamic timezone"
+        },
+        {
+          "approach": "List available",
+          "code": "use chrono_tz::TZ_VARIANTS;\nfor tz in TZ_VARIANTS {\n    println!(\"{}\", tz.name());\n}",
+          "when": "Find valid timezones"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_time",
+      "pattern": "Ambiguous.*time|LocalResult::Ambiguous|multiple results",
+      "message": "Ambiguous local time during DST transition",
+      "cause": "Time falls during 'fall back' DST transition, exists twice",
+      "solutions": [
+        {
+          "approach": "Handle ambiguity",
+          "code": "use chrono::LocalResult;\nmatch tz.with_ymd_and_hms(2024, 11, 3, 1, 30, 0) {\n    LocalResult::Single(dt) => dt,\n    LocalResult::Ambiguous(dt1, dt2) => dt1, // Earlier\n    LocalResult::None => panic!(\"invalid\"),\n}",
+          "when": "DST fall back"
+        },
+        {
+          "approach": "Use earliest/latest",
+          "code": "tz.with_ymd_and_hms(2024, 11, 3, 1, 30, 0)\n    .earliest()\n    .unwrap()",
+          "when": "Pick earliest"
+        },
+        {
+          "approach": "Use UTC",
+          "code": "// Store in UTC, convert on display\nlet utc = Utc::now();\nlet local = utc.with_timezone(&tz);",
+          "when": "Avoid ambiguity"
+        }
+      ]
+    },
+    {
+      "id": "nonexistent_time",
+      "pattern": "None.*local time|LocalResult::None|nonexistent time|gap",
+      "message": "Local time doesn't exist during DST spring forward",
+      "cause": "Time falls in DST gap (spring forward), doesn't exist",
+      "solutions": [
+        {
+          "approach": "Handle gap",
+          "code": "match tz.with_ymd_and_hms(2024, 3, 10, 2, 30, 0) {\n    LocalResult::None => {\n        // Time doesn't exist, use 3:30 instead\n        tz.with_ymd_and_hms(2024, 3, 10, 3, 30, 0).unwrap()\n    }\n    LocalResult::Single(dt) => dt,\n    _ => unreachable!(),\n}",
+          "when": "DST spring forward"
+        },
+        {
+          "approach": "Skip validation",
+          "code": "// Create UTC and convert\nlet utc = Utc.with_ymd_and_hms(2024, 3, 10, 7, 30, 0).unwrap();\nlet local = utc.with_timezone(&America::New_York);",
+          "when": "Create from UTC"
+        },
+        {
+          "approach": "Use and_local_timezone",
+          "code": "NaiveDateTime::new(date, time)\n    .and_local_timezone(tz)\n    .single()\n    .expect(\"time should exist\")",
+          "when": "From NaiveDateTime"
+        }
+      ]
+    },
+    {
+      "id": "feature_flag_missing",
+      "pattern": "no.*feature|chrono_tz.*not found|missing feature",
+      "message": "Crate or feature not enabled",
+      "cause": "chrono-tz not in dependencies or feature missing",
+      "solutions": [
+        {
+          "approach": "Add dependency",
+          "code": "# Cargo.toml\n[dependencies]\nchrono = { version = \"0.4\", features = [\"serde\"] }\nchrono-tz = \"0.8\"",
+          "when": "Missing crate"
+        },
+        {
+          "approach": "Enable serde",
+          "code": "chrono-tz = { version = \"0.8\", features = [\"serde\"] }",
+          "when": "Serialization support"
+        },
+        {
+          "approach": "Case mappings",
+          "code": "chrono-tz = { version = \"0.8\", features = [\"case-insensitive\"] }",
+          "when": "Case-insensitive parsing"
+        }
+      ]
+    },
+    {
+      "id": "format_error",
+      "pattern": "format.*error|strftime.*invalid|parse.*format",
+      "message": "DateTime formatting error",
+      "cause": "Invalid format string or timezone display",
+      "solutions": [
+        {
+          "approach": "Format with timezone",
+          "code": "use chrono::format::strftime::StrftimeItems;\nlet dt = Utc::now().with_timezone(&tz);\nprintln!(\"{}\", dt.format(\"%Y-%m-%d %H:%M:%S %Z\"));",
+          "when": "Include timezone"
+        },
+        {
+          "approach": "RFC formats",
+          "code": "dt.to_rfc3339()  // ISO 8601\ndt.to_rfc2822()  // Email format",
+          "when": "Standard formats"
+        },
+        {
+          "approach": "Timezone name",
+          "code": "let tz_name = tz.name();  // \"America/New_York\"\nlet abbrev = dt.format(\"%Z\");  // \"EST\" or \"EDT\"",
+          "when": "Display timezone"
+        }
+      ]
+    },
+    {
+      "id": "conversion_error",
+      "pattern": "conversion.*failed|cannot convert|timezone mismatch|From.*Error",
+      "message": "Timezone conversion error",
+      "cause": "Converting between incompatible datetime types",
+      "solutions": [
+        {
+          "approach": "UTC to local",
+          "code": "let utc: DateTime<Utc> = Utc::now();\nlet local: DateTime<Tz> = utc.with_timezone(&tz);",
+          "when": "UTC to local"
+        },
+        {
+          "approach": "Local to UTC",
+          "code": "let local: DateTime<Tz> = ...;\nlet utc: DateTime<Utc> = local.with_timezone(&Utc);",
+          "when": "Local to UTC"
+        },
+        {
+          "approach": "Between timezones",
+          "code": "let ny = utc.with_timezone(&America::New_York);\nlet tokyo = ny.with_timezone(&Asia::Tokyo);",
+          "when": "Cross-timezone"
+        }
+      ]
+    }
+  ]
+}

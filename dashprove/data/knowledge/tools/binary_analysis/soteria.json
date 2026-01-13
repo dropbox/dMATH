@@ -1,0 +1,100 @@
+{
+  "id": "soteria",
+  "name": "Soteria",
+  "category": "binary_analysis",
+  "subcategory": "symbolic_execution",
+
+  "description": "Symbolic execution engine for compiled Rust with Tree Borrows support and path-pruning heuristics.",
+  "long_description": "Soteria targets binary-level verification of Rust programs. It operates on lifted MIR/LLVM bitcode, models Tree Borrows for aliasing, and uses symbolic execution plus constraint solving to find counterexamples or prove memory-safety properties. The design emphasizes scalability and compatibility with modern Rust compiler semantics.",
+
+  "capabilities": [
+    "symbolic_execution",
+    "memory_safety",
+    "pointer_aliasing",
+    "counterexample_generation",
+    "path_pruning"
+  ],
+  "property_types": ["memory_safety", "assertion", "termination"],
+  "input_languages": ["rust_mir", "llvm_bitcode", "binary"],
+  "output_formats": ["counterexample_trace", "model", "coverage_report"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://arxiv.org/abs/2511.08729"},
+      {"type": "source", "url": "https://doi.org/10.48550/arXiv.2511.08729"}
+    ],
+    "dependencies": ["llvm", "z3"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://arxiv.org/abs/2511.08729",
+    "tutorial": "https://arxiv.org/abs/2511.08729",
+    "api_reference": "https://arxiv.org/abs/2511.08729",
+    "examples": "https://arxiv.org/abs/2511.08729"
+  },
+
+  "tactics": [
+    {
+      "name": "bounded_depth",
+      "description": "Limit exploration depth to prioritize shallow counterexamples.",
+      "syntax": "--max-depth <n>",
+      "when_to_use": "When the path space explodes on loops or recursion.",
+      "examples": ["soteria verify target.bc --max-depth 50"]
+    },
+    {
+      "name": "tree_borrows",
+      "description": "Enable Tree Borrows memory model to track aliasing soundly.",
+      "syntax": "--memory-model tree-borrows",
+      "when_to_use": "For unsafe Rust code that relies on aliasing rules.",
+      "examples": ["soteria verify lib.bc --memory-model tree-borrows"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Unsupported MIR construct",
+      "meaning": "The MIR emitted by rustc uses features not yet modeled.",
+      "common_causes": ["New compiler version", "Unmodeled intrinsic"],
+      "fixes": ["Compile with older rustc", "Stub the intrinsic or add a semantics plugin"]
+    },
+    {
+      "pattern": "solver timeout",
+      "meaning": "SMT queries exceeded the configured timeout.",
+      "common_causes": ["Complex pointer arithmetic", "Large path conditions"],
+      "fixes": ["Tighten search bounds", "Increase solver timeout", "Enable heuristics like path merging"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["binary_property", "contract", "memory_safety"],
+    "cli_command": "dashprove reverse --backend soteria --binary <path>"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to tens of minutes depending on path bounds",
+    "scalability": "Scales to medium Rust crates with pruning; large binaries require targeted slicing",
+    "memory_usage": "Moderate; solver load dominates for deep searches"
+  },
+
+  "comparisons": {
+    "similar_tools": ["kani", "cbmc", "angr"],
+    "advantages": [
+      "Tree Borrows-aware symbolic execution",
+      "Binary-level reasoning without source",
+      "Heuristics for Rust-specific UB patterns"
+    ],
+    "disadvantages": [
+      "Research prototype",
+      "Limited public tooling around the CLI"
+    ]
+  },
+
+  "metadata": {
+    "version": "research-prototype",
+    "last_updated": "2025-12-29",
+    "maintainer": "Soteria authors",
+    "license": "Apache-2.0"
+  }
+}

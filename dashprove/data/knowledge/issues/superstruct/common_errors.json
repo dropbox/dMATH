@@ -1,0 +1,145 @@
+{
+  "tool": "superstruct",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "validation_error",
+      "pattern": "StructError|validation failed|expected.*received|At path",
+      "message": "Value doesn't match struct schema",
+      "cause": "Input data doesn't conform to defined schema",
+      "solutions": [
+        {
+          "approach": "Use is() for boolean check",
+          "code": "import { is, object, string, number } from 'superstruct';\nconst User = object({ name: string(), age: number() });\nif (is(data, User)) {\n  console.log(data.name);  // type-safe\n}",
+          "when": "Check without throwing"
+        },
+        {
+          "approach": "Handle validation errors",
+          "code": "import { validate } from 'superstruct';\nconst [error, result] = validate(data, User);\nif (error) {\n  console.log('Path:', error.path);\n  console.log('Expected:', error.type);\n  console.log('Got:', error.value);\n}",
+          "when": "Get error details"
+        },
+        {
+          "approach": "Use assert() with try/catch",
+          "code": "import { assert } from 'superstruct';\ntry {\n  assert(data, User);\n} catch (error) {\n  console.log(error.message);\n}",
+          "when": "Throw on invalid"
+        }
+      ]
+    },
+    {
+      "id": "type_coercion",
+      "pattern": "string.*number|coercion|type mismatch|parse",
+      "message": "Need type coercion",
+      "cause": "Input is string but schema expects number, etc.",
+      "solutions": [
+        {
+          "approach": "Use coerce",
+          "code": "import { coerce, number, string } from 'superstruct';\nconst NumericString = coerce(number(), string(), (value) => parseFloat(value));\nassert('42', NumericString);  // returns 42",
+          "when": "String to number"
+        },
+        {
+          "approach": "Date coercion",
+          "code": "const IsoDate = coerce(\n  date(),\n  string(),\n  (value) => new Date(value)\n);\nassert('2024-01-01', IsoDate);  // returns Date object",
+          "when": "String to Date"
+        },
+        {
+          "approach": "JSON string coercion",
+          "code": "const JsonObject = coerce(\n  object({ key: string() }),\n  string(),\n  (value) => JSON.parse(value)\n);",
+          "when": "Parse JSON"
+        }
+      ]
+    },
+    {
+      "id": "optional_fields",
+      "pattern": "undefined|required|missing|optional",
+      "message": "Optional field handling",
+      "cause": "Field may or may not be present",
+      "solutions": [
+        {
+          "approach": "Use optional()",
+          "code": "const User = object({\n  name: string(),\n  email: optional(string()),  // can be undefined\n});",
+          "when": "Field may be missing"
+        },
+        {
+          "approach": "Use nullable()",
+          "code": "const User = object({\n  name: string(),\n  nickname: nullable(string()),  // can be null\n});",
+          "when": "Field may be null"
+        },
+        {
+          "approach": "Default values",
+          "code": "const User = defaulted(\n  object({ name: string(), role: string() }),\n  { role: 'user' }\n);",
+          "when": "Provide defaults"
+        }
+      ]
+    },
+    {
+      "id": "union_discrimination",
+      "pattern": "union|discriminated|multiple types|one of",
+      "message": "Union type validation failing",
+      "cause": "Value doesn't match any union variant",
+      "solutions": [
+        {
+          "approach": "Simple union",
+          "code": "const StringOrNumber = union([string(), number()]);\nassert('hello', StringOrNumber);  // ok\nassert(42, StringOrNumber);        // ok",
+          "when": "Basic union"
+        },
+        {
+          "approach": "Discriminated union",
+          "code": "const Shape = union([\n  object({ type: literal('circle'), radius: number() }),\n  object({ type: literal('rect'), width: number(), height: number() })\n]);\nassert({ type: 'circle', radius: 5 }, Shape);",
+          "when": "Tagged union"
+        },
+        {
+          "approach": "Check which matched",
+          "code": "const [error, result] = validate(data, StringOrNumber);\n// error.failures() shows all failed variants",
+          "when": "Debug union"
+        }
+      ]
+    },
+    {
+      "id": "nested_validation",
+      "pattern": "nested|deep|path.*error|complex object",
+      "message": "Nested object validation errors",
+      "cause": "Error deep in nested structure",
+      "solutions": [
+        {
+          "approach": "Check error path",
+          "code": "const [error] = validate(data, schema);\nif (error) {\n  console.log('Path:', error.path.join('.'));\n  // e.g., 'user.address.city'\n}",
+          "when": "Find error location"
+        },
+        {
+          "approach": "Get all failures",
+          "code": "const [error] = validate(data, schema);\nif (error) {\n  for (const failure of error.failures()) {\n    console.log(`${failure.path.join('.')}: ${failure.message}`);\n  }\n}",
+          "when": "Multiple errors"
+        },
+        {
+          "approach": "Custom refinement",
+          "code": "const PositiveNumber = refine(number(), 'positive', (n) => n > 0);\nconst User = object({\n  age: PositiveNumber\n});",
+          "when": "Custom validation"
+        }
+      ]
+    },
+    {
+      "id": "array_validation",
+      "pattern": "array|elements|min|max|length",
+      "message": "Array validation issues",
+      "cause": "Array contents or length invalid",
+      "solutions": [
+        {
+          "approach": "Array of type",
+          "code": "const Numbers = array(number());\nassert([1, 2, 3], Numbers);",
+          "when": "Typed array"
+        },
+        {
+          "approach": "Tuple validation",
+          "code": "const Point = tuple([number(), number()]);\nassert([10, 20], Point);",
+          "when": "Fixed length"
+        },
+        {
+          "approach": "Size constraints",
+          "code": "const NonEmpty = refine(array(string()), 'non-empty', \n  (arr) => arr.length > 0\n);\nconst Limited = refine(array(string()), 'max-5',\n  (arr) => arr.length <= 5\n);",
+          "when": "Size limits"
+        }
+      ]
+    }
+  ]
+}

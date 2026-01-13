@@ -1,0 +1,99 @@
+{
+  "id": "smack",
+  "name": "SMACK",
+  "category": "model_checker",
+  "subcategory": "llvm",
+
+  "description": "LLVM-to-Boogie translator for software verification",
+  "long_description": "SMACK is a software verification toolchain that translates LLVM bitcode to the Boogie intermediate verification language. This allows programs in any LLVM-based language (C, C++, Rust, etc.) to be verified using Boogie-based verifiers like Corral and Boogie itself.",
+
+  "capabilities": [
+    "llvm_translation",
+    "boogie_generation",
+    "memory_modeling",
+    "assertion_checking",
+    "multi_language"
+  ],
+  "property_types": ["assertions", "memory_safety"],
+  "input_languages": ["c", "cpp", "rust", "llvm_ir"],
+  "output_formats": ["boogie", "verification_result"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "command": "git clone https://github.com/smackers/smack && cd smack && bin/build.sh"},
+      {"type": "docker", "command": "docker pull smackers/smack"}
+    ],
+    "dependencies": ["llvm", "boogie", "corral"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://smackers.github.io/",
+    "manual": "https://github.com/smackers/smack/blob/master/docs/index.md",
+    "api_reference": "https://github.com/smackers/smack/wiki"
+  },
+
+  "tactics": [
+    {
+      "name": "default",
+      "description": "Standard verification",
+      "syntax": "smack program.c",
+      "when_to_use": "For general verification",
+      "examples": ["smack --verifier=corral program.c"]
+    },
+    {
+      "name": "boogie",
+      "description": "Use Boogie verifier",
+      "syntax": "smack --verifier=boogie program.c",
+      "when_to_use": "For modular verification",
+      "examples": ["smack --verifier=boogie program.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "SMACK found an error",
+      "meaning": "Assertion violation found",
+      "common_causes": ["Bug in program"],
+      "fixes": ["Analyze counterexample"]
+    },
+    {
+      "pattern": "SMACK timed out",
+      "meaning": "Verification timeout",
+      "common_causes": ["Complex program"],
+      "fixes": ["Increase timeout", "Add loop bounds"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["assertion", "safety"],
+    "cli_command": "dashprove verify --backend smack"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Good for modular verification",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["seahorn", "cpachecker", "klee"],
+    "advantages": [
+      "Multi-language support",
+      "Boogie ecosystem",
+      "Memory models"
+    ],
+    "disadvantages": [
+      "Linux only",
+      "Complex toolchain"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.8.0",
+    "last_updated": "2025-12-21",
+    "maintainer": "University of Utah",
+    "license": "MIT"
+  }
+}

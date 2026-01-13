@@ -1,0 +1,67 @@
+{
+  "tool_id": "fuzzbench",
+  "tool_name": "FuzzBench",
+  "description": "Google's fuzzer benchmarking platform for evaluating and comparing fuzzing techniques using standardized benchmarks and metrics",
+  "common_errors": [
+    {
+      "id": "benchmark_build_failure",
+      "pattern": "build failed|compilation error|could not build benchmark",
+      "category": "setup",
+      "severity": "high",
+      "cause": "Benchmark program failed to compile due to missing dependencies, incompatible compiler version, or environment issues",
+      "solution": "Use provided Docker containers for consistent environment. Check benchmark's Dockerfile for dependencies. Verify compiler version matches requirements. Review build logs for specific errors.",
+      "example": "make build-$BENCHMARK-$FUZZER  # build specific combination",
+      "related_concepts": ["docker_build", "benchmark_configuration", "build_dependencies"]
+    },
+    {
+      "id": "fuzzer_integration_error",
+      "pattern": "fuzzer not found|fuzzer integration failed|unknown fuzzer",
+      "category": "integration",
+      "severity": "medium",
+      "cause": "Custom fuzzer not properly integrated into FuzzBench's fuzzer interface or missing required files",
+      "solution": "Create fuzzer directory with required files: fuzzer.py, builder.Dockerfile, runner.Dockerfile. Implement required functions: build(), fuzz(). Test locally before CI.",
+      "related_concepts": ["fuzzer_interface", "custom_fuzzer", "integration_testing"]
+    },
+    {
+      "id": "experiment_timeout",
+      "pattern": "experiment timed out|trial did not complete|insufficient runtime",
+      "category": "execution",
+      "severity": "medium",
+      "cause": "Fuzzing trial didn't complete within allocated time, or results collection failed",
+      "solution": "Increase experiment duration. Check cloud resource availability. Verify trials started successfully. Use --local for debugging. Review trial logs for crashes.",
+      "example": "python experiment.py --experiment-time 86400  # 24 hour experiment",
+      "related_concepts": ["experiment_configuration", "trial_management", "cloud_resources"]
+    },
+    {
+      "id": "coverage_collection_error",
+      "pattern": "could not collect coverage|coverage data missing|profdata error",
+      "category": "measurement",
+      "severity": "high",
+      "cause": "Coverage instrumentation failed or coverage data couldn't be processed, invalidating experiment results",
+      "solution": "Verify benchmark compiled with coverage instrumentation. Check llvm-profdata availability. Ensure corpus is accessible. Review sanitizer output for crashes preventing coverage.",
+      "related_concepts": ["llvm_coverage", "profdata", "instrumentation"]
+    },
+    {
+      "id": "statistical_insignificance",
+      "pattern": "not statistically significant|p-value too high|insufficient samples",
+      "category": "analysis",
+      "severity": "low",
+      "cause": "Not enough trials or variance too high to draw statistically significant conclusions between fuzzers",
+      "solution": "Run more trials (20+ recommended). Increase experiment duration. Use FuzzBench's statistical analysis tools. Report confidence intervals, not just means.",
+      "example": "python analysis/report.py --trials 20  # ensure sufficient trials",
+      "related_concepts": ["statistical_testing", "sample_size", "mann_whitney_u"]
+    }
+  ],
+  "best_practices": [
+    "Run at least 20 trials per fuzzer for statistical significance",
+    "Use 24-hour experiments for comprehensive coverage comparison",
+    "Test fuzzer integration locally before cloud experiments",
+    "Use standard benchmarks for reproducible comparisons",
+    "Report median coverage with confidence intervals"
+  ],
+  "references": [
+    "https://google.github.io/fuzzbench/",
+    "https://github.com/google/fuzzbench",
+    "https://www.usenix.org/conference/usenixsecurity21/presentation/metzman"
+  ]
+}

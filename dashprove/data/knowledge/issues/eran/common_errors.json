@@ -1,0 +1,192 @@
+{
+  "tool": "eran",
+  "version": "4.0",
+  "last_updated": "2025-12-22",
+  "description": "ETH Robustness Analyzer for Neural Networks using abstract interpretation",
+  "errors": [
+    {
+      "id": "installation_error",
+      "pattern": "ELINA.*not found|installation.*failed|gurobi.*error",
+      "message": "ERAN installation error",
+      "cause": "Missing dependencies (ELINA, Gurobi, etc.)",
+      "solutions": [
+        {
+          "approach": "Install ELINA",
+          "code": "git clone https://github.com/eth-sri/ELINA.git\ncd ELINA\nmake\nmake install",
+          "when": "ELINA not installed"
+        },
+        {
+          "approach": "Install with conda",
+          "code": "conda create -n eran python=3.8\nconda activate eran\npip install -r requirements.txt",
+          "when": "Python dependencies"
+        },
+        {
+          "approach": "Set up Gurobi (optional)",
+          "code": "# For MILP refinement:\n# Get academic license from gurobi.com\nexport GUROBI_HOME=/opt/gurobi\nexport GRB_LICENSE_FILE=~/gurobi.lic",
+          "when": "Need MILP backend"
+        }
+      ]
+    },
+    {
+      "id": "network_format_error",
+      "pattern": "network.*format.*error|unsupported.*layer|cannot parse",
+      "message": "Network format error",
+      "cause": "Unsupported network format or architecture",
+      "solutions": [
+        {
+          "approach": "Convert to ONNX",
+          "code": "# ERAN supports ONNX format\nimport torch.onnx\ntorch.onnx.export(model, x, 'model.onnx', opset_version=11)",
+          "when": "Converting from PyTorch"
+        },
+        {
+          "approach": "Check supported layers",
+          "code": "# Supported: Conv2D, ReLU, MaxPool, Flatten, Dense\n# Limited: BatchNorm (fold into weights first)\n# Unsupported: Some attention mechanisms",
+          "when": "Layer not supported"
+        },
+        {
+          "approach": "Use TensorFlow format",
+          "code": "python3 . --netname model.tf --dataset mnist",
+          "when": "TensorFlow model"
+        }
+      ]
+    },
+    {
+      "id": "domain_error",
+      "pattern": "domain.*error|abstract domain.*failed",
+      "message": "Abstract domain error",
+      "cause": "Issue with abstract interpretation domain",
+      "solutions": [
+        {
+          "approach": "Choose appropriate domain",
+          "code": "# Domains by precision (low to high):\n# box < zono < deeppoly < refinezono < refinepoly\npython3 . --domain deeppoly --netname model.onnx",
+          "when": "Select domain"
+        },
+        {
+          "approach": "Use DeepPoly",
+          "code": "python3 . --domain deeppoly --netname model.onnx --epsilon 0.03",
+          "when": "Good precision/speed tradeoff"
+        },
+        {
+          "approach": "Use RefineZono for precision",
+          "code": "python3 . --domain refinezono --netname model.onnx --use_milp",
+          "when": "Need higher precision"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|time limit|verification timed out",
+      "message": "Verification timed out",
+      "cause": "Verification taking too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "python3 . --timeout_lp 100 --timeout_milp 100",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Use faster domain",
+          "code": "# Use box or zono for quick incomplete check\npython3 . --domain box --netname model.onnx",
+          "when": "Speed over precision"
+        },
+        {
+          "approach": "Reduce epsilon",
+          "code": "# Smaller perturbation = faster verification\npython3 . --epsilon 0.01  # instead of 0.03",
+          "when": "Perturbation too large"
+        }
+      ]
+    },
+    {
+      "id": "epsilon_error",
+      "pattern": "epsilon.*invalid|perturbation.*error",
+      "message": "Epsilon/perturbation specification error",
+      "cause": "Invalid epsilon value or norm",
+      "solutions": [
+        {
+          "approach": "Set L-infinity epsilon",
+          "code": "python3 . --epsilon 0.03  # L_inf perturbation\n# For MNIST: typical 0.1, 0.3\n# For CIFAR: typical 2/255, 8/255",
+          "when": "L-infinity norm"
+        },
+        {
+          "approach": "Set L2 epsilon",
+          "code": "python3 . --norm l2 --epsilon 1.5",
+          "when": "L2 norm"
+        },
+        {
+          "approach": "Normalize epsilon",
+          "code": "# For [0,1] normalized inputs:\n# epsilon 0.03 = 3% max perturbation\n# For [0,255] inputs: divide by 255",
+          "when": "Epsilon interpretation"
+        }
+      ]
+    },
+    {
+      "id": "dataset_error",
+      "pattern": "dataset.*not found|cannot load.*dataset",
+      "message": "Dataset loading error",
+      "cause": "Dataset path or format issue",
+      "solutions": [
+        {
+          "approach": "Use built-in datasets",
+          "code": "python3 . --dataset mnist  # or cifar10",
+          "when": "Standard dataset"
+        },
+        {
+          "approach": "Custom dataset",
+          "code": "# Provide numpy arrays or CSV\n# Format: one sample per line",
+          "when": "Custom test data"
+        },
+        {
+          "approach": "Verify single image",
+          "code": "python3 . --test_image image.png --netname model.onnx",
+          "when": "Single image verification"
+        }
+      ]
+    },
+    {
+      "id": "milp_error",
+      "pattern": "MILP.*error|Gurobi.*license|LP.*infeasible",
+      "message": "MILP/LP solver error",
+      "cause": "LP/MILP solver issue",
+      "solutions": [
+        {
+          "approach": "Check Gurobi license",
+          "code": "gurobi_cl --license\n# Academic license free from gurobi.com",
+          "when": "License issue"
+        },
+        {
+          "approach": "Use GLPK instead",
+          "code": "# ERAN can use open-source GLPK\napt install glpk-utils libglpk-dev",
+          "when": "No Gurobi license"
+        },
+        {
+          "approach": "Disable MILP refinement",
+          "code": "python3 . --domain deeppoly  # without --use_milp",
+          "when": "Skip MILP"
+        }
+      ]
+    },
+    {
+      "id": "result_interpretation",
+      "pattern": "verified|falsified|unknown|incomplete",
+      "message": "Understanding verification results",
+      "cause": "Interpreting ERAN output",
+      "solutions": [
+        {
+          "approach": "Interpret verified",
+          "code": "# VERIFIED: Network provably robust for this input\n# No adversarial example exists within epsilon",
+          "when": "Verified result"
+        },
+        {
+          "approach": "Interpret falsified",
+          "code": "# FALSIFIED: Concrete adversarial example found\n# The network IS vulnerable",
+          "when": "Falsified result"
+        },
+        {
+          "approach": "Interpret unknown",
+          "code": "# UNKNOWN: Abstract domain too imprecise\n# Try more precise domain or smaller epsilon",
+          "when": "Unknown result"
+        }
+      ]
+    }
+  ]
+}

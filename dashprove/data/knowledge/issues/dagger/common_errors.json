@@ -1,0 +1,186 @@
+{
+  "tool": "dagger",
+  "version": "0.9.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "engine_not_running",
+      "pattern": "Could not connect|engine.*not running|dagger engine",
+      "message": "Dagger engine not running",
+      "cause": "Dagger engine container not started",
+      "solutions": [
+        {
+          "approach": "Start engine",
+          "code": "dagger version  # Auto-starts engine",
+          "when": "First run"
+        },
+        {
+          "approach": "Manual start",
+          "code": "docker run -d --name dagger-engine \\\n  --privileged \\\n  registry.dagger.io/engine:v0.9.5",
+          "when": "Manual control"
+        },
+        {
+          "approach": "Check Docker",
+          "code": "docker ps | grep dagger",
+          "when": "Verify engine running"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "Module not found|no dagger.json|missing module",
+      "message": "Dagger module not found",
+      "cause": "No dagger.json or module not initialized",
+      "solutions": [
+        {
+          "approach": "Initialize module",
+          "code": "dagger init --sdk=python my-module",
+          "when": "Create Python module"
+        },
+        {
+          "approach": "TypeScript module",
+          "code": "dagger init --sdk=typescript my-module",
+          "when": "Create TS module"
+        },
+        {
+          "approach": "Go module",
+          "code": "dagger init --sdk=go my-module",
+          "when": "Create Go module"
+        }
+      ]
+    },
+    {
+      "id": "function_error",
+      "pattern": "Function.*error|@dagger\\.function|@function",
+      "message": "Dagger function error",
+      "cause": "Error in Dagger function definition",
+      "solutions": [
+        {
+          "approach": "Python function",
+          "code": "import dagger\nfrom dagger import function, object_type\n\n@object_type\nclass MyModule:\n    @function\n    async def build(self) -> dagger.Container:\n        return await dagger.container().from_(\"alpine\")",
+          "when": "Python syntax"
+        },
+        {
+          "approach": "TypeScript function",
+          "code": "import { object, func } from \"@dagger.io/dagger\"\n\n@object()\nclass MyModule {\n  @func()\n  async build(): Promise<Container> {\n    return dag.container().from(\"alpine\")\n  }\n}",
+          "when": "TypeScript syntax"
+        },
+        {
+          "approach": "Regenerate types",
+          "code": "dagger develop",
+          "when": "Type generation"
+        }
+      ]
+    },
+    {
+      "id": "cache_error",
+      "pattern": "Cache.*error|cache volume|withMountedCache",
+      "message": "Cache mount error",
+      "cause": "Cache volume configuration issue",
+      "solutions": [
+        {
+          "approach": "Mount cache",
+          "code": "container.with_mounted_cache(\"/root/.cache\", cache_volume)",
+          "when": "Add cache volume"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "dagger call --progress=plain build  # Force fresh",
+          "when": "Cache issues"
+        },
+        {
+          "approach": "Named cache",
+          "code": "cache = dag.cache_volume(\"my-cache\")\ncontainer.with_mounted_cache(\"/cache\", cache)",
+          "when": "Persistent cache"
+        }
+      ]
+    },
+    {
+      "id": "secret_error",
+      "pattern": "Secret.*error|setSecret|secret not provided",
+      "message": "Secret not available",
+      "cause": "Required secret not provided or configured",
+      "solutions": [
+        {
+          "approach": "Pass secret",
+          "code": "dagger call build --token=env:GITHUB_TOKEN",
+          "when": "From environment"
+        },
+        {
+          "approach": "Create secret",
+          "code": "token = dag.set_secret(\"token\", os.environ[\"TOKEN\"])\ncontainer.with_secret_variable(\"TOKEN\", token)",
+          "when": "In code"
+        },
+        {
+          "approach": "File secret",
+          "code": "dagger call build --ssh-key=file:~/.ssh/id_rsa",
+          "when": "From file"
+        }
+      ]
+    },
+    {
+      "id": "network_error",
+      "pattern": "Network.*error|DNS.*failed|connection refused",
+      "message": "Network error in container",
+      "cause": "Container network access issue",
+      "solutions": [
+        {
+          "approach": "Check connectivity",
+          "code": "container.with_exec([\"ping\", \"-c\", \"1\", \"google.com\"])",
+          "when": "Test network"
+        },
+        {
+          "approach": "Expose ports",
+          "code": "service = container.with_exposed_port(8080).as_service()\nawait service.start()",
+          "when": "Service exposure"
+        }
+      ]
+    },
+    {
+      "id": "file_not_found",
+      "pattern": "File not found|directory.*not found|withDirectory",
+      "message": "File or directory not found",
+      "cause": "Source file/directory doesn't exist",
+      "solutions": [
+        {
+          "approach": "Mount directory",
+          "code": "src = dag.host().directory(\"./src\")\ncontainer.with_directory(\"/app/src\", src)",
+          "when": "Mount host dir"
+        },
+        {
+          "approach": "Mount file",
+          "code": "file = dag.host().file(\"./config.json\")\ncontainer.with_file(\"/config.json\", file)",
+          "when": "Mount single file"
+        },
+        {
+          "approach": "Exclude patterns",
+          "code": "src = dag.host().directory(\".\", exclude=[\"node_modules\", \".git\"])",
+          "when": "Exclude files"
+        }
+      ]
+    },
+    {
+      "id": "sdk_error",
+      "pattern": "SDK.*error|codegen.*failed|type.*error",
+      "message": "SDK code generation error",
+      "cause": "Error generating SDK types",
+      "solutions": [
+        {
+          "approach": "Regenerate",
+          "code": "dagger develop",
+          "when": "Regenerate SDK"
+        },
+        {
+          "approach": "Update SDK",
+          "code": "dagger develop --sdk=python",
+          "when": "Specific SDK"
+        },
+        {
+          "approach": "Check syntax",
+          "code": "# Ensure function signatures are valid",
+          "when": "Type errors"
+        }
+      ]
+    }
+  ]
+}

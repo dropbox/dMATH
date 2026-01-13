@@ -1,0 +1,129 @@
+{
+  "id": "torchmetrics",
+  "name": "TorchMetrics",
+  "category": "ml_evaluation",
+  "subcategory": "metrics",
+
+  "description": "PyTorch-native metrics library",
+  "long_description": "TorchMetrics is a collection of 100+ PyTorch metrics for ML evaluation. It provides metrics as PyTorch modules, enabling distributed and batched computation on GPU. Created by Lightning AI, it integrates seamlessly with PyTorch Lightning.",
+
+  "capabilities": [
+    "batched_computation",
+    "distributed_metrics",
+    "gpu_acceleration",
+    "metric_aggregation",
+    "custom_metrics",
+    "classification_metrics",
+    "regression_metrics",
+    "nlp_metrics",
+    "audio_metrics",
+    "image_metrics"
+  ],
+  "property_types": ["accuracy", "f1", "auroc", "bleu", "psnr"],
+  "input_languages": ["python"],
+  "output_formats": ["tensor", "dict"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install torchmetrics"},
+      {"type": "pip_extras", "command": "pip install torchmetrics[audio,image,text]"},
+      {"type": "conda", "command": "conda install -c conda-forge torchmetrics"}
+    ],
+    "dependencies": ["torch"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://torchmetrics.readthedocs.io/",
+    "tutorial": "https://torchmetrics.readthedocs.io/en/stable/pages/quickstart.html",
+    "api_reference": "https://torchmetrics.readthedocs.io/en/stable/all-metrics.html",
+    "examples": "https://github.com/Lightning-AI/torchmetrics/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "functional",
+      "description": "Functional API",
+      "syntax": "torchmetrics.functional.metric(pred, target)",
+      "when_to_use": "For one-off computations",
+      "examples": ["import torchmetrics.functional as F\nacc = F.accuracy(preds, target, task='binary')"]
+    },
+    {
+      "name": "module",
+      "description": "Module API",
+      "syntax": "metric = torchmetrics.Metric()\nmetric(pred, target)",
+      "when_to_use": "For batched/distributed computation",
+      "examples": ["from torchmetrics import Accuracy\nmetric = Accuracy(task='multiclass', num_classes=10)\nfor batch in dataloader:\n    metric.update(preds, targets)\nfinal = metric.compute()"]
+    },
+    {
+      "name": "collection",
+      "description": "Multiple metrics",
+      "syntax": "MetricCollection([m1, m2])",
+      "when_to_use": "For multiple metrics together",
+      "examples": ["from torchmetrics import MetricCollection, Accuracy, F1Score\nmetrics = MetricCollection([\n    Accuracy(task='multiclass', num_classes=10),\n    F1Score(task='multiclass', num_classes=10)\n])\nresult = metrics(preds, targets)"]
+    },
+    {
+      "name": "distributed",
+      "description": "Distributed metrics",
+      "syntax": "metric.to(device)",
+      "when_to_use": "For multi-GPU training",
+      "examples": ["metric = Accuracy(task='binary').to(device)\n# Automatically syncs across processes\nfor batch in dataloader:\n    metric.update(preds, targets)\n# Aggregates from all processes\nresult = metric.compute()"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "task.*must be specified",
+      "meaning": "Missing task parameter",
+      "common_causes": ["Old API usage"],
+      "fixes": ["Add task='binary/multiclass/multilabel'"]
+    },
+    {
+      "pattern": "num_classes.*required",
+      "meaning": "Missing num_classes",
+      "common_causes": ["Multiclass without num_classes"],
+      "fixes": ["Add num_classes parameter"]
+    },
+    {
+      "pattern": "Shape mismatch",
+      "meaning": "Tensor dimension error",
+      "common_causes": ["Wrong prediction shape"],
+      "fixes": ["Check prediction/target shapes"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["accuracy", "f1", "auroc"],
+    "cli_command": "dashprove verify --backend torchmetrics"
+  },
+
+  "performance": {
+    "typical_runtime": "Microseconds to milliseconds",
+    "scalability": "Excellent (GPU, distributed)",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["sklearn.metrics", "evaluate", "ignite.metrics"],
+    "advantages": [
+      "PyTorch native",
+      "GPU acceleration",
+      "Distributed support",
+      "100+ metrics",
+      "Lightning integration"
+    ],
+    "disadvantages": [
+      "PyTorch only",
+      "Some metrics GPU-only",
+      "API changed in v0.11"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.3.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Lightning AI",
+    "license": "Apache-2.0"
+  }
+}

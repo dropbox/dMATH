@@ -1,0 +1,119 @@
+{
+  "tool": "openssl",
+  "category": "crypto",
+  "common_errors": [
+    {
+      "pattern": "error:0A000086:SSL.*legacy sigalg|unsupported signature algorithm",
+      "meaning": "Algorithm not allowed by security policy",
+      "causes": [
+        "OpenSSL 3.0 security level blocks weak algorithms",
+        "SHA-1 signatures disabled by default",
+        "Legacy cipher not in allowed list"
+      ],
+      "solutions": [
+        "Update to modern algorithms (SHA-256+)",
+        "For legacy: set security level: SSL_CTX_set_security_level(ctx, 0)",
+        "Or use legacy provider: openssl.cnf with legacy = legacy_sect"
+      ]
+    },
+    {
+      "pattern": "certificate verify failed|unable to get local issuer",
+      "meaning": "TLS certificate chain validation failed",
+      "causes": [
+        "Missing intermediate certificates",
+        "CA bundle not found/outdated",
+        "Self-signed cert not trusted"
+      ],
+      "solutions": [
+        "Include intermediate certs in chain",
+        "Set CA path: SSL_CTX_load_verify_locations()",
+        "Update CA bundle: update-ca-certificates",
+        "For self-signed: add to trusted store or skip verify (dev only)"
+      ]
+    },
+    {
+      "pattern": "wrong final block length|bad decrypt|EVP_DecryptFinal",
+      "meaning": "Block cipher padding error",
+      "causes": [
+        "Wrong key or corrupted ciphertext",
+        "Padding mismatch between encrypt/decrypt",
+        "Truncated ciphertext"
+      ],
+      "solutions": [
+        "Verify correct key used",
+        "Check ciphertext wasn't modified",
+        "Ensure same padding mode (PKCS7 default)"
+      ]
+    },
+    {
+      "pattern": "no shared cipher|SSL_do_handshake|handshake failure",
+      "meaning": "TLS handshake failed",
+      "causes": [
+        "No common cipher suite",
+        "Protocol version mismatch",
+        "Certificate/key mismatch"
+      ],
+      "solutions": [
+        "Check cipher suite configuration",
+        "Verify TLS version compatibility",
+        "Ensure cert matches private key: openssl x509 -check_key"
+      ]
+    },
+    {
+      "pattern": "PEM routines:get_name:no start line",
+      "meaning": "PEM parsing failed",
+      "causes": [
+        "File is DER not PEM format",
+        "Corrupted PEM file",
+        "Wrong file type"
+      ],
+      "solutions": [
+        "Check for -----BEGIN ... ----- header",
+        "Convert DER to PEM: openssl x509 -inform der -outform pem",
+        "Verify file type: openssl x509 -text"
+      ]
+    },
+    {
+      "pattern": "dh key too small|dh parameter",
+      "meaning": "Weak DH parameters rejected",
+      "causes": [
+        "DH key < 2048 bits",
+        "Security level rejects weak DH",
+        "Old server configuration"
+      ],
+      "solutions": [
+        "Use 2048-bit+ DH parameters",
+        "Generate new: openssl dhparam -out dh2048.pem 2048",
+        "Prefer ECDHE over DHE"
+      ]
+    },
+    {
+      "pattern": "FIPS mode|not FIPS approved|FIPS_mode",
+      "meaning": "FIPS mode algorithm restriction",
+      "causes": [
+        "Algorithm not FIPS 140-2 approved",
+        "FIPS mode enabled system-wide",
+        "MD5, DES, etc. blocked"
+      ],
+      "solutions": [
+        "Use FIPS-approved algorithms only",
+        "Check: openssl list -providers for FIPS status",
+        "Disable FIPS if not required: OPENSSL_FORCE_FIPS_MODE=0"
+      ]
+    },
+    {
+      "pattern": "private key mismatch|key values mismatch",
+      "meaning": "Certificate and key don't match",
+      "causes": [
+        "Wrong private key for certificate",
+        "Key regenerated after CSR",
+        "Mixed up files"
+      ],
+      "solutions": [
+        "Verify match: openssl x509 -noout -modulus -in cert.pem | md5sum",
+        "Compare with: openssl rsa -noout -modulus -in key.pem | md5sum",
+        "Regenerate CSR and cert from same key"
+      ]
+    }
+  ]
+}

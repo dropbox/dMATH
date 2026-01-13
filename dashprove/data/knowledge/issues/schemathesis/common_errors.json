@@ -1,0 +1,260 @@
+{
+  "tool": "schemathesis",
+  "version": "3.25.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "schema_not_found",
+      "pattern": "Failed to load schema|Schema.*not found|404.*openapi|Unable to fetch",
+      "message": "OpenAPI/Swagger schema not found",
+      "cause": "Schema URL incorrect or not accessible",
+      "solutions": [
+        {
+          "approach": "Verify schema URL",
+          "code": "curl http://localhost:8000/openapi.json  # Test schema endpoint",
+          "when": "Check accessibility"
+        },
+        {
+          "approach": "Use local file",
+          "code": "schemathesis run ./openapi.yaml --base-url http://localhost:8000",
+          "when": "Have local schema"
+        },
+        {
+          "approach": "Check common paths",
+          "code": "# Try:\n# /openapi.json, /swagger.json\n# /api/openapi.json, /docs/openapi.json\n# /v1/openapi.json",
+          "when": "Unknown schema location"
+        }
+      ]
+    },
+    {
+      "id": "invalid_schema",
+      "pattern": "Invalid schema|Schema validation error|not a valid OpenAPI",
+      "message": "OpenAPI schema is invalid",
+      "cause": "Schema doesn't conform to OpenAPI specification",
+      "solutions": [
+        {
+          "approach": "Validate schema first",
+          "code": "npx @apidevtools/swagger-cli validate openapi.yaml",
+          "when": "Check schema validity"
+        },
+        {
+          "approach": "Fix common issues",
+          "code": "# Common problems:\n# - Missing required fields (info, paths)\n# - Invalid $ref pointers\n# - Incorrect type definitions",
+          "when": "Schema has errors"
+        },
+        {
+          "approach": "Use permissive mode",
+          "code": "schemathesis run --validate-schema=false http://localhost:8000/openapi.json",
+          "when": "Schema has minor issues"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "Connection refused|ECONNREFUSED|Failed to establish|Network error",
+      "message": "Cannot connect to API server",
+      "cause": "Server not running or unreachable",
+      "solutions": [
+        {
+          "approach": "Start server first",
+          "code": "# In terminal 1:\npython -m uvicorn app:app --host 0.0.0.0 --port 8000\n\n# In terminal 2:\nschemathesis run http://localhost:8000/openapi.json",
+          "when": "Server not running"
+        },
+        {
+          "approach": "Check base URL",
+          "code": "schemathesis run schema.yaml --base-url http://localhost:8000",
+          "when": "Wrong base URL"
+        },
+        {
+          "approach": "Use Docker networking",
+          "code": "schemathesis run http://host.docker.internal:8000/openapi.json",
+          "when": "Running in Docker"
+        }
+      ]
+    },
+    {
+      "id": "authentication_required",
+      "pattern": "401.*Unauthorized|403.*Forbidden|authentication required",
+      "message": "API requires authentication",
+      "cause": "Endpoints need auth credentials",
+      "solutions": [
+        {
+          "approach": "Add header authentication",
+          "code": "schemathesis run http://api/openapi.json \\\n    -H 'Authorization: Bearer YOUR_TOKEN'",
+          "when": "Bearer token"
+        },
+        {
+          "approach": "Use basic auth",
+          "code": "schemathesis run http://api/openapi.json \\\n    --auth user:password",
+          "when": "Basic auth"
+        },
+        {
+          "approach": "Use auth hook",
+          "code": "import schemathesis\n\n@schemathesis.hook\ndef before_generate_case(context, case):\n    case.headers = case.headers or {}\n    case.headers['Authorization'] = f'Bearer {get_token()}'",
+          "when": "Dynamic auth"
+        }
+      ]
+    },
+    {
+      "id": "server_error_found",
+      "pattern": "500 Internal Server Error|5\\d{2}.*failure|Server error detected",
+      "message": "Server returned 5xx error",
+      "cause": "Test input caused server crash/error",
+      "solutions": [
+        {
+          "approach": "View failure details",
+          "code": "schemathesis run http://api/openapi.json --show-errors-tracebacks",
+          "when": "Need details"
+        },
+        {
+          "approach": "Reproduce with curl",
+          "code": "# Schemathesis provides curl command for failures\n# Copy and run to reproduce",
+          "when": "Debug manually"
+        },
+        {
+          "approach": "Fix server validation",
+          "code": "# Server should validate inputs and return 4xx\n# Not crash with 5xx on bad input",
+          "when": "Server bug found"
+        }
+      ]
+    },
+    {
+      "id": "timeout_errors",
+      "pattern": "Timeout|ReadTimeoutError|request timed out",
+      "message": "Request timed out",
+      "cause": "Endpoint too slow or hanging",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "schemathesis run http://api/openapi.json --request-timeout 30000",
+          "when": "Slow endpoint"
+        },
+        {
+          "approach": "Limit workers",
+          "code": "schemathesis run http://api/openapi.json --workers 1",
+          "when": "Server overloaded"
+        },
+        {
+          "approach": "Skip slow endpoints",
+          "code": "schemathesis run http://api/openapi.json \\\n    --exclude-operation-id slow_endpoint",
+          "when": "Known slow operation"
+        }
+      ]
+    },
+    {
+      "id": "hypothesis_health_check",
+      "pattern": "HealthCheck|too slow to generate|filter rejected",
+      "message": "Hypothesis health check failed",
+      "cause": "Can't generate valid test data efficiently",
+      "solutions": [
+        {
+          "approach": "Suppress health check",
+          "code": "schemathesis run http://api/openapi.json \\\n    --hypothesis-suppress-health-check=all",
+          "when": "Known issue"
+        },
+        {
+          "approach": "Reduce examples",
+          "code": "schemathesis run http://api/openapi.json \\\n    --hypothesis-max-examples=10",
+          "when": "Generate fewer cases"
+        },
+        {
+          "approach": "Fix schema constraints",
+          "code": "# Schema may have conflicting constraints\n# Check regex patterns, enum values, min/max",
+          "when": "Schema issue"
+        }
+      ]
+    },
+    {
+      "id": "data_generation_failed",
+      "pattern": "Unable to generate|No suitable data|Unsupported|generation failed",
+      "message": "Cannot generate test data for schema",
+      "cause": "Schema has unsupported or complex constraints",
+      "solutions": [
+        {
+          "approach": "Use explicit examples",
+          "code": "# In OpenAPI schema:\nparameters:\n  - name: id\n    example: 12345",
+          "when": "Provide examples"
+        },
+        {
+          "approach": "Simplify regex patterns",
+          "code": "# Complex regex can't be generated:\npattern: '^[a-z]+$'  # Simple, works\npattern: '(?=.*[A-Z])(?=.*\\d).+'  # Complex, may fail",
+          "when": "Complex regex"
+        },
+        {
+          "approach": "Register custom strategy",
+          "code": "import schemathesis\nfrom hypothesis import strategies as st\n\n@schemathesis.hook\ndef before_generate_case(context, case):\n    case.body = {'custom': 'data'}",
+          "when": "Need custom generation"
+        }
+      ]
+    },
+    {
+      "id": "response_validation_failed",
+      "pattern": "Response does not conform|response validation.*failed|Undocumented response",
+      "message": "Response doesn't match schema",
+      "cause": "API returns data not matching documented schema",
+      "solutions": [
+        {
+          "approach": "Fix API response",
+          "code": "# API should return data matching its schema\n# Check response structure, types, required fields",
+          "when": "API bug"
+        },
+        {
+          "approach": "Update schema",
+          "code": "# Add missing response codes:\nresponses:\n  200:\n    description: Success\n  404:\n    description: Not found  # Add if returned",
+          "when": "Schema incomplete"
+        },
+        {
+          "approach": "Skip response validation",
+          "code": "schemathesis run http://api/openapi.json \\\n    --validate-schema=false",
+          "when": "Temporary workaround"
+        }
+      ]
+    },
+    {
+      "id": "stateful_test_failure",
+      "pattern": "Stateful test.*failed|link.*not found|dependency.*failed",
+      "message": "Stateful testing failure",
+      "cause": "API state dependencies not met",
+      "solutions": [
+        {
+          "approach": "Use stateful testing mode",
+          "code": "schemathesis run http://api/openapi.json --stateful=links",
+          "when": "Test API workflows"
+        },
+        {
+          "approach": "Define OpenAPI links",
+          "code": "# In schema:\nlinks:\n  GetUserById:\n    operationId: getUser\n    parameters:\n      userId: $response.body#/id",
+          "when": "Define dependencies"
+        },
+        {
+          "approach": "Use hooks for setup",
+          "code": "@schemathesis.hook\ndef before_call(context, case):\n    if case.operation.path == '/items/{id}':\n        # Ensure item exists first\n        create_test_item()",
+          "when": "Need test data"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_hit",
+      "pattern": "429|Too Many Requests|rate limit|throttled",
+      "message": "API rate limit exceeded",
+      "cause": "Too many requests in short time",
+      "solutions": [
+        {
+          "approach": "Add delay between requests",
+          "code": "schemathesis run http://api/openapi.json \\\n    --request-tls-verify=false \\\n    --rate-limit '10/s'",
+          "when": "Known rate limit"
+        },
+        {
+          "approach": "Reduce concurrency",
+          "code": "schemathesis run http://api/openapi.json --workers 1",
+          "when": "Single worker"
+        },
+        {
+          "approach": "Fewer examples",
+          "code": "schemathesis run http://api/openapi.json \\\n    --hypothesis-max-examples=50",
+          "when": "Reduce test count"
+        }
+      ]
+    }
+  ]
+}

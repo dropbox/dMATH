@@ -1,0 +1,65 @@
+{
+  "tool_id": "postgresql_tla",
+  "tool_name": "PostgreSQL Replication TLA+ Specification",
+  "description": "TLA+ specification of PostgreSQL's streaming replication, logical replication, and MVCC transaction isolation protocols",
+  "common_errors": [
+    {
+      "id": "wal_segment_missing",
+      "pattern": "requested WAL segment.*has already been removed|could not receive data from WAL stream",
+      "category": "replication",
+      "severity": "critical",
+      "cause": "Standby fell too far behind and the WAL segments needed for catchup were recycled on the primary",
+      "solution": "Increase wal_keep_size or use replication slots to prevent WAL removal. Consider WAL archiving for disaster recovery. Rebuild standby from backup if too far behind.",
+      "example": "CREATE REPLICATION SLOT slot_name FOR REPLICA;  -- prevents WAL removal",
+      "related_concepts": ["wal_archiving", "replication_slots", "streaming_replication"]
+    },
+    {
+      "id": "synchronous_replication_timeout",
+      "pattern": "canceling statement due to statement timeout.*synchronous_standby_names|synchronous replication hung",
+      "category": "synchronous_replication",
+      "severity": "high",
+      "cause": "Synchronous standby is unreachable or too slow, causing commits to block waiting for replication confirmation",
+      "solution": "Configure synchronous_standby_names with multiple standbys (ANY 1 (s1, s2)). Set appropriate timeouts. Consider async replication if availability is prioritized over durability.",
+      "related_concepts": ["synchronous_commit", "standby_quorum", "replication_lag"]
+    },
+    {
+      "id": "logical_replication_conflict",
+      "pattern": "logical replication apply worker.*ERROR.*duplicate key|replication origin.*conflict",
+      "category": "logical_replication",
+      "severity": "medium",
+      "cause": "Subscriber has conflicting data (e.g., row with same primary key) that prevents applying changes from publisher",
+      "solution": "Use CREATE SUBSCRIPTION ... WITH (copy_data = false) if data exists. Skip conflicting transactions with ALTER SUBSCRIPTION ... SKIP. Resolve conflicts manually.",
+      "related_concepts": ["publication", "subscription", "conflict_resolution"]
+    },
+    {
+      "id": "mvcc_snapshot_wraparound",
+      "pattern": "database is not accepting commands to avoid wraparound|must be vacuumed within.*transactions",
+      "category": "mvcc",
+      "severity": "critical",
+      "cause": "Transaction ID wraparound imminent due to insufficient vacuuming, which would cause data loss or corruption",
+      "solution": "Run VACUUM FREEZE on affected tables immediately. Fix autovacuum if blocked. Monitor age(datfrozenxid) in pg_database. Set aggressive autovacuum_freeze_max_age.",
+      "related_concepts": ["transaction_wraparound", "vacuum_freeze", "xid_exhaustion"]
+    },
+    {
+      "id": "serialization_failure",
+      "pattern": "could not serialize access due to concurrent update|ERROR:  40001",
+      "category": "isolation",
+      "severity": "medium",
+      "cause": "Serializable isolation detected a potential anomaly and aborted the transaction to maintain correctness",
+      "solution": "Retry the transaction with exponential backoff. This is expected behavior for SERIALIZABLE isolation. Consider READ COMMITTED if serializability not required.",
+      "related_concepts": ["ssi", "serializable_snapshot_isolation", "transaction_retry"]
+    }
+  ],
+  "best_practices": [
+    "Model WAL as an append-only log with segment boundaries",
+    "Include replication slot mechanics to show WAL retention",
+    "Specify MVCC visibility rules (xmin, xmax, snapshot)",
+    "Model synchronous vs asynchronous commit semantics",
+    "Test with cascading replication topologies"
+  ],
+  "references": [
+    "https://www.postgresql.org/docs/current/high-availability.html",
+    "https://www.postgresql.org/docs/current/logical-replication.html",
+    "https://wiki.postgresql.org/wiki/SSI"
+  ]
+}

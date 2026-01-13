@@ -1,0 +1,125 @@
+{
+  "tool": "od",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "wrong_format",
+      "pattern": "format|type specifier|output garbled",
+      "message": "Output format not as expected",
+      "cause": "Need to specify correct type specifier",
+      "solutions": [
+        {
+          "approach": "Common formats",
+          "code": "od -A x -t x1 file    # Hex bytes\nod -A x -t x2 file    # Hex 2-byte words\nod -c file            # Characters (with escapes)\nod -t d1 file         # Decimal bytes\nod -t o1 file         # Octal bytes (default)",
+          "when": "Choose format"
+        },
+        {
+          "approach": "Address format",
+          "code": "od -A x  # Hex addresses\nod -A d  # Decimal addresses\nod -A o  # Octal addresses (default)\nod -A n  # No addresses",
+          "when": "Change offset display"
+        }
+      ]
+    },
+    {
+      "id": "endianness",
+      "pattern": "byte order|endian|reversed|swapped",
+      "message": "Bytes appear in wrong order",
+      "cause": "Multi-byte display affected by system endianness",
+      "solutions": [
+        {
+          "approach": "Use single bytes",
+          "code": "od -t x1 file  # Always shows bytes in file order",
+          "when": "Avoid endian issues"
+        },
+        {
+          "approach": "Compare with xxd",
+          "code": "xxd file | head  # xxd shows bytes in order",
+          "when": "Alternative viewer"
+        },
+        {
+          "approach": "Specify width",
+          "code": "od -t x1z file  # x1 = single bytes, z = ASCII",
+          "when": "Byte-by-byte with ASCII"
+        }
+      ]
+    },
+    {
+      "id": "skip_limit",
+      "pattern": "skip|offset|partial|range",
+      "message": "Want to view portion of file",
+      "cause": "Default shows entire file",
+      "solutions": [
+        {
+          "approach": "Skip bytes",
+          "code": "od -j 100 file      # Skip first 100 bytes\nod -j 0x100 file    # Skip first 256 bytes (hex)",
+          "when": "Start from offset"
+        },
+        {
+          "approach": "Limit output",
+          "code": "od -N 64 file       # Only first 64 bytes\nod -j 100 -N 32 file  # 32 bytes starting at offset 100",
+          "when": "Limit bytes shown"
+        }
+      ]
+    },
+    {
+      "id": "ascii_display",
+      "pattern": "ascii|printable|readable|character",
+      "message": "Want to see ASCII alongside hex",
+      "cause": "ASCII not shown by default in hex mode",
+      "solutions": [
+        {
+          "approach": "Character display",
+          "code": "od -c file  # Shows chars, escapes unprintable",
+          "when": "Character view"
+        },
+        {
+          "approach": "Hex with ASCII",
+          "code": "od -A x -t x1z -v file  # Hex bytes + ASCII\nod -t x1z file",
+          "when": "Combined view"
+        },
+        {
+          "approach": "Use xxd instead",
+          "code": "xxd file | head  # Better hex+ASCII format",
+          "when": "hexdump style"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_suppression",
+      "pattern": "\\*|repeated|suppressed|asterisk",
+      "message": "Output shows * for repeated lines",
+      "cause": "od suppresses identical consecutive lines",
+      "solutions": [
+        {
+          "approach": "Show all",
+          "code": "od -v file  # -v shows all data, no suppression",
+          "when": "Need every byte"
+        },
+        {
+          "approach": "Understanding",
+          "code": "# * means previous line repeats until next shown offset\n# Normal for large runs of zeros or identical bytes",
+          "when": "Interpreting output"
+        }
+      ]
+    },
+    {
+      "id": "string_extraction",
+      "pattern": "string|text|printable.*only",
+      "message": "Want to extract strings from binary",
+      "cause": "od shows everything including binary",
+      "solutions": [
+        {
+          "approach": "Use strings command",
+          "code": "strings binary_file  # Extract printable strings",
+          "when": "Just text content"
+        },
+        {
+          "approach": "Filter od output",
+          "code": "od -c file | grep -v '\\\\0'",
+          "when": "Skip null bytes"
+        }
+      ]
+    }
+  ]
+}

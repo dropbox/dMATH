@@ -1,0 +1,99 @@
+{
+  "tool": "sqs",
+  "category": "aws_messaging",
+  "description": "Amazon Simple Queue Service - message queuing service",
+  "common_errors": [
+    {
+      "id": "access_denied",
+      "pattern": "AccessDenied",
+      "regex": "(?i)access.*denied|not.*authorized|sender.*is not.*authorized|missing.*permission",
+      "cause": "IAM policy missing SQS permissions",
+      "solution": "Add sqs:SendMessage, sqs:ReceiveMessage, sqs:DeleteMessage to IAM policy, check queue access policy",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "queue_not_found",
+      "pattern": "NonExistentQueue",
+      "regex": "(?i)nonexistent.*queue|queue.*not.*exist|queue.*not.*found|invalid.*queue",
+      "cause": "SQS queue does not exist",
+      "solution": "Verify queue URL/name, check region, create queue if needed",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "message_too_large",
+      "pattern": "InvalidMessageContents",
+      "regex": "(?i)message.*too.*large|payload.*exceeded|256.*kb|size.*limit",
+      "cause": "Message size exceeds 256 KB limit",
+      "solution": "Use Extended Client Library for large messages (stores in S3), compress message payload",
+      "severity": "medium",
+      "category": "messages"
+    },
+    {
+      "id": "over_limit",
+      "pattern": "OverLimit",
+      "regex": "(?i)over.*limit|inflight.*messages|too.*many.*entries|batch.*limit",
+      "cause": "Queue limits exceeded (inflight messages, batch size)",
+      "solution": "Process and delete messages faster, increase visibility timeout, check for poison messages",
+      "severity": "high",
+      "category": "limits"
+    },
+    {
+      "id": "invalid_batch",
+      "pattern": "BatchEntryIds",
+      "regex": "(?i)batch.*entry.*id|duplicate.*id|invalid.*batch|malformed.*entry",
+      "cause": "Batch operation entry validation failed",
+      "solution": "Ensure unique IDs within batch (max 10 entries), check message format",
+      "severity": "medium",
+      "category": "api"
+    },
+    {
+      "id": "purge_in_progress",
+      "pattern": "PurgeQueueInProgress",
+      "regex": "(?i)purge.*in.*progress|purge.*queue|cannot.*purge|wait.*60.*seconds",
+      "cause": "Cannot purge queue while previous purge is in progress",
+      "solution": "Wait 60 seconds between purge operations, implement backoff logic",
+      "severity": "low",
+      "category": "operations"
+    },
+    {
+      "id": "fifo_error",
+      "pattern": "FIFO",
+      "regex": "(?i)fifo|message.*group|deduplication|sequence.*number|exactly.*once",
+      "cause": "FIFO queue specific error (deduplication, message group)",
+      "solution": "Ensure MessageGroupId is provided, use ContentBasedDeduplication or provide MessageDeduplicationId",
+      "severity": "medium",
+      "category": "fifo"
+    },
+    {
+      "id": "dlq_error",
+      "pattern": "deadletter",
+      "regex": "(?i)dead.*letter|dlq|redrive.*policy|max.*receive.*count",
+      "cause": "Dead-letter queue configuration or processing issue",
+      "solution": "Configure redrive policy, monitor DLQ depth, investigate why messages are failing",
+      "severity": "medium",
+      "category": "dlq"
+    },
+    {
+      "id": "visibility_timeout",
+      "pattern": "VisibilityTimeout",
+      "regex": "(?i)visibility.*timeout|message.*became.*visible|receipt.*handle|expired",
+      "cause": "Message visibility timeout expired before processing completed",
+      "solution": "Increase visibility timeout, use ChangeMessageVisibility during long processing, optimize processing time",
+      "severity": "medium",
+      "category": "processing"
+    },
+    {
+      "id": "kms_error",
+      "pattern": "KMS",
+      "regex": "(?i)kms.*error|encryption.*key|decrypt.*error|sse.*sqs",
+      "cause": "KMS key access issue for encrypted queue",
+      "solution": "Grant SQS service principal kms:GenerateDataKey and kms:Decrypt, verify key policy",
+      "severity": "high",
+      "category": "security"
+    }
+  ],
+  "related_tools": ["aws_cli", "sns", "lambda", "cloudwatch"],
+  "documentation_url": "https://docs.aws.amazon.com/sqs/"
+}

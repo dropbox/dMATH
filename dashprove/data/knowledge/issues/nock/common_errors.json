@@ -1,0 +1,76 @@
+{
+  "tool": "nock",
+  "category": "http_testing",
+  "common_errors": [
+    {
+      "pattern": "NetConnectNotAllowedError|Nock: Not allow net connect",
+      "meaning": "Real network connection attempted when disallowed",
+      "causes": [
+        "No interceptor defined for request",
+        "Network connections disabled via nock.disableNetConnect()",
+        "Host not whitelisted"
+      ],
+      "solutions": [
+        "Add interceptor matching host/path/method",
+        "Whitelist required hosts: nock.enableNetConnect('127.0.0.1')",
+        "Remove disableNetConnect in tests that need passthrough"
+      ]
+    },
+    {
+      "pattern": "No match for request|Nock: No match for request",
+      "meaning": "Request did not match any interceptor",
+      "causes": [
+        "URL/query mismatch",
+        "Request body differs from expected",
+        "Different HTTP method or headers"
+      ],
+      "solutions": [
+        "Use .query(true) or .query(expected) appropriately",
+        "Match request body using .post(url, bodyMatcher)",
+        "Include exact method and headers in interceptor"
+      ]
+    },
+    {
+      "pattern": "Mocks not satisfied|Mocks not done|pending mocks",
+      "meaning": "Expected interceptors were not used",
+      "causes": [
+        "Code path not invoked",
+        "Interceptor persisted but request never sent",
+        "Incorrect order or .once() semantics"
+      ],
+      "solutions": [
+        "Call nock.isDone() in tests to assert usage",
+        "Use .persist() only when necessary",
+        "Review code path or trigger request in test"
+      ]
+    },
+    {
+      "pattern": "Nock is not active|No active nock interceptors",
+      "meaning": "HTTP interception disabled",
+      "causes": [
+        "nock.restore() called before test",
+        "Using axios/fetch in environment not patched (e.g., node-fetch v3 ESM)",
+        "Request bypasses http/https modules"
+      ],
+      "solutions": [
+        "Call nock.activate() or avoid restore during tests",
+        "Ensure HTTP client uses Node http/https (enable experimental node-fetch adapter)",
+        "Use nockBack for recorded fixtures when needed"
+      ]
+    },
+    {
+      "pattern": "interceptor.*never called|reply not triggered",
+      "meaning": "Interceptor skipped due to mismatch or cleanup",
+      "causes": [
+        "Scope cleaned with nock.cleanAll() before request",
+        "Multiple scopes for same host with different paths",
+        "Using trailing slash differences"
+      ],
+      "solutions": [
+        "Define interceptors after cleanAll in each test",
+        "Ensure paths include or exclude trailing slash consistently",
+        "Use nock.recorder to inspect actual requests if unsure"
+      ]
+    }
+  ]
+}

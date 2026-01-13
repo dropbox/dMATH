@@ -1,0 +1,191 @@
+{
+  "tool": "upstash",
+  "version": "1.27.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "WRONGPASS|authentication.*failed|UPSTASH_REDIS_REST_TOKEN|unauthorized",
+      "message": "Authentication error",
+      "cause": "Invalid token or credentials",
+      "solutions": [
+        {
+          "approach": "Check credentials",
+          "code": "// Use REST API credentials:\nconst redis = new Redis({\n  url: process.env.UPSTASH_REDIS_REST_URL,\n  token: process.env.UPSTASH_REDIS_REST_TOKEN,\n});",
+          "when": "REST API"
+        },
+        {
+          "approach": "Check URL",
+          "code": "# URL format:\n# https://xxx.upstash.io\n# Token from Upstash console",
+          "when": "Wrong URL"
+        },
+        {
+          "approach": "Redis CLI",
+          "code": "# Use Redis CLI with password:\nredis-cli -u redis://default:password@xxx.upstash.io:6379",
+          "when": "Direct connection"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection.*refused|ETIMEDOUT|ECONNREFUSED|TLS.*error",
+      "message": "Connection error",
+      "cause": "Network or TLS configuration issue",
+      "solutions": [
+        {
+          "approach": "Use REST API",
+          "code": "// @upstash/redis uses REST, works in serverless:\nimport { Redis } from '@upstash/redis';\n\nconst redis = new Redis({\n  url: process.env.UPSTASH_REDIS_REST_URL,\n  token: process.env.UPSTASH_REDIS_REST_TOKEN,\n});",
+          "when": "Serverless environment"
+        },
+        {
+          "approach": "TLS connection",
+          "code": "// ioredis with TLS:\nconst redis = new Redis({\n  host: 'xxx.upstash.io',\n  port: 6379,\n  password: 'your-password',\n  tls: {}\n});",
+          "when": "Direct with TLS"
+        },
+        {
+          "approach": "Check firewall",
+          "code": "# Verify outbound connection:\nnc -zv xxx.upstash.io 6379",
+          "when": "Network blocked"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_error",
+      "pattern": "rate limit|too many requests|ERR max.*exceeded|commands per second",
+      "message": "Rate limit exceeded",
+      "cause": "Request rate too high",
+      "solutions": [
+        {
+          "approach": "Check limits",
+          "code": "# Free tier: 10,000 commands/day\n# Pay-as-you-go: higher limits\n# Check usage in Upstash console",
+          "when": "View limits"
+        },
+        {
+          "approach": "Pipeline requests",
+          "code": "// Batch commands:\nconst pipeline = redis.pipeline();\npipeline.set('key1', 'value1');\npipeline.set('key2', 'value2');\nconst results = await pipeline.exec();",
+          "when": "Reduce requests"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Upgrade to higher tier for more commands",
+          "when": "Need more capacity"
+        }
+      ]
+    },
+    {
+      "id": "size_limit_error",
+      "pattern": "value.*too large|max.*size|ERR.*length|memory.*exceeded",
+      "message": "Data size limit error",
+      "cause": "Value or database size exceeded",
+      "solutions": [
+        {
+          "approach": "Check size",
+          "code": "// Max value size: 1MB for REST API\n// Check actual size:\nconst size = Buffer.byteLength(JSON.stringify(data));",
+          "when": "Value too large"
+        },
+        {
+          "approach": "Compress data",
+          "code": "import { compress, decompress } from 'lz4js';\n\nconst compressed = compress(Buffer.from(data));\nawait redis.set('key', compressed);",
+          "when": "Reduce size"
+        },
+        {
+          "approach": "Split data",
+          "code": "// Store large objects in chunks\n// Or use Upstash Vector for embeddings",
+          "when": "Large objects"
+        }
+      ]
+    },
+    {
+      "id": "kafka_error",
+      "pattern": "Kafka.*error|topic.*not found|consumer.*failed|producer.*error",
+      "message": "Upstash Kafka error",
+      "cause": "Kafka configuration or operation error",
+      "solutions": [
+        {
+          "approach": "Check topic",
+          "code": "// Verify topic exists in Upstash console\n// Topic names are case-sensitive",
+          "when": "Topic not found"
+        },
+        {
+          "approach": "Producer setup",
+          "code": "import { Kafka } from '@upstash/kafka';\n\nconst kafka = new Kafka({\n  url: process.env.UPSTASH_KAFKA_REST_URL,\n  username: process.env.UPSTASH_KAFKA_REST_USERNAME,\n  password: process.env.UPSTASH_KAFKA_REST_PASSWORD,\n});\n\nconst producer = kafka.producer();\nawait producer.produce('topic', { value: 'message' });",
+          "when": "Producer example"
+        },
+        {
+          "approach": "Consumer setup",
+          "code": "const consumer = kafka.consumer();\nconst messages = await consumer.consume({\n  consumerGroupId: 'my-group',\n  instanceId: 'instance-1',\n  topics: ['topic'],\n});",
+          "when": "Consumer example"
+        }
+      ]
+    },
+    {
+      "id": "qstash_error",
+      "pattern": "QStash.*error|message.*failed|destination.*invalid|schedule.*error",
+      "message": "QStash error",
+      "cause": "Message queue or scheduling error",
+      "solutions": [
+        {
+          "approach": "Check destination",
+          "code": "// Destination must be publicly accessible URL\nimport { Client } from '@upstash/qstash';\n\nconst qstash = new Client({ token: process.env.QSTASH_TOKEN });\nawait qstash.publishJSON({\n  url: 'https://your-app.com/api/webhook',\n  body: { data: 'value' },\n});",
+          "when": "Destination error"
+        },
+        {
+          "approach": "Schedule message",
+          "code": "await qstash.publishJSON({\n  url: 'https://your-app.com/api/task',\n  body: { data: 'value' },\n  delay: 60,  // seconds\n  // or cron: '0 * * * *'  // every hour\n});",
+          "when": "Schedule message"
+        },
+        {
+          "approach": "Verify signature",
+          "code": "import { Receiver } from '@upstash/qstash';\n\nconst receiver = new Receiver({\n  currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,\n  nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,\n});\n\nconst isValid = await receiver.verify({ signature, body });",
+          "when": "Verify webhook"
+        }
+      ]
+    },
+    {
+      "id": "vector_error",
+      "pattern": "Vector.*error|dimension.*mismatch|index.*not found|embedding.*error",
+      "message": "Upstash Vector error",
+      "cause": "Vector dimension or index error",
+      "solutions": [
+        {
+          "approach": "Check dimensions",
+          "code": "// Embedding dimensions must match index:\n// OpenAI ada-002: 1536\n// Cohere: 1024\n// Create index with correct dimensions",
+          "when": "Dimension mismatch"
+        },
+        {
+          "approach": "Upsert vectors",
+          "code": "import { Index } from '@upstash/vector';\n\nconst index = new Index({\n  url: process.env.UPSTASH_VECTOR_REST_URL,\n  token: process.env.UPSTASH_VECTOR_REST_TOKEN,\n});\n\nawait index.upsert({\n  id: 'doc-1',\n  vector: embedding,\n  metadata: { text: 'content' },\n});",
+          "when": "Upsert example"
+        },
+        {
+          "approach": "Query vectors",
+          "code": "const results = await index.query({\n  vector: queryEmbedding,\n  topK: 10,\n  includeMetadata: true,\n});",
+          "when": "Query example"
+        }
+      ]
+    },
+    {
+      "id": "eviction_error",
+      "pattern": "ERR.*evicted|key.*expired|MOVED|memory.*full",
+      "message": "Key eviction or expiry error",
+      "cause": "Key expired or evicted due to memory",
+      "solutions": [
+        {
+          "approach": "Set TTL",
+          "code": "// Set explicit TTL:\nawait redis.set('key', 'value', { ex: 3600 });  // 1 hour\n// Or:\nawait redis.setex('key', 3600, 'value');",
+          "when": "Control expiry"
+        },
+        {
+          "approach": "Check eviction",
+          "code": "# Upstash uses LRU eviction\n# Keys may be evicted when memory is full\n# Upgrade for more memory",
+          "when": "Memory full"
+        },
+        {
+          "approach": "Persist important keys",
+          "code": "// For critical data, use PERSIST:\nawait redis.persist('important-key');",
+          "when": "Prevent expiry"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "tool": "wasmer",
+  "version": "4.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "wasm_invalid",
+      "pattern": "Invalid WebAssembly|wasm.*invalid|validation.*failed",
+      "message": "Invalid WebAssembly module",
+      "cause": "Wasm binary is malformed or invalid",
+      "solutions": [
+        {
+          "approach": "Validate wasm",
+          "code": "wasmer validate module.wasm",
+          "when": "Check validity"
+        },
+        {
+          "approach": "Rebuild module",
+          "code": "# Rebuild from source with correct settings",
+          "when": "Corrupted binary"
+        },
+        {
+          "approach": "Check wasm version",
+          "code": "wasm2wat module.wasm  # Inspect module",
+          "when": "Debug structure"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "import.*not found|unresolved import|missing function",
+      "message": "Missing wasm import",
+      "cause": "Module imports function not provided by host",
+      "solutions": [
+        {
+          "approach": "Check imports",
+          "code": "wasmer inspect module.wasm",
+          "when": "List required imports"
+        },
+        {
+          "approach": "Use WASI",
+          "code": "wasmer run --enable-all module.wasm",
+          "when": "Enable WASI imports"
+        },
+        {
+          "approach": "Provide imports",
+          "code": "# In code: provide import object with required functions",
+          "when": "Custom imports needed"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory.*error|out of memory|grow.*failed",
+      "message": "WebAssembly memory error",
+      "cause": "Memory allocation or access error",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "wasmer run --mapdir /tmp:/tmp module.wasm",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Check memory access",
+          "code": "# Ensure memory accesses are within bounds",
+          "when": "Out of bounds access"
+        }
+      ]
+    },
+    {
+      "id": "compiler_error",
+      "pattern": "compiler.*error|cranelift|LLVM|singlepass",
+      "message": "Wasm compiler error",
+      "cause": "JIT compiler error",
+      "solutions": [
+        {
+          "approach": "Try different compiler",
+          "code": "wasmer run --singlepass module.wasm\nwasmer run --cranelift module.wasm\nwasmer run --llvm module.wasm",
+          "when": "Compiler-specific issue"
+        },
+        {
+          "approach": "Use native compilation",
+          "code": "wasmer compile -o module.wasmu module.wasm",
+          "when": "Pre-compile module"
+        }
+      ]
+    },
+    {
+      "id": "wasi_error",
+      "pattern": "WASI.*error|filesystem|permission denied",
+      "message": "WASI capability error",
+      "cause": "Missing WASI capability or permission",
+      "solutions": [
+        {
+          "approach": "Map directories",
+          "code": "wasmer run --mapdir /data:./data module.wasm",
+          "when": "Need filesystem access"
+        },
+        {
+          "approach": "Enable network",
+          "code": "wasmer run --net module.wasm",
+          "when": "Need network access"
+        },
+        {
+          "approach": "Pass env vars",
+          "code": "wasmer run --env KEY=value module.wasm",
+          "when": "Need environment"
+        }
+      ]
+    },
+    {
+      "id": "registry_error",
+      "pattern": "registry.*error|package.*not found|wasmer login",
+      "message": "Wasmer registry error",
+      "cause": "Package not found or auth error",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "wasmer login",
+          "when": "Need authentication"
+        },
+        {
+          "approach": "Check package name",
+          "code": "wasmer search <package-name>",
+          "when": "Find package"
+        },
+        {
+          "approach": "Publish package",
+          "code": "wasmer publish",
+          "when": "Upload package"
+        }
+      ]
+    },
+    {
+      "id": "linking_error",
+      "pattern": "linking.*failed|symbol.*undefined|relocation",
+      "message": "Module linking error",
+      "cause": "Module dependencies not resolved",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "wasmer inspect module.wasm",
+          "when": "View imports/exports"
+        },
+        {
+          "approach": "Link modules",
+          "code": "# Ensure all module dependencies are available",
+          "when": "Missing linked module"
+        }
+      ]
+    },
+    {
+      "id": "cache_error",
+      "pattern": "cache.*error|cached.*invalid|clear cache",
+      "message": "Wasmer cache error",
+      "cause": "Compilation cache corrupted",
+      "solutions": [
+        {
+          "approach": "Clear cache",
+          "code": "wasmer cache clean",
+          "when": "Cache corruption"
+        },
+        {
+          "approach": "Disable cache",
+          "code": "WASMER_CACHE_DIR=/dev/null wasmer run module.wasm",
+          "when": "Bypass cache"
+        }
+      ]
+    }
+  ]
+}

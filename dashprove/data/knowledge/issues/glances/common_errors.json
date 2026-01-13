@@ -1,0 +1,111 @@
+{
+  "tool": "glances",
+  "version": "4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_psutil",
+      "pattern": "No module named psutil|pkg_resources.DistributionNotFound: psutil",
+      "message": "psutil dependency missing",
+      "cause": "Glances installed without required Python dependencies",
+      "solutions": [
+        {
+          "approach": "Install with extras",
+          "code": "pip install 'glances[all]'",
+          "when": "Need full plugin support"
+        },
+        {
+          "approach": "Install system package",
+          "code": "sudo apt install glances python3-psutil",
+          "when": "Using distro packages"
+        }
+      ]
+    },
+    {
+      "id": "docker_plugin_error",
+      "pattern": "docker\\.errors\\.|Error while fetching server API version",
+      "message": "Docker metrics plugin fails",
+      "cause": "Docker daemon not running or user lacks permission",
+      "solutions": [
+        {
+          "approach": "Start Docker",
+          "code": "sudo systemctl start docker",
+          "when": "Docker service stopped"
+        },
+        {
+          "approach": "Add user to docker group",
+          "code": "sudo usermod -aG docker $USER",
+          "when": "Permission denied talking to Docker socket"
+        },
+        {
+          "approach": "Disable plugin",
+          "code": "glances --disable-plugin docker",
+          "when": "No Docker metrics needed"
+        }
+      ]
+    },
+    {
+      "id": "webserver_bind",
+      "pattern": "Address already in use|Cannot bind server",
+      "message": "Web UI port conflict",
+      "cause": "Another process bound to default port 61208",
+      "solutions": [
+        {
+          "approach": "Use different port",
+          "code": "glances -w --port 61209",
+          "when": "Port 61208 in use"
+        },
+        {
+          "approach": "Free existing process",
+          "code": "sudo lsof -i :61208",
+          "when": "Need to stop conflicting service"
+        }
+      ]
+    },
+    {
+      "id": "sensors_unavailable",
+      "pattern": "sensors not found|temperature values not available",
+      "message": "Hardware sensors missing",
+      "cause": "lm-sensors not configured or permissions blocked",
+      "solutions": [
+        {
+          "approach": "Configure sensors",
+          "code": "sudo apt install lm-sensors && sudo sensors-detect",
+          "when": "Modules not loaded"
+        },
+        {
+          "approach": "Run as root",
+          "code": "sudo glances",
+          "when": "/sys/class/hwmon requires root"
+        }
+      ]
+    },
+    {
+      "id": "high_cpu",
+      "pattern": "WARNING - Slow plugin|Glances CPU usage high",
+      "message": "Glances consuming high CPU",
+      "cause": "Short refresh interval or heavy plugins enabled",
+      "solutions": [
+        {
+          "approach": "Increase refresh time",
+          "code": "glances --time 5",
+          "when": "Default 2s interval too frequent"
+        },
+        {
+          "approach": "Disable heavy plugins",
+          "code": "glances --disable-plugin cloud,docker,raid",
+          "when": "Plugins not needed on server"
+        },
+        {
+          "approach": "Use curse-less mode",
+          "code": "glances -b -t 5",
+          "when": "Need batch output only"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://nicolargo.github.io/glances/",
+    "https://github.com/nicolargo/glances"
+  ]
+}

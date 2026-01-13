@@ -1,0 +1,195 @@
+{
+  "tool": "chaos_monkey",
+  "version": "3.1.0",
+  "last_updated": "2025-12-22",
+  "description": "Netflix's original chaos engineering tool for randomly terminating instances",
+  "errors": [
+    {
+      "id": "aws_credentials_error",
+      "pattern": "AWS.*credentials.*not found|NoCredentialProviders|InvalidClientTokenId",
+      "message": "AWS credentials not configured",
+      "cause": "Missing or invalid AWS credentials",
+      "solutions": [
+        {
+          "approach": "Set environment variables",
+          "code": "export AWS_ACCESS_KEY_ID=your_key\nexport AWS_SECRET_ACCESS_KEY=your_secret\nexport AWS_REGION=us-east-1",
+          "when": "Using environment credentials"
+        },
+        {
+          "approach": "Use IAM role",
+          "code": "# Attach IAM role to EC2 instance running Chaos Monkey\n# Role needs ec2:DescribeInstances, ec2:TerminateInstances",
+          "when": "Running on EC2"
+        },
+        {
+          "approach": "Configure credentials file",
+          "code": "# ~/.aws/credentials\n[default]\naws_access_key_id = YOUR_KEY\naws_secret_access_key = YOUR_SECRET",
+          "when": "Using credentials file"
+        }
+      ]
+    },
+    {
+      "id": "spinnaker_not_found",
+      "pattern": "Spinnaker.*not found|Cannot connect to Spinnaker",
+      "message": "Cannot connect to Spinnaker",
+      "cause": "Spinnaker integration required but not configured",
+      "solutions": [
+        {
+          "approach": "Configure Spinnaker URL",
+          "code": "# In config:\nchaosMonkey:\n  spinnaker:\n    baseUrl: http://spinnaker.example.com:8084",
+          "when": "Using Spinnaker integration"
+        },
+        {
+          "approach": "Use standalone mode",
+          "code": "# Chaos Monkey can run without Spinnaker\n# Configure AWS directly",
+          "when": "No Spinnaker available"
+        }
+      ]
+    },
+    {
+      "id": "no_instances_found",
+      "pattern": "no instances found|empty instance list|nothing to terminate",
+      "message": "No instances found to terminate",
+      "cause": "Filter doesn't match any running instances",
+      "solutions": [
+        {
+          "approach": "Check ASG/cluster filter",
+          "code": "# Verify Auto Scaling Group exists:\naws autoscaling describe-auto-scaling-groups --auto-scaling-group-names my-asg",
+          "when": "Using ASG filter"
+        },
+        {
+          "approach": "Check instance tags",
+          "code": "# Chaos Monkey often filters by tags like:\n# chaosmonkey.enabled=true\naws ec2 describe-instances --filters \"Name=tag:chaosmonkey.enabled,Values=true\"",
+          "when": "Tag-based filtering"
+        },
+        {
+          "approach": "Verify region",
+          "code": "# Ensure region matches where instances are running\naws ec2 describe-instances --region us-west-2",
+          "when": "Wrong region"
+        }
+      ]
+    },
+    {
+      "id": "insufficient_permissions",
+      "pattern": "AccessDenied|UnauthorizedOperation|not authorized",
+      "message": "Insufficient IAM permissions",
+      "cause": "IAM role/user lacks required permissions",
+      "solutions": [
+        {
+          "approach": "Add required permissions",
+          "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Effect\": \"Allow\",\n    \"Action\": [\n      \"ec2:DescribeInstances\",\n      \"ec2:TerminateInstances\",\n      \"autoscaling:DescribeAutoScalingGroups\"\n    ],\n    \"Resource\": \"*\"\n  }]\n}",
+          "when": "IAM policy"
+        },
+        {
+          "approach": "Test permissions",
+          "code": "aws ec2 describe-instances --dry-run\naws ec2 terminate-instances --instance-ids i-test --dry-run",
+          "when": "Verify permissions"
+        }
+      ]
+    },
+    {
+      "id": "schedule_not_running",
+      "pattern": "schedule.*not active|chaos monkey.*disabled|not running",
+      "message": "Chaos Monkey schedule not active",
+      "cause": "Scheduler disabled or misconfigured",
+      "solutions": [
+        {
+          "approach": "Enable Chaos Monkey",
+          "code": "# In config:\nchaosMonkey:\n  enabled: true\n  leashed: false  # false = actually terminate",
+          "when": "Enable execution"
+        },
+        {
+          "approach": "Check schedule",
+          "code": "# Default schedule might be business hours only\nchaosMonkey:\n  schedule:\n    startHour: 9\n    endHour: 17\n    timezone: America/Los_Angeles",
+          "when": "Running outside schedule"
+        },
+        {
+          "approach": "Force immediate run",
+          "code": "# API call to trigger immediately\ncurl -X POST http://chaosmonkey:8080/api/v1/chaos",
+          "when": "Manual trigger"
+        }
+      ]
+    },
+    {
+      "id": "leashed_mode",
+      "pattern": "leashed|dry.run|would have terminated",
+      "message": "Running in leashed/dry-run mode",
+      "cause": "Chaos Monkey configured to not actually terminate",
+      "solutions": [
+        {
+          "approach": "Unleash Chaos Monkey",
+          "code": "chaosMonkey:\n  leashed: false",
+          "when": "Enable actual termination"
+        },
+        {
+          "approach": "Keep leashed for testing",
+          "code": "# Leashed mode logs what would happen without terminating\n# Good for initial validation",
+          "when": "Safe testing"
+        }
+      ]
+    },
+    {
+      "id": "probability_too_low",
+      "pattern": "probability.*0|no termination.*probability|skipped.*probability",
+      "message": "Termination probability too low",
+      "cause": "Probability setting prevents terminations",
+      "solutions": [
+        {
+          "approach": "Increase probability",
+          "code": "# Probability from 0.0 to 1.0\nchaosMonkey:\n  probability: 1.0  # 100% chance",
+          "when": "Want guaranteed termination"
+        },
+        {
+          "approach": "Set per-ASG probability",
+          "code": "# Can set different probabilities per Auto Scaling Group",
+          "when": "Granular control"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "database.*error|MySQL.*connection|PostgreSQL.*failed",
+      "message": "Database connection error",
+      "cause": "Chaos Monkey can't connect to its database",
+      "solutions": [
+        {
+          "approach": "Configure database",
+          "code": "spring:\n  datasource:\n    url: jdbc:mysql://localhost:3306/chaosmonkey\n    username: root\n    password: secret",
+          "when": "MySQL configuration"
+        },
+        {
+          "approach": "Use in-memory database",
+          "code": "spring:\n  datasource:\n    url: jdbc:h2:mem:chaosmonkey",
+          "when": "Testing/development"
+        },
+        {
+          "approach": "Check database is running",
+          "code": "mysql -h localhost -u root -p -e 'show databases'",
+          "when": "Verify database"
+        }
+      ]
+    },
+    {
+      "id": "spring_config_error",
+      "pattern": "Spring.*configuration.*error|application.yml.*not found|bean.*not found",
+      "message": "Spring Boot configuration error",
+      "cause": "Invalid application configuration",
+      "solutions": [
+        {
+          "approach": "Check config file location",
+          "code": "# application.yml should be in:\n# - classpath:application.yml\n# - ./config/application.yml\n# - ./application.yml",
+          "when": "Config not found"
+        },
+        {
+          "approach": "Validate YAML syntax",
+          "code": "python -c \"import yaml; yaml.safe_load(open('application.yml'))\"",
+          "when": "YAML syntax error"
+        },
+        {
+          "approach": "Set config location",
+          "code": "java -jar chaos-monkey.jar --spring.config.location=/path/to/application.yml",
+          "when": "Custom config location"
+        }
+      ]
+    }
+  ]
+}

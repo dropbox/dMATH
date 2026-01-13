@@ -1,0 +1,168 @@
+{
+  "tool": "tipocket",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "tikv_connection_failed",
+      "pattern": "connection.*tikv.*failed|tikv.*unavailable",
+      "message": "Cannot connect to TiKV cluster",
+      "cause": "TiKV nodes are not accessible or cluster is not ready",
+      "solutions": [
+        {
+          "approach": "Check cluster status",
+          "code": "tiup cluster display <cluster-name>\n# Verify all nodes are Up",
+          "when": "Cluster nodes are down"
+        },
+        {
+          "approach": "Verify PD endpoints",
+          "code": "tipocket --pd-endpoints=http://pd0:2379,http://pd1:2379",
+          "when": "Wrong PD addresses"
+        },
+        {
+          "approach": "Check network connectivity",
+          "code": "# Test PD and TiKV ports\nnc -zv pd0 2379\nnc -zv tikv0 20160",
+          "when": "Firewall blocking ports"
+        }
+      ]
+    },
+    {
+      "id": "linearizability_violation",
+      "pattern": "linearizability.*violation|history not linearizable",
+      "message": "Detected linearizability violation in TiDB",
+      "cause": "Transaction isolation or consistency violation found",
+      "solutions": [
+        {
+          "approach": "Check transaction isolation level",
+          "code": "-- Verify isolation level\nSHOW VARIABLES LIKE 'transaction_isolation';\n-- Should be REPEATABLE-READ or SERIALIZABLE",
+          "when": "Using weaker isolation"
+        },
+        {
+          "approach": "Review TSO configuration",
+          "code": "# Check PD TSO allocation\ntiup ctl pd config show | grep tso",
+          "when": "Timestamp Oracle issues"
+        },
+        {
+          "approach": "Enable pessimistic transactions",
+          "code": "SET GLOBAL tidb_txn_mode = 'pessimistic';",
+          "when": "Optimistic transaction conflicts"
+        }
+      ]
+    },
+    {
+      "id": "nemesis_injection_failed",
+      "pattern": "nemesis.*failed|fault injection.*error",
+      "message": "Failed to inject fault",
+      "cause": "Nemesis fault injection mechanism encountered an error",
+      "solutions": [
+        {
+          "approach": "Check Kubernetes permissions",
+          "code": "# Tipocket needs permissions to kill pods\nkubectl auth can-i delete pods -n tidb-cluster",
+          "when": "Running on Kubernetes"
+        },
+        {
+          "approach": "Verify chaos mesh installation",
+          "code": "kubectl get pods -n chaos-testing\n# Ensure chaos-controller-manager is running",
+          "when": "Using Chaos Mesh for faults"
+        },
+        {
+          "approach": "Use native nemesis",
+          "code": "tipocket --nemesis=native --nemesis-ops=kill,pause",
+          "when": "Chaos Mesh not available"
+        }
+      ]
+    },
+    {
+      "id": "stale_read_detected",
+      "pattern": "stale read|read.*old value",
+      "message": "Read returned stale data",
+      "cause": "Read operation did not see the latest committed write",
+      "solutions": [
+        {
+          "approach": "Use follower read with caution",
+          "code": "-- Disable follower reads for consistency tests\nSET GLOBAL tidb_replica_read = 'leader';",
+          "when": "Follower reads enabled"
+        },
+        {
+          "approach": "Check region leader",
+          "code": "# Verify region has a valid leader\ntiup ctl pd region --id <region-id>",
+          "when": "Leader election in progress"
+        },
+        {
+          "approach": "Increase resolved-ts interval",
+          "code": "# In TiKV config\n[resolved-ts]\nadvance-ts-interval = \"100ms\"",
+          "when": "Resolved timestamp lagging"
+        }
+      ]
+    },
+    {
+      "id": "split_brain_detected",
+      "pattern": "split brain|multiple leaders",
+      "message": "Split brain condition detected",
+      "cause": "Multiple nodes believe they are the leader for the same region",
+      "solutions": [
+        {
+          "approach": "Check Raft configuration",
+          "code": "# Verify raft election timeout\n[raftstore]\nraft-election-timeout-ticks = 10",
+          "when": "Election timeout too short"
+        },
+        {
+          "approach": "Verify network partitioning",
+          "code": "# Ensure quorum is maintained during partitions\n# 3 nodes: 2 must be reachable\n# 5 nodes: 3 must be reachable",
+          "when": "Network partition caused split"
+        },
+        {
+          "approach": "Review lease settings",
+          "code": "[raftstore]\nraft-store-max-leader-lease = \"9s\"",
+          "when": "Leader lease expired during partition"
+        }
+      ]
+    },
+    {
+      "id": "transaction_retry_exceeded",
+      "pattern": "retry.*exceeded|too many retries",
+      "message": "Transaction retry limit exceeded",
+      "cause": "Transaction failed to commit after maximum retries",
+      "solutions": [
+        {
+          "approach": "Increase retry limit",
+          "code": "tipocket --txn-retry-limit=50",
+          "when": "High contention workload"
+        },
+        {
+          "approach": "Use smaller transactions",
+          "code": "-- Break large transactions into smaller batches\nSET tidb_batch_insert = 1;\nSET tidb_batch_delete = 1;",
+          "when": "Large transaction conflicts"
+        },
+        {
+          "approach": "Add backoff between retries",
+          "code": "tipocket --txn-retry-backoff=100ms",
+          "when": "Retries happening too fast"
+        }
+      ]
+    },
+    {
+      "id": "k8s_namespace_not_found",
+      "pattern": "namespace.*not found|cannot find namespace",
+      "message": "Kubernetes namespace does not exist",
+      "cause": "Tipocket cannot find the specified namespace for TiDB cluster",
+      "solutions": [
+        {
+          "approach": "Create namespace",
+          "code": "kubectl create namespace tidb-tipocket",
+          "when": "Namespace not created"
+        },
+        {
+          "approach": "Specify correct namespace",
+          "code": "tipocket --namespace=<your-tidb-namespace>",
+          "when": "Using wrong namespace name"
+        },
+        {
+          "approach": "Check kubeconfig context",
+          "code": "kubectl config current-context\nkubectl config use-context <correct-context>",
+          "when": "Wrong Kubernetes cluster"
+        }
+      ]
+    }
+  ]
+}

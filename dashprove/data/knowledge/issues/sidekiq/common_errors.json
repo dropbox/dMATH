@@ -1,0 +1,55 @@
+{
+  "tool": "sidekiq",
+  "category": "task_queue",
+  "description": "Ruby background job processor",
+  "errors": [
+    {
+      "pattern": "Error connecting to Redis|ECONNREFUSED",
+      "meaning": "Cannot connect to Redis",
+      "causes": ["Redis not running", "Wrong REDIS_URL", "Network issue"],
+      "solutions": ["Start Redis server", "Check REDIS_URL environment variable", "Verify network connectivity"]
+    },
+    {
+      "pattern": "NameError.*uninitialized constant.*Worker",
+      "meaning": "Worker class not found",
+      "causes": ["Worker file not loaded", "Wrong class name", "Typo in worker reference"],
+      "solutions": ["Ensure worker is in app/workers/", "Check class name matches", "Require worker file"]
+    },
+    {
+      "pattern": "Job raised.*DeadJobError",
+      "meaning": "Job failed after all retries",
+      "causes": ["Persistent failure", "External dependency issue", "Bug in worker"],
+      "solutions": ["Check dead job queue", "Investigate failure reason", "Fix worker code"]
+    },
+    {
+      "pattern": "Could not obtain.*lock",
+      "meaning": "Cannot acquire Redis lock",
+      "causes": ["Sidekiq-unique-jobs lock held", "Previous job didn't release", "Redis issue"],
+      "solutions": ["Check unique job config", "Clear stale locks", "Increase lock timeout"]
+    },
+    {
+      "pattern": "ArgumentError.*wrong number of arguments",
+      "meaning": "Job arguments mismatch",
+      "causes": ["perform method signature changed", "Extra/missing arguments", "Code deployment mismatch"],
+      "solutions": ["Match perform args to perform_async call", "Deploy workers before enqueuers", "Use keyword arguments"]
+    },
+    {
+      "pattern": "SystemStackError.*stack level too deep",
+      "meaning": "Infinite recursion in job",
+      "causes": ["Recursive job enqueue", "Circular callbacks", "Bug in worker"],
+      "solutions": ["Check for self-enqueue loops", "Review callback chains", "Add recursion guards"]
+    },
+    {
+      "pattern": "Redis::TimeoutError",
+      "meaning": "Redis operation timed out",
+      "causes": ["Redis overloaded", "Slow Redis command", "Network latency"],
+      "solutions": ["Increase read/write timeout", "Optimize Redis usage", "Check Redis performance"]
+    },
+    {
+      "pattern": "Sidekiq::Shutdown",
+      "meaning": "Sidekiq received shutdown signal",
+      "causes": ["Process stopped", "Kubernetes pod termination", "Manual shutdown"],
+      "solutions": ["Job will be retried", "Increase terminationGracePeriodSeconds", "Handle shutdown gracefully"]
+    }
+  ]
+}

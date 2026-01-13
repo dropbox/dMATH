@@ -1,0 +1,186 @@
+{
+  "tool": "autolirpa",
+  "version": "0.4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unsupported_op",
+      "pattern": "unsupported",
+      "message": "Unsupported operation",
+      "cause": "Layer type not supported",
+      "solutions": [
+        {
+          "approach": "Check supported ops",
+          "code": "# Linear, Conv, ReLU, Sigmoid, Tanh, MaxPool supported",
+          "when": "Using exotic layer"
+        },
+        {
+          "approach": "Register custom op",
+          "code": "@auto_lirpa.register_operator\nclass MyOp(BoundModule): ...",
+          "when": "Can implement bounds"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "# Replace unsupported with supported equivalent",
+          "when": "Can restructure model"
+        }
+      ]
+    },
+    {
+      "id": "bound_error",
+      "pattern": "bound",
+      "message": "Bound computation failed",
+      "cause": "Cannot compute bounds for layer",
+      "solutions": [
+        {
+          "approach": "Check input spec",
+          "code": "ptb = PerturbationLpNorm(norm=np.inf, eps=0.1)\nmy_input = BoundedTensor(x, ptb)",
+          "when": "Input perturbation not specified"
+        },
+        {
+          "approach": "Use simpler bound",
+          "code": "model.compute_bounds(method='IBP')",
+          "when": "Complex method failing"
+        },
+        {
+          "approach": "Check model structure",
+          "code": "# Verify model is traceable",
+          "when": "Model tracing issue"
+        }
+      ]
+    },
+    {
+      "id": "shape_error",
+      "pattern": "shape",
+      "message": "Shape mismatch",
+      "cause": "Tensor dimensions don't match",
+      "solutions": [
+        {
+          "approach": "Check input shape",
+          "code": "x = x.view(batch_size, *input_shape)",
+          "when": "Wrong input shape"
+        },
+        {
+          "approach": "Check perturbation spec",
+          "code": "# Perturbation must match input dimensions",
+          "when": "Perturbation shape wrong"
+        },
+        {
+          "approach": "Verify model conversion",
+          "code": "# Check model was converted correctly",
+          "when": "Model conversion issue"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Verification timed out",
+      "cause": "Bound propagation too slow",
+      "solutions": [
+        {
+          "approach": "Use IBP instead of CROWN",
+          "code": "model.compute_bounds(method='IBP')",
+          "when": "Need faster but looser bounds"
+        },
+        {
+          "approach": "Batch verification",
+          "code": "# Verify multiple inputs in batch",
+          "when": "Many samples to verify"
+        },
+        {
+          "approach": "Use GPU",
+          "code": "model.cuda()",
+          "when": "CPU too slow"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Out of memory",
+      "cause": "Model or verification too large",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "batch_size = 1",
+          "when": "Batch too large"
+        },
+        {
+          "approach": "Use IBP",
+          "code": "# IBP uses less memory than CROWN",
+          "when": "CROWN too memory-intensive"
+        },
+        {
+          "approach": "Checkpoint gradients",
+          "code": "# Use gradient checkpointing",
+          "when": "Training with bounds"
+        }
+      ]
+    },
+    {
+      "id": "conversion_error",
+      "pattern": "conversion",
+      "message": "Model conversion failed",
+      "cause": "Cannot convert PyTorch model",
+      "solutions": [
+        {
+          "approach": "Use BoundedModule",
+          "code": "from auto_LiRPA import BoundedModule\nmodel = BoundedModule(pytorch_model, dummy_input)",
+          "when": "Standard conversion"
+        },
+        {
+          "approach": "Check tracing",
+          "code": "torch.jit.trace(model, dummy_input)",
+          "when": "Model not traceable"
+        },
+        {
+          "approach": "Remove dynamic ops",
+          "code": "# Avoid data-dependent control flow",
+          "when": "Dynamic model"
+        }
+      ]
+    },
+    {
+      "id": "numerical_instability",
+      "pattern": "nan|inf",
+      "message": "Numerical instability",
+      "cause": "Bounds became unbounded or NaN",
+      "solutions": [
+        {
+          "approach": "Check input range",
+          "code": "# Ensure perturbation doesn't cause extreme values",
+          "when": "Large perturbation"
+        },
+        {
+          "approach": "Use double precision",
+          "code": "model.double()\nx = x.double()",
+          "when": "Float32 insufficient"
+        },
+        {
+          "approach": "Clamp bounds",
+          "code": "# Add bound clipping",
+          "when": "Bounds exploding"
+        }
+      ]
+    },
+    {
+      "id": "backward_error",
+      "pattern": "backward",
+      "message": "Backward bound propagation error",
+      "cause": "Error in backward mode CROWN",
+      "solutions": [
+        {
+          "approach": "Use forward mode",
+          "code": "model.compute_bounds(method='forward')",
+          "when": "Backward mode failing"
+        },
+        {
+          "approach": "Check layer support",
+          "code": "# Some layers only support forward mode",
+          "when": "Layer-specific issue"
+        }
+      ]
+    }
+  ]
+}

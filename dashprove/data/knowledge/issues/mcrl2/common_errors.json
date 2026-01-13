@@ -1,0 +1,102 @@
+{
+  "tool": "mcrl2",
+  "version": "2024.06",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "spec_parse_error",
+      "pattern": "parse error in specification|unknown sort|syntax error near",
+      "message": "mCRL2 specification does not compile",
+      "cause": "Missing sort declarations, improper process syntax, or misplaced act declarations",
+      "solutions": [
+        {
+          "approach": "Declare sorts and maps first",
+          "code": "sort Nat;\nmap inc: Nat -> Nat;\nact a,b;\nproc P(n:Nat) = a.P(inc(n));\ninit P(0);",
+          "when": "Undefined sorts detected"
+        },
+        {
+          "approach": "Validate with mcrl22lps",
+          "code": "mcrl22lps model.mcrl2 model.lps",
+          "when": "Need early parser feedback"
+        }
+      ]
+    },
+    {
+      "id": "linearization_failure",
+      "pattern": "cannot linearise process|stack overflow in lineariser",
+      "message": "Process cannot be linearised",
+      "cause": "Unbounded recursion or data-dependent parallel composition",
+      "solutions": [
+        {
+          "approach": "Add guards to recursion",
+          "code": "proc P(n:Nat) = (n < 10) -> a.P(n+1) <> delta;",
+          "when": "Recursive growth"
+        },
+        {
+          "approach": "Use rewrite strategies",
+          "code": "mcrl22lps --rewriter=jittyc model.mcrl2 model.lps",
+          "when": "Complex data expressions"
+        }
+      ]
+    },
+    {
+      "id": "state_space_blowup",
+      "pattern": "state space too large|lps2lts: out of memory",
+      "message": "Exploration runs out of memory",
+      "cause": "Parallel composition or data sorts create huge LTS",
+      "solutions": [
+        {
+          "approach": "Apply reductions",
+          "code": "lps2lts --cached --save-scs model.lps model.lts",
+          "when": "Need symbolic caching"
+        },
+        {
+          "approach": "Minimize before properties",
+          "code": "ltsconvert -ebisim model.lts reduced.lts",
+          "when": "Checking equivalence/CTL*"
+        },
+        {
+          "approach": "Use parameter elimination",
+          "code": "lpssuminstantiator model.lps model_sum.lps",
+          "when": "Data parameters unused"
+        }
+      ]
+    },
+    {
+      "id": "pbess_generation_error",
+      "pattern": "pbes generation failed|could not instantiate quantifier",
+      "message": "Property translation to PBES fails",
+      "cause": "CTL/LTL formula references undefined actions or uses unsupported modality",
+      "solutions": [
+        {
+          "approach": "Check action labels in formula",
+          "code": "mu X. [a]X && <b>true",
+          "when": "Action names mismatched"
+        },
+        {
+          "approach": "Use branching bisimulation reductions",
+          "code": "lps2pbes --rewriter=jitty model.lps property.mcf property.pbes",
+          "when": "Large PBES generated"
+        }
+      ]
+    },
+    {
+      "id": "toolchain_mismatch",
+      "pattern": "unexpected format|wrong input type",
+      "message": "Wrong artifact passed to next stage",
+      "cause": "Passing .mcrl2 file to lps2lts or .lts to pbes tools",
+      "solutions": [
+        {
+          "approach": "Follow correct pipeline",
+          "code": "mcrl22lps model.mcrl2 model.lps\nlps2lts model.lps model.lts\nlts2pbes property.mcf model.lts property.pbes",
+          "when": "Manual tool chaining"
+        },
+        {
+          "approach": "Use mcrl22pbes helper",
+          "code": "mcrl22pbes -f property.mcf model.mcrl2 property.pbes",
+          "when": "Prefer single command"
+        }
+      ]
+    }
+  ]
+}

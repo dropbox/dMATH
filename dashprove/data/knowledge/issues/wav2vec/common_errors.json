@@ -1,0 +1,177 @@
+{
+  "tool": "wav2vec",
+  "version": "2.0",
+  "last_updated": "2025-12-22",
+  "description": "Self-supervised speech representation learning (wav2vec 2.0)",
+  "errors": [
+    {
+      "id": "audio_length_error",
+      "pattern": "sample.*too (short|long)|length.*bounds",
+      "message": "Audio length outside valid range",
+      "cause": "Audio clip too short for wav2vec processing",
+      "solutions": [
+        {
+          "approach": "Set minimum sample size",
+          "code": "--min-sample-size 32000  # 2 seconds at 16kHz",
+          "when": "Clips are very short"
+        },
+        {
+          "approach": "Filter short files",
+          "code": "# Remove files < 1 second from manifest",
+          "when": "Dataset has many short clips"
+        },
+        {
+          "approach": "Chunk long audio",
+          "code": "--max-sample-size 320000  # 20 seconds max",
+          "when": "Files are very long"
+        }
+      ]
+    },
+    {
+      "id": "pretrain_checkpoint_error",
+      "pattern": "checkpoint.*incompatible|state_dict.*mismatch",
+      "message": "Pretrained checkpoint loading failed",
+      "cause": "Model architecture doesn't match checkpoint",
+      "solutions": [
+        {
+          "approach": "Use matching architecture",
+          "code": "--arch wav2vec2_base  # or wav2vec2_large\n# Must match pretrained checkpoint",
+          "when": "Architecture mismatch"
+        },
+        {
+          "approach": "Load with strict=False",
+          "code": "model.load_state_dict(checkpoint['model'], strict=False)",
+          "when": "Partial loading needed"
+        },
+        {
+          "approach": "Download correct checkpoint",
+          "code": "# Download from: github.com/pytorch/fairseq/tree/main/examples/wav2vec",
+          "when": "Wrong checkpoint version"
+        }
+      ]
+    },
+    {
+      "id": "contrastive_loss_error",
+      "pattern": "contrastive.*loss.*nan|diversity.*loss.*error",
+      "message": "Contrastive or diversity loss error",
+      "cause": "Training configuration issue for self-supervised loss",
+      "solutions": [
+        {
+          "approach": "Adjust loss weights",
+          "code": "--contrastive-loss-weight 0.1 --diversity-loss-weight 0.1",
+          "when": "Loss imbalance"
+        },
+        {
+          "approach": "Check temperature",
+          "code": "--contrastive-logit-temp 0.1",
+          "when": "Contrastive loss unstable"
+        },
+        {
+          "approach": "Reduce codebook size",
+          "code": "--codebook-size 320",
+          "when": "Diversity loss issues"
+        }
+      ]
+    },
+    {
+      "id": "masking_error",
+      "pattern": "mask.*percentage.*error|masked.*frames.*invalid",
+      "message": "Masking configuration error",
+      "cause": "Masking parameters produce invalid configuration",
+      "solutions": [
+        {
+          "approach": "Standard masking config",
+          "code": "--mask-length 10 --mask-prob 0.65 --mask-selection static\n--mask-other 0 --no-mask-overlap",
+          "when": "Default wav2vec2 masking"
+        },
+        {
+          "approach": "Reduce mask length for short audio",
+          "code": "--mask-length 5  # For shorter utterances",
+          "when": "Audio clips are short"
+        }
+      ]
+    },
+    {
+      "id": "feature_extractor_error",
+      "pattern": "conv.*layer.*error|feature.*extraction.*failed",
+      "message": "Convolutional feature extractor error",
+      "cause": "Audio preprocessing or conv layer config issue",
+      "solutions": [
+        {
+          "approach": "Check sample rate",
+          "code": "# wav2vec2 expects 16kHz audio\nffmpeg -i input.wav -ar 16000 output.wav",
+          "when": "Wrong sample rate"
+        },
+        {
+          "approach": "Verify audio format",
+          "code": "--sample-rate 16000\n# Audio must be mono float32 or int16",
+          "when": "Audio format issue"
+        },
+        {
+          "approach": "Check conv config",
+          "code": "--conv-feature-layers [(512, 10, 5)] + [(512, 3, 2)] * 4 + [(512, 2, 2)] * 2",
+          "when": "Custom conv architecture"
+        }
+      ]
+    },
+    {
+      "id": "finetuning_ctc_error",
+      "pattern": "CTC.*error|ctc.*loss.*nan",
+      "message": "CTC fine-tuning error",
+      "cause": "Label sequence or CTC configuration issue",
+      "solutions": [
+        {
+          "approach": "Check label format",
+          "code": "# Labels must be space-separated characters/tokens\n# Manifest: audio_path\\tnum_frames\\tlabel",
+          "when": "Label format wrong"
+        },
+        {
+          "approach": "Verify label length",
+          "code": "# Label sequence must be shorter than audio frames // 320",
+          "when": "Labels too long"
+        },
+        {
+          "approach": "Adjust CTC config",
+          "code": "--criterion ctc --ctc-zero-infinity",
+          "when": "CTC infinity handling"
+        }
+      ]
+    },
+    {
+      "id": "quantizer_error",
+      "pattern": "quantizer.*error|gumbel.*softmax.*nan",
+      "message": "Vector quantizer error",
+      "cause": "Quantization layer training instability",
+      "solutions": [
+        {
+          "approach": "Adjust Gumbel temperature",
+          "code": "--gumbel-temp-start 2.0 --gumbel-temp-end 0.5 --gumbel-temp-anneal-steps 100000",
+          "when": "Quantizer not learning"
+        },
+        {
+          "approach": "Check codebook utilization",
+          "code": "# Monitor: codebook_diversity in logs should increase",
+          "when": "Codebook collapse"
+        }
+      ]
+    },
+    {
+      "id": "huggingface_conversion",
+      "pattern": "convert.*fairseq.*error|transformers.*incompatible",
+      "message": "Error converting to/from HuggingFace format",
+      "cause": "Model format conversion issue",
+      "solutions": [
+        {
+          "approach": "Use HF conversion script",
+          "code": "python -m transformers.models.wav2vec2.convert_wav2vec2_original_pytorch_checkpoint_to_pytorch \\\n  --pytorch_dump_folder hf_model --checkpoint_path wav2vec.pt",
+          "when": "Converting to HuggingFace"
+        },
+        {
+          "approach": "Load directly with transformers",
+          "code": "from transformers import Wav2Vec2Model\nmodel = Wav2Vec2Model.from_pretrained('facebook/wav2vec2-base-960h')",
+          "when": "Use HuggingFace directly"
+        }
+      ]
+    }
+  ]
+}

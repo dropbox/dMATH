@@ -1,0 +1,237 @@
+{
+  "tool": "tarpaulin",
+  "version": "0.28.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "ptrace_denied",
+      "pattern": "ptrace.*denied|Operation not permitted|EPERM",
+      "message": "ptrace permission denied",
+      "cause": "ptrace system call blocked by security policy",
+      "solutions": [
+        {
+          "approach": "Enable ptrace in Docker",
+          "code": "docker run --security-opt seccomp=unconfined ...",
+          "when": "Running in Docker"
+        },
+        {
+          "approach": "Set kernel parameter",
+          "code": "sudo sysctl kernel.yama.ptrace_scope=0",
+          "when": "On Linux host"
+        },
+        {
+          "approach": "Use engine flag",
+          "code": "cargo tarpaulin --engine llvm",
+          "when": "Use LLVM coverage instead"
+        }
+      ]
+    },
+    {
+      "id": "no_coverage_data",
+      "pattern": "No coverage data|0% coverage|no source files",
+      "message": "No coverage data collected",
+      "cause": "Tests didn't run or coverage instrumentation failed",
+      "solutions": [
+        {
+          "approach": "Check tests exist and pass",
+          "code": "cargo test",
+          "when": "Tests may not be running"
+        },
+        {
+          "approach": "Specify packages",
+          "code": "cargo tarpaulin -p my-crate",
+          "when": "Workspace project"
+        },
+        {
+          "approach": "Include doc tests",
+          "code": "cargo tarpaulin --doc",
+          "when": "Only have doc tests"
+        }
+      ]
+    },
+    {
+      "id": "compilation_failed",
+      "pattern": "error\\[E|could not compile|build failed",
+      "message": "Test compilation failed",
+      "cause": "Code doesn't compile with coverage instrumentation",
+      "solutions": [
+        {
+          "approach": "Fix compilation errors first",
+          "code": "cargo build --tests",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Check feature flags",
+          "code": "cargo tarpaulin --features \"feat1,feat2\"",
+          "when": "Missing features"
+        },
+        {
+          "approach": "Skip specific crates",
+          "code": "cargo tarpaulin --exclude crate-that-fails",
+          "when": "One crate problematic"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|timed out|exceeded time limit",
+      "message": "Coverage collection timed out",
+      "cause": "Tests taking too long with instrumentation overhead",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "cargo tarpaulin --timeout 600",
+          "when": "Tests need more time"
+        },
+        {
+          "approach": "Run fewer tests",
+          "code": "cargo tarpaulin -- --test-threads=1",
+          "when": "Parallel tests cause issues"
+        },
+        {
+          "approach": "Skip slow tests",
+          "code": "cargo tarpaulin -- --skip slow_test",
+          "when": "Specific tests are slow"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_platform",
+      "pattern": "unsupported|platform not supported|only.*linux",
+      "message": "Platform not supported",
+      "cause": "Tarpaulin only supports Linux (uses ptrace)",
+      "solutions": [
+        {
+          "approach": "Use Docker",
+          "code": "docker run -v $PWD:/app xd009642/tarpaulin cargo tarpaulin",
+          "when": "On macOS/Windows"
+        },
+        {
+          "approach": "Use llvm-cov alternative",
+          "code": "cargo llvm-cov",
+          "when": "Need cross-platform"
+        },
+        {
+          "approach": "Use CI Linux runner",
+          "code": "# Run tarpaulin in CI on Linux",
+          "when": "Have CI pipeline"
+        }
+      ]
+    },
+    {
+      "id": "missing_source_lines",
+      "pattern": "source file not found|missing line info|DWARF",
+      "message": "Debug info missing for source lines",
+      "cause": "Binary compiled without sufficient debug info",
+      "solutions": [
+        {
+          "approach": "Enable debug info",
+          "code": "[profile.dev]\ndebug = true",
+          "when": "Debug symbols missing"
+        },
+        {
+          "approach": "Clean and rebuild",
+          "code": "cargo clean && cargo tarpaulin",
+          "when": "Stale build artifacts"
+        },
+        {
+          "approach": "Use force flag",
+          "code": "cargo tarpaulin --force-clean",
+          "when": "Force clean build"
+        }
+      ]
+    },
+    {
+      "id": "output_format_error",
+      "pattern": "output.*error|invalid format|report generation failed",
+      "message": "Coverage report generation failed",
+      "cause": "Error generating output in requested format",
+      "solutions": [
+        {
+          "approach": "Use different output format",
+          "code": "cargo tarpaulin --out Html",
+          "when": "JSON/Xml problematic"
+        },
+        {
+          "approach": "Specify output path",
+          "code": "cargo tarpaulin --output-dir ./coverage",
+          "when": "Default path issue"
+        },
+        {
+          "approach": "Use multiple outputs",
+          "code": "cargo tarpaulin --out Html --out Lcov",
+          "when": "Need multiple formats"
+        }
+      ]
+    },
+    {
+      "id": "workspace_error",
+      "pattern": "workspace.*error|package.*not found in workspace",
+      "message": "Workspace configuration issue",
+      "cause": "Tarpaulin can't find packages in workspace",
+      "solutions": [
+        {
+          "approach": "Specify workspace root",
+          "code": "cargo tarpaulin --manifest-path ./Cargo.toml",
+          "when": "Not at workspace root"
+        },
+        {
+          "approach": "Run from workspace root",
+          "code": "cd workspace-root && cargo tarpaulin",
+          "when": "In subdirectory"
+        },
+        {
+          "approach": "Specify all packages",
+          "code": "cargo tarpaulin --workspace",
+          "when": "Want all workspace crates"
+        }
+      ]
+    },
+    {
+      "id": "proc_macro_coverage",
+      "pattern": "proc.macro|procedural macro.*coverage",
+      "message": "Cannot cover proc macros",
+      "cause": "Proc macro crates compile separately, can't be instrumented",
+      "solutions": [
+        {
+          "approach": "Exclude proc macro crate",
+          "code": "cargo tarpaulin --exclude my-proc-macro",
+          "when": "Proc macro in workspace"
+        },
+        {
+          "approach": "Test proc macros separately",
+          "code": "# Use trybuild or similar for proc macro testing",
+          "when": "Need proc macro coverage"
+        },
+        {
+          "approach": "Cover macro output in user crate",
+          "code": "# Test generated code in consuming crate",
+          "when": "Test macro results not macro itself"
+        }
+      ]
+    },
+    {
+      "id": "integration_test_missing",
+      "pattern": "integration.*not found|tests/.*not covered",
+      "message": "Integration tests not covered",
+      "cause": "Integration tests in tests/ directory not being instrumented",
+      "solutions": [
+        {
+          "approach": "Enable all targets",
+          "code": "cargo tarpaulin --all-targets",
+          "when": "Missing integration tests"
+        },
+        {
+          "approach": "Specify test binary",
+          "code": "cargo tarpaulin --test integration_test_name",
+          "when": "Run specific integration test"
+        },
+        {
+          "approach": "Include benches",
+          "code": "cargo tarpaulin --benches",
+          "when": "Want benchmark coverage"
+        }
+      ]
+    }
+  ]
+}

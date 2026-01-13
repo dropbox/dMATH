@@ -1,0 +1,97 @@
+{
+  "tool": "paxos",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "proposal_preempted",
+      "pattern": "(preempt|higher.*proposal|ballot|nack)",
+      "message": "Proposal preempted by higher ballot",
+      "cause": "Another proposer started with higher proposal number",
+      "solutions": [
+        {
+          "approach": "Retry with higher ballot",
+          "code": "// On preemption, use higher ballot\nif response.is_nack() {\n    let new_ballot = max(response.highest_seen + 1, my_ballot + num_nodes);\n    retry_prepare(new_ballot);\n}",
+          "when": "Preempted proposal"
+        },
+        {
+          "approach": "Use leader lease",
+          "code": "// Avoid dueling proposers with leases\nif has_valid_lease() {\n    // Can skip prepare phase (Multi-Paxos)\n    send_accept(current_ballot, value);\n}",
+          "when": "Multi-Paxos optimization"
+        }
+      ]
+    },
+    {
+      "id": "no_quorum",
+      "pattern": "(quorum|majority|not enough|promise)",
+      "message": "Failed to get quorum",
+      "cause": "Could not get majority of promises/accepts",
+      "solutions": [
+        {
+          "approach": "Wait and retry",
+          "code": "// Exponential backoff\nlet mut delay = Duration::from_millis(100);\nloop {\n    match try_prepare(ballot).await {\n        Ok(quorum) => break,\n        Err(_) => {\n            sleep(delay).await;\n            delay = min(delay * 2, max_delay);\n            ballot += num_nodes;\n        }\n    }\n}",
+          "when": "Transient failures"
+        },
+        {
+          "approach": "Check connectivity",
+          "code": "// Verify acceptors are reachable\nlet healthy = acceptors.iter()\n    .filter(|a| a.ping().is_ok())\n    .count();\nassert!(healthy >= quorum_size());",
+          "when": "Network partition"
+        }
+      ]
+    },
+    {
+      "id": "value_conflict",
+      "pattern": "(conflict|different.*value|already.*chosen)",
+      "message": "Different value already chosen",
+      "cause": "Acceptor already accepted different value",
+      "solutions": [
+        {
+          "approach": "Use promised value",
+          "code": "// Phase 1b: Use highest accepted value\nlet promises = send_prepare(ballot).await;\nlet value_to_propose = promises.iter()\n    .filter_map(|p| p.accepted_value())\n    .max_by_key(|v| v.ballot)\n    .unwrap_or(my_value);",
+          "when": "Prepare phase"
+        },
+        {
+          "approach": "Learn chosen value",
+          "code": "// If majority accepted same value, it's chosen\nlet chosen = accepts.iter()\n    .filter(|a| a.value == proposed_value)\n    .count() >= quorum_size();",
+          "when": "Determining chosen value"
+        }
+      ]
+    },
+    {
+      "id": "log_gap",
+      "pattern": "(gap|missing.*slot|hole|log)",
+      "message": "Gap in log sequence",
+      "cause": "Missing entries in Multi-Paxos log",
+      "solutions": [
+        {
+          "approach": "Fill gaps",
+          "code": "// Propose no-op for gaps\nfor slot in gaps {\n    propose(slot, NoOp);\n}",
+          "when": "Log has holes"
+        },
+        {
+          "approach": "Catch up",
+          "code": "// Request missing entries from leader\nlet missing = find_gaps(min_slot, max_slot);\nfor slot in missing {\n    let entry = leader.get_entry(slot).await;\n    log.insert(slot, entry);\n}",
+          "when": "Replica behind"
+        }
+      ]
+    },
+    {
+      "id": "livelock",
+      "pattern": "(livelock|duel|competing.*proposers)",
+      "message": "Proposer livelock",
+      "cause": "Multiple proposers continuously preempting each other",
+      "solutions": [
+        {
+          "approach": "Random backoff",
+          "code": "// Add randomized delay\nlet jitter = rand::thread_rng().gen_range(0..max_jitter);\nsleep(base_delay + jitter).await;",
+          "when": "Breaking livelock"
+        },
+        {
+          "approach": "Leader election",
+          "code": "// Use separate leader election\nif am_leader() {\n    // Only leader proposes\n} else {\n    // Forward to leader\n    leader.propose(value).await;\n}",
+          "when": "Avoiding dueling"
+        }
+      ]
+    }
+  ]
+}

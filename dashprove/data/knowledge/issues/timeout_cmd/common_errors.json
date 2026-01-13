@@ -1,0 +1,135 @@
+{
+  "tool": "timeout",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "timeout:.*command not found|timeout:.*not found",
+      "message": "timeout command not available",
+      "cause": "Not installed (not default on macOS)",
+      "solutions": [
+        {
+          "approach": "Install on macOS",
+          "code": "brew install coreutils\ngtimeout 30 command  # GNU timeout as gtimeout",
+          "when": "macOS"
+        },
+        {
+          "approach": "Shell alternative",
+          "code": "( sleep 30; kill $$ ) &\ncommand\nkill $!",
+          "when": "No timeout available"
+        },
+        {
+          "approach": "Perl alternative",
+          "code": "perl -e 'alarm 30; exec @ARGV' command",
+          "when": "Perl available"
+        }
+      ]
+    },
+    {
+      "id": "invalid_duration",
+      "pattern": "timeout:.*invalid|timeout:.*time|invalid time interval",
+      "message": "Invalid timeout duration",
+      "cause": "Duration format not recognized",
+      "solutions": [
+        {
+          "approach": "Valid formats",
+          "code": "timeout 30 cmd      # 30 seconds\ntimeout 5m cmd      # 5 minutes\ntimeout 1h cmd      # 1 hour\ntimeout 1d cmd      # 1 day\ntimeout 30.5 cmd    # Floating point OK",
+          "when": "Correct duration"
+        },
+        {
+          "approach": "Suffix meanings",
+          "code": "# s = seconds (default)\n# m = minutes\n# h = hours\n# d = days",
+          "when": "Understand units"
+        }
+      ]
+    },
+    {
+      "id": "signal_issues",
+      "pattern": "timeout:.*signal|SIGKILL|SIGTERM|not killed",
+      "message": "Process not responding to timeout signal",
+      "cause": "Process ignoring SIGTERM or handling signals",
+      "solutions": [
+        {
+          "approach": "Use SIGKILL",
+          "code": "timeout -s KILL 30 command  # Force kill",
+          "when": "Process ignores SIGTERM"
+        },
+        {
+          "approach": "Kill after grace",
+          "code": "timeout -k 5 30 cmd  # SIGTERM, then SIGKILL after 5s",
+          "when": "Grace period then force"
+        },
+        {
+          "approach": "Custom signal",
+          "code": "timeout -s INT 30 cmd   # Send SIGINT\ntimeout -s HUP 30 cmd   # Send SIGHUP",
+          "when": "Specific signal needed"
+        }
+      ]
+    },
+    {
+      "id": "exit_code",
+      "pattern": "exit.*124|status|return code",
+      "message": "Understanding timeout exit codes",
+      "cause": "Need to distinguish timeout from command failure",
+      "solutions": [
+        {
+          "approach": "Exit codes",
+          "code": "timeout 5 cmd\nstatus=$?\n# 124 = timeout occurred\n# 137 = killed by SIGKILL (128+9)\n# other = command's exit code",
+          "when": "Check result"
+        },
+        {
+          "approach": "Preserve exit code",
+          "code": "timeout --preserve-status 30 cmd",
+          "when": "Use command's exit code on timeout"
+        },
+        {
+          "approach": "Script example",
+          "code": "if timeout 30 mycommand; then\n  echo 'Completed'\nelif [ $? -eq 124 ]; then\n  echo 'Timed out'\nelse\n  echo 'Failed'\nfi",
+          "when": "Handle in script"
+        }
+      ]
+    },
+    {
+      "id": "foreground_only",
+      "pattern": "background|&|job control",
+      "message": "Timeout with background processes",
+      "cause": "timeout only tracks foreground process",
+      "solutions": [
+        {
+          "approach": "Foreground mode",
+          "code": "timeout --foreground 30 cmd  # May help with interactive",
+          "when": "Terminal interaction"
+        },
+        {
+          "approach": "Process group",
+          "code": "# timeout kills the process group by default\n# Child processes should also be terminated",
+          "when": "Kill children too"
+        },
+        {
+          "approach": "Subshell approach",
+          "code": "timeout 30 bash -c 'cmd1 & cmd2 & wait'",
+          "when": "Multiple background"
+        }
+      ]
+    },
+    {
+      "id": "verbose_output",
+      "pattern": "verbose|progress|status",
+      "message": "Want to see timeout status",
+      "cause": "No built-in verbose mode",
+      "solutions": [
+        {
+          "approach": "Add message",
+          "code": "timeout 30 cmd || echo 'Timed out or failed'",
+          "when": "Simple feedback"
+        },
+        {
+          "approach": "Verbose wrapper",
+          "code": "echo 'Starting with 30s timeout'\ntime timeout 30 cmd\necho \"Exit status: $?\"",
+          "when": "Debug timing"
+        }
+      ]
+    }
+  ]
+}

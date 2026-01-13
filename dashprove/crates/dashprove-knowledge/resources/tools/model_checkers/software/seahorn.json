@@ -1,0 +1,99 @@
+{
+  "id": "seahorn",
+  "name": "SeaHorn",
+  "category": "model_checker",
+  "subcategory": "llvm",
+
+  "description": "LLVM-based verification framework using CHC solving",
+  "long_description": "SeaHorn is an automated analysis framework for LLVM-based languages. It encodes verification conditions as Constrained Horn Clauses (CHC) and uses SMT solvers for solving. SeaHorn supports multiple verification techniques including bounded model checking, k-induction, and abstract interpretation.",
+
+  "capabilities": [
+    "chc_solving",
+    "bounded_model_checking",
+    "k_induction",
+    "abstract_interpretation",
+    "cex_generation"
+  ],
+  "property_types": ["safety", "assertions", "memory_safety"],
+  "input_languages": ["llvm_ir", "c", "cpp"],
+  "output_formats": ["sat/unsat", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "docker", "command": "docker pull seahorn/seahorn"},
+      {"type": "source", "command": "git clone https://github.com/seahorn/seahorn && cd seahorn && mkdir build && cd build && cmake .. && make"}
+    ],
+    "dependencies": ["llvm", "z3", "cmake"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://seahorn.github.io/",
+    "tutorial": "https://seahorn.github.io/seahorn/tutorials/",
+    "api_reference": "https://github.com/seahorn/seahorn/wiki"
+  },
+
+  "tactics": [
+    {
+      "name": "bpf",
+      "description": "Bounded proof search",
+      "syntax": "sea bpf program.c",
+      "when_to_use": "For bounded verification",
+      "examples": ["sea bpf -m64 --bound=10 program.c"]
+    },
+    {
+      "name": "pf",
+      "description": "Unbounded proof search",
+      "syntax": "sea pf program.c",
+      "when_to_use": "For full verification",
+      "examples": ["sea pf -m64 program.c"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "sat",
+      "meaning": "Counterexample found",
+      "common_causes": ["Bug in program"],
+      "fixes": ["Analyze generated counterexample"]
+    },
+    {
+      "pattern": "unknown",
+      "meaning": "Could not verify",
+      "common_causes": ["Complex program", "Timeout"],
+      "fixes": ["Increase bounds", "Add invariants"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["safety", "assertion"],
+    "cli_command": "dashprove verify --backend seahorn"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Good for C/C++ programs",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cpachecker", "cbmc", "smack"],
+    "advantages": [
+      "CHC-based approach",
+      "LLVM integration",
+      "Active development"
+    ],
+    "disadvantages": [
+      "Linux only",
+      "Complex setup"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.1.0",
+    "last_updated": "2025-12-21",
+    "maintainer": "SeaHorn team",
+    "license": "BSD-3-Clause"
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "tool": "openjml",
+  "version": "0.17.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "FAILED: .* is false|verification error",
+      "message": "JML specification verification failed",
+      "cause": "Method does not satisfy its JML contract",
+      "solutions": [
+        {
+          "approach": "Check preconditions",
+          "code": "//@ requires param != null && param.length > 0;",
+          "when": "Caller must satisfy requires clause"
+        },
+        {
+          "approach": "Strengthen postcondition",
+          "code": "//@ ensures \\result >= 0;",
+          "when": "Implementation doesn't match ensures"
+        },
+        {
+          "approach": "Add intermediate assertions",
+          "code": "//@ assert intermediate_condition;",
+          "when": "Debug verification failure"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_error",
+      "pattern": "loop invariant .* not established|invariant .* not maintained",
+      "message": "Loop invariant verification failed",
+      "cause": "Loop invariant false on entry or not preserved by iteration",
+      "solutions": [
+        {
+          "approach": "Fix establishment",
+          "code": "//@ loop_invariant i >= 0; // Must be true before loop",
+          "when": "Invariant false initially"
+        },
+        {
+          "approach": "Fix preservation",
+          "code": "//@ loop_invariant sum == i * (i-1) / 2;",
+          "when": "Invariant broken by body"
+        },
+        {
+          "approach": "Add decreases clause",
+          "code": "//@ loop_invariant 0 <= i && i <= n;\n//@ decreases n - i;",
+          "when": "Need termination proof"
+        }
+      ]
+    },
+    {
+      "id": "null_dereference",
+      "pattern": "Null dereference|NullPointerException may occur",
+      "message": "Possible null pointer dereference",
+      "cause": "Object reference may be null at dereference point",
+      "solutions": [
+        {
+          "approach": "Add non-null precondition",
+          "code": "//@ requires obj != null;",
+          "when": "Caller responsibility"
+        },
+        {
+          "approach": "Add null check",
+          "code": "if (obj != null) { obj.method(); }",
+          "when": "Runtime null check needed"
+        },
+        {
+          "approach": "Use nullable annotation",
+          "code": "/*@ nullable @*/ Object maybeNull;",
+          "when": "Document nullable fields"
+        }
+      ]
+    },
+    {
+      "id": "index_out_of_bounds",
+      "pattern": "Index out of bounds|ArrayIndexOutOfBoundsException",
+      "message": "Array index may be out of bounds",
+      "cause": "Array access not proven within bounds",
+      "solutions": [
+        {
+          "approach": "Add bounds precondition",
+          "code": "//@ requires 0 <= index && index < array.length;",
+          "when": "Caller must ensure bounds"
+        },
+        {
+          "approach": "Add loop bounds",
+          "code": "//@ loop_invariant 0 <= i && i <= arr.length;",
+          "when": "Loop iterating array"
+        },
+        {
+          "approach": "Add explicit check",
+          "code": "if (index >= 0 && index < arr.length) { arr[index] = value; }",
+          "when": "Runtime bounds check"
+        }
+      ]
+    },
+    {
+      "id": "arithmetic_overflow",
+      "pattern": "arithmetic overflow|integer overflow possible",
+      "message": "Arithmetic operation may overflow",
+      "cause": "Integer operation could exceed type bounds",
+      "solutions": [
+        {
+          "approach": "Add overflow precondition",
+          "code": "//@ requires a <= Integer.MAX_VALUE - b;",
+          "when": "Constrain inputs"
+        },
+        {
+          "approach": "Use Math.addExact",
+          "code": "int result = Math.addExact(a, b);",
+          "when": "Throw on overflow"
+        },
+        {
+          "approach": "Use bigint in spec",
+          "code": "//@ ensures \\result == (\\bigint)a + (\\bigint)b;",
+          "when": "Specify unbounded math"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Prover timed out|TIMEOUT",
+      "message": "SMT solver timed out",
+      "cause": "Verification condition too complex for prover",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "openjml --timeout 300 MyClass.java",
+          "when": "Proof nearly completing"
+        },
+        {
+          "approach": "Add helper lemmas",
+          "code": "//@ assert helper_fact; // Break down proof",
+          "when": "Complex single goal"
+        },
+        {
+          "approach": "Simplify specifications",
+          "code": "// Factor complex spec into smaller methods",
+          "when": "Spec too complex"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "JML syntax error|unexpected token",
+      "message": "JML annotation parsing failed",
+      "cause": "Invalid JML syntax in annotation",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "//@ requires x > 0; // NOT /*@ @*/requires",
+          "when": "Comment style wrong"
+        },
+        {
+          "approach": "Escape keywords",
+          "code": "//@ requires \\old(x) == x;",
+          "when": "JML keywords need backslash"
+        },
+        {
+          "approach": "Check JML version",
+          "code": "// OpenJML supports JML 2.0+ syntax",
+          "when": "Using legacy JML"
+        }
+      ]
+    },
+    {
+      "id": "assignable_clause_error",
+      "pattern": "assignable clause violated|assigns .* but not allowed",
+      "message": "Method modifies disallowed location",
+      "cause": "Method writes to location not in assignable clause",
+      "solutions": [
+        {
+          "approach": "Extend assignable",
+          "code": "//@ assignable this.field, array[*];",
+          "when": "Method legitimately modifies"
+        },
+        {
+          "approach": "Use pure",
+          "code": "//@ pure",
+          "when": "Method should not modify state"
+        },
+        {
+          "approach": "Use assigns nothing",
+          "code": "//@ assignable \\nothing;",
+          "when": "Method is side-effect free"
+        }
+      ]
+    },
+    {
+      "id": "exceptional_postcondition",
+      "pattern": "signals clause not satisfied",
+      "message": "Exceptional postcondition failed",
+      "cause": "Exception thrown but signals clause not satisfied",
+      "solutions": [
+        {
+          "approach": "Specify exceptional behavior",
+          "code": "//@ signals (IllegalArgumentException e) param < 0;",
+          "when": "Document when exception thrown"
+        },
+        {
+          "approach": "Use signals_only",
+          "code": "//@ signals_only RuntimeException, IOException;",
+          "when": "Limit exception types"
+        },
+        {
+          "approach": "Add exceptional ensures",
+          "code": "//@ ensures_redundantly \\not_thrown(Exception);",
+          "when": "Prove no exception"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "tool": "printf",
+  "version": "coreutils / shell builtin",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_arguments",
+      "pattern": "missing.*argument|expected.*argument|printf:.*%",
+      "message": "Format string expects more arguments",
+      "cause": "Format specifiers don't match argument count",
+      "solutions": [
+        {
+          "approach": "Match specifiers",
+          "code": "printf '%s %s\\n' 'hello' 'world'  # Two %s, two args",
+          "when": "Correct count"
+        },
+        {
+          "approach": "Reuse format",
+          "code": "printf '%s\\n' one two three  # Repeats format for each",
+          "when": "Multiple values"
+        }
+      ]
+    },
+    {
+      "id": "invalid_format",
+      "pattern": "invalid.*conversion|unknown.*format|bad format",
+      "message": "Unknown format specifier",
+      "cause": "Invalid % sequence",
+      "solutions": [
+        {
+          "approach": "Common formats",
+          "code": "%s - string\n%d - signed decimal\n%u - unsigned decimal\n%x - hex (lower)\n%X - hex (upper)\n%o - octal\n%f - floating point\n%e - scientific notation\n%% - literal percent",
+          "when": "Valid specifiers"
+        },
+        {
+          "approach": "Width/precision",
+          "code": "printf '%10s' str     # Right-align width 10\nprintf '%-10s' str    # Left-align width 10\nprintf '%.5s' str     # Max 5 chars\nprintf '%05d' 42      # Zero-pad: 00042\nprintf '%.2f' 3.14159 # 2 decimals: 3.14",
+          "when": "Formatting"
+        }
+      ]
+    },
+    {
+      "id": "no_newline",
+      "pattern": "newline|\\\\n|line break",
+      "message": "Output doesn't have newline",
+      "cause": "printf doesn't add newline automatically (unlike echo)",
+      "solutions": [
+        {
+          "approach": "Add newline",
+          "code": "printf '%s\\n' 'hello'",
+          "when": "Need newline"
+        },
+        {
+          "approach": "Multiple newlines",
+          "code": "printf 'line1\\nline2\\nline3\\n'",
+          "when": "Multiple lines"
+        },
+        {
+          "approach": "No newline wanted",
+          "code": "printf '%s' 'no newline'  # Intentional",
+          "when": "Continue on same line"
+        }
+      ]
+    },
+    {
+      "id": "escape_sequences",
+      "pattern": "escape|backslash|\\\\t|\\\\r|special char",
+      "message": "Escape sequences not working",
+      "cause": "May need shell vs printf escaping",
+      "solutions": [
+        {
+          "approach": "printf escapes",
+          "code": "printf 'tab:\\there\\n'\nprintf 'return:\\rhere\\n'\nprintf 'bell:\\a'",
+          "when": "Special chars"
+        },
+        {
+          "approach": "Literal backslash",
+          "code": "printf 'path\\\\to\\\\file\\n'  # Double backslash",
+          "when": "Need actual backslash"
+        },
+        {
+          "approach": "Single quotes",
+          "code": "printf 'no $expansion here\\n'  # Single quotes",
+          "when": "Prevent shell expansion"
+        }
+      ]
+    },
+    {
+      "id": "integer_conversion",
+      "pattern": "expected.*numeric|invalid number|not.*number",
+      "message": "Expected number but got string",
+      "cause": "%d or %f with non-numeric argument",
+      "solutions": [
+        {
+          "approach": "Validate input",
+          "code": "if [[ $var =~ ^[0-9]+$ ]]; then\n  printf '%d\\n' \"$var\"\nfi",
+          "when": "Check first"
+        },
+        {
+          "approach": "Default to zero",
+          "code": "printf '%d\\n' \"${var:-0}\"",
+          "when": "Fallback value"
+        },
+        {
+          "approach": "String if unknown",
+          "code": "printf '%s\\n' \"$var\"  # Safe for any type",
+          "when": "Generic output"
+        }
+      ]
+    },
+    {
+      "id": "hex_octal_input",
+      "pattern": "0x|0[0-7]|octal|hex.*interpret",
+      "message": "Numbers interpreted as octal/hex",
+      "cause": "Leading 0 means octal, 0x means hex",
+      "solutions": [
+        {
+          "approach": "Force decimal",
+          "code": "printf '%d\\n' $((10#$var))  # Force base 10",
+          "when": "Leading zeros"
+        },
+        {
+          "approach": "Intentional hex",
+          "code": "printf '%d\\n' 0xff   # 255\nprintf '%x\\n' 255    # ff",
+          "when": "Hex conversion"
+        },
+        {
+          "approach": "Output in bases",
+          "code": "printf 'Dec: %d, Hex: %x, Oct: %o\\n' 255 255 255",
+          "when": "Multiple formats"
+        }
+      ]
+    },
+    {
+      "id": "quoting_issues",
+      "pattern": "quote|space|word splitting",
+      "message": "Arguments split incorrectly",
+      "cause": "Word splitting on spaces",
+      "solutions": [
+        {
+          "approach": "Quote variables",
+          "code": "printf '%s\\n' \"$variable\"  # Double quotes",
+          "when": "Preserve spaces"
+        },
+        {
+          "approach": "Quote array",
+          "code": "printf '%s\\n' \"${array[@]}\"  # Each element",
+          "when": "Array handling"
+        }
+      ]
+    }
+  ]
+}

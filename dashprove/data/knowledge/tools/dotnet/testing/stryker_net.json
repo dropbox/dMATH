@@ -1,0 +1,207 @@
+{
+  "id": "stryker_net",
+  "name": "Stryker.NET",
+  "category": "dotnet_testing",
+  "subcategory": "mutation_testing",
+
+  "description": "Mutation testing framework for .NET to measure test quality",
+  "long_description": "Stryker.NET is a mutation testing framework for .NET that helps measure the quality of your test suite. It works by introducing small changes (mutations) to your code and checking if your tests catch them. A surviving mutation indicates a gap in test coverage. Stryker.NET supports C# and produces detailed HTML reports.",
+
+  "capabilities": [
+    "mutation_testing",
+    "test_quality_measurement",
+    "mutation_score_calculation",
+    "html_reporting",
+    "baseline_comparison",
+    "incremental_analysis",
+    "mutation_filtering",
+    "parallel_execution"
+  ],
+  "property_types": ["mutation", "mutant_status", "mutation_score"],
+  "input_languages": ["csharp"],
+  "output_formats": ["html", "json", "dashboard"],
+
+  "installation": {
+    "methods": [
+      {"type": "dotnet_tool", "command": "dotnet tool install -g dotnet-stryker"},
+      {"type": "nuget", "command": "dotnet add package Stryker.CLI"}
+    ],
+    "dependencies": ["dotnet", "test_framework"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://stryker-mutator.io/docs/stryker-net/introduction/",
+    "getting_started": "https://stryker-mutator.io/docs/stryker-net/getting-started/",
+    "configuration": "https://stryker-mutator.io/docs/stryker-net/configuration/",
+    "examples": "https://github.com/stryker-mutator/stryker-net/tree/master/integrationtest"
+  },
+
+  "mutation_types": [
+    {
+      "name": "Arithmetic",
+      "description": "Change arithmetic operators",
+      "examples": ["+ → -", "* → /", "% → *"]
+    },
+    {
+      "name": "Boolean",
+      "description": "Negate boolean conditions",
+      "examples": ["true → false", "&& → ||", "== → !="]
+    },
+    {
+      "name": "Equality",
+      "description": "Change equality operators",
+      "examples": ["== → !=", "> → >=", "< → <="]
+    },
+    {
+      "name": "String",
+      "description": "Mutate string values",
+      "examples": ["\"foo\" → \"\"", "\"\" → \"Stryker was here!\""]
+    },
+    {
+      "name": "Unary",
+      "description": "Remove unary operators",
+      "examples": ["-x → x", "!b → b", "++i → i"]
+    },
+    {
+      "name": "Update",
+      "description": "Change update operators",
+      "examples": ["++ → --", "+= → -="]
+    },
+    {
+      "name": "Linq",
+      "description": "Mutate LINQ methods",
+      "examples": ["First → Last", "Skip → Take", "OrderBy → OrderByDescending"]
+    }
+  ],
+
+  "tactics": [
+    {
+      "name": "run_stryker",
+      "description": "Run mutation testing",
+      "syntax": "dotnet stryker",
+      "when_to_use": "Measure test quality",
+      "examples": ["dotnet stryker", "dotnet stryker --project MyProject.csproj"]
+    },
+    {
+      "name": "target_project",
+      "description": "Specify project to mutate",
+      "syntax": "dotnet stryker -p PROJECT",
+      "when_to_use": "Multi-project solutions",
+      "examples": ["dotnet stryker --project src/MyLib/MyLib.csproj"]
+    },
+    {
+      "name": "filter_mutants",
+      "description": "Filter which files to mutate",
+      "syntax": "dotnet stryker --mutate PATTERN",
+      "when_to_use": "Focus on specific files",
+      "examples": ["dotnet stryker --mutate \"!**/Generated/**\"", "dotnet stryker --mutate \"**/Services/**\""]
+    },
+    {
+      "name": "set_threshold",
+      "description": "Set mutation score threshold",
+      "syntax": "--break SCORE",
+      "when_to_use": "CI quality gate",
+      "examples": ["dotnet stryker --break 80"]
+    },
+    {
+      "name": "baseline_mode",
+      "description": "Compare against baseline",
+      "syntax": "--with-baseline",
+      "when_to_use": "Track changes over time",
+      "examples": ["dotnet stryker --with-baseline"]
+    },
+    {
+      "name": "exclude_mutators",
+      "description": "Disable specific mutators",
+      "syntax": "--excluded-mutations",
+      "when_to_use": "Reduce noise from certain mutations",
+      "examples": ["dotnet stryker --excluded-mutations string,linq"]
+    }
+  ],
+
+  "mutant_statuses": [
+    {
+      "name": "Killed",
+      "description": "Mutation caught by test (good)",
+      "meaning": "Test suite detected the change"
+    },
+    {
+      "name": "Survived",
+      "description": "Mutation not caught (bad)",
+      "meaning": "Gap in test coverage"
+    },
+    {
+      "name": "NoCoverage",
+      "description": "No test covers this code",
+      "meaning": "Code not tested at all"
+    },
+    {
+      "name": "Timeout",
+      "description": "Test timed out with mutation",
+      "meaning": "Mutation caused infinite loop"
+    },
+    {
+      "name": "CompileError",
+      "description": "Mutation caused compile error",
+      "meaning": "Invalid mutation (excluded from score)"
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Mutation score.*below threshold",
+      "meaning": "Test quality below configured threshold",
+      "common_causes": ["Insufficient tests", "Tests don't assert enough"],
+      "fixes": ["Add more assertions", "Test edge cases", "Add missing tests"]
+    },
+    {
+      "pattern": "No test projects found",
+      "meaning": "Stryker couldn't find test project",
+      "common_causes": ["Wrong directory", "Missing test project reference"],
+      "fixes": ["Run from solution directory", "Check project references"]
+    },
+    {
+      "pattern": "survived mutant",
+      "meaning": "Test didn't catch the mutation",
+      "common_causes": ["Missing assertion", "Test doesn't cover this path"],
+      "fixes": ["Add assertion for this case", "Test the specific behavior"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["visual_studio", "rider"],
+    "ci_integration": ["azure_devops", "github_actions", "jenkins"],
+    "test_frameworks": ["xunit", "nunit", "mstest"]
+  },
+
+  "performance": {
+    "typical_runtime": "minutes to hours (depends on codebase size)",
+    "scalability": "Parallel execution, incremental analysis",
+    "memory_usage": "High (runs many test executions)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["pitest", "cargo_mutants", "mutmut"],
+    "advantages": [
+      "Comprehensive .NET support",
+      "Beautiful HTML reports",
+      "Dashboard integration",
+      "Many mutation types",
+      "Active development"
+    ],
+    "disadvantages": [
+      "Can be slow for large codebases",
+      "C# only (no F#)",
+      "High resource usage"
+    ]
+  },
+
+  "metadata": {
+    "version": "4.0.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Stryker Mutator team",
+    "license": "Apache-2.0"
+  }
+}

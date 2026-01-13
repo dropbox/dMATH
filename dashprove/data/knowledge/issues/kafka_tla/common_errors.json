@@ -1,0 +1,146 @@
+{
+  "tool": "kafka_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specifications for Apache Kafka's replication protocol (KIP-595 and related)",
+  "errors": [
+    {
+      "id": "isr_shrink_data_loss",
+      "pattern": "ISR.*shrink.*data loss|committed.*lost",
+      "message": "Data loss during ISR shrink",
+      "cause": "Committed messages lost when replicas removed from ISR",
+      "solutions": [
+        {
+          "approach": "Check min.insync.replicas",
+          "code": "\\* Ensure acks=all with min.insync.replicas\nMinISR == Cardinality(ISR) >= min_insync_replicas\nCanAck == MinISR",
+          "when": "acks != all or minISR too low"
+        },
+        {
+          "approach": "Verify high watermark advancement",
+          "code": "\\* HW only advances with ISR agreement\nAdvanceHW(leader) ==\n    LET newHW == Min({LEO[r] : r \\in ISR})\n    IN HW' = [HW EXCEPT ![leader] = newHW]",
+          "when": "HW advancing beyond ISR"
+        },
+        {
+          "approach": "Check ISR shrink conditions",
+          "code": "\\* Only remove from ISR if replica is truly failed\nShrinkISR(replica) ==\n    /\\ replica \\notin ISR\n    /\\ lastCaughtUpTime[replica] < now - replica_lag_time_max_ms",
+          "when": "Aggressive ISR shrinking"
+        }
+      ]
+    },
+    {
+      "id": "unclean_leader_election",
+      "pattern": "unclean.*leader|out.?of.?sync.*leader",
+      "message": "Unclean leader election occurred",
+      "cause": "Leader elected from replica not in ISR, causing potential data loss",
+      "solutions": [
+        {
+          "approach": "Disable unclean election",
+          "code": "\\* Only elect from ISR\nCanBecomeLeader(replica) == replica \\in ISR\n\\* In config: unclean.leader.election.enable=false",
+          "when": "Unclean election enabled"
+        },
+        {
+          "approach": "Model unclean election explicitly",
+          "code": "\\* If modeling unclean election, track data loss\nUncleanElection(replica) ==\n    /\\ replica \\notin ISR\n    /\\ lostMessages' = lostMessages \\union \n       {m \\in committed : m.offset > LEO[replica]}",
+          "when": "Need to analyze unclean impact"
+        },
+        {
+          "approach": "Verify ISR before election",
+          "code": "LeaderElection ==\n    /\\ ISR # {}\n    /\\ newLeader \\in ISR",
+          "when": "Empty ISR causing unclean"
+        }
+      ]
+    },
+    {
+      "id": "log_divergence",
+      "pattern": "log.*divergence|epoch.*mismatch",
+      "message": "Log divergence detected between leader and follower",
+      "cause": "Follower log diverged from leader after leader change",
+      "solutions": [
+        {
+          "approach": "Use leader epoch",
+          "code": "\\* Truncate on epoch mismatch\nTruncateToLeaderEpoch(follower, epoch, offset) ==\n    /\\ leaderEpoch[follower] < epoch\n    /\\ log' = [log EXCEPT ![follower] = SubSeq(log[follower], 1, offset)]",
+          "when": "Not truncating on epoch change"
+        },
+        {
+          "approach": "Check OffsetForLeaderEpoch",
+          "code": "\\* Follower must query leader's epoch boundary\nOffsetForLeaderEpoch(leader, epoch) ==\n    IF epoch = currentEpoch THEN LEO[leader]\n    ELSE epochEndOffset[leader][epoch]",
+          "when": "Not using epoch boundary"
+        },
+        {
+          "approach": "Verify fetch protocol",
+          "code": "FetchRequest(follower, leader) ==\n    /\\ LET lastEpoch == leaderEpoch[follower] IN\n       \\* Include epoch in fetch\n       Send([type |-> \"fetch\", from |-> follower,\n             offset |-> LEO[follower], epoch |-> lastEpoch])",
+          "when": "Fetch missing epoch info"
+        }
+      ]
+    },
+    {
+      "id": "hwm_regression",
+      "pattern": "high watermark.*decreased|HW.*regression",
+      "message": "High watermark decreased (should be monotonic)",
+      "cause": "Consumer may re-read already consumed messages",
+      "solutions": [
+        {
+          "approach": "Check HW update logic",
+          "code": "UpdateHW(replica, newHW) ==\n    /\\ newHW >= HW[replica]\n    /\\ HW' = [HW EXCEPT ![replica] = newHW]",
+          "when": "HW not monotonic"
+        },
+        {
+          "approach": "Verify leader handoff",
+          "code": "\\* New leader inherits HW from followers' fetch\nBecomeLeader(replica) ==\n    /\\ HW' = [HW EXCEPT ![replica] = \n       Max({fetchPosition[r] : r \\in {replica} \\union ISR})]",
+          "when": "HW reset on leader change"
+        },
+        {
+          "approach": "Check follower HW update",
+          "code": "\\* Follower updates HW from fetch response\nHandleFetchResponse(follower, response) ==\n    /\\ HW' = [HW EXCEPT ![follower] = \n       Min(LEO[follower], response.leaderHW)]",
+          "when": "Follower HW exceeding LEO"
+        }
+      ]
+    },
+    {
+      "id": "controller_epoch_stale",
+      "pattern": "controller.*epoch.*stale|old.*controller",
+      "message": "Stale controller epoch causing split-brain",
+      "cause": "Old controller commands being processed after new controller elected",
+      "solutions": [
+        {
+          "approach": "Check controller epoch on all requests",
+          "code": "HandleControllerRequest(broker, req) ==\n    IF req.controllerEpoch < currentControllerEpoch[broker]\n    THEN Reject(req)\n    ELSE Process(req)",
+          "when": "Not validating controller epoch"
+        },
+        {
+          "approach": "Fence old controller",
+          "code": "\\* Broker fences on higher epoch\nUpdateControllerEpoch(broker, epoch) ==\n    /\\ epoch > currentControllerEpoch[broker]\n    /\\ currentControllerEpoch' = [currentControllerEpoch EXCEPT ![broker] = epoch]",
+          "when": "Brokers accepting old controller"
+        },
+        {
+          "approach": "Use KRaft epoch (post-ZK)",
+          "code": "\\* In KRaft mode, controller epoch is part of metadata log\nControllerEpochFromLog == metadata.controllerEpoch",
+          "when": "Using KRaft instead of ZK"
+        }
+      ]
+    },
+    {
+      "id": "fetch_session_staleness",
+      "pattern": "fetch.*session.*stale|incremental.*fetch.*error",
+      "message": "Stale fetch session causing missed updates",
+      "cause": "Incremental fetch returned stale partition data",
+      "solutions": [
+        {
+          "approach": "Validate fetch session epoch",
+          "code": "HandleFetchRequest(leader, req) ==\n    IF req.sessionEpoch # fetchSessions[leader][req.sessionId].epoch\n    THEN ResetSession(req.sessionId)\n    ELSE ProcessIncremental(req)",
+          "when": "Session epoch mismatch"
+        },
+        {
+          "approach": "Force full fetch on error",
+          "code": "\\* Client falls back to full fetch\nFetchWithFallback(consumer) ==\n    IF lastFetchError THEN FullFetch(consumer)\n    ELSE IncrementalFetch(consumer)",
+          "when": "Incremental fetch errors"
+        },
+        {
+          "approach": "Check session timeout",
+          "code": "\\* Expire old sessions\nExpireFetchSessions(broker) ==\n    fetchSessions' = [fetchSessions EXCEPT ![broker] = \n        {s \\in fetchSessions[broker] : s.lastUsed > now - sessionTimeout}]",
+          "when": "Stale sessions not expired"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "tool": "fairlearn",
+  "version": "0.10.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sensitive_feature_mismatch",
+      "pattern": "(sensitive.*feature|shape.*mismatch|length.*differ)",
+      "message": "Sensitive feature array length mismatch",
+      "cause": "Sensitive features must match data length",
+      "solutions": [
+        {
+          "approach": "Check array lengths",
+          "code": "assert len(sensitive_features) == len(X)\nassert len(sensitive_features) == len(y)",
+          "when": "Debugging shape issues"
+        },
+        {
+          "approach": "Extract from dataframe",
+          "code": "sensitive_features = df['gender'].values\nX = df.drop(['gender', 'target'], axis=1)\ny = df['target'].values",
+          "when": "Using dataframe"
+        }
+      ]
+    },
+    {
+      "id": "metric_not_supported",
+      "pattern": "(metric.*not supported|unknown metric)",
+      "message": "Metric not supported for fairness analysis",
+      "cause": "Some sklearn metrics not compatible with MetricFrame",
+      "solutions": [
+        {
+          "approach": "Use supported metric",
+          "code": "from fairlearn.metrics import MetricFrame\nfrom sklearn.metrics import accuracy_score, precision_score\nmf = MetricFrame(\n    metrics={'accuracy': accuracy_score, 'precision': precision_score},\n    y_true=y_true, y_pred=y_pred,\n    sensitive_features=sensitive_features\n)",
+          "when": "Using standard metrics"
+        },
+        {
+          "approach": "Create custom metric",
+          "code": "def custom_metric(y_true, y_pred):\n    return (y_true == y_pred).mean()\nmf = MetricFrame(metrics=custom_metric, ...)",
+          "when": "Need custom metric"
+        }
+      ]
+    },
+    {
+      "id": "constraint_not_satisfied",
+      "pattern": "(constraint.*infeasible|no solution|optimization.*failed)",
+      "message": "Fairness constraint cannot be satisfied",
+      "cause": "Constraints too strict for given model/data",
+      "solutions": [
+        {
+          "approach": "Relax constraints",
+          "code": "from fairlearn.reductions import ExponentiatedGradient, DemographicParity\nmitigator = ExponentiatedGradient(\n    estimator=LogisticRegression(),\n    constraints=DemographicParity(difference_bound=0.05)  # Allow some slack\n)",
+          "when": "Strict parity infeasible"
+        },
+        {
+          "approach": "Use different constraint",
+          "code": "from fairlearn.reductions import EqualizedOdds, ErrorRateParity\n# Try ErrorRateParity instead of DemographicParity\nconstraints = ErrorRateParity()",
+          "when": "Current constraint too strict"
+        },
+        {
+          "approach": "Increase iterations",
+          "code": "mitigator = ExponentiatedGradient(\n    estimator=clf,\n    constraints=DemographicParity(),\n    max_iter=100  # Default is 50\n)",
+          "when": "Optimization needs more time"
+        }
+      ]
+    },
+    {
+      "id": "estimator_not_fitted",
+      "pattern": "(not fitted|fit.*first)",
+      "message": "Mitigator or estimator not fitted",
+      "cause": "Must call fit() before predict()",
+      "solutions": [
+        {
+          "approach": "Fit mitigator",
+          "code": "mitigator.fit(X_train, y_train, sensitive_features=sf_train)\ny_pred = mitigator.predict(X_test)",
+          "when": "Using ExponentiatedGradient"
+        },
+        {
+          "approach": "Fit threshold optimizer",
+          "code": "postprocess = ThresholdOptimizer(\n    estimator=trained_model,\n    constraints='demographic_parity'\n)\npostprocess.fit(X_val, y_val, sensitive_features=sf_val)",
+          "when": "Using ThresholdOptimizer"
+        }
+      ]
+    },
+    {
+      "id": "binary_classification_required",
+      "pattern": "(binary.*classification|multiclass.*not supported)",
+      "message": "Method requires binary classification",
+      "cause": "Some fairness constraints only work for binary problems",
+      "solutions": [
+        {
+          "approach": "Use binary encoding",
+          "code": "# Convert multiclass to binary\ny_binary = (y == positive_class).astype(int)",
+          "when": "Can reduce to binary"
+        },
+        {
+          "approach": "Use one-vs-rest",
+          "code": "# Train separate binary classifiers\nfrom sklearn.multiclass import OneVsRestClassifier\nclf = OneVsRestClassifier(fair_classifier)",
+          "when": "Need multiclass"
+        }
+      ]
+    },
+    {
+      "id": "dashboard_error",
+      "pattern": "(FairnessDashboard|widget|visualization)",
+      "message": "Fairness dashboard error",
+      "cause": "Dashboard requires specific environment setup",
+      "solutions": [
+        {
+          "approach": "Use metrics directly",
+          "code": "mf = MetricFrame(metrics=accuracy_score, ...)\nprint(mf.by_group)\nprint(mf.difference())",
+          "when": "Dashboard not working"
+        },
+        {
+          "approach": "Use built-in plots",
+          "code": "mf.by_group.plot.bar()\nplt.show()",
+          "when": "Want simple visualization"
+        }
+      ]
+    },
+    {
+      "id": "sample_weight_error",
+      "pattern": "(sample.*weight|weight.*not supported)",
+      "message": "Sample weights handling error",
+      "cause": "Estimator may not support sample weights",
+      "solutions": [
+        {
+          "approach": "Use weight-supporting estimator",
+          "code": "# Most sklearn estimators support sample_weight\nfrom sklearn.linear_model import LogisticRegression\nmitigator = ExponentiatedGradient(\n    estimator=LogisticRegression(),  # Supports sample_weight\n    constraints=DemographicParity()\n)",
+          "when": "Current estimator doesn't support weights"
+        },
+        {
+          "approach": "Use GridSearch instead",
+          "code": "from fairlearn.reductions import GridSearch\nmitigator = GridSearch(\n    estimator=estimator,\n    constraints=DemographicParity()\n)",
+          "when": "Can use grid search"
+        }
+      ]
+    }
+  ]
+}

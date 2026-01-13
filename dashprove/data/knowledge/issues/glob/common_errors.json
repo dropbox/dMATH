@@ -1,0 +1,102 @@
+{
+  "tool": "glob",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "glob_no_matches",
+      "pattern": "empty result|no files found|glob returned \\[\\]",
+      "severity": "warning",
+      "causes": [
+        "Pattern doesn't match any files",
+        "Wrong working directory",
+        "Files are in gitignored/excluded directories"
+      ],
+      "solutions": [
+        "Test simpler pattern first: **/*.js",
+        "Use absolute paths or verify cwd option",
+        "Check for typos in directory/file names",
+        "Use { dot: true } to match dotfiles"
+      ]
+    },
+    {
+      "id": "glob_v9_esm_breaking",
+      "pattern": "ERR_REQUIRE_ESM|not a function|glob is not defined",
+      "severity": "error",
+      "causes": [
+        "glob v9+ is ESM-only",
+        "Attempting require() on ESM module",
+        "API changed from callback to async/sync"
+      ],
+      "solutions": [
+        "v9+: import { glob, globSync } from 'glob'",
+        "v9+: const files = await glob('**/*.js')",
+        "Use v8.x for CommonJS: npm i glob@8",
+        "Or use dynamic import: const { glob } = await import('glob')"
+      ]
+    },
+    {
+      "id": "glob_too_many_files",
+      "pattern": "EMFILE|too many open files|memory error",
+      "severity": "error",
+      "causes": [
+        "Pattern matching too many files",
+        "File descriptor limit reached",
+        "Recursive glob on large directory"
+      ],
+      "solutions": [
+        "Use more specific pattern to reduce matches",
+        "Add ignore option: { ignore: 'node_modules/**' }",
+        "Use stream API for large result sets",
+        "Increase ulimit -n on Unix systems"
+      ]
+    },
+    {
+      "id": "glob_windows_path",
+      "pattern": "path.*backslash|Windows path|ENOENT.*\\\\",
+      "severity": "warning",
+      "causes": [
+        "Glob expects forward slashes",
+        "Windows backslash paths don't work",
+        "Path normalization needed"
+      ],
+      "solutions": [
+        "Always use forward slashes in patterns",
+        "Glob converts results to forward slashes",
+        "Use path.posix.join() for patterns",
+        "Or use fg (fast-glob) which handles this better"
+      ]
+    },
+    {
+      "id": "glob_negation_not_working",
+      "pattern": "negation.*not working|!pattern ignored|exclude not applied",
+      "severity": "warning",
+      "causes": [
+        "Negation syntax wrong or unsupported",
+        "Negation needs to be in ignore option",
+        "Array pattern order matters"
+      ],
+      "solutions": [
+        "Use ignore option: { ignore: ['node_modules/**'] }",
+        "v9: negation in pattern array may not work as expected",
+        "Put negated patterns in ignore, positive in main pattern",
+        "Test with ignore separately first"
+      ]
+    },
+    {
+      "id": "glob_symlink_handling",
+      "pattern": "symlink not followed|broken symlink error|ELOOP",
+      "severity": "warning",
+      "causes": [
+        "Symlinks not followed by default (v9+)",
+        "Broken symlink causing error",
+        "Circular symlink loop"
+      ],
+      "solutions": [
+        "Use { follow: true } to follow symlinks",
+        "Handle broken symlinks: { allowBroken: true }",
+        "Check for symlink loops in file structure",
+        "Use { realpath: true } to resolve symlinks"
+      ]
+    }
+  ]
+}

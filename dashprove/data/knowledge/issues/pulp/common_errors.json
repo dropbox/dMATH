@@ -1,0 +1,122 @@
+{
+  "version": "2.8",
+  "errors": [
+    {
+      "id": "solver_not_found",
+      "pattern": "PulpSolverError:.*No executable found",
+      "message": "Requested solver binary not available",
+      "cause": "CBC/GLPK/CPLEX binary missing from PATH or not installed",
+      "solutions": [
+        {
+          "approach": "Install CBC (default) solver",
+          "code": "sudo apt install coinor-cbc",
+          "when": "Using default PULP_CBC_CMD"
+        },
+        {
+          "approach": "Point to custom solver path",
+          "code": "pulp.PULP_CBC_CMD(path='/usr/local/bin/cbc')",
+          "when": "Solver installed in non-standard location"
+        },
+        {
+          "approach": "Switch to available solver",
+          "code": "pulp.GLPK_CMD() or pulp.CPLEX_CMD()",
+          "when": "Alternative solver already installed"
+        }
+      ]
+    },
+    {
+      "id": "solve_failed",
+      "pattern": "PulpSolverError: Pulp: Error while executing",
+      "message": "External solver returned an error",
+      "cause": "Solver crashed, input file invalid, or wrong command-line options",
+      "solutions": [
+        {
+          "approach": "Write LP for inspection",
+          "code": "model.writeLP(\"debug.lp\")",
+          "when": "Need to inspect exported model"
+        },
+        {
+          "approach": "Enable msg=True to capture logs",
+          "code": "solver = pulp.PULP_CBC_CMD(msg=True)",
+          "when": "See solver output to diagnose failure"
+        },
+        {
+          "approach": "Check solver arguments",
+          "code": "solver = pulp.COIN_CMD(options=[\"presolve on\"])",
+          "when": "Custom options might be invalid"
+        }
+      ]
+    },
+    {
+      "id": "infeasible",
+      "pattern": "Status: Infeasible",
+      "message": "Solver reported model infeasible",
+      "cause": "Constraints conflict or bounds inconsistent",
+      "solutions": [
+        {
+          "approach": "Inspect constraint slacks",
+          "code": "for c in model.constraints.values(): print(c, c.slack)",
+          "when": "Identify which constraints are violated"
+        },
+        {
+          "approach": "Relax constraints gradually",
+          "code": "% add slack var and penalize in objective",
+          "when": "Need feasibility with minimal violations"
+        },
+        {
+          "approach": "Verify data feeding into model",
+          "code": "% ensure demand <= capacity arrays align",
+          "when": "Input mistakes often cause infeasibility"
+        }
+      ]
+    },
+    {
+      "id": "unbounded",
+      "pattern": "Status: Unbounded",
+      "message": "Objective is unbounded",
+      "cause": "Missing bounds on variables in direction of optimization",
+      "solutions": [
+        {
+          "approach": "Set explicit bounds on decision vars",
+          "code": "x = pulp.LpVariable(\"x\", lowBound=0, upBound=1e6)",
+          "when": "Variables default to unbounded"
+        },
+        {
+          "approach": "Add regularization to objective",
+          "code": "model += pulp.lpSum(cost[i]*x[i] + 0.001*x[i])",
+          "when": "Need to curb unbounded growth"
+        },
+        {
+          "approach": "Confirm objective sense",
+          "code": "model.sense = pulp.LpMinimize",
+          "when": "Wrong sense makes model appear unbounded"
+        }
+      ]
+    },
+    {
+      "id": "none_values",
+      "pattern": "NoneType|value None",
+      "message": "Variable values are None after solve",
+      "cause": "Solver did not find a feasible/optimal solution or solve was not run",
+      "solutions": [
+        {
+          "approach": "Check solver status before reading values",
+          "code": "if pulp.LpStatus[model.status] == \"Optimal\": ...",
+          "when": "Avoid accessing values after failed solve"
+        },
+        {
+          "approach": "Enable msg=True to see reason",
+          "code": "solver = pulp.PULP_CBC_CMD(msg=True)",
+          "when": "Need solver output to understand failure"
+        },
+        {
+          "approach": "Provide better initial bounds",
+          "code": "x = pulp.LpVariable(\"x\", lowBound=0)",
+          "when": "Undefined bounds may confuse solver"
+        }
+      ]
+    }
+  ],
+  "tool": "pulp",
+  "last_updated": "2025-12-23"
+}

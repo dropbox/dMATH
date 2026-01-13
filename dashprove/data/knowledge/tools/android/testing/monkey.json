@@ -1,0 +1,182 @@
+{
+  "id": "monkey",
+  "name": "Android Monkey",
+  "category": "android_testing",
+  "subcategory": "stress_testing",
+
+  "description": "Android tool for generating random UI events (stress/fuzz testing)",
+  "long_description": "Android Monkey is a command-line tool that generates pseudo-random streams of user events such as clicks, touches, and gestures. It's designed for stress testing applications by simulating random user behavior. Monkey can find crashes, ANRs, and edge cases that structured testing might miss.",
+
+  "capabilities": [
+    "random_event_generation",
+    "stress_testing",
+    "crash_detection",
+    "anr_detection",
+    "throttling_control",
+    "package_filtering",
+    "seed_based_reproducibility",
+    "event_type_weighting"
+  ],
+  "property_types": ["event", "crash_log", "anr_log"],
+  "input_languages": ["shell"],
+  "output_formats": ["console", "logcat"],
+
+  "installation": {
+    "methods": [
+      {"type": "builtin", "command": "Included in Android SDK platform-tools"}
+    ],
+    "dependencies": ["android_sdk", "adb"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://developer.android.com/studio/test/other-testing-tools/monkey",
+    "api_reference": "https://developer.android.com/studio/test/other-testing-tools/monkey#command-options",
+    "examples": "https://developer.android.com/studio/test/other-testing-tools/monkey#basic-use"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_run",
+      "description": "Run basic monkey test",
+      "syntax": "adb shell monkey -p PACKAGE -v COUNT",
+      "when_to_use": "Quick stress test",
+      "examples": ["adb shell monkey -p com.example.app -v 1000"]
+    },
+    {
+      "name": "throttled_run",
+      "description": "Run with delay between events",
+      "syntax": "adb shell monkey --throttle MS -p PACKAGE COUNT",
+      "when_to_use": "Slower, more realistic testing",
+      "examples": ["adb shell monkey --throttle 100 -p com.example.app -v 5000"]
+    },
+    {
+      "name": "seed_run",
+      "description": "Run with specific seed for reproducibility",
+      "syntax": "adb shell monkey -s SEED -p PACKAGE COUNT",
+      "when_to_use": "Reproducing a crash",
+      "examples": ["adb shell monkey -s 12345 -p com.example.app -v 1000"]
+    },
+    {
+      "name": "event_weights",
+      "description": "Adjust event type probabilities",
+      "syntax": "adb shell monkey --pct-TYPE PERCENT ...",
+      "when_to_use": "Focus on specific interaction types",
+      "examples": ["adb shell monkey --pct-touch 60 --pct-motion 20 --pct-nav 10 -p com.example.app 1000"]
+    },
+    {
+      "name": "ignore_crashes",
+      "description": "Continue after crashes",
+      "syntax": "adb shell monkey --ignore-crashes -p PACKAGE COUNT",
+      "when_to_use": "Find multiple crashes in one run",
+      "examples": ["adb shell monkey --ignore-crashes --ignore-timeouts -p com.example.app 10000"]
+    },
+    {
+      "name": "verbose_output",
+      "description": "Increase output verbosity",
+      "syntax": "adb shell monkey -v -v -v",
+      "when_to_use": "Debugging crash reproduction",
+      "examples": ["adb shell monkey -v -v -v -p com.example.app 1000"]
+    }
+  ],
+
+  "event_types": [
+    {
+      "name": "pct-touch",
+      "description": "Touch events (tap)",
+      "default": "15%"
+    },
+    {
+      "name": "pct-motion",
+      "description": "Motion events (drag, swipe)",
+      "default": "10%"
+    },
+    {
+      "name": "pct-trackball",
+      "description": "Trackball events",
+      "default": "15%"
+    },
+    {
+      "name": "pct-nav",
+      "description": "Navigation events (up/down/left/right)",
+      "default": "25%"
+    },
+    {
+      "name": "pct-majornav",
+      "description": "Major navigation (back, menu)",
+      "default": "15%"
+    },
+    {
+      "name": "pct-syskeys",
+      "description": "System keys (home, volume)",
+      "default": "2%"
+    },
+    {
+      "name": "pct-appswitch",
+      "description": "App switch activity",
+      "default": "2%"
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CRASH:",
+      "meaning": "Application crashed",
+      "common_causes": ["Null pointer", "Array bounds", "Unhandled exception"],
+      "fixes": ["Check logcat for stack trace", "Re-run with same seed", "Fix exception handling"]
+    },
+    {
+      "pattern": "ANR",
+      "meaning": "Application Not Responding",
+      "common_causes": ["Main thread blocked", "Long operation on UI thread"],
+      "fixes": ["Check for network/DB on main thread", "Use async operations"]
+    },
+    {
+      "pattern": "Monkey aborted",
+      "meaning": "Monkey stopped due to error",
+      "common_causes": ["App crashed and restart failed", "Device disconnected"],
+      "fixes": ["Use --ignore-crashes", "Check device connection"]
+    },
+    {
+      "pattern": "No activities found",
+      "meaning": "Package has no launchable activity",
+      "common_causes": ["Wrong package name", "No exported activity"],
+      "fixes": ["Verify package name", "Check AndroidManifest"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["android_studio"],
+    "ci_integration": ["github_actions", "gitlab_ci", "firebase_test_lab"]
+  },
+
+  "performance": {
+    "typical_runtime": "minutes to hours",
+    "scalability": "Runs as long as needed",
+    "memory_usage": "Low (events sent from host)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["afl", "libfuzzer", "chaos_monkey"],
+    "advantages": [
+      "Built into Android SDK - no setup",
+      "Finds edge case crashes",
+      "Reproducible with seeds",
+      "Configurable event distribution"
+    ],
+    "disadvantages": [
+      "Random - may not cover all paths",
+      "Cannot target specific features",
+      "No assertions - only finds crashes",
+      "Output can be hard to analyze"
+    ]
+  },
+
+  "metadata": {
+    "version": "Android SDK",
+    "last_updated": "2025-12-22",
+    "maintainer": "Google",
+    "license": "Apache-2.0"
+  }
+}

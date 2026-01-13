@@ -1,0 +1,130 @@
+{
+  "tool": "touch",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot touch",
+      "message": "Cannot create or update file",
+      "cause": "No write permission",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo touch /var/log/myapp.log",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check directory",
+          "code": "ls -ld directory/  # Need write on dir for new files",
+          "when": "New file"
+        },
+        {
+          "approach": "Check file",
+          "code": "ls -la file  # Need write on file to update time",
+          "when": "Existing file"
+        }
+      ]
+    },
+    {
+      "id": "no_such_directory",
+      "pattern": "No such file or directory|cannot touch|parent.*missing",
+      "message": "Parent directory doesn't exist",
+      "cause": "Path contains non-existent directory",
+      "solutions": [
+        {
+          "approach": "Create parents",
+          "code": "mkdir -p path/to && touch path/to/file.txt",
+          "when": "Create path"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la path/to/",
+          "when": "Verify exists"
+        }
+      ]
+    },
+    {
+      "id": "set_specific_time",
+      "pattern": "timestamp|date|time|specific.*time",
+      "message": "Want to set specific time",
+      "cause": "Need custom timestamp instead of current time",
+      "solutions": [
+        {
+          "approach": "Date string",
+          "code": "touch -d '2024-01-15 14:30:00' file.txt\ntouch -d 'yesterday' file.txt",
+          "when": "Human readable"
+        },
+        {
+          "approach": "Reference file",
+          "code": "touch -r reference_file target_file",
+          "when": "Copy from other"
+        },
+        {
+          "approach": "Timestamp",
+          "code": "touch -t 202401151430.00 file.txt  # YYYYMMDDhhmm.ss",
+          "when": "Exact timestamp"
+        }
+      ]
+    },
+    {
+      "id": "atime_vs_mtime",
+      "pattern": "access.*time|modification.*time|atime|mtime",
+      "message": "Want to change specific time type",
+      "cause": "Need to change only atime or mtime",
+      "solutions": [
+        {
+          "approach": "Access time only",
+          "code": "touch -a file.txt",
+          "when": "atime only"
+        },
+        {
+          "approach": "Modify time only",
+          "code": "touch -m file.txt",
+          "when": "mtime only"
+        },
+        {
+          "approach": "Check times",
+          "code": "stat file.txt  # Shows all times",
+          "when": "View current"
+        }
+      ]
+    },
+    {
+      "id": "no_create",
+      "pattern": "only.*update|don't create|existing only",
+      "message": "Don't want to create new file",
+      "cause": "Only update if file exists",
+      "solutions": [
+        {
+          "approach": "No create",
+          "code": "touch -c file.txt  # Don't create if missing",
+          "when": "Existing only"
+        },
+        {
+          "approach": "Check first",
+          "code": "[ -f file.txt ] && touch file.txt",
+          "when": "Conditional"
+        }
+      ]
+    },
+    {
+      "id": "symbolic_link",
+      "pattern": "symbolic link|symlink|dereference",
+      "message": "Touch affects wrong file",
+      "cause": "Touch follows symlinks by default",
+      "solutions": [
+        {
+          "approach": "Don't follow",
+          "code": "touch -h symlink  # Touch the link, not target",
+          "when": "Update link time"
+        },
+        {
+          "approach": "Follow (default)",
+          "code": "touch symlink  # Updates target file time",
+          "when": "Update target"
+        }
+      ]
+    }
+  ]
+}

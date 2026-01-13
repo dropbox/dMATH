@@ -1,0 +1,145 @@
+{
+  "id": "kani",
+  "name": "Kani",
+  "category": "rust_formal_verification",
+  "subcategory": "model_checker",
+
+  "description": "Bit-precise model checker for Rust",
+  "long_description": "Kani is a bit-precise model checker for Rust developed by Amazon Web Services. It verifies that Rust programs satisfy user-specified properties by exploring all possible program executions up to a bounded depth. Kani can prove absence of runtime errors like arithmetic overflow, out-of-bounds access, and assertion failures.",
+
+  "capabilities": [
+    "memory_safety",
+    "undefined_behavior",
+    "panic_freedom",
+    "arithmetic_overflow",
+    "bounds_checking",
+    "null_pointer",
+    "assertion_verification",
+    "loop_unwinding"
+  ],
+  "property_types": ["contract", "invariant", "assertion", "assume"],
+  "input_languages": ["rust"],
+  "output_formats": ["proof", "counterexample", "trace", "coverage"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install --locked kani-verifier && cargo kani setup"},
+      {"type": "source", "url": "https://github.com/model-checking/kani"}
+    ],
+    "dependencies": ["cbmc", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://model-checking.github.io/kani/",
+    "tutorial": "https://model-checking.github.io/kani/getting-started.html",
+    "api_reference": "https://model-checking.github.io/kani/reference.html",
+    "examples": "https://github.com/model-checking/kani/tree/main/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "unwind",
+      "description": "Set loop unwinding bound",
+      "syntax": "#[kani::unwind(N)]",
+      "when_to_use": "When verification times out due to loops",
+      "examples": ["#[kani::unwind(10)]", "#[kani::unwind(100)]"]
+    },
+    {
+      "name": "stub",
+      "description": "Replace function with stub for verification",
+      "syntax": "#[kani::stub(original, replacement)]",
+      "when_to_use": "When a function is too complex or calls external code",
+      "examples": ["#[kani::stub(std::time::Instant::now, mock_now)]"]
+    },
+    {
+      "name": "proof",
+      "description": "Mark function as proof harness",
+      "syntax": "#[kani::proof]",
+      "when_to_use": "Every verification entry point needs this",
+      "examples": ["#[kani::proof]\nfn check_my_function() { ... }"]
+    },
+    {
+      "name": "should_panic",
+      "description": "Expect the proof to find a panic",
+      "syntax": "#[kani::should_panic]",
+      "when_to_use": "When testing that invalid inputs cause panics",
+      "examples": ["#[kani::proof]\n#[kani::should_panic]\nfn test_panic() { ... }"]
+    },
+    {
+      "name": "any",
+      "description": "Generate arbitrary symbolic value",
+      "syntax": "kani::any::<T>()",
+      "when_to_use": "To create symbolic inputs for exhaustive checking",
+      "examples": ["let x: u32 = kani::any();", "let arr: [u8; 10] = kani::any();"]
+    },
+    {
+      "name": "assume",
+      "description": "Add precondition constraint",
+      "syntax": "kani::assume(condition)",
+      "when_to_use": "To restrict symbolic values to valid inputs",
+      "examples": ["kani::assume(x > 0 && x < 100);"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "unwinding assertion loop \\d+",
+      "meaning": "Loop bound exceeded during verification",
+      "common_causes": ["Loop bound too small", "Infinite loop", "Complex control flow"],
+      "fixes": ["Increase #[kani::unwind(N)] value", "Add loop invariants", "Simplify loop structure"]
+    },
+    {
+      "pattern": "VERIFICATION:- FAILED",
+      "meaning": "Property violation found",
+      "common_causes": ["Actual bug in code", "Missing precondition", "Incomplete stub"],
+      "fixes": ["Fix the bug", "Add kani::assume() for preconditions", "Review stub implementations"]
+    },
+    {
+      "pattern": "out of memory",
+      "meaning": "State space explosion",
+      "common_causes": ["Unbounded loops", "Large data structures", "Complex recursion"],
+      "fixes": ["Add bounds", "Use stubs for complex functions", "Increase system memory"]
+    },
+    {
+      "pattern": "unsupported feature",
+      "meaning": "Kani doesn't support this Rust feature",
+      "common_causes": ["Inline assembly", "Certain FFI patterns", "Unsupported intrinsics"],
+      "fixes": ["Use stub to replace unsupported code", "Refactor to avoid feature"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["contract", "invariant", "assertion"],
+    "cli_command": "dashprove verify --backend kani"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Handles 1000-5000 lines effectively",
+    "memory_usage": "2-16GB depending on complexity"
+  },
+
+  "comparisons": {
+    "similar_tools": ["prusti", "verus", "creusot", "miri"],
+    "advantages": [
+      "Bit-precise (no false positives for covered properties)",
+      "Good Rust integration via proc macros",
+      "Active development by AWS",
+      "Supports unsafe code verification"
+    ],
+    "disadvantages": [
+      "Bounded verification (may miss deep bugs)",
+      "Can be slow for complex code",
+      "Limited support for concurrency"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.46.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Amazon Web Services",
+    "license": "Apache-2.0/MIT"
+  }
+}

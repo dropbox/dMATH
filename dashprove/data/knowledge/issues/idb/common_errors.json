@@ -1,0 +1,191 @@
+{
+  "tool": "idb",
+  "version": "1.1.8",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "companion_not_found",
+      "pattern": "No IDB Companion found",
+      "message": "IDB companion process not running",
+      "cause": "idb_companion service not started or crashed",
+      "solutions": [
+        {
+          "approach": "Start companion manually",
+          "code": "idb_companion --udid <device_udid>",
+          "when": "Companion not running"
+        },
+        {
+          "approach": "Check companion status",
+          "code": "ps aux | grep idb_companion",
+          "when": "Verify companion is running"
+        },
+        {
+          "approach": "Restart companion",
+          "code": "pkill idb_companion && idb_companion --udid <udid>",
+          "when": "Companion unresponsive"
+        }
+      ]
+    },
+    {
+      "id": "device_not_found",
+      "pattern": "Target .* not found",
+      "message": "Device or simulator not found",
+      "cause": "Device disconnected, locked, or simulator not booted",
+      "solutions": [
+        {
+          "approach": "List available devices",
+          "code": "idb list-targets",
+          "when": "Need to find correct device"
+        },
+        {
+          "approach": "Boot simulator",
+          "code": "xcrun simctl boot <simulator_udid>",
+          "when": "Simulator not running"
+        },
+        {
+          "approach": "Reconnect device",
+          "code": "# Unplug and replug USB cable, trust computer on device",
+          "when": "Physical device disconnected"
+        }
+      ]
+    },
+    {
+      "id": "install_failed",
+      "pattern": "Installation failed",
+      "message": "App installation failed",
+      "cause": "Invalid IPA, signing issue, or device incompatibility",
+      "solutions": [
+        {
+          "approach": "Check bundle ID",
+          "code": "idb list-apps --target <udid> | grep com.myapp",
+          "when": "App already installed with different signing"
+        },
+        {
+          "approach": "Uninstall first",
+          "code": "idb uninstall com.myapp --target <udid>",
+          "when": "Need clean install"
+        },
+        {
+          "approach": "Verify IPA signing",
+          "code": "codesign -vvvv app.ipa",
+          "when": "Signing issues"
+        }
+      ]
+    },
+    {
+      "id": "launch_failed",
+      "pattern": "Launch failed",
+      "message": "App launch failed",
+      "cause": "App crashed on launch, missing entitlements, or resource unavailable",
+      "solutions": [
+        {
+          "approach": "Check crash logs",
+          "code": "idb crash list --target <udid>",
+          "when": "App crashing on launch"
+        },
+        {
+          "approach": "Wait for app install",
+          "code": "idb launch com.myapp --wait-for-debugger --target <udid>",
+          "when": "App not fully installed"
+        },
+        {
+          "approach": "Check entitlements",
+          "code": "codesign -d --entitlements :- App.app",
+          "when": "Missing required capabilities"
+        }
+      ]
+    },
+    {
+      "id": "permission_error",
+      "pattern": "Operation not permitted",
+      "message": "Permission denied for operation",
+      "cause": "Missing permissions or device restrictions",
+      "solutions": [
+        {
+          "approach": "Enable developer mode",
+          "code": "# On device: Settings > Privacy & Security > Developer Mode",
+          "when": "Developer mode disabled"
+        },
+        {
+          "approach": "Trust computer",
+          "code": "# Tap 'Trust' on device when prompted",
+          "when": "Device not trusted"
+        },
+        {
+          "approach": "Run with sudo",
+          "code": "sudo idb <command>  # Only if necessary",
+          "when": "Local permission issue"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Timed out",
+      "message": "Operation timed out",
+      "cause": "Device unresponsive or operation took too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "idb install app.ipa --timeout 120 --target <udid>",
+          "when": "Large app or slow device"
+        },
+        {
+          "approach": "Check device responsiveness",
+          "code": "idb describe --target <udid>",
+          "when": "Device may be frozen"
+        },
+        {
+          "approach": "Restart companion",
+          "code": "pkill idb_companion && idb_companion",
+          "when": "Companion deadlocked"
+        }
+      ]
+    },
+    {
+      "id": "screenshot_failed",
+      "pattern": "Screenshot failed",
+      "message": "Cannot capture screenshot",
+      "cause": "Screen locked, app in background, or GPU issue",
+      "solutions": [
+        {
+          "approach": "Unlock device",
+          "code": "idb ui keychain --target <udid>",
+          "when": "Device is locked"
+        },
+        {
+          "approach": "Bring app to foreground",
+          "code": "idb focus --target <udid>",
+          "when": "App in background"
+        },
+        {
+          "approach": "Use alternative method",
+          "code": "xcrun simctl io <udid> screenshot screen.png",
+          "when": "idb screenshot not working"
+        }
+      ]
+    },
+    {
+      "id": "video_recording_failed",
+      "pattern": "Recording failed",
+      "message": "Video recording failed",
+      "cause": "Insufficient storage, codec issue, or permission denied",
+      "solutions": [
+        {
+          "approach": "Check storage",
+          "code": "idb describe --target <udid>  # Check available space",
+          "when": "Device storage full"
+        },
+        {
+          "approach": "Use shorter recording",
+          "code": "idb record video output.mp4 --duration 30 --target <udid>",
+          "when": "Recording too long"
+        },
+        {
+          "approach": "Use xcrun for simulator",
+          "code": "xcrun simctl io <udid> recordVideo video.mp4",
+          "when": "idb recording not supported"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "tool": "nnenum",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Verification timed out",
+      "cause": "Enumeration took too long",
+      "solutions": [
+        {
+          "approach": "Set timeout",
+          "code": "settings.timeout = 3600",
+          "when": "Need time limit"
+        },
+        {
+          "approach": "Reduce epsilon",
+          "code": "# Smaller perturbation = fewer regions",
+          "when": "Too many linear regions"
+        },
+        {
+          "approach": "Use GPU",
+          "code": "settings.use_gpu = True",
+          "when": "CPU too slow"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Out of memory",
+      "cause": "Too many stars in enumeration",
+      "solutions": [
+        {
+          "approach": "Limit stars",
+          "code": "settings.max_stars = 10000",
+          "when": "Exponential star growth"
+        },
+        {
+          "approach": "Use approximation",
+          "code": "# Merge similar stars",
+          "when": "Exact enumeration too expensive"
+        },
+        {
+          "approach": "Smaller epsilon",
+          "code": "# Reduce perturbation size",
+          "when": "Large input region"
+        }
+      ]
+    },
+    {
+      "id": "model_error",
+      "pattern": "model",
+      "message": "Model loading error",
+      "cause": "Unsupported model format",
+      "solutions": [
+        {
+          "approach": "Use ONNX format",
+          "code": "network = load_onnx_network('model.onnx')",
+          "when": "Wrong format"
+        },
+        {
+          "approach": "Check layer support",
+          "code": "# nnenum supports ReLU, linear layers",
+          "when": "Unsupported activation"
+        },
+        {
+          "approach": "Convert model",
+          "code": "torch.onnx.export(model, dummy_input, 'model.onnx')",
+          "when": "Have PyTorch model"
+        }
+      ]
+    },
+    {
+      "id": "spec_error",
+      "pattern": "specification",
+      "message": "Invalid specification",
+      "cause": "Property specification error",
+      "solutions": [
+        {
+          "approach": "Check VNNLIB format",
+          "code": "# Use standard VNNLIB property format",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Check bounds",
+          "code": "# Input bounds must be valid (lb <= ub)",
+          "when": "Invalid bounds"
+        }
+      ]
+    },
+    {
+      "id": "lp_error",
+      "pattern": "LP",
+      "message": "LP solver error",
+      "cause": "Linear programming solver failed",
+      "solutions": [
+        {
+          "approach": "Check LP solver",
+          "code": "# Ensure GLPK or Gurobi installed",
+          "when": "Solver not available"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "settings.lp_solver = 'gurobi'",
+          "when": "GLPK failing"
+        },
+        {
+          "approach": "Check constraints",
+          "code": "# LP may be infeasible",
+          "when": "Infeasible constraints"
+        }
+      ]
+    },
+    {
+      "id": "star_error",
+      "pattern": "star",
+      "message": "Star set error",
+      "cause": "Error in star set computation",
+      "solutions": [
+        {
+          "approach": "Check input star",
+          "code": "# Verify input specification is valid",
+          "when": "Invalid input star"
+        },
+        {
+          "approach": "Numerical precision",
+          "code": "# Check for numerical issues",
+          "when": "Precision problems"
+        }
+      ]
+    },
+    {
+      "id": "verified_unsafe",
+      "pattern": "UNSAFE",
+      "message": "Property violation",
+      "cause": "Found counterexample in enumeration",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "# Check result.counterexample",
+          "when": "Understanding failure"
+        },
+        {
+          "approach": "Verify counterexample",
+          "code": "# Forward pass on original network",
+          "when": "Confirming result"
+        }
+      ]
+    },
+    {
+      "id": "parallel_error",
+      "pattern": "parallel",
+      "message": "Parallelization error",
+      "cause": "Multi-processing issue",
+      "solutions": [
+        {
+          "approach": "Disable parallelism",
+          "code": "settings.num_processes = 1",
+          "when": "Debug single-threaded"
+        },
+        {
+          "approach": "Reduce processes",
+          "code": "settings.num_processes = 4",
+          "when": "Too many processes"
+        }
+      ]
+    }
+  ]
+}

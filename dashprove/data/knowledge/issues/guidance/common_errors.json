@@ -1,0 +1,196 @@
+{
+  "tool": "guidance",
+  "version": "0.1.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_load_error",
+      "pattern": "Cannot load model|Model not found|HuggingFace.*error",
+      "message": "Failed to load language model",
+      "cause": "Model path incorrect or model not downloaded",
+      "solutions": [
+        {
+          "approach": "Use correct model class",
+          "code": "import guidance\nlm = guidance.models.LlamaCpp('/path/to/model.gguf')",
+          "when": "Using local GGUF model"
+        },
+        {
+          "approach": "Use HuggingFace model",
+          "code": "lm = guidance.models.Transformers('meta-llama/Llama-2-7b-hf')",
+          "when": "Using HuggingFace model"
+        },
+        {
+          "approach": "Use OpenAI",
+          "code": "lm = guidance.models.OpenAI('gpt-4')",
+          "when": "Using OpenAI API"
+        },
+        {
+          "approach": "Authenticate HuggingFace",
+          "code": "huggingface-cli login",
+          "when": "Model requires authentication"
+        }
+      ]
+    },
+    {
+      "id": "grammar_error",
+      "pattern": "Grammar error|Invalid grammar|Parse error",
+      "message": "Guidance grammar specification is invalid",
+      "cause": "Syntax error in guidance template",
+      "solutions": [
+        {
+          "approach": "Check block syntax",
+          "code": "program = guidance('''\n{{#each items}}\n{{this}}\n{{/each}}\n''')",
+          "when": "Using control structures"
+        },
+        {
+          "approach": "Use gen block correctly",
+          "code": "program = guidance('Answer: {{gen \"answer\" max_tokens=50}}')",
+          "when": "Generating text"
+        },
+        {
+          "approach": "Escape special characters",
+          "code": "# Use {{{{literal}}}} for literal braces",
+          "when": "Need literal braces in output"
+        }
+      ]
+    },
+    {
+      "id": "select_error",
+      "pattern": "select.*error|Invalid options|No matching option",
+      "message": "Select block failed to match",
+      "cause": "Model output didn't match any select options",
+      "solutions": [
+        {
+          "approach": "Use select correctly",
+          "code": "program = guidance('Choose: {{select \"choice\" options=[\"A\", \"B\", \"C\"]}}')",
+          "when": "Constraining to options"
+        },
+        {
+          "approach": "Add more options",
+          "code": "# Ensure all valid model outputs are in options list",
+          "when": "Model wants to output unlisted value"
+        },
+        {
+          "approach": "Use gen instead",
+          "code": "program = guidance('Choose: {{gen \"choice\" stop=\"\\n\"}}')",
+          "when": "Options are too restrictive"
+        }
+      ]
+    },
+    {
+      "id": "regex_error",
+      "pattern": "regex.*error|Invalid regex|Pattern failed",
+      "message": "Regex constraint failed",
+      "cause": "Model output doesn't match regex pattern",
+      "solutions": [
+        {
+          "approach": "Use regex constraint",
+          "code": "program = guidance('Email: {{gen \"email\" regex=\"[a-z]+@[a-z]+\\\\.[a-z]+\"}}')",
+          "when": "Constraining output format"
+        },
+        {
+          "approach": "Escape regex properly",
+          "code": "# Double escape in Python strings: \\\\d for \\d",
+          "when": "Regex not matching expected"
+        },
+        {
+          "approach": "Simplify pattern",
+          "code": "# Start with simple patterns, add complexity gradually",
+          "when": "Complex regex failing"
+        }
+      ]
+    },
+    {
+      "id": "token_limit",
+      "pattern": "max_tokens|Token limit|Context length",
+      "message": "Token limit exceeded or too restrictive",
+      "cause": "Generation hit token limit before completing",
+      "solutions": [
+        {
+          "approach": "Increase max_tokens",
+          "code": "{{gen \"response\" max_tokens=500}}",
+          "when": "Output was truncated"
+        },
+        {
+          "approach": "Use stop condition",
+          "code": "{{gen \"response\" stop=\"</answer>\"}}",
+          "when": "Want natural stopping point"
+        },
+        {
+          "approach": "Reduce context",
+          "code": "# Shorten prompt to leave room for generation",
+          "when": "Context too long"
+        }
+      ]
+    },
+    {
+      "id": "api_error",
+      "pattern": "API error|OpenAI error|Anthropic error",
+      "message": "API call failed",
+      "cause": "Error from cloud API provider",
+      "solutions": [
+        {
+          "approach": "Set API key",
+          "code": "import os\nos.environ['OPENAI_API_KEY'] = 'sk-...'",
+          "when": "Key not configured"
+        },
+        {
+          "approach": "Handle rate limits",
+          "code": "import time\ntime.sleep(1)  # Add delay between calls",
+          "when": "Rate limited"
+        },
+        {
+          "approach": "Use local model",
+          "code": "lm = guidance.models.LlamaCpp('/path/to/model.gguf')",
+          "when": "Want to avoid API issues"
+        }
+      ]
+    },
+    {
+      "id": "caching_error",
+      "pattern": "Cache error|Cannot cache|Serialization error",
+      "message": "Guidance caching failed",
+      "cause": "Cannot serialize model state for caching",
+      "solutions": [
+        {
+          "approach": "Disable caching",
+          "code": "lm = guidance.models.OpenAI('gpt-4', caching=False)",
+          "when": "Caching causes issues"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "guidance.models.clear_cache()",
+          "when": "Stale cache causing problems"
+        },
+        {
+          "approach": "Use compatible model",
+          "code": "# Some model types have better caching support",
+          "when": "Specific model has cache issues"
+        }
+      ]
+    },
+    {
+      "id": "json_error",
+      "pattern": "JSON.*error|Invalid JSON|json_object",
+      "message": "JSON generation failed",
+      "cause": "Model didn't produce valid JSON",
+      "solutions": [
+        {
+          "approach": "Use JSON constraint",
+          "code": "program = guidance('{{gen \"data\" json_schema=schema}}')",
+          "when": "Need structured JSON output"
+        },
+        {
+          "approach": "Define schema",
+          "code": "schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}",
+          "when": "Specifying JSON structure"
+        },
+        {
+          "approach": "Use structured generation",
+          "code": "{{#each fields}}\"{{this.name}}\": {{gen this.name}},{{/each}}",
+          "when": "Building JSON piece by piece"
+        }
+      ]
+    }
+  ]
+}

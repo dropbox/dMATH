@@ -1,0 +1,130 @@
+{
+  "tool": "vmstat",
+  "version": "3.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "first_line_misleading",
+      "pattern": "first line|average|since boot|cumulative",
+      "message": "First line shows average since boot",
+      "cause": "First vmstat output is cumulative",
+      "solutions": [
+        {
+          "approach": "Skip first",
+          "code": "vmstat 1 2 | tail -1  # Get second line only",
+          "when": "One sample"
+        },
+        {
+          "approach": "Multiple samples",
+          "code": "vmstat 1 5  # 5 samples (ignore first)",
+          "when": "Get real-time"
+        },
+        {
+          "approach": "Continuous",
+          "code": "vmstat 2  # Every 2 seconds",
+          "when": "Monitor"
+        }
+      ]
+    },
+    {
+      "id": "column_meaning",
+      "pattern": "columns|what is|meaning|explain",
+      "message": "Understanding vmstat columns",
+      "cause": "Output columns are cryptic",
+      "solutions": [
+        {
+          "approach": "Key columns",
+          "code": "# procs:\n#   r = processes waiting for run time\n#   b = processes in uninterruptible sleep\n# memory:\n#   swpd = virtual memory used\n#   free = idle memory\n#   buff = memory used as buffers\n#   cache = memory used as cache\n# swap:\n#   si = memory swapped in from disk\n#   so = memory swapped out to disk\n# io:\n#   bi = blocks received from block device\n#   bo = blocks sent to block device\n# cpu:\n#   us = user time\n#   sy = system time\n#   id = idle time\n#   wa = waiting for I/O",
+          "when": "Reference"
+        },
+        {
+          "approach": "Wide output",
+          "code": "vmstat -w  # Wider columns for large numbers",
+          "when": "Formatting"
+        }
+      ]
+    },
+    {
+      "id": "timestamps",
+      "pattern": "timestamp|time|when|date",
+      "message": "Add timestamps to output",
+      "cause": "Default output has no time reference",
+      "solutions": [
+        {
+          "approach": "Add timestamp",
+          "code": "vmstat -t 1  # Add timestamp column",
+          "when": "With time"
+        },
+        {
+          "approach": "Manual timestamp",
+          "code": "vmstat 1 | while read line; do echo \"$(date '+%H:%M:%S') $line\"; done",
+          "when": "Custom format"
+        }
+      ]
+    },
+    {
+      "id": "memory_units",
+      "pattern": "units|KB|MB|bytes|human",
+      "message": "Change memory units",
+      "cause": "Default shows kilobytes",
+      "solutions": [
+        {
+          "approach": "Megabytes",
+          "code": "vmstat -S M 1  # Show in MB\nvmstat -S m 1  # Also MB",
+          "when": "Megabytes"
+        },
+        {
+          "approach": "Kilobytes",
+          "code": "vmstat -S k 1  # In KB (default)\nvmstat -S K 1",
+          "when": "Kilobytes"
+        }
+      ]
+    },
+    {
+      "id": "disk_stats",
+      "pattern": "disk|device|partition|io stats",
+      "message": "Show disk statistics",
+      "cause": "Need per-disk information",
+      "solutions": [
+        {
+          "approach": "Disk mode",
+          "code": "vmstat -d  # Disk statistics\nvmstat -D  # Summary disk stats",
+          "when": "Disk info"
+        },
+        {
+          "approach": "Partition",
+          "code": "vmstat -p sda1 1  # Specific partition",
+          "when": "One partition"
+        },
+        {
+          "approach": "Use iostat",
+          "code": "iostat -x 1  # Better for disk stats",
+          "when": "Better tool"
+        }
+      ]
+    },
+    {
+      "id": "active_inactive",
+      "pattern": "active|inactive|memory breakdown",
+      "message": "Show active/inactive memory",
+      "cause": "Need detailed memory breakdown",
+      "solutions": [
+        {
+          "approach": "Active/inactive",
+          "code": "vmstat -a 1  # Show active/inactive instead of buff/cache",
+          "when": "Memory details"
+        },
+        {
+          "approach": "Use free",
+          "code": "free -h  # Simpler memory view",
+          "when": "Simpler"
+        },
+        {
+          "approach": "Detailed",
+          "code": "cat /proc/meminfo  # Full details",
+          "when": "All details"
+        }
+      ]
+    }
+  ]
+}

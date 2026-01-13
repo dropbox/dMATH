@@ -1,0 +1,52 @@
+// Refinement Examples
+// Demonstrates implementation refinement proofs (compiles to LEAN)
+
+// Abstract specification of a set
+type AbstractSet = {
+    elements: Set<Int>
+}
+
+// Concrete implementation using sorted list
+type SortedListSet = {
+    sorted_elements: List<Int>
+}
+
+// Refinement: sorted list implements set
+refinement sorted_list_refines_set refines AbstractSet {
+    abstraction {
+        // The abstraction function: SortedListSet -> AbstractSet
+        forall sl: SortedListSet .
+            to_set(sl.sorted_elements) == abstract(sl).elements
+    }
+    simulation {
+        // Operations preserve abstraction
+        forall sl: SortedListSet, x: Int .
+            abstract(insert(sl, x)).elements ==
+            abstract(sl).elements.union(singleton(x))
+    }
+}
+
+// Abstract queue specification
+type AbstractQueue = {
+    items: List<Int>
+}
+
+// Ring buffer implementation
+type RingBuffer = {
+    buffer: List<Int>,
+    head: Int,
+    tail: Int,
+    capacity: Int
+}
+
+// Refinement: ring buffer implements queue
+refinement ring_buffer_refines_queue refines AbstractQueue {
+    abstraction {
+        forall rb: RingBuffer .
+            to_list(rb) == abstract(rb).items
+    }
+    simulation {
+        forall rb: RingBuffer, x: Int .
+            to_list(enqueue(rb, x)) == abstract(rb).items.append(x)
+    }
+}

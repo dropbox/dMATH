@@ -1,0 +1,99 @@
+{
+  "tool": "aks",
+  "category": "azure_kubernetes",
+  "description": "Azure Kubernetes Service - managed Kubernetes service",
+  "common_errors": [
+    {
+      "id": "cluster_unreachable",
+      "pattern": "Unable to connect",
+      "regex": "(?i)unable to connect|connection refused|couldn't connect|cluster.*unreachable",
+      "cause": "AKS cluster API endpoint unreachable",
+      "solution": "Update kubeconfig with 'az aks get-credentials', check authorized IP ranges, verify private cluster configuration",
+      "severity": "high",
+      "category": "connectivity"
+    },
+    {
+      "id": "auth_error",
+      "pattern": "Unauthorized",
+      "regex": "(?i)unauthorized|invalid.*credentials|token.*expired|authentication.*error",
+      "cause": "Azure AD authentication failed for AKS cluster",
+      "solution": "Run 'az login', update kubeconfig, check Azure AD RBAC configuration",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "nodepool_error",
+      "pattern": "NodePool",
+      "regex": "(?i)node.*pool|nodes.*not.*ready|vmss.*error|scale.*set.*error",
+      "cause": "Node pool creation or scaling failed",
+      "solution": "Check VM SKU availability in region, verify subscription quotas, review node pool configuration",
+      "severity": "high",
+      "category": "compute"
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "QuotaExceeded",
+      "regex": "(?i)quota.*exceeded|cores.*limit|vm.*limit|resource.*quota",
+      "cause": "Azure subscription quota exceeded",
+      "solution": "Request quota increase in Azure Portal, reduce node count, use different VM size",
+      "severity": "high",
+      "category": "limits"
+    },
+    {
+      "id": "pod_identity",
+      "pattern": "Pod Identity",
+      "regex": "(?i)pod.*identity|workload.*identity|aad.*pod.*identity|managed.*identity",
+      "cause": "Azure AD Pod Identity or Workload Identity configuration issue",
+      "solution": "Enable workload identity on cluster, configure federation, annotate service accounts correctly",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "network_error",
+      "pattern": "Network",
+      "regex": "(?i)network.*error|vnet.*error|subnet.*full|ip.*exhaustion|cni.*error",
+      "cause": "Virtual network or CNI configuration issue",
+      "solution": "Use larger subnet CIDR, configure Azure CNI overlay, check network policy addon",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "acr_pull_error",
+      "pattern": "ImagePullBackOff",
+      "regex": "(?i)image.*pull|acr.*error|registry.*access|unauthorized.*registry",
+      "cause": "Cannot pull images from Azure Container Registry",
+      "solution": "Attach ACR to AKS cluster with 'az aks update --attach-acr', or configure imagePullSecrets",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "upgrade_error",
+      "pattern": "Upgrade",
+      "regex": "(?i)upgrade.*error|version.*not.*available|cluster.*upgrade|node.*pool.*upgrade",
+      "cause": "Cluster or node pool upgrade failed",
+      "solution": "Check supported versions with 'az aks get-versions', upgrade incrementally, cordon/drain problematic nodes",
+      "severity": "medium",
+      "category": "version"
+    },
+    {
+      "id": "load_balancer",
+      "pattern": "LoadBalancer",
+      "regex": "(?i)load.*balancer|public.*ip|service.*pending|external.*ip",
+      "cause": "Load balancer provisioning or configuration issue",
+      "solution": "Check public IP quota, verify service annotations, review load balancer SKU (Basic vs Standard)",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "disk_error",
+      "pattern": "Disk",
+      "regex": "(?i)disk.*error|azure.*disk|persistent.*volume|pvc.*pending|storage.*class",
+      "cause": "Azure Disk volume provisioning or attachment issue",
+      "solution": "Verify storage class exists, check disk SKU availability, ensure zone alignment for zonal disks",
+      "severity": "medium",
+      "category": "storage"
+    }
+  ],
+  "related_tools": ["kubectl", "azure_cli", "helm"],
+  "documentation_url": "https://docs.microsoft.com/azure/aks/"
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "liquidhaskell",
+  "version": "0.9.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "liquid_type_error",
+      "pattern": "Liquid Type Mismatch",
+      "message": "Refinement type mismatch",
+      "cause": "Expression doesn't satisfy refinement predicate",
+      "solutions": [
+        {
+          "approach": "Check refinement",
+          "code": "{-@ type Pos = {v:Int | v > 0} @-}",
+          "when": "Type predicate too strict"
+        },
+        {
+          "approach": "Add assume",
+          "code": "{-@ assume f :: x:Int -> {v:Int | v > x} @-}",
+          "when": "Unsafe but trusted function"
+        },
+        {
+          "approach": "Strengthen precondition",
+          "code": "{-@ f :: {x:Int | x > 0} -> Pos @-}",
+          "when": "Need stronger input constraint"
+        }
+      ]
+    },
+    {
+      "id": "termination_error",
+      "pattern": "Termination Check",
+      "message": "Cannot prove termination",
+      "cause": "Recursive function may not terminate",
+      "solutions": [
+        {
+          "approach": "Add termination metric",
+          "code": "{-@ f :: n:Nat -> Int / [n] @-}",
+          "when": "Need to specify decreasing measure"
+        },
+        {
+          "approach": "Use lazy annotation",
+          "code": "{-@ lazy f @-}",
+          "when": "Intended to be non-terminating"
+        },
+        {
+          "approach": "Specify well-founded order",
+          "code": "{-@ f :: Ord a => a -> Int / [a] @-}",
+          "when": "Custom ordering"
+        }
+      ]
+    },
+    {
+      "id": "unsafe_error",
+      "pattern": "UNSAFE",
+      "message": "Verification failed - UNSAFE",
+      "cause": "Could not verify safety property",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "-- LH shows which constraint failed",
+          "when": "Understanding failure"
+        },
+        {
+          "approach": "Add intermediate refinement",
+          "code": "{-@ lemma :: x:Int -> {v:() | p x} @-}",
+          "when": "Need lemma for proof"
+        },
+        {
+          "approach": "Use reflect",
+          "code": "{-@ reflect f @-}",
+          "when": "Need function in refinements"
+        }
+      ]
+    },
+    {
+      "id": "measure_error",
+      "pattern": "measure",
+      "message": "Invalid measure definition",
+      "cause": "Measure doesn't satisfy requirements",
+      "solutions": [
+        {
+          "approach": "Check measure syntax",
+          "code": "{-@ measure len @-}\nlen :: [a] -> Int\nlen [] = 0\nlen (_:xs) = 1 + len xs",
+          "when": "Wrong measure syntax"
+        },
+        {
+          "approach": "Ensure single recursion",
+          "code": "-- Measures must be single-recursive",
+          "when": "Complex recursion in measure"
+        },
+        {
+          "approach": "Use inline",
+          "code": "{-@ inline f @-}",
+          "when": "Simple function should be inlined"
+        }
+      ]
+    },
+    {
+      "id": "abstract_refinement_error",
+      "pattern": "abstract refinement",
+      "message": "Abstract refinement issue",
+      "cause": "Problem with polymorphic refinement",
+      "solutions": [
+        {
+          "approach": "Instantiate abstract refinement",
+          "code": "{-@ f :: forall <p :: Int -> Bool>. ... @-}",
+          "when": "Need explicit instantiation"
+        },
+        {
+          "approach": "Check bounds",
+          "code": "{-@ data List a <p :: a -> Bool> = ... @-}",
+          "when": "Abstract type parameter"
+        }
+      ]
+    },
+    {
+      "id": "smt_timeout",
+      "pattern": "SMT Timeout",
+      "message": "SMT solver timed out",
+      "cause": "Verification condition too complex",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "liquid --smttimeout=120 File.hs",
+          "when": "May succeed with more time"
+        },
+        {
+          "approach": "Simplify refinement",
+          "code": "-- Break complex refinement into parts",
+          "when": "Refinement too complex"
+        },
+        {
+          "approach": "Add PLE",
+          "code": "{-@ LIQUID \"--ple\" @-}",
+          "when": "Need proof by logical evaluation"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "Cannot import",
+      "message": "Cannot import refined module",
+      "cause": "Module not processed by LiquidHaskell",
+      "solutions": [
+        {
+          "approach": "Process dependency first",
+          "code": "liquid Dependency.hs && liquid Main.hs",
+          "when": "Wrong compilation order"
+        },
+        {
+          "approach": "Use spec file",
+          "code": "-- Create .spec file for external module",
+          "when": "External dependency"
+        },
+        {
+          "approach": "Trust import",
+          "code": "{-@ LIQUID \"--trust-imports\" @-}",
+          "when": "Skip refinement checking for imports"
+        }
+      ]
+    },
+    {
+      "id": "reflect_error",
+      "pattern": "reflection",
+      "message": "Cannot reflect function",
+      "cause": "Function not suitable for reflection",
+      "solutions": [
+        {
+          "approach": "Check function form",
+          "code": "-- Reflected functions must be total",
+          "when": "Partial function"
+        },
+        {
+          "approach": "Add termination proof",
+          "code": "{-@ f :: n:Nat -> Int / [n] @-}",
+          "when": "Need termination"
+        },
+        {
+          "approach": "Use assume-reflect",
+          "code": "{-@ assume reflect f @-}",
+          "when": "Trust without proof"
+        }
+      ]
+    }
+  ]
+}

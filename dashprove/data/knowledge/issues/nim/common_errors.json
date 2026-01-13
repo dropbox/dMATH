@@ -1,0 +1,168 @@
+{
+  "tool": "nim",
+  "version": "2.0.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "type mismatch|expected.*got",
+      "message": "Type mismatch",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Add explicit conversion",
+          "code": "let x = myInt.float  # int to float\nlet y = myFloat.int  # float to int",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Add type annotation",
+          "code": "var x: int = 42",
+          "when": "Type inference failed"
+        },
+        {
+          "approach": "Check generic instantiation",
+          "code": "proc f[T](x: T): T = x\nlet result = f[int](42)",
+          "when": "Generic type unclear"
+        }
+      ]
+    },
+    {
+      "id": "undeclared_identifier",
+      "pattern": "undeclared identifier|not declared",
+      "message": "Identifier not declared",
+      "cause": "Variable or procedure not defined or imported",
+      "solutions": [
+        {
+          "approach": "Import module",
+          "code": "import strutils\nfrom sequtils import map, filter",
+          "when": "Identifier in another module"
+        },
+        {
+          "approach": "Check case sensitivity",
+          "code": "# Nim is case-insensitive but style-sensitive",
+          "when": "Might be case issue"
+        },
+        {
+          "approach": "Define before use",
+          "code": "# Nim requires forward declaration or definition order",
+          "when": "Used before definition"
+        }
+      ]
+    },
+    {
+      "id": "gc_safety",
+      "pattern": "GC.*safe|not GC safe",
+      "message": "GC safety violation",
+      "cause": "Procedure not GC-safe for use in threaded context",
+      "solutions": [
+        {
+          "approach": "Mark as gcsafe",
+          "code": "proc f() {.gcsafe.} = ...",
+          "when": "Procedure is actually GC-safe"
+        },
+        {
+          "approach": "Use thread-local storage",
+          "code": "var x {.threadvar.}: int",
+          "when": "Global variable needed"
+        },
+        {
+          "approach": "Use ARC/ORC",
+          "code": "nim c --mm:orc myfile.nim",
+          "when": "Can use reference counting"
+        }
+      ]
+    },
+    {
+      "id": "effect_mismatch",
+      "pattern": "effect.*not allowed|can raise",
+      "message": "Effect system violation",
+      "cause": "Procedure has effects not declared in signature",
+      "solutions": [
+        {
+          "approach": "Add raises pragma",
+          "code": "proc f() {.raises: [ValueError, IOError].} = ...",
+          "when": "Procedure can raise exceptions"
+        },
+        {
+          "approach": "Add effect pragma",
+          "code": "proc f() {.tags: [ReadIO, WriteIO].} = ...",
+          "when": "Procedure has side effects"
+        },
+        {
+          "approach": "Catch exceptions",
+          "code": "try:\n  riskyOp()\nexcept ValueError:\n  discard",
+          "when": "Want to suppress effect"
+        }
+      ]
+    },
+    {
+      "id": "borrowing_error",
+      "pattern": "cannot borrow|borrow checker",
+      "message": "Borrow checker violation (with strict mode)",
+      "cause": "Attempting to mutate while borrowed",
+      "solutions": [
+        {
+          "approach": "Copy instead of borrow",
+          "code": "let copy = original  # Makes a copy",
+          "when": "Can afford copy"
+        },
+        {
+          "approach": "Use sink",
+          "code": "proc consume(x: sink MyType) = ...",
+          "when": "Transferring ownership"
+        },
+        {
+          "approach": "Use lent",
+          "code": "proc borrow(x: lent MyType) = ...",
+          "when": "Read-only borrow"
+        }
+      ]
+    },
+    {
+      "id": "index_out_of_bounds",
+      "pattern": "index.*out of bounds|IndexDefect",
+      "message": "Index out of bounds",
+      "cause": "Sequence or array index exceeds valid range",
+      "solutions": [
+        {
+          "approach": "Check bounds first",
+          "code": "if idx < seq.len:\n  let val = seq[idx]",
+          "when": "Index may be invalid"
+        },
+        {
+          "approach": "Use getOrDefault",
+          "code": "let val = table.getOrDefault(key, default)",
+          "when": "Using tables"
+        },
+        {
+          "approach": "Use high/low",
+          "code": "for i in arr.low..arr.high:\n  echo arr[i]",
+          "when": "Iterating arrays"
+        }
+      ]
+    },
+    {
+      "id": "nimble_error",
+      "pattern": "nimble.*error|package.*not found",
+      "message": "Nimble package error",
+      "cause": "Package installation or resolution failed",
+      "solutions": [
+        {
+          "approach": "Refresh packages",
+          "code": "nimble refresh",
+          "when": "Package list outdated"
+        },
+        {
+          "approach": "Install package",
+          "code": "nimble install packagename",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Check .nimble file",
+          "code": "# Verify requires in .nimble",
+          "when": "Missing dependency"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "id": "fuzztest",
+  "name": "FuzzTest",
+  "category": "testing",
+  "subcategory": "cpp_fuzzing",
+
+  "description": "Google's C++ fuzzing framework combining fuzz testing and property-based testing",
+  "long_description": "FuzzTest is a C++ fuzzing framework by Google that allows writing fuzz tests as easily as unit tests. It combines fuzzing with property-based testing, enabling specification of input domains and properties that should hold. It integrates with GoogleTest and can run in both fuzzing mode and unit test mode. FuzzTest uses coverage-guided fuzzing internally but provides a high-level API.",
+
+  "capabilities": [
+    "fuzz_testing",
+    "property_based_testing",
+    "input_domain_specification",
+    "coverage_guided_fuzzing",
+    "googletest_integration",
+    "regression_testing",
+    "corpus_management",
+    "sanitizer_integration"
+  ],
+  "property_types": ["correctness", "safety", "robustness"],
+  "input_languages": ["cpp"],
+  "output_formats": ["test_results", "crash_reports", "corpus_files"],
+
+  "installation": {
+    "methods": [
+      {"type": "cmake", "command": "FetchContent_Declare(fuzztest GIT_REPOSITORY https://github.com/google/fuzztest.git)"},
+      {"type": "bazel", "command": "bazel_dep(name = \"fuzztest\", version = \"...\")"}
+    ],
+    "dependencies": ["cmake>=3.19", "clang>=14", "googletest"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/google/fuzztest",
+    "tutorial": "https://github.com/google/fuzztest/blob/main/doc/tutorial.md",
+    "api_reference": "https://github.com/google/fuzztest/blob/main/doc/domains-reference.md",
+    "examples": "https://github.com/google/fuzztest/tree/main/e2e_tests"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_fuzz_test",
+      "description": "Write a basic fuzz test",
+      "syntax": "void MyTest(std::string input) { ... }\nFUZZ_TEST(MySuite, MyTest);",
+      "when_to_use": "Testing function with arbitrary input",
+      "examples": ["FUZZ_TEST(ParserTest, ParseNeverCrashes).WithDomains(Arbitrary<std::string>());"]
+    },
+    {
+      "name": "domain_specification",
+      "description": "Specify input domains for structured testing",
+      "syntax": ".WithDomains(InRange(0, 100), ElementOf({\"a\", \"b\"}))",
+      "when_to_use": "Testing with constrained input",
+      "examples": ["FUZZ_TEST(MathTest, DivideByNonZero).WithDomains(Arbitrary<int>(), NonZero<int>());"]
+    },
+    {
+      "name": "run_fuzz_mode",
+      "description": "Run in continuous fuzzing mode",
+      "syntax": "./my_test --fuzz=MySuite.MyTest",
+      "when_to_use": "Finding new bugs through fuzzing",
+      "examples": ["./fuzz_test --fuzz=ParserTest.ParseNeverCrashes --fuzz_corpus=/tmp/corpus"]
+    },
+    {
+      "name": "unit_test_mode",
+      "description": "Run as regular unit test with seeds",
+      "syntax": "ctest or ./my_test",
+      "when_to_use": "CI integration, regression testing",
+      "examples": ["cmake --build . && ctest"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "FUZZ_TEST.*crashed",
+      "meaning": "Fuzz test found crashing input",
+      "common_causes": ["Buffer overflow", "Null dereference", "Assertion failure"],
+      "fixes": ["Fix the bug", "Add input validation", "Add reproducer to corpus"]
+    },
+    {
+      "pattern": "Domain.*cannot generate",
+      "meaning": "Domain specification too restrictive",
+      "common_causes": ["Conflicting constraints", "Empty intersection"],
+      "fixes": ["Relax domain constraints", "Check domain specification"]
+    },
+    {
+      "pattern": "Sanitizer:.*detected",
+      "meaning": "ASan/MSan/UBSan found issue",
+      "common_causes": ["Memory corruption", "Undefined behavior"],
+      "fixes": ["Fix memory safety bug", "Handle undefined behavior case"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["robustness", "safety"],
+    "cli_command": "dashprove verify --backend fuzztest"
+  },
+
+  "performance": {
+    "typical_runtime": "Variable; fuzz mode runs continuously, unit test mode is fast",
+    "scalability": "Good; can run multiple tests in parallel",
+    "memory_usage": "Moderate; depends on corpus size"
+  },
+
+  "comparisons": {
+    "similar_tools": ["libfuzzer", "afl", "honggfuzz", "proptest"],
+    "advantages": ["GoogleTest integration", "High-level domain API", "Both fuzz and unit test modes", "Structured inputs"],
+    "disadvantages": ["Clang-only", "Linux/macOS only", "Requires recent compiler"]
+  },
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Google",
+    "license": "Apache-2.0"
+  }
+}

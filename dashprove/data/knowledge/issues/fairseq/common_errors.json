@@ -1,0 +1,215 @@
+{
+  "tool": "fairseq",
+  "version": "0.12.2",
+  "last_updated": "2025-12-22",
+  "description": "Facebook AI Research sequence modeling toolkit for NLP and speech",
+  "errors": [
+    {
+      "id": "cuda_oom",
+      "pattern": "CUDA out of memory|RuntimeError.*allocate",
+      "message": "GPU out of memory",
+      "cause": "Batch size or model too large for GPU",
+      "solutions": [
+        {
+          "approach": "Reduce batch size with update-freq",
+          "code": "fairseq-train ... --batch-size 4 --update-freq 8  # Effective batch = 32",
+          "when": "OOM during training"
+        },
+        {
+          "approach": "Use gradient checkpointing",
+          "code": "fairseq-train ... --checkpoint-activations",
+          "when": "Large transformer model"
+        },
+        {
+          "approach": "Enable FP16",
+          "code": "fairseq-train ... --fp16",
+          "when": "GPU supports mixed precision"
+        },
+        {
+          "approach": "Use CPU offload",
+          "code": "fairseq-train ... --cpu-offload",
+          "when": "Need to fit larger model"
+        }
+      ]
+    },
+    {
+      "id": "data_preprocessing_error",
+      "pattern": "fairseq-preprocess.*failed|Dictionary.*mismatch",
+      "message": "Data preprocessing failed",
+      "cause": "Input format wrong or dictionary issues",
+      "solutions": [
+        {
+          "approach": "Check input format",
+          "code": "# Files should be one sentence per line\n# Source: train.src, train.tgt\n# Tokenized text only",
+          "when": "Format issue"
+        },
+        {
+          "approach": "Build dictionary first",
+          "code": "fairseq-preprocess --source-lang src --target-lang tgt \\\n  --trainpref train --validpref valid --testpref test \\\n  --destdir data-bin --workers 20",
+          "when": "First preprocessing"
+        },
+        {
+          "approach": "Use existing dictionary",
+          "code": "fairseq-preprocess ... --srcdict dict.src.txt --tgtdict dict.tgt.txt",
+          "when": "Using pretrained model dictionary"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_load_error",
+      "pattern": "Checkpoint.*not found|Error loading checkpoint",
+      "message": "Failed to load checkpoint",
+      "cause": "Checkpoint path wrong or format incompatible",
+      "solutions": [
+        {
+          "approach": "Check checkpoint path",
+          "code": "ls checkpoints/  # Verify checkpoint exists",
+          "when": "Path issue"
+        },
+        {
+          "approach": "Use --restore-file",
+          "code": "fairseq-train ... --restore-file checkpoint_best.pt",
+          "when": "Resuming training"
+        },
+        {
+          "approach": "Handle version mismatch",
+          "code": "# For old checkpoints:\nfairseq-train ... --reset-optimizer --reset-meters",
+          "when": "Fairseq version changed"
+        }
+      ]
+    },
+    {
+      "id": "audio_feature_error",
+      "pattern": "Audio.*loading.*failed|soundfile.*error",
+      "message": "Audio loading or feature extraction failed",
+      "cause": "Audio format issue or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Install audio dependencies",
+          "code": "pip install soundfile librosa",
+          "when": "Missing audio libraries"
+        },
+        {
+          "approach": "Convert audio format",
+          "code": "ffmpeg -i input.mp3 -ar 16000 -ac 1 output.wav",
+          "when": "Audio format not supported"
+        },
+        {
+          "approach": "Check manifest format",
+          "code": "# TSV format: /path/to/audio.wav\\tnum_frames\n# First line is root directory",
+          "when": "Speech task manifest issue"
+        }
+      ]
+    },
+    {
+      "id": "transformer_attention_error",
+      "pattern": "Attention.*dimension.*mismatch|embed_dim.*error",
+      "message": "Transformer attention dimension error",
+      "cause": "Model architecture configuration mismatch",
+      "solutions": [
+        {
+          "approach": "Check architecture",
+          "code": "--arch transformer --encoder-embed-dim 512 --decoder-embed-dim 512\n--encoder-attention-heads 8 --decoder-attention-heads 8\n# embed_dim must be divisible by num_heads",
+          "when": "Custom architecture"
+        },
+        {
+          "approach": "Use standard architecture",
+          "code": "--arch transformer_iwslt_de_en  # or transformer_wmt_en_de",
+          "when": "Use predefined architecture"
+        }
+      ]
+    },
+    {
+      "id": "loss_nan",
+      "pattern": "loss.*nan|NaN detected",
+      "message": "Training loss became NaN",
+      "cause": "Learning rate too high or numerical instability",
+      "solutions": [
+        {
+          "approach": "Reduce learning rate",
+          "code": "--lr 0.0001 --warmup-updates 4000",
+          "when": "Loss explodes early"
+        },
+        {
+          "approach": "Enable loss scaling",
+          "code": "--fp16 --fp16-init-scale 4 --fp16-scale-window 256",
+          "when": "FP16 underflow"
+        },
+        {
+          "approach": "Gradient clipping",
+          "code": "--clip-norm 1.0",
+          "when": "Gradient explosion"
+        }
+      ]
+    },
+    {
+      "id": "wav2vec_error",
+      "pattern": "wav2vec.*error|W2VBertModel.*failed",
+      "message": "wav2vec model error",
+      "cause": "Model configuration or data issue for self-supervised speech",
+      "solutions": [
+        {
+          "approach": "Use correct task",
+          "code": "fairseq-train ... --task audio_pretraining",
+          "when": "Pretraining wav2vec"
+        },
+        {
+          "approach": "Check data manifest",
+          "code": "# Create manifest with: python examples/wav2vec/wav2vec_manifest.py /audio/dir --dest manifest --ext flac",
+          "when": "Data loading issue"
+        },
+        {
+          "approach": "Verify audio length",
+          "code": "--min-sample-size 32000 --max-sample-size 320000",
+          "when": "Audio too short/long"
+        }
+      ]
+    },
+    {
+      "id": "distributed_training_error",
+      "pattern": "NCCL.*error|distributed.*failed",
+      "message": "Distributed training error",
+      "cause": "Multi-GPU setup or communication issue",
+      "solutions": [
+        {
+          "approach": "Set NCCL environment",
+          "code": "export NCCL_DEBUG=INFO\nexport NCCL_IB_DISABLE=1  # If InfiniBand issues",
+          "when": "Debug NCCL"
+        },
+        {
+          "approach": "Use correct distributed command",
+          "code": "fairseq-train ... --distributed-world-size 8 --distributed-port 12345",
+          "when": "Multi-GPU training"
+        },
+        {
+          "approach": "Check GPU visibility",
+          "code": "export CUDA_VISIBLE_DEVICES=0,1,2,3",
+          "when": "Specific GPUs needed"
+        }
+      ]
+    },
+    {
+      "id": "generation_error",
+      "pattern": "generate.*error|beam.*failed",
+      "message": "Generation/inference error",
+      "cause": "Model/data mismatch during inference",
+      "solutions": [
+        {
+          "approach": "Check generation parameters",
+          "code": "fairseq-generate data-bin --path checkpoint_best.pt --beam 5 --batch-size 32",
+          "when": "Basic generation"
+        },
+        {
+          "approach": "Use interactive mode",
+          "code": "fairseq-interactive data-bin --path checkpoint_best.pt",
+          "when": "Debug single inputs"
+        },
+        {
+          "approach": "Match preprocessing",
+          "code": "# Ensure test data uses same preprocessing and dictionary as training",
+          "when": "Dictionary mismatch"
+        }
+      ]
+    }
+  ]
+}

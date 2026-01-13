@@ -1,0 +1,126 @@
+{
+  "id": "chaos_mesh",
+  "name": "Chaos Mesh",
+  "category": "chaos_engineering",
+  "subcategory": "kubernetes",
+
+  "description": "Cloud-native chaos engineering platform for Kubernetes",
+  "long_description": "Chaos Mesh is a cloud-native chaos engineering platform that orchestrates chaos experiments on Kubernetes. It supports pod failures, network chaos, stress testing, DNS chaos, and more. Provides a web dashboard and supports chaos workflows for automated chaos testing.",
+
+  "capabilities": [
+    "pod_chaos",
+    "network_chaos",
+    "io_chaos",
+    "time_chaos",
+    "stress_chaos",
+    "dns_chaos",
+    "jvm_chaos",
+    "http_chaos"
+  ],
+  "property_types": ["resilience", "availability", "recovery_time"],
+  "input_languages": ["yaml", "kubernetes"],
+  "output_formats": ["events", "metrics"],
+
+  "installation": {
+    "methods": [
+      {"type": "helm", "command": "helm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-mesh --create-namespace"},
+      {"type": "kubectl", "command": "kubectl apply -f https://mirrors.chaos-mesh.org/latest/crd.yaml"}
+    ],
+    "dependencies": ["kubernetes"],
+    "platforms": ["kubernetes"]
+  },
+
+  "documentation": {
+    "official": "https://chaos-mesh.org/docs/",
+    "tutorial": "https://chaos-mesh.org/docs/quick-start/",
+    "api_reference": "https://chaos-mesh.org/docs/chaos_experiments/",
+    "examples": "https://github.com/chaos-mesh/chaos-mesh/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "pod_chaos",
+      "description": "Kill or disrupt pods",
+      "syntax": "kind: PodChaos",
+      "when_to_use": "To test pod failures",
+      "examples": ["apiVersion: chaos-mesh.org/v1alpha1\nkind: PodChaos\nmetadata:\n  name: pod-kill\nspec:\n  action: pod-kill\n  mode: one\n  selector:\n    namespaces: [default]\n    labelSelectors:\n      app: myapp\n  duration: 60s"]
+    },
+    {
+      "name": "network_chaos",
+      "description": "Inject network failures",
+      "syntax": "kind: NetworkChaos",
+      "when_to_use": "To test network issues",
+      "examples": ["apiVersion: chaos-mesh.org/v1alpha1\nkind: NetworkChaos\nmetadata:\n  name: network-delay\nspec:\n  action: delay\n  mode: all\n  selector:\n    namespaces: [default]\n  delay:\n    latency: 100ms\n    jitter: 10ms"]
+    },
+    {
+      "name": "stress_chaos",
+      "description": "CPU/memory stress",
+      "syntax": "kind: StressChaos",
+      "when_to_use": "To test resource pressure",
+      "examples": ["apiVersion: chaos-mesh.org/v1alpha1\nkind: StressChaos\nmetadata:\n  name: cpu-stress\nspec:\n  mode: one\n  selector:\n    namespaces: [default]\n  stressors:\n    cpu:\n      workers: 1\n      load: 80"]
+    },
+    {
+      "name": "workflow",
+      "description": "Chain chaos experiments",
+      "syntax": "kind: Workflow",
+      "when_to_use": "For chaos scenarios",
+      "examples": ["apiVersion: chaos-mesh.org/v1alpha1\nkind: Workflow\nmetadata:\n  name: chaos-workflow\nspec:\n  entry: entry\n  templates:\n    - name: entry\n      templateType: Serial\n      children: [pod-kill, network-delay]"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "selector.*no pods",
+      "meaning": "No pods match selector",
+      "common_causes": ["Wrong labels", "Namespace mismatch"],
+      "fixes": ["Check pod labels and namespace"]
+    },
+    {
+      "pattern": "permission.*denied",
+      "meaning": "RBAC issue",
+      "common_causes": ["Missing permissions"],
+      "fixes": ["Check Chaos Mesh RBAC setup"]
+    },
+    {
+      "pattern": "chaos.*not injected",
+      "meaning": "Chaos not applied",
+      "common_causes": ["Sidecar not injected"],
+      "fixes": ["Restart pod to inject sidecar"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["resilience", "availability"],
+    "cli_command": "dashprove verify --backend chaos-mesh"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to hours",
+    "scalability": "Cluster-wide",
+    "memory_usage": "Controller-based"
+  },
+
+  "comparisons": {
+    "similar_tools": ["litmus", "gremlin", "chaoskube"],
+    "advantages": [
+      "Kubernetes native",
+      "Web dashboard",
+      "Many chaos types",
+      "Workflow support",
+      "Active development"
+    ],
+    "disadvantages": [
+      "Kubernetes only",
+      "Complex setup",
+      "Requires cluster access"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.6.3",
+    "last_updated": "2025-12-22",
+    "maintainer": "Chaos Mesh Community",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "lodash",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "import_bundle_size",
+      "pattern": "bundle size|tree shaking|import lodash|esm",
+      "message": "Large bundle size from full import",
+      "cause": "Importing entire lodash instead of specific functions",
+      "solutions": [
+        {
+          "approach": "Import specific functions",
+          "code": "// Bad - imports entire library\nimport _ from 'lodash';\n\n// Good - imports only debounce\nimport debounce from 'lodash/debounce';",
+          "when": "Reduce bundle"
+        },
+        {
+          "approach": "Use lodash-es",
+          "code": "// ES modules with tree-shaking\nimport { debounce, throttle } from 'lodash-es';",
+          "when": "ES modules"
+        },
+        {
+          "approach": "Use per-method packages",
+          "code": "npm install lodash.debounce\n// Then:\nimport debounce from 'lodash.debounce';",
+          "when": "Minimal install"
+        }
+      ]
+    },
+    {
+      "id": "deep_clone_issues",
+      "pattern": "cloneDeep|circular|function.*lost|Symbol|Date|RegExp",
+      "message": "Deep clone not working correctly",
+      "cause": "Some values don't clone as expected",
+      "solutions": [
+        {
+          "approach": "Use cloneDeep",
+          "code": "import cloneDeep from 'lodash/cloneDeep';\nconst copy = cloneDeep(original);",
+          "when": "Deep copy needed"
+        },
+        {
+          "approach": "Handle circular refs",
+          "code": "// cloneDeep handles circular references automatically\nconst obj = { a: 1 };\nobj.self = obj;\nconst copy = cloneDeep(obj);  // works",
+          "when": "Circular refs"
+        },
+        {
+          "approach": "Custom cloning",
+          "code": "import cloneDeepWith from 'lodash/cloneDeepWith';\nconst copy = cloneDeepWith(obj, (value) => {\n  if (value instanceof MyClass) {\n    return new MyClass(value.data);\n  }\n});",
+          "when": "Custom classes"
+        }
+      ]
+    },
+    {
+      "id": "chain_termination",
+      "pattern": "chain|value|not a function|lazy evaluation",
+      "message": "Chain not returning value",
+      "cause": "Forgot to call .value() to end chain",
+      "solutions": [
+        {
+          "approach": "End chain with value()",
+          "code": "const result = _.chain(users)\n  .filter({ active: true })\n  .map('name')\n  .value();  // Don't forget this!",
+          "when": "Explicit chain"
+        },
+        {
+          "approach": "Avoid chain",
+          "code": "// Chain prevents tree-shaking. Use flow instead:\nimport flow from 'lodash/flow';\nimport filter from 'lodash/filter';\nimport map from 'lodash/map';\n\nconst getActiveNames = flow(\n  users => filter(users, { active: true }),\n  users => map(users, 'name')\n);",
+          "when": "Better alternative"
+        },
+        {
+          "approach": "Use implicit chain",
+          "code": "const names = _(users)\n  .filter({ active: true })\n  .map('name')\n  .value();",
+          "when": "Implicit wrapper"
+        }
+      ]
+    },
+    {
+      "id": "get_default",
+      "pattern": "get.*undefined|default value|null|path",
+      "message": "_.get not returning default for null",
+      "cause": "null is a defined value, default only applies to undefined",
+      "solutions": [
+        {
+          "approach": "Understand _.get behavior",
+          "code": "_.get({ a: null }, 'a', 'default');  // returns null, not 'default'\n_.get({ a: undefined }, 'a', 'default');  // returns 'default'\n_.get({}, 'a', 'default');  // returns 'default'",
+          "when": "null vs undefined"
+        },
+        {
+          "approach": "Handle null explicitly",
+          "code": "const value = _.get(obj, 'path') ?? 'default';\n// OR\nconst value = _.get(obj, 'path', null) || 'default';",
+          "when": "Treat null as missing"
+        },
+        {
+          "approach": "Use result() for functions",
+          "code": "// If value might be a function:\n_.result(obj, 'method', 'default');",
+          "when": "Function values"
+        }
+      ]
+    },
+    {
+      "id": "throttle_debounce",
+      "pattern": "throttle|debounce|leading|trailing|cancel",
+      "message": "Throttle/debounce not behaving as expected",
+      "cause": "Options configuration or cleanup issues",
+      "solutions": [
+        {
+          "approach": "Understand difference",
+          "code": "// debounce: fires after quiet period\nconst search = _.debounce(query, 300);\n\n// throttle: fires at most every N ms\nconst scroll = _.throttle(onScroll, 100);",
+          "when": "Choose correctly"
+        },
+        {
+          "approach": "Configure options",
+          "code": "// Fire immediately, then wait\n_.debounce(fn, 300, { leading: true, trailing: false });\n\n// Fire on trailing edge only (default)\n_.debounce(fn, 300, { leading: false, trailing: true });",
+          "when": "Timing control"
+        },
+        {
+          "approach": "Clean up",
+          "code": "const debouncedFn = _.debounce(fn, 300);\n\n// In React cleanup:\nuseEffect(() => {\n  return () => debouncedFn.cancel();\n}, []);",
+          "when": "Prevent leaks"
+        }
+      ]
+    },
+    {
+      "id": "merge_mutates",
+      "pattern": "merge|assign|mutate|original changed",
+      "message": "Source object mutated unexpectedly",
+      "cause": "_.merge and _.assign mutate first argument",
+      "solutions": [
+        {
+          "approach": "Start with empty object",
+          "code": "// Mutates obj1:\n_.merge(obj1, obj2);\n\n// Creates new object:\nconst result = _.merge({}, obj1, obj2);",
+          "when": "Prevent mutation"
+        },
+        {
+          "approach": "Use merge difference",
+          "code": "// assign: shallow copy\n// merge: deep recursive merge\n// defaults: like merge but doesn't overwrite\n_.defaults({}, obj1, obj2);",
+          "when": "Choose method"
+        },
+        {
+          "approach": "Immutable alternative",
+          "code": "// For truly immutable:\nconst result = _.cloneDeep(obj1);\n_.merge(result, obj2);",
+          "when": "Need immutable"
+        }
+      ]
+    },
+    {
+      "id": "collection_vs_array",
+      "pattern": "forEach|map|collection|array-like|object",
+      "message": "Function works differently on objects vs arrays",
+      "cause": "Lodash collection methods work on both arrays and objects",
+      "solutions": [
+        {
+          "approach": "Know iteration behavior",
+          "code": "// On array: iterates values\n_.forEach([1, 2], console.log);  // 1, 2\n\n// On object: iterates values (not key-value pairs)\n_.forEach({ a: 1, b: 2 }, console.log);  // 1, 2",
+          "when": "Understand iteration"
+        },
+        {
+          "approach": "Get keys and values",
+          "code": "// For key-value iteration:\n_.forEach(obj, (value, key) => {\n  console.log(key, value);\n});\n\n// Or use entries:\n_.entries(obj).forEach(([key, value]) => ...);",
+          "when": "Need keys"
+        },
+        {
+          "approach": "Check type first",
+          "code": "if (_.isArray(data)) {\n  // array handling\n} else if (_.isPlainObject(data)) {\n  // object handling\n}",
+          "when": "Type-specific logic"
+        }
+      ]
+    }
+  ]
+}

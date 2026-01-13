@@ -1,0 +1,143 @@
+{
+  "tool": "openvino",
+  "version": "2024.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_conversion_error",
+      "pattern": "(convert|mo|model optimizer|onnx)",
+      "message": "Model conversion error",
+      "cause": "Failed to convert model to OpenVINO IR",
+      "solutions": [
+        {
+          "approach": "Convert ONNX",
+          "code": "from openvino import convert_model, save_model\nov_model = convert_model('model.onnx')\nsave_model(ov_model, 'model.xml')",
+          "when": "Converting ONNX"
+        },
+        {
+          "approach": "Convert PyTorch",
+          "code": "import openvino as ov\nimport torch\nmodel.eval()\nexample_input = torch.randn(1, 3, 224, 224)\nov_model = ov.convert_model(model, example_input=example_input)",
+          "when": "Converting PyTorch"
+        },
+        {
+          "approach": "Convert TensorFlow",
+          "code": "ov_model = ov.convert_model('saved_model_dir')\n# Or from Keras\nov_model = ov.convert_model(keras_model)",
+          "when": "Converting TensorFlow"
+        }
+      ]
+    },
+    {
+      "id": "inference_error",
+      "pattern": "(infer|compile.*model|runtime)",
+      "message": "Inference execution error",
+      "cause": "Error running inference on model",
+      "solutions": [
+        {
+          "approach": "Run inference",
+          "code": "import openvino as ov\ncore = ov.Core()\nmodel = core.read_model('model.xml')\ncompiled_model = core.compile_model(model, 'CPU')\nresult = compiled_model([input_data])[0]",
+          "when": "Basic inference"
+        },
+        {
+          "approach": "Async inference",
+          "code": "infer_request = compiled_model.create_infer_request()\ninfer_request.start_async({0: input_data})\ninfer_request.wait()\nresult = infer_request.get_output_tensor(0).data",
+          "when": "Async execution"
+        }
+      ]
+    },
+    {
+      "id": "device_error",
+      "pattern": "(device|CPU|GPU|NPU|HETERO)",
+      "message": "Device not available or unsupported",
+      "cause": "Target device not found or model incompatible",
+      "solutions": [
+        {
+          "approach": "List devices",
+          "code": "core = ov.Core()\nprint(core.available_devices)  # ['CPU', 'GPU', ...]",
+          "when": "Finding devices"
+        },
+        {
+          "approach": "Use HETERO",
+          "code": "compiled_model = core.compile_model(\n    model, 'HETERO:GPU,CPU'  # Fallback to CPU\n)",
+          "when": "Multi-device"
+        },
+        {
+          "approach": "Use AUTO",
+          "code": "compiled_model = core.compile_model(\n    model, 'AUTO'  # Auto-select best device\n)",
+          "when": "Auto device selection"
+        }
+      ]
+    },
+    {
+      "id": "input_shape_error",
+      "pattern": "(shape|dimension|reshape|dynamic)",
+      "message": "Input shape mismatch",
+      "cause": "Input data shape doesn't match model expectation",
+      "solutions": [
+        {
+          "approach": "Check shapes",
+          "code": "for input in model.inputs:\n    print(f'{input.any_name}: {input.shape}')",
+          "when": "Debugging shapes"
+        },
+        {
+          "approach": "Reshape model",
+          "code": "model.reshape({0: [1, 3, 480, 640]})  # New shape\ncompiled_model = core.compile_model(model, 'CPU')",
+          "when": "Changing input shape"
+        },
+        {
+          "approach": "Dynamic shapes",
+          "code": "model.reshape({0: [-1, 3, -1, -1]})  # Dynamic batch and spatial",
+          "when": "Need dynamic shapes"
+        }
+      ]
+    },
+    {
+      "id": "quantization_error",
+      "pattern": "(quantization|INT8|POT|NNCF)",
+      "message": "Quantization error",
+      "cause": "Error during INT8 quantization",
+      "solutions": [
+        {
+          "approach": "Post-training quantization",
+          "code": "import nncf\nfrom nncf import quantize\ncalibration_dataset = nncf.Dataset(calibration_data)\nquantized_model = quantize(\n    model, calibration_dataset,\n    preset=nncf.QuantizationPreset.PERFORMANCE\n)",
+          "when": "Using NNCF PTQ"
+        },
+        {
+          "approach": "Accuracy-aware quantization",
+          "code": "from nncf import quantize_with_accuracy_control\nquantized_model = quantize_with_accuracy_control(\n    model, calibration_dataset, validation_dataset,\n    validation_fn=eval_func,\n    max_drop=0.01\n)",
+          "when": "Need accuracy control"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_op_error",
+      "pattern": "(unsupported|operation|layer|custom)",
+      "message": "Unsupported operation",
+      "cause": "Model contains operation not supported by OpenVINO",
+      "solutions": [
+        {
+          "approach": "Check supported ops",
+          "code": "# Use query_model to check\nsupported = core.query_model(model, 'CPU')\nunsupported = [op.friendly_name for op in model.get_ops() \n               if op.friendly_name not in supported]",
+          "when": "Finding unsupported ops"
+        },
+        {
+          "approach": "Use custom ops",
+          "code": "# Register custom operation\nfrom openvino.runtime import opset11\n# Or simplify model before conversion",
+          "when": "Custom operations needed"
+        }
+      ]
+    },
+    {
+      "id": "preprocessing_error",
+      "pattern": "(preprocessing|resize|normalize|mean.*std)",
+      "message": "Preprocessing configuration error",
+      "cause": "Input preprocessing not properly configured",
+      "solutions": [
+        {
+          "approach": "Add preprocessing",
+          "code": "from openvino.preprocess import PrePostProcessor\nppp = PrePostProcessor(model)\nppp.input().tensor().set_element_type(ov.Type.u8)\nppp.input().tensor().set_layout('NHWC')\nppp.input().preprocess().resize(ov.preprocess.ResizeAlgorithm.RESIZE_LINEAR)\nppp.input().preprocess().mean([123.675, 116.28, 103.53])\nppp.input().preprocess().scale([58.395, 57.12, 57.375])\nmodel = ppp.build()",
+          "when": "Adding image preprocessing"
+        }
+      ]
+    }
+  ]
+}

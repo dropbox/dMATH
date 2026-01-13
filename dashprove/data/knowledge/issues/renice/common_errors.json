@@ -1,0 +1,89 @@
+{
+  "tool": "renice",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "renice:.*Permission denied|Operation not permitted|not permitted",
+      "message": "Cannot change process priority",
+      "cause": "Need root for others' processes or negative nice",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo renice -n -10 -p PID",
+          "when": "Elevate priority or others' processes"
+        },
+        {
+          "approach": "Own processes only",
+          "code": "renice -n 10 -p $(pgrep -u $USER command)",
+          "when": "Your own processes"
+        },
+        {
+          "approach": "Set PAM limits",
+          "code": "# /etc/security/limits.conf\nusername - nice -20",
+          "when": "Allow without root"
+        }
+      ]
+    },
+    {
+      "id": "no_such_process",
+      "pattern": "renice:.*No such process|renice:.*not found|invalid PID",
+      "message": "Process does not exist",
+      "cause": "PID invalid or process already exited",
+      "solutions": [
+        {
+          "approach": "Find process",
+          "code": "ps aux | grep myprocess\npgrep -fl myprocess",
+          "when": "Get correct PID"
+        },
+        {
+          "approach": "By user",
+          "code": "renice -n 10 -u username  # All user's processes",
+          "when": "Target all by user"
+        },
+        {
+          "approach": "By group",
+          "code": "renice -n 10 -g groupname  # All group's processes",
+          "when": "Target by group"
+        }
+      ]
+    },
+    {
+      "id": "invalid_priority",
+      "pattern": "renice:.*invalid|renice:.*priority|out of range",
+      "message": "Invalid priority value",
+      "cause": "Nice value must be -20 to 19",
+      "solutions": [
+        {
+          "approach": "Valid range",
+          "code": "renice -n -20 -p PID  # Highest (root)\nrenice -n 19 -p PID   # Lowest\nrenice -n 0 -p PID    # Default",
+          "when": "Correct value"
+        },
+        {
+          "approach": "GNU vs BSD syntax",
+          "code": "# GNU: renice -n 10 -p PID\n# BSD: renice 10 PID",
+          "when": "Platform difference"
+        }
+      ]
+    },
+    {
+      "id": "old_priority",
+      "pattern": "old priority|current|was",
+      "message": "Success message showing old priority",
+      "cause": "Not an error - renice shows previous value",
+      "solutions": [
+        {
+          "approach": "Verify change",
+          "code": "ps -o pid,ni,comm -p PID  # Show niceness",
+          "when": "Confirm new value"
+        },
+        {
+          "approach": "Understand output",
+          "code": "# Output: PID: old priority N, new priority M\n# This is normal success output",
+          "when": "Read output"
+        }
+      ]
+    }
+  ]
+}

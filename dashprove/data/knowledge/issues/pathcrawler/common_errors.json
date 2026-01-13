@@ -1,0 +1,168 @@
+{
+  "tool": "pathcrawler",
+  "version": "29.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "path_explosion",
+      "pattern": "too many paths|path limit reached",
+      "message": "Path explosion during test generation",
+      "cause": "Symbolic execution encountered too many program paths",
+      "solutions": [
+        {
+          "approach": "Increase path limit",
+          "code": "pathcrawler -max-paths 10000 test.c",
+          "when": "Need more coverage"
+        },
+        {
+          "approach": "Add constraints",
+          "code": "//@ requires n < 100; // Bound input domain",
+          "when": "Reduce search space"
+        },
+        {
+          "approach": "Use function stubs",
+          "code": "pathcrawler -stub external_func test.c",
+          "when": "External calls cause explosion"
+        }
+      ]
+    },
+    {
+      "id": "constraint_unsolvable",
+      "pattern": "constraint unsolvable|no solution found",
+      "message": "Path constraint cannot be solved",
+      "cause": "SMT solver cannot find satisfying assignment",
+      "solutions": [
+        {
+          "approach": "Check constraint complexity",
+          "code": "// Simplify non-linear arithmetic if possible",
+          "when": "Complex constraints"
+        },
+        {
+          "approach": "Increase solver timeout",
+          "code": "pathcrawler -solver-timeout 120 test.c",
+          "when": "Solver needs more time"
+        },
+        {
+          "approach": "Use concrete values",
+          "code": "pathcrawler -concrete x=42 test.c",
+          "when": "Bind some inputs"
+        }
+      ]
+    },
+    {
+      "id": "oracle_missing",
+      "pattern": "oracle not defined|expected output missing",
+      "message": "Test oracle not provided",
+      "cause": "PathCrawler needs oracle to determine test pass/fail",
+      "solutions": [
+        {
+          "approach": "Use ACSL assertions",
+          "code": "//@ assert result > 0; // Embedded oracle",
+          "when": "Property-based oracle"
+        },
+        {
+          "approach": "Define postcondition",
+          "code": "//@ ensures \\result == expected;",
+          "when": "Functional specification"
+        },
+        {
+          "approach": "Use runtime checks",
+          "code": "assert(condition); // C assertion as oracle",
+          "when": "Simple checks"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "parsing error|ACSL syntax error",
+      "message": "Source or annotation parsing failed",
+      "cause": "Invalid C or ACSL syntax",
+      "solutions": [
+        {
+          "approach": "Validate C syntax",
+          "code": "frama-c -print test.c",
+          "when": "Check preprocessing"
+        },
+        {
+          "approach": "Check ACSL syntax",
+          "code": "frama-c -wp test.c # Validates annotations",
+          "when": "ACSL errors"
+        },
+        {
+          "approach": "Use correct comment style",
+          "code": "/*@ requires x > 0; @*/",
+          "when": "Wrong annotation format"
+        }
+      ]
+    },
+    {
+      "id": "coverage_insufficient",
+      "pattern": "coverage target not reached|uncovered branches",
+      "message": "Coverage goal not achieved",
+      "cause": "Some branches could not be covered by generated tests",
+      "solutions": [
+        {
+          "approach": "Relax preconditions",
+          "code": "// Make requires clause less restrictive",
+          "when": "Preconditions exclude paths"
+        },
+        {
+          "approach": "Check dead code",
+          "code": "frama-c -val test.c # Find unreachable code",
+          "when": "Branches may be dead"
+        },
+        {
+          "approach": "Increase search depth",
+          "code": "pathcrawler -depth 50 test.c",
+          "when": "Deep paths unreached"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory access error|out of memory",
+      "message": "Memory error during analysis",
+      "cause": "Analysis exhausted memory or detected memory issue",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "pathcrawler -memory 8G test.c",
+          "when": "System has more RAM"
+        },
+        {
+          "approach": "Bound array sizes",
+          "code": "//@ requires size <= 1000;",
+          "when": "Large symbolic arrays"
+        },
+        {
+          "approach": "Detect memory bugs",
+          "code": "frama-c -eva test.c # Find potential issues",
+          "when": "Code has memory bugs"
+        }
+      ]
+    },
+    {
+      "id": "instrumentation_error",
+      "pattern": "instrumentation failed|cannot instrument",
+      "message": "Code instrumentation failed",
+      "cause": "PathCrawler cannot instrument certain constructs",
+      "solutions": [
+        {
+          "approach": "Check unsupported features",
+          "code": "// PathCrawler may not support: inline asm, VLAs",
+          "when": "Advanced C features"
+        },
+        {
+          "approach": "Use stubs",
+          "code": "// Provide stub for problematic functions",
+          "when": "External functions"
+        },
+        {
+          "approach": "Simplify code",
+          "code": "// Refactor to supported constructs",
+          "when": "Complex expressions"
+        }
+      ]
+    }
+  ]
+}

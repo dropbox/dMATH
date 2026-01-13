@@ -1,0 +1,145 @@
+{
+  "tool": "pkill",
+  "version": "3.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "wrong_processes",
+      "pattern": "killed wrong|too many|unintended",
+      "message": "Killed wrong processes",
+      "cause": "Pattern too broad",
+      "solutions": [
+        {
+          "approach": "Preview first",
+          "code": "pgrep -a pattern  # Show what would be killed first",
+          "when": "Always preview"
+        },
+        {
+          "approach": "Exact match",
+          "code": "pkill -x processname  # Exact name match",
+          "when": "Strict match"
+        },
+        {
+          "approach": "Full cmdline",
+          "code": "pkill -f 'full command pattern'",
+          "when": "Match arguments"
+        }
+      ]
+    },
+    {
+      "id": "no_process_found",
+      "pattern": "no process|nothing killed|not found",
+      "message": "No matching process",
+      "cause": "Pattern doesn't match any process",
+      "solutions": [
+        {
+          "approach": "Check pattern",
+          "code": "pgrep pattern  # Test pattern\npgrep -a pattern  # Show full command",
+          "when": "Debug pattern"
+        },
+        {
+          "approach": "Case insensitive",
+          "code": "pkill -i pattern",
+          "when": "Ignore case"
+        },
+        {
+          "approach": "List all",
+          "code": "ps aux | grep pattern",
+          "when": "Find manually"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Operation not permitted|Permission denied",
+      "message": "Cannot kill process",
+      "cause": "Process owned by another user",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo pkill pattern",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Filter by user",
+          "code": "pkill -u $USER pattern  # Only your processes",
+          "when": "Own processes"
+        },
+        {
+          "approach": "Check owner",
+          "code": "pgrep -u root pattern  # Processes by root",
+          "when": "Verify owner"
+        }
+      ]
+    },
+    {
+      "id": "specific_user",
+      "pattern": "user|owner|specific user|filter",
+      "message": "Kill only specific user's processes",
+      "cause": "Need to target user's processes",
+      "solutions": [
+        {
+          "approach": "By username",
+          "code": "pkill -u username pattern\npkill -U username pattern  # By effective UID",
+          "when": "Filter user"
+        },
+        {
+          "approach": "All user processes",
+          "code": "pkill -u username  # All of user's processes",
+          "when": "Kill all"
+        },
+        {
+          "approach": "Except user",
+          "code": "# No direct option, use:\npgrep pattern | while read pid; do\n  [ $(ps -o user= -p $pid) != 'username' ] && kill $pid\ndone",
+          "when": "Exclude user"
+        }
+      ]
+    },
+    {
+      "id": "signal_type",
+      "pattern": "signal|SIGTERM|SIGKILL|force",
+      "message": "Send different signal",
+      "cause": "Need specific signal",
+      "solutions": [
+        {
+          "approach": "SIGKILL",
+          "code": "pkill -9 pattern\npkill -KILL pattern",
+          "when": "Force kill"
+        },
+        {
+          "approach": "SIGHUP",
+          "code": "pkill -HUP pattern  # Reload config",
+          "when": "Reload"
+        },
+        {
+          "approach": "List signals",
+          "code": "pkill --list-signals\nkill -l",
+          "when": "Reference"
+        }
+      ]
+    },
+    {
+      "id": "oldest_newest",
+      "pattern": "oldest|newest|first|last|most recent",
+      "message": "Kill specific instance",
+      "cause": "Multiple matching processes",
+      "solutions": [
+        {
+          "approach": "Oldest only",
+          "code": "pkill -o pattern  # Kill oldest",
+          "when": "First started"
+        },
+        {
+          "approach": "Newest only",
+          "code": "pkill -n pattern  # Kill newest",
+          "when": "Last started"
+        },
+        {
+          "approach": "Interactive",
+          "code": "pgrep -a pattern  # Review list\nkill <specific_pid>  # Kill chosen one",
+          "when": "Manual selection"
+        }
+      ]
+    }
+  ]
+}

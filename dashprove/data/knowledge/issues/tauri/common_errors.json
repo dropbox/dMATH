@@ -1,0 +1,191 @@
+{
+  "tool": "tauri",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "webview_not_found",
+      "pattern": "WebView2|WKWebView|webkit2gtk|webview.*not.*found|runtime",
+      "message": "System WebView not installed",
+      "cause": "Platform-specific WebView runtime missing",
+      "solutions": [
+        {
+          "approach": "Windows - Install WebView2",
+          "code": "# Download from Microsoft\n# https://developer.microsoft.com/en-us/microsoft-edge/webview2/\n# Or bundle with app using WiX/NSIS",
+          "when": "Windows"
+        },
+        {
+          "approach": "Linux - Install webkit2gtk",
+          "code": "# Ubuntu/Debian\nsudo apt install libwebkit2gtk-4.1-dev\n# Fedora\nsudo dnf install webkit2gtk4.1-devel",
+          "when": "Linux"
+        },
+        {
+          "approach": "macOS",
+          "code": "# WKWebView is built into macOS\n# Ensure targeting macOS 10.15+",
+          "when": "macOS"
+        }
+      ]
+    },
+    {
+      "id": "command_not_allowed",
+      "pattern": "Command.*not.*allowed|invoke.*error|not in allowlist|capabilities",
+      "message": "Tauri command not in allowlist",
+      "cause": "Command must be declared in capabilities/permissions",
+      "solutions": [
+        {
+          "approach": "Add to capabilities (v2)",
+          "code": "// src-tauri/capabilities/default.json\n{\n  \"$schema\": \"../gen/schemas/desktop-schema.json\",\n  \"identifier\": \"default\",\n  \"windows\": [\"main\"],\n  \"permissions\": [\n    \"core:default\",\n    \"fs:read\",\n    \"fs:write\",\n    { \"identifier\": \"fs:scope\", \"allow\": [\"$APPDATA/**\"] }\n  ]\n}",
+          "when": "Tauri v2"
+        },
+        {
+          "approach": "Define command (Rust)",
+          "code": "#[tauri::command]\nfn my_command(name: String) -> String {\n    format!(\"Hello, {name}!\")\n}\n\nfn main() {\n    tauri::Builder::default()\n        .invoke_handler(tauri::generate_handler![my_command])\n        .run(tauri::generate_context!())\n        .expect(\"error\");\n}",
+          "when": "Custom command"
+        },
+        {
+          "approach": "Call from frontend",
+          "code": "import { invoke } from '@tauri-apps/api/core';\nconst result = await invoke('my_command', { name: 'World' });",
+          "when": "Invoke command"
+        }
+      ]
+    },
+    {
+      "id": "build_rust_error",
+      "pattern": "cargo.*failed|rustc.*error|compilation.*failed|linker",
+      "message": "Rust compilation failed",
+      "cause": "Rust code error or missing system dependencies",
+      "solutions": [
+        {
+          "approach": "Check Rust errors",
+          "code": "cd src-tauri && cargo build\n# Read compiler errors carefully",
+          "when": "Code errors"
+        },
+        {
+          "approach": "Install system deps (Linux)",
+          "code": "# Ubuntu/Debian\nsudo apt install libgtk-3-dev libayatana-appindicator3-dev",
+          "when": "Linux deps"
+        },
+        {
+          "approach": "Update Rust",
+          "code": "rustup update stable\nrustup default stable",
+          "when": "Outdated toolchain"
+        }
+      ]
+    },
+    {
+      "id": "fs_path_error",
+      "pattern": "path.*not.*allowed|fs.*permission|scope|APPDATA|DOCUMENT",
+      "message": "File system path not in allowed scope",
+      "cause": "Path must be within configured scope",
+      "solutions": [
+        {
+          "approach": "Configure scope (v2)",
+          "code": "// capabilities/default.json\n{\n  \"permissions\": [\n    {\n      \"identifier\": \"fs:scope\",\n      \"allow\": [\n        \"$APPDATA/*\",\n        \"$DOCUMENT/*\",\n        \"$DOWNLOAD/*\"\n      ]\n    }\n  ]\n}",
+          "when": "Define paths"
+        },
+        {
+          "approach": "Use path API",
+          "code": "import { appDataDir, join } from '@tauri-apps/api/path';\nconst appData = await appDataDir();\nconst filePath = await join(appData, 'config.json');",
+          "when": "Get safe paths"
+        },
+        {
+          "approach": "Use dialog",
+          "code": "import { open } from '@tauri-apps/plugin-dialog';\nconst file = await open({\n  multiple: false,\n  filters: [{ name: 'JSON', extensions: ['json'] }]\n});",
+          "when": "User selected"
+        }
+      ]
+    },
+    {
+      "id": "window_not_found",
+      "pattern": "window.*not.*found|label.*invalid|WebviewWindow|getByLabel",
+      "message": "Window with label not found",
+      "cause": "Window doesn't exist or wrong label",
+      "solutions": [
+        {
+          "approach": "Check window labels",
+          "code": "// tauri.conf.json\n\"windows\": [\n  { \"label\": \"main\", \"title\": \"My App\" },\n  { \"label\": \"settings\", \"title\": \"Settings\", \"visible\": false }\n]",
+          "when": "Define windows"
+        },
+        {
+          "approach": "Get window reference",
+          "code": "import { WebviewWindow } from '@tauri-apps/api/webviewWindow';\nconst mainWindow = await WebviewWindow.getByLabel('main');\nawait mainWindow?.show();",
+          "when": "Access window"
+        },
+        {
+          "approach": "Create new window",
+          "code": "const webview = new WebviewWindow('new-window', {\n  url: '/settings',\n  title: 'Settings'\n});",
+          "when": "Dynamic window"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin.*not.*found|Cargo.toml.*plugin|tauri-plugin",
+      "message": "Tauri plugin not properly configured",
+      "cause": "Plugin not added to both Rust and JS sides",
+      "solutions": [
+        {
+          "approach": "Add Rust dependency",
+          "code": "# src-tauri/Cargo.toml\n[dependencies]\ntauri-plugin-fs = \"2\"\ntauri-plugin-dialog = \"2\"",
+          "when": "Cargo.toml"
+        },
+        {
+          "approach": "Register plugin",
+          "code": "fn main() {\n    tauri::Builder::default()\n        .plugin(tauri_plugin_fs::init())\n        .plugin(tauri_plugin_dialog::init())\n        .run(tauri::generate_context!())\n        .expect(\"error\");\n}",
+          "when": "main.rs"
+        },
+        {
+          "approach": "Install JS package",
+          "code": "npm install @tauri-apps/plugin-fs @tauri-apps/plugin-dialog",
+          "when": "Frontend"
+        }
+      ]
+    },
+    {
+      "id": "async_command_error",
+      "pattern": "async.*command|tokio|runtime|block_on|Future",
+      "message": "Async command not working",
+      "cause": "Async Rust commands need proper setup",
+      "solutions": [
+        {
+          "approach": "Mark command async",
+          "code": "#[tauri::command]\nasync fn fetch_data(url: String) -> Result<String, String> {\n    reqwest::get(&url)\n        .await\n        .map_err(|e| e.to_string())?\n        .text()\n        .await\n        .map_err(|e| e.to_string())\n}",
+          "when": "Async command"
+        },
+        {
+          "approach": "Return Result",
+          "code": "#[tauri::command]\nasync fn save_file(path: String, content: String) -> Result<(), String> {\n    tokio::fs::write(&path, &content)\n        .await\n        .map_err(|e| e.to_string())\n}",
+          "when": "With errors"
+        },
+        {
+          "approach": "Call from frontend",
+          "code": "try {\n  const data = await invoke('fetch_data', { url: 'https://api.example.com' });\n} catch (error) {\n  console.error('Command failed:', error);\n}",
+          "when": "Error handling"
+        }
+      ]
+    },
+    {
+      "id": "dev_server_not_found",
+      "pattern": "failed to load|localhost.*refused|ECONNREFUSED|devUrl",
+      "message": "Development server not running",
+      "cause": "Frontend dev server must run before Tauri",
+      "solutions": [
+        {
+          "approach": "Start frontend first",
+          "code": "# Start your frontend dev server\nnpm run dev\n# Then in another terminal\nnpm run tauri dev",
+          "when": "Manual start"
+        },
+        {
+          "approach": "Configure beforeDevCommand",
+          "code": "// tauri.conf.json\n\"build\": {\n  \"beforeDevCommand\": \"npm run dev\",\n  \"devUrl\": \"http://localhost:5173\"\n}",
+          "when": "Auto start"
+        },
+        {
+          "approach": "Check port",
+          "code": "// tauri.conf.json\n\"devUrl\": \"http://localhost:3000\"  // match your framework",
+          "when": "Wrong port"
+        }
+      ]
+    }
+  ]
+}

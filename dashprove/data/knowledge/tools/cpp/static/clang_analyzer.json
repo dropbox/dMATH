@@ -1,0 +1,129 @@
+{
+  "id": "clang_analyzer",
+  "name": "Clang Static Analyzer",
+  "category": "static_analysis",
+  "subcategory": "cpp_deep_analysis",
+
+  "description": "Deep static analysis engine for C, C++, and Objective-C",
+  "long_description": "The Clang Static Analyzer is a source code analysis tool that finds bugs in C, C++, and Objective-C programs. It performs symbolic execution and path-sensitive analysis to detect memory leaks, null pointer dereferences, use-after-free bugs, and other defects that simpler linters miss. It can be run via scan-build or integrated into IDEs.",
+
+  "capabilities": [
+    "symbolic_execution",
+    "path_sensitive_analysis",
+    "null_pointer_detection",
+    "memory_leak_detection",
+    "use_after_free_detection",
+    "dead_store_analysis",
+    "security_checks",
+    "custom_checkers"
+  ],
+  "property_types": ["memory_safety", "correctness", "security"],
+  "input_languages": ["c", "cpp", "objective-c", "objective-cpp"],
+  "output_formats": ["html_report", "plist", "sarif", "text"],
+
+  "installation": {
+    "methods": [
+      {"type": "package", "command": "apt install clang-tools", "platform": "linux"},
+      {"type": "package", "command": "brew install llvm", "platform": "macos"},
+      {"type": "binary", "url": "https://releases.llvm.org/"}
+    ],
+    "dependencies": ["llvm", "clang"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://clang-analyzer.llvm.org/",
+    "tutorial": "https://clang-analyzer.llvm.org/scan-build.html",
+    "api_reference": "https://clang-analyzer.llvm.org/available_checks.html",
+    "examples": "https://github.com/llvm/llvm-project/tree/main/clang/lib/StaticAnalyzer"
+  },
+
+  "tactics": [
+    {
+      "name": "scan_build",
+      "description": "Run analyzer on entire build",
+      "syntax": "scan-build make",
+      "when_to_use": "Analyzing full project during build",
+      "examples": ["scan-build -o reports/ cmake --build . --clean-first"]
+    },
+    {
+      "name": "single_file",
+      "description": "Analyze single file",
+      "syntax": "clang --analyze file.c",
+      "when_to_use": "Quick analysis of individual file",
+      "examples": ["clang --analyze -Xanalyzer -analyzer-output=html src/main.cpp"]
+    },
+    {
+      "name": "security_checks",
+      "description": "Enable security-focused checkers",
+      "syntax": "scan-build -enable-checker security.insecureAPI make",
+      "when_to_use": "Security audit",
+      "examples": ["scan-build -enable-checker alpha.security.* make"]
+    },
+    {
+      "name": "html_report",
+      "description": "Generate interactive HTML report",
+      "syntax": "scan-build -o ./reports make",
+      "when_to_use": "Detailed bug investigation with traces",
+      "examples": ["scan-build -V -o reports/ make && scan-view reports/"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Dereference of null pointer",
+      "meaning": "Path exists where null pointer is dereferenced",
+      "common_causes": ["Missing null check", "Error path not handled"],
+      "fixes": ["Add null check before dereference", "Use optional/expected pattern"]
+    },
+    {
+      "pattern": "Memory leak",
+      "meaning": "Allocated memory not freed on all paths",
+      "common_causes": ["Early return without cleanup", "Exception safety issues"],
+      "fixes": ["Use RAII/smart pointers", "Ensure cleanup on all paths"]
+    },
+    {
+      "pattern": "Use-after-free",
+      "meaning": "Memory accessed after being freed",
+      "common_causes": ["Dangling pointer", "Double free"],
+      "fixes": ["Set pointer to null after free", "Use smart pointers"]
+    },
+    {
+      "pattern": "Dead store",
+      "meaning": "Value written but never read",
+      "common_causes": ["Logic error", "Debugging leftovers"],
+      "fixes": ["Remove unnecessary assignment", "Fix intended logic"]
+    },
+    {
+      "pattern": "Uninitialized value",
+      "meaning": "Variable used before initialization",
+      "common_causes": ["Missing initializer", "Conditional initialization"],
+      "fixes": ["Initialize variable at declaration", "Ensure all paths initialize"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["memory_safety", "correctness"],
+    "cli_command": "dashprove verify --backend clang-analyzer"
+  },
+
+  "performance": {
+    "typical_runtime": "Slow; path explosion for complex code",
+    "scalability": "Can be slow for large functions; parallelizes per-TU",
+    "memory_usage": "High for complex paths"
+  },
+
+  "comparisons": {
+    "similar_tools": ["infer", "cppcheck", "coverity", "pvs-studio"],
+    "advantages": ["Deep path analysis", "Free and open source", "IDE integration", "Custom checker support"],
+    "disadvantages": ["Slower than syntactic checkers", "Path explosion on complex code", "Some false positives"]
+  },
+
+  "metadata": {
+    "version": "18.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0 with LLVM Exception"
+  }
+}

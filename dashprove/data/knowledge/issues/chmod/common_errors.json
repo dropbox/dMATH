@@ -1,0 +1,145 @@
+{
+  "tool": "chmod",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|changing permissions|not permitted",
+      "message": "Cannot change permissions",
+      "cause": "Not owner or root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo chmod 755 file.txt",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check owner",
+          "code": "ls -la file.txt\nstat file.txt",
+          "when": "Verify ownership"
+        },
+        {
+          "approach": "Change owner first",
+          "code": "sudo chown $USER file.txt && chmod 755 file.txt",
+          "when": "Take ownership"
+        }
+      ]
+    },
+    {
+      "id": "invalid_mode",
+      "pattern": "invalid mode|invalid mode string|bad mode",
+      "message": "Invalid permission mode",
+      "cause": "Wrong syntax for permission specification",
+      "solutions": [
+        {
+          "approach": "Octal mode",
+          "code": "chmod 755 file.txt  # rwxr-xr-x\nchmod 644 file.txt  # rw-r--r--\nchmod 600 file.txt  # rw-------",
+          "when": "Numeric permissions"
+        },
+        {
+          "approach": "Symbolic mode",
+          "code": "chmod u+x file.txt  # Add execute for user\nchmod go-w file.txt  # Remove write for group/other\nchmod a+r file.txt  # Add read for all",
+          "when": "Relative changes"
+        },
+        {
+          "approach": "Reference",
+          "code": "chmod --reference=other.txt file.txt",
+          "when": "Copy permissions"
+        }
+      ]
+    },
+    {
+      "id": "recursive_issues",
+      "pattern": "recursive|directory|subdirectories",
+      "message": "Permissions not applied recursively",
+      "cause": "Need -R flag for directories",
+      "solutions": [
+        {
+          "approach": "Recursive",
+          "code": "chmod -R 755 directory/",
+          "when": "All contents"
+        },
+        {
+          "approach": "Files only",
+          "code": "find directory/ -type f -exec chmod 644 {} +",
+          "when": "Only files"
+        },
+        {
+          "approach": "Dirs only",
+          "code": "find directory/ -type d -exec chmod 755 {} +",
+          "when": "Only directories"
+        }
+      ]
+    },
+    {
+      "id": "execute_not_working",
+      "pattern": "execute|cannot execute|Permission denied.*script",
+      "message": "Script won't execute",
+      "cause": "Missing execute bit",
+      "solutions": [
+        {
+          "approach": "Add execute",
+          "code": "chmod +x script.sh\nchmod u+x script.sh",
+          "when": "Make executable"
+        },
+        {
+          "approach": "Run via interpreter",
+          "code": "bash script.sh\npython script.py",
+          "when": "Without +x"
+        },
+        {
+          "approach": "Check shebang",
+          "code": "head -1 script.sh  # Should be #!/bin/bash etc.",
+          "when": "Shebang missing"
+        }
+      ]
+    },
+    {
+      "id": "setuid_setgid",
+      "pattern": "setuid|setgid|SUID|SGID|sticky",
+      "message": "Special permission bits",
+      "cause": "Need setuid/setgid/sticky bit",
+      "solutions": [
+        {
+          "approach": "Set SUID",
+          "code": "chmod u+s file  # SUID - 4xxx\nchmod 4755 file",
+          "when": "Run as owner"
+        },
+        {
+          "approach": "Set SGID",
+          "code": "chmod g+s directory  # SGID - 2xxx\nchmod 2755 directory",
+          "when": "Inherit group"
+        },
+        {
+          "approach": "Sticky bit",
+          "code": "chmod +t directory  # Sticky - 1xxx\nchmod 1777 /tmp",
+          "when": "Delete protection"
+        }
+      ]
+    },
+    {
+      "id": "selinux_apparmor",
+      "pattern": "SELinux|AppArmor|Permission denied.*context",
+      "message": "MAC preventing access",
+      "cause": "SELinux or AppArmor overriding Unix perms",
+      "solutions": [
+        {
+          "approach": "Check SELinux",
+          "code": "ls -Z file.txt  # Show SELinux context\ngetenforce  # Check if enforcing",
+          "when": "SELinux"
+        },
+        {
+          "approach": "Fix context",
+          "code": "restorecon -v file.txt\nchcon -t httpd_sys_content_t file.txt",
+          "when": "Wrong context"
+        },
+        {
+          "approach": "Check AppArmor",
+          "code": "aa-status\ncat /var/log/syslog | grep apparmor",
+          "when": "AppArmor"
+        }
+      ]
+    }
+  ]
+}

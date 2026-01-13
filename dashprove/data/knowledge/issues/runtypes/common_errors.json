@@ -1,0 +1,145 @@
+{
+  "tool": "runtypes",
+  "version": "6.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "validation_error",
+      "pattern": "ValidationError|Expected.*but was|check failed|constraint",
+      "message": "Value doesn't match runtype",
+      "cause": "Input data doesn't conform to defined type",
+      "solutions": [
+        {
+          "approach": "Use guard() for boolean",
+          "code": "import { String, Number, Record } from 'runtypes';\nconst User = Record({ name: String, age: Number });\nif (User.guard(data)) {\n  console.log(data.name);  // type-safe\n}",
+          "when": "Check without throwing"
+        },
+        {
+          "approach": "Use validate() for result",
+          "code": "const result = User.validate(data);\nif (result.success) {\n  console.log(result.value.name);\n} else {\n  console.log(result.message);\n}",
+          "when": "Get validation result"
+        },
+        {
+          "approach": "Use check() to throw",
+          "code": "try {\n  const user = User.check(data);\n} catch (e) {\n  console.error(e.message);\n}",
+          "when": "Throw on invalid"
+        }
+      ]
+    },
+    {
+      "id": "record_vs_dictionary",
+      "pattern": "Record|Dictionary|object keys|dynamic keys",
+      "message": "Confusion between Record and Dictionary",
+      "cause": "Record is for fixed keys, Dictionary for dynamic",
+      "solutions": [
+        {
+          "approach": "Record for fixed fields",
+          "code": "const User = Record({\n  name: String,\n  age: Number\n});",
+          "when": "Known fields"
+        },
+        {
+          "approach": "Dictionary for dynamic keys",
+          "code": "const Scores = Dictionary(Number);\n// { math: 95, english: 88, ... }",
+          "when": "Unknown keys"
+        },
+        {
+          "approach": "Partial for optional",
+          "code": "const User = Record({\n  name: String\n}).And(Partial({\n  email: String,\n  phone: String\n}));",
+          "when": "Some optional fields"
+        }
+      ]
+    },
+    {
+      "id": "union_matching",
+      "pattern": "Union|one of|discriminated|tag",
+      "message": "Union type validation issues",
+      "cause": "Value doesn't match any union member",
+      "solutions": [
+        {
+          "approach": "Simple union",
+          "code": "const StringOrNumber = String.Or(Number);\nStringOrNumber.check('hello');  // ok\nStringOrNumber.check(42);        // ok",
+          "when": "Basic union"
+        },
+        {
+          "approach": "Discriminated union",
+          "code": "const Circle = Record({ type: Literal('circle'), radius: Number });\nconst Square = Record({ type: Literal('square'), side: Number });\nconst Shape = Circle.Or(Square);\n\nShape.check({ type: 'circle', radius: 5 });",
+          "when": "Tagged union"
+        },
+        {
+          "approach": "Match on union",
+          "code": "const result = Shape.match(\n  (circle) => Math.PI * circle.radius ** 2,\n  (square) => square.side ** 2\n)(shape);",
+          "when": "Pattern matching"
+        }
+      ]
+    },
+    {
+      "id": "constraint_error",
+      "pattern": "constraint|withConstraint|custom validation|refinement",
+      "message": "Custom constraint failed",
+      "cause": "Value passes type check but fails constraint",
+      "solutions": [
+        {
+          "approach": "Add constraint",
+          "code": "const PositiveNumber = Number.withConstraint(\n  (n) => n > 0 || 'must be positive'\n);\nPositiveNumber.check(-1);  // throws with 'must be positive'",
+          "when": "Custom validation"
+        },
+        {
+          "approach": "Multiple constraints",
+          "code": "const Age = Number\n  .withConstraint((n) => n >= 0 || 'must be non-negative')\n  .withConstraint((n) => n <= 150 || 'must be realistic');",
+          "when": "Chain constraints"
+        },
+        {
+          "approach": "Constraint with guard",
+          "code": "const Email = String.withConstraint((s) => {\n  return /^[^@]+@[^@]+$/.test(s) || 'invalid email format';\n});",
+          "when": "Regex validation"
+        }
+      ]
+    },
+    {
+      "id": "brand_type",
+      "pattern": "Brand|nominal|opaque|newtype",
+      "message": "Branded type issues",
+      "cause": "Need distinct types for type safety",
+      "solutions": [
+        {
+          "approach": "Create branded type",
+          "code": "const UserId = String.withBrand('UserId');\nconst PostId = String.withBrand('PostId');\n\ntype UserId = Static<typeof UserId>;\ntype PostId = Static<typeof PostId>;\n\n// These are now incompatible at compile time\nfunction getUser(id: UserId) { ... }",
+          "when": "Prevent ID mixing"
+        },
+        {
+          "approach": "Brand with constraint",
+          "code": "const Email = String\n  .withConstraint((s) => s.includes('@'))\n  .withBrand('Email');",
+          "when": "Validated brand"
+        },
+        {
+          "approach": "Extract brand",
+          "code": "const userId: UserId = UserId.check('123');\n// userId is both typed and validated",
+          "when": "Create branded value"
+        }
+      ]
+    },
+    {
+      "id": "intersection_error",
+      "pattern": "And|intersect|merge|extend",
+      "message": "Type intersection issues",
+      "cause": "Combining types with And()",
+      "solutions": [
+        {
+          "approach": "Extend record",
+          "code": "const Person = Record({ name: String });\nconst Employee = Person.And(Record({ employeeId: String }));\n// Has both name and employeeId",
+          "when": "Add fields"
+        },
+        {
+          "approach": "Pick fields",
+          "code": "const UserInput = User.pick('name', 'email');\n// Only has name and email",
+          "when": "Subset of fields"
+        },
+        {
+          "approach": "Omit fields",
+          "code": "const UserOutput = User.omit('password');\n// All fields except password",
+          "when": "Exclude fields"
+        }
+      ]
+    }
+  ]
+}

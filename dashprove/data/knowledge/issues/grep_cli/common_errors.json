@@ -1,0 +1,168 @@
+{
+  "tool": "grep",
+  "version": "3.11",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "binary_file_matches",
+      "pattern": "Binary file.*matches",
+      "message": "Binary file matches",
+      "cause": "File detected as binary, not showing matches",
+      "solutions": [
+        {
+          "approach": "Force text",
+          "code": "grep -a pattern file",
+          "when": "File is text but detected as binary"
+        },
+        {
+          "approach": "Show binary",
+          "code": "grep --binary-files=text pattern file",
+          "when": "Want to see matches"
+        },
+        {
+          "approach": "Exclude binaries",
+          "code": "grep -rI pattern dir/",
+          "when": "Skip binary files"
+        }
+      ]
+    },
+    {
+      "id": "no_match",
+      "pattern": "No such file|grep:.*Is a directory",
+      "message": "No match or wrong file type",
+      "cause": "File doesn't exist or is directory",
+      "solutions": [
+        {
+          "approach": "Recursive search",
+          "code": "grep -r pattern directory/",
+          "when": "Search in directory"
+        },
+        {
+          "approach": "Check file exists",
+          "code": "ls -la file",
+          "when": "Verify file"
+        },
+        {
+          "approach": "Use find with grep",
+          "code": "find . -name '*.txt' -exec grep pattern {} +",
+          "when": "Search specific files"
+        }
+      ]
+    },
+    {
+      "id": "regex_error",
+      "pattern": "Invalid.*expression|trailing backslash|unmatched",
+      "message": "Invalid regular expression",
+      "cause": "Regex syntax error",
+      "solutions": [
+        {
+          "approach": "Escape metacharacters",
+          "code": "grep 'price\\.' file  (escape dot)",
+          "when": "Literal special char"
+        },
+        {
+          "approach": "Use fixed strings",
+          "code": "grep -F 'literal[string]' file",
+          "when": "No regex needed"
+        },
+        {
+          "approach": "Use extended regex",
+          "code": "grep -E 'pattern1|pattern2' file",
+          "when": "Need extended features"
+        }
+      ]
+    },
+    {
+      "id": "color_in_pipe",
+      "pattern": "\\[.*m|escape.*sequences|color.*codes",
+      "message": "ANSI color codes in output",
+      "cause": "Color enabled in pipe",
+      "solutions": [
+        {
+          "approach": "Disable color",
+          "code": "grep --color=never pattern file | ...",
+          "when": "Piping to other commands"
+        },
+        {
+          "approach": "Strip colors",
+          "code": "grep pattern file | sed 's/\\x1b\\[[0-9;]*m//g'",
+          "when": "Remove ANSI codes"
+        },
+        {
+          "approach": "Auto detection",
+          "code": "grep --color=auto pattern file",
+          "when": "Color only on terminal"
+        }
+      ]
+    },
+    {
+      "id": "encoding_issues",
+      "pattern": "illegal byte|invalid.*character|encoding",
+      "message": "Character encoding issue",
+      "cause": "File encoding doesn't match locale",
+      "solutions": [
+        {
+          "approach": "Use C locale",
+          "code": "LC_ALL=C grep pattern file",
+          "when": "Binary-safe search"
+        },
+        {
+          "approach": "Set encoding",
+          "code": "LANG=en_US.UTF-8 grep pattern file",
+          "when": "UTF-8 file"
+        },
+        {
+          "approach": "Convert first",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file | grep pattern",
+          "when": "Known encoding"
+        }
+      ]
+    },
+    {
+      "id": "hyphen_argument",
+      "pattern": "invalid option|unknown option|unrecognized",
+      "message": "Invalid option (pattern starts with -)",
+      "cause": "Pattern starting with - interpreted as option",
+      "solutions": [
+        {
+          "approach": "Use --",
+          "code": "grep -- -pattern file",
+          "when": "Pattern starts with -"
+        },
+        {
+          "approach": "Use -e flag",
+          "code": "grep -e '-pattern' file",
+          "when": "Explicit pattern"
+        },
+        {
+          "approach": "Bracket expression",
+          "code": "grep '[-]pattern' file",
+          "when": "Character class trick"
+        }
+      ]
+    },
+    {
+      "id": "exit_code",
+      "pattern": "exit code|return value|status",
+      "message": "Non-zero exit code",
+      "cause": "No match found (exit 1) or error (exit 2)",
+      "solutions": [
+        {
+          "approach": "Check exit code",
+          "code": "grep pattern file; echo $?  (0=match, 1=no match, 2=error)",
+          "when": "In scripts"
+        },
+        {
+          "approach": "Suppress no match error",
+          "code": "grep pattern file || true",
+          "when": "No match is OK"
+        },
+        {
+          "approach": "Use quiet mode",
+          "code": "if grep -q pattern file; then ...",
+          "when": "Just check existence"
+        }
+      ]
+    }
+  ]
+}

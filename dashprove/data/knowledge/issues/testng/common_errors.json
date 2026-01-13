@@ -1,0 +1,216 @@
+{
+  "tool": "testng",
+  "version": "7.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_tests_found",
+      "pattern": "No tests found|Cannot find class|No runnable methods|no test methods",
+      "message": "TestNG cannot find tests",
+      "cause": "Missing @Test annotation or configuration issue",
+      "solutions": [
+        {
+          "approach": "Add @Test annotation",
+          "code": "import org.testng.annotations.Test;\nimport static org.testng.Assert.*;\n\npublic class MyTest {\n    @Test\n    public void shouldWork() {\n        assertEquals(2, 1 + 1);\n    }\n}",
+          "when": "Missing annotation"
+        },
+        {
+          "approach": "Configure testng.xml",
+          "code": "<!-- testng.xml -->\n<!DOCTYPE suite SYSTEM \"https://testng.org/testng-1.0.dtd\">\n<suite name=\"MySuite\">\n    <test name=\"MyTest\">\n        <classes>\n            <class name=\"com.example.MyTest\"/>\n        </classes>\n    </test>\n</suite>",
+          "when": "XML configuration"
+        },
+        {
+          "approach": "Configure Maven Surefire",
+          "code": "<!-- pom.xml -->\n<plugin>\n    <groupId>org.apache.maven.plugins</groupId>\n    <artifactId>maven-surefire-plugin</artifactId>\n    <version>3.2.5</version>\n    <configuration>\n        <suiteXmlFiles>\n            <suiteXmlFile>testng.xml</suiteXmlFile>\n        </suiteXmlFiles>\n    </configuration>\n</plugin>",
+          "when": "Maven integration"
+        },
+        {
+          "approach": "Use package scan",
+          "code": "<!-- testng.xml -->\n<suite name=\"MySuite\">\n    <test name=\"AllTests\">\n        <packages>\n            <package name=\"com.example.tests.*\"/>\n        </packages>\n    </test>\n</suite>",
+          "when": "Scan packages"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError|expected.*but found|assertEquals|assertTrue",
+      "message": "Test assertion failed",
+      "cause": "Expected value doesn't match actual",
+      "solutions": [
+        {
+          "approach": "Use TestNG assertions",
+          "code": "import static org.testng.Assert.*;\n\n// Equality (note: order is actual, expected - opposite of JUnit!)\nassertEquals(actual, expected);\nassertEquals(actual, expected, \"message\");\n\n// Boolean\nassertTrue(condition);\nassertFalse(condition);\n\n// Null\nassertNull(value);\nassertNotNull(value);",
+          "when": "Basic assertions"
+        },
+        {
+          "approach": "Soft assertions",
+          "code": "import org.testng.asserts.SoftAssert;\n\n@Test\npublic void testMultiple() {\n    SoftAssert soft = new SoftAssert();\n    soft.assertEquals(user.getName(), \"John\");\n    soft.assertEquals(user.getAge(), 30);\n    soft.assertTrue(user.isActive());\n    soft.assertAll();  // Reports all failures\n}",
+          "when": "Multiple assertions"
+        },
+        {
+          "approach": "Assert exceptions",
+          "code": "@Test(expectedExceptions = IllegalArgumentException.class)\npublic void testException() {\n    service.validate(null);\n}\n\n@Test(expectedExceptions = MyException.class,\n      expectedExceptionsMessageRegExp = \".*invalid.*\")\npublic void testExceptionMessage() {\n    service.process();\n}",
+          "when": "Testing exceptions"
+        }
+      ]
+    },
+    {
+      "id": "configuration_error",
+      "pattern": "Configuration|@BeforeSuite|@BeforeTest|@BeforeClass|@BeforeMethod|failed",
+      "message": "Configuration method error",
+      "cause": "Setup/teardown method failed",
+      "solutions": [
+        {
+          "approach": "Use configuration annotations",
+          "code": "import org.testng.annotations.*;\n\npublic class MyTest {\n    @BeforeSuite\n    public void beforeSuite() {\n        // Once before all suites\n    }\n    \n    @BeforeTest\n    public void beforeTest() {\n        // Before each <test> in XML\n    }\n    \n    @BeforeClass\n    public void beforeClass() {\n        // Once before class\n    }\n    \n    @BeforeMethod\n    public void beforeMethod() {\n        // Before each @Test method\n    }\n    \n    // Corresponding @After* methods\n}",
+          "when": "Setup/teardown needed"
+        },
+        {
+          "approach": "Handle configuration failure",
+          "code": "// Skip tests if config fails\n@BeforeClass(alwaysRun = true)\npublic void setup() {\n    // Runs even if previous configs failed\n}\n\n// Don't skip dependent tests\n@Test(dependsOnMethods = \"setup\", alwaysRun = true)\npublic void test() {\n    // Runs even if setup failed\n}",
+          "when": "Config failure handling"
+        },
+        {
+          "approach": "Configure groups",
+          "code": "@BeforeGroups(groups = \"integration\")\npublic void setupIntegration() {\n    // Runs before first test in 'integration' group\n}\n\n@AfterGroups(groups = \"integration\")\npublic void cleanupIntegration() {\n    // Runs after last test in 'integration' group\n}",
+          "when": "Group-specific setup"
+        }
+      ]
+    },
+    {
+      "id": "dependency_error",
+      "pattern": "dependsOnMethods|dependsOnGroups|depends on|DependencyException|skipped",
+      "message": "Test dependency error",
+      "cause": "Dependent test failed or doesn't exist",
+      "solutions": [
+        {
+          "approach": "Define method dependency",
+          "code": "@Test\npublic void login() {\n    // Login test\n}\n\n@Test(dependsOnMethods = \"login\")\npublic void testDashboard() {\n    // Runs only if login passed\n}",
+          "when": "Test depends on another"
+        },
+        {
+          "approach": "Define group dependency",
+          "code": "@Test(groups = \"setup\")\npublic void createUser() { }\n\n@Test(groups = \"setup\")\npublic void setupDb() { }\n\n@Test(dependsOnGroups = \"setup\")\npublic void runTests() {\n    // Runs after all 'setup' tests pass\n}",
+          "when": "Depends on group"
+        },
+        {
+          "approach": "Handle dependency failure",
+          "code": "@Test(dependsOnMethods = \"login\", alwaysRun = true)\npublic void testLogout() {\n    // Runs even if login failed\n    // Check preconditions manually\n}",
+          "when": "Run despite failure"
+        },
+        {
+          "approach": "Check method exists",
+          "code": "// Ensure dependent method exists in same class\n// or use fully qualified name\n@Test(dependsOnMethods = {\"com.example.BaseTest.setup\"})\npublic void test() { }",
+          "when": "Method not found"
+        }
+      ]
+    },
+    {
+      "id": "data_provider_error",
+      "pattern": "DataProvider|@DataProvider|Cannot find data provider|data provider.*not found",
+      "message": "Data provider error",
+      "cause": "Data provider not found or returns wrong type",
+      "solutions": [
+        {
+          "approach": "Define data provider",
+          "code": "@DataProvider(name = \"testData\")\npublic Object[][] provideData() {\n    return new Object[][] {\n        {\"hello\", 5},\n        {\"world\", 5}\n    };\n}\n\n@Test(dataProvider = \"testData\")\npublic void testLength(String input, int expected) {\n    assertEquals(input.length(), expected);\n}",
+          "when": "Basic data provider"
+        },
+        {
+          "approach": "Data provider in different class",
+          "code": "public class DataProviders {\n    @DataProvider(name = \"sharedData\")\n    public static Object[][] getData() {\n        return new Object[][] {{\"a\"}, {\"b\"}};\n    }\n}\n\n@Test(dataProvider = \"sharedData\", \n      dataProviderClass = DataProviders.class)\npublic void test(String data) { }",
+          "when": "Reusable data provider"
+        },
+        {
+          "approach": "Use Iterator",
+          "code": "@DataProvider(name = \"lazyData\")\npublic Iterator<Object[]> provideLazyData() {\n    List<Object[]> data = new ArrayList<>();\n    data.add(new Object[] {\"a\", 1});\n    data.add(new Object[] {\"b\", 2});\n    return data.iterator();\n}",
+          "when": "Large/lazy data"
+        },
+        {
+          "approach": "Parallel data provider",
+          "code": "@DataProvider(name = \"parallelData\", parallel = true)\npublic Object[][] getParallelData() {\n    return new Object[][] {\n        {1}, {2}, {3}, {4}, {5}\n    };\n}\n\n// Each row runs in parallel",
+          "when": "Parallel execution"
+        }
+      ]
+    },
+    {
+      "id": "parallel_error",
+      "pattern": "parallel|thread|concurrent|race|flaky|intermittent",
+      "message": "Parallel execution issue",
+      "cause": "Tests not thread-safe",
+      "solutions": [
+        {
+          "approach": "Configure parallel in XML",
+          "code": "<!-- testng.xml -->\n<suite name=\"Parallel\" parallel=\"methods\" thread-count=\"5\">\n    <!-- parallel: methods, tests, classes, instances -->\n    <test name=\"Test\">\n        <classes>\n            <class name=\"com.example.MyTest\"/>\n        </classes>\n    </test>\n</suite>",
+          "when": "Enable parallelism"
+        },
+        {
+          "approach": "Thread-safe tests",
+          "code": "// Use ThreadLocal for test data\nprivate static ThreadLocal<WebDriver> driver = new ThreadLocal<>();\n\n@BeforeMethod\npublic void setup() {\n    driver.set(new ChromeDriver());\n}\n\n@AfterMethod\npublic void teardown() {\n    driver.get().quit();\n    driver.remove();\n}",
+          "when": "Shared resources"
+        },
+        {
+          "approach": "Disable parallel for test",
+          "code": "@Test(singleThreaded = true)\npublic void notThreadSafe() {\n    // This test runs alone\n}",
+          "when": "Single test needs isolation"
+        },
+        {
+          "approach": "Configure thread pool",
+          "code": "<!-- testng.xml -->\n<suite name=\"Suite\" \n       parallel=\"methods\" \n       thread-count=\"10\"\n       data-provider-thread-count=\"3\">\n    <!-- Separate thread count for data providers -->\n</suite>",
+          "when": "Fine-tune threading"
+        }
+      ]
+    },
+    {
+      "id": "listener_error",
+      "pattern": "ITestListener|IReporter|listener|@Listeners|reporter",
+      "message": "TestNG listener error",
+      "cause": "Listener not found or throws exception",
+      "solutions": [
+        {
+          "approach": "Add listener via annotation",
+          "code": "import org.testng.annotations.Listeners;\n\n@Listeners({MyTestListener.class})\npublic class MyTest {\n    // ...\n}",
+          "when": "Class-level listener"
+        },
+        {
+          "approach": "Add listener in XML",
+          "code": "<!-- testng.xml -->\n<suite name=\"Suite\">\n    <listeners>\n        <listener class-name=\"com.example.MyTestListener\"/>\n    </listeners>\n    <test name=\"Test\">\n        <!-- ... -->\n    </test>\n</suite>",
+          "when": "Suite-level listener"
+        },
+        {
+          "approach": "Implement ITestListener",
+          "code": "public class MyTestListener implements ITestListener {\n    @Override\n    public void onTestStart(ITestResult result) {\n        System.out.println(\"Starting: \" + result.getName());\n    }\n    \n    @Override\n    public void onTestSuccess(ITestResult result) {\n        System.out.println(\"Passed: \" + result.getName());\n    }\n    \n    @Override\n    public void onTestFailure(ITestResult result) {\n        System.out.println(\"Failed: \" + result.getName());\n    }\n}",
+          "when": "Custom listener"
+        },
+        {
+          "approach": "Use retry analyzer",
+          "code": "public class RetryAnalyzer implements IRetryAnalyzer {\n    private int count = 0;\n    private static final int MAX = 3;\n    \n    @Override\n    public boolean retry(ITestResult result) {\n        if (count < MAX) {\n            count++;\n            return true;  // Retry\n        }\n        return false;\n    }\n}\n\n@Test(retryAnalyzer = RetryAnalyzer.class)\npublic void flakyTest() { }",
+          "when": "Retry failed tests"
+        }
+      ]
+    },
+    {
+      "id": "factory_error",
+      "pattern": "@Factory|factory|Cannot create instance|InstantiationException",
+      "message": "TestNG factory error",
+      "cause": "Factory method issue or instance creation failure",
+      "solutions": [
+        {
+          "approach": "Use @Factory",
+          "code": "public class ParameterizedTest {\n    private String param;\n    \n    public ParameterizedTest(String param) {\n        this.param = param;\n    }\n    \n    @Test\n    public void test() {\n        System.out.println(\"Testing: \" + param);\n    }\n}\n\npublic class TestFactory {\n    @Factory\n    public Object[] createTests() {\n        return new Object[] {\n            new ParameterizedTest(\"a\"),\n            new ParameterizedTest(\"b\")\n        };\n    }\n}",
+          "when": "Create test instances"
+        },
+        {
+          "approach": "Factory with DataProvider",
+          "code": "@Factory(dataProvider = \"params\")\npublic ParameterizedTest(String param) {\n    this.param = param;\n}\n\n@DataProvider(name = \"params\")\npublic static Object[][] params() {\n    return new Object[][] {{\"x\"}, {\"y\"}, {\"z\"}};\n}",
+          "when": "Factory with data"
+        },
+        {
+          "approach": "Check constructor",
+          "code": "// Test class needs no-arg constructor\n// Or constructor matching @Factory parameters\npublic class MyTest {\n    public MyTest() {  // Required\n    }\n}",
+          "when": "Missing constructor"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "id": "rapid",
+  "name": "Rapid",
+  "category": "go_testing",
+  "subcategory": "property_based_testing",
+
+  "description": "Property-based testing library for Go with integrated shrinking",
+  "long_description": "Rapid is a modern property-based testing library for Go inspired by Hypothesis for Python. It generates random test inputs, checks properties, and automatically shrinks failing cases to minimal examples. Rapid features integrated shrinking (no separate shrinker needed), stateful testing support, and excellent error messages.",
+
+  "capabilities": [
+    "property_based_testing",
+    "automatic_shrinking",
+    "stateful_testing",
+    "custom_generators",
+    "example_database",
+    "deterministic_replay",
+    "counterexample_minimization"
+  ],
+  "property_types": ["property", "invariant", "stateful_property"],
+  "input_languages": ["go"],
+  "output_formats": ["text", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "go_get", "command": "go get pgregory.net/rapid"}
+    ],
+    "dependencies": ["go >= 1.18"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://pkg.go.dev/pgregory.net/rapid",
+    "tutorial": "https://github.com/flyingmutant/rapid#quick-start",
+    "examples": "https://github.com/flyingmutant/rapid/tree/master/example_test.go",
+    "statemachine": "https://github.com/flyingmutant/rapid#stateful-testing"
+  },
+
+  "tactics": [
+    {
+      "name": "check_property",
+      "description": "Test a property with random inputs",
+      "syntax": "rapid.Check(t, func(t *rapid.T) { ... })",
+      "when_to_use": "Testing properties that should hold for all inputs",
+      "examples": ["rapid.Check(t, func(t *rapid.T) {\n    x := rapid.Int().Draw(t, \"x\")\n    y := rapid.Int().Draw(t, \"y\")\n    if x+y != y+x {\n        t.Fatal(\"addition not commutative\")\n    }\n})"]
+    },
+    {
+      "name": "draw_values",
+      "description": "Generate random values using generators",
+      "syntax": "rapid.Generator().Draw(t, name)",
+      "when_to_use": "Creating test inputs",
+      "examples": ["rapid.Int().Draw(t, \"n\")", "rapid.String().Draw(t, \"s\")", "rapid.SliceOf(rapid.Byte()).Draw(t, \"data\")"]
+    },
+    {
+      "name": "custom_generator",
+      "description": "Create custom type generator",
+      "syntax": "rapid.Custom(func(t *rapid.T) T { ... })",
+      "when_to_use": "Generating domain-specific types",
+      "examples": ["rapid.Custom(func(t *rapid.T) Person {\n    return Person{\n        Name: rapid.String().Draw(t, \"name\"),\n        Age:  rapid.IntRange(0, 150).Draw(t, \"age\"),\n    }\n})"]
+    },
+    {
+      "name": "stateful_test",
+      "description": "Test stateful systems with commands",
+      "syntax": "rapid.StateMachine[State]",
+      "when_to_use": "Testing systems with state transitions",
+      "examples": ["type setMachine struct {\n    actual map[int]struct{}\n}\nfunc (m *setMachine) Add(t *rapid.T) {\n    v := rapid.Int().Draw(t, \"v\")\n    m.actual[v] = struct{}{}\n}"]
+    },
+    {
+      "name": "filter",
+      "description": "Filter generated values",
+      "syntax": "gen.Filter(predicate)",
+      "when_to_use": "Constraining inputs to valid values",
+      "examples": ["rapid.Int().Filter(func(x int) bool { return x > 0 })"]
+    }
+  ],
+
+  "generators": [
+    {
+      "name": "Int",
+      "description": "Generate random integers",
+      "examples": ["rapid.Int()", "rapid.IntRange(0, 100)", "rapid.IntMin(0)"]
+    },
+    {
+      "name": "String",
+      "description": "Generate random strings",
+      "examples": ["rapid.String()", "rapid.StringOf(rapid.RuneFrom([]rune{'a','b','c'}))", "rapid.StringN(1, 10, -1)"]
+    },
+    {
+      "name": "Slice",
+      "description": "Generate random slices",
+      "examples": ["rapid.SliceOf(rapid.Int())", "rapid.SliceOfN(rapid.Byte(), 1, 100)"]
+    },
+    {
+      "name": "Map",
+      "description": "Generate random maps",
+      "examples": ["rapid.MapOf(rapid.String(), rapid.Int())"]
+    },
+    {
+      "name": "SampledFrom",
+      "description": "Sample from fixed set",
+      "examples": ["rapid.SampledFrom([]string{\"red\", \"green\", \"blue\"})"]
+    },
+    {
+      "name": "OneOf",
+      "description": "Choose between generators",
+      "examples": ["rapid.OneOf(rapid.Int(), rapid.Float64())"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "failed after \\d+ tests",
+      "meaning": "Property violation found",
+      "common_causes": ["Bug in implementation", "Property too strict", "Edge case not handled"],
+      "fixes": ["Fix the bug", "Relax property", "Handle edge case"]
+    },
+    {
+      "pattern": "draw from empty",
+      "meaning": "Filter excluded all values",
+      "common_causes": ["Filter too restrictive", "Impossible constraints"],
+      "fixes": ["Relax filter", "Use different generator", "Check constraint logic"]
+    },
+    {
+      "pattern": "shrinking",
+      "meaning": "Rapid is minimizing the failing case",
+      "common_causes": ["Normal behavior after finding failure"],
+      "fixes": ["Wait for minimization to complete"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "goland"],
+    "ci_integration": ["github_actions", "gitlab_ci", "jenkins"]
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to seconds",
+    "default_runs": "100 iterations per property",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["gopter", "go-fuzz", "quick", "hypothesis"],
+    "advantages": [
+      "Integrated shrinking - no separate shrinker",
+      "Modern API inspired by Hypothesis",
+      "Excellent error messages with counterexamples",
+      "Stateful testing support",
+      "Deterministic replay"
+    ],
+    "disadvantages": [
+      "Less mature than Hypothesis",
+      "Smaller community than gopter"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Gregory Petrosyan",
+    "license": "MPL-2.0"
+  }
+}

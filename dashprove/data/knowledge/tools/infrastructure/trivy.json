@@ -1,0 +1,125 @@
+{
+  "id": "trivy",
+  "name": "Trivy",
+  "category": "security",
+  "subcategory": "comprehensive_scanner",
+
+  "description": "Comprehensive security scanner for containers, IaC, filesystems, and git repos",
+  "long_description": "Trivy is a comprehensive and versatile security scanner by Aqua Security. It can scan container images, filesystems, git repositories, and IaC (Terraform, CloudFormation, etc.) for vulnerabilities, misconfigurations, secrets, and SBOM generation. It combines capabilities of multiple tools (tfsec, etc.) into one.",
+
+  "capabilities": [
+    "container_scanning",
+    "vulnerability_detection",
+    "iac_scanning",
+    "secret_detection",
+    "sbom_generation",
+    "license_scanning",
+    "filesystem_scanning",
+    "kubernetes_scanning",
+    "rootfs_scanning"
+  ],
+  "property_types": ["security", "vulnerability", "compliance"],
+  "input_languages": ["dockerfile", "hcl", "yaml", "json"],
+  "output_formats": ["table", "json", "sarif", "cyclonedx", "spdx"],
+
+  "installation": {
+    "methods": [
+      {"type": "brew", "command": "brew install trivy", "platform": "macos"},
+      {"type": "apt", "command": "apt install trivy", "platform": "linux"},
+      {"type": "binary", "url": "https://github.com/aquasecurity/trivy/releases"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://aquasecurity.github.io/trivy/",
+    "tutorial": "https://aquasecurity.github.io/trivy/latest/getting-started/installation/",
+    "api_reference": "https://aquasecurity.github.io/trivy/latest/docs/references/configuration/cli/trivy/",
+    "examples": "https://github.com/aquasecurity/trivy/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "image_scan",
+      "description": "Scan container image",
+      "syntax": "trivy image nginx:latest",
+      "when_to_use": "Checking container security",
+      "examples": ["trivy image --severity HIGH,CRITICAL myapp:1.0"]
+    },
+    {
+      "name": "filesystem_scan",
+      "description": "Scan local filesystem",
+      "syntax": "trivy fs /path/to/project",
+      "when_to_use": "Scanning source code",
+      "examples": ["trivy fs . --scanners vuln,secret"]
+    },
+    {
+      "name": "config_scan",
+      "description": "Scan IaC configs",
+      "syntax": "trivy config /path/to/iac",
+      "when_to_use": "IaC security scanning",
+      "examples": ["trivy config ./terraform --severity HIGH"]
+    },
+    {
+      "name": "sbom",
+      "description": "Generate SBOM",
+      "syntax": "trivy image --format cyclonedx image:tag",
+      "when_to_use": "Software Bill of Materials",
+      "examples": ["trivy image --format spdx-json myapp:1.0 > sbom.json"]
+    },
+    {
+      "name": "kubernetes",
+      "description": "Scan Kubernetes cluster",
+      "syntax": "trivy k8s --report=summary cluster",
+      "when_to_use": "Cluster security audit",
+      "examples": ["trivy k8s --namespace default --report all"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CRITICAL.*CVE-",
+      "meaning": "Critical vulnerability found",
+      "common_causes": ["Outdated base image", "Vulnerable dependency"],
+      "fixes": ["Update base image", "Patch dependency"]
+    },
+    {
+      "pattern": "Secret detected",
+      "meaning": "Hardcoded secret found",
+      "common_causes": ["Committed credentials"],
+      "fixes": ["Remove secret", "Use secret management"]
+    },
+    {
+      "pattern": "Misconfiguration.*CRITICAL",
+      "meaning": "Critical IaC misconfiguration",
+      "common_causes": ["Insecure defaults", "Missing encryption"],
+      "fixes": ["Apply security best practices"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security", "vulnerability"],
+    "cli_command": "dashprove verify --backend trivy"
+  },
+
+  "performance": {
+    "typical_runtime": "Fast; uses local DB",
+    "scalability": "Good for large scans",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["grype", "snyk", "clair", "anchore"],
+    "advantages": ["All-in-one", "Fast", "Free", "Active development"],
+    "disadvantages": ["DB download on first run"]
+  },
+
+  "metadata": {
+    "version": "0.49.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Aqua Security",
+    "license": "Apache-2.0"
+  }
+}

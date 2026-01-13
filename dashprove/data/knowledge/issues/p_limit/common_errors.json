@@ -1,0 +1,145 @@
+{
+  "tool": "p_limit",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "esm_import_error",
+      "pattern": "ERR_REQUIRE_ESM|Must use import|Cannot use require",
+      "message": "Module import error",
+      "cause": "p-limit is ESM-only since v4",
+      "solutions": [
+        {
+          "approach": "Use ESM import",
+          "code": "import pLimit from 'p-limit';\nconst limit = pLimit(5);",
+          "when": "ES modules"
+        },
+        {
+          "approach": "Dynamic import in CJS",
+          "code": "const pLimit = await import('p-limit');\nconst limit = pLimit.default(5);",
+          "when": "CommonJS"
+        },
+        {
+          "approach": "Use v3 for CJS",
+          "code": "npm install p-limit@3\n// Then: const pLimit = require('p-limit');",
+          "when": "Need CommonJS"
+        }
+      ]
+    },
+    {
+      "id": "not_a_function",
+      "pattern": "limit is not a function|TypeError.*limit|cannot call",
+      "message": "Limiter not callable",
+      "cause": "Using limiter incorrectly or wrong import",
+      "solutions": [
+        {
+          "approach": "Correct usage pattern",
+          "code": "import pLimit from 'p-limit';\nconst limit = pLimit(2);  // create limiter\n\n// Wrap async functions\nconst results = await Promise.all(\n  urls.map(url => limit(() => fetch(url)))\n);",
+          "when": "Basic usage"
+        },
+        {
+          "approach": "Check import",
+          "code": "// ESM:\nimport pLimit from 'p-limit';\n// NOT: import { pLimit } from 'p-limit';",
+          "when": "Wrong import"
+        },
+        {
+          "approach": "Pass function, not result",
+          "code": "limit(() => fetchData())  // correct - pass function\nlimit(fetchData())         // WRONG - passes promise",
+          "when": "Common mistake"
+        }
+      ]
+    },
+    {
+      "id": "error_propagation",
+      "pattern": "unhandled rejection|error not caught|swallowed error",
+      "message": "Error in limited function not handled",
+      "cause": "Errors propagate through the limiter",
+      "solutions": [
+        {
+          "approach": "Catch in Promise.all",
+          "code": "try {\n  const results = await Promise.all(\n    items.map(item => limit(() => process(item)))\n  );\n} catch (err) {\n  console.error('One or more failed:', err);\n}",
+          "when": "Any failure stops all"
+        },
+        {
+          "approach": "Use Promise.allSettled",
+          "code": "const results = await Promise.allSettled(\n  items.map(item => limit(() => process(item)))\n);\nconst failed = results.filter(r => r.status === 'rejected');",
+          "when": "Continue on failures"
+        },
+        {
+          "approach": "Individual error handling",
+          "code": "const results = await Promise.all(\n  items.map(item => limit(() => process(item).catch(err => ({ error: err }))))\n);",
+          "when": "Custom error handling"
+        }
+      ]
+    },
+    {
+      "id": "concurrency_not_respected",
+      "pattern": "too many concurrent|more than limit|limit not working",
+      "message": "More operations running than limit",
+      "cause": "Not wrapping all operations with limiter",
+      "solutions": [
+        {
+          "approach": "Wrap all operations",
+          "code": "const limit = pLimit(3);\n// ALL async operations must go through limit\nconst result1 = await limit(() => op1());\nconst result2 = await limit(() => op2());",
+          "when": "Missed operations"
+        },
+        {
+          "approach": "Single limiter instance",
+          "code": "// Use same limiter instance everywhere\nexport const dbLimit = pLimit(10);\n// In other files:\nimport { dbLimit } from './limits';\nawait dbLimit(() => query());",
+          "when": "Shared limit"
+        },
+        {
+          "approach": "Check active count",
+          "code": "const limit = pLimit(5);\nconsole.log('Active:', limit.activeCount);\nconsole.log('Pending:', limit.pendingCount);",
+          "when": "Debugging"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "memory leak|heap.*grow|pending tasks accumulate",
+      "message": "Pending operations accumulating",
+      "cause": "Tasks added faster than processed, never cleared",
+      "solutions": [
+        {
+          "approach": "Clear pending",
+          "code": "limit.clearQueue();\nconsole.log('Cleared pending tasks');",
+          "when": "Reset needed"
+        },
+        {
+          "approach": "Monitor queue size",
+          "code": "if (limit.pendingCount > 1000) {\n  console.warn('Queue growing:', limit.pendingCount);\n}",
+          "when": "Monitoring"
+        },
+        {
+          "approach": "Backpressure",
+          "code": "// Don't add more if too many pending\nif (limit.pendingCount < 100) {\n  limit(() => processItem(item));\n} else {\n  // Wait or drop\n}",
+          "when": "Flow control"
+        }
+      ]
+    },
+    {
+      "id": "return_value_lost",
+      "pattern": "undefined result|return value missing|result is undefined",
+      "message": "Return value not captured",
+      "cause": "Not awaiting or returning the limited call",
+      "solutions": [
+        {
+          "approach": "Await the result",
+          "code": "const result = await limit(() => fetchData());\nconsole.log(result);",
+          "when": "Single call"
+        },
+        {
+          "approach": "Collect all results",
+          "code": "const promises = items.map(item => limit(() => process(item)));\nconst results = await Promise.all(promises);",
+          "when": "Multiple calls"
+        },
+        {
+          "approach": "Return from callback",
+          "code": "// Make sure your function returns the value\nconst result = await limit(async () => {\n  const data = await fetchData();\n  return data;  // Don't forget this!\n});",
+          "when": "Missing return"
+        }
+      ]
+    }
+  ]
+}

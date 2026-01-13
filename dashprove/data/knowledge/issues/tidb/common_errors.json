@@ -1,0 +1,191 @@
+{
+  "tool": "tidb",
+  "version": "7.5.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "region_error",
+      "pattern": "region|Region is unavailable|No Region",
+      "message": "Region unavailable",
+      "cause": "TiKV region not available or split",
+      "solutions": [
+        {
+          "approach": "Check PD",
+          "code": "tiup ctl:v7.5.0 pd -u http://pd:2379 region",
+          "when": "Check regions"
+        },
+        {
+          "approach": "Wait for recovery",
+          "code": "-- Regions may be splitting or merging\n-- Wait and retry the query",
+          "when": "Transient error"
+        },
+        {
+          "approach": "Check TiKV status",
+          "code": "tiup cluster display <cluster-name>",
+          "when": "TiKV health"
+        }
+      ]
+    },
+    {
+      "id": "transaction_error",
+      "pattern": "Lock wait timeout|deadlock|transaction conflict",
+      "message": "Transaction conflict or deadlock",
+      "cause": "Concurrent transactions conflicting",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "SET innodb_lock_wait_timeout = 120;",
+          "when": "Timeout too short"
+        },
+        {
+          "approach": "Pessimistic mode",
+          "code": "SET tidb_txn_mode = 'pessimistic';",
+          "when": "Reduce conflicts"
+        },
+        {
+          "approach": "Retry transaction",
+          "code": "-- Catch error 9007 and retry\n-- TiDB retries automatically for some cases",
+          "when": "Deadlock"
+        }
+      ]
+    },
+    {
+      "id": "gc_error",
+      "pattern": "GC life time|snapshot is too old|gc_safe_point",
+      "message": "GC or snapshot error",
+      "cause": "Transaction running longer than GC window",
+      "solutions": [
+        {
+          "approach": "Increase GC lifetime",
+          "code": "UPDATE mysql.tidb SET VARIABLE_VALUE = '24h'\nWHERE VARIABLE_NAME = 'tikv_gc_life_time';",
+          "when": "Long transactions"
+        },
+        {
+          "approach": "Check GC status",
+          "code": "SELECT * FROM mysql.tidb\nWHERE VARIABLE_NAME LIKE 'tikv_gc%';",
+          "when": "Debug GC"
+        },
+        {
+          "approach": "Smaller batches",
+          "code": "-- Process data in smaller transactions\n-- to avoid GC conflicts",
+          "when": "Large updates"
+        }
+      ]
+    },
+    {
+      "id": "oom_error",
+      "pattern": "Out of memory|oom-action|memory quota",
+      "message": "Out of memory",
+      "cause": "Query exceeded memory limit",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "SET tidb_mem_quota_query = 8589934592;  -- 8GB",
+          "when": "More memory needed"
+        },
+        {
+          "approach": "Enable disk spill",
+          "code": "SET tidb_enable_tmp_storage_on_oom = ON;\nSET tidb_tmp_table_max_size = 10737418240;",
+          "when": "Use disk"
+        },
+        {
+          "approach": "Check statement",
+          "code": "SELECT * FROM information_schema.statements_summary\nWHERE max_mem > 1073741824;",
+          "when": "Find expensive queries"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "index|No index|slow query|full table scan",
+      "message": "Missing or ineffective index",
+      "cause": "Query not using indexes effectively",
+      "solutions": [
+        {
+          "approach": "Analyze table",
+          "code": "ANALYZE TABLE table_name;",
+          "when": "Update statistics"
+        },
+        {
+          "approach": "Check execution plan",
+          "code": "EXPLAIN ANALYZE SELECT * FROM t WHERE col = 'value';",
+          "when": "Debug query plan"
+        },
+        {
+          "approach": "Add index",
+          "code": "CREATE INDEX idx_col ON table_name(col);",
+          "when": "Missing index"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "Cannot connect|connection refused|max connections",
+      "message": "Connection failed",
+      "cause": "Cannot connect to TiDB server",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "tiup cluster display <cluster-name>",
+          "when": "Check cluster"
+        },
+        {
+          "approach": "Connection pool",
+          "code": "-- Use connection pooling\n-- Don't create connection per query",
+          "when": "Max connections"
+        },
+        {
+          "approach": "Check port",
+          "code": "# Default: 4000\nmysql -h 127.0.0.1 -P 4000 -u root",
+          "when": "Connect to TiDB"
+        }
+      ]
+    },
+    {
+      "id": "ddl_error",
+      "pattern": "DDL|ALTER|schema change|Adding column",
+      "message": "DDL operation error",
+      "cause": "Schema change failed or blocked",
+      "solutions": [
+        {
+          "approach": "Check DDL jobs",
+          "code": "ADMIN SHOW DDL JOBS;",
+          "when": "View pending DDL"
+        },
+        {
+          "approach": "Cancel DDL",
+          "code": "ADMIN CANCEL DDL JOBS job_id;",
+          "when": "Cancel stuck DDL"
+        },
+        {
+          "approach": "Online DDL",
+          "code": "-- TiDB DDLs are online by default\n-- Large table changes may take time\nALTER TABLE t ADD COLUMN c INT;",
+          "when": "Large table"
+        }
+      ]
+    },
+    {
+      "id": "charset_error",
+      "pattern": "charset|character set|utf8mb4|collation",
+      "message": "Character set error",
+      "cause": "Character set or collation mismatch",
+      "solutions": [
+        {
+          "approach": "Set charset",
+          "code": "CREATE TABLE t (\n    c VARCHAR(100)\n) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",
+          "when": "Create with charset"
+        },
+        {
+          "approach": "Convert charset",
+          "code": "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4;",
+          "when": "Change existing"
+        },
+        {
+          "approach": "New collation",
+          "code": "-- TiDB 7.4+: new_collations_enabled_on_first_bootstrap\nSHOW VARIABLES LIKE 'new_collations%';",
+          "when": "Enable new collation"
+        }
+      ]
+    }
+  ]
+}

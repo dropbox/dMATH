@@ -1,0 +1,119 @@
+{
+  "tool": "pako",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "incorrect header check",
+      "meaning": "Input is not valid zlib/gzip format",
+      "causes": [
+        "Data is raw deflate without wrapper",
+        "Wrong format for inflate() call",
+        "Data corrupted or not compressed"
+      ],
+      "solutions": [
+        "For raw deflate: pako.inflateRaw()",
+        "For gzip: pako.ungzip()",
+        "For zlib: pako.inflate()",
+        "Check windowBits option for format selection"
+      ]
+    },
+    {
+      "pattern": "invalid stored block lengths",
+      "meaning": "Deflate block header corrupted",
+      "causes": [
+        "Data truncated",
+        "Not actually compressed",
+        "Corruption in stored block"
+      ],
+      "solutions": [
+        "Verify data is actually deflate-compressed",
+        "Check for complete data transfer",
+        "Use try/catch to handle invalid input"
+      ]
+    },
+    {
+      "pattern": "buffer error|output buffer full",
+      "meaning": "Output buffer overflow",
+      "causes": [
+        "Raw array/typed array with insufficient size",
+        "Streaming mode buffer management",
+        "Very high compression ratio data"
+      ],
+      "solutions": [
+        "pako auto-grows buffers by default",
+        "For streaming: handle onData callback promptly",
+        "Check raw option and provide adequate buffer"
+      ]
+    },
+    {
+      "pattern": "invalid distance|invalid literal/lengths",
+      "meaning": "Deflate algorithm error",
+      "causes": [
+        "Corrupted compressed data",
+        "Invalid back-reference",
+        "Data modified after compression"
+      ],
+      "solutions": [
+        "Verify data integrity",
+        "Re-compress from original source",
+        "Check for transfer/storage corruption"
+      ]
+    },
+    {
+      "pattern": "pako is not defined|require.*pako.*failed",
+      "meaning": "Pako not loaded/imported",
+      "causes": [
+        "Missing script tag or import",
+        "Wrong import path",
+        "Module bundling issue"
+      ],
+      "solutions": [
+        "Browser: <script src='pako.min.js'></script>",
+        "Node/bundler: const pako = require('pako') or import pako from 'pako'",
+        "Check package.json has pako dependency"
+      ]
+    },
+    {
+      "pattern": "string argument expected|invalid input type",
+      "meaning": "Wrong data type passed to pako",
+      "causes": [
+        "Passing string to binary function",
+        "Passing object instead of array/buffer",
+        "Uint8Array expected but got different type"
+      ],
+      "solutions": [
+        "Use Uint8Array or Buffer for binary data",
+        "For strings: pako.deflate(string, { to: 'string' })",
+        "Convert: new TextEncoder().encode(str)"
+      ]
+    },
+    {
+      "pattern": "stream error|push after end",
+      "meaning": "Streaming API misuse",
+      "causes": [
+        "Calling push() after push(data, true)",
+        "Reusing finished stream",
+        "Not checking stream.err"
+      ],
+      "solutions": [
+        "Final push: inflator.push(chunk, true)",
+        "Create new Inflate/Deflate for each operation",
+        "Check .err and .msg after push()"
+      ]
+    },
+    {
+      "pattern": "checksum mismatch|adler32.*crc32",
+      "meaning": "Data integrity verification failed",
+      "causes": [
+        "Data corrupted",
+        "Wrong checksum type for format",
+        "Incomplete data"
+      ],
+      "solutions": [
+        "zlib uses Adler-32, gzip uses CRC-32",
+        "Verify complete data transfer",
+        "Re-obtain uncorrupted source data"
+      ]
+    }
+  ]
+}

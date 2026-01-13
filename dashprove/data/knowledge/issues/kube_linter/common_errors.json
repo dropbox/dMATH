@@ -1,0 +1,197 @@
+{
+  "tool": "kube-linter",
+  "version": "0.6.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_read_only_root_fs",
+      "pattern": "no-read-only-root-fs|readOnlyRootFilesystem",
+      "message": "Container does not have a read-only root filesystem",
+      "cause": "Pod spec missing securityContext.readOnlyRootFilesystem: true",
+      "solutions": [
+        {
+          "approach": "Set read-only root filesystem",
+          "code": "securityContext:\n  readOnlyRootFilesystem: true",
+          "when": "Container doesn't need to write to root filesystem"
+        },
+        {
+          "approach": "Add emptyDir for writable paths",
+          "code": "volumes:\n- name: tmp\n  emptyDir: {}\nvolumeMounts:\n- name: tmp\n  mountPath: /tmp",
+          "when": "Container needs specific writable directories"
+        }
+      ]
+    },
+    {
+      "id": "run_as_non_root",
+      "pattern": "run-as-non-root|runAsNonRoot",
+      "message": "Container is running as root",
+      "cause": "Pod spec missing runAsNonRoot: true or runAsUser",
+      "solutions": [
+        {
+          "approach": "Set non-root user",
+          "code": "securityContext:\n  runAsNonRoot: true\n  runAsUser: 1000\n  runAsGroup: 1000",
+          "when": "Container can run as non-root"
+        },
+        {
+          "approach": "Use distroless image",
+          "code": "image: gcr.io/distroless/static-debian11:nonroot",
+          "when": "Building from scratch"
+        }
+      ]
+    },
+    {
+      "id": "privileged_container",
+      "pattern": "privileged-container|privileged: true",
+      "message": "Container is running in privileged mode",
+      "cause": "securityContext.privileged set to true",
+      "solutions": [
+        {
+          "approach": "Remove privileged mode",
+          "code": "securityContext:\n  privileged: false",
+          "when": "Container doesn't need full host access"
+        },
+        {
+          "approach": "Use specific capabilities",
+          "code": "securityContext:\n  capabilities:\n    add: [\"NET_ADMIN\"]\n    drop: [\"ALL\"]",
+          "when": "Need specific Linux capabilities"
+        }
+      ]
+    },
+    {
+      "id": "unset_cpu_requirements",
+      "pattern": "unset-cpu-requirements|cpu.*not set",
+      "message": "Container does not have CPU requirements set",
+      "cause": "Missing resources.requests.cpu or resources.limits.cpu",
+      "solutions": [
+        {
+          "approach": "Set CPU requests and limits",
+          "code": "resources:\n  requests:\n    cpu: \"100m\"\n  limits:\n    cpu: \"500m\"",
+          "when": "Standard workload"
+        },
+        {
+          "approach": "Use LimitRange",
+          "code": "apiVersion: v1\nkind: LimitRange\nmetadata:\n  name: default-limits\nspec:\n  limits:\n  - default:\n      cpu: \"500m\"\n    defaultRequest:\n      cpu: \"100m\"\n    type: Container",
+          "when": "Set namespace-wide defaults"
+        }
+      ]
+    },
+    {
+      "id": "unset_memory_requirements",
+      "pattern": "unset-memory-requirements|memory.*not set",
+      "message": "Container does not have memory requirements set",
+      "cause": "Missing resources.requests.memory or resources.limits.memory",
+      "solutions": [
+        {
+          "approach": "Set memory requests and limits",
+          "code": "resources:\n  requests:\n    memory: \"128Mi\"\n  limits:\n    memory: \"256Mi\"",
+          "when": "Standard workload"
+        },
+        {
+          "approach": "Profile memory usage first",
+          "code": "kubectl top pods -n <namespace>",
+          "when": "Unknown memory requirements"
+        }
+      ]
+    },
+    {
+      "id": "latest_tag",
+      "pattern": "latest-tag|:latest",
+      "message": "Container image uses 'latest' tag",
+      "cause": "Image tag is :latest or missing (defaults to latest)",
+      "solutions": [
+        {
+          "approach": "Use specific version tag",
+          "code": "image: nginx:1.25.3",
+          "when": "Use pinned version"
+        },
+        {
+          "approach": "Use SHA digest",
+          "code": "image: nginx@sha256:abc123...",
+          "when": "Maximum reproducibility"
+        }
+      ]
+    },
+    {
+      "id": "no_liveness_probe",
+      "pattern": "no-liveness-probe|livenessProbe.*not",
+      "message": "Container does not have a liveness probe",
+      "cause": "Pod spec missing livenessProbe configuration",
+      "solutions": [
+        {
+          "approach": "Add HTTP liveness probe",
+          "code": "livenessProbe:\n  httpGet:\n    path: /healthz\n    port: 8080\n  initialDelaySeconds: 10\n  periodSeconds: 10",
+          "when": "Container has HTTP health endpoint"
+        },
+        {
+          "approach": "Add exec liveness probe",
+          "code": "livenessProbe:\n  exec:\n    command: [\"cat\", \"/tmp/healthy\"]\n  initialDelaySeconds: 5\n  periodSeconds: 5",
+          "when": "Use command-based check"
+        },
+        {
+          "approach": "Add TCP liveness probe",
+          "code": "livenessProbe:\n  tcpSocket:\n    port: 8080\n  initialDelaySeconds: 10",
+          "when": "Check port is open"
+        }
+      ]
+    },
+    {
+      "id": "no_readiness_probe",
+      "pattern": "no-readiness-probe|readinessProbe.*not",
+      "message": "Container does not have a readiness probe",
+      "cause": "Pod spec missing readinessProbe configuration",
+      "solutions": [
+        {
+          "approach": "Add HTTP readiness probe",
+          "code": "readinessProbe:\n  httpGet:\n    path: /ready\n    port: 8080\n  initialDelaySeconds: 5\n  periodSeconds: 5",
+          "when": "Container has ready endpoint"
+        },
+        {
+          "approach": "Add startup probe for slow starts",
+          "code": "startupProbe:\n  httpGet:\n    path: /healthz\n    port: 8080\n  failureThreshold: 30\n  periodSeconds: 10",
+          "when": "Container has slow initialization"
+        }
+      ]
+    },
+    {
+      "id": "writable_host_mount",
+      "pattern": "writable-host-mount|hostPath.*writable",
+      "message": "Container has writable host path mount",
+      "cause": "hostPath volume mounted without readOnly: true",
+      "solutions": [
+        {
+          "approach": "Make mount read-only",
+          "code": "volumeMounts:\n- name: host-data\n  mountPath: /data\n  readOnly: true",
+          "when": "Container only needs read access"
+        },
+        {
+          "approach": "Use emptyDir instead",
+          "code": "volumes:\n- name: data\n  emptyDir: {}",
+          "when": "Don't need host path"
+        },
+        {
+          "approach": "Use PersistentVolumeClaim",
+          "code": "volumes:\n- name: data\n  persistentVolumeClaim:\n    claimName: my-pvc",
+          "when": "Need persistent storage"
+        }
+      ]
+    },
+    {
+      "id": "drop_all_capabilities",
+      "pattern": "drop-.*-capabilities|capabilities.*drop",
+      "message": "Container does not drop capabilities",
+      "cause": "securityContext.capabilities.drop missing or not dropping ALL",
+      "solutions": [
+        {
+          "approach": "Drop all capabilities",
+          "code": "securityContext:\n  capabilities:\n    drop: [\"ALL\"]",
+          "when": "Container doesn't need special capabilities"
+        },
+        {
+          "approach": "Drop all then add required",
+          "code": "securityContext:\n  capabilities:\n    drop: [\"ALL\"]\n    add: [\"NET_BIND_SERVICE\"]",
+          "when": "Need specific capabilities"
+        }
+      ]
+    }
+  ]
+}

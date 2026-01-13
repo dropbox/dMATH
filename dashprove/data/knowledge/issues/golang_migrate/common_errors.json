@@ -1,0 +1,145 @@
+{
+  "tool": "golang_migrate",
+  "version": "4.17",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "dirty_database",
+      "pattern": "Dirty database version|database is dirty|dirty state",
+      "message": "Database in dirty state after failed migration",
+      "cause": "Previous migration failed partway through, leaving database inconsistent",
+      "solutions": [
+        {
+          "approach": "Force version",
+          "code": "migrate -path ./migrations -database \"$DB_URL\" force VERSION",
+          "when": "Set version without running migration"
+        },
+        {
+          "approach": "Check current state",
+          "code": "migrate -path ./migrations -database \"$DB_URL\" version",
+          "when": "See dirty version"
+        },
+        {
+          "approach": "Fix manually",
+          "code": "# Fix schema manually then force to correct version\nmigrate force 20240101",
+          "when": "Partial migration needs cleanup"
+        }
+      ]
+    },
+    {
+      "id": "no_change",
+      "pattern": "no change|no migration files|file does not exist",
+      "message": "No migration files found",
+      "cause": "Wrong path, incorrect naming convention, or all migrations applied",
+      "solutions": [
+        {
+          "approach": "Check naming",
+          "code": "ls migrations/  # Must be: {version}_{name}.up.sql, {version}_{name}.down.sql",
+          "when": "Files don't follow convention"
+        },
+        {
+          "approach": "Create migration",
+          "code": "migrate create -ext sql -dir ./migrations -seq add_users_table",
+          "when": "Generate properly named files"
+        },
+        {
+          "approach": "Use source URL",
+          "code": "migrate -source file://migrations -database \"$DB_URL\" up",
+          "when": "Explicit source specification"
+        }
+      ]
+    },
+    {
+      "id": "driver_error",
+      "pattern": "unknown driver|URL scheme|source driver.*unknown|database driver.*unknown",
+      "message": "Unknown driver or scheme",
+      "cause": "Driver not built in or wrong URL format",
+      "solutions": [
+        {
+          "approach": "Use postgres",
+          "code": "migrate -database \"postgres://user:pass@localhost:5432/db?sslmode=disable\"",
+          "when": "PostgreSQL"
+        },
+        {
+          "approach": "Use mysql",
+          "code": "migrate -database \"mysql://user:pass@tcp(localhost:3306)/db\"",
+          "when": "MySQL"
+        },
+        {
+          "approach": "Install with drivers",
+          "code": "go install -tags 'postgres mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest",
+          "when": "Build with specific drivers"
+        }
+      ]
+    },
+    {
+      "id": "migration_syntax_error",
+      "pattern": "syntax error|Error:.*sql|migration.*failed.*sql",
+      "message": "SQL syntax error",
+      "cause": "Invalid SQL in migration file",
+      "solutions": [
+        {
+          "approach": "Validate SQL",
+          "code": "psql -f migrations/000001_create_users.up.sql",
+          "when": "Test migration manually"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "file migrations/*.sql  # Should be UTF-8",
+          "when": "Encoding issues"
+        },
+        {
+          "approach": "Single statement",
+          "code": "# Each .up.sql should contain valid single/multi statement SQL",
+          "when": "Complex migrations"
+        }
+      ]
+    },
+    {
+      "id": "version_gap",
+      "pattern": "error: Dirty database|version.*gap|expected version",
+      "message": "Version sequence has gaps",
+      "cause": "Missing migration file or version numbers not sequential",
+      "solutions": [
+        {
+          "approach": "Use sequential",
+          "code": "migrate create -ext sql -dir ./migrations -seq init_schema",
+          "when": "Ensure sequential numbering"
+        },
+        {
+          "approach": "Check files",
+          "code": "ls -la migrations/*.up.sql | sort -V",
+          "when": "Verify all versions present"
+        },
+        {
+          "approach": "Rename to fix",
+          "code": "mv 000003_xxx.up.sql 000002_xxx.up.sql  # Fill gap",
+          "when": "Fix version gaps"
+        }
+      ]
+    },
+    {
+      "id": "down_missing",
+      "pattern": "no down migration|down file.*not found|cannot rollback",
+      "message": "Down migration file missing",
+      "cause": "Up migration exists but corresponding down migration doesn't",
+      "solutions": [
+        {
+          "approach": "Create down file",
+          "code": "touch migrations/000001_create_users.down.sql\n# Add DROP TABLE users;",
+          "when": "Missing down migration"
+        },
+        {
+          "approach": "Use paired creation",
+          "code": "migrate create -ext sql -dir ./migrations add_column  # Creates both up and down",
+          "when": "Always create pairs"
+        },
+        {
+          "approach": "Skip down validation",
+          "code": "migrate -path ./migrations up  # Only runs up",
+          "when": "Down not needed for forward-only"
+        }
+      ]
+    }
+  ]
+}

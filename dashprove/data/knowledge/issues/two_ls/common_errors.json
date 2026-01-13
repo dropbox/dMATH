@@ -1,0 +1,148 @@
+{
+  "tool": "two_ls",
+  "version": "0.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "VERIFICATION FAILED",
+      "message": "Property violation found",
+      "cause": "2LS found abstract counterexample",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "2ls --show-vcc program.c  # View verification conditions",
+          "when": "Need to understand violation"
+        },
+        {
+          "approach": "Add assertions",
+          "code": "__CPROVER_assume(condition);",
+          "when": "Missing preconditions"
+        },
+        {
+          "approach": "Refine analysis",
+          "code": "2ls --havoc program.c  # Different abstraction",
+          "when": "Spurious counterexample suspected"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "UNKNOWN|INCONCLUSIVE",
+      "message": "Verification inconclusive",
+      "cause": "Abstract interpretation too imprecise",
+      "solutions": [
+        {
+          "approach": "Use more precise domain",
+          "code": "2ls --intervals program.c",
+          "when": "Need interval analysis"
+        },
+        {
+          "approach": "Enable heap analysis",
+          "code": "2ls --heap program.c",
+          "when": "Dynamic memory involved"
+        },
+        {
+          "approach": "Increase unrolling",
+          "code": "2ls --unwind 20 program.c",
+          "when": "Loops need more iterations"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|timed out",
+      "message": "Analysis timed out",
+      "cause": "Fixpoint computation didn't converge in time",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "2ls --timeout 600 program.c",
+          "when": "Close to convergence"
+        },
+        {
+          "approach": "Use widening",
+          "code": "2ls --widening-thresholds program.c",
+          "when": "Slow convergence"
+        },
+        {
+          "approach": "Bound loops",
+          "code": "2ls --unwind 10 program.c",
+          "when": "Deep loops"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "Parsing|error: |syntax error",
+      "message": "C parsing failed",
+      "cause": "Invalid C syntax",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "gcc -fsyntax-only program.c",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Add includes",
+          "code": "2ls -I/path/to/headers program.c",
+          "when": "Missing headers"
+        }
+      ]
+    },
+    {
+      "id": "termination_unknown",
+      "pattern": "TERMINATION UNKNOWN",
+      "message": "Termination analysis inconclusive",
+      "cause": "Could not prove termination",
+      "solutions": [
+        {
+          "approach": "Enable ranking synthesis",
+          "code": "2ls --termination --ranking program.c",
+          "when": "Need automatic ranking functions"
+        },
+        {
+          "approach": "Add annotations",
+          "code": "// Annotate decreasing quantities",
+          "when": "Manual ranking available"
+        }
+      ]
+    },
+    {
+      "id": "nontermination",
+      "pattern": "NONTERMINATING|termination analysis failed",
+      "message": "Non-termination detected",
+      "cause": "Found potentially non-terminating execution",
+      "solutions": [
+        {
+          "approach": "View lasso",
+          "code": "2ls --show-nontermination program.c",
+          "when": "Need to see infinite trace"
+        },
+        {
+          "approach": "Fix loop",
+          "code": "// Add proper termination condition",
+          "when": "Loop genuinely doesn't terminate"
+        }
+      ]
+    },
+    {
+      "id": "invariant_failure",
+      "pattern": "invariant.*violated|loop invariant failed",
+      "message": "Loop invariant doesn't hold",
+      "cause": "Computed invariant is not inductive",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "2ls --inline program.c  # Try inlining",
+          "when": "Need more precise invariant"
+        },
+        {
+          "approach": "Add manual invariant",
+          "code": "__CPROVER_loop_invariant(condition);",
+          "when": "Know correct invariant"
+        }
+      ]
+    }
+  ]
+}

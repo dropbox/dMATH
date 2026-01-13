@@ -1,0 +1,122 @@
+{
+  "version": "9.9",
+  "errors": [
+    {
+      "id": "model_invalid",
+      "pattern": "MODEL_INVALID|Invalid model",
+      "message": "CP-SAT model failed validation",
+      "cause": "Constraint references undefined variables, uses empty domains, or mixes incompatible bounds",
+      "solutions": [
+        {
+          "approach": "Run model validation before solving",
+          "code": "assert model.Validate() is None",
+          "when": "Need early detection of malformed constraints"
+        },
+        {
+          "approach": "Ensure integer domains are finite",
+          "code": "x = model.NewIntVar(0, 1000, \"x\")",
+          "when": "Using unbounded or reversed bounds"
+        },
+        {
+          "approach": "Keep coefficients within 64-bit range",
+          "code": "model.Add(sum(cost[i] * x[i] for i in items) <= 1_000_000)",
+          "when": "Large coefficients overflow internal limits"
+        }
+      ]
+    },
+    {
+      "id": "infeasible",
+      "pattern": "INFEASIBLE",
+      "message": "Solver proved no assignment satisfies all constraints",
+      "cause": "Constraints are contradictory or too tight",
+      "solutions": [
+        {
+          "approach": "Check assumptions and optional constraints",
+          "code": "solver.Solve(model, assumptions=[a1, a2])",
+          "when": "Use assumptions to locate conflicting literals"
+        },
+        {
+          "approach": "Introduce slack variables",
+          "code": "model.Add(sum(demand) <= capacity + slack); model.Minimize(slack)",
+          "when": "Allow small violations to diagnose infeasibility"
+        },
+        {
+          "approach": "Simplify or scale bounds",
+          "code": "model.Add(sum(load) <= 100)",
+          "when": "Bounds derived from data may be inconsistent"
+        }
+      ]
+    },
+    {
+      "id": "timeout_unknown",
+      "pattern": "UNKNOWN|TIME_LIMIT",
+      "message": "Search stopped without proving feasibility or optimality",
+      "cause": "Time or node limit reached before solution was found",
+      "solutions": [
+        {
+          "approach": "Increase time limit or parallelism",
+          "code": "solver.parameters.max_time_in_seconds = 120\nsolver.parameters.num_search_workers = 8",
+          "when": "More compute can find a solution"
+        },
+        {
+          "approach": "Tighten search with hints",
+          "code": "solver.AddHint(x, 0)",
+          "when": "Provide a feasible starting assignment"
+        },
+        {
+          "approach": "Simplify model or tighten propagation",
+          "code": "model.AddAllDifferent(route_nodes)",
+          "when": "Weak constraints lead to huge search tree"
+        }
+      ]
+    },
+    {
+      "id": "non_linear_expression",
+      "pattern": "Not an integer linear expression|only linear expressions are supported",
+      "message": "Expression is non-linear for CP-SAT linear constraints",
+      "cause": "Used multiplication/division or non-supported operations inside linear constraints",
+      "solutions": [
+        {
+          "approach": "Use dedicated constraints for products",
+          "code": "model.AddMultiplicationEquality(z, [x, y])",
+          "when": "Need product of two ints"
+        },
+        {
+          "approach": "Linearize absolute values",
+          "code": "model.Add(z >= x - y); model.Add(z >= y - x); model.Minimize(z)",
+          "when": "Replace abs with linear constraints"
+        },
+        {
+          "approach": "Precompute constants outside the model",
+          "code": "model.Add(x >= precomputed_cost)",
+          "when": "Avoid symbolic division inside Add()"
+        }
+      ]
+    },
+    {
+      "id": "invalid_boolean",
+      "pattern": "Only Boolean|not a Boolean variable",
+      "message": "Constraint expects BoolVar but got IntVar or literal value",
+      "cause": "Passing integer expressions to logical operators or reification APIs",
+      "solutions": [
+        {
+          "approach": "Create explicit boolean variables",
+          "code": "b = model.NewBoolVar(\"b\"); model.Add(x >= 10).OnlyEnforceIf(b)",
+          "when": "Need boolean guard for constraint"
+        },
+        {
+          "approach": "Convert comparisons to literals",
+          "code": "lit = model.NewBoolVar(\"lit\"); model.Add(x == 1).OnlyEnforceIf(lit)",
+          "when": "Using integer expression as if it were BoolVar"
+        },
+        {
+          "approach": "Use equality with 0/1 encoding explicitly",
+          "code": "model.Add(b == (x >= 5))",
+          "when": "Need boolean from comparison"
+        }
+      ]
+    }
+  ],
+  "tool": "or_tools",
+  "last_updated": "2025-12-23"
+}

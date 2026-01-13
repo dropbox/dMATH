@@ -1,0 +1,192 @@
+{
+  "tool": "coverity",
+  "version": "2024.6",
+  "last_updated": "2025-12-23",
+  "description": "Synopsys Coverity static analysis for finding defects in C, C++, Java, C#, and JavaScript",
+  "errors": [
+    {
+      "id": "null_returns",
+      "pattern": "NULL_RETURNS|Dereference.*null return",
+      "message": "Dereference of null pointer returned from function",
+      "cause": "Function may return null but caller doesn't check",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "// Check return value before use:\nchar* str = GetString();\nif (str != NULL) {\n    printf(\"%s\", str);\n}",
+          "when": "Function can return null"
+        },
+        {
+          "approach": "Use Coverity model",
+          "code": "// Add model file annotation:\n__coverity_returns_nonnull__()\nchar* AlwaysReturnsString(void);\n\n// Or use SAL annotations:\n_Ret_notnull_ char* AlwaysReturnsString(void);",
+          "when": "Function guaranteed non-null"
+        },
+        {
+          "approach": "Handle allocation failure",
+          "code": "// For malloc/new:\nvoid* ptr = malloc(size);\nif (ptr == NULL) {\n    // Handle OOM\n    exit(1);\n}\n// ptr is now known non-null to Coverity",
+          "when": "Memory allocation"
+        }
+      ]
+    },
+    {
+      "id": "resource_leak",
+      "pattern": "RESOURCE_LEAK|leaked_.*handle|file.*not closed",
+      "message": "Resource not freed on all paths",
+      "cause": "File handle, memory, or other resource leaked",
+      "solutions": [
+        {
+          "approach": "Free on all paths",
+          "code": "// Ensure cleanup on error paths:\nFILE* f = fopen(\"file.txt\", \"r\");\nif (!f) return ERROR;\n\nif (parse_error) {\n    fclose(f);  // Don't forget!\n    return ERROR;\n}\n\nfclose(f);\nreturn OK;",
+          "when": "Missing cleanup"
+        },
+        {
+          "approach": "Use RAII in C++",
+          "code": "// Use smart pointers/RAII:\nstd::unique_ptr<FILE, decltype(&fclose)> file(\n    fopen(\"file.txt\", \"r\"), fclose);\n\nif (!file) return ERROR;\n// Automatically closed on scope exit",
+          "when": "C++ code"
+        },
+        {
+          "approach": "Use cleanup goto pattern",
+          "code": "int func() {\n    int ret = ERROR;\n    FILE* f = fopen(\"file\", \"r\");\n    if (!f) goto cleanup;\n    \n    // ... work ...\n    \n    ret = OK;\ncleanup:\n    if (f) fclose(f);\n    return ret;\n}",
+          "when": "C code with multiple resources"
+        }
+      ]
+    },
+    {
+      "id": "buffer_overrun",
+      "pattern": "OVERRUN|BUFFER_SIZE|buffer overrun",
+      "message": "Buffer overrun - writing past end of buffer",
+      "cause": "Array index or string operation exceeds buffer size",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "// Add bounds checking:\nchar buf[100];\nif (index >= 0 && index < sizeof(buf)) {\n    buf[index] = value;\n}",
+          "when": "Variable index"
+        },
+        {
+          "approach": "Use safe string functions",
+          "code": "// Replace strcpy/strcat:\nchar dest[100];\n// Wrong: strcpy(dest, src);\n// Correct:\nstrncpy(dest, src, sizeof(dest) - 1);\ndest[sizeof(dest) - 1] = '\\0';\n\n// Or use snprintf:\nsnprintf(dest, sizeof(dest), \"%s\", src);",
+          "when": "String operations"
+        },
+        {
+          "approach": "Use C++ containers",
+          "code": "// Bounds-checked containers:\nstd::vector<int> vec(100);\nvec.at(index) = value;  // Throws if out of bounds\n\n// Or use span in modern C++:\nstd::span<int> s(data, size);\nif (index < s.size()) {\n    s[index] = value;\n}",
+          "when": "Can use C++"
+        }
+      ]
+    },
+    {
+      "id": "uninit_var",
+      "pattern": "UNINIT|uninitialized|garbage value",
+      "message": "Use of uninitialized variable",
+      "cause": "Variable used before being assigned a value",
+      "solutions": [
+        {
+          "approach": "Initialize at declaration",
+          "code": "// Always initialize:\nint count = 0;\nchar* ptr = NULL;\nstruct Data data = {0};",
+          "when": "Simple variable"
+        },
+        {
+          "approach": "Fix conditional initialization",
+          "code": "// Ensure all paths initialize:\nint result;\nif (condition) {\n    result = compute_a();\n} else {\n    result = compute_b();  // Was missing!\n}\nreturn result;",
+          "when": "Conditional paths"
+        },
+        {
+          "approach": "Use constructors",
+          "code": "// C++ - default initialize members:\nclass MyClass {\n    int count = 0;  // Default member initializer\n    std::string name{};  // Empty string\n};",
+          "when": "Class members"
+        }
+      ]
+    },
+    {
+      "id": "toctou",
+      "pattern": "TOCTOU|time.?of.?check|race condition.*file",
+      "message": "Time-of-check time-of-use race condition",
+      "cause": "File checked then used, but may change between",
+      "solutions": [
+        {
+          "approach": "Use atomic operations",
+          "code": "// Wrong:\nif (access(\"file\", W_OK) == 0) {\n    FILE* f = fopen(\"file\", \"w\");  // May fail now!\n}\n\n// Better - just try:\nFILE* f = fopen(\"file\", \"w\");\nif (f) {\n    // Proceed\n}",
+          "when": "File existence check"
+        },
+        {
+          "approach": "Use secure temp files",
+          "code": "// Use mkstemp for temp files:\nchar template[] = \"/tmp/myapp.XXXXXX\";\nint fd = mkstemp(template);  // Creates and opens atomically\nif (fd >= 0) {\n    // File exists and is open\n}",
+          "when": "Temporary files"
+        },
+        {
+          "approach": "Use file descriptors",
+          "code": "// Open once, then operate on fd:\nint fd = open(\"file\", O_RDWR);\nif (fd >= 0) {\n    struct stat st;\n    fstat(fd, &st);  // Stat the open file\n    // Not vulnerable to TOCTOU\n}",
+          "when": "Need file metadata"
+        }
+      ]
+    },
+    {
+      "id": "deadcode",
+      "pattern": "DEADCODE|unreachable|code cannot be reached",
+      "message": "Unreachable code detected",
+      "cause": "Code that can never execute",
+      "solutions": [
+        {
+          "approach": "Check logic",
+          "code": "// May indicate logic error:\nif (x > 10) {\n    return;\n}\nif (x > 20) {  // Unreachable - always false here\n    // Dead code\n}",
+          "when": "Logic error"
+        },
+        {
+          "approach": "Remove dead code",
+          "code": "// Clean up after refactoring:\nvoid func() {\n    return;\n    // This code was left behind - remove it\n    cleanup();\n}",
+          "when": "Leftover code"
+        },
+        {
+          "approach": "Use UNREACHABLE macro",
+          "code": "// For intentionally unreachable code:\nswitch (type) {\n    case A: return 1;\n    case B: return 2;\n    default:\n        __builtin_unreachable();  // GCC\n        // Or: __assume(0);  // MSVC\n}",
+          "when": "Defensive coding"
+        }
+      ]
+    },
+    {
+      "id": "integer_overflow",
+      "pattern": "INTEGER_OVERFLOW|overflow|wrap.?around",
+      "message": "Integer overflow or wraparound",
+      "cause": "Arithmetic operation may overflow",
+      "solutions": [
+        {
+          "approach": "Check before operation",
+          "code": "// Check before multiply:\nif (a != 0 && b > INT_MAX / a) {\n    // Would overflow\n    return ERROR;\n}\nint result = a * b;",
+          "when": "Need to prevent overflow"
+        },
+        {
+          "approach": "Use safe integer library",
+          "code": "// Use safe_math or similar:\n#include <safe_int.h>\n\nSafeInt<int> a = GetValue();\nSafeInt<int> b = GetOther();\nint result = a * b;  // Throws on overflow",
+          "when": "Have safe integer library"
+        },
+        {
+          "approach": "Use wider type",
+          "code": "// Promote to wider type:\nint32_t a = GetA();\nint32_t b = GetB();\nint64_t result = (int64_t)a * (int64_t)b;\nif (result > INT32_MAX || result < INT32_MIN) {\n    // Overflow would occur\n}",
+          "when": "Can use wider type"
+        }
+      ]
+    },
+    {
+      "id": "scan_error",
+      "pattern": "Cannot open|build failed|cov-build.*error",
+      "message": "Coverity build capture failed",
+      "cause": "cov-build couldn't capture compilation",
+      "solutions": [
+        {
+          "approach": "Clean and rebuild",
+          "code": "# Clean intermediate directory\nrm -rf cov-int\n\n# Clean build and capture\nmake clean\ncov-build --dir cov-int make",
+          "when": "Stale capture data"
+        },
+        {
+          "approach": "Use correct compiler",
+          "code": "# Ensure Coverity knows the compiler:\ncov-configure --compiler /usr/bin/gcc --comptype gcc\n\n# Then build:\ncov-build --dir cov-int make CC=gcc",
+          "when": "Unknown compiler"
+        },
+        {
+          "approach": "Check build success",
+          "code": "# Verify normal build works first:\nmake clean && make\n\n# Then try Coverity capture:\ncov-build --dir cov-int --emit-complementary-info make",
+          "when": "Build errors"
+        }
+      ]
+    }
+  ]
+}

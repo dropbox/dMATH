@@ -1,0 +1,145 @@
+{
+  "tool": "tsoa",
+  "version": "6.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "controller_not_found",
+      "pattern": "No controllers found|Controller.*not detected|Routes.*empty|No routes generated",
+      "message": "No controllers detected",
+      "cause": "Controllers not in configured path or missing @Route decorator",
+      "solutions": [
+        {
+          "approach": "Configure paths",
+          "code": "// tsoa.json\n{\n  \"entryFile\": \"src/index.ts\",\n  \"controllerPathGlobs\": [\"src/**/*Controller.ts\"]\n}",
+          "when": "Controller path mismatch"
+        },
+        {
+          "approach": "Add decorators",
+          "code": "import { Controller, Route, Get } from 'tsoa';\n\n@Route('users')\nexport class UsersController extends Controller {\n  @Get()\n  public async getUsers(): Promise<User[]> { ... }\n}",
+          "when": "Missing decorators"
+        },
+        {
+          "approach": "Check exports",
+          "code": "// Controller must be exported\nexport class UsersController extends Controller { ... }",
+          "when": "Controller not exported"
+        }
+      ]
+    },
+    {
+      "id": "type_resolution_error",
+      "pattern": "Cannot resolve.*type|Type.*not found|Unknown type reference|TypeReferenceNotFound",
+      "message": "Type resolution failed",
+      "cause": "Referenced type not exported or circular dependency",
+      "solutions": [
+        {
+          "approach": "Export interfaces",
+          "code": "// All types used in controllers must be exported\nexport interface User {\n  id: string;\n  name: string;\n}",
+          "when": "Type not exported"
+        },
+        {
+          "approach": "Use imports",
+          "code": "// Import types from same compilation scope\nimport { User } from '../models/User';\n\n@Get()\npublic async getUser(): Promise<User> { ... }",
+          "when": "Cross-module types"
+        },
+        {
+          "approach": "Check circular",
+          "code": "// Avoid: A imports B, B imports A\n// Use interface segregation or shared types module",
+          "when": "Circular dependency"
+        }
+      ]
+    },
+    {
+      "id": "validation_error",
+      "pattern": "Validation.*failed|@Example.*invalid|Schema generation.*error",
+      "message": "Schema validation error",
+      "cause": "Invalid example or schema annotations",
+      "solutions": [
+        {
+          "approach": "Fix examples",
+          "code": "/**\n * @example {\n *   \"id\": \"123\",\n *   \"name\": \"John\"\n * }\n */\nexport interface User { ... }",
+          "when": "Example format"
+        },
+        {
+          "approach": "Use validators",
+          "code": "import { Body, ValidateError } from 'tsoa';\n\n@Post()\npublic async createUser(\n  @Body() body: CreateUserRequest\n): Promise<User> { ... }",
+          "when": "Request validation"
+        },
+        {
+          "approach": "Custom validators",
+          "code": "// tsoa.json\n{\n  \"spec\": {\n    \"specVersion\": 3\n  }\n}",
+          "when": "OpenAPI 3 validation"
+        }
+      ]
+    },
+    {
+      "id": "routes_generation_error",
+      "pattern": "Routes.*generation.*failed|Cannot write routes|Template.*error",
+      "message": "Routes file generation failed",
+      "cause": "Output path issue or template error",
+      "solutions": [
+        {
+          "approach": "Configure routes",
+          "code": "// tsoa.json\n{\n  \"routes\": {\n    \"routesDir\": \"build\",\n    \"routesFileName\": \"routes.ts\"\n  }\n}",
+          "when": "Route output config"
+        },
+        {
+          "approach": "Middleware config",
+          "code": "// tsoa.json\n{\n  \"routes\": {\n    \"middleware\": \"express\",\n    \"authenticationModule\": \"./src/auth.ts\"\n  }\n}",
+          "when": "Express/Koa middleware"
+        },
+        {
+          "approach": "Create directory",
+          "code": "mkdir -p build\ntsoa routes",
+          "when": "Directory missing"
+        }
+      ]
+    },
+    {
+      "id": "spec_generation_error",
+      "pattern": "Spec.*generation.*failed|OpenAPI.*error|swagger\\.json.*failed",
+      "message": "OpenAPI spec generation failed",
+      "cause": "Invalid decorators or spec configuration",
+      "solutions": [
+        {
+          "approach": "Configure spec",
+          "code": "// tsoa.json\n{\n  \"spec\": {\n    \"outputDirectory\": \"build\",\n    \"specVersion\": 3,\n    \"basePath\": \"/api\"\n  }\n}",
+          "when": "Spec config"
+        },
+        {
+          "approach": "Add metadata",
+          "code": "// tsoa.json\n{\n  \"spec\": {\n    \"name\": \"My API\",\n    \"version\": \"1.0.0\",\n    \"description\": \"API Description\"\n  }\n}",
+          "when": "Missing metadata"
+        },
+        {
+          "approach": "Run both",
+          "code": "tsoa spec-and-routes",
+          "when": "Generate spec and routes"
+        }
+      ]
+    },
+    {
+      "id": "security_error",
+      "pattern": "Security.*not found|@Security.*invalid|Authentication.*failed",
+      "message": "Security configuration error",
+      "cause": "Security scheme not configured or invalid",
+      "solutions": [
+        {
+          "approach": "Define security",
+          "code": "// tsoa.json\n{\n  \"spec\": {\n    \"securityDefinitions\": {\n      \"jwt\": {\n        \"type\": \"http\",\n        \"scheme\": \"bearer\"\n      }\n    }\n  }\n}",
+          "when": "Define schemes"
+        },
+        {
+          "approach": "Use decorator",
+          "code": "@Route('admin')\n@Security('jwt')\nexport class AdminController extends Controller {\n  @Get()\n  public async getAdmin(): Promise<Admin> { ... }\n}",
+          "when": "Apply security"
+        },
+        {
+          "approach": "Auth module",
+          "code": "// src/auth.ts\nexport function expressAuthentication(\n  req: express.Request,\n  securityName: string,\n  scopes?: string[]\n): Promise<any> { ... }",
+          "when": "Implement auth handler"
+        }
+      ]
+    }
+  ]
+}

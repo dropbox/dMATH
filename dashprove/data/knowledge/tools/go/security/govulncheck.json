@@ -1,0 +1,137 @@
+{
+  "id": "govulncheck",
+  "name": "govulncheck",
+  "category": "go_security",
+  "subcategory": "vulnerability_scanning",
+
+  "description": "Official Go vulnerability scanner using Go vulnerability database",
+  "long_description": "govulncheck is the official vulnerability scanner for Go modules, developed by the Go security team. It analyzes your code and dependencies to find known vulnerabilities from the Go vulnerability database (vuln.go.dev). Unlike simple dependency scanners, govulncheck performs static analysis to determine if vulnerable code paths are actually reachable in your program, reducing false positives.",
+
+  "capabilities": [
+    "vulnerability_detection",
+    "dependency_scanning",
+    "call_graph_analysis",
+    "reachability_analysis",
+    "binary_scanning",
+    "module_scanning",
+    "cve_identification"
+  ],
+  "property_types": ["vulnerability", "cve", "security_advisory"],
+  "input_languages": ["go"],
+  "output_formats": ["text", "json", "sarif"],
+
+  "installation": {
+    "methods": [
+      {"type": "go_install", "command": "go install golang.org/x/vuln/cmd/govulncheck@latest"}
+    ],
+    "dependencies": ["go >= 1.18"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck",
+    "tutorial": "https://go.dev/doc/tutorial/govulncheck",
+    "database": "https://vuln.go.dev/",
+    "advisory_format": "https://go.dev/security/vuln/database"
+  },
+
+  "tactics": [
+    {
+      "name": "scan_module",
+      "description": "Scan current module for vulnerabilities",
+      "syntax": "govulncheck ./...",
+      "when_to_use": "Regular security check in CI/CD",
+      "examples": ["govulncheck ./...", "govulncheck -C /path/to/module ./..."]
+    },
+    {
+      "name": "scan_binary",
+      "description": "Scan compiled Go binary",
+      "syntax": "govulncheck -mode binary BINARY",
+      "when_to_use": "Checking a compiled binary without source",
+      "examples": ["govulncheck -mode binary ./myapp", "govulncheck -mode binary /usr/bin/kubectl"]
+    },
+    {
+      "name": "json_output",
+      "description": "Output in JSON format",
+      "syntax": "govulncheck -json ./...",
+      "when_to_use": "Integration with security tools",
+      "examples": ["govulncheck -json ./... | jq .", "govulncheck -format sarif ./..."]
+    },
+    {
+      "name": "show_all",
+      "description": "Show all vulnerabilities including non-reachable",
+      "syntax": "govulncheck -show=verbose ./...",
+      "when_to_use": "Full audit of dependencies",
+      "examples": ["govulncheck -show verbose ./..."]
+    },
+    {
+      "name": "test_dependencies",
+      "description": "Include test dependencies in scan",
+      "syntax": "govulncheck -test ./...",
+      "when_to_use": "Checking test infrastructure security",
+      "examples": ["govulncheck -test ./..."]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "GO-\\d{4}-\\d{4}",
+      "meaning": "Go vulnerability database entry found",
+      "common_causes": ["Vulnerable dependency", "Outdated module"],
+      "fixes": ["Upgrade to fixed version", "Replace vulnerable dependency", "Apply workaround"]
+    },
+    {
+      "pattern": "Vulnerability.*is called",
+      "meaning": "Vulnerable code path is reachable",
+      "common_causes": ["Using vulnerable function from dependency"],
+      "fixes": ["Upgrade dependency", "Avoid calling vulnerable function"]
+    },
+    {
+      "pattern": "package.*no required module provides",
+      "meaning": "Module resolution issue",
+      "common_causes": ["Invalid go.mod", "Missing dependency"],
+      "fixes": ["Run go mod tidy", "Check module path"]
+    }
+  ],
+
+  "vulnerability_info": {
+    "database": "https://vuln.go.dev/",
+    "id_format": "GO-YYYY-NNNN",
+    "severity_levels": ["LOW", "MODERATE", "HIGH", "CRITICAL"],
+    "fields": ["id", "summary", "details", "aliases (CVE)", "references", "affected modules", "fixed versions"]
+  },
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "goland"],
+    "ci_integration": ["github_actions", "gitlab_ci", "dependabot"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds",
+    "scalability": "Handles large codebases efficiently",
+    "memory_usage": "Moderate (builds call graph)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["nancy", "snyk", "trivy", "grype"],
+    "advantages": [
+      "Official Go team tool - authoritative database",
+      "Call graph analysis reduces false positives",
+      "Can scan binaries without source",
+      "Integrated with Go toolchain ecosystem"
+    ],
+    "disadvantages": [
+      "Only covers Go vulnerabilities (not container/OS)",
+      "Requires Go 1.18+",
+      "May miss vulnerabilities not yet in database"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Go Security Team",
+    "license": "BSD-3-Clause"
+  }
+}

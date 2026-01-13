@@ -1,0 +1,122 @@
+{
+  "version": "9.0",
+  "errors": [
+    {
+      "id": "presolve_infeasible",
+      "pattern": "presolving detected infeasibility",
+      "message": "Presolver proved the model inconsistent",
+      "cause": "Conflicting bounds or constraints before search begins",
+      "solutions": [
+        {
+          "approach": "Inspect conflict constraints",
+          "code": "display conflict",
+          "when": "Need to see rows responsible for infeasibility"
+        },
+        {
+          "approach": "Relax bounds or remove redundant constraints",
+          "code": "set presolving maxrounds 0",
+          "when": "Disable aggressive presolve to debug"
+        },
+        {
+          "approach": "Check data for sign mistakes",
+          "code": "% ensure demand <= capacity",
+          "when": "Input data contradicts assumptions"
+        }
+      ]
+    },
+    {
+      "id": "numerical_trouble",
+      "pattern": "numerical trouble|LP solver failed",
+      "message": "LP relaxation encountered numerical instability",
+      "cause": "Ill-conditioned matrix or coefficients with large magnitude differences",
+      "solutions": [
+        {
+          "approach": "Enable scaling and condition checks",
+          "code": "set presolving scaling on",
+          "when": "Coefficients vary widely"
+        },
+        {
+          "approach": "Tighten feasibility/optimality tolerances gradually",
+          "code": "set numerics feastol 1e-7",
+          "when": "Default tolerances allow large violations"
+        },
+        {
+          "approach": "Reformulate constraints to avoid near-dependence",
+          "code": "% combine similar rows or normalize units",
+          "when": "Matrix close to singular"
+        }
+      ]
+    },
+    {
+      "id": "time_limit",
+      "pattern": "time limit exceeded",
+      "message": "Search stopped after hitting time limit without optimality proof",
+      "cause": "Problem too large for current limit",
+      "solutions": [
+        {
+          "approach": "Adjust limits and heuristics",
+          "code": "set limits time 600\nset heuristics emphasis fast",
+          "when": "More time and aggressive heuristics acceptable"
+        },
+        {
+          "approach": "Provide primal start",
+          "code": "read start.sol",
+          "when": "Starting incumbent accelerates B&B"
+        },
+        {
+          "approach": "Increase emphasis on feasibility",
+          "code": "set emphasis feasibility",
+          "when": "Need any feasible solution quickly"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "memory limit exceeded",
+      "message": "SCIP aborted because it exceeded allowed memory",
+      "cause": "Branch-and-bound tree too large or problem formulation too big",
+      "solutions": [
+        {
+          "approach": "Tighten node limits or tree memory",
+          "code": "set limits nodes 100000",
+          "when": "Prevent runaway tree growth"
+        },
+        {
+          "approach": "Use problem reductions",
+          "code": "set presolving emphasis aggressive",
+          "when": "Stronger presolve can shrink model"
+        },
+        {
+          "approach": "Simplify model dimensions",
+          "code": "% aggregate variables or drop weak cuts",
+          "when": "Model complexity exceeds memory capacity"
+        }
+      ]
+    },
+    {
+      "id": "license_missing",
+      "pattern": "ZIMPL reader not available|file type not supported",
+      "message": "SCIP cannot read the provided model format",
+      "cause": "Built without support for the requested reader (e.g., ZIMPL, MPS)",
+      "solutions": [
+        {
+          "approach": "Rebuild SCIP with required readers",
+          "code": "cmake -DREAD_ZIMPL=ON ..",
+          "when": "Need to parse ZIMPL models"
+        },
+        {
+          "approach": "Convert model to supported format",
+          "code": "minizinc model.mzn --solver scip",
+          "when": "Can export FlatZinc instead"
+        },
+        {
+          "approach": "Use SCIPOptSuite binaries",
+          "code": "brew install scipopt-suite",
+          "when": "Packaged build includes common readers"
+        }
+      ]
+    }
+  ],
+  "tool": "scip",
+  "last_updated": "2025-12-23"
+}

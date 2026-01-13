@@ -1,0 +1,140 @@
+{
+  "tool": "inquirer",
+  "version": "9.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_a_tty",
+      "pattern": "Prompts can't be called in non-interactive|TTY.*not.*detected|stdin is not a TTY",
+      "message": "Cannot prompt in non-interactive environment",
+      "cause": "Running in CI/CD, piped input, or background process",
+      "solutions": [
+        {
+          "approach": "Provide defaults for CI",
+          "code": "const answer = process.env.CI ? 'default' : await input({ message: 'Value?' });",
+          "when": "Running in CI environment"
+        },
+        {
+          "approach": "Use --yes flag pattern",
+          "code": "if (flags.yes) return defaults; else await prompt()",
+          "when": "Batch mode needed"
+        },
+        {
+          "approach": "Force TTY allocation",
+          "code": "ssh -t user@host 'command'",
+          "when": "Running over SSH"
+        }
+      ]
+    },
+    {
+      "id": "validation_failed",
+      "pattern": "validation failed|Validation error|Input is invalid",
+      "message": "User input failed validation",
+      "cause": "validate function returned false or error message",
+      "solutions": [
+        {
+          "approach": "Fix input value",
+          "code": "Provide value that passes validation",
+          "when": "Input genuinely invalid"
+        },
+        {
+          "approach": "Improve validation feedback",
+          "code": "validate: (input) => input.length > 0 || 'Cannot be empty'",
+          "when": "Error message unclear"
+        },
+        {
+          "approach": "Add transformer",
+          "code": "transformer: (input) => input.trim().toLowerCase()",
+          "when": "Normalize input before validation"
+        }
+      ]
+    },
+    {
+      "id": "choices_empty",
+      "pattern": "Choices array is empty|No choices|at least one choice",
+      "message": "Select/checkbox prompt has no choices",
+      "cause": "choices array is empty or returned empty from function",
+      "solutions": [
+        {
+          "approach": "Provide choices",
+          "code": "await select({ choices: [{ name: 'Option', value: 'opt' }] })",
+          "when": "Static choices needed"
+        },
+        {
+          "approach": "Handle empty case",
+          "code": "if (choices.length === 0) return console.log('No options available');",
+          "when": "Dynamic choices may be empty"
+        },
+        {
+          "approach": "Add fallback choice",
+          "code": "const opts = items.length ? items : [{ name: 'None available', value: null }]",
+          "when": "Need placeholder option"
+        }
+      ]
+    },
+    {
+      "id": "esm_import_error",
+      "pattern": "ERR_REQUIRE_ESM|Must use import|Cannot use require|default is not a function",
+      "message": "Module system mismatch (ESM vs CommonJS)",
+      "cause": "inquirer v9+ is ESM-only, but code uses require()",
+      "solutions": [
+        {
+          "approach": "Use dynamic import",
+          "code": "const { input } = await import('@inquirer/prompts');",
+          "when": "In CommonJS context"
+        },
+        {
+          "approach": "Switch to ESM",
+          "code": "// package.json: \"type\": \"module\"\nimport { input } from '@inquirer/prompts';",
+          "when": "Can convert to ESM"
+        },
+        {
+          "approach": "Use older version",
+          "code": "npm install inquirer@8",
+          "when": "Must stay on CommonJS"
+        }
+      ]
+    },
+    {
+      "id": "theme_error",
+      "pattern": "Invalid theme|theme.*undefined|Cannot read.*style",
+      "message": "Theme configuration error",
+      "cause": "Custom theme missing required properties",
+      "solutions": [
+        {
+          "approach": "Use default theme",
+          "code": "await input({ message: 'Name?' })  // no theme specified",
+          "when": "Custom theme not needed"
+        },
+        {
+          "approach": "Extend default theme",
+          "code": "theme: { ...defaultTheme, style: { answer: chalk.green } }",
+          "when": "Partial customization"
+        },
+        {
+          "approach": "Check theme structure",
+          "code": "// Ensure all required style properties exist",
+          "when": "Custom theme incomplete"
+        }
+      ]
+    },
+    {
+      "id": "ctrl_c_handling",
+      "pattern": "User force closed|ExitPromptError|prompt was interrupted",
+      "message": "User cancelled the prompt (Ctrl+C)",
+      "cause": "User pressed Ctrl+C during prompt",
+      "solutions": [
+        {
+          "approach": "Catch cancellation",
+          "code": "try { await input(...) } catch (e) { if (e.name === 'ExitPromptError') process.exit(0); throw e; }",
+          "when": "Handle graceful exit"
+        },
+        {
+          "approach": "Use signal handler",
+          "code": "process.on('SIGINT', () => { console.log('Cancelled'); process.exit(0); });",
+          "when": "Global cancellation handling"
+        }
+      ]
+    }
+  ]
+}

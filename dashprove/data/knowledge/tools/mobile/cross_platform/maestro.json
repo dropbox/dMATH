@@ -1,0 +1,190 @@
+{
+  "id": "maestro",
+  "name": "Maestro",
+  "category": "mobile_testing",
+  "subcategory": "cross_platform",
+
+  "description": "Simple, powerful mobile UI testing using YAML flows",
+  "long_description": "Maestro is a mobile UI testing framework that uses simple YAML files to define test flows. It automatically handles flakiness through built-in retries and synchronization. Maestro supports iOS, Android, React Native, and Flutter apps. Its declarative YAML syntax makes tests readable and maintainable without programming knowledge.",
+
+  "capabilities": [
+    "yaml_test_definition",
+    "automatic_retry",
+    "cross_platform_testing",
+    "visual_testing",
+    "continuous_mode",
+    "device_control",
+    "network_mocking",
+    "cloud_execution"
+  ],
+  "property_types": ["flow_step", "assertion", "command"],
+  "input_languages": ["yaml"],
+  "output_formats": ["console", "junit_xml", "json", "video"],
+
+  "installation": {
+    "methods": [
+      {"type": "curl", "command": "curl -Ls 'https://get.maestro.mobile.dev' | bash"},
+      {"type": "brew", "command": "brew tap mobile-dev-inc/tap && brew install maestro"}
+    ],
+    "dependencies": ["java"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://maestro.mobile.dev/",
+    "getting_started": "https://maestro.mobile.dev/getting-started/installing-maestro",
+    "api_reference": "https://maestro.mobile.dev/api-reference/commands",
+    "examples": "https://github.com/mobile-dev-inc/maestro/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_flow",
+      "description": "Write a basic test flow",
+      "syntax": "YAML flow file",
+      "when_to_use": "Every E2E test",
+      "examples": ["appId: com.example.app\n---\n- launchApp\n- tapOn: \"Login\"\n- inputText: \"user@test.com\"\n- tapOn: \"Submit\"\n- assertVisible: \"Welcome\""]
+    },
+    {
+      "name": "tap_on",
+      "description": "Tap on element",
+      "syntax": "- tapOn: selector",
+      "when_to_use": "Clicking buttons and links",
+      "examples": ["- tapOn: \"Login\"", "- tapOn:\n    id: \"submit-button\"", "- tapOn:\n    text: \"Continue\""]
+    },
+    {
+      "name": "input_text",
+      "description": "Enter text in field",
+      "syntax": "- inputText: text",
+      "when_to_use": "Filling forms",
+      "examples": ["- tapOn:\n    id: \"email-field\"\n- inputText: \"test@example.com\""]
+    },
+    {
+      "name": "assertions",
+      "description": "Assert element visibility",
+      "syntax": "- assertVisible/assertNotVisible",
+      "when_to_use": "Verifying UI state",
+      "examples": ["- assertVisible: \"Success\"", "- assertNotVisible: \"Error\"", "- assertVisible:\n    id: \"welcome-screen\""]
+    },
+    {
+      "name": "scroll",
+      "description": "Scroll in direction",
+      "syntax": "- scroll / - scrollUntilVisible",
+      "when_to_use": "Finding elements in lists",
+      "examples": ["- scroll", "- scrollUntilVisible:\n    element: \"Item 50\""]
+    },
+    {
+      "name": "run_flow",
+      "description": "Execute another flow file",
+      "syntax": "- runFlow: path",
+      "when_to_use": "Reusing common flows (login, setup)",
+      "examples": ["- runFlow: flows/login.yaml", "- runFlow:\n    file: flows/setup.yaml\n    env:\n      USER: \"test\""]
+    },
+    {
+      "name": "continuous_mode",
+      "description": "Run in watch mode",
+      "syntax": "maestro test --continuous flow.yaml",
+      "when_to_use": "Interactive development",
+      "examples": ["maestro test --continuous login_flow.yaml"]
+    }
+  ],
+
+  "commands": [
+    {
+      "name": "launchApp",
+      "description": "Launch or restart app",
+      "examples": ["- launchApp", "- launchApp:\n    clearState: true"]
+    },
+    {
+      "name": "tapOn",
+      "description": "Tap element by text, id, or point",
+      "examples": ["- tapOn: \"Button\"", "- tapOn:\n    point: \"50%,50%\""]
+    },
+    {
+      "name": "inputText",
+      "description": "Type text into focused field",
+      "examples": ["- inputText: \"Hello\""]
+    },
+    {
+      "name": "swipe",
+      "description": "Swipe in direction",
+      "examples": ["- swipe:\n    direction: LEFT", "- swipe:\n    start: \"90%,50%\"\n    end: \"10%,50%\""]
+    },
+    {
+      "name": "back",
+      "description": "Press back button (Android) or swipe back (iOS)",
+      "examples": ["- back"]
+    },
+    {
+      "name": "hideKeyboard",
+      "description": "Hide the on-screen keyboard",
+      "examples": ["- hideKeyboard"]
+    },
+    {
+      "name": "takeScreenshot",
+      "description": "Capture screenshot",
+      "examples": ["- takeScreenshot: login_screen"]
+    },
+    {
+      "name": "waitForAnimationToEnd",
+      "description": "Wait for animations to complete",
+      "examples": ["- waitForAnimationToEnd"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Element not found",
+      "meaning": "Could not find element matching selector",
+      "common_causes": ["Wrong text/id", "Element not loaded", "Different screen"],
+      "fixes": ["Check element text/id in app", "Add wait or scroll", "Verify flow order"]
+    },
+    {
+      "pattern": "App not installed",
+      "meaning": "App ID doesn't match installed app",
+      "common_causes": ["Wrong appId", "App not installed on device"],
+      "fixes": ["Check appId in flow file", "Install app on device/emulator"]
+    },
+    {
+      "pattern": "Timeout waiting for element",
+      "meaning": "Element didn't appear within timeout",
+      "common_causes": ["Slow app", "Element never appears", "Network delay"],
+      "fixes": ["Increase timeout", "Check if element ever appears", "Mock network"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode"],
+    "ci_integration": ["github_actions", "circleci", "bitrise", "maestro_cloud"],
+    "cloud_platforms": ["maestro_cloud"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds per flow",
+    "scalability": "Parallel on multiple devices",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["appium", "detox", "xcuitest", "espresso"],
+    "advantages": [
+      "Simple YAML syntax - no programming needed",
+      "Built-in retry and synchronization",
+      "Cross-platform (iOS, Android, RN, Flutter)",
+      "Fast continuous mode for development"
+    ],
+    "disadvantages": [
+      "Less flexible than code-based frameworks",
+      "Limited programmatic logic",
+      "Newer tool with smaller ecosystem"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.36.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "mobile.dev",
+    "license": "Apache-2.0"
+  }
+}

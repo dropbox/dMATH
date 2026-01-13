@@ -1,0 +1,115 @@
+{
+  "tool": "selfcheckgpt",
+  "version": "0.1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_error",
+      "pattern": "(model|LLM|generate|samples)",
+      "message": "Model generation error",
+      "cause": "Error generating sample responses for self-consistency check",
+      "solutions": [
+        {
+          "approach": "Configure model",
+          "code": "from selfcheckgpt import SelfCheckGPT\nselfcheck = SelfCheckGPT(\n    model_name='gpt-3.5-turbo',\n    api_key='your-key'\n)",
+          "when": "Setting up SelfCheckGPT"
+        },
+        {
+          "approach": "Use local model",
+          "code": "from transformers import AutoModelForCausalLM, AutoTokenizer\nmodel = AutoModelForCausalLM.from_pretrained('model-name')\ntokenizer = AutoTokenizer.from_pretrained('model-name')\nselfcheck = SelfCheckGPT(model=model, tokenizer=tokenizer)",
+          "when": "Using local model"
+        }
+      ]
+    },
+    {
+      "id": "sample_generation_error",
+      "pattern": "(samples|stochastic|generation.*failed)",
+      "message": "Sample generation failed",
+      "cause": "Could not generate multiple samples for comparison",
+      "solutions": [
+        {
+          "approach": "Generate samples",
+          "code": "# Generate multiple responses for same prompt\nsamples = []\nfor _ in range(5):\n    response = model.generate(prompt, temperature=1.0)\n    samples.append(response)",
+          "when": "Manual sample generation"
+        },
+        {
+          "approach": "Adjust parameters",
+          "code": "selfcheck = SelfCheckGPT(\n    n_samples=5,\n    temperature=1.0  # Higher for diversity\n)",
+          "when": "Configuring sampling"
+        }
+      ]
+    },
+    {
+      "id": "consistency_check_error",
+      "pattern": "(consistency|NLI|similarity)",
+      "message": "Consistency check error",
+      "cause": "NLI or similarity model failed",
+      "solutions": [
+        {
+          "approach": "Use NLI check",
+          "code": "from selfcheckgpt import SelfCheckNLI\nselfcheck_nli = SelfCheckNLI(\n    nli_model='roberta-large-mnli'\n)\nscores = selfcheck_nli.predict(\n    sentences=sentences,\n    sampled_passages=samples\n)",
+          "when": "Using NLI method"
+        },
+        {
+          "approach": "Use BERTScore check",
+          "code": "from selfcheckgpt import SelfCheckBERTScore\nselfcheck = SelfCheckBERTScore()\nscores = selfcheck.predict(\n    sentences=sentences,\n    sampled_passages=samples\n)",
+          "when": "Using BERTScore method"
+        }
+      ]
+    },
+    {
+      "id": "sentence_split_error",
+      "pattern": "(sentence|split|segmentation)",
+      "message": "Sentence segmentation error",
+      "cause": "Could not split response into sentences",
+      "solutions": [
+        {
+          "approach": "Use spacy",
+          "code": "import spacy\nnlp = spacy.load('en_core_web_sm')\ndoc = nlp(response)\nsentences = [sent.text for sent in doc.sents]",
+          "when": "Better sentence splitting"
+        },
+        {
+          "approach": "Manual split",
+          "code": "# Simple split for structured text\nsentences = [s.strip() for s in response.split('.') if s.strip()]",
+          "when": "Simple text"
+        }
+      ]
+    },
+    {
+      "id": "score_interpretation_error",
+      "pattern": "(score|threshold|hallucination)",
+      "message": "Score interpretation error",
+      "cause": "Unclear how to interpret consistency scores",
+      "solutions": [
+        {
+          "approach": "Interpret scores",
+          "code": "# Higher scores = more likely hallucination\n# Typical threshold is 0.5\nfor sent, score in zip(sentences, scores):\n    status = 'hallucination' if score > 0.5 else 'consistent'\n    print(f'{status}: {sent} (score: {score:.2f})')",
+          "when": "Interpreting results"
+        },
+        {
+          "approach": "Aggregate scores",
+          "code": "# Overall hallucination score\nimport numpy as np\noverall_score = np.mean(scores)\nprint(f'Overall hallucination risk: {overall_score:.2f}')",
+          "when": "Summary score"
+        }
+      ]
+    },
+    {
+      "id": "prompt_method_error",
+      "pattern": "(prompt|GPT.*check|LLM.*check)",
+      "message": "Prompt-based check error",
+      "cause": "LLM-based consistency check failed",
+      "solutions": [
+        {
+          "approach": "Use prompt method",
+          "code": "from selfcheckgpt import SelfCheckPrompt\nselfcheck = SelfCheckPrompt(\n    model_name='gpt-4',\n    api_key='key'\n)\nscores = selfcheck.predict(\n    sentences=sentences,\n    sampled_passages=samples\n)",
+          "when": "Using GPT for checking"
+        },
+        {
+          "approach": "Customize prompt",
+          "code": "selfcheck = SelfCheckPrompt(\n    model_name='gpt-4',\n    prompt_template='Given the context, is this claim supported? {claim}\\nContext: {context}'\n)",
+          "when": "Custom prompt needed"
+        }
+      ]
+    }
+  ]
+}

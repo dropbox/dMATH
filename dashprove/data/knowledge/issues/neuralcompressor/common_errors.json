@@ -1,0 +1,115 @@
+{
+  "tool": "neuralcompressor",
+  "version": "2.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "quantization_config_error",
+      "pattern": "(config|PostTrainingQuantConfig|scheme)",
+      "message": "Quantization configuration error",
+      "cause": "Invalid quantization configuration",
+      "solutions": [
+        {
+          "approach": "Configure PTQ",
+          "code": "from neural_compressor.config import PostTrainingQuantConfig\nconfig = PostTrainingQuantConfig(\n    approach='static',  # or 'dynamic'\n    backend='pytorch',\n    device='cpu'\n)",
+          "when": "Setting up PTQ"
+        },
+        {
+          "approach": "Configure QAT",
+          "code": "from neural_compressor.config import QuantizationAwareTrainingConfig\nconfig = QuantizationAwareTrainingConfig(\n    device='cuda',\n    backend='pytorch_fx'\n)",
+          "when": "Setting up QAT"
+        }
+      ]
+    },
+    {
+      "id": "calibration_dataloader_error",
+      "pattern": "(dataloader|calibration.*data|eval_func)",
+      "message": "Calibration dataloader error",
+      "cause": "Invalid or missing calibration data",
+      "solutions": [
+        {
+          "approach": "Provide dataloader",
+          "code": "from neural_compressor.quantization import fit\nq_model = fit(\n    model=model,\n    conf=config,\n    calib_dataloader=calibration_dataloader,\n    eval_func=eval_func\n)",
+          "when": "Running quantization"
+        },
+        {
+          "approach": "Create eval function",
+          "code": "def eval_func(model):\n    model.eval()\n    correct = 0\n    for data, target in eval_loader:\n        output = model(data)\n        pred = output.argmax(dim=1)\n        correct += (pred == target).sum().item()\n    return correct / len(eval_loader.dataset)",
+          "when": "Defining evaluation"
+        }
+      ]
+    },
+    {
+      "id": "accuracy_criterion_error",
+      "pattern": "(accuracy.*criterion|target.*accuracy|tolerance)",
+      "message": "Accuracy criterion not met",
+      "cause": "Quantized model accuracy below threshold",
+      "solutions": [
+        {
+          "approach": "Set accuracy criterion",
+          "code": "from neural_compressor.config import AccuracyCriterion\nconfig = PostTrainingQuantConfig(\n    accuracy_criterion=AccuracyCriterion(\n        higher_is_better=True,\n        criterion='relative',\n        tolerable_loss=0.01  # 1% accuracy loss allowed\n    )\n)",
+          "when": "Setting accuracy goal"
+        },
+        {
+          "approach": "Use mixed precision",
+          "code": "from neural_compressor.config import TuningCriterion\nconfig = PostTrainingQuantConfig(\n    tuning_criterion=TuningCriterion(\n        strategy='bayesian',\n        max_trials=100\n    )\n)",
+          "when": "Auto-tuning precision"
+        }
+      ]
+    },
+    {
+      "id": "model_format_error",
+      "pattern": "(model.*format|framework|ONNX|TensorFlow)",
+      "message": "Model format not supported",
+      "cause": "Model format incompatible with backend",
+      "solutions": [
+        {
+          "approach": "Quantize PyTorch",
+          "code": "from neural_compressor.quantization import fit\nq_model = fit(\n    model=torch_model,\n    conf=config,\n    calib_dataloader=dataloader\n)",
+          "when": "PyTorch model"
+        },
+        {
+          "approach": "Quantize ONNX",
+          "code": "from neural_compressor.config import PostTrainingQuantConfig\nconfig = PostTrainingQuantConfig(backend='onnxruntime')\nq_model = fit(\n    model='model.onnx',\n    conf=config,\n    calib_dataloader=dataloader\n)",
+          "when": "ONNX model"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "(export|save|serialize)",
+      "message": "Model export error",
+      "cause": "Failed to save quantized model",
+      "solutions": [
+        {
+          "approach": "Save model",
+          "code": "q_model.save('./output_model')",
+          "when": "Saving quantized model"
+        },
+        {
+          "approach": "Export to ONNX",
+          "code": "from neural_compressor.utils.pytorch import export_onnx\nexport_onnx(\n    q_model.model,\n    dummy_input,\n    'quantized_model.onnx'\n)",
+          "when": "Exporting to ONNX"
+        }
+      ]
+    },
+    {
+      "id": "pruning_error",
+      "pattern": "(pruning|sparse|magnitude)",
+      "message": "Pruning configuration error",
+      "cause": "Error in model pruning",
+      "solutions": [
+        {
+          "approach": "Configure pruning",
+          "code": "from neural_compressor.config import PruningConfig\nconfig = PruningConfig(\n    target_sparsity=0.5,\n    pruning_type='magnitude',\n    start_step=0,\n    end_step=100\n)",
+          "when": "Setting up pruning"
+        },
+        {
+          "approach": "Run pruning",
+          "code": "from neural_compressor.compression.pruner import Pruner\npruner = Pruner(config)\nfor epoch in range(epochs):\n    for batch in train_loader:\n        pruner.on_step_begin()\n        loss = train_step(model, batch)\n        pruner.on_step_end()",
+          "when": "Training with pruning"
+        }
+      ]
+    }
+  ]
+}

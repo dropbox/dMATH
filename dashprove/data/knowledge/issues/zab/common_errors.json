@@ -1,0 +1,97 @@
+{
+  "tool": "zab",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "leader_election_failure",
+      "pattern": "(election|looking|leader|quorum)",
+      "message": "Leader election not completing",
+      "cause": "Cannot establish quorum for leader election",
+      "solutions": [
+        {
+          "approach": "Check quorum",
+          "code": "// ZooKeeper needs majority\n// 3 nodes: need 2\n// 5 nodes: need 3\nif connected_nodes < total_nodes / 2 + 1 {\n    // Cannot elect leader\n    log::error!(\"Insufficient nodes for quorum\");\n}",
+          "when": "Not enough nodes"
+        },
+        {
+          "approach": "Check election config",
+          "code": "# zoo.cfg\ninitLimit=10\nsyncLimit=5\nserver.1=node1:2888:3888\nserver.2=node2:2888:3888\nserver.3=node3:2888:3888",
+          "when": "Configuration issues"
+        }
+      ]
+    },
+    {
+      "id": "zxid_mismatch",
+      "pattern": "(zxid|epoch|transaction.*id|out of sync)",
+      "message": "ZXID/epoch mismatch",
+      "cause": "Follower's transaction ID diverged from leader",
+      "solutions": [
+        {
+          "approach": "Sync with leader",
+          "code": "// Follower sync modes\n// DIFF: Apply missing transactions\n// TRUNC: Truncate ahead transactions\n// SNAP: Full snapshot transfer\nmatch sync_type {\n    DIFF => apply_diff(leader_log_suffix),\n    TRUNC => truncate_to(leader_last_zxid),\n    SNAP => install_snapshot(leader_snapshot),\n}",
+          "when": "Follower out of sync"
+        },
+        {
+          "approach": "Check epoch",
+          "code": "// ZXID = (epoch << 32) | counter\nlet epoch = zxid >> 32;\nlet counter = zxid & 0xFFFFFFFF;\nif follower_epoch != leader_epoch {\n    // Epoch mismatch - need sync\n}",
+          "when": "Debugging ZXID"
+        }
+      ]
+    },
+    {
+      "id": "broadcast_failure",
+      "pattern": "(broadcast|proposal|ack|commit)",
+      "message": "Atomic broadcast failure",
+      "cause": "Proposal not acknowledged by quorum",
+      "solutions": [
+        {
+          "approach": "Wait for quorum acks",
+          "code": "// Leader broadcasts proposal\nbroadcast_proposal(zxid, transaction);\n\n// Wait for quorum of acks\nlet acks = collect_acks(zxid, timeout);\nif acks.len() >= quorum_size() {\n    broadcast_commit(zxid);\n} else {\n    // Proposal failed\n}",
+          "when": "Normal operation"
+        },
+        {
+          "approach": "Check followers",
+          "code": "// Leader monitors follower health\nfor follower in followers {\n    if follower.last_ack_time > heartbeat_timeout {\n        log::warn!(\"Follower {} unresponsive\", follower.id);\n    }\n}",
+          "when": "Follower issues"
+        }
+      ]
+    },
+    {
+      "id": "recovery_error",
+      "pattern": "(recovery|crash|restart|log)",
+      "message": "Recovery after crash failed",
+      "cause": "Could not recover state from transaction log",
+      "solutions": [
+        {
+          "approach": "Replay transaction log",
+          "code": "// On restart, replay committed transactions\nfn recover() -> Result<()> {\n    let snapshot = load_latest_snapshot()?;\n    apply_snapshot(&snapshot);\n    \n    for entry in read_log_after(snapshot.zxid) {\n        if entry.committed {\n            apply_transaction(&entry.tx);\n        }\n    }\n    Ok(())\n}",
+          "when": "Node restart"
+        },
+        {
+          "approach": "Sync from leader",
+          "code": "// If log corrupted, full sync from leader\nif !verify_log_integrity() {\n    clear_data_dir();\n    request_full_sync_from_leader();\n}",
+          "when": "Log corruption"
+        }
+      ]
+    },
+    {
+      "id": "session_expired",
+      "pattern": "(session|expired|ephemeral|watch)",
+      "message": "Client session expired",
+      "cause": "Client did not heartbeat in time",
+      "solutions": [
+        {
+          "approach": "Handle session expiry",
+          "code": "// Recreate session and state\ntry {\n    zk.exists(path);\n} catch SessionExpiredException {\n    zk = new ZooKeeper(connect_string);\n    recreate_ephemeral_nodes();\n    reregister_watches();\n}",
+          "when": "Session timeout"
+        },
+        {
+          "approach": "Adjust timeout",
+          "code": "// Increase session timeout\nzk = new ZooKeeper(\n    connect_string,\n    session_timeout_ms: 30000  // 30 seconds\n);",
+          "when": "Frequent expiry"
+        }
+      ]
+    }
+  ]
+}

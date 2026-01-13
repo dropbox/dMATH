@@ -1,0 +1,99 @@
+{
+  "tool": "podman",
+  "category": "container_runtime",
+  "description": "Podman - daemonless container engine for OCI containers",
+  "common_errors": [
+    {
+      "id": "image_not_found",
+      "pattern": "image not known",
+      "regex": "(?i)image.*not known|unable to find|no such image|manifest unknown",
+      "cause": "Specified image does not exist locally or in configured registries",
+      "solution": "Verify image name, add registry prefix (docker.io/), check registries.conf",
+      "severity": "medium",
+      "category": "images"
+    },
+    {
+      "id": "rootless_permission_error",
+      "pattern": "rootless: permission denied",
+      "regex": "(?i)rootless.*permission|user.*namespace|newuidmap|cannot setup namespace",
+      "cause": "Rootless podman user namespace setup failed",
+      "solution": "Configure /etc/subuid and /etc/subgid for user, run 'podman system migrate'",
+      "severity": "high",
+      "category": "rootless"
+    },
+    {
+      "id": "storage_error",
+      "pattern": "storage error",
+      "regex": "(?i)storage.*error|overlay.*error|unable to create layer|graph driver",
+      "cause": "Container storage driver issue",
+      "solution": "Reset storage with 'podman system reset', check storage.conf, verify filesystem supports overlayfs",
+      "severity": "high",
+      "category": "storage"
+    },
+    {
+      "id": "cni_network_error",
+      "pattern": "CNI network error",
+      "regex": "(?i)cni.*error|network.*plugin|cni.*config|netavark.*error",
+      "cause": "Container network interface (CNI/netavark) configuration issue",
+      "solution": "Check network config in /etc/cni/net.d/, run 'podman network ls' and recreate network",
+      "severity": "medium",
+      "category": "networking"
+    },
+    {
+      "id": "port_bind_error",
+      "pattern": "port bind error",
+      "regex": "(?i)error.*binding.*port|rootlessport|cannot listen|port.*in use",
+      "cause": "Cannot bind to requested port (privilege or conflict)",
+      "solution": "Use ports > 1024 for rootless, or set net.ipv4.ip_unprivileged_port_start=0",
+      "severity": "medium",
+      "category": "networking"
+    },
+    {
+      "id": "registry_auth_error",
+      "pattern": "authentication required",
+      "regex": "(?i)authentication required|unauthorized|access denied|login.*required",
+      "cause": "Not authenticated to container registry",
+      "solution": "Run 'podman login' with credentials, check auth.json in XDG_RUNTIME_DIR",
+      "severity": "medium",
+      "category": "registry"
+    },
+    {
+      "id": "conmon_error",
+      "pattern": "conmon error",
+      "regex": "(?i)conmon.*error|conmon.*failed|runtime.*conmon",
+      "cause": "Container monitor (conmon) process failed",
+      "solution": "Check conmon is installed, verify OCI runtime (crun/runc) is working",
+      "severity": "high",
+      "category": "runtime"
+    },
+    {
+      "id": "volume_mount_error",
+      "pattern": "volume mount error",
+      "regex": "(?i)mount.*error|invalid.*mount|volume.*permission|selinux.*denied",
+      "cause": "Volume mount failed due to path or permissions",
+      "solution": "Use :Z or :z suffix for SELinux, verify paths exist, check rootless volume locations",
+      "severity": "medium",
+      "category": "volumes"
+    },
+    {
+      "id": "pod_creation_error",
+      "pattern": "pod creation error",
+      "regex": "(?i)pod.*creation.*error|infra.*container.*failed|pod.*already exists",
+      "cause": "Failed to create pod or infra container",
+      "solution": "Check pod name is unique, verify resources available, review pod spec",
+      "severity": "medium",
+      "category": "pods"
+    },
+    {
+      "id": "systemd_integration_error",
+      "pattern": "systemd integration error",
+      "regex": "(?i)systemd.*error|quadlet.*error|unit.*failed|generate.*systemd",
+      "cause": "Error with systemd unit generation or quadlet",
+      "solution": "Check unit file syntax, verify podman version supports feature, review journalctl logs",
+      "severity": "medium",
+      "category": "systemd"
+    }
+  ],
+  "related_tools": ["docker", "buildah", "skopeo", "kubernetes"],
+  "documentation_url": "https://docs.podman.io/"
+}

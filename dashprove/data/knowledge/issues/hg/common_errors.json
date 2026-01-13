@@ -1,0 +1,140 @@
+{
+  "tool": "hg",
+  "version": "6.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_a_repository",
+      "pattern": "no repository found|not.*repository|abort:.*repository",
+      "message": "Not a Mercurial repository",
+      "cause": "Not in a hg repo or .hg missing",
+      "solutions": [
+        {
+          "approach": "Initialize",
+          "code": "hg init",
+          "when": "Create new repo"
+        },
+        {
+          "approach": "Clone",
+          "code": "hg clone https://example.com/repo",
+          "when": "Get from remote"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la .hg\nhg root",
+          "when": "Verify repo"
+        }
+      ]
+    },
+    {
+      "id": "merge_conflict",
+      "pattern": "merge conflict|unresolved|conflicts",
+      "message": "Merge conflicts",
+      "cause": "Conflicting changes during merge",
+      "solutions": [
+        {
+          "approach": "Resolve manually",
+          "code": "hg resolve --list  # List unresolved\nhg resolve --mark FILE  # Mark resolved\nhg resolve --all  # Retry all",
+          "when": "After editing"
+        },
+        {
+          "approach": "Use tool",
+          "code": "hg resolve FILE  # Opens merge tool",
+          "when": "Visual merge"
+        },
+        {
+          "approach": "Abort merge",
+          "code": "hg update --clean",
+          "when": "Start over"
+        }
+      ]
+    },
+    {
+      "id": "uncommitted_changes",
+      "pattern": "uncommitted changes|abort:.*outstanding|local changes",
+      "message": "Uncommitted changes blocking operation",
+      "cause": "Need clean working directory",
+      "solutions": [
+        {
+          "approach": "Commit first",
+          "code": "hg commit -m 'message'",
+          "when": "Save changes"
+        },
+        {
+          "approach": "Shelve",
+          "code": "hg shelve\n# Later: hg unshelve",
+          "when": "Temporary save"
+        },
+        {
+          "approach": "Discard",
+          "code": "hg update --clean",
+          "when": "Throw away"
+        }
+      ]
+    },
+    {
+      "id": "push_creates_head",
+      "pattern": "creates new head|multiple heads|push creates",
+      "message": "Push would create multiple heads",
+      "cause": "Branch has diverged",
+      "solutions": [
+        {
+          "approach": "Pull and merge",
+          "code": "hg pull\nhg merge\nhg commit -m 'merge'\nhg push",
+          "when": "Merge first"
+        },
+        {
+          "approach": "Force push",
+          "code": "hg push --force  # Creates multiple heads",
+          "when": "Intentional"
+        },
+        {
+          "approach": "Rebase",
+          "code": "hg pull --rebase  # If rebase extension enabled",
+          "when": "Linear history"
+        }
+      ]
+    },
+    {
+      "id": "certificate_error",
+      "pattern": "certificate|SSL|unable to verify",
+      "message": "SSL certificate error",
+      "cause": "Untrusted certificate",
+      "solutions": [
+        {
+          "approach": "Configure CA",
+          "code": "# In ~/.hgrc:\n[web]\ncacerts = /etc/ssl/certs/ca-certificates.crt",
+          "when": "System CA"
+        },
+        {
+          "approach": "Disable verify",
+          "code": "# In ~/.hgrc:\n[hostfingerprints]\nexample.com = sha256:xxxx\n# Or:\nhg --insecure clone URL",
+          "when": "Dev only"
+        }
+      ]
+    },
+    {
+      "id": "unknown_command",
+      "pattern": "unknown command|hg:.*unknown",
+      "message": "Unknown hg command",
+      "cause": "Extension not enabled or typo",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "hg help  # List commands\nhg help command",
+          "when": "Typo"
+        },
+        {
+          "approach": "Enable extension",
+          "code": "# In ~/.hgrc:\n[extensions]\nrebase =\nevolve =\nstrip =",
+          "when": "Missing extension"
+        },
+        {
+          "approach": "List extensions",
+          "code": "hg help extensions",
+          "when": "Reference"
+        }
+      ]
+    }
+  ]
+}

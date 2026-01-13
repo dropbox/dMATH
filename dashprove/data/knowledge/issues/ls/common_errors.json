@@ -1,0 +1,140 @@
+{
+  "tool": "ls",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "ls:.*Permission denied|cannot open directory|cannot access",
+      "message": "Cannot list directory contents",
+      "cause": "Insufficient permissions to read directory",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo ls /root/",
+          "when": "Need elevated access"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -ld /path/to/dir  # Show directory permissions",
+          "when": "Understand access"
+        },
+        {
+          "approach": "Skip errors",
+          "code": "ls 2>/dev/null || true",
+          "when": "In scripts, continue on error"
+        }
+      ]
+    },
+    {
+      "id": "no_such_file",
+      "pattern": "ls:.*No such file or directory|cannot access.*No such",
+      "message": "File or directory does not exist",
+      "cause": "Path doesn't exist or broken symlink",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "realpath /path/to/check  # Resolve full path",
+          "when": "Verify actual path"
+        },
+        {
+          "approach": "Show symlinks",
+          "code": "ls -la  # Shows -> target for symlinks",
+          "when": "Check for broken links"
+        },
+        {
+          "approach": "Find broken symlinks",
+          "code": "find . -xtype l  # Find broken symlinks",
+          "when": "Locate issues"
+        }
+      ]
+    },
+    {
+      "id": "argument_list_too_long",
+      "pattern": "Argument list too long|ls:.*too many arguments",
+      "message": "Too many files to list",
+      "cause": "Shell glob expanded to too many arguments",
+      "solutions": [
+        {
+          "approach": "Use find",
+          "code": "find . -maxdepth 1 -name '*.txt' -exec ls -l {} +",
+          "when": "Many matching files"
+        },
+        {
+          "approach": "Use xargs",
+          "code": "echo *.txt | xargs ls -l",
+          "when": "Split arguments"
+        },
+        {
+          "approach": "Increase limit",
+          "code": "getconf ARG_MAX  # Check current limit",
+          "when": "Understand limits"
+        }
+      ]
+    },
+    {
+      "id": "invalid_option",
+      "pattern": "ls:.*invalid option|ls:.*unrecognized option|illegal option",
+      "message": "Unknown command line option",
+      "cause": "Option not supported (BSD vs GNU ls)",
+      "solutions": [
+        {
+          "approach": "Check available options",
+          "code": "ls --help  # GNU\nman ls     # BSD/macOS",
+          "when": "Verify syntax"
+        },
+        {
+          "approach": "Use portable options",
+          "code": "ls -la  # Works on both GNU and BSD",
+          "when": "Cross-platform"
+        },
+        {
+          "approach": "Escape filenames starting with dash",
+          "code": "ls -- -filename  # Use -- to end options",
+          "when": "File starts with -"
+        }
+      ]
+    },
+    {
+      "id": "not_a_directory",
+      "pattern": "ls:.*Not a directory",
+      "message": "Path is not a directory",
+      "cause": "Tried to use -d or list contents of a file",
+      "solutions": [
+        {
+          "approach": "Check type",
+          "code": "file /path/to/item  # Determine file type",
+          "when": "Verify what it is"
+        },
+        {
+          "approach": "List file info",
+          "code": "ls -l /path/to/file  # Just show the file itself",
+          "when": "Want file details"
+        }
+      ]
+    },
+    {
+      "id": "color_output_garbled",
+      "pattern": "\\[0m|\\[1;|escape sequences",
+      "message": "Color escape codes visible in output",
+      "cause": "LS_COLORS or piping colored output",
+      "solutions": [
+        {
+          "approach": "Disable color",
+          "code": "ls --color=never  # or \\ls to bypass alias",
+          "when": "In scripts/pipes"
+        },
+        {
+          "approach": "Force color",
+          "code": "ls --color=always | less -R",
+          "when": "Want color in pager"
+        },
+        {
+          "approach": "Check TERM",
+          "code": "echo $TERM  # Should be xterm-256color or similar",
+          "when": "Terminal issues"
+        }
+      ]
+    }
+  ]
+}

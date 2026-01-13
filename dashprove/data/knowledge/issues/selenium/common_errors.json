@@ -1,0 +1,145 @@
+{
+  "tool": "selenium",
+  "version": "4.17",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "session_not_created",
+      "pattern": "SessionNotCreatedException|This version of ChromeDriver only supports|session not created",
+      "message": "WebDriver session could not be created",
+      "cause": "Browser version and driver version mismatch or browser not installed",
+      "solutions": [
+        {
+          "approach": "Match driver to browser",
+          "code": "webdriver-manager update --chrome",
+          "when": "Auto-manage driver version"
+        },
+        {
+          "approach": "Pin driver version",
+          "code": "CHROMEDRIVER_VERSION=120.0.6099.109",
+          "when": "CI with fixed browser"
+        },
+        {
+          "approach": "Install browser",
+          "code": "apt-get update && apt-get install -y google-chrome-stable",
+          "when": "Headless nodes missing browser"
+        }
+      ]
+    },
+    {
+      "id": "no_such_element",
+      "pattern": "NoSuchElementException|Unable to locate element",
+      "message": "Element locator did not match any element",
+      "cause": "Locator incorrect or element not yet rendered",
+      "solutions": [
+        {
+          "approach": "Use explicit waits",
+          "code": "WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#id')))",
+          "when": "Element loads asynchronously"
+        },
+        {
+          "approach": "Verify locator",
+          "code": "document.querySelector('#id')",
+          "when": "Ensure locator matches DOM"
+        },
+        {
+          "approach": "Switch context",
+          "code": "driver.switch_to.frame('frame-name')",
+          "when": "Element inside iframe"
+        }
+      ]
+    },
+    {
+      "id": "timeout_exception",
+      "pattern": "TimeoutException|timed out after|page load timeout",
+      "message": "Operation timed out",
+      "cause": "Navigation or waits exceeded configured timeout",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "driver.set_page_load_timeout(60)",
+          "when": "Slow pages"
+        },
+        {
+          "approach": "Wait for specific condition",
+          "code": "WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, 'btn')))",
+          "when": "Generic wait insufficient"
+        },
+        {
+          "approach": "Disable unnecessary waits",
+          "code": "driver.set_script_timeout(0)",
+          "when": "Long-running scripts not needed"
+        }
+      ]
+    },
+    {
+      "id": "stale_element",
+      "pattern": "StaleElementReferenceException|stale element reference",
+      "message": "Element reference became stale",
+      "cause": "DOM refreshed or element re-rendered",
+      "solutions": [
+        {
+          "approach": "Re-find element",
+          "code": "element = driver.find_element(By.ID, 'btn')",
+          "when": "After DOM change"
+        },
+        {
+          "approach": "Wait for stability",
+          "code": "WebDriverWait(driver, 10).until(EC.staleness_of(old_element))",
+          "when": "During page transitions"
+        },
+        {
+          "approach": "Avoid caching",
+          "code": "Do not store element references across page loads",
+          "when": "Navigation occurs"
+        }
+      ]
+    },
+    {
+      "id": "element_not_interactable",
+      "pattern": "ElementNotInteractableException|element not interactable|element click intercepted",
+      "message": "Element cannot be clicked or typed into",
+      "cause": "Element hidden, overlapped, or disabled",
+      "solutions": [
+        {
+          "approach": "Scroll into view",
+          "code": "driver.execute_script('arguments[0].scrollIntoView()', element)",
+          "when": "Element off-screen"
+        },
+        {
+          "approach": "Wait for clickable",
+          "code": "WebDriverWait(driver, 10).until(EC.element_to_be_clickable(locator))",
+          "when": "Overlay or animation present"
+        },
+        {
+          "approach": "Use actions",
+          "code": "ActionChains(driver).move_to_element(element).click().perform()",
+          "when": "Standard click fails"
+        }
+      ]
+    },
+    {
+      "id": "driver_connection_lost",
+      "pattern": "WebDriverException: connection refused|chrome not reachable|invalid session id",
+      "message": "Lost connection to browser",
+      "cause": "Browser crashed, path to driver wrong, or session timed out",
+      "solutions": [
+        {
+          "approach": "Check driver path",
+          "code": "export PATH=$PWD/drivers:$PATH",
+          "when": "Driver binary not on PATH"
+        },
+        {
+          "approach": "Stabilize browser",
+          "code": "options.add_argument('--disable-dev-shm-usage')\noptions.add_argument('--no-sandbox')",
+          "when": "Chrome crashing in containers"
+        },
+        {
+          "approach": "Recreate session",
+          "code": "driver.quit(); driver = webdriver.Chrome(options=options)",
+          "when": "Session expired"
+        }
+      ]
+    }
+  ]
+}

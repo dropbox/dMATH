@@ -1,0 +1,145 @@
+{
+  "version": "6.7",
+  "errors": [
+    {
+      "id": "solver_not_found",
+      "pattern": "ApplicationError: No executable found for solver",
+      "message": "Requested solver binary not available",
+      "cause": "Solver not installed or not on PATH",
+      "solutions": [
+        {
+          "approach": "Install and expose solver executable",
+          "code": "sudo apt install coinor-cbc",
+          "when": "Using CBC or GLPK"
+        },
+        {
+          "approach": "Pass full path to solver",
+          "code": "SolverFactory('cbc', executable='/usr/local/bin/cbc')",
+          "when": "Binary in non-standard location"
+        },
+        {
+          "approach": "Switch to available solver plugin",
+          "code": "SolverFactory('ipopt')",
+          "when": "Another solver is already installed"
+        }
+      ]
+    },
+    {
+      "id": "invalid_expression",
+      "pattern": "ValueError: Constraint.*is invalid|NonNumeric value",
+      "message": "Constraint or objective expression is malformed",
+      "cause": "Used Python conditionals instead of Pyomo expressions or mixed numeric and logical types",
+      "solutions": [
+        {
+          "approach": "Use Pyomo relational operators",
+          "code": "model.con = Constraint(expr=model.x + model.y <= 10)",
+          "when": "Avoid plain Python if/else inside expr"
+        },
+        {
+          "approach": "Ensure expressions are numeric",
+          "code": "model.cost = Objective(expr=sum(cost[i]*x[i] for i in items))",
+          "when": "Lists/dicts cannot appear directly in expressions"
+        },
+        {
+          "approach": "Check iterable indices",
+          "code": "for i in model.I: model.cons.add(expr=model.x[i] >= 0)",
+          "when": "Indexing errors create NonNumeric terms"
+        }
+      ]
+    },
+    {
+      "id": "infeasible",
+      "pattern": "Model was proven infeasible|infeasible problem",
+      "message": "Solver reports model infeasible",
+      "cause": "Constraints conflict or bounds inconsistent",
+      "solutions": [
+        {
+          "approach": "Use iis or infeasibility tools",
+          "code": "SolverFactory('gurobi').solve(model, tee=True, warmstart=True)",
+          "when": "Solver can produce IIS"
+        },
+        {
+          "approach": "Relax constraints with penalties",
+          "code": "# introduce slack\nmodel.slack = Var(within=NonNegativeReals)\nmodel.cost = Objective(expr=model.original_cost + 1000*model.slack)",
+          "when": "Need feasibility with minimal violation"
+        },
+        {
+          "approach": "Validate parameter data",
+          "code": "% ensure bounds and parameters are non-empty and aligned",
+          "when": "Bad input often creates conflict"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_component",
+      "pattern": "AttributeError:.*already exists",
+      "message": "Component name reused",
+      "cause": "Adding constraint/objective/variable with an existing name",
+      "solutions": [
+        {
+          "approach": "Use unique names for components",
+          "code": "model.add_component('capacity_con', Constraint(...))",
+          "when": "Programmatic creation loops over constraints"
+        },
+        {
+          "approach": "Delete before re-adding",
+          "code": "del model.capacity_con",
+          "when": "Need to rebuild component during iterations"
+        },
+        {
+          "approach": "Check factory helpers",
+          "code": "model.capacity = ConstraintList()",
+          "when": "ConstraintList avoids repeated name collisions"
+        }
+      ]
+    },
+    {
+      "id": "objective_missing",
+      "pattern": "No objectives declared",
+      "message": "Model has no objective defined",
+      "cause": "Only constraints created without Objective component",
+      "solutions": [
+        {
+          "approach": "Add Objective with sense",
+          "code": "model.obj = Objective(expr=sum(cost[i]*model.x[i] for i in model.I), sense=minimize)",
+          "when": "Forgot to set optimization goal"
+        },
+        {
+          "approach": "Set sense explicitly",
+          "code": "from pyomo.environ import minimize",
+          "when": "Default sense may be None if not provided"
+        },
+        {
+          "approach": "Use SatisfactionProblem if only feasibility matters",
+          "code": "# or use ConstraintList without objective",
+          "when": "Model should be solved as feasibility only"
+        }
+      ]
+    },
+    {
+      "id": "import_errors",
+      "pattern": "ImportError|Failed to create model components from data",
+      "message": "Data loading failed or sets/params not initialized",
+      "cause": "Dat files missing values or mismatched indices",
+      "solutions": [
+        {
+          "approach": "Validate data files with DataPortal",
+          "code": "dp = DataPortal(); dp.load(filename=\"data.dat\", model=model);",
+          "when": "Data/param mismatch suspected"
+        },
+        {
+          "approach": "Provide default values for optional params",
+          "code": "Param(default=0)",
+          "when": "Missing values in data file"
+        },
+        {
+          "approach": "Check set bounds",
+          "code": "% ensure index sets not empty",
+          "when": "Empty sets lead to missing components"
+        }
+      ]
+    }
+  ],
+  "tool": "pyomo",
+  "last_updated": "2025-12-23"
+}

@@ -1,0 +1,183 @@
+{
+  "id": "golangci_lint",
+  "name": "golangci-lint",
+  "category": "go_static_analysis",
+  "subcategory": "meta_linter",
+
+  "description": "Fast, configurable meta-linter aggregating 100+ linters",
+  "long_description": "golangci-lint is a meta-linter for Go that runs many linters in parallel, shares work between them, and caches results. It aggregates staticcheck, gosec, errcheck, ineffassign, and 100+ other linters into a single tool with unified configuration. It's the most popular linting solution for Go projects.",
+
+  "capabilities": [
+    "bug_detection",
+    "style_enforcement",
+    "security_scanning",
+    "performance_analysis",
+    "complexity_checking",
+    "error_handling",
+    "concurrency_issues",
+    "code_formatting"
+  ],
+  "property_types": ["lint_rule", "security_finding", "style_violation"],
+  "input_languages": ["go"],
+  "output_formats": ["text", "json", "colored-line-number", "tab", "checkstyle", "code-climate", "junit-xml", "github-actions", "teamcity", "sarif"],
+
+  "installation": {
+    "methods": [
+      {"type": "binary", "command": "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin"},
+      {"type": "go_install", "command": "go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"},
+      {"type": "brew", "command": "brew install golangci-lint"},
+      {"type": "docker", "command": "docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint golangci-lint run"}
+    ],
+    "dependencies": ["go"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://golangci-lint.run/",
+    "configuration": "https://golangci-lint.run/usage/configuration/",
+    "linters": "https://golangci-lint.run/usage/linters/",
+    "examples": "https://github.com/golangci/golangci-lint/tree/master/test/testdata"
+  },
+
+  "included_linters": [
+    {
+      "name": "staticcheck",
+      "category": "bugs",
+      "description": "Advanced static analysis"
+    },
+    {
+      "name": "gosec",
+      "category": "security",
+      "description": "Security-focused checks"
+    },
+    {
+      "name": "errcheck",
+      "category": "errors",
+      "description": "Unchecked errors detection"
+    },
+    {
+      "name": "ineffassign",
+      "category": "performance",
+      "description": "Ineffectual assignments"
+    },
+    {
+      "name": "govet",
+      "category": "bugs",
+      "description": "Reports suspicious constructs"
+    },
+    {
+      "name": "revive",
+      "category": "style",
+      "description": "Extensible linter (golint successor)"
+    },
+    {
+      "name": "gocyclo",
+      "category": "complexity",
+      "description": "Cyclomatic complexity checker"
+    },
+    {
+      "name": "goconst",
+      "category": "style",
+      "description": "Find repeated strings that could be constants"
+    }
+  ],
+
+  "tactics": [
+    {
+      "name": "run_default",
+      "description": "Run with default linters",
+      "syntax": "golangci-lint run",
+      "when_to_use": "Quick check with sensible defaults",
+      "examples": ["golangci-lint run", "golangci-lint run ./..."]
+    },
+    {
+      "name": "enable_all",
+      "description": "Enable all available linters",
+      "syntax": "golangci-lint run --enable-all",
+      "when_to_use": "Comprehensive analysis (can be noisy)",
+      "examples": ["golangci-lint run --enable-all --disable=gochecknoglobals"]
+    },
+    {
+      "name": "fix_issues",
+      "description": "Auto-fix issues where possible",
+      "syntax": "golangci-lint run --fix",
+      "when_to_use": "Automatic formatting and simple fixes",
+      "examples": ["golangci-lint run --fix"]
+    },
+    {
+      "name": "new_from_rev",
+      "description": "Only check new code since revision",
+      "syntax": "golangci-lint run --new-from-rev=REV",
+      "when_to_use": "Check only changes in a PR",
+      "examples": ["golangci-lint run --new-from-rev=HEAD~1", "golangci-lint run --new-from-rev=main"]
+    },
+    {
+      "name": "config_file",
+      "description": "Use configuration file",
+      "syntax": ".golangci.yml",
+      "when_to_use": "Consistent project-wide settings",
+      "examples": ["golangci-lint run -c .golangci.yml"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "typecheck.*could not import",
+      "meaning": "Go module dependency issue",
+      "common_causes": ["Missing go.mod", "Outdated dependencies", "Invalid import path"],
+      "fixes": ["Run go mod tidy", "Run go mod download", "Check import paths"]
+    },
+    {
+      "pattern": "\\[linter\\]",
+      "meaning": "Specific linter found an issue",
+      "common_causes": ["Code quality issue", "Style violation", "Potential bug"],
+      "fixes": ["Address the specific issue", "Disable linter via nolint comment if false positive"]
+    },
+    {
+      "pattern": "File is not \\`goimports\\`-ed",
+      "meaning": "Imports not properly formatted",
+      "common_causes": ["Missing goimports run", "Editor not configured"],
+      "fixes": ["Run golangci-lint run --fix", "Configure editor to run goimports on save"]
+    }
+  ],
+
+  "configuration_example": {
+    "filename": ".golangci.yml",
+    "content": "linters:\n  enable:\n    - staticcheck\n    - gosec\n    - errcheck\n    - govet\n    - ineffassign\n  disable:\n    - deadcode\n\nlinters-settings:\n  errcheck:\n    check-type-assertions: true\n  govet:\n    check-shadowing: true\n\nissues:\n  exclude-rules:\n    - path: _test\\.go\n      linters:\n        - errcheck"
+  },
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "goland", "vim", "emacs", "sublime"],
+    "ci_integration": ["github_actions", "gitlab_ci", "jenkins", "circleci", "travis"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes",
+    "scalability": "Handles very large codebases with caching",
+    "memory_usage": "Moderate (parallel execution)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["staticcheck", "revive", "go_vet"],
+    "advantages": [
+      "Aggregates 100+ linters in one tool",
+      "Parallel execution with shared work",
+      "Excellent caching for fast CI",
+      "Highly configurable",
+      "Active community and development"
+    ],
+    "disadvantages": [
+      "Configuration can be complex",
+      "Some linters overlap/conflict",
+      "Memory usage with many linters enabled"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.61.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "golangci team",
+    "license": "GPL-3.0"
+  }
+}

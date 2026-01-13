@@ -1,0 +1,147 @@
+{
+  "tool": "memcached",
+  "category": "caching",
+  "common_errors": [
+    {
+      "error": "CONNECTION_REFUSED",
+      "pattern": "connect\\(\\): Connection refused|Error: connect ECONNREFUSED",
+      "severity": "high",
+      "causes": [
+        "Memcached server not running",
+        "Firewall blocking port 11211",
+        "Server bound to wrong interface (localhost vs 0.0.0.0)",
+        "Incorrect host/port configuration"
+      ],
+      "solutions": [
+        "Start memcached: systemctl start memcached or memcached -d -p 11211",
+        "Check firewall rules: sudo ufw allow 11211",
+        "Verify binding: netstat -tlnp | grep 11211",
+        "Check memcached.conf: -l 0.0.0.0 for remote access"
+      ]
+    },
+    {
+      "error": "SERVER_ERROR_OUT_OF_MEMORY",
+      "pattern": "SERVER_ERROR out of memory|cannot allocate memory",
+      "severity": "high",
+      "causes": [
+        "Memory limit reached (-m flag)",
+        "Too many items stored",
+        "Large item sizes consuming memory",
+        "Memory fragmentation"
+      ],
+      "solutions": [
+        "Increase memory limit: memcached -m 1024 (MB)",
+        "Implement cache eviction policy (LRU is default)",
+        "Monitor with stats command: echo 'stats' | nc localhost 11211",
+        "Consider sharding across multiple memcached instances"
+      ]
+    },
+    {
+      "error": "ITEM_TOO_LARGE",
+      "pattern": "SERVER_ERROR object too large|Item size exceeds slab",
+      "severity": "medium",
+      "causes": [
+        "Default max item size is 1MB",
+        "Slab size configuration mismatch",
+        "Attempting to store oversized objects"
+      ],
+      "solutions": [
+        "Increase max item size: memcached -I 5m (5MB max)",
+        "Compress data before storing",
+        "Split large objects into chunks",
+        "Use slab_reassign and slab_automove for dynamic allocation"
+      ]
+    },
+    {
+      "error": "CLIENT_ERROR_BAD_COMMAND",
+      "pattern": "CLIENT_ERROR bad command|ERROR\\s*$",
+      "severity": "medium",
+      "causes": [
+        "Malformed command syntax",
+        "Using binary protocol commands with ASCII protocol",
+        "Unsupported command for memcached version"
+      ],
+      "solutions": [
+        "Verify command syntax: get key, set key flags exptime bytes",
+        "Check protocol mode (ASCII vs binary)",
+        "Use client library instead of raw commands",
+        "Upgrade memcached if using newer features"
+      ]
+    },
+    {
+      "error": "NOT_STORED",
+      "pattern": "NOT_STORED",
+      "severity": "low",
+      "causes": [
+        "add command for existing key",
+        "replace command for non-existent key",
+        "cas command with wrong cas token",
+        "Condition not met for conditional operations"
+      ],
+      "solutions": [
+        "Use set instead of add for overwrite behavior",
+        "Use add for 'create if not exists' semantics",
+        "Implement retry with fresh cas token for CAS operations",
+        "Check key existence before conditional operations"
+      ]
+    },
+    {
+      "error": "CONNECTION_TIMEOUT",
+      "pattern": "timed out|Operation timed out|ETIMEDOUT",
+      "severity": "high",
+      "causes": [
+        "Network latency issues",
+        "Memcached overloaded",
+        "Client timeout too short",
+        "Connection pool exhaustion"
+      ],
+      "solutions": [
+        "Increase client timeout settings",
+        "Add more memcached instances for load distribution",
+        "Use connection pooling with proper sizing",
+        "Monitor memcached with stats for bottlenecks"
+      ]
+    },
+    {
+      "error": "AUTHENTICATION_FAILED",
+      "pattern": "AUTH_FAILURE|SASL authentication failed",
+      "severity": "high",
+      "causes": [
+        "SASL authentication enabled but credentials wrong",
+        "SASL not compiled into memcached",
+        "Client not supporting SASL"
+      ],
+      "solutions": [
+        "Verify SASL credentials in client configuration",
+        "Check memcached compiled with --enable-sasl",
+        "Use memcached -S to enable SASL",
+        "Test with: memcstat --servers=localhost --username=user --password=pass"
+      ]
+    },
+    {
+      "error": "KEY_TOO_LONG",
+      "pattern": "CLIENT_ERROR bad command line|key too long",
+      "severity": "low",
+      "causes": [
+        "Key exceeds 250 bytes limit",
+        "Special characters in key",
+        "Whitespace in key"
+      ],
+      "solutions": [
+        "Hash long keys: md5(original_key) as key",
+        "Remove whitespace and control characters from keys",
+        "Use key namespacing within length limits",
+        "Implement key generation function in client code"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use consistent hashing for multi-server setups",
+    "Implement cache stampede prevention (locking or probabilistic early expiration)",
+    "Set appropriate expiration times (avoid infinite TTL)",
+    "Monitor cache hit/miss ratios",
+    "Use connection pooling in production",
+    "Consider memcached as volatile (data loss on restart is expected)"
+  ],
+  "related_tools": ["redis", "haproxy", "mcrouter"]
+}

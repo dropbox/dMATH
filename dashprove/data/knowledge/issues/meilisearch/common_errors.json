@@ -1,0 +1,191 @@
+{
+  "tool": "meilisearch",
+  "version": "1.5.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "invalid_api_key|missing_authorization_header|unauthorized|MEILI_MASTER_KEY",
+      "message": "Authentication error",
+      "cause": "Invalid or missing API key",
+      "solutions": [
+        {
+          "approach": "Set master key",
+          "code": "export MEILI_MASTER_KEY='your-master-key'\nmeilisearch --master-key='your-master-key'",
+          "when": "Start with key"
+        },
+        {
+          "approach": "Create API key",
+          "code": "curl -X POST 'http://localhost:7700/keys' \\\n  -H 'Authorization: Bearer MASTER_KEY' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"actions\": [\"*\"], \"indexes\": [\"*\"], \"expiresAt\": null}'",
+          "when": "Create key"
+        },
+        {
+          "approach": "Use key",
+          "code": "const client = new MeiliSearch({\n  host: 'http://localhost:7700',\n  apiKey: 'your-api-key'\n});",
+          "when": "Client config"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "index_not_found|index_already_exists|invalid_index_uid",
+      "message": "Index error",
+      "cause": "Index doesn't exist or naming issue",
+      "solutions": [
+        {
+          "approach": "Create index",
+          "code": "curl -X POST 'http://localhost:7700/indexes' \\\n  -H 'Authorization: Bearer MASTER_KEY' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"uid\": \"movies\", \"primaryKey\": \"id\"}'",
+          "when": "Create index"
+        },
+        {
+          "approach": "List indexes",
+          "code": "curl 'http://localhost:7700/indexes' \\\n  -H 'Authorization: Bearer MASTER_KEY'",
+          "when": "View indexes"
+        },
+        {
+          "approach": "Valid uid",
+          "code": "# Index uid rules:\n# - Only alphanumeric, hyphen, underscore\n# - Must start with letter\n# - Max 512 characters",
+          "when": "Naming rules"
+        }
+      ]
+    },
+    {
+      "id": "document_error",
+      "pattern": "missing_document_id|primary_key_inference_failed|invalid_document_fields",
+      "message": "Document error",
+      "cause": "Document format or primary key issue",
+      "solutions": [
+        {
+          "approach": "Set primary key",
+          "code": "// When adding documents:\nawait index.addDocuments(documents, { primaryKey: 'id' });",
+          "when": "Specify primary key"
+        },
+        {
+          "approach": "Check format",
+          "code": "// Documents must have unique id:\nconst documents = [\n  { id: 1, title: 'Movie 1' },\n  { id: 2, title: 'Movie 2' }\n];",
+          "when": "Document format"
+        },
+        {
+          "approach": "Update settings",
+          "code": "curl -X PATCH 'http://localhost:7700/indexes/movies/settings' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"displayedAttributes\": [\"*\"], \"searchableAttributes\": [\"title\", \"description\"]}'",
+          "when": "Configure attributes"
+        }
+      ]
+    },
+    {
+      "id": "task_error",
+      "pattern": "task_not_found|task_failed|enqueued|processing",
+      "message": "Task error",
+      "cause": "Async task failed or still processing",
+      "solutions": [
+        {
+          "approach": "Check task",
+          "code": "curl 'http://localhost:7700/tasks/123' \\\n  -H 'Authorization: Bearer MASTER_KEY'",
+          "when": "Get task status"
+        },
+        {
+          "approach": "Wait for task",
+          "code": "const task = await index.addDocuments(documents);\nawait client.waitForTask(task.taskUid);",
+          "when": "Await completion"
+        },
+        {
+          "approach": "List tasks",
+          "code": "curl 'http://localhost:7700/tasks?status=failed' \\\n  -H 'Authorization: Bearer MASTER_KEY'",
+          "when": "View failed tasks"
+        }
+      ]
+    },
+    {
+      "id": "search_error",
+      "pattern": "invalid_search_filter|invalid_search_sort|attribute.*not filterable",
+      "message": "Search configuration error",
+      "cause": "Attribute not configured for filtering/sorting",
+      "solutions": [
+        {
+          "approach": "Add filterable",
+          "code": "await index.updateSettings({\n  filterableAttributes: ['genre', 'year']\n});",
+          "when": "Enable filtering"
+        },
+        {
+          "approach": "Add sortable",
+          "code": "await index.updateSettings({\n  sortableAttributes: ['year', 'rating']\n});",
+          "when": "Enable sorting"
+        },
+        {
+          "approach": "Search with filter",
+          "code": "const results = await index.search('query', {\n  filter: ['genre = \"action\"', 'year > 2020'],\n  sort: ['rating:desc']\n});",
+          "when": "Use filters"
+        }
+      ]
+    },
+    {
+      "id": "payload_error",
+      "pattern": "payload_too_large|document_limit|max_documents|memory",
+      "message": "Payload/memory error",
+      "cause": "Request too large or memory limit",
+      "solutions": [
+        {
+          "approach": "Batch documents",
+          "code": "// Add documents in batches:\nfor (let i = 0; i < documents.length; i += 10000) {\n  const batch = documents.slice(i, i + 10000);\n  await index.addDocuments(batch);\n}",
+          "when": "Large dataset"
+        },
+        {
+          "approach": "Increase limit",
+          "code": "meilisearch --http-payload-size-limit 1073741824  # 1GB",
+          "when": "Increase payload"
+        },
+        {
+          "approach": "Check size",
+          "code": "curl 'http://localhost:7700/stats' \\\n  -H 'Authorization: Bearer MASTER_KEY'",
+          "when": "View stats"
+        }
+      ]
+    },
+    {
+      "id": "dump_error",
+      "pattern": "dump.*failed|import_dump.*error|invalid_dump",
+      "message": "Dump/backup error",
+      "cause": "Dump creation or import failed",
+      "solutions": [
+        {
+          "approach": "Create dump",
+          "code": "curl -X POST 'http://localhost:7700/dumps' \\\n  -H 'Authorization: Bearer MASTER_KEY'",
+          "when": "Create backup"
+        },
+        {
+          "approach": "Import dump",
+          "code": "meilisearch --import-dump /path/to/dump.dump",
+          "when": "Restore backup"
+        },
+        {
+          "approach": "Dump location",
+          "code": "meilisearch --dump-dir /path/to/dumps",
+          "when": "Custom dump path"
+        }
+      ]
+    },
+    {
+      "id": "typo_tolerance_error",
+      "pattern": "typo_tolerance|min_word_size|ranking_rules",
+      "message": "Typo tolerance/ranking error",
+      "cause": "Search relevance configuration issue",
+      "solutions": [
+        {
+          "approach": "Configure typo",
+          "code": "await index.updateSettings({\n  typoTolerance: {\n    enabled: true,\n    minWordSizeForTypos: {\n      oneTypo: 5,\n      twoTypos: 9\n    }\n  }\n});",
+          "when": "Adjust typo tolerance"
+        },
+        {
+          "approach": "Ranking rules",
+          "code": "await index.updateSettings({\n  rankingRules: [\n    'words',\n    'typo',\n    'proximity',\n    'attribute',\n    'sort',\n    'exactness'\n  ]\n});",
+          "when": "Custom ranking"
+        },
+        {
+          "approach": "Disable typos",
+          "code": "await index.updateSettings({\n  typoTolerance: {\n    disableOnAttributes: ['sku', 'product_code']\n  }\n});",
+          "when": "Exact match fields"
+        }
+      ]
+    }
+  ]
+}

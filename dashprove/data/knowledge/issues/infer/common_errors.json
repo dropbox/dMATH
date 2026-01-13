@@ -1,0 +1,242 @@
+{
+  "tool": "infer",
+  "version": "1.2.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "null_dereference",
+      "pattern": "NULL_DEREFERENCE|null pointer|nullptr",
+      "message": "Potential null pointer dereference",
+      "cause": "Pointer may be null when dereferenced",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (ptr != nullptr) {\n    ptr->method();\n}",
+          "when": "Pointer can legitimately be null"
+        },
+        {
+          "approach": "Use assert for precondition",
+          "code": "assert(ptr != nullptr);\nptr->method();",
+          "when": "Null is programming error"
+        },
+        {
+          "approach": "Use optional/expected",
+          "code": "std::optional<T> opt = getOptional();\nif (opt) { opt->method(); }",
+          "when": "Modern C++"
+        },
+        {
+          "approach": "Add nullability annotation",
+          "code": "void func(T* _Nonnull ptr);  // Objective-C/Swift",
+          "when": "Document API contract"
+        }
+      ]
+    },
+    {
+      "id": "resource_leak",
+      "pattern": "RESOURCE_LEAK|memory leak|FILE.*not closed",
+      "message": "Resource not freed on all paths",
+      "cause": "Memory, file, or other resource not released",
+      "solutions": [
+        {
+          "approach": "Use RAII",
+          "code": "std::unique_ptr<T> ptr = std::make_unique<T>();\n// Automatically freed",
+          "when": "C++ memory"
+        },
+        {
+          "approach": "Use smart file handle",
+          "code": "std::ifstream file(path);  // Closes automatically",
+          "when": "File handling"
+        },
+        {
+          "approach": "Add cleanup on all paths",
+          "code": "T* ptr = new T();\nif (error) {\n    delete ptr;\n    return;\n}\ndelete ptr;",
+          "when": "Cannot use RAII"
+        },
+        {
+          "approach": "Annotate ownership transfer",
+          "code": "// Infer: ptr ownership transferred to callee",
+          "when": "Ownership semantics"
+        }
+      ]
+    },
+    {
+      "id": "use_after_free",
+      "pattern": "USE_AFTER_FREE|dangling pointer|freed memory",
+      "message": "Using memory after it was freed",
+      "cause": "Accessing pointer after delete/free",
+      "solutions": [
+        {
+          "approach": "Use smart pointers",
+          "code": "std::shared_ptr<T> ptr = std::make_shared<T>();\n// Cannot use after reset",
+          "when": "Shared ownership"
+        },
+        {
+          "approach": "Set to null after free",
+          "code": "delete ptr;\nptr = nullptr;",
+          "when": "Manual memory management"
+        },
+        {
+          "approach": "Review object lifetime",
+          "code": "// Ensure object outlives all references",
+          "when": "Lifetime issue"
+        }
+      ]
+    },
+    {
+      "id": "thread_safety_violation",
+      "pattern": "THREAD_SAFETY|race condition|data race|lock.*not held",
+      "message": "Potential data race detected",
+      "cause": "Shared data accessed without synchronization",
+      "solutions": [
+        {
+          "approach": "Add mutex protection",
+          "code": "std::mutex m;\nstd::lock_guard<std::mutex> lock(m);\n// Access shared data",
+          "when": "Need synchronization"
+        },
+        {
+          "approach": "Use atomic types",
+          "code": "std::atomic<int> counter;",
+          "when": "Simple shared variable"
+        },
+        {
+          "approach": "Add thread safety annotation",
+          "code": "int value GUARDED_BY(mutex);",
+          "when": "Document with Clang annotations"
+        }
+      ]
+    },
+    {
+      "id": "dead_store",
+      "pattern": "DEAD_STORE|unused value|value never read",
+      "message": "Value assigned but never used",
+      "cause": "Variable assigned then overwritten without use",
+      "solutions": [
+        {
+          "approach": "Remove dead assignment",
+          "code": "// Remove: int x = 0;\nint x = computeValue();",
+          "when": "Assignment is redundant"
+        },
+        {
+          "approach": "Use the value",
+          "code": "int x = compute();\nlog(x);  // Use before reassign",
+          "when": "Missing use"
+        },
+        {
+          "approach": "Mark intentionally unused",
+          "code": "(void)result;  // Intentionally unused",
+          "when": "Required by API"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_value",
+      "pattern": "UNINITIALIZED_VALUE|uninitialized|not initialized",
+      "message": "Using variable before initialization",
+      "cause": "Variable read before being assigned",
+      "solutions": [
+        {
+          "approach": "Initialize at declaration",
+          "code": "int x = 0;  // Not: int x;",
+          "when": "Default value known"
+        },
+        {
+          "approach": "Initialize in all branches",
+          "code": "int x;\nif (cond) { x = 1; } else { x = 2; }\nuse(x);",
+          "when": "Conditional initialization"
+        },
+        {
+          "approach": "Use constructor initialization",
+          "code": "class C {\n    int x = 0;  // In-class initializer\n};",
+          "when": "Class member"
+        }
+      ]
+    },
+    {
+      "id": "buffer_overrun",
+      "pattern": "BUFFER_OVERRUN|array.*bounds|out of bounds",
+      "message": "Potential buffer overrun",
+      "cause": "Array access may exceed bounds",
+      "solutions": [
+        {
+          "approach": "Add bounds check",
+          "code": "if (index < array_size) {\n    array[index] = value;\n}",
+          "when": "Index may be invalid"
+        },
+        {
+          "approach": "Use safe containers",
+          "code": "std::vector<T> v;\nv.at(index);  // Throws on out-of-bounds",
+          "when": "C++ containers"
+        },
+        {
+          "approach": "Use span for arrays",
+          "code": "void func(std::span<int> arr) {\n    // Size is known\n}",
+          "when": "C++20 available"
+        }
+      ]
+    },
+    {
+      "id": "integer_overflow",
+      "pattern": "INTEGER_OVERFLOW|overflow|wraparound",
+      "message": "Potential integer overflow",
+      "cause": "Arithmetic may overflow type bounds",
+      "solutions": [
+        {
+          "approach": "Check before operation",
+          "code": "if (a <= INT_MAX - b) {\n    result = a + b;\n}",
+          "when": "Need overflow protection"
+        },
+        {
+          "approach": "Use larger type",
+          "code": "int64_t result = static_cast<int64_t>(a) + b;",
+          "when": "Can use larger type"
+        },
+        {
+          "approach": "Use safe math library",
+          "code": "#include <safe_math.h>\nsafe_add(a, b, &result);",
+          "when": "Critical code"
+        }
+      ]
+    },
+    {
+      "id": "capture_analysis",
+      "pattern": "CAPTURED_STRONG_SELF|retain cycle|strong reference cycle",
+      "message": "Potential retain cycle in block/closure (Obj-C)",
+      "cause": "Strong reference to self in block",
+      "solutions": [
+        {
+          "approach": "Use weak reference",
+          "code": "__weak typeof(self) weakSelf = self;\n[block ^{\n    [weakSelf method];\n}];",
+          "when": "Obj-C block"
+        },
+        {
+          "approach": "Use weak-strong dance",
+          "code": "__weak typeof(self) weakSelf = self;\n[block ^{\n    __strong typeof(self) strongSelf = weakSelf;\n    if (strongSelf) { ... }\n}];",
+          "when": "Need strong reference in block"
+        }
+      ]
+    },
+    {
+      "id": "biabduction_error",
+      "pattern": "BIABDUCTION|shape analysis|heap analysis",
+      "message": "Heap shape analysis found issue",
+      "cause": "Complex heap manipulation may be incorrect",
+      "solutions": [
+        {
+          "approach": "Simplify heap operations",
+          "code": "// Use standard containers instead of manual lists",
+          "when": "Complex data structures"
+        },
+        {
+          "approach": "Add assertions",
+          "code": "assert(list->next != nullptr);",
+          "when": "Document invariants"
+        },
+        {
+          "approach": "Review linked structure ops",
+          "code": "// Check insert/delete/traversal logic",
+          "when": "Manual linked structures"
+        }
+      ]
+    }
+  ]
+}

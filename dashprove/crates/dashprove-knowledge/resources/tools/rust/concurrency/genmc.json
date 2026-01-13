@@ -1,0 +1,102 @@
+{
+  "id": "genmc",
+  "name": "GenMC",
+  "category": "rust_concurrency",
+  "subcategory": "model_checking",
+
+  "description": "Stateless model checker for C11/C++11 concurrency",
+  "long_description": "GenMC is a stateless model checker that verifies concurrent programs against memory models like RC11, IMM, and LKMM. While designed for C/C++, its techniques apply to Rust's atomic operations. It explores all possible interleavings to find data races and other concurrency bugs.",
+
+  "capabilities": [
+    "stateless_model_checking",
+    "c11_memory_model",
+    "rc11_memory_model",
+    "imm_memory_model",
+    "data_race_detection",
+    "assertion_checking",
+    "dpor_optimization",
+    "symmetry_reduction"
+  ],
+  "property_types": ["concurrency", "memory_model"],
+  "input_languages": ["c", "cpp", "llvm_ir"],
+  "output_formats": ["verification_result", "counterexample", "execution_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/MPI-SWS/genmc"}
+    ],
+    "dependencies": ["llvm", "clang", "cmake"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/MPI-SWS/genmc",
+    "tutorial": "https://github.com/MPI-SWS/genmc/blob/master/README.md",
+    "api_reference": "https://github.com/MPI-SWS/genmc/wiki",
+    "examples": "https://github.com/MPI-SWS/genmc/tree/master/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "verify",
+      "description": "Run model checking",
+      "syntax": "genmc -- program.ll",
+      "when_to_use": "Verifying concurrent algorithm",
+      "examples": ["genmc -- test.ll"]
+    },
+    {
+      "name": "memory_model",
+      "description": "Select memory model",
+      "syntax": "--mm=MODEL",
+      "when_to_use": "Specifying target memory model",
+      "examples": ["genmc --mm=rc11 test.ll", "genmc --mm=imm test.ll"]
+    },
+    {
+      "name": "unroll",
+      "description": "Set loop bound",
+      "syntax": "-unroll=N",
+      "when_to_use": "Bounded verification of loops",
+      "examples": ["genmc -unroll=10 test.ll"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Data race detected",
+      "meaning": "Unsynchronized concurrent access",
+      "common_causes": ["Missing synchronization"],
+      "fixes": ["Add proper atomic operations or locks"]
+    },
+    {
+      "pattern": "Assertion violation",
+      "meaning": "Property doesn't hold under some interleaving",
+      "common_causes": ["Concurrency bug"],
+      "fixes": ["Fix synchronization logic"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["concurrency"],
+    "cli_command": "dashprove verify --backend genmc"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "State space dependent",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["loom", "cdschecker", "tsan"],
+    "advantages": ["Formal memory model", "DPOR optimization", "Complete for bounded programs"],
+    "disadvantages": ["C/C++ focused", "Requires LLVM IR", "Linux only"]
+  },
+
+  "metadata": {
+    "version": "0.8",
+    "last_updated": "2025-12-20",
+    "maintainer": "MPI-SWS",
+    "license": "GPL-3.0"
+  }
+}

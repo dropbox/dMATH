@@ -1,0 +1,140 @@
+{
+  "tool": "lsof",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "lsof:.*Permission denied|can't stat|no permission",
+      "message": "Cannot access process information",
+      "cause": "Requires root privileges to see all processes",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo lsof -i :80",
+          "when": "Need all process info"
+        },
+        {
+          "approach": "Current user only",
+          "code": "lsof -u $USER",
+          "when": "Just own processes"
+        }
+      ]
+    },
+    {
+      "id": "no_output",
+      "pattern": "^$|no matching",
+      "message": "No matching files/processes found",
+      "cause": "Nothing matches the criteria",
+      "solutions": [
+        {
+          "approach": "Check port format",
+          "code": "lsof -i :8080    # With colon\nlsof -i TCP:8080 # Protocol specific",
+          "when": "Finding port listeners"
+        },
+        {
+          "approach": "Broaden search",
+          "code": "lsof -i  # All network connections",
+          "when": "See all network"
+        },
+        {
+          "approach": "Check if process exists",
+          "code": "ps aux | grep nginx  # Verify process runs",
+          "when": "Process not running"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "lsof:.*command not found|lsof:.*not found",
+      "message": "lsof not installed",
+      "cause": "lsof not available on minimal systems",
+      "solutions": [
+        {
+          "approach": "Install on Debian/Ubuntu",
+          "code": "sudo apt install lsof",
+          "when": "Debian-based"
+        },
+        {
+          "approach": "Install on RHEL/CentOS",
+          "code": "sudo yum install lsof",
+          "when": "RHEL-based"
+        },
+        {
+          "approach": "Alternative: /proc",
+          "code": "# Linux: Find process using port\ncat /proc/net/tcp  # See connections",
+          "when": "Cannot install lsof"
+        },
+        {
+          "approach": "Alternative: ss",
+          "code": "ss -tlnp  # Modern alternative to lsof -i",
+          "when": "ss available"
+        }
+      ]
+    },
+    {
+      "id": "invalid_option",
+      "pattern": "lsof:.*illegal|lsof:.*unrecognized|usage:",
+      "message": "Invalid command line option",
+      "cause": "Option syntax error or unsupported flag",
+      "solutions": [
+        {
+          "approach": "Check usage",
+          "code": "lsof -h 2>&1 | head -50",
+          "when": "See available options"
+        },
+        {
+          "approach": "Common patterns",
+          "code": "lsof -i :PORT   # Network port\nlsof +D /dir   # Files in directory\nlsof -c name   # By command name\nlsof -p PID    # By process ID",
+          "when": "Correct syntax"
+        }
+      ]
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "address already in use|LISTEN|ESTABLISHED",
+      "message": "Port already bound",
+      "cause": "Another process using the port",
+      "solutions": [
+        {
+          "approach": "Find process",
+          "code": "sudo lsof -i :8080 | grep LISTEN",
+          "when": "Identify occupant"
+        },
+        {
+          "approach": "Kill process",
+          "code": "sudo lsof -t -i :8080 | xargs kill -9",
+          "when": "Free the port"
+        },
+        {
+          "approach": "Use different port",
+          "code": "# Configure app to use 8081 instead",
+          "when": "Cannot kill process"
+        }
+      ]
+    },
+    {
+      "id": "slow_output",
+      "pattern": "taking too long|timeout|hanging",
+      "message": "lsof running slowly",
+      "cause": "Resolving hostnames or many files open",
+      "solutions": [
+        {
+          "approach": "Disable DNS lookup",
+          "code": "lsof -n -i  # -n skips hostname resolution",
+          "when": "Faster output"
+        },
+        {
+          "approach": "Disable port names",
+          "code": "lsof -n -P -i  # -P shows port numbers not names",
+          "when": "Avoid service lookups"
+        },
+        {
+          "approach": "Limit scope",
+          "code": "lsof -p $(pgrep nginx)  # Specific process only",
+          "when": "Target specific PID"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "clickhouse",
+  "version": "24.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "memory_limit",
+      "pattern": "MEMORY_LIMIT_EXCEEDED|Memory limit|exceeded memory",
+      "message": "Query exceeded memory limit",
+      "cause": "Query requires more memory than allowed",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "SET max_memory_usage = 20000000000;  -- 20GB\nSELECT * FROM large_table;",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Use aggregation",
+          "code": "SELECT date, sum(value)\nFROM events\nGROUP BY date;",
+          "when": "Reduce result size"
+        },
+        {
+          "approach": "External aggregation",
+          "code": "SET max_bytes_before_external_group_by = 10000000000;\nSET max_bytes_before_external_sort = 10000000000;",
+          "when": "Use disk for sorting"
+        }
+      ]
+    },
+    {
+      "id": "type_mismatch",
+      "pattern": "Type mismatch|Cannot convert|Illegal type",
+      "message": "Data type mismatch",
+      "cause": "Column or value type doesn't match expected",
+      "solutions": [
+        {
+          "approach": "Cast explicitly",
+          "code": "SELECT toUInt64(string_column)\nFROM table;",
+          "when": "Type conversion"
+        },
+        {
+          "approach": "Use correct type",
+          "code": "INSERT INTO table (date_col)\nVALUES (toDate('2024-01-15'));",
+          "when": "Insert with type"
+        },
+        {
+          "approach": "Check nullable",
+          "code": "SELECT toUInt64OrNull(maybe_number)\nFROM table;",
+          "when": "Handle nulls"
+        }
+      ]
+    },
+    {
+      "id": "distributed_error",
+      "pattern": "DISTRIBUTED|replica|shard|Distributed table",
+      "message": "Distributed query error",
+      "cause": "Issue with distributed query execution",
+      "solutions": [
+        {
+          "approach": "Check replicas",
+          "code": "SELECT * FROM system.replicas\nWHERE is_readonly = 1;",
+          "when": "Replica issues"
+        },
+        {
+          "approach": "Check cluster",
+          "code": "SELECT * FROM system.clusters;",
+          "when": "Cluster config"
+        },
+        {
+          "approach": "Local execution",
+          "code": "SELECT * FROM table_local\n-- Instead of distributed table",
+          "when": "Debug locally"
+        }
+      ]
+    },
+    {
+      "id": "merge_error",
+      "pattern": "Too many parts|MERGE|merging",
+      "message": "Too many parts error",
+      "cause": "Too many parts pending merge",
+      "solutions": [
+        {
+          "approach": "Force merge",
+          "code": "OPTIMIZE TABLE table_name FINAL;",
+          "when": "Immediate merge"
+        },
+        {
+          "approach": "Batch inserts",
+          "code": "-- Insert in batches of 10k+ rows\n-- Don't insert row by row",
+          "when": "Too frequent inserts"
+        },
+        {
+          "approach": "Check merges",
+          "code": "SELECT * FROM system.merges;",
+          "when": "Monitor merges"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "Connection refused|Cannot connect|NETWORK_ERROR",
+      "message": "Connection failed",
+      "cause": "Cannot connect to ClickHouse server",
+      "solutions": [
+        {
+          "approach": "Check service",
+          "code": "sudo systemctl status clickhouse-server\nsudo systemctl start clickhouse-server",
+          "when": "Server not running"
+        },
+        {
+          "approach": "Check ports",
+          "code": "# Native: 9000, HTTP: 8123\nnetstat -tlnp | grep -E '9000|8123'",
+          "when": "Port not listening"
+        },
+        {
+          "approach": "Check config",
+          "code": "# /etc/clickhouse-server/config.xml\n<listen_host>0.0.0.0</listen_host>",
+          "when": "Remote connection"
+        }
+      ]
+    },
+    {
+      "id": "mutation_error",
+      "pattern": "MUTATION|ALTER|mutation is killed|stuck mutation",
+      "message": "Mutation operation error",
+      "cause": "ALTER/mutation operation failed or stuck",
+      "solutions": [
+        {
+          "approach": "Check mutations",
+          "code": "SELECT * FROM system.mutations\nWHERE is_done = 0;",
+          "when": "View pending"
+        },
+        {
+          "approach": "Kill mutation",
+          "code": "KILL MUTATION\nWHERE database = 'db' AND table = 'table';",
+          "when": "Stuck mutation"
+        },
+        {
+          "approach": "Wait setting",
+          "code": "SET mutations_sync = 2;  -- Wait for completion\nALTER TABLE t UPDATE col = value WHERE ...;",
+          "when": "Sync mutation"
+        }
+      ]
+    },
+    {
+      "id": "primary_key_error",
+      "pattern": "ORDER BY|PRIMARY KEY|sorting key",
+      "message": "Primary/sorting key error",
+      "cause": "Issue with ORDER BY or PRIMARY KEY definition",
+      "solutions": [
+        {
+          "approach": "Define correctly",
+          "code": "CREATE TABLE events (\n    date Date,\n    event_type String,\n    user_id UInt64\n)\nENGINE = MergeTree()\nORDER BY (date, event_type, user_id);",
+          "when": "Table creation"
+        },
+        {
+          "approach": "Use partial key",
+          "code": "-- Query should filter by prefix of ORDER BY\nSELECT * FROM events\nWHERE date = '2024-01-15' AND event_type = 'click';",
+          "when": "Optimize queries"
+        },
+        {
+          "approach": "Add projection",
+          "code": "ALTER TABLE events\nADD PROJECTION user_proj (\n    SELECT * ORDER BY user_id\n);",
+          "when": "Alternative sort order"
+        }
+      ]
+    },
+    {
+      "id": "materialized_view_error",
+      "pattern": "MATERIALIZED VIEW|MV|TO table",
+      "message": "Materialized view error",
+      "cause": "Issue creating or using materialized view",
+      "solutions": [
+        {
+          "approach": "Create MV",
+          "code": "CREATE MATERIALIZED VIEW events_daily\nENGINE = SummingMergeTree()\nORDER BY (date)\nAS SELECT\n    toDate(timestamp) AS date,\n    sum(value) AS total\nFROM events\nGROUP BY date;",
+          "when": "Create aggregating MV"
+        },
+        {
+          "approach": "Populate existing",
+          "code": "CREATE MATERIALIZED VIEW mv TO target_table\nAS SELECT ... FROM source_table;\n\nINSERT INTO target_table\nSELECT ... FROM source_table;  -- backfill",
+          "when": "Backfill data"
+        },
+        {
+          "approach": "Debug MV",
+          "code": "SYSTEM STOP MERGES mv;\nSELECT * FROM mv FINAL;",
+          "when": "Check MV state"
+        }
+      ]
+    }
+  ]
+}

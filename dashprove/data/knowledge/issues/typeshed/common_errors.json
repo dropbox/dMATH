@@ -1,0 +1,247 @@
+{
+  "tool": "typeshed",
+  "version": "2024.1.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "missing_stub",
+      "pattern": "Cannot find.*stub|missing.*pyi|no stub",
+      "message": "Type stub not found for package",
+      "cause": "Third-party package lacks type stubs",
+      "solutions": [
+        {
+          "approach": "Install types package",
+          "code": "pip install types-requests  # For requests\npip install types-PyYAML  # For PyYAML",
+          "when": "Stub package exists"
+        },
+        {
+          "approach": "Search typeshed",
+          "code": "# Check https://github.com/python/typeshed/tree/main/stubs",
+          "when": "Finding available stubs"
+        },
+        {
+          "approach": "Create local stub",
+          "code": "# Create package_name.pyi file\n# Or add to stubs/ directory",
+          "when": "No public stubs"
+        },
+        {
+          "approach": "Ignore missing imports",
+          "code": "# pyproject.toml\n[tool.mypy]\nignore_missing_imports = true",
+          "when": "Accept missing stubs"
+        }
+      ]
+    },
+    {
+      "id": "stub_outdated",
+      "pattern": "stub.*outdated|version mismatch|incompatible stub",
+      "message": "Stub version doesn't match package",
+      "cause": "Type stubs lag behind package updates",
+      "solutions": [
+        {
+          "approach": "Update stub package",
+          "code": "pip install --upgrade types-requests",
+          "when": "Newer stub available"
+        },
+        {
+          "approach": "Pin compatible versions",
+          "code": "# requirements.txt\nrequests==2.31.0\ntypes-requests==2.31.0.1",
+          "when": "Need version match"
+        },
+        {
+          "approach": "Contribute stub update",
+          "code": "# PR to typeshed with updated stubs",
+          "when": "Stubs need updating"
+        }
+      ]
+    },
+    {
+      "id": "stub_incomplete",
+      "pattern": "has no attribute|incomplete.*stub|missing.*method",
+      "message": "Stub missing method or attribute",
+      "cause": "Stub doesn't cover all public API",
+      "solutions": [
+        {
+          "approach": "Use type ignore",
+          "code": "obj.undocumented_method()  # type: ignore[attr-defined]",
+          "when": "One-off usage"
+        },
+        {
+          "approach": "Add to local stub",
+          "code": "# package.pyi\nclass MyClass:\n    def missing_method(self) -> str: ...",
+          "when": "Need local extension"
+        },
+        {
+          "approach": "Contribute to typeshed",
+          "code": "# Submit PR adding missing signatures",
+          "when": "Benefit community"
+        },
+        {
+          "approach": "Cast to Any",
+          "code": "from typing import cast, Any\nresult = cast(Any, obj).undocumented_method()",
+          "when": "Need type-safe workaround"
+        }
+      ]
+    },
+    {
+      "id": "stub_wrong_signature",
+      "pattern": "incompatible.*signature|argument.*type|return.*type",
+      "message": "Stub signature doesn't match runtime",
+      "cause": "Stub has incorrect type signature",
+      "solutions": [
+        {
+          "approach": "Verify actual signature",
+          "code": "import inspect\nprint(inspect.signature(func))",
+          "when": "Check runtime signature"
+        },
+        {
+          "approach": "Report/fix stub bug",
+          "code": "# File issue at github.com/python/typeshed",
+          "when": "Stub is wrong"
+        },
+        {
+          "approach": "Override locally",
+          "code": "# local_stubs/package.pyi\n# Correct signature here",
+          "when": "Need immediate fix"
+        }
+      ]
+    },
+    {
+      "id": "overload_resolution",
+      "pattern": "No overload.*matches|overload.*ambiguous",
+      "message": "Overload resolution failed",
+      "cause": "Arguments don't match any overload signature",
+      "solutions": [
+        {
+          "approach": "Check available overloads",
+          "code": "# Review .pyi file for valid signatures",
+          "when": "Understanding options"
+        },
+        {
+          "approach": "Match an overload exactly",
+          "code": "# Ensure types match one @overload signature",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Add type annotation",
+          "code": "x: int = value  # Help type narrowing\nfunc(x)  # Now matches overload",
+          "when": "Help inference"
+        }
+      ]
+    },
+    {
+      "id": "stdlib_stub_issue",
+      "pattern": "builtins|typing|stdlib",
+      "message": "Standard library stub issue",
+      "cause": "Problem with bundled stdlib stubs",
+      "solutions": [
+        {
+          "approach": "Check Python version",
+          "code": "# Ensure stub supports your Python version\n# Some features 3.10+ only",
+          "when": "Version-specific features"
+        },
+        {
+          "approach": "Update type checker",
+          "code": "pip install --upgrade mypy",
+          "when": "Old bundled stubs"
+        },
+        {
+          "approach": "Check feature availability",
+          "code": "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    from typing import ParamSpec  # 3.10+",
+          "when": "Conditional imports"
+        }
+      ]
+    },
+    {
+      "id": "inline_vs_stub",
+      "pattern": "duplicate|both inline.*stub|conflicting types",
+      "message": "Conflict between inline types and stub",
+      "cause": "Package has both py.typed and typeshed stubs",
+      "solutions": [
+        {
+          "approach": "Prefer inline types",
+          "code": "# Modern packages include inline types\n# Remove types- package if redundant",
+          "when": "Package is py.typed"
+        },
+        {
+          "approach": "Remove stub package",
+          "code": "pip uninstall types-package",
+          "when": "Package has inline types"
+        },
+        {
+          "approach": "Check mypy settings",
+          "code": "# pyproject.toml\n[tool.mypy]\nfollow_imports = \"normal\"",
+          "when": "Import behavior issue"
+        }
+      ]
+    },
+    {
+      "id": "partial_stub",
+      "pattern": "partial stub|Partially typed|incomplete",
+      "message": "Package has partial type coverage",
+      "cause": "Not all modules have type information",
+      "solutions": [
+        {
+          "approach": "Enable partial stubs",
+          "code": "# pyproject.toml\n[tool.mypy]\n[[tool.mypy.overrides]]\nmodule = \"package.*\"\nfollow_imports = \"skip\"",
+          "when": "Use available stubs"
+        },
+        {
+          "approach": "Contribute missing stubs",
+          "code": "# Add stubs for uncovered modules",
+          "when": "Expanding coverage"
+        },
+        {
+          "approach": "Type ignore specific imports",
+          "code": "from package import untyped_module  # type: ignore",
+          "when": "Selective ignore"
+        }
+      ]
+    },
+    {
+      "id": "stub_syntax_error",
+      "pattern": "syntax error.*pyi|parse error.*stub",
+      "message": "Stub file has syntax error",
+      "cause": "Invalid Python or stub-specific syntax",
+      "solutions": [
+        {
+          "approach": "Check stub syntax",
+          "code": "# .pyi files use ... for body\ndef func(x: int) -> str: ...",
+          "when": "Stub syntax rules"
+        },
+        {
+          "approach": "Validate with stubtest",
+          "code": "python -m mypy.stubtest package",
+          "when": "Test stub validity"
+        },
+        {
+          "approach": "Check Python version compatibility",
+          "code": "# Some syntax requires newer Python",
+          "when": "Syntax version issue"
+        }
+      ]
+    },
+    {
+      "id": "namespace_package",
+      "pattern": "namespace package|__init__\\.pyi|package structure",
+      "message": "Namespace package stub configuration",
+      "cause": "Namespace packages need special stub handling",
+      "solutions": [
+        {
+          "approach": "Add __init__.pyi",
+          "code": "# stubs/namespace/subpackage/__init__.pyi\n# Empty file or with exports",
+          "when": "Missing init stub"
+        },
+        {
+          "approach": "Use VERSIONS file",
+          "code": "# typeshed stubs need VERSIONS file",
+          "when": "Typeshed contribution"
+        },
+        {
+          "approach": "Configure stub path",
+          "code": "[tool.mypy]\nmypy_path = \"stubs\"",
+          "when": "Custom stub location"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,329 @@
+{
+  "tool_id": "spark_contracts",
+  "tool_name": "SPARK Ada Contracts",
+  "tool_version": "24.0",
+  "category": "contract_based_verification",
+  "error_patterns": [
+    {
+      "id": "spark_precondition_failure",
+      "pattern": "precondition.*might fail|Pre aspect might fail|precondition check might fail",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "SPARK prover cannot verify that a precondition always holds at call sites",
+      "common_causes": [
+        "Caller doesn't establish precondition",
+        "Precondition depends on external state",
+        "Loop doesn't preserve required condition",
+        "Missing null/range checks before call"
+      ],
+      "solutions": [
+        "Add assertions before the call",
+        "Strengthen caller's postcondition",
+        "Add loop invariant to preserve condition",
+        "Use pragma Assert before call"
+      ],
+      "examples": [
+        {
+          "error": "medium: precondition might fail",
+          "context": "Pre => X > 0 called without ensuring X > 0",
+          "fix": "pragma Assert (X > 0); Call_Function(X);"
+        }
+      ],
+      "related_errors": ["spark_postcondition_failure"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_postcondition_failure",
+      "pattern": "postcondition.*might fail|Post aspect might fail|postcondition check might fail",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "SPARK prover cannot verify that a postcondition is established",
+      "common_causes": [
+        "Implementation doesn't satisfy specification",
+        "Missing case in conditional",
+        "Loop doesn't establish postcondition",
+        "Wrong computation in implementation"
+      ],
+      "solutions": [
+        "Fix implementation to match specification",
+        "Add loop invariant to help prover",
+        "Weaken postcondition if too strong",
+        "Add intermediate assertions"
+      ],
+      "examples": [
+        {
+          "error": "medium: postcondition might fail",
+          "context": "Post => Result >= 0 but negative possible",
+          "fix": "Ensure all paths return non-negative values"
+        }
+      ],
+      "related_errors": ["spark_precondition_failure"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_loop_invariant_failure",
+      "pattern": "loop invariant.*might fail|invariant not preserved|loop invariant might not hold",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "SPARK cannot prove the loop invariant holds after each iteration",
+      "common_causes": [
+        "Invariant too strong for loop body",
+        "Missing case in loop",
+        "Side effects break invariant",
+        "Incorrect invariant formulation"
+      ],
+      "solutions": [
+        "Weaken invariant to match actual loop behavior",
+        "Add intermediate assertions in loop",
+        "Check all loop paths maintain invariant",
+        "Use Ghost code to track loop state"
+      ],
+      "examples": [
+        {
+          "error": "medium: loop invariant might fail after first iteration",
+          "context": "pragma Loop_Invariant (Sum >= 0)",
+          "fix": "Add type constraint or strengthen initialization"
+        }
+      ],
+      "related_errors": ["spark_postcondition_failure"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_overflow_check",
+      "pattern": "overflow check.*might fail|range check might fail|overflow might occur",
+      "severity": "error",
+      "category": "runtime_check",
+      "description": "SPARK cannot prove absence of arithmetic overflow",
+      "common_causes": [
+        "Arithmetic on unbounded expressions",
+        "Type ranges not sufficient",
+        "Missing preconditions on inputs",
+        "Intermediate values exceed type range"
+      ],
+      "solutions": [
+        "Use larger integer type",
+        "Add preconditions to bound inputs",
+        "Use Saturating_Add from Ada.Numerics",
+        "Split computation to avoid overflow"
+      ],
+      "examples": [
+        {
+          "error": "medium: overflow check might fail",
+          "context": "A + B where A, B: Integer",
+          "fix": "Pre => A <= Integer'Last - B"
+        }
+      ],
+      "related_errors": ["spark_division_check"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_division_check",
+      "pattern": "division check.*might fail|divide by zero|divisor might be zero",
+      "severity": "error",
+      "category": "runtime_check",
+      "description": "SPARK cannot prove the divisor is non-zero",
+      "common_causes": [
+        "Missing precondition on divisor",
+        "Divisor computed from expression that may be zero",
+        "Conditional division without guard"
+      ],
+      "solutions": [
+        "Add precondition: Pre => Divisor /= 0",
+        "Guard division with if-check",
+        "Use subtype with non-zero constraint",
+        "Add assertion before division"
+      ],
+      "examples": [
+        {
+          "error": "high: divide by zero might occur",
+          "context": "Result := A / B",
+          "fix": "Pre => B /= 0 or subtype Positive_Int is Integer range 1 .. Integer'Last"
+        }
+      ],
+      "related_errors": ["spark_overflow_check"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_index_check",
+      "pattern": "index check.*might fail|array index out of bounds|index might be outside",
+      "severity": "error",
+      "category": "runtime_check",
+      "description": "SPARK cannot prove array index is within bounds",
+      "common_causes": [
+        "Index variable may exceed array bounds",
+        "Loop counter goes past array",
+        "Computed index without bounds check",
+        "Off-by-one error"
+      ],
+      "solutions": [
+        "Add precondition on index",
+        "Use 'Range for loop iteration",
+        "Add loop invariant for index bounds",
+        "Use Bounded_String or similar"
+      ],
+      "examples": [
+        {
+          "error": "medium: index check might fail",
+          "context": "Arr(I) where I not bounded",
+          "fix": "pragma Assert (I in Arr'Range); or for I in Arr'Range loop"
+        }
+      ],
+      "related_errors": ["spark_overflow_check"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_aliasing_error",
+      "pattern": "aliasing.*detected|might be aliased|aliasing check might fail",
+      "severity": "error",
+      "category": "flow_analysis",
+      "description": "SPARK detected potential aliasing which could cause unexpected behavior",
+      "common_causes": [
+        "Same variable passed to two in/out parameters",
+        "Global variable used while also passed",
+        "Pointer aliasing",
+        "Overlapping array slices"
+      ],
+      "solutions": [
+        "Pass distinct variables to parameters",
+        "Make copy before call",
+        "Use No_Aliasing aspect if safe",
+        "Restructure to avoid aliasing"
+      ],
+      "examples": [
+        {
+          "error": "high: formal parameters might be aliased",
+          "context": "Swap(X, X) - same variable to both params",
+          "fix": "Ensure actual parameters are distinct"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_uninitialized",
+      "pattern": "might not be initialized|uninitialized|not initialized before use",
+      "severity": "error",
+      "category": "flow_analysis",
+      "description": "SPARK flow analysis detected potentially uninitialized variable use",
+      "common_causes": [
+        "Variable used before assignment",
+        "Not all branches initialize variable",
+        "Out parameter not set on all paths",
+        "Partial initialization of record"
+      ],
+      "solutions": [
+        "Initialize variable at declaration",
+        "Ensure all branches assign value",
+        "Set out parameter in all paths",
+        "Use Default_Value aspect"
+      ],
+      "examples": [
+        {
+          "error": "high: X might not be initialized",
+          "context": "Reading X before assignment",
+          "fix": "X : Integer := 0; or ensure assignment on all paths"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_data_dependency",
+      "pattern": "Global aspect.*incorrect|missing.*from Global|data dependency error",
+      "severity": "error",
+      "category": "flow_analysis",
+      "description": "SPARK Global aspect doesn't match actual data dependencies",
+      "common_causes": [
+        "Global variable accessed but not declared",
+        "Global modified but listed as Input only",
+        "Missing Output in Global aspect",
+        "Transitive dependency not declared"
+      ],
+      "solutions": [
+        "Add missing globals to aspect",
+        "Change Input to In_Out if modified",
+        "Declare Output for written globals",
+        "Review called subprogram globals"
+      ],
+      "examples": [
+        {
+          "error": "medium: Counter missing from Global aspect",
+          "context": "Global => null but uses Counter",
+          "fix": "Global => (In_Out => Counter)"
+        }
+      ],
+      "related_errors": ["spark_depends_error"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    },
+    {
+      "id": "spark_depends_error",
+      "pattern": "Depends aspect.*incorrect|output.*does not depend on|missing dependency",
+      "severity": "error",
+      "category": "flow_analysis",
+      "description": "SPARK Depends aspect doesn't match actual information flow",
+      "common_causes": [
+        "Output doesn't depend on declared input",
+        "Hidden dependency through global",
+        "Conditional dependency not declared",
+        "Incomplete Depends specification"
+      ],
+      "solutions": [
+        "Add missing dependency to aspect",
+        "Check control flow for all influences",
+        "Include implicit dependencies",
+        "Use => null for independent outputs"
+      ],
+      "examples": [
+        {
+          "error": "medium: Result does not depend on X as stated",
+          "context": "Depends => (Result => X) but Result computed from Y",
+          "fix": "Depends => (Result => (X, Y))"
+        }
+      ],
+      "related_errors": ["spark_data_dependency"],
+      "documentation_url": "https://docs.adacore.com/spark2014-docs/html/ug/"
+    }
+  ],
+  "general_tips": [
+    "SPARK provides both flow analysis and formal proof capabilities",
+    "Start with flow analysis (--mode=flow) before attempting proof",
+    "Use gnatprove --level=1 through 4 for increasing proof effort",
+    "Ghost code (Ghost aspect) helps provers without runtime cost",
+    "Contracts are Ada 2012+ syntax: Pre, Post, Contract_Cases",
+    "Run time checks (overflow, index, etc.) are proven absent by SPARK",
+    "Global and Depends aspects enable modular verification"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic SPARK verification",
+      "steps": [
+        "Add SPARK_Mode to package",
+        "Add Pre/Post contracts to subprograms",
+        "Run: gnatprove -P project.gpr",
+        "Fix reported issues"
+      ]
+    },
+    {
+      "name": "Incremental proof",
+      "steps": [
+        "gnatprove --level=1 (fast, few provers)",
+        "gnatprove --level=2 (more effort)",
+        "gnatprove --level=4 (maximum effort)",
+        "Add manual lemmas for remaining"
+      ]
+    },
+    {
+      "name": "Adding loop invariants",
+      "steps": [
+        "Identify what the loop establishes",
+        "Add pragma Loop_Invariant",
+        "Add pragma Loop_Variant for termination",
+        "Re-run gnatprove"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "24.0": "GNAT Pro 24, improved provers, better counterexamples",
+    "22.0": "CVC5 integration, improved Alt-Ergo"
+  }
+}

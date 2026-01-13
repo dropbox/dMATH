@@ -1,0 +1,140 @@
+{
+  "tool": "alembic",
+  "version": "1.13",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "revision_not_found",
+      "pattern": "Can't locate revision identified by|No such revision|Revision error",
+      "message": "Referenced revision file missing",
+      "cause": "versions/ file deleted, branch mismatch, or wrong versions_path",
+      "solutions": [
+        {
+          "approach": "List revisions",
+          "code": "alembic history -v",
+          "when": "Check available revision ids"
+        },
+        {
+          "approach": "Stamp database",
+          "code": "alembic stamp head",
+          "when": "Align DB to latest without rerunning"
+        },
+        {
+          "approach": "Restore revision file",
+          "code": "git checkout migrations/versions/<revision>.py",
+          "when": "File removed locally"
+        }
+      ]
+    },
+    {
+      "id": "multiple_heads",
+      "pattern": "Multiple head revisions are present|branch labeling collision",
+      "message": "Multiple heads detected",
+      "cause": "Divergent branches created by concurrent revisions",
+      "solutions": [
+        {
+          "approach": "Inspect heads",
+          "code": "alembic heads",
+          "when": "Identify current heads"
+        },
+        {
+          "approach": "Merge branches",
+          "code": "alembic merge -m \"merge heads\" <head1> <head2>",
+          "when": "Need single linear history"
+        },
+        {
+          "approach": "Avoid parallel autogenerate",
+          "code": "Serialize revision creation in CI",
+          "when": "Prevent future collisions"
+        }
+      ]
+    },
+    {
+      "id": "target_not_up_to_date",
+      "pattern": "Target database is not up to date|Database .* is not up to date",
+      "message": "Database behind migration state",
+      "cause": "Pending migrations not applied before generating new revision",
+      "solutions": [
+        {
+          "approach": "Upgrade first",
+          "code": "alembic upgrade head",
+          "when": "Bring DB to latest before autogenerate"
+        },
+        {
+          "approach": "Stamp without running",
+          "code": "alembic stamp head",
+          "when": "Align metadata when schema already updated"
+        }
+      ]
+    },
+    {
+      "id": "environment_import_error",
+      "pattern": "Environment.*Error|Can't load.*env.py|ModuleNotFoundError",
+      "message": "Alembic environment could not load",
+      "cause": "PYTHONPATH not set, env.py imports fail, or alembic.ini points to wrong module",
+      "solutions": [
+        {
+          "approach": "Set module path",
+          "code": "export PYTHONPATH=$PWD",
+          "when": "Project modules not importable"
+        },
+        {
+          "approach": "Use correct config",
+          "code": "alembic -c alembic.ini upgrade head",
+          "when": "Multiple alembic.ini files"
+        },
+        {
+          "approach": "Verify env.py",
+          "code": "from myapp import models  # ensure imports succeed",
+          "when": "Import failing inside env.py"
+        }
+      ]
+    },
+    {
+      "id": "operational_error",
+      "pattern": "OperationalError|connection refused|timeout expired",
+      "message": "Database connection failed during migration",
+      "cause": "SQLAlchemy URL incorrect or DB unreachable",
+      "solutions": [
+        {
+          "approach": "Check URL",
+          "code": "sqlalchemy.url = postgresql+psycopg2://user:pass@host:5432/db",
+          "when": "DSN may be wrong"
+        },
+        {
+          "approach": "Ping database",
+          "code": "psql $SQLALCHEMY_URL || mysql ...",
+          "when": "Network/firewall suspicion"
+        },
+        {
+          "approach": "Configure pool",
+          "code": "[alembic]\npool_pre_ping = True",
+          "when": "Idle connections dropped"
+        }
+      ]
+    },
+    {
+      "id": "autogenerate_failure",
+      "pattern": "Can't compare type|Could not render element|Failed to detect changes",
+      "message": "Autogenerate failed to render migration",
+      "cause": "Custom types or operations not supported by autogenerate",
+      "solutions": [
+        {
+          "approach": "Provide compare functions",
+          "code": "def compare_type(context, inspected_column, metadata_column, inspected_type, metadata_type): ...",
+          "when": "Custom type comparisons"
+        },
+        {
+          "approach": "Implement type compilation",
+          "code": "class MyType(TypeDecorator):\n    impl = VARCHAR\n    cache_ok = True\n    def process_literal_param(...): ...",
+          "when": "Custom SQL rendering needed"
+        },
+        {
+          "approach": "Edit migration manually",
+          "code": "op.execute(\"ALTER TYPE ...\")",
+          "when": "Autogenerate cannot model change"
+        }
+      ]
+    }
+  ]
+}

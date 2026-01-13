@@ -1,0 +1,113 @@
+{
+  "id": "tlaplus_hotstuff",
+  "name": "HotStuff TLA+ Specification",
+  "category": "tlaplus_specifications",
+  "subcategory": "byzantine_consensus",
+
+  "description": "TLA+ specification of HotStuff linear BFT consensus protocol",
+  "long_description": "HotStuff is a leader-based Byzantine Fault Tolerant consensus protocol that achieves linear communication complexity. The TLA+ specification covers the three-phase chained protocol and pipelining. HotStuff was developed by VMware Research and is used in Facebook's Diem (Libra) blockchain. It simplifies PBFT while maintaining safety and liveness.",
+
+  "capabilities": [
+    "byzantine_consensus",
+    "linear_communication",
+    "chained_consensus",
+    "pipelining",
+    "view_synchronization"
+  ],
+  "property_types": ["safety", "liveness", "byzantine_tolerance"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/vmware/hotstuff",
+    "paper": "https://arxiv.org/abs/1803.05069"
+  },
+
+  "documentation": {
+    "official": "https://arxiv.org/abs/1803.05069",
+    "blog": "https://research.vmware.com/projects/hotstuff"
+  },
+
+  "protocol_phases": [
+    {
+      "name": "Prepare",
+      "description": "Leader proposes block, replicas send prepare vote",
+      "action": "Leader sends PREPARE, replicas vote"
+    },
+    {
+      "name": "Pre-commit",
+      "description": "Leader aggregates prepare votes",
+      "action": "Leader sends PRE-COMMIT with QC, replicas vote"
+    },
+    {
+      "name": "Commit",
+      "description": "Leader aggregates pre-commit votes",
+      "action": "Leader sends COMMIT with QC, replicas vote"
+    },
+    {
+      "name": "Decide",
+      "description": "Leader aggregates commit votes",
+      "action": "Leader sends DECIDE with QC, replicas commit"
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "Safety",
+      "description": "No two correct replicas commit conflicting blocks",
+      "tla_formula": "\\A r1, r2 \\in Correct : commit(r1, b1) /\\ commit(r2, b2) /\\ height(b1) = height(b2) => b1 = b2"
+    },
+    {
+      "name": "Liveness",
+      "description": "If leader is correct and network is synchronous, progress is made",
+      "tla_formula": "GST => <>(new block committed)"
+    },
+    {
+      "name": "ChainQuality",
+      "description": "Honest blocks appear in chain proportionally",
+      "tla_formula": "Fraction of honest blocks >= threshold"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "view", "type": "Nat", "description": "Current view number"},
+    {"name": "prepareQC", "type": "QC", "description": "Highest prepare QC"},
+    {"name": "lockedQC", "type": "QC", "description": "Locked QC for safety"},
+    {"name": "b_leaf", "type": "Block", "description": "Tip of preferred chain"},
+    {"name": "vHeight", "type": "Nat", "description": "Height of last vote"}
+  ],
+
+  "key_concepts": [
+    {"name": "Quorum Certificate (QC)", "description": "Aggregated signature from 2f+1 replicas"},
+    {"name": "Chaining", "description": "Each phase of one consensus is prepare of next"},
+    {"name": "Pipelining", "description": "Multiple consensus instances in flight"},
+    {"name": "ThreeChain", "description": "Block commits when it has 3 consecutive QCs"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Replica": "{r1, r2, r3, r4}",
+      "MaxView": "4",
+      "f": "1"
+    },
+    "invariants": ["TypeOK", "Safety", "OneCommitPerHeight"],
+    "expected_states": "Millions"
+  },
+
+  "related_specs": ["pbft", "tendermint", "raft"],
+
+  "implementations": [
+    "Diem (Libra)",
+    "Aptos",
+    "Flow",
+    "Cypherium"
+  ],
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "VMware Research",
+    "license": "Apache-2.0"
+  }
+}

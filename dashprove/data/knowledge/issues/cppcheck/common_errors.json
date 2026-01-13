@@ -1,0 +1,253 @@
+{
+  "tool": "cppcheck",
+  "version": "2.14",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "uninitvar",
+      "pattern": "uninitvar.*Uninitialized variable",
+      "message": "Uninitialized variable",
+      "cause": "Variable used before being initialized",
+      "solutions": [
+        {
+          "approach": "Initialize at declaration",
+          "code": "int x = 0;  // Not just int x;",
+          "when": "Variable has known initial value"
+        },
+        {
+          "approach": "Use braced initialization",
+          "code": "int x{};  // Zero-initialized",
+          "when": "C++11 default init is appropriate"
+        }
+      ]
+    },
+    {
+      "id": "memleak",
+      "pattern": "memleak.*Memory leak",
+      "message": "Memory leak detected",
+      "cause": "Allocated memory not freed",
+      "solutions": [
+        {
+          "approach": "Use smart pointers",
+          "code": "auto ptr = std::make_unique<T>();  // Not new T",
+          "when": "C++ with RAII"
+        },
+        {
+          "approach": "Add delete",
+          "code": "delete ptr;\nptr = nullptr;",
+          "when": "C-style memory management required"
+        },
+        {
+          "approach": "Fix early return",
+          "code": "if (error) {\n    delete ptr;  // Clean up before return\n    return;\n}",
+          "when": "Leak on error path"
+        }
+      ]
+    },
+    {
+      "id": "nullpointer",
+      "pattern": "nullPointer.*Null pointer dereference",
+      "message": "Null pointer dereference",
+      "cause": "Pointer may be null when dereferenced",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (ptr != nullptr) {\n    ptr->method();\n}",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Use assert",
+          "code": "assert(ptr != nullptr);\nptr->method();",
+          "when": "Null indicates bug"
+        },
+        {
+          "approach": "Use optional",
+          "code": "std::optional<T>& opt = ...;\nif (opt.has_value()) { opt->method(); }",
+          "when": "C++17 optional semantics"
+        }
+      ]
+    },
+    {
+      "id": "arrayIndexOutOfBounds",
+      "pattern": "arrayIndexOutOfBounds",
+      "message": "Array index out of bounds",
+      "cause": "Accessing array beyond its size",
+      "solutions": [
+        {
+          "approach": "Fix bounds",
+          "code": "for (int i = 0; i < size; i++)  // Not i <= size",
+          "when": "Off-by-one error"
+        },
+        {
+          "approach": "Use at() for bounds checking",
+          "code": "vec.at(i)  // Throws if out of bounds",
+          "when": "Using std::vector"
+        },
+        {
+          "approach": "Use range-for",
+          "code": "for (auto& item : arr)  // No index needed",
+          "when": "Iterating all elements"
+        }
+      ]
+    },
+    {
+      "id": "resourceLeak",
+      "pattern": "resourceLeak",
+      "message": "Resource leak (file/socket not closed)",
+      "cause": "Resource opened but not closed",
+      "solutions": [
+        {
+          "approach": "Use RAII wrapper",
+          "code": "std::ifstream file(path);  // Auto-closes",
+          "when": "File operations"
+        },
+        {
+          "approach": "Use unique_ptr with deleter",
+          "code": "auto fp = std::unique_ptr<FILE, decltype(&fclose)>(fopen(path, \"r\"), fclose);",
+          "when": "C-style FILE*"
+        },
+        {
+          "approach": "Add close in all paths",
+          "code": "FILE* f = fopen(...);\nif (error) { fclose(f); return; }\n// ...\nfclose(f);",
+          "when": "C-style required"
+        }
+      ]
+    },
+    {
+      "id": "unusedFunction",
+      "pattern": "unusedFunction",
+      "message": "Unused function",
+      "cause": "Function defined but never called",
+      "solutions": [
+        {
+          "approach": "Remove dead code",
+          "code": "// Delete unused function",
+          "when": "Function truly not needed"
+        },
+        {
+          "approach": "Mark as callback/API",
+          "code": "// [[maybe_unused]] for intentional\n// Or add to suppression file",
+          "when": "Used via pointer or external"
+        }
+      ]
+    },
+    {
+      "id": "unusedVariable",
+      "pattern": "unusedVariable",
+      "message": "Unused variable",
+      "cause": "Variable declared but never used",
+      "solutions": [
+        {
+          "approach": "Remove variable",
+          "code": "// Delete unused declaration",
+          "when": "Variable not needed"
+        },
+        {
+          "approach": "Use [[maybe_unused]]",
+          "code": "[[maybe_unused]] int debug_counter = 0;",
+          "when": "Used in debug only"
+        }
+      ]
+    },
+    {
+      "id": "duplicateCondition",
+      "pattern": "duplicateCondition",
+      "message": "Same condition in if and else if",
+      "cause": "Condition repeated, second branch never reached",
+      "solutions": [
+        {
+          "approach": "Fix condition",
+          "code": "if (a) { ... }\nelse if (b) { ... }  // Not else if (a)",
+          "when": "Copy-paste error"
+        },
+        {
+          "approach": "Remove unreachable branch",
+          "code": "if (a) { ... }  // Remove duplicate else-if",
+          "when": "Second condition is dead"
+        }
+      ]
+    },
+    {
+      "id": "invalidScanf",
+      "pattern": "invalidScanf.*scanf without field width",
+      "message": "scanf without field width limits",
+      "cause": "Buffer overflow risk with unbounded scanf",
+      "solutions": [
+        {
+          "approach": "Add field width",
+          "code": "scanf(\"%99s\", buf);  // Limit to 99 chars",
+          "when": "Using scanf"
+        },
+        {
+          "approach": "Use fgets instead",
+          "code": "fgets(buf, sizeof(buf), stdin);",
+          "when": "Reading lines"
+        },
+        {
+          "approach": "Use C++ streams",
+          "code": "std::string input;\nstd::cin >> input;",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "syntaxError",
+      "pattern": "syntaxError",
+      "message": "Syntax error in code",
+      "cause": "Code cannot be parsed",
+      "solutions": [
+        {
+          "approach": "Check for missing semicolons",
+          "code": "int x = 5;  // Missing ; after statement",
+          "when": "Statement termination"
+        },
+        {
+          "approach": "Check brace matching",
+          "code": "if (cond) {\n    // ...\n}  // Ensure matching braces",
+          "when": "Brace imbalance"
+        },
+        {
+          "approach": "Check preprocessor",
+          "code": "// Ensure #include has proper format\n#include <header>",
+          "when": "Include errors"
+        }
+      ]
+    },
+    {
+      "id": "uninitMemberVar",
+      "pattern": "uninitMemberVar",
+      "message": "Uninitialized member variable in constructor",
+      "cause": "Class member not initialized in constructor",
+      "solutions": [
+        {
+          "approach": "Use member initializer list",
+          "code": "MyClass() : member_(0), ptr_(nullptr) { }",
+          "when": "Member needs initialization"
+        },
+        {
+          "approach": "Use in-class initialization",
+          "code": "class MyClass {\n    int member_ = 0;\n    int* ptr_ = nullptr;\n};",
+          "when": "C++11 or later"
+        }
+      ]
+    },
+    {
+      "id": "virtualCallInConstructor",
+      "pattern": "virtualCallInConstructor",
+      "message": "Virtual function called in constructor",
+      "cause": "Virtual call during construction uses base class version",
+      "solutions": [
+        {
+          "approach": "Move to factory function",
+          "code": "static unique_ptr<T> create() {\n    auto p = make_unique<T>();\n    p->init();  // Virtual call safe here\n    return p;\n}",
+          "when": "Need polymorphic behavior"
+        },
+        {
+          "approach": "Use CRTP",
+          "code": "template<typename Derived>\nclass Base {\n    void foo() { static_cast<Derived*>(this)->impl(); }\n};",
+          "when": "Static polymorphism acceptable"
+        }
+      ]
+    }
+  ]
+}

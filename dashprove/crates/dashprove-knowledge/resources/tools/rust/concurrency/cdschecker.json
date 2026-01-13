@@ -1,0 +1,100 @@
+{
+  "id": "cdschecker",
+  "name": "CDSChecker",
+  "category": "rust",
+  "subcategory": "concurrency",
+
+  "description": "Model checker for C11/C++11 memory model concurrency",
+  "long_description": "CDSChecker is a model checker for programs written using the C/C++11 memory model. It systematically explores the behaviors allowed by the memory model to find concurrency bugs. While originally for C++, it can be used with Rust programs that use atomics following the same memory model.",
+
+  "capabilities": [
+    "c11_memory_model",
+    "systematic_exploration",
+    "data_race_detection",
+    "atomics_verification",
+    "relaxed_memory_analysis",
+    "bug_finding"
+  ],
+  "property_types": ["data_race", "memory_order", "assertion"],
+  "input_languages": ["c", "cpp"],
+  "output_formats": ["execution_trace", "bug_report"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/computersforpeace/cdschecker"}
+    ],
+    "dependencies": ["gcc", "make"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "http://demsky.eecs.uci.edu/c11modelchecker.html",
+    "tutorial": "https://github.com/computersforpeace/cdschecker/blob/master/README.md",
+    "api_reference": "http://demsky.eecs.uci.edu/c11modelchecker.html",
+    "examples": "https://github.com/computersforpeace/cdschecker/tree/master/test"
+  },
+
+  "tactics": [
+    {
+      "name": "run",
+      "description": "Run model checker on program",
+      "syntax": "./run.sh program",
+      "when_to_use": "Finding concurrency bugs",
+      "examples": ["./run.sh ./test/userprog"]
+    },
+    {
+      "name": "verbose",
+      "description": "Detailed execution traces",
+      "syntax": "./run.sh -v program",
+      "when_to_use": "Debugging found issues",
+      "examples": ["./run.sh -v ./test/userprog"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Data race detected",
+      "meaning": "Concurrent unsynchronized access",
+      "common_causes": ["Missing synchronization", "Wrong memory order"],
+      "fixes": ["Add proper atomics", "Use correct memory ordering"]
+    },
+    {
+      "pattern": "Assertion failed",
+      "meaning": "Program invariant violated",
+      "common_causes": ["Concurrency bug", "Algorithm error"],
+      "fixes": ["Fix synchronization", "Review concurrent algorithm"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["data_race"],
+    "cli_command": "dashprove verify --backend cdschecker"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Exponential in program interleavings",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["loom", "genmc", "tsan"],
+    "advantages": [
+      "Complete exploration of C11 behaviors",
+      "Finds subtle memory model bugs"
+    ],
+    "disadvantages": [
+      "C/C++ focused",
+      "Requires instrumentation",
+      "Scalability limits"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.4",
+    "last_updated": "2025-12-20",
+    "maintainer": "Brian Demsky (UC Irvine)",
+    "license": "GPL-2.0"
+  }
+}

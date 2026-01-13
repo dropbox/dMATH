@@ -1,0 +1,97 @@
+{
+  "tool": "hol4",
+  "version": "4.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "tactic_failed",
+      "pattern": "Exception.*TACTIC FAILED|metis: failed",
+      "message": "Proof tactic fails to close goal",
+      "cause": "Goal not in tactic search space or missing lemmas",
+      "solutions": [
+        {
+          "approach": "Break goal into subgoals",
+          "code": "e(REPEAT STRIP_TAC THEN Cases_on \\\"x\\\" THEN ASM_SIMP_TAC[]);",
+          "when": "Simplify structure before automation"
+        },
+        {
+          "approach": "Import relevant theories",
+          "code": "open HolKernel boolLib bossLib;",
+          "when": "Needed lemmas not loaded"
+        }
+      ]
+    },
+    {
+      "id": "type_variable_scope",
+      "pattern": "Type variable not in scope|unbound type variable",
+      "message": "Type variables escape intended scope",
+      "cause": "Forgetting universal quantifiers or mismatched polymorphic types",
+      "solutions": [
+        {
+          "approach": "Quantify variables explicitly",
+          "code": "val lemma = prove(``! 'a x. P x``, ...);",
+          "when": "Type variable appears free"
+        },
+        {
+          "approach": "Use new_type_definition correctly",
+          "code": "new_type_definition(\\\"mytype\\\", (\\\"rep\\\",\\\"abs\\\"), proof);",
+          "when": "Abstract types"
+        }
+      ]
+    },
+    {
+      "id": "simp_loop",
+      "pattern": "SIMP_CONV failed|rewriting loop detected",
+      "message": "Simplifier loops or times out",
+      "cause": "Self-referential rewrite rules or heavy congruence",
+      "solutions": [
+        {
+          "approach": "Add conditional rewrites",
+          "code": "ADD_SIMPLIFIER_CONV (\\\"thm\\\") (REWRITE_CONV[COND_RULE]);",
+          "when": "Rule needs guard"
+        },
+        {
+          "approach": "Limit simp set",
+          "code": "ASM_SIMP_TAC[thm1, thm2];",
+          "when": "Default simp too large"
+        }
+      ]
+    },
+    {
+      "id": "datatype_definition_failed",
+      "pattern": "Cannot prove datatype is non-empty|failure in Hol_datatype",
+      "message": "Datatype or record definition rejected",
+      "cause": "Constructors not providing inhabitants or recursive occurrences not well-founded",
+      "solutions": [
+        {
+          "approach": "Provide witness for non-emptiness",
+          "code": "Datatype `myty = Con bool`;",
+          "when": "Type had zero constructors"
+        },
+        {
+          "approach": "Ensure positive recursion",
+          "code": "Datatype `tree = Leaf num | Node tree tree`;",
+          "when": "Recursion under function arrow disallowed"
+        }
+      ]
+    },
+    {
+      "id": "overloaded_numeral",
+      "pattern": "Cannot resolve overloading of numeral|ambiguous constant",
+      "message": "Numeric literals cannot be resolved",
+      "cause": "Multiple numeral interpretations in scope without default",
+      "solutions": [
+        {
+          "approach": "Open specific numeral theory",
+          "code": "open numLib;",
+          "when": "Need natural numbers"
+        },
+        {
+          "approach": "Annotate type explicitly",
+          "code": "\\\"(3:num)\\\"",
+          "when": "Ambiguous literal context"
+        }
+      ]
+    }
+  ]
+}

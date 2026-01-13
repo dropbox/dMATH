@@ -1,0 +1,135 @@
+{
+  "tool": "fsck",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "mounted_filesystem",
+      "pattern": "mounted|WARNING.*mounted|in use|Device or resource busy",
+      "message": "Filesystem is mounted",
+      "cause": "Cannot check mounted filesystem",
+      "solutions": [
+        {
+          "approach": "Unmount first",
+          "code": "sudo umount /dev/sda1\nsudo fsck /dev/sda1",
+          "when": "Unmount possible"
+        },
+        {
+          "approach": "Read-only mount",
+          "code": "sudo mount -o remount,ro /dev/sda1\nsudo fsck /dev/sda1",
+          "when": "Remount read-only"
+        },
+        {
+          "approach": "Use rescue mode",
+          "code": "# Boot to single-user or live USB\n# Root filesystem must be unmounted for check",
+          "when": "System partition"
+        },
+        {
+          "approach": "Force on reboot",
+          "code": "sudo touch /forcefsck\nsudo reboot\n# Or: shutdown -rF now",
+          "when": "Check on next boot"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|must be root",
+      "message": "Need root privileges",
+      "cause": "Filesystem check requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo fsck /dev/sda1",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "needs_manual_repair",
+      "pattern": "UNEXPECTED INCONSISTENCY|manual fsck|RUN fsck MANUALLY",
+      "message": "Manual repair needed",
+      "cause": "Serious filesystem errors",
+      "solutions": [
+        {
+          "approach": "Interactive repair",
+          "code": "sudo fsck -y /dev/sda1  # Auto-yes to prompts",
+          "when": "Accept all fixes"
+        },
+        {
+          "approach": "Careful manual",
+          "code": "sudo fsck /dev/sda1\n# Answer each prompt carefully",
+          "when": "Review each fix"
+        },
+        {
+          "approach": "Backup first",
+          "code": "sudo dd if=/dev/sda1 of=/backup/sda1.img bs=4M\nsudo fsck -y /dev/sda1",
+          "when": "Important data"
+        }
+      ]
+    },
+    {
+      "id": "bad_superblock",
+      "pattern": "bad superblock|Bad magic number|couldn't find.*superblock",
+      "message": "Superblock corrupted",
+      "cause": "Primary superblock damaged",
+      "solutions": [
+        {
+          "approach": "Find backup superblocks",
+          "code": "sudo mke2fs -n /dev/sda1  # List backup locations\nsudo dumpe2fs /dev/sda1 | grep -i superblock",
+          "when": "Find backups"
+        },
+        {
+          "approach": "Use backup superblock",
+          "code": "sudo fsck -b 32768 /dev/sda1\n# Try: 32768, 98304, 163840, 229376",
+          "when": "Restore superblock"
+        }
+      ]
+    },
+    {
+      "id": "exit_codes",
+      "pattern": "exit code|return.*code|status",
+      "message": "Understanding exit codes",
+      "cause": "fsck return values",
+      "solutions": [
+        {
+          "approach": "Exit codes",
+          "code": "# 0 = No errors\n# 1 = Errors corrected\n# 2 = Reboot needed\n# 4 = Errors uncorrected\n# 8 = Operational error\n# 16 = Usage error\n# 32 = fsck canceled",
+          "when": "Reference"
+        },
+        {
+          "approach": "Check result",
+          "code": "sudo fsck /dev/sda1; echo \"Exit code: $?\"",
+          "when": "See exit code"
+        }
+      ]
+    },
+    {
+      "id": "filesystem_specific",
+      "pattern": "e2fsck|xfs_repair|btrfs|ntfsfix",
+      "message": "Filesystem-specific tools",
+      "cause": "Different filesystems need different tools",
+      "solutions": [
+        {
+          "approach": "ext4",
+          "code": "sudo e2fsck -f /dev/sda1\nsudo fsck.ext4 -f /dev/sda1",
+          "when": "ext2/3/4"
+        },
+        {
+          "approach": "XFS",
+          "code": "sudo xfs_repair /dev/sda1\n# Note: xfs_repair cannot run on mounted fs",
+          "when": "XFS filesystem"
+        },
+        {
+          "approach": "Btrfs",
+          "code": "sudo btrfs check /dev/sda1\nsudo btrfs scrub start /mountpoint  # Online",
+          "when": "Btrfs"
+        },
+        {
+          "approach": "NTFS",
+          "code": "sudo ntfsfix /dev/sda1",
+          "when": "NTFS (limited)"
+        }
+      ]
+    }
+  ]
+}

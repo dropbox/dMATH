@@ -1,0 +1,211 @@
+{
+  "tool": "webpack",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "module_not_found",
+      "pattern": "Module not found|Can't resolve|Cannot find module",
+      "message": "Webpack cannot resolve a module",
+      "cause": "Module not installed, wrong path, or missing extension",
+      "solutions": [
+        {
+          "approach": "Install missing package",
+          "code": "npm install missing-module\n# Or\nyarn add missing-module",
+          "when": "Package not in node_modules"
+        },
+        {
+          "approach": "Configure resolve extensions",
+          "code": "// webpack.config.js\nmodule.exports = {\n  resolve: {\n    extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']\n  }\n};",
+          "when": "Non-.js file not resolving"
+        },
+        {
+          "approach": "Add alias",
+          "code": "// webpack.config.js\nconst path = require('path');\nmodule.exports = {\n  resolve: {\n    alias: {\n      '@': path.resolve(__dirname, 'src/'),\n      'components': path.resolve(__dirname, 'src/components/')\n    }\n  }\n};",
+          "when": "Path alias not working"
+        },
+        {
+          "approach": "Check case sensitivity",
+          "code": "// Files are case-sensitive on Linux\n// import from './MyComponent' vs './mycomponent'",
+          "when": "Works locally, fails in CI"
+        }
+      ]
+    },
+    {
+      "id": "loader_error",
+      "pattern": "You may need an appropriate loader|Module parse failed|Unexpected token",
+      "message": "No loader configured for file type",
+      "cause": "File type needs specific loader not configured",
+      "solutions": [
+        {
+          "approach": "Add babel-loader for JS/JSX",
+          "code": "npm install --save-dev babel-loader @babel/core @babel/preset-env @babel/preset-react\n\n// webpack.config.js\nmodule.exports = {\n  module: {\n    rules: [\n      {\n        test: /\\.(js|jsx)$/,\n        exclude: /node_modules/,\n        use: 'babel-loader'\n      }\n    ]\n  }\n};",
+          "when": "JSX or modern JS not transpiling"
+        },
+        {
+          "approach": "Add CSS loader",
+          "code": "npm install --save-dev css-loader style-loader\n\n// webpack.config.js\n{\n  test: /\\.css$/,\n  use: ['style-loader', 'css-loader']\n}",
+          "when": "Cannot import CSS"
+        },
+        {
+          "approach": "Add file loader for assets",
+          "code": "// Webpack 5 uses asset modules\n{\n  test: /\\.(png|svg|jpg|jpeg|gif)$/i,\n  type: 'asset/resource'\n}\n\n// For fonts\n{\n  test: /\\.(woff|woff2|eot|ttf|otf)$/i,\n  type: 'asset/resource'\n}",
+          "when": "Cannot import images/fonts"
+        },
+        {
+          "approach": "Add TypeScript loader",
+          "code": "npm install --save-dev ts-loader typescript\n\n// webpack.config.js\n{\n  test: /\\.tsx?$/,\n  use: 'ts-loader',\n  exclude: /node_modules/\n}",
+          "when": "Cannot process TypeScript"
+        }
+      ]
+    },
+    {
+      "id": "chunk_load_failed",
+      "pattern": "ChunkLoadError|Loading chunk.*failed|Failed to load resource",
+      "message": "Dynamic import chunk failed to load",
+      "cause": "Chunk not found at expected URL, CORS, or network issue",
+      "solutions": [
+        {
+          "approach": "Set public path",
+          "code": "// webpack.config.js\nmodule.exports = {\n  output: {\n    publicPath: '/assets/',  // Or full CDN URL\n    // publicPath: 'https://cdn.example.com/'\n  }\n};",
+          "when": "Chunks deployed to CDN/subdirectory"
+        },
+        {
+          "approach": "Configure chunk names",
+          "code": "// webpack.config.js\nmodule.exports = {\n  output: {\n    chunkFilename: '[name].[contenthash].js'\n  }\n};",
+          "when": "Chunk naming issues"
+        },
+        {
+          "approach": "Add retry logic",
+          "code": "// In your code\nconst loadWithRetry = async (importFn, retries = 3) => {\n  for (let i = 0; i < retries; i++) {\n    try {\n      return await importFn();\n    } catch (e) {\n      if (i === retries - 1) throw e;\n      await new Promise(r => setTimeout(r, 1000));\n    }\n  }\n};",
+          "when": "Network flakiness"
+        },
+        {
+          "approach": "Check CORS headers",
+          "code": "# Server must return proper headers for chunks\nAccess-Control-Allow-Origin: *",
+          "when": "Cross-origin chunk loading"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "JavaScript heap out of memory|FATAL ERROR.*heap|Allocation failed",
+      "message": "Node ran out of memory during build",
+      "cause": "Build too large for default Node memory limit",
+      "solutions": [
+        {
+          "approach": "Increase Node memory",
+          "code": "# Set environment variable\nexport NODE_OPTIONS=\"--max-old-space-size=8192\"\n\n# Or in npm script\n\"build\": \"node --max-old-space-size=8192 node_modules/webpack/bin/webpack.js\"",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Enable caching",
+          "code": "// webpack.config.js\nmodule.exports = {\n  cache: {\n    type: 'filesystem',\n    buildDependencies: {\n      config: [__filename]\n    }\n  }\n};",
+          "when": "Rebuilds are slow"
+        },
+        {
+          "approach": "Reduce parallelism",
+          "code": "// If using thread-loader\n{\n  loader: 'thread-loader',\n  options: {\n    workers: 2  // Reduce from default\n  }\n}",
+          "when": "Too many parallel processes"
+        },
+        {
+          "approach": "Split into smaller bundles",
+          "code": "// webpack.config.js\nmodule.exports = {\n  optimization: {\n    splitChunks: {\n      chunks: 'all',\n      maxInitialRequests: 10\n    }\n  }\n};",
+          "when": "Single bundle too large"
+        }
+      ]
+    },
+    {
+      "id": "circular_dependency",
+      "pattern": "Circular dependency|circular reference|Maximum call stack",
+      "message": "Circular dependency detected",
+      "cause": "Module A imports B which imports A",
+      "solutions": [
+        {
+          "approach": "Use circular-dependency-plugin",
+          "code": "npm install --save-dev circular-dependency-plugin\n\n// webpack.config.js\nconst CircularDependencyPlugin = require('circular-dependency-plugin');\n\nplugins: [\n  new CircularDependencyPlugin({\n    exclude: /node_modules/,\n    failOnError: true\n  })\n]",
+          "when": "Need to find cycles"
+        },
+        {
+          "approach": "Refactor to break cycle",
+          "code": "// Extract shared code to separate module\n// Before: A <-> B\n// After: A -> C <- B (C has shared code)",
+          "when": "After finding cycle"
+        },
+        {
+          "approach": "Use dynamic import",
+          "code": "// Convert static to dynamic import\n// Instead of: import { foo } from './other';\nconst { foo } = await import('./other');",
+          "when": "Can't restructure"
+        }
+      ]
+    },
+    {
+      "id": "polyfill_error",
+      "pattern": "polyfill|Buffer is not defined|process is not defined|Can't resolve 'fs'",
+      "message": "Node.js polyfill missing in Webpack 5",
+      "cause": "Webpack 5 removed Node polyfills, module expects them",
+      "solutions": [
+        {
+          "approach": "Add fallbacks",
+          "code": "// webpack.config.js\nmodule.exports = {\n  resolve: {\n    fallback: {\n      \"buffer\": require.resolve(\"buffer/\"),\n      \"process\": require.resolve(\"process/browser\"),\n      \"stream\": require.resolve(\"stream-browserify\"),\n      \"path\": require.resolve(\"path-browserify\")\n    }\n  }\n};",
+          "when": "Need Node API in browser"
+        },
+        {
+          "approach": "Provide global",
+          "code": "const webpack = require('webpack');\n\nplugins: [\n  new webpack.ProvidePlugin({\n    Buffer: ['buffer', 'Buffer'],\n    process: 'process/browser'\n  })\n]",
+          "when": "Global reference needed"
+        },
+        {
+          "approach": "Set to false",
+          "code": "// webpack.config.js\nresolve: {\n  fallback: {\n    \"fs\": false,\n    \"net\": false,\n    \"tls\": false\n  }\n}",
+          "when": "Don't need the module"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "Plugin.*TypeError|Invalid configuration|Plugin could not be registered",
+      "message": "Webpack plugin error",
+      "cause": "Plugin misconfigured or incompatible version",
+      "solutions": [
+        {
+          "approach": "Check plugin version",
+          "code": "# Webpack 5 requires compatible plugins\nnpm ls html-webpack-plugin\n\n# Upgrade if needed\nnpm install html-webpack-plugin@5",
+          "when": "Plugin version mismatch"
+        },
+        {
+          "approach": "Check constructor syntax",
+          "code": "// Old (webpack 4)\nnew MiniCssExtractPlugin({ filename: '[name].css' })\n\n// New (may have different options)\n// Check plugin docs for webpack 5 syntax",
+          "when": "Options changed between versions"
+        },
+        {
+          "approach": "Read error details",
+          "code": "// Run with verbose output\nwebpack --stats verbose\n\n// Or in config\nmodule.exports = {\n  stats: 'verbose'\n};",
+          "when": "Need more info"
+        }
+      ]
+    },
+    {
+      "id": "source_map_error",
+      "pattern": "source.?map|devtool|SourceMap|sourceMappingURL",
+      "message": "Source map not working or error",
+      "cause": "Devtool misconfigured or source maps not served",
+      "solutions": [
+        {
+          "approach": "Configure devtool",
+          "code": "// webpack.config.js\nmodule.exports = {\n  // Development\n  devtool: 'eval-source-map',  // Fast rebuild, good quality\n  \n  // Production\n  devtool: 'source-map',  // Separate files, high quality\n};",
+          "when": "Source maps not generated"
+        },
+        {
+          "approach": "Use hidden source maps",
+          "code": "// For production (upload to error tracking, don't expose)\ndevtool: 'hidden-source-map'",
+          "when": "Don't want public source maps"
+        },
+        {
+          "approach": "Configure loader source maps",
+          "code": "// Loaders must pass through source maps\n{\n  loader: 'css-loader',\n  options: {\n    sourceMap: true\n  }\n}",
+          "when": "Source maps broken by loader"
+        }
+      ]
+    }
+  ]
+}

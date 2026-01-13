@@ -1,0 +1,191 @@
+{
+  "tool": "deepchecks",
+  "version": "0.18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "dataset_error",
+      "pattern": "Dataset.*error|Cannot create.*Dataset|Invalid data format",
+      "message": "Cannot create Deepchecks Dataset",
+      "cause": "DataFrame format incorrect or missing required columns",
+      "solutions": [
+        {
+          "approach": "Create tabular dataset",
+          "code": "from deepchecks.tabular import Dataset\nds = Dataset(df, label='target', cat_features=['cat1', 'cat2'])",
+          "when": "Tabular data"
+        },
+        {
+          "approach": "Create vision dataset",
+          "code": "from deepchecks.vision import VisionData\nvision_data = VisionData(data_loader, label_map=label_map)",
+          "when": "Image data"
+        },
+        {
+          "approach": "Specify index column",
+          "code": "ds = Dataset(df, label='target', index_name='id')",
+          "when": "DataFrame has index"
+        }
+      ]
+    },
+    {
+      "id": "model_error",
+      "pattern": "Model.*error|predict.*error|Unsupported model",
+      "message": "Model integration error",
+      "cause": "Model doesn't have expected interface or predict method",
+      "solutions": [
+        {
+          "approach": "Use sklearn model",
+          "code": "# Deepchecks expects sklearn-style predict/predict_proba\nmodel.predict(X)\nmodel.predict_proba(X)",
+          "when": "Using scikit-learn"
+        },
+        {
+          "approach": "Wrap custom model",
+          "code": "class WrappedModel:\n    def predict(self, X): return my_model.forward(X)\n    def predict_proba(self, X): return my_model.probs(X)",
+          "when": "Custom model"
+        },
+        {
+          "approach": "Pass predictions directly",
+          "code": "suite.run(train_ds, test_ds, model_predictions={'train': y_pred_train})",
+          "when": "Pre-computed predictions"
+        }
+      ]
+    },
+    {
+      "id": "check_failed",
+      "pattern": "Check.*failed|Condition.*failed|FAIL",
+      "message": "Deepchecks validation check failed",
+      "cause": "Data or model doesn't meet quality condition - intended behavior",
+      "solutions": [
+        {
+          "approach": "Review check results",
+          "code": "result = check.run(dataset)\nprint(result.display)",
+          "when": "Understanding failure"
+        },
+        {
+          "approach": "Adjust condition",
+          "code": "check.add_condition_feature_drift_score_less_than(0.2)",
+          "when": "Threshold too strict"
+        },
+        {
+          "approach": "Fix data/model issue",
+          "code": "# Address the underlying data quality issue",
+          "when": "Genuine problem found"
+        }
+      ]
+    },
+    {
+      "id": "suite_error",
+      "pattern": "Suite.*error|Cannot run suite|Check incompatible",
+      "message": "Test suite execution error",
+      "cause": "Suite contains incompatible checks for data type",
+      "solutions": [
+        {
+          "approach": "Use appropriate suite",
+          "code": "from deepchecks.tabular.suites import data_integrity\nsuite = data_integrity()",
+          "when": "Tabular data"
+        },
+        {
+          "approach": "Create custom suite",
+          "code": "from deepchecks.tabular import Suite\nsuite = Suite('My Suite', DataDuplicates(), MixedTypes())",
+          "when": "Selecting specific checks"
+        },
+        {
+          "approach": "Skip incompatible checks",
+          "code": "suite.run(dataset).remove_check('IncompatibleCheck')",
+          "when": "Some checks don't apply"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "MemoryError|Out of memory|Cannot allocate",
+      "message": "Deepchecks ran out of memory",
+      "cause": "Dataset too large for available memory",
+      "solutions": [
+        {
+          "approach": "Sample data",
+          "code": "ds = Dataset(df.sample(10000), label='target')",
+          "when": "Large dataset"
+        },
+        {
+          "approach": "Run checks individually",
+          "code": "for check in suite.checks:\n    try: check.run(dataset)\n    except MemoryError: pass",
+          "when": "Some checks use too much memory"
+        },
+        {
+          "approach": "Use lower precision",
+          "code": "df = df.astype({col: 'float32' for col in float_cols})",
+          "when": "Float64 not needed"
+        }
+      ]
+    },
+    {
+      "id": "vision_error",
+      "pattern": "Vision.*error|DataLoader.*error|Image.*error",
+      "message": "Vision data loading error",
+      "cause": "Image DataLoader not compatible with Deepchecks",
+      "solutions": [
+        {
+          "approach": "Use VisionData wrapper",
+          "code": "from deepchecks.vision import VisionData\nvision = VisionData(loader, label_map=class_names)",
+          "when": "Wrapping DataLoader"
+        },
+        {
+          "approach": "Add label extraction",
+          "code": "vision = VisionData(loader, label_map=names,\n    label_type='classification_label')",
+          "when": "Classification task"
+        },
+        {
+          "approach": "Configure batch format",
+          "code": "# Ensure dataloader returns (images, labels) tuple",
+          "when": "Custom batch format"
+        }
+      ]
+    },
+    {
+      "id": "drift_error",
+      "pattern": "Drift.*error|Cannot calculate drift|Reference.*missing",
+      "message": "Data drift calculation error",
+      "cause": "Reference dataset not provided or incompatible",
+      "solutions": [
+        {
+          "approach": "Provide both datasets",
+          "code": "check.run(train_dataset=train_ds, test_dataset=test_ds)",
+          "when": "Comparing train/test"
+        },
+        {
+          "approach": "Match column names",
+          "code": "# Ensure both datasets have same columns",
+          "when": "Column mismatch"
+        },
+        {
+          "approach": "Use same feature types",
+          "code": "# Categorical columns must match between datasets",
+          "when": "Type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "report_error",
+      "pattern": "Report.*error|Cannot save|HTML.*error",
+      "message": "Cannot generate or save report",
+      "cause": "Report generation or file writing failed",
+      "solutions": [
+        {
+          "approach": "Save as HTML",
+          "code": "result.save_as_html('report.html')",
+          "when": "Interactive report"
+        },
+        {
+          "approach": "Export to JSON",
+          "code": "result.to_json('report.json')",
+          "when": "Machine-readable format"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "# Ensure write access to output directory",
+          "when": "Permission denied"
+        }
+      ]
+    }
+  ]
+}

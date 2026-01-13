@@ -1,0 +1,102 @@
+{
+  "tool": "arp",
+  "version": "net-tools",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "arp: command not found",
+      "message": "net-tools not installed",
+      "cause": "Package not installed on modern systems",
+      "solutions": [
+        {
+          "approach": "Install net-tools",
+          "code": "sudo apt install net-tools  # Debian\nsudo yum install net-tools  # RHEL",
+          "when": "Install legacy tools"
+        },
+        {
+          "approach": "Use ip neigh",
+          "code": "# Modern equivalents:\nip neigh show          # arp -a\nip neigh add ...       # arp -s\nip neigh del ...       # arp -d\nip n                   # Short form",
+          "when": "Recommended"
+        }
+      ]
+    },
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|SIOCSARP: Operation not permitted",
+      "message": "Need root privileges",
+      "cause": "ARP table modification requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo arp -s 192.168.1.1 00:11:22:33:44:55",
+          "when": "Add static entry"
+        }
+      ]
+    },
+    {
+      "id": "incomplete_entry",
+      "pattern": "incomplete|\\(incomplete\\)",
+      "message": "ARP resolution failed",
+      "cause": "Target host not responding to ARP",
+      "solutions": [
+        {
+          "approach": "Check connectivity",
+          "code": "ping -c1 192.168.1.1  # Try to reach host\nip link show  # Is interface up?",
+          "when": "Verify network"
+        },
+        {
+          "approach": "Clear and retry",
+          "code": "sudo ip neigh flush all\nping -c1 target_ip",
+          "when": "Stale entry"
+        },
+        {
+          "approach": "Check same subnet",
+          "code": "# ARP only works on local subnet\nip addr show | grep inet\n# Target must be same network",
+          "when": "Routing issue"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_ip",
+      "pattern": "duplicate|conflict|already in use",
+      "message": "IP address conflict",
+      "cause": "Multiple hosts using same IP",
+      "solutions": [
+        {
+          "approach": "Find duplicate",
+          "code": "arping -D -I eth0 192.168.1.100\narp -a | grep 192.168.1.100",
+          "when": "Detect conflict"
+        },
+        {
+          "approach": "Change IP",
+          "code": "sudo ip addr del 192.168.1.100/24 dev eth0\nsudo ip addr add 192.168.1.101/24 dev eth0",
+          "when": "Use different IP"
+        }
+      ]
+    },
+    {
+      "id": "static_entry",
+      "pattern": "static|permanent|PERM",
+      "message": "Working with static ARP",
+      "cause": "Need static ARP entry",
+      "solutions": [
+        {
+          "approach": "Add static (legacy)",
+          "code": "sudo arp -s 192.168.1.1 00:11:22:33:44:55",
+          "when": "Using arp"
+        },
+        {
+          "approach": "Add static (modern)",
+          "code": "sudo ip neigh add 192.168.1.1 lladdr 00:11:22:33:44:55 nud permanent dev eth0",
+          "when": "Using ip neigh"
+        },
+        {
+          "approach": "Delete entry",
+          "code": "sudo arp -d 192.168.1.1\nsudo ip neigh del 192.168.1.1 dev eth0",
+          "when": "Remove entry"
+        }
+      ]
+    }
+  ]
+}

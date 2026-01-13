@@ -1,0 +1,130 @@
+{
+  "id": "miri",
+  "name": "Miri",
+  "category": "rust_formal_verification",
+  "subcategory": "interpreter",
+
+  "description": "Undefined behavior detector for Rust via MIR interpretation",
+  "long_description": "Miri is an interpreter for Rust's Mid-level Intermediate Representation (MIR) that detects undefined behavior in Rust programs. It can catch issues like use-after-free, data races, invalid pointer arithmetic, and aliasing violations that would be missed by the compiler.",
+
+  "capabilities": [
+    "undefined_behavior",
+    "memory_safety",
+    "aliasing_violations",
+    "use_after_free",
+    "data_races",
+    "invalid_pointer",
+    "uninitialized_memory",
+    "stacked_borrows"
+  ],
+  "property_types": ["runtime_check", "ub_detection"],
+  "input_languages": ["rust"],
+  "output_formats": ["diagnostic", "trace", "backtrace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "rustup +nightly component add miri && cargo +nightly miri setup"}
+    ],
+    "dependencies": ["rust-nightly"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/rust-lang/miri",
+    "tutorial": "https://github.com/rust-lang/miri#using-miri",
+    "api_reference": "https://doc.rust-lang.org/nightly/nightly-rustc/miri/",
+    "examples": "https://github.com/rust-lang/miri/tree/master/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "miri-flags",
+      "description": "Configure Miri behavior via environment",
+      "syntax": "MIRIFLAGS=\"flags\" cargo +nightly miri",
+      "when_to_use": "To adjust checking behavior",
+      "examples": ["MIRIFLAGS=\"-Zmiri-disable-stacked-borrows\"", "MIRIFLAGS=\"-Zmiri-symbolic-alignment-check\""]
+    },
+    {
+      "name": "miri-seed",
+      "description": "Set randomness seed for reproducibility",
+      "syntax": "MIRIFLAGS=\"-Zmiri-seed=N\"",
+      "when_to_use": "For reproducible concurrency testing",
+      "examples": ["MIRIFLAGS=\"-Zmiri-seed=42\""]
+    },
+    {
+      "name": "isolation",
+      "description": "Control isolation from host system",
+      "syntax": "MIRIFLAGS=\"-Zmiri-disable-isolation\"",
+      "when_to_use": "When program needs to access real files",
+      "examples": ["MIRIFLAGS=\"-Zmiri-disable-isolation\""]
+    },
+    {
+      "name": "tree-borrows",
+      "description": "Use Tree Borrows instead of Stacked Borrows",
+      "syntax": "MIRIFLAGS=\"-Zmiri-tree-borrows\"",
+      "when_to_use": "For alternative aliasing model",
+      "examples": ["MIRIFLAGS=\"-Zmiri-tree-borrows\""]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Undefined Behavior: .* was created due to .* but is being used",
+      "meaning": "Stacked Borrows violation - aliasing rules broken",
+      "common_causes": ["Mutable alias created during shared borrow", "Pointer used after invalidation"],
+      "fixes": ["Restructure code to avoid aliasing", "Use Cell/RefCell for interior mutability"]
+    },
+    {
+      "pattern": "memory access .* at .* is out of bounds",
+      "meaning": "Out of bounds array/slice access",
+      "common_causes": ["Index calculation error", "Buffer overflow"],
+      "fixes": ["Add bounds checking", "Use safe slice methods"]
+    },
+    {
+      "pattern": "using uninitialized data",
+      "meaning": "Reading memory before initialization",
+      "common_causes": ["MaybeUninit misuse", "Unsafe pointer operations"],
+      "fixes": ["Initialize before use", "Use MaybeUninit::assume_init only when safe"]
+    },
+    {
+      "pattern": "data race detected",
+      "meaning": "Concurrent unsynchronized access",
+      "common_causes": ["Missing synchronization", "UnsafeCell without proper locking"],
+      "fixes": ["Add Mutex/RwLock", "Use atomic operations"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["runtime_check"],
+    "cli_command": "dashprove verify --backend miri"
+  },
+
+  "performance": {
+    "typical_runtime": "10-100x slower than native execution",
+    "scalability": "Best for unit tests and small programs",
+    "memory_usage": "2-4x native memory"
+  },
+
+  "comparisons": {
+    "similar_tools": ["valgrind", "sanitizers", "kani"],
+    "advantages": [
+      "Catches Rust-specific UB (Stacked Borrows)",
+      "No false positives",
+      "Easy to use (cargo miri test)",
+      "Cross-platform consistent results"
+    ],
+    "disadvantages": [
+      "Very slow (not for large test suites)",
+      "Only detects UB on executed paths",
+      "Limited FFI support"
+    ]
+  },
+
+  "metadata": {
+    "version": "nightly",
+    "last_updated": "2025-12-20",
+    "maintainer": "Rust Project",
+    "license": "MIT/Apache-2.0"
+  }
+}

@@ -1,0 +1,79 @@
+// Agent executor specification with runtime invariants
+// These invariants are compiled to Rust closures for runtime checking
+
+contract agent_executor {
+    // Agent state definition
+    type AgentState = {
+        iteration: Int,
+        status: Status,
+        messages: List<Message>,
+        tool_calls: List<ToolCall>,
+        errors: List<Error>
+    }
+
+    type Status = Idle | Processing | ToolExecution | Waiting | Done | Error
+
+    type Message = {
+        role: Role,
+        content: String,
+        timestamp: Timestamp
+    }
+
+    type ToolCall = {
+        id: String,
+        name: String,
+        arguments: Map<String, Any>,
+        result: Option<ToolResult>
+    }
+
+    // Invariant: Bounded iterations prevent infinite loops
+    invariant bounded_iterations {
+        state.iteration <= 10
+    }
+
+    // Invariant: Status is always valid
+    invariant valid_status {
+        state.status in {Idle, Processing, ToolExecution, Waiting, Done, Error}
+    }
+
+    // Invariant: Monotonic iteration count
+    invariant monotonic_iterations {
+        forall prev: AgentState, curr: AgentState .
+            is_transition(prev, curr) => curr.iteration >= prev.iteration
+    }
+
+    // Invariant: Messages are well-formed
+    invariant valid_messages {
+        forall msg: Message in state.messages .
+            msg.role in {User, Assistant, System} and
+            length(msg.content) > 0
+    }
+
+    // Invariant: Tool calls have unique IDs
+    invariant unique_tool_ids {
+        forall i, j: Int .
+            0 <= i < j < length(state.tool_calls) =>
+            state.tool_calls[i].id != state.tool_calls[j].id
+    }
+
+    // Invariant: Error state implies non-empty errors list
+    invariant error_consistency {
+        state.status == Error => length(state.errors) > 0
+    }
+
+    // Invariant: Done state implies no pending tool calls
+    invariant done_implies_complete {
+        state.status == Done =>
+            forall tc: ToolCall in state.tool_calls . tc.result != None
+    }
+}
+
+// Liveness properties (checked on complete traces)
+liveness eventually_terminates {
+    eventually(state.status in {Done, Error})
+}
+
+liveness tool_calls_complete {
+    forall tc: ToolCall .
+        leads_to(tc.result == None, tc.result != None)
+}

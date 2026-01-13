@@ -1,0 +1,168 @@
+{
+  "tool": "electron",
+  "version": "28.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "context_isolation",
+      "pattern": "contextIsolation|require is not defined|nodeIntegration|preload",
+      "message": "Context isolation preventing Node.js access",
+      "cause": "contextIsolation:true (default) blocks direct Node.js access in renderer",
+      "solutions": [
+        {
+          "approach": "Use preload script",
+          "code": "// main.js\nnew BrowserWindow({\n  webPreferences: {\n    preload: path.join(__dirname, 'preload.js'),\n    contextIsolation: true\n  }\n});\n\n// preload.js\nconst { contextBridge, ipcRenderer } = require('electron');\ncontextBridge.exposeInMainWorld('api', {\n  send: (channel, data) => ipcRenderer.send(channel, data)\n});",
+          "when": "Secure approach"
+        },
+        {
+          "approach": "Enable nodeIntegration (risky)",
+          "code": "// NOT recommended for loading remote content\nnew BrowserWindow({\n  webPreferences: {\n    nodeIntegration: true,\n    contextIsolation: false\n  }\n});",
+          "when": "Local trusted content only"
+        },
+        {
+          "approach": "Use IPC",
+          "code": "// main.js\nipcMain.handle('read-file', async (event, path) => {\n  return fs.readFileSync(path, 'utf8');\n});\n\n// renderer (via preload)\nconst content = await window.api.readFile('/path');",
+          "when": "File system access"
+        }
+      ]
+    },
+    {
+      "id": "ipc_not_working",
+      "pattern": "ipcRenderer.*undefined|ipcMain.*not.*receiving|channel.*not.*found",
+      "message": "IPC communication failing",
+      "cause": "IPC not properly set up between main and renderer",
+      "solutions": [
+        {
+          "approach": "Expose via preload",
+          "code": "// preload.js\ncontextBridge.exposeInMainWorld('electron', {\n  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),\n  on: (channel, callback) => ipcRenderer.on(channel, callback)\n});\n\n// renderer\nconst result = await window.electron.invoke('my-channel', data);",
+          "when": "Renderer to main"
+        },
+        {
+          "approach": "Main to renderer",
+          "code": "// main.js\nmainWindow.webContents.send('update', data);\n\n// preload.js\ncontextBridge.exposeInMainWorld('api', {\n  onUpdate: (callback) => ipcRenderer.on('update', (e, data) => callback(data))\n});",
+          "when": "Main to renderer"
+        },
+        {
+          "approach": "Use invoke/handle",
+          "code": "// main.js (handle returns Promise)\nipcMain.handle('get-data', async () => {\n  return await fetchData();\n});\n\n// renderer\nconst data = await window.api.invoke('get-data');",
+          "when": "Request/response"
+        }
+      ]
+    },
+    {
+      "id": "white_screen",
+      "pattern": "blank.*white|nothing.*loading|empty window|not rendering",
+      "message": "Window shows blank/white screen",
+      "cause": "Content not loading or error in renderer",
+      "solutions": [
+        {
+          "approach": "Check file path",
+          "code": "mainWindow.loadFile(path.join(__dirname, 'index.html'));\n// Or for dev server:\nmainWindow.loadURL('http://localhost:3000');",
+          "when": "Path issue"
+        },
+        {
+          "approach": "Open DevTools",
+          "code": "mainWindow.webContents.openDevTools();\n// Check console for errors",
+          "when": "Debug rendering"
+        },
+        {
+          "approach": "Wait for ready",
+          "code": "mainWindow.once('ready-to-show', () => {\n  mainWindow.show();\n});",
+          "when": "Timing issue"
+        }
+      ]
+    },
+    {
+      "id": "native_module_error",
+      "pattern": "native module|NODE_MODULE_VERSION|was compiled against|rebuild",
+      "message": "Native module version mismatch",
+      "cause": "Native module compiled for different Node/Electron version",
+      "solutions": [
+        {
+          "approach": "Rebuild with electron-rebuild",
+          "code": "npm install --save-dev electron-rebuild\nnpx electron-rebuild",
+          "when": "After npm install"
+        },
+        {
+          "approach": "Use postinstall",
+          "code": "// package.json\n\"scripts\": {\n  \"postinstall\": \"electron-rebuild\"\n}",
+          "when": "Automate"
+        },
+        {
+          "approach": "Specify target",
+          "code": "npx electron-rebuild -v 28.0.0 -w sqlite3",
+          "when": "Specific module"
+        }
+      ]
+    },
+    {
+      "id": "sandbox_error",
+      "pattern": "sandbox|GPU process|spawn|SUID|kernel",
+      "message": "Sandbox or GPU process error",
+      "cause": "System doesn't support sandboxing or GPU features",
+      "solutions": [
+        {
+          "approach": "Disable GPU",
+          "code": "app.disableHardwareAcceleration();\n// Or command line:\nelectron --disable-gpu .",
+          "when": "GPU issues"
+        },
+        {
+          "approach": "Disable sandbox",
+          "code": "app.commandLine.appendSwitch('no-sandbox');\n// Or in BrowserWindow:\nwebPreferences: { sandbox: false }",
+          "when": "Linux SUID issues"
+        },
+        {
+          "approach": "Linux permissions",
+          "code": "sudo chown root chrome-sandbox\nsudo chmod 4755 chrome-sandbox",
+          "when": "Fix sandbox permissions"
+        }
+      ]
+    },
+    {
+      "id": "packaging_error",
+      "pattern": "packaging|build.*failed|ASAR|electron-builder|forge",
+      "message": "Application packaging failed",
+      "cause": "Build configuration or dependency issues",
+      "solutions": [
+        {
+          "approach": "Check build config",
+          "code": "// electron-builder.json\n{\n  \"appId\": \"com.example.app\",\n  \"files\": [\"dist/**/*\", \"package.json\"],\n  \"directories\": { \"output\": \"release\" }\n}",
+          "when": "Config issue"
+        },
+        {
+          "approach": "Include dependencies",
+          "code": "// package.json - dependencies go in production\n\"dependencies\": { \"sqlite3\": \"^5.0.0\" },\n\"devDependencies\": { \"electron\": \"^28.0.0\" }",
+          "when": "Missing deps in build"
+        },
+        {
+          "approach": "Native module packaging",
+          "code": "// electron-builder.json\n\"asar\": { \"smartUnpack\": true },\n// or exclude native modules from asar:\n\"asarUnpack\": [\"**/node_modules/sqlite3/**\"]",
+          "when": "Native module issues"
+        }
+      ]
+    },
+    {
+      "id": "cors_issues",
+      "pattern": "CORS|Access-Control|blocked by CORS|cross-origin",
+      "message": "CORS blocking requests",
+      "cause": "Browser security blocking cross-origin requests",
+      "solutions": [
+        {
+          "approach": "Disable web security (dev only)",
+          "code": "new BrowserWindow({\n  webPreferences: {\n    webSecurity: false  // NEVER in production!\n  }\n});",
+          "when": "Development"
+        },
+        {
+          "approach": "Proxy through main process",
+          "code": "// main.js\nipcMain.handle('fetch', async (_, url) => {\n  const resp = await fetch(url);\n  return resp.json();\n});",
+          "when": "Production solution"
+        },
+        {
+          "approach": "Configure session",
+          "code": "session.defaultSession.webRequest.onHeadersReceived((details, callback) => {\n  callback({\n    responseHeaders: {\n      ...details.responseHeaders,\n      'Access-Control-Allow-Origin': ['*']\n    }\n  });\n});",
+          "when": "Modify responses"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "tool": "doctest",
+  "version": "3.12",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "expected_output_mismatch",
+      "pattern": "Expected:\\n.*Got:\\n.*",
+      "message": "Output doesn't match expected",
+      "cause": "Function output differs from docstring example",
+      "solutions": [
+        {
+          "approach": "Update expected output",
+          "code": ">>> func()\n'actual_output'  # Update this line",
+          "when": "Function behavior changed intentionally"
+        },
+        {
+          "approach": "Use ellipsis for variable output",
+          "code": ">>> func()  # doctest: +ELLIPSIS\n'...partial match...'",
+          "when": "Output contains timestamps, IDs, etc."
+        },
+        {
+          "approach": "Normalize whitespace",
+          "code": ">>> func()  # doctest: +NORMALIZE_WHITESPACE\nexpected  output",
+          "when": "Whitespace differences causing failures"
+        }
+      ]
+    },
+    {
+      "id": "exception_not_raised",
+      "pattern": "Expected:.*Traceback",
+      "message": "Expected exception was not raised",
+      "cause": "Doctest expects an exception but function succeeded",
+      "solutions": [
+        {
+          "approach": "Fix function to raise exception",
+          "code": "def func(x):\n    if x < 0:\n        raise ValueError('x must be positive')",
+          "when": "Function should raise exception"
+        },
+        {
+          "approach": "Update doctest",
+          "code": ">>> func(-1)\nTraceback (most recent call last):\n    ...\nValueError: x must be positive",
+          "when": "Documenting exception behavior"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error_in_doctest",
+      "pattern": "SyntaxError",
+      "message": "Syntax error in doctest example",
+      "cause": "Invalid Python syntax in docstring example",
+      "solutions": [
+        {
+          "approach": "Fix indentation",
+          "code": ">>> if True:\n...     print('indented')",
+          "when": "Multiline statement needs continuation"
+        },
+        {
+          "approach": "Use ... for continuation",
+          "code": ">>> for i in range(3):\n...     print(i)",
+          "when": "Block statements in doctest"
+        },
+        {
+          "approach": "Check prompt format",
+          "code": ">>> statement  # Use >>> for new statements\n... continuation  # Use ... for continuations",
+          "when": "Wrong prompt prefix"
+        }
+      ]
+    },
+    {
+      "id": "import_error_in_doctest",
+      "pattern": "NameError: name .* is not defined",
+      "message": "Name not defined in doctest context",
+      "cause": "Required import not in doctest scope",
+      "solutions": [
+        {
+          "approach": "Add import to doctest",
+          "code": ">>> from mymodule import helper\n>>> helper()",
+          "when": "Need external dependency"
+        },
+        {
+          "approach": "Use globs parameter",
+          "code": "doctest.testmod(globs={'helper': helper})",
+          "when": "Running doctests programmatically"
+        },
+        {
+          "approach": "Add setup in doctest",
+          "code": ">>> import numpy as np\n>>> np.array([1, 2, 3])",
+          "when": "Need library imports in example"
+        }
+      ]
+    },
+    {
+      "id": "blank_line_issue",
+      "pattern": "Expected nothing\\nGot:",
+      "message": "Unexpected output after blank line",
+      "cause": "Blank line in expected output not handled correctly",
+      "solutions": [
+        {
+          "approach": "Use BLANKLINE directive",
+          "code": ">>> print('a\\n\\nb')\na\n<BLANKLINE>\nb",
+          "when": "Output contains blank lines"
+        },
+        {
+          "approach": "Avoid blank lines in output",
+          "code": ">>> '\\n'.join(filter(None, lines))",
+          "when": "Can modify function to avoid blanks"
+        }
+      ]
+    },
+    {
+      "id": "dict_order_mismatch",
+      "pattern": "Expected:.*{.*Got:.*{",
+      "message": "Dictionary order mismatch",
+      "cause": "Dict representation order differs (Python 3.7+ dicts are ordered)",
+      "solutions": [
+        {
+          "approach": "Sort keys for comparison",
+          "code": ">>> sorted(result.items())\n[('a', 1), ('b', 2)]",
+          "when": "Order doesn't matter"
+        },
+        {
+          "approach": "Use pprint for consistent output",
+          "code": ">>> from pprint import pprint\n>>> pprint(result)",
+          "when": "Complex nested structures"
+        },
+        {
+          "approach": "Check specific keys",
+          "code": ">>> result['key']\n'value'",
+          "when": "Only care about specific values"
+        }
+      ]
+    },
+    {
+      "id": "float_representation",
+      "pattern": "Expected:.*\\d+\\.\\d+.*Got:.*\\d+\\.\\d+",
+      "message": "Float representation mismatch",
+      "cause": "Float string representation differs slightly",
+      "solutions": [
+        {
+          "approach": "Round to fixed precision",
+          "code": ">>> round(result, 2)\n3.14",
+          "when": "Exact digits don't matter"
+        },
+        {
+          "approach": "Use format string",
+          "code": ">>> f'{result:.2f}'\n'3.14'",
+          "when": "Need consistent formatting"
+        },
+        {
+          "approach": "Use ellipsis",
+          "code": ">>> result  # doctest: +ELLIPSIS\n3.14159...",
+          "when": "Only care about prefix"
+        }
+      ]
+    },
+    {
+      "id": "skip_directive",
+      "pattern": "1 items had no tests",
+      "message": "No doctests found or all skipped",
+      "cause": "No valid doctest examples in module",
+      "solutions": [
+        {
+          "approach": "Check docstring format",
+          "code": "def func():\n    \"\"\"Brief description.\n    \n    >>> func()\n    'result'\n    \"\"\"",
+          "when": "Doctests not being recognized"
+        },
+        {
+          "approach": "Use SKIP directive selectively",
+          "code": ">>> slow_func()  # doctest: +SKIP",
+          "when": "Skip specific examples"
+        },
+        {
+          "approach": "Run with verbose",
+          "code": "python -m doctest -v module.py",
+          "when": "Need to see what's being tested"
+        }
+      ]
+    }
+  ]
+}

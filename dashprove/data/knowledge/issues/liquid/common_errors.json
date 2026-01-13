@@ -1,0 +1,168 @@
+{
+  "tool": "liquid",
+  "version": "10.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_variable",
+      "pattern": "undefined|nil|Liquid error.*undefined|variable.*not found",
+      "message": "Variable not defined in context",
+      "cause": "Variable not passed to template or wrong path",
+      "solutions": [
+        {
+          "approach": "Check variable assignment",
+          "code": "const { Liquid } = require('liquidjs');\nconst engine = new Liquid();\nengine.renderSync('Hello {{ name }}', { name: 'World' });",
+          "when": "Missing data"
+        },
+        {
+          "approach": "Use default filter",
+          "code": "{{ name | default: 'Guest' }}",
+          "when": "Provide fallback"
+        },
+        {
+          "approach": "Check nested access",
+          "code": "{{ user.profile.name }}  <!-- requires { user: { profile: { name: '...' } } } -->",
+          "when": "Path issue"
+        }
+      ]
+    },
+    {
+      "id": "filter_not_found",
+      "pattern": "unknown filter|undefined filter|filter.*not.*registered",
+      "message": "Filter not registered",
+      "cause": "Custom filter used but not registered with engine",
+      "solutions": [
+        {
+          "approach": "Register custom filter",
+          "code": "const engine = new Liquid();\nengine.registerFilter('money', (amount) => '$' + amount.toFixed(2));",
+          "when": "Custom filter"
+        },
+        {
+          "approach": "Check built-in filter names",
+          "code": "{{ 'hello' | capitalize }}  {# upcase not uppercase #}\n{{ arr | size }}  {# not length #}",
+          "when": "Wrong filter name"
+        },
+        {
+          "approach": "Use correct syntax",
+          "code": "{{ value | filter: arg1, arg2 }}  {# colon then args #}",
+          "when": "Syntax issue"
+        }
+      ]
+    },
+    {
+      "id": "tag_syntax_error",
+      "pattern": "syntax error|unexpected token|tag.*not.*closed|unknown tag",
+      "message": "Invalid Liquid syntax",
+      "cause": "Incorrect tag syntax or unclosed tag",
+      "solutions": [
+        {
+          "approach": "Check tag closing",
+          "code": "{% if condition %}\n  content\n{% endif %}  {# must close with endif #}",
+          "when": "Unclosed tag"
+        },
+        {
+          "approach": "Use correct operators",
+          "code": "{% if x == 1 %}  {# not === #}\n{% if x != 2 %}  {# not !== #}\n{% if x and y %}  {# not && #}",
+          "when": "Wrong operator"
+        },
+        {
+          "approach": "Register custom tag",
+          "code": "engine.registerTag('mytag', {\n  parse(tagToken, remainTokens) { /* ... */ },\n  render(ctx, emitter) { /* ... */ }\n});",
+          "when": "Unknown tag"
+        }
+      ]
+    },
+    {
+      "id": "include_not_found",
+      "pattern": "include.*not found|ENOENT|template.*not.*found|failed to lookup",
+      "message": "Included file not found",
+      "cause": "Include path doesn't resolve to existing file",
+      "solutions": [
+        {
+          "approach": "Configure root directory",
+          "code": "const engine = new Liquid({\n  root: ['./templates', './partials'],\n  extname: '.liquid'\n});",
+          "when": "Multiple paths"
+        },
+        {
+          "approach": "Check relative path",
+          "code": "{% include 'partials/header' %}  {# relative to root #}",
+          "when": "Path issue"
+        },
+        {
+          "approach": "Include with variables",
+          "code": "{% include 'product' with product %}  {# passes 'product' variable #}\n{% include 'item' for items %}  {# iterates #}",
+          "when": "Pass context"
+        }
+      ]
+    },
+    {
+      "id": "loop_variable_scope",
+      "pattern": "forloop.*undefined|loop variable.*outside|index.*nil",
+      "message": "Loop variable accessed outside loop",
+      "cause": "forloop object only available inside for block",
+      "solutions": [
+        {
+          "approach": "Use within loop",
+          "code": "{% for item in items %}\n  {{ forloop.index }}: {{ item }}  {# 1-based #}\n  {{ forloop.index0 }}  {# 0-based #}\n{% endfor %}",
+          "when": "Inside loop"
+        },
+        {
+          "approach": "Capture loop data",
+          "code": "{% capture lastIndex %}{% for item in items %}{% if forloop.last %}{{ forloop.index }}{% endif %}{% endfor %}{% endcapture %}",
+          "when": "Need outside loop"
+        },
+        {
+          "approach": "Check forloop properties",
+          "code": "forloop.first  {# true on first iteration #}\nforloop.last   {# true on last iteration #}\nforloop.length {# total items #}",
+          "when": "Available properties"
+        }
+      ]
+    },
+    {
+      "id": "html_escaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML",
+      "message": "HTML content is escaped",
+      "cause": "Output is HTML-escaped by default",
+      "solutions": [
+        {
+          "approach": "Disable escaping",
+          "code": "const engine = new Liquid({ outputEscape: false });",
+          "when": "Global disable"
+        },
+        {
+          "approach": "Use raw filter",
+          "code": "{{ rawHtml | raw }}  {# liquidjs specific #}",
+          "when": "Specific variable"
+        },
+        {
+          "approach": "Use raw tag",
+          "code": "{% raw %}\n  {{ this won't be processed }}\n{% endraw %}",
+          "when": "Literal output"
+        }
+      ]
+    },
+    {
+      "id": "strict_mode_error",
+      "pattern": "undefined variable|strict.*error|lenient.*false",
+      "message": "Strict mode rejecting undefined variables",
+      "cause": "Engine configured in strict mode",
+      "solutions": [
+        {
+          "approach": "Disable strict mode",
+          "code": "const engine = new Liquid({\n  strictVariables: false,\n  strictFilters: false\n});",
+          "when": "Allow undefined"
+        },
+        {
+          "approach": "Ensure all variables defined",
+          "code": "// Pre-validate data before rendering\nconst requiredVars = ['name', 'items'];\nrequiredVars.forEach(v => {\n  if (!(v in data)) data[v] = '';\n});",
+          "when": "Keep strict mode"
+        },
+        {
+          "approach": "Use conditional",
+          "code": "{% if user %}{{ user.name }}{% else %}Guest{% endif %}",
+          "when": "Handle in template"
+        }
+      ]
+    }
+  ]
+}

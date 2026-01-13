@@ -1,0 +1,124 @@
+{
+  "tool": "pm2",
+  "category": "process_management",
+  "common_errors": [
+    {
+      "pattern": "Script not found|ENOENT.*app\\.js",
+      "meaning": "PM2 can't find the application script",
+      "causes": [
+        "Wrong path to script",
+        "Script doesn't exist",
+        "Working directory mismatch"
+      ],
+      "solutions": [
+        "Use absolute path: pm2 start /full/path/to/app.js",
+        "Or set cwd: pm2 start app.js --cwd /app/directory",
+        "Check ecosystem.config.js script path"
+      ]
+    },
+    {
+      "pattern": "Process .* errored|app crashed",
+      "meaning": "Application crashed repeatedly",
+      "causes": [
+        "Unhandled exception in app",
+        "Missing dependencies",
+        "Port already in use",
+        "Environment variables missing"
+      ],
+      "solutions": [
+        "Check logs: pm2 logs",
+        "View error details: pm2 show <id>",
+        "Check environment: pm2 env <id>",
+        "Fix app code or configuration"
+      ]
+    },
+    {
+      "pattern": "pm2: command not found|pm2 is not recognized",
+      "meaning": "PM2 not in PATH",
+      "causes": [
+        "PM2 not installed globally",
+        "Node.js bin directory not in PATH",
+        "Different Node version active"
+      ],
+      "solutions": [
+        "Install globally: npm install -g pm2",
+        "Add Node global bin to PATH",
+        "Use npx: npx pm2 start app.js",
+        "Check nvm/fnm/asdf version"
+      ]
+    },
+    {
+      "pattern": "EADDRINUSE|Port .* already in use",
+      "meaning": "Port conflict with other process",
+      "causes": [
+        "Another instance running",
+        "Previous process didn't clean up",
+        "Other application using port"
+      ],
+      "solutions": [
+        "pm2 list to see running processes",
+        "pm2 delete <app> to stop",
+        "lsof -i :<port> to find process using port",
+        "Use different port or kill conflicting process"
+      ]
+    },
+    {
+      "pattern": "Cannot connect to pm2 daemon|IPC",
+      "meaning": "PM2 daemon not running or inaccessible",
+      "causes": [
+        "PM2 daemon crashed",
+        "Permission issue with PM2 home",
+        "Multiple PM2 versions"
+      ],
+      "solutions": [
+        "Kill and restart: pm2 kill; pm2 start app.js",
+        "Check PM2_HOME environment variable",
+        "Check ~/.pm2 permissions",
+        "Run: pm2 ping to test daemon"
+      ]
+    },
+    {
+      "pattern": "cluster mode.*fork mode|workers not spawning",
+      "meaning": "Cluster mode not working",
+      "causes": [
+        "App doesn't support clustering",
+        "exec_mode not set correctly",
+        "instances count issue"
+      ],
+      "solutions": [
+        "Set in ecosystem: exec_mode: 'cluster', instances: 'max'",
+        "Or CLI: pm2 start app.js -i max",
+        "Ensure app can handle multiple instances"
+      ]
+    },
+    {
+      "pattern": "Error: spawn ENOMEM|memory limit|OOM",
+      "meaning": "Memory issues with PM2 or app",
+      "causes": [
+        "System out of memory",
+        "Memory leak in application",
+        "max_memory_restart triggered"
+      ],
+      "solutions": [
+        "Set memory limit: pm2 start app.js --max-memory-restart 1G",
+        "Check for memory leaks in app",
+        "Monitor with: pm2 monit"
+      ]
+    },
+    {
+      "pattern": "ecosystem\\.config.*not found|no processes",
+      "meaning": "Ecosystem file issue",
+      "causes": [
+        "ecosystem.config.js not in current directory",
+        "Syntax error in ecosystem file",
+        "Apps array empty or malformed"
+      ],
+      "solutions": [
+        "Create ecosystem: pm2 ecosystem",
+        "Check JS syntax in ecosystem file",
+        "Use: pm2 start ecosystem.config.js",
+        "Specify path: pm2 start /path/to/ecosystem.config.js"
+      ]
+    }
+  ]
+}

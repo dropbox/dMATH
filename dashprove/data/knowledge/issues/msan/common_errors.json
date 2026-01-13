@@ -1,0 +1,197 @@
+{
+  "tool": "msan",
+  "version": "clang 18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "use_of_uninitialized_value",
+      "pattern": "use-of-uninitialized-value|MemorySanitizer: use-of-uninitialized",
+      "message": "Use of uninitialized memory",
+      "cause": "Reading memory that was never written to",
+      "solutions": [
+        {
+          "approach": "Initialize variable",
+          "code": "int x = 0;  // Not just 'int x;'",
+          "when": "Simple variable"
+        },
+        {
+          "approach": "Zero-initialize struct",
+          "code": "struct S s = {0};\n// or\nstruct S s;\nmemset(&s, 0, sizeof(s));",
+          "when": "Struct initialization"
+        },
+        {
+          "approach": "Use calloc",
+          "code": "void* buf = calloc(count, size);  // Zero-initialized",
+          "when": "Heap allocation"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_value_was_created",
+      "pattern": "Uninitialized value was created by a heap allocation",
+      "message": "Origin: heap allocation",
+      "cause": "malloc() returns uninitialized memory",
+      "solutions": [
+        {
+          "approach": "Use calloc instead",
+          "code": "void* buf = calloc(1, size);",
+          "when": "Need zero memory"
+        },
+        {
+          "approach": "Initialize after malloc",
+          "code": "void* buf = malloc(size);\nmemset(buf, 0, size);",
+          "when": "Need malloc semantics"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_stack",
+      "pattern": "Uninitialized value was created by an allocation of .* in the stack",
+      "message": "Origin: stack allocation",
+      "cause": "Local variable not initialized",
+      "solutions": [
+        {
+          "approach": "Initialize on declaration",
+          "code": "int arr[SIZE] = {0};\nchar buf[SIZE] = {};",
+          "when": "Array initialization"
+        },
+        {
+          "approach": "Use value initialization",
+          "code": "MyStruct s{};  // C++ value-initialized",
+          "when": "C++ struct"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_param",
+      "pattern": "in call to.*Uninitialized value was stored",
+      "message": "Uninitialized value passed to function",
+      "cause": "Parameter contains uninitialized data",
+      "solutions": [
+        {
+          "approach": "Initialize before call",
+          "code": "struct S param = {0};\nfunc(&param);",
+          "when": "Struct parameter"
+        },
+        {
+          "approach": "Check output parameters",
+          "code": "// If function is supposed to initialize,\n// ensure all paths initialize the output",
+          "when": "Output parameter"
+        }
+      ]
+    },
+    {
+      "id": "conditional_uninitialized",
+      "pattern": "Conditional jump.*depends on an uninitialized value",
+      "message": "Branch depends on uninitialized value",
+      "cause": "Condition uses uninitialized variable",
+      "solutions": [
+        {
+          "approach": "Initialize control variable",
+          "code": "bool found = false;\nfor (...) {\n    if (match) found = true;\n}\nif (found) { ... }",
+          "when": "Flag variable"
+        },
+        {
+          "approach": "Ensure all paths initialize",
+          "code": "int result;\nif (cond) {\n    result = val1;\n} else {\n    result = val2;  // Don't forget else!\n}",
+          "when": "Conditional initialization"
+        }
+      ]
+    },
+    {
+      "id": "syscall_uninitialized",
+      "pattern": "WARNING: MemorySanitizer:.*in.*syscall",
+      "message": "Uninitialized value passed to syscall",
+      "cause": "System call receives uninitialized data",
+      "solutions": [
+        {
+          "approach": "Initialize buffer",
+          "code": "struct sockaddr_in addr;\nmemset(&addr, 0, sizeof(addr));\naddr.sin_family = AF_INET;",
+          "when": "Socket struct"
+        },
+        {
+          "approach": "Zero pad buffer",
+          "code": "char buf[SIZE];\nmemset(buf, 0, SIZE);\n// Now fill in actual data",
+          "when": "Partial fill"
+        }
+      ]
+    },
+    {
+      "id": "msan_external_lib",
+      "pattern": "in.*\\.so|external library",
+      "message": "Issue in external library",
+      "cause": "External library not instrumented with MSan",
+      "solutions": [
+        {
+          "approach": "Build library with MSan",
+          "code": "# Rebuild library with -fsanitize=memory",
+          "when": "Have library source"
+        },
+        {
+          "approach": "Use intercept",
+          "code": "// MSan intercepts standard library\n// Custom libs need instrumentation",
+          "when": "Can't rebuild library"
+        },
+        {
+          "approach": "Use blocklist",
+          "code": "# msan_blocklist.txt\nfun:problematic_function",
+          "when": "False positive"
+        }
+      ]
+    },
+    {
+      "id": "return_uninitialized",
+      "pattern": "returning.*uninitialized",
+      "message": "Returning uninitialized value",
+      "cause": "Function returns without initializing return value",
+      "solutions": [
+        {
+          "approach": "Initialize return value",
+          "code": "int func() {\n    int result = 0;\n    // ...\n    return result;\n}",
+          "when": "Simple return"
+        },
+        {
+          "approach": "Ensure all paths return",
+          "code": "int func(bool cond) {\n    if (cond) return 1;\n    return 0;  // Don't fall through!\n}",
+          "when": "Multiple return paths"
+        }
+      ]
+    },
+    {
+      "id": "track_origins",
+      "pattern": "Created at|Uninitialized value was created",
+      "message": "Origin tracking information",
+      "cause": "MSan tracks where uninitialized value came from",
+      "solutions": [
+        {
+          "approach": "Enable origin tracking",
+          "code": "-fsanitize=memory -fsanitize-memory-track-origins=2",
+          "when": "Need full stack trace"
+        },
+        {
+          "approach": "Read origin trace",
+          "code": "// MSan shows: 'Uninitialized value was created'\n// followed by allocation stack trace",
+          "when": "Debugging origin"
+        }
+      ]
+    },
+    {
+      "id": "msan_false_positive",
+      "pattern": "false positive|benign",
+      "message": "Potential false positive",
+      "cause": "MSan may report issues in uninstrumented code",
+      "solutions": [
+        {
+          "approach": "Annotate memory",
+          "code": "#include <sanitizer/msan_interface.h>\n__msan_unpoison(ptr, size);",
+          "when": "External data is valid"
+        },
+        {
+          "approach": "Mark as initialized",
+          "code": "__msan_unpoison(&var, sizeof(var));",
+          "when": "False positive from inline asm"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "tool": "typedoc",
+  "version": "0.25+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "entry_point_not_found",
+      "pattern": "entry point.*not found|no entry points|could not find entry",
+      "message": "Entry point file not found",
+      "cause": "Specified entry point doesn't exist or wrong path",
+      "solutions": [
+        {
+          "approach": "Specify correct entry",
+          "code": "typedoc --entryPoints src/index.ts",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Use glob patterns",
+          "code": "typedoc --entryPoints 'src/**/*.ts'",
+          "when": "Multiple entry points"
+        },
+        {
+          "approach": "Check tsconfig paths",
+          "code": "typedoc --tsconfig tsconfig.json",
+          "when": "Using tsconfig baseUrl"
+        }
+      ]
+    },
+    {
+      "id": "symbol_not_exported",
+      "pattern": "not exported|symbol.*not accessible|internal symbol",
+      "message": "Symbol not exported from entry point",
+      "cause": "TypeDoc only documents exported symbols by default",
+      "solutions": [
+        {
+          "approach": "Export the symbol",
+          "code": "export class MyClass {} // Add export",
+          "when": "Symbol should be public"
+        },
+        {
+          "approach": "Use entryPointStrategy",
+          "code": "typedoc --entryPointStrategy expand",
+          "when": "Document all modules"
+        },
+        {
+          "approach": "Include internal",
+          "code": "@internal and set excludeInternal: false",
+          "when": "Need internal docs"
+        }
+      ]
+    },
+    {
+      "id": "type_not_resolved",
+      "pattern": "type.*not resolved|unknown type|could not resolve type",
+      "message": "Type reference cannot be resolved",
+      "cause": "Missing type definition or declaration file",
+      "solutions": [
+        {
+          "approach": "Install types",
+          "code": "npm install @types/node @types/express",
+          "when": "Missing @types package"
+        },
+        {
+          "approach": "Add type declarations",
+          "code": "// Create types/custom.d.ts\ndeclare module 'custom-module'",
+          "when": "No types available"
+        },
+        {
+          "approach": "Include in tsconfig",
+          "code": "{ \"compilerOptions\": { \"types\": [\"node\"] } }",
+          "when": "Types not included"
+        }
+      ]
+    },
+    {
+      "id": "tsconfig_error",
+      "pattern": "tsconfig.*error|configuration.*invalid|cannot parse tsconfig",
+      "message": "TypeScript configuration error",
+      "cause": "Invalid or missing tsconfig.json",
+      "solutions": [
+        {
+          "approach": "Specify tsconfig",
+          "code": "typedoc --tsconfig tsconfig.json",
+          "when": "Non-standard location"
+        },
+        {
+          "approach": "Fix tsconfig syntax",
+          "code": "// Remove trailing commas, fix JSON syntax",
+          "when": "Invalid JSON"
+        },
+        {
+          "approach": "Create tsconfig",
+          "code": "npx tsc --init",
+          "when": "Missing tsconfig"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin.*error|plugin.*not found|failed to load plugin",
+      "message": "TypeDoc plugin error",
+      "cause": "Plugin not installed or incompatible",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "npm install typedoc-plugin-markdown",
+          "when": "Plugin not installed"
+        },
+        {
+          "approach": "Check version compatibility",
+          "code": "// Ensure plugin version matches TypeDoc version",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Remove plugin option",
+          "code": "// Remove from typedoc.json: \"plugin\": [...]",
+          "when": "Plugin not needed"
+        }
+      ]
+    },
+    {
+      "id": "comment_not_parsed",
+      "pattern": "comment.*ignored|JSDoc.*invalid|@param.*not recognized",
+      "message": "JSDoc comment not parsed correctly",
+      "cause": "Comment syntax doesn't match TypeDoc expectations",
+      "solutions": [
+        {
+          "approach": "Use standard JSDoc",
+          "code": "/**\n * Description\n * @param name - The name\n * @returns The result\n */",
+          "when": "Non-standard format"
+        },
+        {
+          "approach": "Enable JSDoc comments",
+          "code": "typedoc --jsDocCompatibility",
+          "when": "Using pure JSDoc"
+        },
+        {
+          "approach": "Use TSDoc tags",
+          "code": "/** @remarks More details */",
+          "when": "Using TSDoc standard"
+        }
+      ]
+    },
+    {
+      "id": "output_conflict",
+      "pattern": "output directory.*not empty|file already exists|would overwrite",
+      "message": "Output directory has existing content",
+      "cause": "Previous docs exist in output directory",
+      "solutions": [
+        {
+          "approach": "Clean first",
+          "code": "rm -rf docs && typedoc",
+          "when": "Fresh build needed"
+        },
+        {
+          "approach": "Different output",
+          "code": "typedoc --out docs/api",
+          "when": "Preserve other files"
+        }
+      ]
+    },
+    {
+      "id": "emit_error",
+      "pattern": "emit.*error|generation failed|could not write",
+      "message": "Documentation generation failed",
+      "cause": "TypeScript compilation errors prevent docs",
+      "solutions": [
+        {
+          "approach": "Fix TS errors first",
+          "code": "npx tsc --noEmit",
+          "when": "Compilation errors"
+        },
+        {
+          "approach": "Emit despite errors",
+          "code": "typedoc --skipErrorChecking",
+          "when": "Errors not critical"
+        },
+        {
+          "approach": "Exclude problematic files",
+          "code": "typedoc --exclude '**/broken.ts'",
+          "when": "Specific file has issues"
+        }
+      ]
+    },
+    {
+      "id": "monorepo_error",
+      "pattern": "workspace.*error|package.*not found|lerna.*issue",
+      "message": "Monorepo documentation error",
+      "cause": "TypeDoc doesn't find all packages",
+      "solutions": [
+        {
+          "approach": "Use packages mode",
+          "code": "typedoc --entryPointStrategy packages ./packages/*",
+          "when": "Documenting monorepo"
+        },
+        {
+          "approach": "Configure packages",
+          "code": "// typedoc.json\n{ \"entryPointStrategy\": \"packages\" }",
+          "when": "Complex monorepo"
+        },
+        {
+          "approach": "Document each package",
+          "code": "cd packages/pkg1 && typedoc",
+          "when": "Separate docs per package"
+        }
+      ]
+    },
+    {
+      "id": "theme_error",
+      "pattern": "theme.*not found|custom theme.*error|cannot load theme",
+      "message": "Theme loading error",
+      "cause": "Custom theme not found or incompatible",
+      "solutions": [
+        {
+          "approach": "Install theme",
+          "code": "npm install typedoc-theme-xyz",
+          "when": "Theme not installed"
+        },
+        {
+          "approach": "Use default theme",
+          "code": "// Remove: \"theme\": \"custom\"",
+          "when": "Custom theme not needed"
+        },
+        {
+          "approach": "Check theme compatibility",
+          "code": "// Theme must support TypeDoc version",
+          "when": "Version mismatch"
+        }
+      ]
+    }
+  ]
+}

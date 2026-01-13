@@ -1,0 +1,247 @@
+{
+  "tool": "oclint",
+  "version": "22.02",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "compile_commands_missing",
+      "pattern": "compile_commands.json.*not found|no compilation database",
+      "message": "Compilation database not found",
+      "cause": "OCLint needs compile_commands.json to understand build settings",
+      "solutions": [
+        {
+          "approach": "Generate with CMake",
+          "code": "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..",
+          "when": "CMake project"
+        },
+        {
+          "approach": "Use xcpretty for Xcode",
+          "code": "xcodebuild ... | xcpretty -r json-compilation-database",
+          "when": "Xcode project"
+        },
+        {
+          "approach": "Use Bear",
+          "code": "bear -- make",
+          "when": "Make-based project"
+        },
+        {
+          "approach": "Specify with flag",
+          "code": "oclint -p /path/to/compile_commands.json",
+          "when": "Non-standard location"
+        }
+      ]
+    },
+    {
+      "id": "high_cyclomatic_complexity",
+      "pattern": "cyclomatic complexity|CyclomaticComplexity|complexity of \\d+",
+      "message": "Function has high cyclomatic complexity",
+      "cause": "Too many conditional branches in function",
+      "solutions": [
+        {
+          "approach": "Extract helper methods",
+          "code": "// Break complex function into smaller focused functions",
+          "when": "Function doing too much"
+        },
+        {
+          "approach": "Use early returns",
+          "code": "if (!isValid) return error;  // Guard clauses",
+          "when": "Deep nesting"
+        },
+        {
+          "approach": "Increase threshold",
+          "code": "oclint -rc CYCLOMATIC_COMPLEXITY=15",
+          "when": "Threshold too strict"
+        },
+        {
+          "approach": "Suppress for specific function",
+          "code": "// NOLINT(oclint)",
+          "when": "Justified complexity"
+        }
+      ]
+    },
+    {
+      "id": "long_method",
+      "pattern": "LongMethod|method with \\d+ lines",
+      "message": "Method is too long",
+      "cause": "Method exceeds line count threshold",
+      "solutions": [
+        {
+          "approach": "Extract methods",
+          "code": "// Break into logical sub-methods",
+          "when": "Multiple responsibilities"
+        },
+        {
+          "approach": "Configure threshold",
+          "code": "oclint -rc LONG_METHOD=100",
+          "when": "Increase limit"
+        },
+        {
+          "approach": "Suppress with comment",
+          "code": "// NOLINT(LongMethod)",
+          "when": "Intentionally long (switch, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "deep_nested_block",
+      "pattern": "DeepNestedBlock|nested block.*level \\d+",
+      "message": "Code has too many nested blocks",
+      "cause": "Excessive if/for/while nesting",
+      "solutions": [
+        {
+          "approach": "Use guard clauses",
+          "code": "if (!condition) return;\n// Rest of code at lower indent",
+          "when": "Can invert conditions"
+        },
+        {
+          "approach": "Extract to method",
+          "code": "// Move inner block to separate method",
+          "when": "Inner block is logical unit"
+        },
+        {
+          "approach": "Use continue/break",
+          "code": "for (...) {\n    if (!valid) continue;\n    // Process\n}",
+          "when": "In loops"
+        }
+      ]
+    },
+    {
+      "id": "unused_method_parameter",
+      "pattern": "UnusedMethodParameter|parameter.*never used",
+      "message": "Method parameter is not used",
+      "cause": "Parameter declared but never referenced",
+      "solutions": [
+        {
+          "approach": "Remove unused parameter",
+          "code": "// Update method signature and callers",
+          "when": "Parameter not needed"
+        },
+        {
+          "approach": "Use void cast",
+          "code": "(void)unusedParam;  // Explicitly ignore",
+          "when": "Required by interface"
+        },
+        {
+          "approach": "Add __unused attribute",
+          "code": "void func(__unused int param) { }",
+          "when": "Suppress warning"
+        }
+      ]
+    },
+    {
+      "id": "empty_catch",
+      "pattern": "EmptyCatchStatement|empty catch block",
+      "message": "Empty catch block swallows errors",
+      "cause": "@catch block has no statements",
+      "solutions": [
+        {
+          "approach": "Log the error",
+          "code": "@catch (NSException *e) {\n    NSLog(@\"Error: %@\", e);\n}",
+          "when": "Should handle error"
+        },
+        {
+          "approach": "Rethrow",
+          "code": "@catch (NSException *e) {\n    @throw;\n}",
+          "when": "Should propagate"
+        },
+        {
+          "approach": "Add comment explaining",
+          "code": "@catch (NSException *e) {\n    // Intentionally ignored: <reason>\n}",
+          "when": "Intentional empty catch"
+        }
+      ]
+    },
+    {
+      "id": "too_many_parameters",
+      "pattern": "TooManyParameters|method with \\d+ parameters",
+      "message": "Method has too many parameters",
+      "cause": "Method signature has excessive parameter count",
+      "solutions": [
+        {
+          "approach": "Use parameter object",
+          "code": "// Group related params into struct/class\ntypedef struct { int x, y; } Point;\nvoid func(Point p);",
+          "when": "Params logically grouped"
+        },
+        {
+          "approach": "Use builder pattern",
+          "code": "[[Builder new] withX:1] withY:2] build];",
+          "when": "Optional parameters"
+        },
+        {
+          "approach": "Configure threshold",
+          "code": "oclint -rc LONG_VARIABLE_NAME=30",
+          "when": "Increase limit"
+        }
+      ]
+    },
+    {
+      "id": "bitwise_in_conditional",
+      "pattern": "BitwiseOperatorInConditional|bitwise.*in.*condition",
+      "message": "Bitwise operator used in conditional",
+      "cause": "Using & or | instead of && or ||",
+      "solutions": [
+        {
+          "approach": "Use logical operators",
+          "code": "if (a && b)  // Not if (a & b)",
+          "when": "Meant logical AND/OR"
+        },
+        {
+          "approach": "Add explicit comparison",
+          "code": "if ((flags & FLAG) != 0)  // Explicit check",
+          "when": "Bitwise is intentional"
+        },
+        {
+          "approach": "Use parentheses",
+          "code": "if ((a & b) == expected)",
+          "when": "Make intent clear"
+        }
+      ]
+    },
+    {
+      "id": "constant_conditional",
+      "pattern": "ConstantConditionalOperator|condition is always",
+      "message": "Conditional always evaluates to same value",
+      "cause": "Condition is compile-time constant",
+      "solutions": [
+        {
+          "approach": "Remove dead code",
+          "code": "// Remove if/else that never executes",
+          "when": "Dead code"
+        },
+        {
+          "approach": "Fix logic error",
+          "code": "// Review condition - may be bug",
+          "when": "Unintended constant"
+        },
+        {
+          "approach": "Use #if for compile-time",
+          "code": "#if DEBUG\n    ...\n#endif",
+          "when": "Intentional compile-time switch"
+        }
+      ]
+    },
+    {
+      "id": "prefer_early_exit",
+      "pattern": "PreferEarlyExits|long else clause",
+      "message": "Consider using early exit instead of long else",
+      "cause": "Large else block could be inverted",
+      "solutions": [
+        {
+          "approach": "Invert condition and return early",
+          "code": "if (!valid) {\n    return error;\n}\n// Normal case (no else needed)",
+          "when": "Error case is short"
+        },
+        {
+          "approach": "Use guard macro",
+          "code": "NSParameterAssert(param != nil);",
+          "when": "Validating preconditions"
+        },
+        {
+          "approach": "Handle failure first",
+          "code": "// Handle exceptional case, then happy path",
+          "when": "Makes logic clearer"
+        }
+      ]
+    }
+  ]
+}

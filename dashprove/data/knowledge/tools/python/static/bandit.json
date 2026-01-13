@@ -1,0 +1,92 @@
+{
+  "id": "bandit",
+  "name": "Bandit",
+  "category": "static_analysis",
+  "subcategory": "security",
+
+  "description": "Security-focused static analyzer for Python",
+  "long_description": "Bandit inspects Python code for common security issues such as injection risks, insecure function use, hardcoded secrets, and weak cryptography. It parses the AST and applies plugins covering OWASP Top 10 style checks.",
+
+  "capabilities": [
+    "security_linting",
+    "ast_analysis",
+    "plugin_support",
+    "severity_reporting",
+    "baseline_generation"
+  ],
+  "property_types": ["security", "code_quality"],
+  "input_languages": ["python"],
+  "output_formats": ["text_report", "json", "csv"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install bandit"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://bandit.readthedocs.io/",
+    "tutorial": "https://bandit.readthedocs.io/en/latest/start.html",
+    "api_reference": "https://bandit.readthedocs.io/en/latest/plugins/index.html",
+    "examples": "https://github.com/PyCQA/bandit/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "recursive_scan",
+      "description": "Scan a repository recursively",
+      "syntax": "bandit -r src",
+      "when_to_use": "Default security scanning",
+      "examples": ["bandit -r . -f json -o bandit.json"]
+    },
+    {
+      "name": "baseline_compare",
+      "description": "Generate baseline file to track new issues",
+      "syntax": "bandit -r src -f json -o bandit-baseline.json",
+      "when_to_use": "CI gating for newly introduced vulnerabilities",
+      "examples": ["bandit -r src --baseline bandit-baseline.json"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "B303",
+      "meaning": "Use of insecure MD5 or SHA1 hashing",
+      "common_causes": ["Legacy hashing", "Non-cryptographic use"],
+      "fixes": ["Switch to SHA256+", "Use hashlib algorithms from strong list"]
+    },
+    {
+      "pattern": "B602",
+      "meaning": "subprocess call with shell=True",
+      "common_causes": ["Shell convenience", "Unvalidated user input"],
+      "fixes": ["Use list argv without shell", "Sanitize inputs", "Use shlex.quote"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security"],
+    "cli_command": "dashprove verify --backend bandit"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds for typical repos",
+    "scalability": "Good for medium codebases",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["pyt", "semgrep", "ruff"],
+    "advantages": ["Security-focused rules", "Simple setup", "JSON output"],
+    "disadvantages": ["Rule set smaller than Semgrep", "Limited taint analysis"]
+  },
+
+  "metadata": {
+    "version": "1.7.9",
+    "last_updated": "2025-12-23",
+    "maintainer": "PyCQA",
+    "license": "Apache-2.0"
+  }
+}

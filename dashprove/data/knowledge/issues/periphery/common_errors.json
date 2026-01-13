@@ -1,0 +1,227 @@
+{
+  "tool": "periphery",
+  "version": "2.18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unused_class",
+      "pattern": "class.*is unused|unused.*class",
+      "message": "Class is declared but never used",
+      "cause": "Class is not instantiated or referenced anywhere in analyzed code",
+      "solutions": [
+        {
+          "approach": "Remove if truly unused",
+          "code": "// Delete the unused class file",
+          "when": "Dead code from refactoring"
+        },
+        {
+          "approach": "Mark as entry point",
+          "code": "// In periphery.yml\nretain_public: true",
+          "when": "Public API consumed externally"
+        },
+        {
+          "approach": "Add @objc for runtime use",
+          "code": "@objc class MyClass { }",
+          "when": "Used via Objective-C runtime"
+        },
+        {
+          "approach": "Annotate to retain",
+          "code": "// periphery:ignore\nclass UsedAtRuntime { }",
+          "when": "Used via reflection/dynamic lookup"
+        }
+      ]
+    },
+    {
+      "id": "unused_function",
+      "pattern": "function.*is unused|unused.*function|method.*is unused",
+      "message": "Function/method is never called",
+      "cause": "Function exists but is not called from any reachable code path",
+      "solutions": [
+        {
+          "approach": "Remove dead code",
+          "code": "// Delete the unused function",
+          "when": "Truly unused code"
+        },
+        {
+          "approach": "Check for protocol witness",
+          "code": "// Ensure method matches protocol signature",
+          "when": "Should implement protocol"
+        },
+        {
+          "approach": "Mark as used",
+          "code": "// periphery:ignore\nfunc usedExternally() { }",
+          "when": "Called from outside analyzed scope"
+        }
+      ]
+    },
+    {
+      "id": "unused_property",
+      "pattern": "property.*is unused|unused.*property",
+      "message": "Property is declared but never read or written",
+      "cause": "Property exists but has no references",
+      "solutions": [
+        {
+          "approach": "Remove if unused",
+          "code": "// Delete the property declaration",
+          "when": "No longer needed"
+        },
+        {
+          "approach": "Check for Codable use",
+          "code": "// Ensure property is in CodingKeys if used for serialization",
+          "when": "Used for JSON encoding"
+        },
+        {
+          "approach": "Add underscore for intentionally unused",
+          "code": "private var _intentionallyUnused: Int",
+          "when": "Kept for future use"
+        }
+      ]
+    },
+    {
+      "id": "unused_parameter",
+      "pattern": "parameter.*is unused|unused.*parameter",
+      "message": "Function parameter is never used in function body",
+      "cause": "Parameter is declared but not referenced in implementation",
+      "solutions": [
+        {
+          "approach": "Use underscore",
+          "code": "func process(_ unusedParam: Int) { }",
+          "when": "Required by protocol but not needed"
+        },
+        {
+          "approach": "Remove parameter",
+          "code": "// Remove from function signature if not needed",
+          "when": "Parameter truly unnecessary"
+        },
+        {
+          "approach": "Actually use the parameter",
+          "code": "func process(value: Int) {\n    print(value)  // Use it\n}",
+          "when": "Forgot to implement logic"
+        }
+      ]
+    },
+    {
+      "id": "unused_protocol",
+      "pattern": "protocol.*is unused|unused.*protocol",
+      "message": "Protocol has no conforming types",
+      "cause": "Protocol is declared but nothing conforms to it",
+      "solutions": [
+        {
+          "approach": "Remove unused protocol",
+          "code": "// Delete protocol declaration",
+          "when": "Abstraction no longer needed"
+        },
+        {
+          "approach": "Add conformance",
+          "code": "struct MyType: MyProtocol { }",
+          "when": "Forgot to add conformance"
+        },
+        {
+          "approach": "Check for external conformance",
+          "code": "// periphery:ignore\nprotocol ExternallyImplemented { }",
+          "when": "Implemented in other modules"
+        }
+      ]
+    },
+    {
+      "id": "unused_enum_case",
+      "pattern": "enum.*case.*is unused|unused.*case",
+      "message": "Enum case is never constructed or matched",
+      "cause": "Case exists but is never used in switch or initialization",
+      "solutions": [
+        {
+          "approach": "Remove unused case",
+          "code": "enum State {\n    case active\n    // case deprecated - removed\n}",
+          "when": "Case no longer needed"
+        },
+        {
+          "approach": "Check for Codable",
+          "code": "// Case may be decoded from external data",
+          "when": "Used in serialization"
+        },
+        {
+          "approach": "Mark for retention",
+          "code": "// periphery:ignore:all\nenum AllCasesNeeded { }",
+          "when": "All cases needed for exhaustiveness"
+        }
+      ]
+    },
+    {
+      "id": "redundant_conformance",
+      "pattern": "redundant.*conformance|conformance.*redundant",
+      "message": "Protocol conformance is redundant",
+      "cause": "Type already conforms through inheritance or another conformance",
+      "solutions": [
+        {
+          "approach": "Remove redundant conformance",
+          "code": "// Remove: Equatable if already Hashable\nclass MyClass: Hashable { }",
+          "when": "Protocol implied by another"
+        },
+        {
+          "approach": "Check inheritance",
+          "code": "// Parent may already conform",
+          "when": "Inherited conformance"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "failed to index|build.*failed|compilation.*error",
+      "message": "Periphery failed to build the project",
+      "cause": "Xcode project has compilation errors preventing analysis",
+      "solutions": [
+        {
+          "approach": "Fix build errors first",
+          "code": "xcodebuild -scheme MyScheme clean build",
+          "when": "Project doesn't compile"
+        },
+        {
+          "approach": "Specify correct scheme",
+          "code": "periphery scan --scheme MyScheme",
+          "when": "Wrong scheme selected"
+        },
+        {
+          "approach": "Use workspace",
+          "code": "periphery scan --workspace MyApp.xcworkspace --scheme MyScheme",
+          "when": "Using CocoaPods/workspace"
+        }
+      ]
+    },
+    {
+      "id": "false_positive_iboutlet",
+      "pattern": "@IBOutlet.*unused|unused.*@IBOutlet",
+      "message": "IBOutlet appears unused (possible false positive)",
+      "cause": "Periphery may not detect storyboard/XIB connections",
+      "solutions": [
+        {
+          "approach": "Use retain configuration",
+          "code": "# periphery.yml\nretain_iboutlet: true",
+          "when": "Many IBOutlets flagged"
+        },
+        {
+          "approach": "Verify storyboard connection",
+          "code": "// Check Interface Builder connections are intact",
+          "when": "May be legitimately disconnected"
+        }
+      ]
+    },
+    {
+      "id": "unused_import",
+      "pattern": "import.*is unused|unused.*import",
+      "message": "Import statement is unused",
+      "cause": "Module imported but no symbols from it are used",
+      "solutions": [
+        {
+          "approach": "Remove import",
+          "code": "// Delete: import UnusedFramework",
+          "when": "Import truly unused"
+        },
+        {
+          "approach": "Check for extensions",
+          "code": "// Import may provide extensions used implicitly",
+          "when": "Framework adds functionality to existing types"
+        }
+      ]
+    }
+  ]
+}

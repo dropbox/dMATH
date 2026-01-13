@@ -1,0 +1,237 @@
+{
+  "tool": "include-what-you-use",
+  "version": "0.21",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "should_add_include",
+      "pattern": "should add.*#include|add these lines",
+      "message": "Missing required include",
+      "cause": "Using symbol without including its header",
+      "solutions": [
+        {
+          "approach": "Add the include",
+          "code": "#include <suggested_header.h>",
+          "when": "IWYU suggestion is correct"
+        },
+        {
+          "approach": "Apply fix automatically",
+          "code": "include-what-you-use file.cpp 2>&1 | fix_includes.py",
+          "when": "Trust IWYU suggestions"
+        },
+        {
+          "approach": "Add IWYU pragma",
+          "code": "// IWYU pragma: keep",
+          "when": "Header provides transitive include"
+        }
+      ]
+    },
+    {
+      "id": "should_remove_include",
+      "pattern": "should remove.*#include|remove these lines",
+      "message": "Unnecessary include",
+      "cause": "Header included but symbols not used",
+      "solutions": [
+        {
+          "approach": "Remove the include",
+          "code": "// Delete: #include <unused_header.h>",
+          "when": "Truly unused"
+        },
+        {
+          "approach": "Mark as intentional",
+          "code": "#include <header.h>  // IWYU pragma: keep",
+          "when": "Header needed for non-obvious reasons"
+        },
+        {
+          "approach": "Apply fix automatically",
+          "code": "include-what-you-use file.cpp 2>&1 | fix_includes.py",
+          "when": "Trust IWYU suggestions"
+        }
+      ]
+    },
+    {
+      "id": "forward_declare",
+      "pattern": "forward.*declare|should.*forward",
+      "message": "Forward declaration possible",
+      "cause": "Full include not needed, forward declaration suffices",
+      "solutions": [
+        {
+          "approach": "Use forward declaration",
+          "code": "class MyClass;  // instead of #include \"myclass.h\"",
+          "when": "Only using pointers/references"
+        },
+        {
+          "approach": "Keep include if needed",
+          "code": "#include \"myclass.h\"  // IWYU pragma: keep",
+          "when": "Need full definition"
+        },
+        {
+          "approach": "Disable forward declare",
+          "code": "iwyu --no_fwd_decls file.cpp",
+          "when": "Prefer includes over fwd decls"
+        }
+      ]
+    },
+    {
+      "id": "private_include",
+      "pattern": "private.*include|IWYU pragma: private",
+      "message": "Including private implementation header",
+      "cause": "Including header meant for internal use only",
+      "solutions": [
+        {
+          "approach": "Include public header instead",
+          "code": "#include <library/public.h>  // not library/detail/private.h",
+          "when": "Public API available"
+        },
+        {
+          "approach": "Mark header as public",
+          "code": "// IWYU pragma: private, include \"library/public.h\"",
+          "when": "In private header file"
+        }
+      ]
+    },
+    {
+      "id": "mapping_file_needed",
+      "pattern": "mapping.*not found|unknown header|could not map",
+      "message": "Header mapping not found",
+      "cause": "IWYU doesn't know correct header for symbol",
+      "solutions": [
+        {
+          "approach": "Use mapping file",
+          "code": "iwyu -Xiwyu --mapping_file=qt5.imp file.cpp",
+          "when": "Using Qt/Boost/etc."
+        },
+        {
+          "approach": "Create custom mapping",
+          "code": "[\n  { include: [\"<bits/stl_vector.h>\", private, \"<vector>\", public] }\n]",
+          "when": "Custom library"
+        },
+        {
+          "approach": "Add pragma in code",
+          "code": "// IWYU pragma: no_include \"internal/detail.h\"",
+          "when": "One-off fix"
+        }
+      ]
+    },
+    {
+      "id": "transitive_include",
+      "pattern": "transitively.*included|indirect include",
+      "message": "Relying on transitive include",
+      "cause": "Using symbol through indirect include chain",
+      "solutions": [
+        {
+          "approach": "Add direct include",
+          "code": "#include <needed_header.h>  // Direct include",
+          "when": "Should include directly"
+        },
+        {
+          "approach": "Document transitive include",
+          "code": "// IWYU pragma: export",
+          "when": "Exporting header intentionally"
+        },
+        {
+          "approach": "Use keep pragma",
+          "code": "#include <provider.h>  // IWYU pragma: keep",
+          "when": "Relying on transitive is intentional"
+        }
+      ]
+    },
+    {
+      "id": "compilation_database",
+      "pattern": "compile_commands.*not found|no compilation database",
+      "message": "Compilation database not found",
+      "cause": "IWYU needs compile flags from build system",
+      "solutions": [
+        {
+          "approach": "Generate with CMake",
+          "code": "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..",
+          "when": "CMake project"
+        },
+        {
+          "approach": "Use Bear",
+          "code": "bear -- make",
+          "when": "Make-based project"
+        },
+        {
+          "approach": "Specify flags manually",
+          "code": "iwyu -I/include/path -DFOO file.cpp",
+          "when": "Simple project"
+        }
+      ]
+    },
+    {
+      "id": "system_header_issue",
+      "pattern": "system header|/usr/include|<.*> vs \".*\"",
+      "message": "System vs local header confusion",
+      "cause": "Wrong include style for header type",
+      "solutions": [
+        {
+          "approach": "Use angle brackets for system",
+          "code": "#include <vector>  // System/library headers",
+          "when": "Standard library"
+        },
+        {
+          "approach": "Use quotes for local",
+          "code": "#include \"myproject/header.h\"  // Project headers",
+          "when": "Project headers"
+        },
+        {
+          "approach": "Configure system include paths",
+          "code": "iwyu -isystem /path/to/lib/include file.cpp",
+          "when": "Third-party library"
+        }
+      ]
+    },
+    {
+      "id": "template_issues",
+      "pattern": "template.*instantiation|specialization",
+      "message": "Template-related include issue",
+      "cause": "Template definition needs full type info",
+      "solutions": [
+        {
+          "approach": "Include in implementation",
+          "code": "// Template impl needs full types included",
+          "when": "Template instantiation"
+        },
+        {
+          "approach": "Use IWYU pragma",
+          "code": "// IWYU pragma: no_forward_declare MyTemplate",
+          "when": "Forward decl insufficient"
+        },
+        {
+          "approach": "Explicit instantiation",
+          "code": "template class MyTemplate<int>;  // Requires full include",
+          "when": "Explicit template instantiation"
+        }
+      ]
+    },
+    {
+      "id": "false_positive",
+      "pattern": "false positive|incorrect suggestion|wrong recommendation",
+      "message": "IWYU made incorrect suggestion",
+      "cause": "IWYU analysis not perfect, has edge cases",
+      "solutions": [
+        {
+          "approach": "Use keep pragma",
+          "code": "#include <header.h>  // IWYU pragma: keep",
+          "when": "Keep incorrectly removed"
+        },
+        {
+          "approach": "Use no_include pragma",
+          "code": "// IWYU pragma: no_include <header.h>",
+          "when": "Don't suggest this header"
+        },
+        {
+          "approach": "Create mapping file",
+          "code": "[\n  { symbol: [\"MySymbol\", private, \"<correct_header.h>\", public] }\n]",
+          "when": "Recurring false positive"
+        },
+        {
+          "approach": "Report upstream",
+          "code": "// File issue at include-what-you-use GitHub",
+          "when": "Bug in IWYU"
+        }
+      ]
+    }
+  ]
+}

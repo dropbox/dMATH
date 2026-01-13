@@ -1,0 +1,115 @@
+{
+  "tool": "tendermint",
+  "version": "0.38.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "consensus_timeout",
+      "pattern": "(timeout|prevote|precommit|propose)",
+      "message": "Consensus round timeout",
+      "cause": "Round did not complete in time",
+      "solutions": [
+        {
+          "approach": "Adjust timeouts",
+          "code": "# config.toml\n[consensus]\ntimeout_propose = \"3s\"\ntimeout_prevote = \"1s\"\ntimeout_precommit = \"1s\"\ntimeout_commit = \"5s\"",
+          "when": "Frequent timeouts"
+        },
+        {
+          "approach": "Check proposer",
+          "code": "# Check if proposer is online\ntendermint show-validator\ncurl localhost:26657/status",
+          "when": "Missing proposals"
+        }
+      ]
+    },
+    {
+      "id": "byzantine_evidence",
+      "pattern": "(evidence|double.*sign|equivocation)",
+      "message": "Byzantine evidence detected",
+      "cause": "Validator signed conflicting blocks",
+      "solutions": [
+        {
+          "approach": "Check evidence",
+          "code": "# Query evidence\ncurl localhost:26657/broadcast_evidence\n# Evidence will slash validator",
+          "when": "Evidence submitted"
+        },
+        {
+          "approach": "Prevent double signing",
+          "code": "# Use remote signer with protection\ntendermint start --priv_validator_laddr=tcp://signer:1234\n# Signer should track last signed height",
+          "when": "Securing validator"
+        }
+      ]
+    },
+    {
+      "id": "app_hash_mismatch",
+      "pattern": "(app.*hash|mismatch|state.*sync)",
+      "message": "Application hash mismatch",
+      "cause": "State machine produced different result",
+      "solutions": [
+        {
+          "approach": "Check determinism",
+          "code": "// Ensure ABCI app is deterministic\n// No random, no time-dependent logic\nfn deliver_tx(&self, tx: &[u8]) -> ResponseDeliverTx {\n    // Deterministic execution only\n}",
+          "when": "Non-deterministic app"
+        },
+        {
+          "approach": "Resync state",
+          "code": "# Reset and resync\ntendermint unsafe-reset-all\n# Or use state sync\ntendermint start --p2p.persistent_peers=...",
+          "when": "State corrupted"
+        }
+      ]
+    },
+    {
+      "id": "peer_connection_error",
+      "pattern": "(peer|connection|dial|p2p)",
+      "message": "Peer connection error",
+      "cause": "Cannot connect to peers",
+      "solutions": [
+        {
+          "approach": "Configure peers",
+          "code": "# config.toml\n[p2p]\nseeds = \"node1@ip1:26656,node2@ip2:26656\"\npersistent_peers = \"nodeid@ip:26656\"",
+          "when": "Peer discovery"
+        },
+        {
+          "approach": "Check firewall",
+          "code": "# Open P2P port\nsudo ufw allow 26656/tcp\n# Check connectivity\ntelnet peer_ip 26656",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "validator_set_error",
+      "pattern": "(validator.*set|power|staking)",
+      "message": "Validator set update error",
+      "cause": "Invalid validator set change",
+      "solutions": [
+        {
+          "approach": "Update validators",
+          "code": "// EndBlock response with validator updates\nfn end_block(&self, req: RequestEndBlock) -> ResponseEndBlock {\n    ResponseEndBlock {\n        validator_updates: vec![\n            ValidatorUpdate {\n                pub_key: pubkey,\n                power: new_power,\n            }\n        ],\n        ..Default::default()\n    }\n}",
+          "when": "Changing validators"
+        },
+        {
+          "approach": "Check bounds",
+          "code": "// Limit validator set changes per block\nlet max_change = total_power / 3;\nassert!(power_delta < max_change);",
+          "when": "Large changes"
+        }
+      ]
+    },
+    {
+      "id": "mempool_error",
+      "pattern": "(mempool|tx.*rejected|check.*tx)",
+      "message": "Transaction rejected from mempool",
+      "cause": "CheckTx failed for transaction",
+      "solutions": [
+        {
+          "approach": "Handle CheckTx",
+          "code": "// ABCI CheckTx\nfn check_tx(&self, req: RequestCheckTx) -> ResponseCheckTx {\n    if is_valid(&req.tx) {\n        ResponseCheckTx::default()  // Accept\n    } else {\n        ResponseCheckTx {\n            code: 1,\n            log: \"invalid tx\".into(),\n            ..Default::default()\n        }\n    }\n}",
+          "when": "Validating transactions"
+        },
+        {
+          "approach": "Configure mempool",
+          "code": "# config.toml\n[mempool]\nsize = 5000\nmax_txs_bytes = 1073741824",
+          "when": "Mempool full"
+        }
+      ]
+    }
+  ]
+}

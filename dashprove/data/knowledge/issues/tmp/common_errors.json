@@ -1,0 +1,102 @@
+{
+  "tool": "tmp",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "tmp_cleanup_not_working",
+      "pattern": "temp files not deleted|cleanup failed|files remain after exit",
+      "severity": "warning",
+      "causes": [
+        "Process crashed before cleanup",
+        "unsafeCleanup needed for non-empty dirs",
+        "Cleanup callback not provided"
+      ],
+      "solutions": [
+        "Use { unsafeCleanup: true } for directories with contents",
+        "tmp-promise handles cleanup on process exit",
+        "Call removeCallback() or use try/finally",
+        "Use tmp.setGracefulCleanup() for process crash handling"
+      ]
+    },
+    {
+      "id": "tmp_enospc",
+      "pattern": "ENOSPC|no space left|disk full",
+      "severity": "error",
+      "causes": [
+        "Temp directory disk is full",
+        "Too many temp files created",
+        "Not cleaning up temp files"
+      ],
+      "solutions": [
+        "Clean up temp files with removeCallback()",
+        "Set dir option to use different temp location",
+        "Free space on temp disk",
+        "Use discardDescriptor: true if fd not needed"
+      ]
+    },
+    {
+      "id": "tmp_dir_vs_file",
+      "pattern": "EISDIR|ENOTDIR|expected file got directory",
+      "severity": "error",
+      "causes": [
+        "Using tmp.file() when directory needed",
+        "Using tmp.dir() when file needed",
+        "Path type mismatch"
+      ],
+      "solutions": [
+        "Use tmp.file() for temporary files",
+        "Use tmp.dir() for temporary directories",
+        "Use tmp.tmpName() for just a name",
+        "Check what the callback returns"
+      ]
+    },
+    {
+      "id": "tmp_prefix_suffix",
+      "pattern": "invalid prefix|suffix error|template invalid",
+      "severity": "error",
+      "causes": [
+        "Invalid characters in prefix/suffix",
+        "Using template with prefix/suffix",
+        "Path separator in prefix"
+      ],
+      "solutions": [
+        "Prefix/suffix should be simple strings",
+        "Don't use path separators in prefix",
+        "template option is alternative to prefix/postfix",
+        "Template: 'tmp-XXXXXX' where X is replaced"
+      ]
+    },
+    {
+      "id": "tmp_callback_vs_promise",
+      "pattern": "callback.*undefined|not a function|promise not returned",
+      "severity": "error",
+      "causes": [
+        "Mixing callback and promise APIs",
+        "Using tmp when tmp-promise expected",
+        "Async/await without promisified version"
+      ],
+      "solutions": [
+        "tmp package: uses callbacks by default",
+        "Use tmp-promise for async/await support",
+        "Or promisify: util.promisify(tmp.file)",
+        "tmp.file((err, path, fd, cleanup) => {})"
+      ]
+    },
+    {
+      "id": "tmp_fd_leak",
+      "pattern": "EMFILE|too many open|file descriptor leak",
+      "severity": "error",
+      "causes": [
+        "Not closing file descriptors",
+        "Many temp files without discardDescriptor",
+        "Cleanup not releasing fd"
+      ],
+      "solutions": [
+        "Close fd after use: fs.closeSync(fd)",
+        "Use { discardDescriptor: true } if fd not needed",
+        "Call removeCallback() which closes fd",
+        "Use { detachDescriptor: true } to manage fd separately"
+      ]
+    }
+  ]
+}

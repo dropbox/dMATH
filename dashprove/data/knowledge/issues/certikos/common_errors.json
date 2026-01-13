@@ -1,0 +1,168 @@
+{
+  "tool": "certikos",
+  "version": "1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "layer_refinement_failed",
+      "pattern": "layer refinement.*failed|Cannot prove.*simulates",
+      "message": "Abstraction layer refinement proof failed",
+      "cause": "Cannot prove implementation refines specification layer",
+      "solutions": [
+        {
+          "approach": "Check simulation relation",
+          "code": "(* Verify relate predicate captures invariants *)",
+          "when": "Simulation relation incomplete"
+        },
+        {
+          "approach": "Strengthen invariant",
+          "code": "Inductive inv : ... -> Prop := | inv_intro : ...",
+          "when": "Missing invariant preservation"
+        },
+        {
+          "approach": "Add intermediate layer",
+          "code": "(* Decompose refinement into smaller steps *)",
+          "when": "Refinement gap too large"
+        }
+      ]
+    },
+    {
+      "id": "primitive_spec_mismatch",
+      "pattern": "primitive.*does not match|spec_of.*failed",
+      "message": "Primitive specification mismatch",
+      "cause": "Implementation doesn't match declared specification",
+      "solutions": [
+        {
+          "approach": "Fix C implementation",
+          "code": "/* Match behavior to spec exactly */",
+          "when": "Implementation has bug"
+        },
+        {
+          "approach": "Update specification",
+          "code": "Definition prim_spec := ... .",
+          "when": "Spec doesn't reflect intended behavior"
+        },
+        {
+          "approach": "Check preconditions",
+          "code": "(* Ensure preconditions are satisfiable *)",
+          "when": "Spec's precondition too strong"
+        }
+      ]
+    },
+    {
+      "id": "assembly_verification_failed",
+      "pattern": "asm.*verification.*failed|assembly.*does not match",
+      "message": "Assembly verification failed",
+      "cause": "Assembly code doesn't satisfy specification",
+      "solutions": [
+        {
+          "approach": "Check register usage",
+          "code": "(* Verify callee-saved registers preserved *)",
+          "when": "Register convention violated"
+        },
+        {
+          "approach": "Verify stack layout",
+          "code": "(* Match stack frame to C ABI *)",
+          "when": "Stack manipulation incorrect"
+        },
+        {
+          "approach": "Use VST for C parts",
+          "code": "(* Verify C code with VST, assembly separately *)",
+          "when": "Mixed C/assembly code"
+        }
+      ]
+    },
+    {
+      "id": "memory_model_error",
+      "pattern": "memory model.*inconsistent|inject.*failed",
+      "message": "Memory model error",
+      "cause": "Memory injection or access pattern invalid",
+      "solutions": [
+        {
+          "approach": "Check block permissions",
+          "code": "(* Verify Mem.valid_access holds *)",
+          "when": "Access to invalid memory"
+        },
+        {
+          "approach": "Verify injection",
+          "code": "(* Check memory injection is maintained *)",
+          "when": "Memory correspondence broken"
+        },
+        {
+          "approach": "Use CompCert memory lemmas",
+          "code": "apply Mem.store_valid_access_1.",
+          "when": "Need memory access facts"
+        }
+      ]
+    },
+    {
+      "id": "contextual_refinement_error",
+      "pattern": "contextual.*refinement|behavior.*not preserved",
+      "message": "Contextual refinement error",
+      "cause": "Refinement doesn't hold for all contexts",
+      "solutions": [
+        {
+          "approach": "Strengthen relation",
+          "code": "(* Add more cases to simulation *)",
+          "when": "Some behaviors not covered"
+        },
+        {
+          "approach": "Check external call handling",
+          "code": "(* Verify external_call simulations *)",
+          "when": "External calls not simulated"
+        },
+        {
+          "approach": "Verify composed layers",
+          "code": "(* Check layer composition is valid *)",
+          "when": "Layer composition incorrect"
+        }
+      ]
+    },
+    {
+      "id": "build_dependencies",
+      "pattern": "Cannot find.*CompCert|missing.*dependency",
+      "message": "Build dependency error",
+      "cause": "Missing CompCert or other dependencies",
+      "solutions": [
+        {
+          "approach": "Install CompCert",
+          "code": "opam install coq-compcert",
+          "when": "CompCert not installed"
+        },
+        {
+          "approach": "Set COMPCERT variable",
+          "code": "export COMPCERT=/path/to/compcert",
+          "when": "CompCert in non-standard location"
+        },
+        {
+          "approach": "Match versions",
+          "code": "# CertiKOS requires specific CompCert/Coq versions",
+          "when": "Version incompatibility"
+        }
+      ]
+    },
+    {
+      "id": "concurrent_layer_error",
+      "pattern": "concurrent.*layer|thread.*safety",
+      "message": "Concurrent layer verification error",
+      "cause": "Cannot prove thread safety or concurrent refinement",
+      "solutions": [
+        {
+          "approach": "Check rely-guarantee",
+          "code": "(* Verify rely and guarantee conditions *)",
+          "when": "Thread interference not handled"
+        },
+        {
+          "approach": "Verify atomicity",
+          "code": "(* Ensure operations are atomic *)",
+          "when": "Non-atomic operation assumed atomic"
+        },
+        {
+          "approach": "Add synchronization",
+          "code": "(* Add lock/unlock around critical section *)",
+          "when": "Missing synchronization"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "tool": "nusmv",
+  "version": "2.7",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "syntax_module_error",
+      "pattern": "syntax error at token|unexpected identifier|VAR declaration error",
+      "message": "SMV model failed to parse",
+      "cause": "Missing MODULE declarations, duplicate variable names, or misplaced INIT/TRANS sections",
+      "solutions": [
+        {
+          "approach": "Ensure MODULE main exists",
+          "code": "MODULE main\nVAR\n  state : {idle, busy};\nINIT state = idle;\nTRANS next(state) = case state = idle : busy; TRUE : idle; esac;",
+          "when": "Top-level model missing"
+        },
+        {
+          "approach": "Separate DEFINE/ASSIGN sections",
+          "code": "DEFINE ready := state = idle;\nASSIGN init(state) := idle;",
+          "when": "Mixing declarations"
+        }
+      ]
+    },
+    {
+      "id": "bdd_state_explosion",
+      "pattern": "out of memory in BDD|variable ordering|Too many BDD nodes",
+      "message": "BDD representation explodes",
+      "cause": "Poor variable ordering or unbounded integer ranges",
+      "solutions": [
+        {
+          "approach": "Enable dynamic reordering",
+          "code": "set_bdd_parameters -dynamic -reordering sifting",
+          "when": "Large boolean state space"
+        },
+        {
+          "approach": "Use BMC engine",
+          "code": "go_bmc; check_ltlspec_bmc -k 50",
+          "when": "BDD approach infeasible"
+        },
+        {
+          "approach": "Abstract integers",
+          "code": "-- integer variables with bounded range: 0..5",
+          "when": "Unbounded INT leads to huge BDDs"
+        }
+      ]
+    },
+    {
+      "id": "fairness_ignored",
+      "pattern": "Fair path does not exist|no FAIR path found",
+      "message": "CTL/LTL property fails due to fairness handling",
+      "cause": "Fairness constraints missing or mis-declared",
+      "solutions": [
+        {
+          "approach": "Declare FAIRNESS conditions",
+          "code": "FAIRNESS running -> eventually ready",
+          "when": "Properties require recurring actions"
+        },
+        {
+          "approach": "Use JUSTICE/COMPASSION",
+          "code": "JUSTICE running; COMPASSION request grant;",
+          "when": "Need strong fairness"
+        }
+      ]
+    },
+    {
+      "id": "ltl_misinterpreted",
+      "pattern": "Parsing LTL formula failed|undefined symbol in LTLSPEC",
+      "message": "LTL property cannot be checked",
+      "cause": "Using CTL-only operators or missing specification binding",
+      "solutions": [
+        {
+          "approach": "Prefix property with LTLSPEC",
+          "code": "LTLSPEC G (req -> F grant)",
+          "when": "Property not registered"
+        },
+        {
+          "approach": "Use next for current/next variables",
+          "code": "LTLSPEC G (req -> X grant)",
+          "when": "Mixing CTL next/prime syntax"
+        }
+      ]
+    },
+    {
+      "id": "undefined_module",
+      "pattern": "Undefined module|could not resolve module name",
+      "message": "Module instantiation fails",
+      "cause": "Missing MODULE definition or wrong parameter list",
+      "solutions": [
+        {
+          "approach": "Define module before use",
+          "code": "MODULE Controller(req, grant) ...\nMODULE main\n  VAR c : Controller(req, grant);",
+          "when": "Instantiating reusable modules"
+        },
+        {
+          "approach": "Match formal parameters",
+          "code": "MODULE Child(x, y); ... Child(a, b);",
+          "when": "Parameter count mismatch"
+        }
+      ]
+    },
+    {
+      "id": "incomplete_init_trans",
+      "pattern": "variable .* not initialized|no initial state",
+      "message": "Model lacks initial conditions or transitions",
+      "cause": "init()/next() not specified for all variables",
+      "solutions": [
+        {
+          "approach": "Add INIT/ASSIGN for each variable",
+          "code": "INIT state = idle;\nASSIGN next(state) := case ... esac;",
+          "when": "New variable introduced"
+        },
+        {
+          "approach": "Use default self-loop",
+          "code": "TRANS next(v) = v;",
+          "when": "Variable should stay unchanged"
+        }
+      ]
+    }
+  ]
+}

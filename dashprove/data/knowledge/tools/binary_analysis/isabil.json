@@ -1,0 +1,99 @@
+{
+  "id": "isabil",
+  "name": "IsaBIL",
+  "category": "binary_analysis",
+  "subcategory": "formal_semantics",
+
+  "description": "Isabelle/HOL formalization of the Binary Intermediate Language (BIL) used by BAP for verified binary analysis.",
+  "long_description": "IsaBIL provides a machine-checked semantics of BIL inside Isabelle/HOL, enabling end-to-end proofs about lifted binaries. It connects BAP's lifter output to higher-order logic, supports reasoning about control flow, memory effects, and simulation between binary code and specifications, and is a foundation for verified reverse engineering.",
+
+  "capabilities": [
+    "formal_semantics",
+    "binary_refinement",
+    "proof_assistant_integration",
+    "control_flow_verification"
+  ],
+  "property_types": ["theorem", "binary_refinement", "equivalence"],
+  "input_languages": ["bil", "isabelle"],
+  "output_formats": ["proof", "counterexample_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/matt-j-griffin/isabil"},
+      {"type": "source", "url": "https://arxiv.org/abs/2504.16775"}
+    ],
+    "dependencies": ["isabelle2023", "bap"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://arxiv.org/abs/2504.16775",
+    "tutorial": "https://github.com/matt-j-griffin/isabil/tree/main/examples",
+    "api_reference": "https://github.com/matt-j-griffin/isabil",
+    "examples": "https://github.com/matt-j-griffin/isabil/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "bil_simpl",
+      "description": "Simplify BIL expressions using Isabelle automation.",
+      "syntax": "apply (simp add: bil_defs)",
+      "when_to_use": "To discharge algebraic side conditions and normalize lifted instructions.",
+      "examples": ["apply (simp add: bil_semantics_def)"]
+    },
+    {
+      "name": "simulation",
+      "description": "Prove simulation between binary steps and abstract specification.",
+      "syntax": "apply (rule simulation_step)",
+      "when_to_use": "To show that lifted BIL traces refine a USL or ISA model.",
+      "examples": ["apply (rule simulation_step)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Could not find constant BIL",
+      "meaning": "IsaBIL theories were not imported.",
+      "common_causes": ["Missing session image", "Incorrect thy import path"],
+      "fixes": ["Build IsaBIL session with isabelle build", "Add \"imports IsaBIL\" to theory header"]
+    },
+    {
+      "pattern": "type mismatch in memory model",
+      "meaning": "Word size or endian assumptions differ from the target binary.",
+      "common_causes": ["Architecture not set", "Using wrong word length in locale"],
+      "fixes": ["Instantiate IsaBIL locale with correct target", "Align BAP lifter settings with IsaBIL theory"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["binary_property", "refinement", "invariant"],
+    "cli_command": "dashprove reverse --backend isabil --binary <path> --isa-session IsaBIL"
+  },
+
+  "performance": {
+    "typical_runtime": "Proofs take seconds to minutes depending on obligations",
+    "scalability": "Best for lifted modules or routines; full firmware proofs require decomposition",
+    "memory_usage": "Moderate Isabelle session footprint"
+  },
+
+  "comparisons": {
+    "similar_tools": ["coq_bap", "cakeml_bir"],
+    "advantages": [
+      "Mechanized semantics aligned with BAP BIL",
+      "Supports refinement proofs from binaries to specs",
+      "Reuses Isabelle automation and libraries"
+    ],
+    "disadvantages": [
+      "Requires Isabelle expertise",
+      "No built-in counterexample search beyond Isabelle tools"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.1",
+    "last_updated": "2025-12-29",
+    "maintainer": "IsaBIL contributors",
+    "license": "BSD-2-Clause"
+  }
+}

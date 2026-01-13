@@ -1,0 +1,209 @@
+{
+  "tool": "snyk_iac",
+  "version": "1.1200.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_required",
+      "pattern": "not authenticated|SNYK_TOKEN|auth.*required|Please authenticate",
+      "message": "Snyk authentication required",
+      "cause": "Not authenticated with Snyk",
+      "solutions": [
+        {
+          "approach": "Authenticate CLI",
+          "code": "snyk auth",
+          "when": "Interactive login"
+        },
+        {
+          "approach": "Use token",
+          "code": "export SNYK_TOKEN=your_token\nsnyk iac test",
+          "when": "CI environment"
+        },
+        {
+          "approach": "Check token validity",
+          "code": "snyk auth --auth-type=token",
+          "when": "Token may be expired"
+        }
+      ]
+    },
+    {
+      "id": "no_files_found",
+      "pattern": "No valid input|Could not find|No supported files",
+      "message": "No IaC files found to scan",
+      "cause": "No Terraform, CloudFormation, or Kubernetes files in path",
+      "solutions": [
+        {
+          "approach": "Specify path",
+          "code": "snyk iac test ./terraform",
+          "when": "Files in subdirectory"
+        },
+        {
+          "approach": "Check file types",
+          "code": "# Supported: .tf, .json, .yaml, .yml (CloudFormation, K8s)\nsnyk iac test --scan=terraform",
+          "when": "Specify file type"
+        },
+        {
+          "approach": "Include hidden",
+          "code": "snyk iac test --include-hidden",
+          "when": "Files in hidden dirs"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "Failed to parse|Parsing error|Invalid.*syntax",
+      "message": "IaC file parsing failed",
+      "cause": "Syntax error in Terraform/CloudFormation/K8s file",
+      "solutions": [
+        {
+          "approach": "Validate Terraform",
+          "code": "terraform validate",
+          "when": "Terraform syntax error"
+        },
+        {
+          "approach": "Validate YAML",
+          "code": "yamllint file.yaml",
+          "when": "YAML syntax error"
+        },
+        {
+          "approach": "Skip invalid files",
+          "code": "snyk iac test --severity-threshold=high",
+          "when": "Continue despite errors"
+        }
+      ]
+    },
+    {
+      "id": "high_severity_found",
+      "pattern": "high severity|critical.*issues|security vulnerabilities",
+      "message": "High/critical severity issues found",
+      "cause": "IaC configuration has security issues",
+      "solutions": [
+        {
+          "approach": "Review findings",
+          "code": "snyk iac test --json | jq '.infrastructureAsCodeIssues'",
+          "when": "Get detailed findings"
+        },
+        {
+          "approach": "Generate report",
+          "code": "snyk iac test --report",
+          "when": "Upload to Snyk dashboard"
+        },
+        {
+          "approach": "Ignore false positives",
+          "code": "# In .snyk file:\nignore:\n  SNYK-CC-TF-123:\n    - '*':\n        reason: 'Accepted risk'\n        expires: 2025-12-31",
+          "when": "Known acceptable risk"
+        }
+      ]
+    },
+    {
+      "id": "rule_not_found",
+      "pattern": "Rule.*not found|Unknown rule|Invalid rule ID",
+      "message": "Rule ID not recognized",
+      "cause": "Invalid or deprecated rule ID in ignore config",
+      "solutions": [
+        {
+          "approach": "List rules",
+          "code": "snyk iac describe --rules",
+          "when": "Find valid rule IDs"
+        },
+        {
+          "approach": "Update .snyk file",
+          "code": "# Check https://security.snyk.io/rules for current IDs",
+          "when": "Rule IDs changed"
+        }
+      ]
+    },
+    {
+      "id": "custom_rules_error",
+      "pattern": "Custom rules.*error|Invalid rule bundle|rules.*failed",
+      "message": "Custom rules loading failed",
+      "cause": "Custom OPA rules have errors",
+      "solutions": [
+        {
+          "approach": "Validate rules",
+          "code": "snyk iac rules test",
+          "when": "Test custom rules"
+        },
+        {
+          "approach": "Check OPA syntax",
+          "code": "opa check policy/*.rego",
+          "when": "OPA syntax error"
+        },
+        {
+          "approach": "Build rules bundle",
+          "code": "snyk iac rules push --bundle-path=custom-rules.tar.gz",
+          "when": "Push to Snyk"
+        }
+      ]
+    },
+    {
+      "id": "policy_violation",
+      "pattern": "Policy violation|fails.*policy|--policy-path",
+      "message": "Snyk policy violation",
+      "cause": "IaC violates organization policy",
+      "solutions": [
+        {
+          "approach": "Check policy",
+          "code": "snyk iac test --policy-path=.snyk",
+          "when": "Use local policy"
+        },
+        {
+          "approach": "Review org policy",
+          "code": "# Check org policy at app.snyk.io/org/{org}/policies",
+          "when": "Org-level policy"
+        },
+        {
+          "approach": "Request exception",
+          "code": "# Add to .snyk with expiry and justification",
+          "when": "Need temporary exception"
+        }
+      ]
+    },
+    {
+      "id": "drift_detection_error",
+      "pattern": "drift.*error|state.*not found|terraform state",
+      "message": "IaC drift detection failed",
+      "cause": "Cannot access cloud state for drift comparison",
+      "solutions": [
+        {
+          "approach": "Set cloud credentials",
+          "code": "export AWS_ACCESS_KEY_ID=...\nexport AWS_SECRET_ACCESS_KEY=...\nsnyk iac describe",
+          "when": "Need cloud access"
+        },
+        {
+          "approach": "Use specific provider",
+          "code": "snyk iac describe --only=aws",
+          "when": "Limit to one provider"
+        },
+        {
+          "approach": "Filter resources",
+          "code": "snyk iac describe --filter='Type==aws_s3_bucket'",
+          "when": "Scan specific resources"
+        }
+      ]
+    },
+    {
+      "id": "output_format_error",
+      "pattern": "Invalid output format|--json|--sarif",
+      "message": "Invalid output format specified",
+      "cause": "Unsupported output format option",
+      "solutions": [
+        {
+          "approach": "Use JSON",
+          "code": "snyk iac test --json > results.json",
+          "when": "Machine-readable output"
+        },
+        {
+          "approach": "Use SARIF",
+          "code": "snyk iac test --sarif > results.sarif",
+          "when": "GitHub code scanning"
+        },
+        {
+          "approach": "Use JUnit",
+          "code": "snyk iac test --json | snyk-to-html -o results.html",
+          "when": "HTML report"
+        }
+      ]
+    }
+  ]
+}

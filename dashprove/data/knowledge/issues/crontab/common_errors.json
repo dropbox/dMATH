@@ -1,0 +1,158 @@
+{
+  "tool": "crontab",
+  "version": "cronie",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_allowed",
+      "pattern": "not allowed|You .* are not allowed|crontab: you are not allowed",
+      "message": "User not allowed",
+      "cause": "User in cron.deny or not in cron.allow",
+      "solutions": [
+        {
+          "approach": "Check allow/deny",
+          "code": "cat /etc/cron.allow\ncat /etc/cron.deny",
+          "when": "See restrictions"
+        },
+        {
+          "approach": "Add to allow",
+          "code": "# As root:\necho 'username' >> /etc/cron.allow",
+          "when": "Grant access"
+        },
+        {
+          "approach": "Remove from deny",
+          "code": "# As root, edit /etc/cron.deny and remove username",
+          "when": "Remove restriction"
+        }
+      ]
+    },
+    {
+      "id": "job_not_running",
+      "pattern": "not running|not executing|cron not working",
+      "message": "Cron job not executing",
+      "cause": "Various cron configuration issues",
+      "solutions": [
+        {
+          "approach": "Check cron daemon",
+          "code": "systemctl status cron\nsystemctl status crond  # RHEL\nservice cron status",
+          "when": "Verify running"
+        },
+        {
+          "approach": "Check syntax",
+          "code": "# Format: min hour dom mon dow command\n# Example: */5 * * * * /path/to/script.sh\ncrontab -l  # Verify entry",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Check logs",
+          "code": "grep CRON /var/log/syslog\njournalctl -u cron\ntail -f /var/log/cron",
+          "when": "Debug execution"
+        },
+        {
+          "approach": "Use full paths",
+          "code": "# Bad: python script.py\n# Good: /usr/bin/python3 /home/user/script.py",
+          "when": "PATH issues"
+        }
+      ]
+    },
+    {
+      "id": "environment_issues",
+      "pattern": "environment|PATH|command not found",
+      "message": "Environment not set",
+      "cause": "Cron has minimal environment",
+      "solutions": [
+        {
+          "approach": "Set PATH in crontab",
+          "code": "# At top of crontab:\nPATH=/usr/local/bin:/usr/bin:/bin\nSHELL=/bin/bash",
+          "when": "Define environment"
+        },
+        {
+          "approach": "Use full paths",
+          "code": "* * * * * /usr/bin/python3 /home/user/script.py",
+          "when": "Explicit paths"
+        },
+        {
+          "approach": "Source profile",
+          "code": "* * * * * . $HOME/.profile; /path/to/script.sh",
+          "when": "Need full env"
+        }
+      ]
+    },
+    {
+      "id": "editor_issues",
+      "pattern": "no crontab|editor|EDITOR|visual",
+      "message": "Editor problems",
+      "cause": "No default editor set",
+      "solutions": [
+        {
+          "approach": "Set editor",
+          "code": "export EDITOR=nano\nexport VISUAL=nano\ncrontab -e",
+          "when": "Choose editor"
+        },
+        {
+          "approach": "Select default",
+          "code": "select-editor  # Debian/Ubuntu",
+          "when": "System default"
+        }
+      ]
+    },
+    {
+      "id": "syntax_errors",
+      "pattern": "errors in crontab|bad .* range|bad minute|bad hour",
+      "message": "Invalid crontab syntax",
+      "cause": "Incorrect time specification",
+      "solutions": [
+        {
+          "approach": "Cron syntax",
+          "code": "# min(0-59) hour(0-23) dom(1-31) mon(1-12) dow(0-7)\n0 2 * * * command      # 2:00 AM daily\n*/15 * * * * command   # Every 15 minutes\n0 0 * * 0 command      # Sunday midnight",
+          "when": "Reference"
+        },
+        {
+          "approach": "Use crontab.guru",
+          "code": "# Validate at: https://crontab.guru\n# Or use: crontab -T file.cron  # Test syntax",
+          "when": "Verify syntax"
+        }
+      ]
+    },
+    {
+      "id": "output_issues",
+      "pattern": "mail|email|output|MTA",
+      "message": "Cron output/mail issues",
+      "cause": "Cron emails output by default",
+      "solutions": [
+        {
+          "approach": "Redirect output",
+          "code": "* * * * * command > /dev/null 2>&1",
+          "when": "Silence output"
+        },
+        {
+          "approach": "Log to file",
+          "code": "* * * * * command >> /var/log/myjob.log 2>&1",
+          "when": "Keep logs"
+        },
+        {
+          "approach": "Set MAILTO",
+          "code": "# In crontab:\nMAILTO=user@example.com\n# Or disable:\nMAILTO=\"\"",
+          "when": "Control mail"
+        }
+      ]
+    },
+    {
+      "id": "special_characters",
+      "pattern": "percent|%|unexpected",
+      "message": "Percent sign issues",
+      "cause": "% has special meaning in crontab",
+      "solutions": [
+        {
+          "approach": "Escape percent",
+          "code": "# % starts stdin input in crontab\n# Escape with backslash:\n* * * * * date +\\%Y-\\%m-\\%d",
+          "when": "Use % in commands"
+        },
+        {
+          "approach": "Use script",
+          "code": "# Put command in script, call script from cron\n* * * * * /home/user/myscript.sh",
+          "when": "Avoid escaping"
+        }
+      ]
+    }
+  ]
+}

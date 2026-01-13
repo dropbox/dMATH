@@ -1,0 +1,130 @@
+{
+  "tool": "hyper",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_executor",
+      "pattern": "executor.*required|no runtime|TokioExecutor.*not found",
+      "message": "No async executor configured",
+      "cause": "hyper 1.x requires explicit executor configuration",
+      "solutions": [
+        {
+          "approach": "Use hyper-util",
+          "code": "use hyper_util::rt::TokioExecutor;\nuse hyper_util::client::legacy::Client;\n\nlet client = Client::builder(TokioExecutor::new()).build_http::<Full<Bytes>>();",
+          "when": "HTTP client"
+        },
+        {
+          "approach": "Configure server",
+          "code": "hyper::server::conn::http1::Builder::new()\n    .serve_connection(io, service)\n    .await?",
+          "when": "HTTP server"
+        }
+      ]
+    },
+    {
+      "id": "body_type_mismatch",
+      "pattern": "expected.*Body|type mismatch|the trait.*Body.*is not implemented",
+      "message": "Incompatible body type",
+      "cause": "Body type doesn't implement http_body::Body trait",
+      "solutions": [
+        {
+          "approach": "Use Full body",
+          "code": "use http_body_util::Full;\nuse bytes::Bytes;\n\nlet body = Full::new(Bytes::from(\"data\"));",
+          "when": "Simple body"
+        },
+        {
+          "approach": "Use Empty body",
+          "code": "use http_body_util::Empty;\nlet body: Empty<Bytes> = Empty::new();",
+          "when": "No body needed"
+        },
+        {
+          "approach": "Use combinators",
+          "code": "use http_body_util::combinators::BoxBody;\nlet boxed = BoxBody::new(body);",
+          "when": "Mixed body types"
+        }
+      ]
+    },
+    {
+      "id": "connection_reset",
+      "pattern": "connection reset|ECONNRESET|broken pipe|peer.*closed",
+      "message": "Connection closed unexpectedly",
+      "cause": "Server closed connection or network issue",
+      "solutions": [
+        {
+          "approach": "Enable keep-alive",
+          "code": "http1::Builder::new()\n    .keep_alive(true)\n    .serve_connection(...)",
+          "when": "Connection reuse"
+        },
+        {
+          "approach": "Handle graceful shutdown",
+          "code": "let conn = http1::Builder::new().serve_connection(...);\ntokio::pin!(conn);\nif let Err(err) = conn.as_mut().await {\n    eprintln!(\"Connection error: {err}\");\n}",
+          "when": "Clean error handling"
+        },
+        {
+          "approach": "Add timeouts",
+          "code": "tokio::time::timeout(Duration::from_secs(30), conn)",
+          "when": "Prevent hanging"
+        }
+      ]
+    },
+    {
+      "id": "service_error",
+      "pattern": "Service.*not implemented|tower.*service|MakeService",
+      "message": "Service trait not implemented",
+      "cause": "Handler doesn't implement Service or MakeService",
+      "solutions": [
+        {
+          "approach": "Use service_fn",
+          "code": "use hyper::service::service_fn;\n\nlet service = service_fn(|req| async move {\n    Ok::<_, Infallible>(Response::new(Full::new(Bytes::from(\"Hello\"))))\n});",
+          "when": "Simple handler"
+        },
+        {
+          "approach": "Use tower",
+          "code": "use tower::ServiceBuilder;\nlet service = ServiceBuilder::new()\n    .layer(TimeoutLayer::new(...))\n    .service(handler);",
+          "when": "Middleware needed"
+        }
+      ]
+    },
+    {
+      "id": "http2_error",
+      "pattern": "HTTP/2.*error|h2 error|PROTOCOL_ERROR|stream.*error",
+      "message": "HTTP/2 protocol error",
+      "cause": "HTTP/2 framing or protocol violation",
+      "solutions": [
+        {
+          "approach": "Use HTTP/1.1",
+          "code": "// Client\nClient::builder(TokioExecutor::new()).build_http()",
+          "when": "Don't need HTTP/2"
+        },
+        {
+          "approach": "Configure HTTP/2",
+          "code": "http2::Builder::new(TokioExecutor::new())\n    .initial_stream_window_size(65535)\n    .initial_connection_window_size(65535)\n    .serve_connection(...)",
+          "when": "Tune HTTP/2 settings"
+        },
+        {
+          "approach": "Add keep-alive",
+          "code": "http2::Builder::new(exec)\n    .keep_alive_interval(Duration::from_secs(20))\n    .keep_alive_timeout(Duration::from_secs(30))",
+          "when": "Connection drops"
+        }
+      ]
+    },
+    {
+      "id": "io_error",
+      "pattern": "IO error|TokioIo|AsyncRead.*not implemented",
+      "message": "IO compatibility issue",
+      "cause": "Incompatible IO types between hyper 1.x and tokio",
+      "solutions": [
+        {
+          "approach": "Use TokioIo wrapper",
+          "code": "use hyper_util::rt::TokioIo;\n\nlet io = TokioIo::new(tcp_stream);",
+          "when": "Wrapping tokio streams"
+        },
+        {
+          "approach": "Check versions",
+          "code": "# Cargo.toml - ensure compatible versions\nhyper = \"1\"\nhyper-util = \"0.1\"\ntokio = { version = \"1\", features = [\"full\"] }",
+          "when": "Version mismatch"
+        }
+      ]
+    }
+  ]
+}

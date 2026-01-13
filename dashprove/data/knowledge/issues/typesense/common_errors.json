@@ -1,0 +1,191 @@
+{
+  "tool": "typesense",
+  "version": "0.25.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "Forbidden|api_key.*invalid|401|TYPESENSE_API_KEY",
+      "message": "Authentication error",
+      "cause": "Invalid or missing API key",
+      "solutions": [
+        {
+          "approach": "Set API key",
+          "code": "const client = new Typesense.Client({\n  nodes: [{ host: 'localhost', port: 8108, protocol: 'http' }],\n  apiKey: 'your-api-key'\n});",
+          "when": "Client config"
+        },
+        {
+          "approach": "Start with key",
+          "code": "typesense-server --data-dir=/data --api-key=your-api-key",
+          "when": "Server start"
+        },
+        {
+          "approach": "Create key",
+          "code": "curl 'http://localhost:8108/keys' \\\n  -X POST \\\n  -H 'X-TYPESENSE-API-KEY: admin-key' \\\n  -d '{\"actions\": [\"*\"], \"collections\": [\"*\"]}'",
+          "when": "Create API key"
+        }
+      ]
+    },
+    {
+      "id": "collection_error",
+      "pattern": "collection.*not found|Collection.*already exists|schema.*error",
+      "message": "Collection error",
+      "cause": "Collection doesn't exist or schema issue",
+      "solutions": [
+        {
+          "approach": "Create collection",
+          "code": "await client.collections().create({\n  name: 'products',\n  fields: [\n    { name: 'name', type: 'string' },\n    { name: 'price', type: 'float' },\n    { name: 'category', type: 'string', facet: true }\n  ]\n});",
+          "when": "Create collection"
+        },
+        {
+          "approach": "List collections",
+          "code": "const collections = await client.collections().retrieve();",
+          "when": "View collections"
+        },
+        {
+          "approach": "Update schema",
+          "code": "await client.collections('products').update({\n  fields: [\n    { name: 'new_field', type: 'string' }\n  ]\n});",
+          "when": "Add field"
+        }
+      ]
+    },
+    {
+      "id": "document_error",
+      "pattern": "document.*not found|Could not find|id.*required|field.*error",
+      "message": "Document error",
+      "cause": "Document format or missing id",
+      "solutions": [
+        {
+          "approach": "Add document",
+          "code": "await client.collections('products').documents().create({\n  id: '1',\n  name: 'Product',\n  price: 99.99\n});",
+          "when": "Create document"
+        },
+        {
+          "approach": "Import documents",
+          "code": "await client.collections('products').documents().import(documents, {\n  action: 'upsert'\n});",
+          "when": "Bulk import"
+        },
+        {
+          "approach": "Auto-generate id",
+          "code": "// Typesense requires id field\n// Add id before import if missing:\nconst withIds = documents.map((doc, i) => ({ id: String(i), ...doc }));",
+          "when": "Generate ids"
+        }
+      ]
+    },
+    {
+      "id": "search_error",
+      "pattern": "Could not find.*field|filter.*error|sort.*error|facet.*error",
+      "message": "Search configuration error",
+      "cause": "Field not configured for filtering/sorting",
+      "solutions": [
+        {
+          "approach": "Enable facet",
+          "code": "// Add facet: true to field in schema:\n{ name: 'category', type: 'string', facet: true }",
+          "when": "Enable faceting"
+        },
+        {
+          "approach": "Enable sort",
+          "code": "// Add sort: true to field in schema:\n{ name: 'price', type: 'float', sort: true }",
+          "when": "Enable sorting"
+        },
+        {
+          "approach": "Search query",
+          "code": "const results = await client.collections('products').documents().search({\n  q: 'query',\n  query_by: 'name,description',\n  filter_by: 'category:=electronics && price:<100',\n  sort_by: 'price:asc'\n});",
+          "when": "Search example"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "ECONNREFUSED|timeout|connection.*failed|node.*unhealthy",
+      "message": "Connection error",
+      "cause": "Typesense server not running or unreachable",
+      "solutions": [
+        {
+          "approach": "Check server",
+          "code": "curl http://localhost:8108/health",
+          "when": "Health check"
+        },
+        {
+          "approach": "Multiple nodes",
+          "code": "const client = new Typesense.Client({\n  nodes: [\n    { host: 'node1', port: 8108, protocol: 'https' },\n    { host: 'node2', port: 8108, protocol: 'https' }\n  ],\n  apiKey: 'your-api-key',\n  connectionTimeoutSeconds: 10\n});",
+          "when": "High availability"
+        },
+        {
+          "approach": "Retry config",
+          "code": "const client = new Typesense.Client({\n  nodes: [...],\n  apiKey: 'key',\n  numRetries: 3,\n  retryIntervalSeconds: 1\n});",
+          "when": "Add retries"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "import.*failed|batch.*error|Could not index|JSONL",
+      "message": "Import error",
+      "cause": "Bulk import format or data issue",
+      "solutions": [
+        {
+          "approach": "Check format",
+          "code": "// Documents must match schema\n// Each document needs id field\n// Types must match schema definition",
+          "when": "Format check"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "const results = await client.collections('products').documents().import(documents);\nconst failed = results.filter(r => !r.success);\nconsole.log('Failed:', failed);",
+          "when": "Check failures"
+        },
+        {
+          "approach": "JSONL import",
+          "code": "curl 'http://localhost:8108/collections/products/documents/import?action=upsert' \\\n  -X POST \\\n  -H 'X-TYPESENSE-API-KEY: key' \\\n  -d $'{\"id\":\"1\",\"name\":\"Product\"}\\n{\"id\":\"2\",\"name\":\"Product 2\"}'",
+          "when": "JSONL format"
+        }
+      ]
+    },
+    {
+      "id": "cluster_error",
+      "pattern": "quorum|leader.*not found|cluster.*unhealthy|raft",
+      "message": "Cluster error",
+      "cause": "Cluster configuration or quorum issue",
+      "solutions": [
+        {
+          "approach": "Check health",
+          "code": "curl http://localhost:8108/health\ncurl http://localhost:8108/debug",
+          "when": "Check status"
+        },
+        {
+          "approach": "Cluster config",
+          "code": "typesense-server \\\n  --data-dir=/data \\\n  --api-key=key \\\n  --nodes=/config/nodes \\\n  --peering-port=8107",
+          "when": "Cluster setup"
+        },
+        {
+          "approach": "Nodes file",
+          "code": "# /config/nodes format:\nhttp://node1:8107:8108,http://node2:8107:8108,http://node3:8107:8108",
+          "when": "Node list"
+        }
+      ]
+    },
+    {
+      "id": "geo_error",
+      "pattern": "geo.*error|geopoint|coordinates.*invalid",
+      "message": "Geo search error",
+      "cause": "Geopoint field or query format issue",
+      "solutions": [
+        {
+          "approach": "Define geopoint",
+          "code": "// Schema field:\n{ name: 'location', type: 'geopoint' }\n\n// Document format:\n{ location: [lat, lng] }  // or [lng, lat] based on config",
+          "when": "Geopoint field"
+        },
+        {
+          "approach": "Geo search",
+          "code": "const results = await client.collections('stores').documents().search({\n  q: '*',\n  filter_by: 'location:(48.853, 2.344, 5 km)',\n  sort_by: 'location(48.853, 2.344):asc'\n});",
+          "when": "Geo query"
+        },
+        {
+          "approach": "Multiple geopoints",
+          "code": "// For polygons or multiple locations:\n{ name: 'locations', type: 'geopoint[]' }",
+          "when": "Array of points"
+        }
+      ]
+    }
+  ]
+}

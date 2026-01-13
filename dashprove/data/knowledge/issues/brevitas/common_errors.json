@@ -1,0 +1,115 @@
+{
+  "tool": "brevitas",
+  "version": "0.10.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "quant_layer_error",
+      "pattern": "(QuantConv|QuantLinear|quant.*layer)",
+      "message": "Quantized layer creation error",
+      "cause": "Error creating quantized version of layer",
+      "solutions": [
+        {
+          "approach": "Use quantized layers",
+          "code": "from brevitas.nn import QuantConv2d, QuantLinear\nlayer = QuantConv2d(\n    in_channels=64, out_channels=128,\n    kernel_size=3, padding=1,\n    weight_bit_width=8,\n    bias=False\n)",
+          "when": "Creating quant layer"
+        },
+        {
+          "approach": "Convert existing",
+          "code": "from brevitas.quant_tensor import QuantTensor\nquant_input = QuantTensor(input_tensor, scale, zero_point, bit_width)",
+          "when": "Converting tensors"
+        }
+      ]
+    },
+    {
+      "id": "bit_width_error",
+      "pattern": "(bit.*width|precision|quantization.*config)",
+      "message": "Bit width configuration error",
+      "cause": "Invalid or unsupported bit width",
+      "solutions": [
+        {
+          "approach": "Set bit widths",
+          "code": "layer = QuantConv2d(\n    in_channels=64, out_channels=128, kernel_size=3,\n    weight_bit_width=4,\n    weight_quant=Int8WeightPerChannelFloat\n)",
+          "when": "Specifying precision"
+        },
+        {
+          "approach": "Use predefined quant",
+          "code": "from brevitas.quant import Int8WeightPerTensorFixedPoint\nfrom brevitas.quant import Int8ActPerTensorFixedPoint\nlayer = QuantConv2d(\n    ...,\n    weight_quant=Int8WeightPerTensorFixedPoint,\n    input_quant=Int8ActPerTensorFixedPoint\n)",
+          "when": "Using standard quant"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "(export|FINN|ONNX|qonnx)",
+      "message": "Export to ONNX/FINN failed",
+      "cause": "Model not compatible with export format",
+      "solutions": [
+        {
+          "approach": "Export to QONNX",
+          "code": "from brevitas.export import export_qonnx\nexport_qonnx(\n    model,\n    input_shape=(1, 3, 224, 224),\n    export_path='model.onnx'\n)",
+          "when": "QONNX export"
+        },
+        {
+          "approach": "Export for FINN",
+          "code": "from brevitas.export import export_finn_onnx\nexport_finn_onnx(\n    model,\n    input_shape=(1, 3, 224, 224),\n    export_path='model_finn.onnx'\n)",
+          "when": "FINN/FPGA export"
+        }
+      ]
+    },
+    {
+      "id": "calibration_error",
+      "pattern": "(calibration|stats|running.*mean)",
+      "message": "Calibration statistics error",
+      "cause": "Failed to collect calibration statistics",
+      "solutions": [
+        {
+          "approach": "Calibrate model",
+          "code": "from brevitas.graph.calibrate import calibrate\nmodel.eval()\nwith calibrate(model):\n    for batch in calibration_loader:\n        model(batch)",
+          "when": "Post-training calibration"
+        },
+        {
+          "approach": "Reset stats",
+          "code": "from brevitas.graph.calibrate import bias_correction\nbias_correction(model, calibration_loader)",
+          "when": "Bias correction"
+        }
+      ]
+    },
+    {
+      "id": "scale_factor_error",
+      "pattern": "(scale.*factor|zero.*point|overflow)",
+      "message": "Quantization scale/zero-point error",
+      "cause": "Scale factor computation failed or caused overflow",
+      "solutions": [
+        {
+          "approach": "Use learned scale",
+          "code": "from brevitas.quant import Int8WeightPerTensorFloat\nlayer = QuantLinear(\n    in_features=128, out_features=64,\n    weight_quant=Int8WeightPerTensorFloat  # Learned scale\n)",
+          "when": "Fixed point issues"
+        },
+        {
+          "approach": "Adjust clipping",
+          "code": "from brevitas.core.scaling import RuntimeStatsScaling\n# Adjust percentile for outliers\nscaling = RuntimeStatsScaling(\n    stats_reduce_dim=0,\n    stats_percentile_q=99.9\n)",
+          "when": "Outliers causing issues"
+        }
+      ]
+    },
+    {
+      "id": "graph_transform_error",
+      "pattern": "(transform|trace|fx.*graph)",
+      "message": "Model graph transformation error",
+      "cause": "Could not transform model graph for quantization",
+      "solutions": [
+        {
+          "approach": "Use FX quantization",
+          "code": "from brevitas.graph.quantize import quantize\nquant_model = quantize(\n    model,\n    weight_quant=Int8WeightPerTensorFloat,\n    act_quant=Int8ActPerTensorFloat\n)",
+          "when": "Auto-quantizing model"
+        },
+        {
+          "approach": "Manual replacement",
+          "code": "# Replace layers manually\ndef replace_layers(model):\n    for name, child in model.named_children():\n        if isinstance(child, nn.Conv2d):\n            setattr(model, name, QuantConv2d(...))",
+          "when": "Auto-quantize fails"
+        }
+      ]
+    }
+  ]
+}

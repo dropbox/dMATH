@@ -1,0 +1,191 @@
+{
+  "tool": "terraform",
+  "version": "1.7.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "provider_not_found",
+      "pattern": "provider .* not found|Could not retrieve the list of available versions",
+      "message": "Provider not installed or version unavailable",
+      "cause": "Provider not initialized or version constraint unsatisfiable",
+      "solutions": [
+        {
+          "approach": "Initialize providers",
+          "code": "terraform init",
+          "when": "Haven't run init"
+        },
+        {
+          "approach": "Upgrade provider",
+          "code": "terraform init -upgrade",
+          "when": "Need newer version"
+        },
+        {
+          "approach": "Check version constraint",
+          "code": "required_providers {\n  aws = {\n    source = \"hashicorp/aws\"\n    version = \">= 4.0.0, < 6.0.0\"\n  }\n}",
+          "when": "Version constraint too strict"
+        }
+      ]
+    },
+    {
+      "id": "resource_not_found",
+      "pattern": "Resource .* not found|does not exist",
+      "message": "Resource not found in state or cloud",
+      "cause": "Resource was deleted outside Terraform or never created",
+      "solutions": [
+        {
+          "approach": "Import resource",
+          "code": "terraform import aws_instance.example i-1234567890abcdef0",
+          "when": "Resource exists but not in state"
+        },
+        {
+          "approach": "Remove from state",
+          "code": "terraform state rm aws_instance.example",
+          "when": "Resource was deleted externally"
+        },
+        {
+          "approach": "Refresh state",
+          "code": "terraform refresh",
+          "when": "State may be stale"
+        }
+      ]
+    },
+    {
+      "id": "cycle_detected",
+      "pattern": "Cycle:|cycle detected|circular dependency",
+      "message": "Circular dependency between resources",
+      "cause": "Resources reference each other creating a loop",
+      "solutions": [
+        {
+          "approach": "Use depends_on",
+          "code": "resource \"aws_instance\" \"example\" {\n  depends_on = [aws_security_group.example]\n}",
+          "when": "Need explicit ordering"
+        },
+        {
+          "approach": "Break the cycle",
+          "code": "// Use data source or output instead of direct reference",
+          "when": "Resources truly depend on each other"
+        },
+        {
+          "approach": "Use lifecycle ignore",
+          "code": "lifecycle {\n  ignore_changes = [attribute]\n}",
+          "when": "Attribute creates false dependency"
+        }
+      ]
+    },
+    {
+      "id": "invalid_reference",
+      "pattern": "Reference to undeclared|Unknown variable|Invalid reference",
+      "message": "Reference to undefined variable or resource",
+      "cause": "Typo in name or resource not declared",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "// Verify resource/variable name matches declaration",
+          "when": "Typo in reference"
+        },
+        {
+          "approach": "Declare variable",
+          "code": "variable \"example\" {\n  type = string\n}",
+          "when": "Variable not declared"
+        },
+        {
+          "approach": "Check module output",
+          "code": "output \"id\" {\n  value = aws_instance.example.id\n}",
+          "when": "Referencing module output"
+        }
+      ]
+    },
+    {
+      "id": "state_lock_error",
+      "pattern": "Error acquiring the state lock|state is locked",
+      "message": "Cannot acquire state lock",
+      "cause": "Another Terraform process holds the lock or previous run crashed",
+      "solutions": [
+        {
+          "approach": "Wait for other process",
+          "code": "// Check if another apply is running",
+          "when": "Concurrent operations"
+        },
+        {
+          "approach": "Force unlock",
+          "code": "terraform force-unlock LOCK_ID",
+          "when": "Previous run crashed"
+        },
+        {
+          "approach": "Check DynamoDB",
+          "code": "// Check locks table in DynamoDB if using S3 backend",
+          "when": "Using remote state"
+        }
+      ]
+    },
+    {
+      "id": "invalid_attribute",
+      "pattern": "Unsupported attribute|does not have an attribute",
+      "message": "Invalid attribute access",
+      "cause": "Trying to access attribute that doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check resource docs",
+          "code": "// Refer to provider documentation for available attributes",
+          "when": "Wrong attribute name"
+        },
+        {
+          "approach": "Use correct syntax",
+          "code": "aws_instance.example.id  // Not aws_instance.example[\"id\"]",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Handle optional",
+          "code": "try(aws_instance.example.private_ip, null)",
+          "when": "Attribute may not exist"
+        }
+      ]
+    },
+    {
+      "id": "plan_apply_mismatch",
+      "pattern": "Objects have changed outside|drift detected",
+      "message": "Infrastructure drift detected",
+      "cause": "Real infrastructure differs from Terraform state",
+      "solutions": [
+        {
+          "approach": "Refresh state",
+          "code": "terraform apply -refresh-only",
+          "when": "Accept external changes"
+        },
+        {
+          "approach": "Apply to fix",
+          "code": "terraform apply",
+          "when": "Terraform config is correct"
+        },
+        {
+          "approach": "Investigate drift",
+          "code": "terraform plan -detailed-exitcode",
+          "when": "Need to understand changes"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "AuthorizationError|Access Denied|Unauthorized",
+      "message": "Authentication/authorization failed",
+      "cause": "Invalid credentials or insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Check credentials",
+          "code": "aws sts get-caller-identity",
+          "when": "AWS credentials"
+        },
+        {
+          "approach": "Set environment",
+          "code": "export AWS_PROFILE=myprofile",
+          "when": "Need specific profile"
+        },
+        {
+          "approach": "Check IAM permissions",
+          "code": "// Ensure IAM role/user has required permissions",
+          "when": "Credentials valid but insufficient"
+        }
+      ]
+    }
+  ]
+}

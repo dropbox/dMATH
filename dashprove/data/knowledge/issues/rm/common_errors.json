@@ -1,0 +1,145 @@
+{
+  "tool": "rm",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot remove|Operation not permitted",
+      "message": "Cannot delete file",
+      "cause": "Insufficient permissions or special attributes",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo rm file.txt",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check attributes",
+          "code": "lsattr file.txt  # Check immutable flag\nsudo chattr -i file.txt  # Remove immutable",
+          "when": "Special attrs"
+        },
+        {
+          "approach": "Check parent dir",
+          "code": "ls -ld directory/  # Need write on parent dir",
+          "when": "Dir permissions"
+        }
+      ]
+    },
+    {
+      "id": "directory_not_empty",
+      "pattern": "Directory not empty|is a directory|cannot remove",
+      "message": "Cannot delete non-empty directory",
+      "cause": "rm requires -r for directories",
+      "solutions": [
+        {
+          "approach": "Recursive delete",
+          "code": "rm -r directory/",
+          "when": "Delete with contents"
+        },
+        {
+          "approach": "Force recursive",
+          "code": "rm -rf directory/  # No prompts",
+          "when": "Skip confirmations"
+        },
+        {
+          "approach": "Delete contents first",
+          "code": "rm -r directory/* && rmdir directory",
+          "when": "Manual approach"
+        }
+      ]
+    },
+    {
+      "id": "argument_list_too_long",
+      "pattern": "Argument list too long|cannot execute|too many",
+      "message": "Too many files to delete",
+      "cause": "Shell glob expansion exceeded ARG_MAX",
+      "solutions": [
+        {
+          "approach": "Use find",
+          "code": "find . -name '*.tmp' -delete",
+          "when": "By pattern"
+        },
+        {
+          "approach": "Use xargs",
+          "code": "find . -name '*.tmp' -print0 | xargs -0 rm",
+          "when": "Batched"
+        },
+        {
+          "approach": "Loop",
+          "code": "for f in *.tmp; do rm \"$f\"; done",
+          "when": "One at a time"
+        }
+      ]
+    },
+    {
+      "id": "no_such_file",
+      "pattern": "No such file|cannot remove.*No such|does not exist",
+      "message": "File not found",
+      "cause": "File doesn't exist or wrong path",
+      "solutions": [
+        {
+          "approach": "Force flag",
+          "code": "rm -f missing_file  # No error if missing",
+          "when": "Ignore missing"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la path/to/file\nrealpath file",
+          "when": "Verify location"
+        },
+        {
+          "approach": "Handle spaces",
+          "code": "rm 'file with spaces.txt'\nrm file\\ with\\ spaces.txt",
+          "when": "Special chars"
+        }
+      ]
+    },
+    {
+      "id": "busy_file",
+      "pattern": "Device or resource busy|cannot remove|busy",
+      "message": "File in use",
+      "cause": "File is open or mounted",
+      "solutions": [
+        {
+          "approach": "Find process",
+          "code": "lsof file.txt\nfuser file.txt",
+          "when": "Find who's using"
+        },
+        {
+          "approach": "Force close",
+          "code": "fuser -k file.txt  # Kill processes",
+          "when": "Force release"
+        },
+        {
+          "approach": "Check mounts",
+          "code": "mount | grep file\numount /path",
+          "when": "If mounted"
+        }
+      ]
+    },
+    {
+      "id": "read_only_filesystem",
+      "pattern": "Read-only file system|read only|cannot delete",
+      "message": "Filesystem is read-only",
+      "cause": "Mounted read-only or disk error",
+      "solutions": [
+        {
+          "approach": "Remount rw",
+          "code": "sudo mount -o remount,rw /",
+          "when": "Remount writable"
+        },
+        {
+          "approach": "Check mount",
+          "code": "mount | grep ' / '",
+          "when": "Verify options"
+        },
+        {
+          "approach": "Check disk",
+          "code": "dmesg | tail  # Check for errors",
+          "when": "Hardware issue"
+        }
+      ]
+    }
+  ]
+}

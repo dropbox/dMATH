@@ -1,0 +1,186 @@
+{
+  "tool": "cucumber",
+  "version": "10.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_step",
+      "pattern": "Undefined step|You can implement step definitions",
+      "message": "Step definition not found",
+      "cause": "No matching step definition for Gherkin step",
+      "solutions": [
+        {
+          "approach": "Generate step definition",
+          "code": "npx cucumber-js --dry-run",
+          "when": "Need to see undefined steps"
+        },
+        {
+          "approach": "Create step definition",
+          "code": "Given('I have {int} cucumbers', function(count) {\n  this.cucumbers = count;\n});",
+          "when": "Implementing new step"
+        },
+        {
+          "approach": "Check step patterns",
+          "code": "// Ensure regex/cucumber expression matches step text",
+          "when": "Step exists but doesn't match"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_step",
+      "pattern": "Ambiguous step|matches multiple step definitions",
+      "message": "Step matches more than one definition",
+      "cause": "Multiple step definitions match the same step text",
+      "solutions": [
+        {
+          "approach": "Make patterns specific",
+          "code": "Given('I have exactly {int} items', ...) // More specific",
+          "when": "Patterns too general"
+        },
+        {
+          "approach": "Remove duplicate",
+          "code": "// Delete one of the conflicting step definitions",
+          "when": "Truly duplicate steps"
+        },
+        {
+          "approach": "Use different wording",
+          "code": "Given I have 5 items in my cart\nGiven I have 5 items in inventory",
+          "when": "Same count, different context"
+        }
+      ]
+    },
+    {
+      "id": "pending_step",
+      "pattern": "Pending|Implementation pending",
+      "message": "Step implementation not complete",
+      "cause": "Step definition returns 'pending' status",
+      "solutions": [
+        {
+          "approach": "Implement step",
+          "code": "Then('the result should be {int}', function(expected) {\n  assert.equal(this.result, expected);\n});",
+          "when": "Step needs implementation"
+        },
+        {
+          "approach": "Skip with tag",
+          "code": "@wip\nScenario: Work in progress",
+          "when": "Not ready to implement"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "function timed out|timeout of \\d+ms exceeded",
+      "message": "Step execution timed out",
+      "cause": "Async operation didn't complete or callback not called",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "setDefaultTimeout(60 * 1000); // 60 seconds",
+          "when": "Operation legitimately slow"
+        },
+        {
+          "approach": "Return promise",
+          "code": "When('I wait for data', async function() {\n  await this.fetchData();\n});",
+          "when": "Async step"
+        },
+        {
+          "approach": "Check callback",
+          "code": "When('I do async', function(callback) {\n  doAsync().then(() => callback());\n});",
+          "when": "Using callback style"
+        }
+      ]
+    },
+    {
+      "id": "world_undefined",
+      "pattern": "this.\\w+ is undefined|Cannot read property",
+      "message": "World property not initialized",
+      "cause": "Accessing property on World that wasn't set",
+      "solutions": [
+        {
+          "approach": "Initialize in Before hook",
+          "code": "Before(function() {\n  this.data = {};\n});",
+          "when": "Need shared state"
+        },
+        {
+          "approach": "Custom World class",
+          "code": "class CustomWorld {\n  constructor() {\n    this.data = {};\n  }\n}\nsetWorldConstructor(CustomWorld);",
+          "when": "Complex shared state"
+        },
+        {
+          "approach": "Check step order",
+          "code": "// Ensure Given step runs before Then step",
+          "when": "Step ordering issue"
+        }
+      ]
+    },
+    {
+      "id": "hook_error",
+      "pattern": "Error in Before hook|Error in After hook",
+      "message": "Hook execution failed",
+      "cause": "Before/After/BeforeAll/AfterAll hook threw error",
+      "solutions": [
+        {
+          "approach": "Add error handling",
+          "code": "Before(async function() {\n  try {\n    await this.setup();\n  } catch(e) {\n    console.error('Setup failed:', e);\n    throw e;\n  }\n});",
+          "when": "Need to debug"
+        },
+        {
+          "approach": "Check async hooks",
+          "code": "AfterAll(async function() {\n  await browser.close();\n});",
+          "when": "Async cleanup"
+        },
+        {
+          "approach": "Tagged hooks",
+          "code": "Before('@browser', async function() {\n  this.browser = await launch();\n});",
+          "when": "Only some scenarios need hook"
+        }
+      ]
+    },
+    {
+      "id": "feature_not_found",
+      "pattern": "No feature files found|Pattern .* did not match any feature files",
+      "message": "Cannot find feature files",
+      "cause": "Feature path pattern doesn't match any files",
+      "solutions": [
+        {
+          "approach": "Check path in config",
+          "code": "// cucumber.js\nmodule.exports = {\n  default: './features/**/*.feature'\n};",
+          "when": "Path misconfigured"
+        },
+        {
+          "approach": "Use correct extension",
+          "code": "// Files must end in .feature",
+          "when": "Wrong file extension"
+        },
+        {
+          "approach": "Specify path directly",
+          "code": "npx cucumber-js features/login.feature",
+          "when": "Running single feature"
+        }
+      ]
+    },
+    {
+      "id": "table_error",
+      "pattern": "DataTable|table.raw\\(\\)|table.hashes\\(\\)",
+      "message": "DataTable parsing error",
+      "cause": "Incorrect DataTable access method",
+      "solutions": [
+        {
+          "approach": "Use hashes for headers",
+          "code": "Given('users:', function(table) {\n  const users = table.hashes();\n  // [{name: 'John', age: '30'}, ...]\n});",
+          "when": "Table has header row"
+        },
+        {
+          "approach": "Use raw for 2D array",
+          "code": "Given('grid:', function(table) {\n  const grid = table.raw();\n  // [['a', 'b'], ['c', 'd']]\n});",
+          "when": "Need raw array"
+        },
+        {
+          "approach": "Use rowsHash for key-value",
+          "code": "Given('config:', function(table) {\n  const config = table.rowsHash();\n  // {key1: 'value1', key2: 'value2'}\n});",
+          "when": "Two-column key-value table"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "id": "klee",
+  "name": "KLEE",
+  "category": "model_checker",
+  "subcategory": "symbolic_execution",
+
+  "description": "Symbolic execution engine for LLVM bitcode",
+  "long_description": "KLEE is a symbolic virtual machine built on top of LLVM. It can automatically generate high-coverage test cases by symbolically executing programs and solving path constraints using STP or Z3. KLEE is widely used for testing and bug finding.",
+
+  "capabilities": [
+    "symbolic_execution",
+    "test_generation",
+    "path_exploration",
+    "constraint_solving",
+    "coverage_guidance"
+  ],
+  "property_types": ["assertion", "memory_safety", "coverage"],
+  "input_languages": ["llvm_ir", "c"],
+  "output_formats": ["test_cases", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "docker", "command": "docker pull klee/klee"},
+      {"type": "source", "url": "https://github.com/klee/klee"}
+    ],
+    "dependencies": ["llvm", "stp", "z3"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://klee.github.io/",
+    "tutorial": "https://klee.github.io/tutorials/",
+    "api_reference": "https://klee.github.io/docs/",
+    "examples": "https://github.com/klee/klee/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "symbolic",
+      "description": "Mark input as symbolic",
+      "syntax": "klee_make_symbolic(&var, sizeof(var), \"name\")",
+      "when_to_use": "To mark symbolic inputs",
+      "examples": ["klee_make_symbolic(&x, sizeof(x), \"x\")"]
+    },
+    {
+      "name": "search",
+      "description": "Search strategy",
+      "syntax": "--search=strategy",
+      "when_to_use": "To guide exploration",
+      "examples": ["klee --search=random-path program.bc"]
+    },
+    {
+      "name": "max-time",
+      "description": "Time limit",
+      "syntax": "--max-time=Ns",
+      "when_to_use": "To bound execution time",
+      "examples": ["klee --max-time=3600s program.bc"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "ASSERTION FAIL",
+      "meaning": "Assertion violated",
+      "common_causes": ["Bug found"],
+      "fixes": ["Examine test case"]
+    },
+    {
+      "pattern": "memory error: out of bound",
+      "meaning": "Buffer overflow",
+      "common_causes": ["Array bounds issue"],
+      "fixes": ["Fix bounds checking"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["assertion", "memory_safety"],
+    "cli_command": "dashprove verify --backend klee"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to hours",
+    "scalability": "Limited by path explosion",
+    "memory_usage": "High for complex programs"
+  },
+
+  "comparisons": {
+    "similar_tools": ["angr", "manticore", "s2e"],
+    "advantages": [
+      "Mature symbolic execution",
+      "Test case generation",
+      "LLVM integration"
+    ],
+    "disadvantages": [
+      "Path explosion",
+      "Constraint solving limits"
+    ]
+  },
+
+  "metadata": {
+    "version": "3.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Imperial College London",
+    "license": "UIUC"
+  }
+}

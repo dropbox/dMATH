@@ -1,0 +1,126 @@
+{
+  "id": "jepsen",
+  "name": "Jepsen",
+  "category": "distributed_systems_testing",
+  "subcategory": "consistency_testing",
+
+  "description": "Framework for testing distributed systems under failure",
+  "long_description": "Jepsen is a framework for testing the safety and consistency of distributed databases under network partitions, clock skew, and node failures. Created by Kyle Kingsbury, it has discovered bugs in Cassandra, MongoDB, Kafka, etcd, CockroachDB, and many other systems. The gold standard for distributed systems testing.",
+
+  "capabilities": [
+    "consistency_testing",
+    "partition_testing",
+    "clock_skew_testing",
+    "linearizability_checking",
+    "serializability_checking",
+    "causal_consistency_checking",
+    "fault_injection"
+  ],
+  "property_types": ["linearizability", "serializability", "causal_consistency"],
+  "input_languages": ["clojure"],
+  "output_formats": ["html", "edn"],
+
+  "installation": {
+    "methods": [
+      {"type": "lein", "command": "lein new jepsen mytest"},
+      {"type": "source", "command": "git clone https://github.com/jepsen-io/jepsen"}
+    ],
+    "dependencies": ["clojure", "leiningen", "docker"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://jepsen.io/",
+    "tutorial": "https://github.com/jepsen-io/jepsen/blob/main/doc/tutorial/index.md",
+    "api_reference": "https://jepsen.io/jepsen/jepsen.html",
+    "examples": "https://github.com/jepsen-io/jepsen/tree/main/jepsen"
+  },
+
+  "tactics": [
+    {
+      "name": "write_test",
+      "description": "Create a Jepsen test",
+      "syntax": "(defn test [opts] ...)",
+      "when_to_use": "To define test case",
+      "examples": ["(defn test\n  [opts]\n  (merge tests/noop-test\n         opts\n         {:name \"mydb\"\n          :client (client nil)\n          :nemesis (nemesis/partition-random-halves)\n          :checker (checker/linearizable)\n          :generator ...}))"]
+    },
+    {
+      "name": "nemesis",
+      "description": "Define fault injection",
+      "syntax": "(nemesis/partition-random-halves)",
+      "when_to_use": "To inject failures",
+      "examples": ["(nemesis/compose\n  {:partition (nemesis/partition-random-halves)\n   :clock (nemesis/clock-skew)})"]
+    },
+    {
+      "name": "checker",
+      "description": "Define consistency checker",
+      "syntax": "(checker/linearizable {:model model})",
+      "when_to_use": "To verify consistency",
+      "examples": ["(checker/compose\n  {:linear (checker/linearizable\n             {:model (model/cas-register)})\n   :timeline (timeline/html)})"]
+    },
+    {
+      "name": "run_test",
+      "description": "Execute Jepsen test",
+      "syntax": "lein run test",
+      "when_to_use": "To run the test",
+      "examples": ["lein run test --nodes n1,n2,n3,n4,n5 \\\n  --time-limit 300 \\\n  --concurrency 10"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "inconsistent",
+      "meaning": "Consistency violation detected",
+      "common_causes": ["Bug in system under test"],
+      "fixes": ["Report bug to system maintainers"]
+    },
+    {
+      "pattern": "SSH.*failed",
+      "meaning": "Cannot connect to nodes",
+      "common_causes": ["Network issue", "Node down"],
+      "fixes": ["Check SSH connectivity", "Check node status"]
+    },
+    {
+      "pattern": "Timeout",
+      "meaning": "Operation timed out",
+      "common_causes": ["System under load", "Partition active"],
+      "fixes": ["Increase timeout", "Check system health"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["linearizability", "consistency"],
+    "cli_command": "dashprove verify --backend jepsen"
+  },
+
+  "performance": {
+    "typical_runtime": "Minutes to hours",
+    "scalability": "Good with cluster",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["elle", "maelstrom", "chaos-mesh"],
+    "advantages": [
+      "Gold standard for testing",
+      "Found real bugs",
+      "Excellent documentation",
+      "Many checkers built-in",
+      "Community tests available"
+    ],
+    "disadvantages": [
+      "Clojure required",
+      "Steep learning curve",
+      "Complex setup",
+      "Requires cluster"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.3.5",
+    "last_updated": "2025-12-22",
+    "maintainer": "Kyle Kingsbury",
+    "license": "EPL-1.0"
+  }
+}

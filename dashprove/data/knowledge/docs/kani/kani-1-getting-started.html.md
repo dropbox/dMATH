@@ -1,0 +1,48 @@
+# [Getting started][1]
+
+Kani is an open-source verification tool that uses [model checking][2] to
+analyze Rust programs. Kani is useful for checking both safety and correctness
+of Rust code.
+
+* *Safety*: Kani automatically checks for many kinds of [undefined behavior][3].
+  This makes it particularly useful for verifying unsafe code blocks in Rust,
+  where the "[unsafe superpowers][4]" are unchecked by the compiler.
+* *Correctness*: Kani automatically checks panics (e.g. `unwrap()` on `None`),
+  arithmetic overflows, and custom correctness properties, either in the form of
+  assertions (`assert!(...)`) or [function contracts][5].
+
+Since Kani uses model checking, Kani will either prove the property, disprove
+the property (with a counterexample), or may run out of resources.
+
+Kani uses proof harnesses to analyze programs. Proof harnesses are similar to
+test harnesses, especially property-based test harnesses.
+
+## [Project Status][6]
+
+Kani is currently under active development. Releases are published [here][7].
+Major changes to Kani are documented in the [RFC Book][8]. We also publish
+updates on Kani use cases and features on our [blog][9].
+
+There is support for a fair amount of Rust language features, but not all (e.g.,
+concurrency). Please see [Limitations][10] for a detailed list of supported
+features.
+
+Kani releases every month. As part of every release, Kani will synchronize with
+a recent nightly release of Rust, and so is generally up-to-date with the latest
+Rust language features.
+
+If you encounter issues when using Kani, we encourage you to [report them to
+us][11].
+
+[1]: #getting-started
+[2]: ./tool-comparison.html
+[3]: ./undefined-behaviour.html
+[4]: https://doc.rust-lang.org/stable/book/ch19-01-unsafe-rust.html#unsafe-super
+powers
+[5]: https://model-checking.github.io/kani/reference/experimental/contracts.html
+[6]: #project-status
+[7]: https://github.com/model-checking/kani/releases
+[8]: https://model-checking.github.io/kani/rfc
+[9]: https://model-checking.github.io/kani-verifier-blog/
+[10]: ./limitations.html
+[11]: https://github.com/model-checking/kani/issues/new/choose

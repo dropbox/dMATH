@@ -1,0 +1,79 @@
+{
+  "tool": "last",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cannot_open_wtmp",
+      "pattern": "cannot open|/var/log/wtmp|No such file",
+      "message": "Cannot read wtmp",
+      "cause": "wtmp file missing or rotated",
+      "solutions": [
+        {
+          "approach": "Check wtmp",
+          "code": "ls -la /var/log/wtmp*\ntouch /var/log/wtmp",
+          "when": "File missing"
+        },
+        {
+          "approach": "Use specific file",
+          "code": "last -f /var/log/wtmp.1",
+          "when": "Rotated logs"
+        }
+      ]
+    },
+    {
+      "id": "empty_output",
+      "pattern": "no output|empty|wtmp begins",
+      "message": "No login history",
+      "cause": "Fresh system or cleared logs",
+      "solutions": [
+        {
+          "approach": "Check log rotation",
+          "code": "ls -la /var/log/wtmp*",
+          "when": "May be rotated"
+        },
+        {
+          "approach": "Check lastlog",
+          "code": "lastlog\nlastlog -u username",
+          "when": "Alternative source"
+        }
+      ]
+    },
+    {
+      "id": "user_not_found",
+      "pattern": "no matching entries",
+      "message": "No entries for user",
+      "cause": "User never logged in",
+      "solutions": [
+        {
+          "approach": "Check all users",
+          "code": "last | head -50",
+          "when": "See who did login"
+        },
+        {
+          "approach": "Use lastlog",
+          "code": "lastlog -u username",
+          "when": "Last login specifically"
+        }
+      ]
+    },
+    {
+      "id": "reboot_entries",
+      "pattern": "reboot|system boot",
+      "message": "Understanding reboots",
+      "cause": "System reboot entries in log",
+      "solutions": [
+        {
+          "approach": "Show only reboots",
+          "code": "last reboot",
+          "when": "Reboot history"
+        },
+        {
+          "approach": "Exclude reboots",
+          "code": "last | grep -v reboot",
+          "when": "Users only"
+        }
+      ]
+    }
+  ]
+}

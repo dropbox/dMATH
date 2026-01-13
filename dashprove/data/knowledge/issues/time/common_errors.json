@@ -1,0 +1,76 @@
+{
+  "tool": "time",
+  "category": "date_time",
+  "common_errors": [
+    {
+      "pattern": "error parsing format description|invalid format component",
+      "meaning": "FormatDescription string cannot be parsed",
+      "causes": [
+        "Unsupported component syntax",
+        "Missing closing bracket for optional segments",
+        "Mixing strftime tokens instead of time format DSL"
+      ],
+      "solutions": [
+        "Use time macros: format_description::parse(\"[year]-[month]-[day]\")",
+        "Ensure optional segments closed with ]",
+        "Replace strftime with time tokens (e.g., [offset_hour])"
+      ]
+    },
+    {
+      "pattern": "Parse error|could not parse .* using format",
+      "meaning": "String does not match provided format description",
+      "causes": [
+        "Input missing offset when format expects it",
+        "Mismatched delimiters or padding",
+        "Lower/upper case mismatch for month/day names"
+      ],
+      "solutions": [
+        "Align format with input precisely or use well_known formats",
+        "Use .parse::<OffsetDateTime>() with RFC3339 well_known::Rfc3339",
+        "Normalize input casing or use case-insensitive parsing where possible"
+      ]
+    },
+    {
+      "pattern": "ComponentRange|out of range|invalid component",
+      "meaning": "Constructed date/time outside supported bounds",
+      "causes": [
+        "Month/day/hour outside valid range",
+        "Unix timestamp cannot be represented",
+        "Nanosecond part >= 1_000_000_000"
+      ],
+      "solutions": [
+        "Validate inputs before constructing PrimitiveDateTime/OffsetDateTime",
+        "Use checked_add/checked_sub for arithmetic",
+        "Clamp nanos and carry to seconds when needed"
+      ]
+    },
+    {
+      "pattern": "local offset not available|UtcOffset::current_local_offset failed",
+      "meaning": "Local timezone offset could not be determined",
+      "causes": [
+        "Running in sandbox/container without /etc/localtime",
+        "Lacking TZ data on target system",
+        "Permissions preventing timezone read"
+      ],
+      "solutions": [
+        "Set TZ environment variable explicitly",
+        "Bundle tzdata or mount /etc/localtime",
+        "Fallback to UTC offset: UtcOffset::UTC"
+      ]
+    },
+    {
+      "pattern": "Unix timestamp out of range|from_unix_timestamp.*invalid",
+      "meaning": "Seconds/nanoseconds exceed representable range",
+      "causes": [
+        "Using milliseconds where seconds expected",
+        "Overflow when combining seconds and nanos",
+        "Input from untrusted source not validated"
+      ],
+      "solutions": [
+        "Use from_unix_timestamp_nanos for nanosecond precision",
+        "Divide ms by 1000 before passing to from_unix_timestamp",
+        "Validate ranges before constructing OffsetDateTime"
+      ]
+    }
+  ]
+}

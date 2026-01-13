@@ -1,0 +1,130 @@
+{
+  "tool": "bc",
+  "version": "bc 1.x / GNU bc",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error|parse error|illegal character",
+      "message": "Invalid expression syntax",
+      "cause": "bc has specific syntax requirements",
+      "solutions": [
+        {
+          "approach": "Basic arithmetic",
+          "code": "echo '3 + 4' | bc\necho '3 * 4' | bc\necho '10 / 3' | bc",
+          "when": "Simple math"
+        },
+        {
+          "approach": "Floating point",
+          "code": "echo 'scale=2; 10/3' | bc  # 3.33",
+          "when": "Decimal precision"
+        },
+        {
+          "approach": "Powers",
+          "code": "echo '2^10' | bc  # 1024",
+          "when": "Exponentiation"
+        }
+      ]
+    },
+    {
+      "id": "scale_zero",
+      "pattern": "scale=0|truncated|integer only",
+      "message": "Division returns integers only",
+      "cause": "Default scale is 0 (no decimal places)",
+      "solutions": [
+        {
+          "approach": "Set scale",
+          "code": "echo 'scale=4; 22/7' | bc  # 3.1428",
+          "when": "Need decimals"
+        },
+        {
+          "approach": "Use -l flag",
+          "code": "echo '22/7' | bc -l  # Uses scale=20 by default",
+          "when": "Math library mode"
+        }
+      ]
+    },
+    {
+      "id": "math_library",
+      "pattern": "s\\(|c\\(|a\\(|l\\(|e\\(|undefined|not defined",
+      "message": "Math functions not available",
+      "cause": "Need -l flag for math library functions",
+      "solutions": [
+        {
+          "approach": "Load math library",
+          "code": "echo 's(1)' | bc -l    # sine of 1 radian\necho 'c(0)' | bc -l    # cosine of 0\necho 'l(10)' | bc -l   # natural log\necho 'e(1)' | bc -l    # e^1\necho 'a(1)' | bc -l    # arctangent",
+          "when": "Trigonometric/log functions"
+        },
+        {
+          "approach": "Square root",
+          "code": "echo 'scale=4; sqrt(2)' | bc",
+          "when": "sqrt is built-in"
+        }
+      ]
+    },
+    {
+      "id": "ibase_obase",
+      "pattern": "ibase|obase|base conversion|hex|binary",
+      "message": "Base conversion issues",
+      "cause": "Input/output base confusion",
+      "solutions": [
+        {
+          "approach": "Hex to decimal",
+          "code": "echo 'ibase=16; FF' | bc  # 255",
+          "when": "Hex input"
+        },
+        {
+          "approach": "Decimal to hex",
+          "code": "echo 'obase=16; 255' | bc  # FF",
+          "when": "Hex output"
+        },
+        {
+          "approach": "Binary",
+          "code": "echo 'obase=2; 255' | bc  # 11111111\necho 'ibase=2; 11111111' | bc  # 255",
+          "when": "Binary conversion"
+        },
+        {
+          "approach": "Order matters",
+          "code": "# Set obase BEFORE ibase, or ibase affects obase value\necho 'obase=16; ibase=2; 11111111' | bc  # FF",
+          "when": "Multiple bases"
+        }
+      ]
+    },
+    {
+      "id": "divide_by_zero",
+      "pattern": "divide by zero|Runtime error",
+      "message": "Division by zero",
+      "cause": "Attempted division by zero",
+      "solutions": [
+        {
+          "approach": "Check divisor",
+          "code": "# Validate in script before bc\nif [ \"$divisor\" != \"0\" ]; then\n  echo \"$dividend / $divisor\" | bc\nfi",
+          "when": "Prevent in script"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "bc:.*command not found|bc:.*not found",
+      "message": "bc not installed",
+      "cause": "bc may not be on minimal systems",
+      "solutions": [
+        {
+          "approach": "Install on Debian/Ubuntu",
+          "code": "sudo apt install bc",
+          "when": "Debian-based"
+        },
+        {
+          "approach": "Use awk alternative",
+          "code": "awk 'BEGIN {print 22/7}'",
+          "when": "bc unavailable"
+        },
+        {
+          "approach": "Use Python",
+          "code": "python3 -c 'print(22/7)'",
+          "when": "Python available"
+        }
+      ]
+    }
+  ]
+}

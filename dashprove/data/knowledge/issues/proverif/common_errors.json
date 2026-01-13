@@ -1,0 +1,187 @@
+{
+  "tool": "proverif",
+  "version": "2.05",
+  "last_updated": "2025-12-22",
+  "description": "Cryptographic protocol verifier based on Horn clause resolution",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "Syntax error|Parse error|unexpected token",
+      "message": "ProVerif syntax error",
+      "cause": "Invalid ProVerif syntax",
+      "solutions": [
+        {
+          "approach": "Check process structure",
+          "code": "(* Declarations *)\nfree c: channel.\n\nprocess\n  (* Main process *)",
+          "when": "Missing process keyword"
+        },
+        {
+          "approach": "Check declaration syntax",
+          "code": "type key.\nfun senc(bitstring, key): bitstring.\nreduc forall m: bitstring, k: key; sdec(senc(m,k),k) = m.",
+          "when": "Function/equation syntax"
+        },
+        {
+          "approach": "Check query syntax",
+          "code": "query attacker(secret).\nquery event(Received(x)) ==> event(Sent(x)).",
+          "when": "Query syntax"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type error|type mismatch|expected type",
+      "message": "Type mismatch in term",
+      "cause": "Function applied to wrong type",
+      "solutions": [
+        {
+          "approach": "Check function types",
+          "code": "fun senc(bitstring, key): bitstring.\n(* senc takes bitstring and key, returns bitstring *)",
+          "when": "Function argument types"
+        },
+        {
+          "approach": "Add type annotations",
+          "code": "let x: bitstring = ... in\nnew k: key;",
+          "when": "Unclear variable types"
+        },
+        {
+          "approach": "Check channel types",
+          "code": "free c: channel.  (* untyped channel *)\nfree c: channel [private].  (* private channel *)",
+          "when": "Channel type issues"
+        }
+      ]
+    },
+    {
+      "id": "non_termination",
+      "pattern": "non-termination|does not terminate|loop detected",
+      "message": "Analysis doesn't terminate",
+      "cause": "Infinite derivation or complex protocol",
+      "solutions": [
+        {
+          "approach": "Use typed model",
+          "code": "set preciseActions = true.\nset movenew = true.",
+          "when": "Enable type-based optimizations"
+        },
+        {
+          "approach": "Add phases",
+          "code": "process\n  phase 1; (* setup phase *)\n  ...\n  phase 2; (* main protocol *)\n  ...",
+          "when": "Separate protocol stages"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "(* Reduce number of parallel processes *)\n(* Bound replication with !^n *)",
+          "when": "Model too complex"
+        }
+      ]
+    },
+    {
+      "id": "false_attack",
+      "pattern": "cannot be proved|RESULT.*false|attack found",
+      "message": "Property cannot be proved (potential false attack)",
+      "cause": "Property doesn't hold or model abstraction issue",
+      "solutions": [
+        {
+          "approach": "Check trace",
+          "code": "set traceDisplay = long.\nset abbreviateDerivation = true.",
+          "when": "Analyze attack trace"
+        },
+        {
+          "approach": "Refine model",
+          "code": "(* Add events to track execution *)\nevent StartSession(...).\nevent EndSession(...).",
+          "when": "Missing synchronization"
+        },
+        {
+          "approach": "Use injective correspondence",
+          "code": "query x: bitstring; inj-event(Accept(x)) ==> inj-event(Send(x)).",
+          "when": "Need replay protection"
+        }
+      ]
+    },
+    {
+      "id": "undeclared_identifier",
+      "pattern": "undeclared|not declared|unknown identifier",
+      "message": "Undeclared identifier",
+      "cause": "Variable or function used before declaration",
+      "solutions": [
+        {
+          "approach": "Declare free names",
+          "code": "free secret: bitstring [private].\nfree publicValue: bitstring.",
+          "when": "Missing free declaration"
+        },
+        {
+          "approach": "Declare events",
+          "code": "event Send(bitstring).\nevent Receive(bitstring).",
+          "when": "Undefined event"
+        },
+        {
+          "approach": "Declare tables",
+          "code": "table keys(key).\n(* Usage: insert keys(k); get keys(x) in ... *)",
+          "when": "Missing table declaration"
+        }
+      ]
+    },
+    {
+      "id": "equivalence_error",
+      "pattern": "equivalence.*cannot be proved|biprocess.*error",
+      "message": "Equivalence property cannot be proved",
+      "cause": "Observational equivalence fails or model issue",
+      "solutions": [
+        {
+          "approach": "Check biprocess",
+          "code": "process\n  new k: key;\n  out(c, choice[senc(secret1, k), senc(secret2, k)])",
+          "when": "Using choice for equivalence"
+        },
+        {
+          "approach": "Enable diff mode",
+          "code": "set diffEquiv = true.\nequivalence\n  P1\nand\n  P2",
+          "when": "Two separate processes"
+        },
+        {
+          "approach": "Simplify equivalence",
+          "code": "(* Start with simpler equivalence, add complexity *)",
+          "when": "Complex equivalence failing"
+        }
+      ]
+    },
+    {
+      "id": "equation_error",
+      "pattern": "equation.*error|reduc.*invalid|destructor.*failed",
+      "message": "Equation/destructor error",
+      "cause": "Invalid rewriting rule",
+      "solutions": [
+        {
+          "approach": "Check reduc syntax",
+          "code": "reduc forall m: bitstring, k: key; sdec(senc(m,k),k) = m.",
+          "when": "Destructor syntax"
+        },
+        {
+          "approach": "Check equation convergence",
+          "code": "(* Equations must be convergent *)\n(* Avoid overlapping left-hand sides *)",
+          "when": "Non-convergent equations"
+        },
+        {
+          "approach": "Use builtin crypto",
+          "code": "(* ProVerif has builtins for common primitives *)\ntype skey.\ntype pkey.\nfun pk(skey): pkey.\nfun aenc(bitstring, pkey): bitstring.\nreduc forall m: bitstring, k: skey; adec(aenc(m,pk(k)),k) = m.",
+          "when": "Standard asymmetric encryption"
+        }
+      ]
+    },
+    {
+      "id": "nounif_error",
+      "pattern": "nounif.*error|selection function",
+      "message": "Nounif selection error",
+      "cause": "Custom selection function issue",
+      "solutions": [
+        {
+          "approach": "Check nounif syntax",
+          "code": "nounif i <= n, j <= n'; mess(c[i], x) / 2.",
+          "when": "Reduce term priority"
+        },
+        {
+          "approach": "Use default selection",
+          "code": "(* Remove nounif declarations to use default *)",
+          "when": "Custom selection causing issues"
+        }
+      ]
+    }
+  ]
+}

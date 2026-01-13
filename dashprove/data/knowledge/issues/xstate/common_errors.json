@@ -1,0 +1,90 @@
+{
+  "tool": "xstate",
+  "category": "state_machines",
+  "common_errors": [
+    {
+      "pattern": "No initial state value for state node|missing initial state",
+      "meaning": "Machine definition lacks initial state",
+      "causes": [
+        "initial property missing on root/state node",
+        "Parallel state without initial for child regions",
+        "Typo in state key referenced by initial"
+      ],
+      "solutions": [
+        "Set initial: 'idle' at machine root",
+        "Each parallel state needs its own initial",
+        "Ensure initial matches existing state key"
+      ]
+    },
+    {
+      "pattern": "Warning: Event \".*\" was sent to unhandled state|Unhandled event",
+      "meaning": "Event has no matching transition",
+      "causes": [
+        "Transition not defined for current state",
+        "Guard prevents transition",
+        "Machine in final state still receiving events"
+      ],
+      "solutions": [
+        "Add on: { EVENT: 'next' } or wildcard on: { '*': ... }",
+        "Check guards return boolean and context values exist",
+        "Ignore events after final or stop interpreter"
+      ]
+    },
+    {
+      "pattern": "Cannot read properties of undefined.*transition|interpret requires a machine",
+      "meaning": "Interpreter started with undefined machine",
+      "causes": [
+        "createMachine not executed (conditional render)",
+        "Import path wrong; machine undefined",
+        "Hook receives machine config instead of machine"
+      ],
+      "solutions": [
+        "Ensure createMachine(...) runs and exports machine instance",
+        "Check imports and circular dependencies",
+        "Wrap config with createMachine before interpret"
+      ]
+    },
+    {
+      "pattern": "context.*not updating|assign not applied",
+      "meaning": "Context changes not persisted",
+      "causes": [
+        "Mutating context directly instead of assign",
+        "Returning undefined from assign reducer",
+        "Using immer/produce without returning result"
+      ],
+      "solutions": [
+        "Use assign({ count: (ctx, e) => ctx.count + 1 })",
+        "Return new context object from assign callback",
+        "Avoid direct ctx.field = value mutations"
+      ]
+    },
+    {
+      "pattern": "invoke.*src undefined|Cannot read property 'src' of undefined",
+      "meaning": "Invoked service misconfigured",
+      "causes": [
+        "invoke missing src or using undefined promise",
+        "Typo in service name referenced by invoke",
+        "Services map not provided to interpreter"
+      ],
+      "solutions": [
+        "Define invoke with src function/promise/actor",
+        "Ensure services: { fetchUser } passed to useMachine/useInterpret",
+        "Return a promise or observable from src"
+      ]
+    },
+    {
+      "pattern": "Machine restarts every render|state resets to initial",
+      "meaning": "Interpreter recreated on each React render",
+      "causes": [
+        "interpret called inside component body without memoization",
+        "useMachine called with new machine reference each render",
+        "Props change rebuilds machine config"
+      ],
+      "solutions": [
+        "Use useMachine from @xstate/react (memoizes internally)",
+        "Memoize machine with useMemo when built from props",
+        "Lift machine creation outside component"
+      ]
+    }
+  ]
+}

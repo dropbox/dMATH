@@ -1,0 +1,146 @@
+{
+  "tool": "etcd_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specifications for etcd's Raft implementation and distributed KV store",
+  "errors": [
+    {
+      "id": "lease_revocation_race",
+      "pattern": "lease.*revoked.*after|stale lease",
+      "message": "Lease revoked but client still operating",
+      "cause": "Client continued operations after lease expiration",
+      "solutions": [
+        {
+          "approach": "Check lease keepalive",
+          "code": "\\* Client must renew before TTL expires\nLeaseValid(lease) ==\n    lease.grantTime + lease.ttl > now\n    \nKeepAlive(lease) ==\n    /\\ LeaseValid(lease)\n    /\\ lease' = [lease EXCEPT !.grantTime = now]",
+          "when": "Keepalive not sent in time"
+        },
+        {
+          "approach": "Use lease-attached keys",
+          "code": "\\* Keys deleted when lease revoked\nRevokeLease(lease) ==\n    /\\ keys' = {k \\in keys : k.lease # lease.id}\n    /\\ leases' = leases \\ {lease}",
+          "when": "Keys surviving lease revocation"
+        },
+        {
+          "approach": "Check lease propagation",
+          "code": "\\* Lease TTL must be propagated to all members\nLeaseConsistent == \\A l \\in leases :\n    \\A member \\in Members : l \\in member.leases",
+          "when": "Lease state inconsistent across cluster"
+        }
+      ]
+    },
+    {
+      "id": "watch_event_loss",
+      "pattern": "watch.*event.*lost|missed.*update",
+      "message": "Watch missed events during compaction",
+      "cause": "Compaction removed history needed by watcher",
+      "solutions": [
+        {
+          "approach": "Check watch revision",
+          "code": "\\* Watch must start at uncompacted revision\nCreateWatch(startRev) ==\n    IF startRev < compactedRev\n    THEN Error(\"compacted\")\n    ELSE Watch(startRev)",
+          "when": "Watch starting at compacted revision"
+        },
+        {
+          "approach": "Use progress notify",
+          "code": "\\* Progress notify keeps watch alive through quiet periods\nWatch(key, opts) ==\n    /\\ opts.progressNotify = TRUE\n    /\\ ...",
+          "when": "Watch timing out during inactivity"
+        },
+        {
+          "approach": "Handle compaction error",
+          "code": "\\* Client must handle ErrCompacted\nHandleWatchResponse(resp) ==\n    IF resp.err = \"compacted\"\n    THEN ResumeWatch(resp.compactRevision)\n    ELSE ProcessEvents(resp.events)",
+          "when": "Not handling compaction error"
+        }
+      ]
+    },
+    {
+      "id": "mvcc_revision_gap",
+      "pattern": "revision.*gap|missing.*revision",
+      "message": "Gap in MVCC revision sequence",
+      "cause": "Revisions are not contiguous which breaks watch",
+      "solutions": [
+        {
+          "approach": "Verify revision allocation",
+          "code": "\\* Revisions must be contiguous\nNextRevision ==\n    /\\ revision' = revision + 1\n    /\\ revision' = Max({r.revision : r \\in store}) + 1",
+          "when": "Revision skipping numbers"
+        },
+        {
+          "approach": "Check transaction batching",
+          "code": "\\* All ops in txn get same revision\nTxn(ops) ==\n    LET rev == NextRevision IN\n    \\A op \\in ops : Execute(op, rev)",
+          "when": "Ops in txn have different revisions"
+        },
+        {
+          "approach": "Verify compaction behavior",
+          "code": "\\* Compaction only removes old revisions, doesn't create gaps\nCompact(rev) ==\n    store' = {kv \\in store : kv.revision >= rev}",
+          "when": "Compaction creating gaps"
+        }
+      ]
+    },
+    {
+      "id": "linearizability_violation",
+      "pattern": "linearizability.*violated|non.?linearizable",
+      "message": "Read returned stale data (linearizability violation)",
+      "cause": "Serializable read returned data older than a completed write",
+      "solutions": [
+        {
+          "approach": "Use linearizable read",
+          "code": "\\* Linearizable read goes through Raft\nLinearizableRead(key) ==\n    /\\ ReadIndex()\n    /\\ WaitApplied(readIndex)\n    /\\ Return(store[key])",
+          "when": "Using serializable when linearizable needed"
+        },
+        {
+          "approach": "Check ReadIndex implementation",
+          "code": "\\* ReadIndex must confirm leadership\nReadIndex(leader) ==\n    /\\ HeartbeatQuorum()\n    /\\ readIndex' = commitIndex",
+          "when": "ReadIndex not checking quorum"
+        },
+        {
+          "approach": "Verify follower read",
+          "code": "\\* Follower read must wait for leader's commit\nFollowerRead(follower) ==\n    LET leaderCommit == GetLeaderCommitIndex()\n    IN /\\ WaitApplied(leaderCommit)\n       /\\ Return(store[key])",
+          "when": "Follower read not waiting for apply"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_restore_divergence",
+      "pattern": "snapshot.*divergence|restore.*mismatch",
+      "message": "State diverged after snapshot restore",
+      "cause": "Snapshot and log entries not properly synchronized",
+      "solutions": [
+        {
+          "approach": "Verify snapshot index",
+          "code": "\\* Snapshot must include all committed entries up to index\nTakeSnapshot(index) ==\n    /\\ index <= commitIndex\n    /\\ snapshot' = [data |-> store, index |-> index, term |-> log[index].term]",
+          "when": "Snapshot ahead of commit"
+        },
+        {
+          "approach": "Check log truncation",
+          "code": "\\* After snapshot restore, discard log entries before snapshot\nRestoreSnapshot(snap) ==\n    /\\ store' = snap.data\n    /\\ log' = SubSeq(log, snap.index + 1, Len(log))\n    /\\ lastIncludedIndex' = snap.index",
+          "when": "Log not truncated after restore"
+        },
+        {
+          "approach": "Verify term consistency",
+          "code": "\\* Snapshot term must match log entry term at that index\nSnapshotValid(snap) ==\n    snap.term = log[snap.index].term",
+          "when": "Snapshot term mismatch"
+        }
+      ]
+    },
+    {
+      "id": "auth_token_replay",
+      "pattern": "token.*replay|auth.*bypass",
+      "message": "Authentication token replayed after revocation",
+      "cause": "Revoked token accepted by cluster member",
+      "solutions": [
+        {
+          "approach": "Check token revision",
+          "code": "\\* Token valid only if auth revision matches\nValidateToken(token) ==\n    /\\ token.authRevision >= authStore.revision\n    /\\ token.user \\in authStore.users",
+          "when": "Not checking auth revision"
+        },
+        {
+          "approach": "Propagate revocation",
+          "code": "\\* Revocation must be committed before enforced\nRevokeToken(token) ==\n    /\\ authStore.revision' = authStore.revision + 1\n    /\\ WaitCommit(authStore.revision')",
+          "when": "Revocation not committed"
+        },
+        {
+          "approach": "Use short token TTL",
+          "code": "\\* Tokens expire quickly, limiting replay window\nTokenValid(token) ==\n    /\\ token.issueTime + tokenTTL > now\n    /\\ ...",
+          "when": "Long-lived tokens"
+        }
+      ]
+    }
+  ]
+}

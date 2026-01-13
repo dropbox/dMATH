@@ -1,0 +1,99 @@
+{
+  "tool": "gke",
+  "category": "gcp_kubernetes",
+  "description": "Google Kubernetes Engine - managed Kubernetes service",
+  "common_errors": [
+    {
+      "id": "cluster_unreachable",
+      "pattern": "Unable to connect",
+      "regex": "(?i)unable to connect|connection refused|couldn't connect|cluster.*unreachable",
+      "cause": "GKE cluster API endpoint unreachable",
+      "solution": "Update kubeconfig with 'gcloud container clusters get-credentials', check VPC/firewall rules, verify master authorized networks",
+      "severity": "high",
+      "category": "connectivity"
+    },
+    {
+      "id": "auth_error",
+      "pattern": "Unauthorized",
+      "regex": "(?i)unauthorized|invalid.*credentials|token.*expired|authentication.*error",
+      "cause": "GCP authentication failed for GKE cluster",
+      "solution": "Run 'gcloud auth login', update kubeconfig, check service account permissions",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "node_pool_error",
+      "pattern": "NodePoolError",
+      "regex": "(?i)node.*pool|nodes.*not.*ready|node.*failed|autoscaling.*error",
+      "cause": "Node pool creation or scaling failed",
+      "solution": "Check Compute Engine quotas, verify machine type availability, review node pool configuration",
+      "severity": "high",
+      "category": "compute"
+    },
+    {
+      "id": "quota_exceeded",
+      "pattern": "QuotaExceeded",
+      "regex": "(?i)quota.*exceeded|cpu.*quota|ip.*address.*quota|resource.*exhausted",
+      "cause": "GCP project quota exceeded",
+      "solution": "Request quota increase in GCP Console, reduce resource requests, use different region",
+      "severity": "high",
+      "category": "limits"
+    },
+    {
+      "id": "workload_identity",
+      "pattern": "Workload Identity",
+      "regex": "(?i)workload.*identity|annotation.*error|service.*account.*binding|iam.*error",
+      "cause": "Workload Identity configuration issue",
+      "solution": "Annotate Kubernetes service account, create IAM binding for GCP service account, enable Workload Identity on cluster",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "network_policy",
+      "pattern": "NetworkPolicy",
+      "regex": "(?i)network.*policy|calico|dataplane.*v2|pod.*communication",
+      "cause": "Network policy blocking pod communication",
+      "solution": "Review network policies, enable network policy addon, check dataplane v2 configuration",
+      "severity": "medium",
+      "category": "networking"
+    },
+    {
+      "id": "autopilot_restriction",
+      "pattern": "Autopilot",
+      "regex": "(?i)autopilot|not.*allowed.*in.*autopilot|restricted.*feature|privileged.*container",
+      "cause": "Feature not supported in GKE Autopilot mode",
+      "solution": "Use Standard mode cluster for feature, modify workload to comply with Autopilot restrictions",
+      "severity": "medium",
+      "category": "autopilot"
+    },
+    {
+      "id": "ip_exhaustion",
+      "pattern": "IP exhaustion",
+      "regex": "(?i)ip.*exhaustion|insufficient.*addresses|subnet.*full|no.*available.*ips",
+      "cause": "VPC subnet or alias IP range exhausted",
+      "solution": "Create additional secondary ranges, use VPC-native cluster, expand subnet CIDR",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "version_error",
+      "pattern": "InvalidVersion",
+      "regex": "(?i)invalid.*version|unsupported.*version|upgrade.*error|version.*skew",
+      "cause": "Kubernetes version unsupported or upgrade issue",
+      "solution": "Check supported GKE versions, upgrade incrementally, update node pools after control plane",
+      "severity": "medium",
+      "category": "version"
+    },
+    {
+      "id": "load_balancer_error",
+      "pattern": "LoadBalancer",
+      "regex": "(?i)load.*balancer|ingress.*error|neg.*error|backend.*unhealthy",
+      "cause": "GKE LoadBalancer or Ingress configuration issue",
+      "solution": "Check health check configuration, verify firewall rules for node ports, review NEG configuration",
+      "severity": "high",
+      "category": "networking"
+    }
+  ],
+  "related_tools": ["kubectl", "gcloud", "helm"],
+  "documentation_url": "https://cloud.google.com/kubernetes-engine/docs"
+}

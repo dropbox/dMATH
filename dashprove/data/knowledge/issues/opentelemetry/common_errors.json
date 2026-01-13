@@ -1,0 +1,76 @@
+{
+  "tool": "opentelemetry",
+  "category": "observability",
+  "common_errors": [
+    {
+      "pattern": "OTLP.*connection refused|failed to export|endpoint.*unreachable",
+      "meaning": "Cannot connect to OTLP endpoint",
+      "causes": ["Collector not running", "Wrong endpoint URL", "Network/firewall issue"],
+      "solutions": ["Verify collector is running", "Check OTEL_EXPORTER_OTLP_ENDPOINT", "Use correct port (4317 gRPC, 4318 HTTP)"]
+    },
+    {
+      "pattern": "context cancelled|deadline exceeded",
+      "meaning": "Export timeout or cancellation",
+      "causes": ["Export taking too long", "Collector overloaded", "Network latency"],
+      "solutions": ["Increase timeout in exporter config", "Scale collector horizontally", "Check batch settings"]
+    },
+    {
+      "pattern": "no TracerProvider|tracer.*nil|span.*not recording",
+      "meaning": "Tracer not configured",
+      "causes": ["Provider not initialized", "SDK not started", "Wrong import"],
+      "solutions": ["Initialize TracerProvider at startup", "Call provider.Shutdown() at end", "Import correct SDK package"]
+    },
+    {
+      "pattern": "span.*dropped|queue full|buffer overflow",
+      "meaning": "Spans being dropped",
+      "causes": ["Export buffer full", "Too many spans", "Export too slow"],
+      "solutions": ["Increase batch processor queue size", "Sample spans: use sampler", "Optimize export performance"]
+    },
+    {
+      "pattern": "resource.*missing|service.name.*required",
+      "meaning": "Resource attributes missing",
+      "causes": ["OTEL_SERVICE_NAME not set", "Resource not configured", "SDK default missing"],
+      "solutions": ["Set OTEL_SERVICE_NAME env var", "Configure resource in code", "Add service.name attribute"]
+    },
+    {
+      "pattern": "propagator.*unknown|context.*not propagating",
+      "meaning": "Context propagation failing",
+      "causes": ["Wrong propagator configured", "Headers not passed", "Missing instrumentation"],
+      "solutions": ["Use W3C TraceContext propagator", "Pass traceparent header", "Add instrumentation for HTTP client"]
+    },
+    {
+      "pattern": "metric.*already registered|duplicate registration",
+      "meaning": "Metric registered twice",
+      "causes": ["Instrument created multiple times", "View registered twice", "Hot reload issue"],
+      "solutions": ["Create instruments once at init", "Use sync.Once for registration", "Check for duplicate views"]
+    },
+    {
+      "pattern": "collector.*unhealthy|health check.*failed",
+      "meaning": "Collector health check failing",
+      "causes": ["Collector crashed", "Memory exhaustion", "Backend unavailable"],
+      "solutions": ["Check collector logs", "Increase memory limits", "Verify backend connectivity"]
+    },
+    {
+      "pattern": "invalid.*config|configuration error",
+      "meaning": "Collector configuration invalid",
+      "causes": ["YAML syntax error", "Missing required field", "Unknown processor/exporter"],
+      "solutions": ["Validate YAML syntax", "Check against config schema", "Use otelcol validate"]
+    },
+    {
+      "pattern": "auto-instrumentation.*failed|agent.*not attached",
+      "meaning": "Auto-instrumentation not working",
+      "causes": ["Agent not loaded", "Incompatible version", "Missing dependencies"],
+      "solutions": ["Check agent attachment (Java: -javaagent)", "Verify version compatibility", "Install required instrumentation packages"]
+    }
+  ],
+  "debugging_commands": [
+    "otelcol validate --config=config.yaml",
+    "curl localhost:13133/health",
+    "export OTEL_LOG_LEVEL=debug",
+    "curl localhost:8888/metrics"
+  ],
+  "documentation_urls": [
+    "https://opentelemetry.io/docs/",
+    "https://github.com/open-telemetry/opentelemetry-collector"
+  ]
+}

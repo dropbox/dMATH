@@ -1,0 +1,176 @@
+{
+  "tool": "unleash",
+  "version": "5.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_failed",
+      "pattern": "connection.*failed|ECONNREFUSED|unable to connect",
+      "message": "Cannot connect to Unleash server",
+      "cause": "Server not running or network issues",
+      "solutions": [
+        {
+          "approach": "Check server URL",
+          "code": "const unleash = require('unleash-client');\nunleash.initialize({\n  url: 'http://localhost:4242/api/',  // Include /api/\n  appName: 'my-app',\n  customHeaders: { Authorization: 'TOKEN' }\n});",
+          "when": "Wrong URL format"
+        },
+        {
+          "approach": "Verify server running",
+          "code": "curl http://localhost:4242/api/admin/features",
+          "when": "Test connectivity"
+        },
+        {
+          "approach": "Check Docker",
+          "code": "docker-compose up -d unleash\ndocker-compose logs unleash",
+          "when": "Using Docker"
+        }
+      ]
+    },
+    {
+      "id": "unauthorized",
+      "pattern": "401|unauthorized|invalid token",
+      "message": "Authentication failed",
+      "cause": "Invalid or missing API token",
+      "solutions": [
+        {
+          "approach": "Use client token",
+          "code": "// Create client API token in Admin UI\n// API Access > Create API Token > CLIENT type\nunleash.initialize({\n  customHeaders: { Authorization: '*:development.abc123' }\n});",
+          "when": "Client SDK"
+        },
+        {
+          "approach": "Check token scope",
+          "code": "# Tokens are scoped:\n# CLIENT - for SDKs\n# ADMIN - for admin API\n# FRONTEND - for browser SDKs",
+          "when": "Wrong token type"
+        },
+        {
+          "approach": "Check environment",
+          "code": "// Token format: project:environment.secret\n// Ensure environment matches",
+          "when": "Environment mismatch"
+        }
+      ]
+    },
+    {
+      "id": "toggle_not_found",
+      "pattern": "toggle.*not found|feature.*undefined",
+      "message": "Feature toggle not found",
+      "cause": "Toggle doesn't exist or not enabled for environment",
+      "solutions": [
+        {
+          "approach": "Check toggle exists",
+          "code": "# In Admin UI: Features > Search for toggle\n# Ensure toggle is created",
+          "when": "Toggle missing"
+        },
+        {
+          "approach": "Check environment",
+          "code": "// Toggle must be enabled in the environment\n// Admin UI: Feature > Environments > Toggle on",
+          "when": "Not enabled in env"
+        },
+        {
+          "approach": "Handle missing gracefully",
+          "code": "const enabled = unleash.isEnabled('my-toggle', undefined, false);\n// Third param is default when toggle doesn't exist",
+          "when": "Defensive coding"
+        }
+      ]
+    },
+    {
+      "id": "strategy_not_working",
+      "pattern": "strategy.*not working|always returning",
+      "message": "Activation strategy not working",
+      "cause": "Strategy misconfigured or context missing",
+      "solutions": [
+        {
+          "approach": "Provide context",
+          "code": "const context = {\n  userId: 'user-123',\n  sessionId: 'session-abc',\n  properties: { plan: 'premium' }\n};\nconst enabled = unleash.isEnabled('my-toggle', context);",
+          "when": "Strategy needs context"
+        },
+        {
+          "approach": "Check gradual rollout",
+          "code": "// For gradualRolloutUserId strategy:\n// Must provide userId in context\n// Percentage is of users, not requests",
+          "when": "Gradual rollout"
+        },
+        {
+          "approach": "Debug strategy",
+          "code": "// Enable debug logging\nconst logger = {\n  debug: console.log,\n  info: console.log,\n  warn: console.warn,\n  error: console.error\n};\nunleash.initialize({ logger });",
+          "when": "Need debug info"
+        }
+      ]
+    },
+    {
+      "id": "stale_data",
+      "pattern": "stale|not updating|cached",
+      "message": "Toggle values not updating",
+      "cause": "SDK caching or polling interval",
+      "solutions": [
+        {
+          "approach": "Adjust refresh interval",
+          "code": "unleash.initialize({\n  refreshInterval: 5000,  // 5 seconds (default 15s)\n});",
+          "when": "Need faster updates"
+        },
+        {
+          "approach": "Force synchronous fetch",
+          "code": "await unleash.start();\n// Waits for initial fetch",
+          "when": "Need immediate data"
+        },
+        {
+          "approach": "Event-driven updates",
+          "code": "unleash.on('update', () => {\n  console.log('Toggles updated');\n});\nunleash.on('changed', () => {\n  console.log('Toggle state changed');\n});",
+          "when": "React to updates"
+        }
+      ]
+    },
+    {
+      "id": "metrics_not_sending",
+      "pattern": "metrics.*not.*sending|usage data",
+      "message": "Metrics not being sent",
+      "cause": "Metrics disabled or interval too long",
+      "solutions": [
+        {
+          "approach": "Configure metrics",
+          "code": "unleash.initialize({\n  metricsInterval: 60000,  // Send every 60 seconds\n  disableMetrics: false\n});",
+          "when": "Metrics not configured"
+        },
+        {
+          "approach": "Disable metrics",
+          "code": "unleash.initialize({\n  disableMetrics: true  // For testing\n});",
+          "when": "Don't want metrics"
+        }
+      ]
+    },
+    {
+      "id": "custom_strategy_not_found",
+      "pattern": "custom strategy.*not found|unknown strategy",
+      "message": "Custom strategy not registered",
+      "cause": "Custom strategy not defined in SDK",
+      "solutions": [
+        {
+          "approach": "Register custom strategy",
+          "code": "class MyStrategy extends Strategy {\n  constructor() {\n    super('myStrategy');\n  }\n  isEnabled(parameters, context) {\n    return context.userId === parameters.targetUser;\n  }\n}\n\nunleash.initialize({\n  strategies: [new MyStrategy()]\n});",
+          "when": "Custom strategy needed"
+        },
+        {
+          "approach": "Check strategy name",
+          "code": "// Strategy name must match exactly\n// Case-sensitive",
+          "when": "Name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "frontend_api_issues",
+      "pattern": "frontend.*error|proxy|edge",
+      "message": "Frontend API issues",
+      "cause": "Using wrong API for browser",
+      "solutions": [
+        {
+          "approach": "Use frontend API",
+          "code": "// Browser SDKs need Unleash Proxy or Edge\n// Don't expose server SDK tokens to browser",
+          "when": "Browser usage"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "// Run Unleash Proxy for browser clients\ndocker run -p 3000:3000 \\\n  -e UNLEASH_URL=http://unleash:4242/api \\\n  -e UNLEASH_API_TOKEN=token \\\n  unleashorg/unleash-proxy",
+          "when": "Setup proxy"
+        }
+      ]
+    }
+  ]
+}

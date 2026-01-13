@@ -1,0 +1,117 @@
+{
+  "tool": "pdfkit",
+  "version": "0.15.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "font_not_found",
+      "pattern": "Font.*not found|cannot find font|unknown font",
+      "message": "Specified font not available",
+      "cause": "Font file missing or not registered",
+      "solutions": [
+        {
+          "approach": "Use built-in font",
+          "code": "doc.font('Helvetica');\n// Built-in: Courier, Helvetica, Times-Roman, Symbol, ZapfDingbats",
+          "when": "Standard font sufficient"
+        },
+        {
+          "approach": "Register custom font",
+          "code": "doc.registerFont('CustomFont', './path/to/font.ttf');\ndoc.font('CustomFont');",
+          "when": "Custom font needed"
+        },
+        {
+          "approach": "Embed font file",
+          "code": "doc.font(fs.readFileSync('./fonts/custom.ttf'));",
+          "when": "Bundling application"
+        }
+      ]
+    },
+    {
+      "id": "stream_finished",
+      "pattern": "stream.*already finished|Cannot write|pipe after end",
+      "message": "PDF stream already closed",
+      "cause": "doc.end() called but still writing, or stream destroyed",
+      "solutions": [
+        {
+          "approach": "Call end() last",
+          "code": "doc.text('Content');\ndoc.image('image.png');\ndoc.end();  // must be last",
+          "when": "Writing after end"
+        },
+        {
+          "approach": "Use async properly",
+          "code": "await new Promise(resolve => {\n  doc.pipe(writeStream);\n  // ... content\n  doc.end();\n  writeStream.on('finish', resolve);\n});",
+          "when": "Need to wait for completion"
+        }
+      ]
+    },
+    {
+      "id": "image_format",
+      "pattern": "Unknown image format|unsupported image|cannot decode",
+      "message": "Image format not supported",
+      "cause": "PDFKit only supports PNG and JPEG natively",
+      "solutions": [
+        {
+          "approach": "Convert to PNG/JPEG",
+          "code": "// Use sharp or jimp to convert SVG/WebP/etc to PNG first",
+          "when": "Have non-supported format"
+        },
+        {
+          "approach": "Use buffer",
+          "code": "const imgBuffer = fs.readFileSync('image.png');\ndoc.image(imgBuffer, { width: 200 });",
+          "when": "Loading from buffer"
+        },
+        {
+          "approach": "Check file header",
+          "code": "// Ensure file is actual PNG/JPEG, not renamed",
+          "when": "Extension doesn't match content"
+        }
+      ]
+    },
+    {
+      "id": "page_overflow",
+      "pattern": "content.*overflow|text clipped|doesn't fit",
+      "message": "Content exceeds page bounds",
+      "cause": "Content doesn't fit on current page",
+      "solutions": [
+        {
+          "approach": "Enable auto pages",
+          "code": "doc.text(longText, { continued: true });  // flows to next page",
+          "when": "Long text content"
+        },
+        {
+          "approach": "Check dimensions",
+          "code": "const { width, height } = doc.page;\nif (doc.y > height - margin) doc.addPage();",
+          "when": "Manual pagination"
+        },
+        {
+          "approach": "Use columns",
+          "code": "doc.text(text, { columns: 2, columnGap: 15 });",
+          "when": "Multi-column layout"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "heap out of memory|allocation failed|ENOMEM",
+      "message": "PDF generation exhausted memory",
+      "cause": "Large images or many pages without streaming",
+      "solutions": [
+        {
+          "approach": "Stream to file",
+          "code": "doc.pipe(fs.createWriteStream('output.pdf'));",
+          "when": "Large PDF output"
+        },
+        {
+          "approach": "Compress images",
+          "code": "doc.image(img, { fit: [400, 400], align: 'center' });",
+          "when": "Large images embedded"
+        },
+        {
+          "approach": "Increase heap",
+          "code": "node --max-old-space-size=4096 script.js",
+          "when": "Temporary workaround"
+        }
+      ]
+    }
+  ]
+}

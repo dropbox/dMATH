@@ -1,0 +1,201 @@
+{
+  "tool": "redis",
+  "version": "7.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "ECONNREFUSED|Connection refused|Could not connect",
+      "message": "Cannot connect to Redis server",
+      "cause": "Server not running, wrong host/port, or network issue",
+      "solutions": [
+        {
+          "approach": "Check server status",
+          "code": "redis-cli ping  # Should return PONG",
+          "when": "Server may not be running"
+        },
+        {
+          "approach": "Verify connection string",
+          "code": "redis-cli -h hostname -p 6379 -a password ping",
+          "when": "Connection parameters may be wrong"
+        },
+        {
+          "approach": "Check protected mode",
+          "code": "# redis.conf\nprotected-mode no\nbind 0.0.0.0",
+          "when": "Remote connections blocked"
+        }
+      ]
+    },
+    {
+      "id": "oom_error",
+      "pattern": "OOM command not allowed|used_memory|maxmemory",
+      "message": "Out of memory - command rejected",
+      "cause": "Redis memory limit reached and no eviction possible",
+      "solutions": [
+        {
+          "approach": "Increase maxmemory",
+          "code": "CONFIG SET maxmemory 2gb",
+          "when": "Server has available RAM"
+        },
+        {
+          "approach": "Set eviction policy",
+          "code": "CONFIG SET maxmemory-policy allkeys-lru",
+          "when": "Want Redis to evict old keys automatically"
+        },
+        {
+          "approach": "Delete unused keys",
+          "code": "redis-cli --scan --pattern 'temp:*' | xargs redis-cli DEL",
+          "when": "Can identify and remove stale data"
+        },
+        {
+          "approach": "Enable lazy-free",
+          "code": "CONFIG SET lazyfree-lazy-eviction yes",
+          "when": "Eviction causing latency spikes"
+        }
+      ]
+    },
+    {
+      "id": "cluster_down",
+      "pattern": "CLUSTERDOWN|cluster_state:fail|slot not covered",
+      "message": "Redis cluster is down or degraded",
+      "cause": "Cluster slots not fully covered or quorum lost",
+      "solutions": [
+        {
+          "approach": "Check cluster status",
+          "code": "redis-cli cluster info\nredis-cli cluster nodes",
+          "when": "Need to diagnose cluster state"
+        },
+        {
+          "approach": "Fix slot coverage",
+          "code": "redis-cli --cluster fix hostname:port",
+          "when": "Some slots not assigned"
+        },
+        {
+          "approach": "Add replica",
+          "code": "redis-cli --cluster add-node new-node:port existing-node:port --cluster-slave",
+          "when": "Need more replicas for failover"
+        }
+      ]
+    },
+    {
+      "id": "moved_ask",
+      "pattern": "MOVED|ASK",
+      "message": "Key moved to different cluster node",
+      "cause": "Client sent command to wrong node in cluster",
+      "solutions": [
+        {
+          "approach": "Use cluster-aware client",
+          "code": "// Use client library with cluster support\nimport redis\nr = redis.RedisCluster(host='localhost', port=6379)",
+          "when": "Client doesn't handle redirects"
+        },
+        {
+          "approach": "Follow redirect",
+          "code": "// Parse MOVED response: MOVED slot host:port\n// Reconnect to specified host",
+          "when": "Implementing custom client"
+        },
+        {
+          "approach": "Update slot cache",
+          "code": "// Refresh cluster slot mapping after topology change",
+          "when": "After cluster resharding"
+        }
+      ]
+    },
+    {
+      "id": "readonly_replica",
+      "pattern": "READONLY|replica-read-only",
+      "message": "Cannot write to read-only replica",
+      "cause": "Write command sent to replica node",
+      "solutions": [
+        {
+          "approach": "Connect to primary",
+          "code": "// Ensure client connects to master node for writes",
+          "when": "Client sent write to replica"
+        },
+        {
+          "approach": "Check replication status",
+          "code": "INFO replication",
+          "when": "Need to identify master/replica"
+        },
+        {
+          "approach": "Use Sentinel for discovery",
+          "code": "redis-cli -p 26379 SENTINEL get-master-addr-by-name mymaster",
+          "when": "Using Sentinel for HA"
+        }
+      ]
+    },
+    {
+      "id": "wrongtype",
+      "pattern": "WRONGTYPE",
+      "message": "Operation against key holding wrong type",
+      "cause": "Command expects different data type than key contains",
+      "solutions": [
+        {
+          "approach": "Check key type",
+          "code": "TYPE mykey  # Returns string, list, set, zset, hash, stream",
+          "when": "Unsure what type key holds"
+        },
+        {
+          "approach": "Delete and recreate",
+          "code": "DEL mykey\n// Then create with correct type",
+          "when": "Key type must change"
+        },
+        {
+          "approach": "Use correct command",
+          "code": "// For hash: HGET, HSET\n// For list: LPUSH, RPOP\n// For string: GET, SET",
+          "when": "Using wrong command family"
+        }
+      ]
+    },
+    {
+      "id": "busy",
+      "pattern": "BUSY Redis is busy|SCRIPT KILL",
+      "message": "Redis blocked by long-running script",
+      "cause": "Lua script exceeded execution time limit",
+      "solutions": [
+        {
+          "approach": "Kill running script",
+          "code": "redis-cli SCRIPT KILL",
+          "when": "Script is read-only and can be safely killed"
+        },
+        {
+          "approach": "Use SHUTDOWN NOSAVE",
+          "code": "redis-cli SHUTDOWN NOSAVE  # Last resort - loses unsaved data",
+          "when": "SCRIPT KILL fails (script did writes)"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "CONFIG SET lua-time-limit 10000  # 10 seconds",
+          "when": "Script legitimately needs more time"
+        },
+        {
+          "approach": "Optimize script",
+          "code": "// Reduce complexity, avoid loops over large datasets",
+          "when": "Script can be made more efficient"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "NOAUTH|AUTH failed|invalid password",
+      "message": "Authentication required or failed",
+      "cause": "Server requires password or provided password is wrong",
+      "solutions": [
+        {
+          "approach": "Provide password",
+          "code": "redis-cli -a yourpassword\n# Or in client: AUTH yourpassword",
+          "when": "Forgot to authenticate"
+        },
+        {
+          "approach": "Use ACL user",
+          "code": "AUTH username password",
+          "when": "Using Redis 6+ ACL system"
+        },
+        {
+          "approach": "Check requirepass",
+          "code": "# redis.conf\nrequirepass yourpassword",
+          "when": "Need to verify configured password"
+        }
+      ]
+    }
+  ]
+}

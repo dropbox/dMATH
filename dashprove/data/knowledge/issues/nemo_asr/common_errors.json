@@ -1,0 +1,182 @@
+{
+  "tool": "nemo_asr",
+  "version": "1.23.0",
+  "last_updated": "2025-12-22",
+  "description": "NVIDIA NeMo toolkit for automatic speech recognition and NLP",
+  "errors": [
+    {
+      "id": "cuda_version_error",
+      "pattern": "CUDA.*not available|No GPU found",
+      "message": "CUDA not available or version mismatch",
+      "cause": "NeMo requires CUDA-compatible GPU",
+      "solutions": [
+        {
+          "approach": "Check CUDA availability",
+          "code": "import torch\nprint(torch.cuda.is_available())\nprint(torch.version.cuda)",
+          "when": "Verify GPU detection"
+        },
+        {
+          "approach": "Install matching PyTorch",
+          "code": "pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118",
+          "when": "PyTorch CUDA version mismatch"
+        },
+        {
+          "approach": "Use CPU mode",
+          "code": "trainer = Trainer(accelerator='cpu')",
+          "when": "No GPU available"
+        }
+      ]
+    },
+    {
+      "id": "model_download_error",
+      "pattern": "Could not download model|HTTPError.*404",
+      "message": "Failed to download pretrained model",
+      "cause": "Model name incorrect or network issues",
+      "solutions": [
+        {
+          "approach": "Check model name",
+          "code": "# List available models:\nfrom nemo.collections.asr.models import ASRModel\nASRModel.list_available_models()",
+          "when": "Model name may be wrong"
+        },
+        {
+          "approach": "Download manually",
+          "code": "# Download from NGC or HuggingFace\n# Then load locally:\nmodel = ASRModel.restore_from('/path/to/model.nemo')",
+          "when": "Network issues"
+        },
+        {
+          "approach": "Check NGC credentials",
+          "code": "# Set NGC API key:\nexport NGC_API_KEY=your_key",
+          "when": "Private model access"
+        }
+      ]
+    },
+    {
+      "id": "manifest_format_error",
+      "pattern": "Invalid manifest|KeyError.*audio_filepath",
+      "message": "Manifest file format error",
+      "cause": "JSON manifest doesn't match expected format",
+      "solutions": [
+        {
+          "approach": "Fix manifest format",
+          "code": "// Each line is JSON:\n{\"audio_filepath\": \"/path/to/audio.wav\", \"text\": \"transcript\", \"duration\": 3.5}",
+          "when": "Wrong manifest structure"
+        },
+        {
+          "approach": "Use NeMo manifest creation",
+          "code": "from nemo.collections.asr.parts.utils.manifest_utils import create_manifest\ncreate_manifest(audio_dir, manifest_path)",
+          "when": "Creating new manifest"
+        },
+        {
+          "approach": "Validate manifest",
+          "code": "import json\nwith open('manifest.json') as f:\n    for line in f:\n        data = json.loads(line)\n        assert 'audio_filepath' in data",
+          "when": "Debug manifest issues"
+        }
+      ]
+    },
+    {
+      "id": "audio_duration_error",
+      "pattern": "Audio.*too (short|long)|duration.*bounds",
+      "message": "Audio duration outside acceptable range",
+      "cause": "Audio clips too short or too long for model",
+      "solutions": [
+        {
+          "approach": "Set duration bounds in config",
+          "code": "model.cfg.train_ds.min_duration = 0.1\nmodel.cfg.train_ds.max_duration = 20.0",
+          "when": "Training with varied durations"
+        },
+        {
+          "approach": "Filter manifest",
+          "code": "# Remove entries outside duration bounds before training",
+          "when": "Some clips are extreme"
+        },
+        {
+          "approach": "Chunk long audio",
+          "code": "# For inference on long audio:\nmodel.transcribe(audio_path, batch_size=4)",
+          "when": "Inference on long files"
+        }
+      ]
+    },
+    {
+      "id": "oom_during_training",
+      "pattern": "CUDA out of memory|RuntimeError.*allocate",
+      "message": "GPU out of memory during training",
+      "cause": "Batch size too large or model too big",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "trainer = Trainer(accumulate_grad_batches=4)  # Effective batch = batch_size * 4\nmodel.cfg.train_ds.batch_size = 4  # Reduce from 16",
+          "when": "OOM during forward pass"
+        },
+        {
+          "approach": "Use mixed precision",
+          "code": "trainer = Trainer(precision='16-mixed')",
+          "when": "GPU has tensor cores"
+        },
+        {
+          "approach": "Gradient checkpointing",
+          "code": "model.enable_checkpointing()",
+          "when": "Large model training"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "OmegaConf.*error|Config.*not found",
+      "message": "Configuration error",
+      "cause": "YAML config missing fields or wrong format",
+      "solutions": [
+        {
+          "approach": "Use default config",
+          "code": "from omegaconf import OmegaConf\ncfg = OmegaConf.structured(ASRModel.get_default_config())",
+          "when": "Start with defaults"
+        },
+        {
+          "approach": "Override specific fields",
+          "code": "cfg = OmegaConf.load('config.yaml')\ncfg.model.optim.lr = 0.001\nOmegaConf.resolve(cfg)",
+          "when": "Modify existing config"
+        }
+      ]
+    },
+    {
+      "id": "tokenizer_error",
+      "pattern": "Tokenizer.*error|SentencePiece.*failed",
+      "message": "Tokenizer initialization failed",
+      "cause": "Tokenizer model missing or incompatible",
+      "solutions": [
+        {
+          "approach": "Train new tokenizer",
+          "code": "from nemo.collections.common.tokenizers.sentencepiece_tokenizer import create_spt_model\ncreate_spt_model(data_file, vocab_size=128, model_prefix='tokenizer')",
+          "when": "Need custom tokenizer"
+        },
+        {
+          "approach": "Use pretrained tokenizer",
+          "code": "model.cfg.tokenizer.dir = '/path/to/tokenizer'\nmodel.cfg.tokenizer.type = 'bpe'",
+          "when": "Use existing tokenizer"
+        }
+      ]
+    },
+    {
+      "id": "ctc_loss_nan",
+      "pattern": "CTC loss.*nan|loss.*inf",
+      "message": "CTC loss became NaN or Inf",
+      "cause": "Blank token issues or sequence length problems",
+      "solutions": [
+        {
+          "approach": "Check blank token",
+          "code": "# Ensure blank token index is correct (usually 0 or vocab_size)",
+          "when": "CTC configuration issue"
+        },
+        {
+          "approach": "Enable gradient clipping",
+          "code": "trainer = Trainer(gradient_clip_val=1.0)",
+          "when": "Gradient explosion"
+        },
+        {
+          "approach": "Check label lengths",
+          "code": "# Label sequence must be <= input length // 2",
+          "when": "Transcripts too long for audio"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "tool": "apollo_server",
+  "category": "graphql",
+  "common_errors": [
+    {
+      "error": "GRAPHQL_PARSE_FAILED",
+      "pattern": "Syntax Error.*GraphQL|GRAPHQL_PARSE_FAILED|GraphQLError.*Syntax",
+      "severity": "high",
+      "causes": [
+        "Invalid GraphQL syntax in query",
+        "Malformed schema definition",
+        "Missing closing braces or parentheses",
+        "Invalid field or type names"
+      ],
+      "solutions": [
+        "Validate query in GraphQL playground",
+        "Check for unclosed braces: { } and parentheses: ( )",
+        "Verify field names match schema",
+        "Use GraphQL linter: eslint-plugin-graphql"
+      ]
+    },
+    {
+      "error": "GRAPHQL_VALIDATION_FAILED",
+      "pattern": "GRAPHQL_VALIDATION_FAILED|Cannot query field|Unknown argument",
+      "severity": "high",
+      "causes": [
+        "Querying field that doesn't exist",
+        "Wrong argument name or type",
+        "Missing required argument",
+        "Fragment on wrong type"
+      ],
+      "solutions": [
+        "Check schema for available fields",
+        "Verify argument names and types",
+        "Use GraphQL IDE for auto-completion",
+        "Ensure fragment type matches schema"
+      ]
+    },
+    {
+      "error": "RESOLVER_NOT_FOUND",
+      "pattern": "Cannot return null for non-nullable|Resolver.*undefined|resolver.*not a function",
+      "severity": "high",
+      "causes": [
+        "Missing resolver function",
+        "Resolver not properly exported",
+        "Typo in resolver name",
+        "Resolver returning null for non-nullable field"
+      ],
+      "solutions": [
+        "Implement resolver for the field",
+        "Check resolver matches schema field name exactly",
+        "Handle null cases: return empty array [] or default value",
+        "Mark field as nullable if can be null: field: String"
+      ]
+    },
+    {
+      "error": "PERSISTED_QUERY_NOT_FOUND",
+      "pattern": "PersistedQueryNotFound|persisted query.*not found|PERSISTED_QUERY_NOT_FOUND",
+      "severity": "medium",
+      "causes": [
+        "Cache cleared or expired",
+        "APQ not enabled on server",
+        "Query hash mismatch",
+        "CDN/proxy stripping APQ headers"
+      ],
+      "solutions": [
+        "Enable APQ: new ApolloServer({ persistedQueries: { cache } })",
+        "Configure shared cache (Redis) for multiple instances",
+        "Client will retry with full query",
+        "Check CDN configuration for GraphQL headers"
+      ]
+    },
+    {
+      "error": "AUTHENTICATION_REQUIRED",
+      "pattern": "UNAUTHENTICATED|must be authenticated|AuthenticationError",
+      "severity": "high",
+      "causes": [
+        "Missing or invalid auth token",
+        "Token expired",
+        "Auth middleware rejected request",
+        "Context not receiving auth info"
+      ],
+      "solutions": [
+        "Include Authorization header: Bearer <token>",
+        "Verify token in context: context: ({ req }) => ({ user: getUser(req) })",
+        "Check token expiration",
+        "Review auth directive implementation"
+      ]
+    },
+    {
+      "error": "FORBIDDEN",
+      "pattern": "FORBIDDEN|not authorized|ForbiddenError|permission denied",
+      "severity": "high",
+      "causes": [
+        "User lacks required permissions",
+        "Role-based access denied",
+        "Field-level authorization failed",
+        "Rate limit exceeded"
+      ],
+      "solutions": [
+        "Check user roles in context",
+        "Review @auth directive requirements",
+        "Implement field-level resolvers with auth checks",
+        "Check rate limiting configuration"
+      ]
+    },
+    {
+      "error": "INTROSPECTION_DISABLED",
+      "pattern": "introspection.*disabled|Cannot query.*__schema",
+      "severity": "low",
+      "causes": [
+        "Introspection disabled in production",
+        "Schema not exposed",
+        "Playground disabled"
+      ],
+      "solutions": [
+        "Enable for development: introspection: process.env.NODE_ENV !== 'production'",
+        "Use separate endpoint for introspection",
+        "Fetch schema from schema registry",
+        "Use static schema file for tooling"
+      ]
+    },
+    {
+      "error": "COMPLEXITY_LIMIT_EXCEEDED",
+      "pattern": "Query.*too complex|complexity.*exceeded|COMPLEXITY_LIMIT",
+      "severity": "medium",
+      "causes": [
+        "Query exceeds complexity limit",
+        "Deep nesting",
+        "Requesting too many fields",
+        "Large connection queries"
+      ],
+      "solutions": [
+        "Reduce query complexity",
+        "Add first/limit arguments to connections",
+        "Increase complexity limit if justified",
+        "Split into multiple smaller queries"
+      ]
+    },
+    {
+      "error": "DEPTH_LIMIT_EXCEEDED",
+      "pattern": "Query.*too deep|depth.*exceeded|DEPTH_LIMIT",
+      "severity": "medium",
+      "causes": [
+        "Query nesting exceeds depth limit",
+        "Circular references in query",
+        "Deeply nested fragments"
+      ],
+      "solutions": [
+        "Flatten query structure",
+        "Use separate queries for nested data",
+        "Increase depth limit: validationRules: [depthLimit(10)]",
+        "Review schema for circular dependencies"
+      ]
+    },
+    {
+      "error": "DATA_SOURCE_ERROR",
+      "pattern": "DataSource.*error|REST.*failed|INTERNAL_SERVER_ERROR",
+      "severity": "high",
+      "causes": [
+        "Backend API failure",
+        "Database connection error",
+        "Timeout in data fetching",
+        "Data source misconfiguration"
+      ],
+      "solutions": [
+        "Check backend service health",
+        "Add error handling in data source: try/catch",
+        "Implement proper error formatting",
+        "Use data loader for batching/caching"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use DataLoader for batching and caching",
+    "Implement proper error handling and formatting",
+    "Enable query complexity and depth limits",
+    "Use persisted queries in production",
+    "Disable introspection in production",
+    "Implement field-level authorization",
+    "Monitor with Apollo Studio or similar"
+  ],
+  "related_tools": ["hasura", "graphql_tools", "prisma", "nexus"]
+}

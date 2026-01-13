@@ -1,0 +1,125 @@
+{
+  "tool": "service",
+  "version": "sysvinit-utils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|must be root|superuser",
+      "message": "Need root privileges",
+      "cause": "Service management requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo service nginx start\nsudo service nginx status",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "service_not_found",
+      "pattern": "unrecognized service|service .* not found|not found",
+      "message": "Service not found",
+      "cause": "Init script doesn't exist",
+      "solutions": [
+        {
+          "approach": "List services",
+          "code": "service --status-all\nls /etc/init.d/",
+          "when": "Find service"
+        },
+        {
+          "approach": "Check systemd",
+          "code": "# On systemd systems, use systemctl:\nsystemctl status servicename\nsystemctl list-units --type=service",
+          "when": "Modern systems"
+        },
+        {
+          "approach": "Install package",
+          "code": "sudo apt install servicename",
+          "when": "Service not installed"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_start",
+      "pattern": "failed|error|cannot|could not",
+      "message": "Service failed",
+      "cause": "Service has configuration or runtime errors",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "service servicename status",
+          "when": "See state"
+        },
+        {
+          "approach": "Check logs",
+          "code": "tail -f /var/log/syslog\ntail -f /var/log/servicename.log\njournalctl -u servicename",
+          "when": "View errors"
+        },
+        {
+          "approach": "Test config",
+          "code": "# Many services have config test:\nnginx -t\napachectl configtest\nmysqld --help --verbose",
+          "when": "Config issues"
+        }
+      ]
+    },
+    {
+      "id": "redirected_to_systemctl",
+      "pattern": "redirecting to.*systemctl|Redirecting to",
+      "message": "Redirected to systemctl",
+      "cause": "System uses systemd",
+      "solutions": [
+        {
+          "approach": "Use systemctl",
+          "code": "# service command is legacy wrapper\nsystemctl start servicename\nsystemctl status servicename",
+          "when": "Recommended"
+        },
+        {
+          "approach": "Service still works",
+          "code": "# service command still works but redirects\nservice nginx restart  # Works, but uses systemctl",
+          "when": "Compatibility"
+        }
+      ]
+    },
+    {
+      "id": "common_commands",
+      "pattern": "how to|commands|usage",
+      "message": "Common usage",
+      "cause": "Reference needed",
+      "solutions": [
+        {
+          "approach": "Basic commands",
+          "code": "service servicename start\nservice servicename stop\nservice servicename restart\nservice servicename status\nservice servicename reload",
+          "when": "Control service"
+        },
+        {
+          "approach": "List all",
+          "code": "service --status-all\n# + = running, - = stopped, ? = unknown",
+          "when": "Overview"
+        },
+        {
+          "approach": "Init scripts",
+          "code": "# Direct script execution:\n/etc/init.d/servicename start\n/etc/init.d/servicename stop",
+          "when": "Alternative"
+        }
+      ]
+    },
+    {
+      "id": "docker_container",
+      "pattern": "docker|container|no init",
+      "message": "No init in container",
+      "cause": "Containers often lack init system",
+      "solutions": [
+        {
+          "approach": "Run directly",
+          "code": "# Start service directly:\nnginx -g 'daemon off;'\n/usr/sbin/sshd -D",
+          "when": "Foreground mode"
+        },
+        {
+          "approach": "Use supervisor",
+          "code": "# Use supervisord or s6 for multiple services",
+          "when": "Multiple services"
+        }
+      ]
+    }
+  ]
+}

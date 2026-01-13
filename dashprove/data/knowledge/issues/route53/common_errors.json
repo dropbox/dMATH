@@ -1,0 +1,99 @@
+{
+  "tool": "route53",
+  "category": "aws_dns",
+  "description": "Amazon Route 53 - DNS and domain registration service",
+  "common_errors": [
+    {
+      "id": "hosted_zone_not_found",
+      "pattern": "NoSuchHostedZone",
+      "regex": "(?i)no.*such.*hosted.*zone|hosted.*zone.*not.*found|invalid.*hosted.*zone",
+      "cause": "Specified hosted zone does not exist",
+      "solution": "Verify hosted zone ID, create hosted zone if needed",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "delegation_error",
+      "pattern": "DelegationSetNotAvailable",
+      "regex": "(?i)delegation.*set|name.*servers|ns.*records|delegation.*not.*available",
+      "cause": "DNS delegation configuration issue",
+      "solution": "Update domain registrar with Route 53 nameservers, wait for DNS propagation",
+      "severity": "high",
+      "category": "delegation"
+    },
+    {
+      "id": "record_exists",
+      "pattern": "RRSetAlreadyExists",
+      "regex": "(?i)rrset.*already.*exists|record.*exists|duplicate.*record",
+      "cause": "DNS record with same name and type already exists",
+      "solution": "Delete existing record first, or use UPSERT in change batch",
+      "severity": "medium",
+      "category": "records"
+    },
+    {
+      "id": "invalid_change",
+      "pattern": "InvalidChangeBatch",
+      "regex": "(?i)invalid.*change.*batch|invalid.*input|validation.*error|tried.*to.*create",
+      "cause": "Change batch validation failed",
+      "solution": "Check record format and values, verify TTL is positive, review ALIAS target",
+      "severity": "medium",
+      "category": "records"
+    },
+    {
+      "id": "no_such_record",
+      "pattern": "InvalidInput",
+      "regex": "(?i)no.*such.*resource.*record|record.*not.*found|tried.*to.*delete",
+      "cause": "Trying to delete/update non-existent record",
+      "solution": "List records to verify existence, check record name and type match exactly",
+      "severity": "medium",
+      "category": "records"
+    },
+    {
+      "id": "alias_target_error",
+      "pattern": "InvalidAliasTarget",
+      "regex": "(?i)alias.*target|invalid.*target|alias.*not.*allowed",
+      "cause": "ALIAS record target is invalid or incompatible",
+      "solution": "Verify target resource exists and is in same account/region, check supported ALIAS targets",
+      "severity": "medium",
+      "category": "records"
+    },
+    {
+      "id": "health_check_error",
+      "pattern": "HealthCheckAlreadyExists",
+      "regex": "(?i)health.*check|health.*check.*not.*found|health.*check.*in.*use",
+      "cause": "Health check configuration or reference issue",
+      "solution": "Use unique CallerReference, disassociate health check from records before deletion",
+      "severity": "medium",
+      "category": "health"
+    },
+    {
+      "id": "limit_exceeded",
+      "pattern": "LimitsExceeded",
+      "regex": "(?i)limit.*exceeded|too.*many.*hosted.*zones|quota|maximum.*records",
+      "cause": "Route 53 service limits exceeded",
+      "solution": "Request quota increase, consolidate hosted zones if possible",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "access_denied",
+      "pattern": "AccessDenied",
+      "regex": "(?i)access.*denied|not.*authorized|missing.*permission|route53.*permission",
+      "cause": "IAM policy missing Route 53 permissions",
+      "solution": "Add route53:* or specific permissions to IAM policy",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "propagation_delay",
+      "pattern": "INSYNC",
+      "regex": "(?i)pending|insync|propagat|dns.*cache|ttl",
+      "cause": "DNS changes not yet propagated",
+      "solution": "Wait for change status to become INSYNC, account for TTL-based caching at resolvers",
+      "severity": "low",
+      "category": "propagation"
+    }
+  ],
+  "related_tools": ["aws_cli", "dig", "nslookup", "cloudfront"],
+  "documentation_url": "https://docs.aws.amazon.com/route53/"
+}

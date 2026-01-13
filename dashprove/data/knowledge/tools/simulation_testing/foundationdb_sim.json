@@ -1,0 +1,117 @@
+{
+  "id": "foundationdb_sim",
+  "name": "FoundationDB Simulation",
+  "category": "simulation_testing",
+  "subcategory": "deterministic_simulation",
+
+  "description": "Deterministic simulation framework used by FoundationDB",
+  "long_description": "FoundationDB's simulation testing framework is a deterministic simulator that the team used to achieve 'millions of hours of simulation' to verify correctness. The framework replaces all sources of non-determinism (time, network, disk I/O) with controlled simulation. This approach found bugs that would have taken years to encounter in production. The technique inspired Antithesis and similar tools.",
+
+  "capabilities": [
+    "deterministic_simulation",
+    "fault_injection",
+    "network_simulation",
+    "disk_simulation",
+    "time_simulation",
+    "buggify"
+  ],
+  "property_types": ["safety", "liveness", "durability"],
+  "input_languages": ["cpp", "flow"],
+  "output_formats": ["traces", "logs"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "command": "git clone https://github.com/apple/foundationdb"}
+    ],
+    "dependencies": ["cmake", "boost", "mono"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/apple/foundationdb",
+    "blog": "https://www.youtube.com/watch?v=4fFDFbi3toc",
+    "paper": "https://www.foundationdb.org/files/fdb-paper.pdf"
+  },
+
+  "tactics": [
+    {
+      "name": "buggify",
+      "description": "Inject random failures with BUGGIFY macro",
+      "syntax": "if (BUGGIFY) { /* inject failure */ }",
+      "when_to_use": "To test error handling paths",
+      "examples": ["if (BUGGIFY) {\n    throw io_timeout();\n}"]
+    },
+    {
+      "name": "simulation_mode",
+      "description": "Run in simulation mode",
+      "syntax": "fdbserver -r simulation",
+      "when_to_use": "To run deterministic tests",
+      "examples": ["bin/fdbserver -r simulation -f test.txt -s 12345"]
+    },
+    {
+      "name": "deterministic_random",
+      "description": "Use deterministic random for reproducibility",
+      "syntax": "deterministicRandom()->random01()",
+      "when_to_use": "For any randomness in code",
+      "examples": ["double r = deterministicRandom()->random01();"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Simulation failed",
+      "meaning": "Test found a bug",
+      "common_causes": ["Bug in FoundationDB code"],
+      "fixes": ["Reproduce with same seed", "Debug trace"]
+    },
+    {
+      "pattern": "ASSERT.*failed",
+      "meaning": "Invariant violation",
+      "common_causes": ["Logic error", "Race condition"],
+      "fixes": ["Debug with trace"]
+    }
+  ],
+
+  "key_concepts": [
+    {"name": "BUGGIFY", "description": "Macro to inject failures probabilistically"},
+    {"name": "Flow", "description": "Actor-based concurrency model"},
+    {"name": "Deterministic Random", "description": "Seeded PRNG for reproducibility"},
+    {"name": "Simulated Network", "description": "Network with controlled delays/failures"},
+    {"name": "Simulated Disk", "description": "Disk with controlled latency/corruption"}
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "usl_property_types": ["safety", "durability"],
+    "cli_command": null
+  },
+
+  "performance": {
+    "typical_runtime": "Minutes to hours",
+    "scalability": "Good",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["antithesis", "shuttle", "loom"],
+    "advantages": [
+      "Battle-tested (FoundationDB)",
+      "Open source",
+      "Complete simulation",
+      "Proven methodology"
+    ],
+    "disadvantages": [
+      "C++/Flow specific",
+      "Complex to adopt",
+      "Requires architectural changes",
+      "Steep learning curve"
+    ]
+  },
+
+  "metadata": {
+    "version": "7.3",
+    "last_updated": "2025-12-22",
+    "maintainer": "Apple",
+    "license": "Apache-2.0"
+  }
+}

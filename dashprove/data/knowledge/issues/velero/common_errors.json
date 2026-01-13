@@ -1,0 +1,76 @@
+{
+  "tool": "velero",
+  "category": "cloud_native",
+  "common_errors": [
+    {
+      "pattern": "BackupStorageLocation.*unavailable|storage location.*not available",
+      "meaning": "Backup storage not accessible",
+      "causes": ["Credentials wrong", "Bucket doesn't exist", "Network issue"],
+      "solutions": ["Check BSL credentials secret", "Verify bucket exists and accessible", "Test connectivity from velero pod"]
+    },
+    {
+      "pattern": "Backup.*PartiallyFailed|some items failed",
+      "meaning": "Backup partially completed",
+      "causes": ["Some resources failed", "Volume snapshot error", "Timeout"],
+      "solutions": ["Check velero backup describe <name> --details", "Review failed items", "Check PV snapshot driver"]
+    },
+    {
+      "pattern": "Restore.*failed|cannot restore",
+      "meaning": "Restore operation failed",
+      "causes": ["Backup corrupted", "Resource conflicts", "Missing dependencies"],
+      "solutions": ["Verify backup is complete", "Use --existing-resource-policy", "Check: velero restore logs <name>"]
+    },
+    {
+      "pattern": "volume snapshot.*failed|VolumeSnapshotLocation.*error",
+      "meaning": "Volume snapshot error",
+      "causes": ["CSI driver not configured", "VolumeSnapshotClass missing", "Provider issue"],
+      "solutions": ["Install CSI snapshot controller", "Create VolumeSnapshotClass", "Check VSL provider credentials"]
+    },
+    {
+      "pattern": "plugin.*not found|no plugin for",
+      "meaning": "Velero plugin missing",
+      "causes": ["Plugin not installed", "Wrong provider", "Plugin init failed"],
+      "solutions": ["Install provider plugin: velero plugin add <image>", "Check: velero plugin get", "Review plugin pod logs"]
+    },
+    {
+      "pattern": "schedule.*not running|schedule.*paused",
+      "meaning": "Backup schedule not executing",
+      "causes": ["Schedule paused", "Cron expression invalid", "Previous backup running"],
+      "solutions": ["Unpause: velero schedule unpause <name>", "Verify cron expression", "Wait for current backup to complete"]
+    },
+    {
+      "pattern": "restic.*failed|file system backup.*error",
+      "meaning": "File system backup failed",
+      "causes": ["Restic repo not initialized", "Node agent not running", "Pod annotation missing"],
+      "solutions": ["Check node-agent DaemonSet", "Add backup.velero.io/backup-volumes annotation", "Verify restic repository exists"]
+    },
+    {
+      "pattern": "cannot delete backup|backup deletion.*stuck",
+      "meaning": "Backup deletion blocked",
+      "causes": ["Storage location unavailable", "Finalizer issue", "Permissions"],
+      "solutions": ["Check BSL availability", "Force delete: kubectl patch with empty finalizers", "Verify delete permissions"]
+    },
+    {
+      "pattern": "credential.*denied|access denied.*bucket",
+      "meaning": "Cloud provider permission error",
+      "causes": ["IAM role missing permissions", "Bucket policy blocking", "Wrong region"],
+      "solutions": ["Add required S3/GCS/Azure permissions", "Check bucket policy allows access", "Verify region matches"]
+    },
+    {
+      "pattern": "timeout.*waiting|backup.*InProgress.*stuck",
+      "meaning": "Operation timeout or stuck",
+      "causes": ["Large backup", "Slow storage", "Resource exhaustion"],
+      "solutions": ["Check velero pod resources", "Increase timeout in BSL", "Monitor: velero backup logs <name> -f"]
+    }
+  ],
+  "debugging_commands": [
+    "velero backup describe <name> --details",
+    "velero restore logs <name>",
+    "velero backup-location get",
+    "kubectl logs -n velero deploy/velero"
+  ],
+  "documentation_urls": [
+    "https://velero.io/docs/",
+    "https://github.com/vmware-tanzu/velero"
+  ]
+}

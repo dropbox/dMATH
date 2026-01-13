@@ -1,0 +1,66 @@
+{
+  "tool_id": "cedar",
+  "tool_name": "Cedar",
+  "description": "Amazon's open-source policy language and authorization engine for access control, featuring formal verification via automated reasoning",
+  "common_errors": [
+    {
+      "id": "policy_syntax_error",
+      "pattern": "parse error|unexpected token|expected.*found",
+      "category": "syntax",
+      "severity": "medium",
+      "cause": "Cedar policy contains syntax errors such as missing semicolons, incorrect keywords, or malformed expressions",
+      "solution": "Validate policies with cedar validate. Check keyword spelling (permit/forbid, when/unless). Ensure string literals are properly quoted. Review Cedar grammar.",
+      "example": "permit(principal, action, resource) when { resource.owner == principal };",
+      "related_concepts": ["policy_syntax", "cedar_grammar", "policy_validation"]
+    },
+    {
+      "id": "type_mismatch",
+      "pattern": "type error|expected.*but found|attribute.*has wrong type",
+      "category": "typing",
+      "severity": "high",
+      "cause": "Policy references attributes with incorrect types or compares incompatible values",
+      "solution": "Define entity types in schema. Use cedar validate with schema to catch type errors. Check attribute definitions match actual entity data. Use type coercion functions.",
+      "example": "// Schema: type User { age: Long }\n// Policy: principal.age > 18  -- correct Long comparison",
+      "related_concepts": ["cedar_schema", "entity_types", "type_checking"]
+    },
+    {
+      "id": "authorization_always_deny",
+      "pattern": "authorization request denied|no permit policy matched|all requests forbidden",
+      "category": "policy_logic",
+      "severity": "high",
+      "cause": "No permit policy matches the authorization request, or a forbid policy is too broad",
+      "solution": "Check policy conditions match entity attributes. Use cedar authorize --verbose to see which policies evaluated. Ensure principal/action/resource match policy scope.",
+      "related_concepts": ["policy_evaluation", "default_deny", "policy_coverage"]
+    },
+    {
+      "id": "verification_timeout",
+      "pattern": "verification timed out|solver timeout|could not prove property",
+      "category": "verification",
+      "severity": "medium",
+      "cause": "Cedar's automated reasoning couldn't prove policy properties within time limits due to complex conditions",
+      "solution": "Simplify policy conditions. Break complex policies into smaller ones. Use cedar analyze to identify problematic policies. Consider reducing attribute set sizes in schema.",
+      "related_concepts": ["smt_solving", "policy_analysis", "automated_reasoning"]
+    },
+    {
+      "id": "shadowed_policy",
+      "pattern": "policy never applies|unreachable policy|shadowed by forbid",
+      "category": "policy_logic",
+      "severity": "medium",
+      "cause": "A permit policy is unreachable because a more general forbid policy always takes precedence",
+      "solution": "Use cedar analyze to detect shadowed policies. Reorder or refine policy conditions. Remember forbid policies override permit. Use when clauses to narrow scope.",
+      "related_concepts": ["policy_analysis", "forbid_precedence", "policy_ordering"]
+    }
+  ],
+  "best_practices": [
+    "Always define a schema and validate policies against it",
+    "Use cedar analyze to verify policy properties (no shadow, completeness)",
+    "Start with default deny - only permit what's explicitly needed",
+    "Use policy templates for repeated patterns",
+    "Version control policies and validate in CI/CD"
+  ],
+  "references": [
+    "https://www.cedarpolicy.com/",
+    "https://github.com/cedar-policy/cedar",
+    "https://docs.cedarpolicy.com/policies/syntax-policy.html"
+  ]
+}

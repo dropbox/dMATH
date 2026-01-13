@@ -1,0 +1,68 @@
+{
+  "tool_id": "souffle",
+  "tool_name": "Souffle",
+  "description": "High-performance Datalog engine for program analysis, security analysis, and graph analytics with compilation to parallel C++",
+  "common_errors": [
+    {
+      "id": "stratification_error",
+      "pattern": "Error: Unable to stratify|negative cycle detected|recursion through negation",
+      "category": "semantics",
+      "severity": "high",
+      "cause": "Program contains recursive rules through negation, which violates Datalog stratification requirements",
+      "solution": "Remove negation from recursive rules. Rewrite using positive recursion with explicit boundary conditions. Use aggregation (count, sum) instead of negation where possible.",
+      "example": "// Bad: reachable(x) :- !unreachable(x).  with unreachable depending on reachable\n// Good: use explicit base case without negation cycle",
+      "related_concepts": ["stratification", "negation_as_failure", "well_founded_semantics"]
+    },
+    {
+      "id": "grounding_error",
+      "pattern": "Error: Ungrounded variable|variable.*not bounded",
+      "category": "safety",
+      "severity": "high",
+      "cause": "Variable appears in rule head or comparison but is not grounded by a positive body atom",
+      "solution": "Ensure all head variables appear in at least one positive (non-negated) body relation. Use auxiliary relations to ground variables before negation or comparison.",
+      "example": "// Bad: result(X) :- !excluded(X).  X not grounded\n// Good: result(X) :- domain(X), !excluded(X).",
+      "related_concepts": ["range_restriction", "safety_condition", "grounding"]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Error: Type.*does not match|incompatible types|type mismatch",
+      "category": "typing",
+      "severity": "medium",
+      "cause": "Type declarations don't match relation usage or incompatible types are compared",
+      "solution": "Check .decl type annotations. Ensure consistent types across joined relations. Use type hierarchy correctly. Cast using as() if necessary.",
+      "example": ".type NodeId <: symbol\n.decl edge(src: NodeId, dst: NodeId)  // explicit typing",
+      "related_concepts": ["souffle_types", "type_hierarchy", "type_inference"]
+    },
+    {
+      "id": "performance_blowup",
+      "pattern": "out of memory|excessive runtime|intermediate relation too large",
+      "category": "performance",
+      "severity": "high",
+      "cause": "Cartesian product explosion from joining large relations without sufficient constraints, or inefficient rule ordering",
+      "solution": "Add indices with .plan directive. Constrain joins with equality conditions. Use subsumption to remove redundant tuples. Profile with souffle-profile.",
+      "example": ".plan 0:(1,2,3)  // specify join order\n.pragma \"index\" \"relation:attr+\"",
+      "related_concepts": ["query_optimization", "join_ordering", "indexing"]
+    },
+    {
+      "id": "syntax_error_directive",
+      "pattern": "Error: Unknown directive|syntax error near '.'",
+      "category": "syntax",
+      "severity": "low",
+      "cause": "Misspelled directive or using deprecated/unsupported directive syntax",
+      "solution": "Check directive spelling (.decl, .input, .output, .type). Use souffle --help for supported options. Check version-specific directive syntax.",
+      "related_concepts": ["souffle_directives", "io_specification", "pragma"]
+    }
+  ],
+  "best_practices": [
+    "Define explicit types for relations to catch errors early",
+    "Use .plan directives for critical performance-sensitive rules",
+    "Profile with souffle-profile before optimizing",
+    "Compile to C++ (souffle -c) for production workloads",
+    "Use subsumption to bound relation sizes in recursive rules"
+  ],
+  "references": [
+    "https://souffle-lang.github.io/",
+    "https://souffle-lang.github.io/docs.html",
+    "https://github.com/souffle-lang/souffle"
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "tool": "playwright",
+  "version": "1.40.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout_exceeded",
+      "pattern": "Timeout \\d+ms exceeded|TimeoutError",
+      "message": "Action or assertion timed out",
+      "cause": "Element not found, page not loaded, or action took too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "await page.locator('button').click({ timeout: 30000 });",
+          "when": "Action needs more time"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "await page.locator('button').waitFor({ state: 'visible' });\nawait page.locator('button').click();",
+          "when": "Element loads asynchronously"
+        },
+        {
+          "approach": "Use better selector",
+          "code": "await page.getByRole('button', { name: 'Submit' }).click();",
+          "when": "Selector may be unstable"
+        },
+        {
+          "approach": "Debug with trace",
+          "code": "npx playwright test --trace on",
+          "when": "Need to see what happened"
+        }
+      ]
+    },
+    {
+      "id": "strict_mode_violation",
+      "pattern": "strict mode violation|resolved to \\d+ elements",
+      "message": "Selector matched multiple elements",
+      "cause": "Locator is not specific enough",
+      "solutions": [
+        {
+          "approach": "Use more specific locator",
+          "code": "await page.getByRole('button', { name: 'Submit', exact: true });",
+          "when": "Need exact match"
+        },
+        {
+          "approach": "Use first/nth",
+          "code": "await page.locator('.item').first().click();",
+          "when": "Want first match"
+        },
+        {
+          "approach": "Filter by text",
+          "code": "await page.locator('.button').filter({ hasText: 'Submit' });",
+          "when": "Need text filtering"
+        },
+        {
+          "approach": "Use test ID",
+          "code": "await page.getByTestId('submit-button').click();",
+          "when": "Can add data-testid"
+        }
+      ]
+    },
+    {
+      "id": "navigation_error",
+      "pattern": "Navigation failed|net::ERR",
+      "message": "Page navigation failed",
+      "cause": "Network error or page didn't load",
+      "solutions": [
+        {
+          "approach": "Wait for network idle",
+          "code": "await page.goto(url, { waitUntil: 'networkidle' });",
+          "when": "Page has many requests"
+        },
+        {
+          "approach": "Handle errors",
+          "code": "try {\n  await page.goto(url);\n} catch (e) {\n  // Handle navigation error\n}",
+          "when": "Navigation may fail"
+        },
+        {
+          "approach": "Check URL",
+          "code": "// Verify URL is correct and server is running",
+          "when": "Server may be down"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "expect\\(.*\\)\\.to|Received:|Expected:",
+      "message": "Test assertion failed",
+      "cause": "Expected value doesn't match actual",
+      "solutions": [
+        {
+          "approach": "Use web-first assertion",
+          "code": "await expect(page.locator('.result')).toHaveText('Success');",
+          "when": "Value may change asynchronously"
+        },
+        {
+          "approach": "Add retry",
+          "code": "await expect(page.locator('.count')).toHaveText('5', { timeout: 10000 });",
+          "when": "Need to wait for value"
+        },
+        {
+          "approach": "Check element state",
+          "code": "await expect(page.locator('button')).toBeEnabled();",
+          "when": "Element state matters"
+        }
+      ]
+    },
+    {
+      "id": "browser_not_found",
+      "pattern": "Executable doesn't exist|browserType.launch",
+      "message": "Browser executable not found",
+      "cause": "Playwright browsers not installed",
+      "solutions": [
+        {
+          "approach": "Install browsers",
+          "code": "npx playwright install",
+          "when": "First time setup"
+        },
+        {
+          "approach": "Install specific browser",
+          "code": "npx playwright install chromium",
+          "when": "Only need one browser"
+        },
+        {
+          "approach": "Install dependencies",
+          "code": "npx playwright install-deps",
+          "when": "Missing system dependencies"
+        }
+      ]
+    },
+    {
+      "id": "element_not_visible",
+      "pattern": "element is not visible|Element is outside",
+      "message": "Element exists but not visible",
+      "cause": "Element hidden, off-screen, or obscured",
+      "solutions": [
+        {
+          "approach": "Scroll into view",
+          "code": "await page.locator('button').scrollIntoViewIfNeeded();",
+          "when": "Element off-screen"
+        },
+        {
+          "approach": "Wait for visible",
+          "code": "await page.locator('button').waitFor({ state: 'visible' });",
+          "when": "Element becomes visible"
+        },
+        {
+          "approach": "Use force option",
+          "code": "await page.locator('button').click({ force: true });",
+          "when": "Know element is actionable"
+        }
+      ]
+    },
+    {
+      "id": "detached_frame",
+      "pattern": "Frame was detached|Execution context was destroyed",
+      "message": "Frame no longer exists",
+      "cause": "Page navigated or iframe removed during action",
+      "solutions": [
+        {
+          "approach": "Re-query element",
+          "code": "// Re-locate element after navigation",
+          "when": "Page navigated"
+        },
+        {
+          "approach": "Wait for frame",
+          "code": "const frame = page.frameLocator('iframe');\nawait frame.locator('button').click();",
+          "when": "Working with iframes"
+        },
+        {
+          "approach": "Handle navigation",
+          "code": "await Promise.all([\n  page.waitForNavigation(),\n  page.click('a')\n]);",
+          "when": "Action causes navigation"
+        }
+      ]
+    },
+    {
+      "id": "test_isolation",
+      "pattern": "Test isolation|Cookie|localStorage",
+      "message": "Test state leaking between tests",
+      "cause": "Tests not properly isolated",
+      "solutions": [
+        {
+          "approach": "Use new context",
+          "code": "test.beforeEach(async ({ context }) => {\n  await context.clearCookies();\n});",
+          "when": "Need clean state"
+        },
+        {
+          "approach": "Use test fixtures",
+          "code": "test.use({ storageState: 'auth.json' });",
+          "when": "Need specific state"
+        },
+        {
+          "approach": "Clear storage",
+          "code": "await page.evaluate(() => localStorage.clear());",
+          "when": "Need to reset storage"
+        }
+      ]
+    }
+  ]
+}

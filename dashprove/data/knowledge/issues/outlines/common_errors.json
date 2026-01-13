@@ -1,0 +1,196 @@
+{
+  "tool": "outlines",
+  "version": "0.0.40",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_load_error",
+      "pattern": "Cannot load model|Model not found|OutOfMemoryError",
+      "message": "Failed to load model for Outlines",
+      "cause": "Model path incorrect, not downloaded, or GPU OOM",
+      "solutions": [
+        {
+          "approach": "Use Transformers model",
+          "code": "import outlines\nmodel = outlines.models.transformers('meta-llama/Llama-2-7b-hf')",
+          "when": "Using HuggingFace model"
+        },
+        {
+          "approach": "Use quantized model",
+          "code": "model = outlines.models.transformers('model', device_map='auto', load_in_8bit=True)",
+          "when": "GPU memory limited"
+        },
+        {
+          "approach": "Use vLLM backend",
+          "code": "model = outlines.models.vllm('meta-llama/Llama-2-7b-hf')",
+          "when": "Need high throughput"
+        },
+        {
+          "approach": "Use OpenAI",
+          "code": "model = outlines.models.openai('gpt-4')",
+          "when": "Using API model"
+        }
+      ]
+    },
+    {
+      "id": "regex_error",
+      "pattern": "regex.*error|Invalid regex|Unsupported regex",
+      "message": "Regex pattern not supported",
+      "cause": "Outlines FSM doesn't support all regex features",
+      "solutions": [
+        {
+          "approach": "Simplify regex",
+          "code": "# Outlines supports: literals, character classes, quantifiers, alternation\ngenerator = outlines.generate.regex(model, r'[A-Z][a-z]+')",
+          "when": "Using complex regex"
+        },
+        {
+          "approach": "Avoid lookback/ahead",
+          "code": "# Replace (?=...) and (?<=...) with explicit patterns",
+          "when": "Using lookahead/lookbehind"
+        },
+        {
+          "approach": "Use interegular check",
+          "code": "import interegular\ninteregular.parse_pattern(pattern)",
+          "when": "Testing regex compatibility"
+        }
+      ]
+    },
+    {
+      "id": "json_schema_error",
+      "pattern": "JSON schema.*error|Invalid schema|Pydantic.*error",
+      "message": "JSON schema or Pydantic model invalid",
+      "cause": "Schema has unsupported features or syntax errors",
+      "solutions": [
+        {
+          "approach": "Use Pydantic model",
+          "code": "from pydantic import BaseModel\nclass Person(BaseModel):\n    name: str\n    age: int\ngenerator = outlines.generate.json(model, Person)",
+          "when": "Structured output"
+        },
+        {
+          "approach": "Check supported types",
+          "code": "# Supported: str, int, float, bool, List, Optional, Literal, Enum",
+          "when": "Using complex types"
+        },
+        {
+          "approach": "Use JSON schema directly",
+          "code": "schema = {'type': 'object', 'properties': {...}}\ngenerator = outlines.generate.json(model, schema)",
+          "when": "Need fine-grained control"
+        }
+      ]
+    },
+    {
+      "id": "choice_error",
+      "pattern": "choice.*error|Invalid choice|No valid tokens",
+      "message": "Choice generation failed",
+      "cause": "Model cannot generate any of the given choices",
+      "solutions": [
+        {
+          "approach": "Check choice format",
+          "code": "generator = outlines.generate.choice(model, ['yes', 'no', 'maybe'])",
+          "when": "Constraining to options"
+        },
+        {
+          "approach": "Verify choices are tokenizable",
+          "code": "# Each choice must be a valid token sequence",
+          "when": "Choices may not tokenize cleanly"
+        },
+        {
+          "approach": "Use regex alternative",
+          "code": "generator = outlines.generate.regex(model, r'yes|no|maybe')",
+          "when": "Choice has issues"
+        }
+      ]
+    },
+    {
+      "id": "context_length",
+      "pattern": "context length|maximum.*exceeded|too long",
+      "message": "Input exceeds model context length",
+      "cause": "Prompt + constrained generation space too large",
+      "solutions": [
+        {
+          "approach": "Reduce prompt length",
+          "code": "# Shorten system prompt or examples",
+          "when": "Prompt is very long"
+        },
+        {
+          "approach": "Use model with longer context",
+          "code": "model = outlines.models.transformers('model-32k')",
+          "when": "Need more context"
+        },
+        {
+          "approach": "Constrain output length",
+          "code": "# Use shorter regex patterns or smaller schemas",
+          "when": "Output constraint is too permissive"
+        }
+      ]
+    },
+    {
+      "id": "fsm_build_error",
+      "pattern": "FSM.*error|Cannot build FSM|State machine error",
+      "message": "Failed to build finite state machine",
+      "cause": "Constraint cannot be converted to FSM for guided generation",
+      "solutions": [
+        {
+          "approach": "Simplify constraint",
+          "code": "# Complex nested schemas may fail FSM construction",
+          "when": "Very complex schema"
+        },
+        {
+          "approach": "Check for cycles",
+          "code": "# Recursive schemas may cause issues",
+          "when": "Schema has recursion"
+        },
+        {
+          "approach": "Use format mode",
+          "code": "generator = outlines.generate.format(model, int)",
+          "when": "Simple type constraint"
+        }
+      ]
+    },
+    {
+      "id": "sampling_error",
+      "pattern": "Sampling error|Temperature.*invalid|No valid next token",
+      "message": "Sampling configuration error",
+      "cause": "Sampler parameters invalid or constraint too restrictive",
+      "solutions": [
+        {
+          "approach": "Use valid temperature",
+          "code": "result = generator(prompt, temperature=0.7)  # 0.0 to 2.0",
+          "when": "Temperature out of range"
+        },
+        {
+          "approach": "Relax constraint",
+          "code": "# If no tokens are valid, constraint is too strict",
+          "when": "Constraint blocks all tokens"
+        },
+        {
+          "approach": "Debug token constraints",
+          "code": "# Check which tokens are allowed at current position",
+          "when": "Understanding constraint behavior"
+        }
+      ]
+    },
+    {
+      "id": "gpu_error",
+      "pattern": "CUDA error|GPU.*error|device.*error",
+      "message": "GPU execution error",
+      "cause": "GPU not available or CUDA error",
+      "solutions": [
+        {
+          "approach": "Check CUDA availability",
+          "code": "import torch\nprint(torch.cuda.is_available())",
+          "when": "Verifying GPU"
+        },
+        {
+          "approach": "Use CPU",
+          "code": "model = outlines.models.transformers('model', device='cpu')",
+          "when": "No GPU available"
+        },
+        {
+          "approach": "Clear GPU memory",
+          "code": "import torch\ntorch.cuda.empty_cache()",
+          "when": "GPU memory fragmented"
+        }
+      ]
+    }
+  ]
+}

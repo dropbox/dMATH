@@ -1,0 +1,102 @@
+{
+  "tool": "rimraf",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "rimraf_v4_breaking",
+      "pattern": "rimraf is not a function|ERR_REQUIRE_ESM|default export",
+      "severity": "error",
+      "causes": [
+        "rimraf v4+ is ESM-only with different API",
+        "Using require() instead of import",
+        "API changed from callback to Promise"
+      ],
+      "solutions": [
+        "v4+: import { rimraf } from 'rimraf'",
+        "v4+: await rimraf('/path/to/delete')",
+        "Use v3.x for CommonJS: npm i rimraf@3",
+        "Or use fs.rm with { recursive: true } (Node 14.14+)"
+      ]
+    },
+    {
+      "id": "rimraf_ebusy",
+      "pattern": "EBUSY|resource busy|file in use",
+      "severity": "error",
+      "causes": [
+        "File locked by another process",
+        "Windows file locking",
+        "Antivirus scanning file"
+      ],
+      "solutions": [
+        "Close applications using the file",
+        "Use { maxRetries: 3 } option for retry",
+        "On Windows, check for locked handles",
+        "Wait and retry with exponential backoff"
+      ]
+    },
+    {
+      "id": "rimraf_enoent",
+      "pattern": "ENOENT|no such file or directory|path doesn't exist",
+      "severity": "warning",
+      "causes": [
+        "File/directory already deleted",
+        "Path doesn't exist (which is often fine)",
+        "Typo in path"
+      ],
+      "solutions": [
+        "rimraf typically ignores ENOENT (idempotent)",
+        "This is usually not an error - goal achieved",
+        "For v4+, ENOENT is handled gracefully",
+        "Check path only if you need to verify it existed"
+      ]
+    },
+    {
+      "id": "rimraf_eperm_windows",
+      "pattern": "EPERM|operation not permitted|Windows.*readonly",
+      "severity": "error",
+      "causes": [
+        "Read-only file attribute on Windows",
+        "File protected by system",
+        "Insufficient permissions"
+      ],
+      "solutions": [
+        "rimraf handles read-only files by default",
+        "Check file isn't system-protected",
+        "Run as administrator if necessary",
+        "Use { preserveRoot: false } cautiously"
+      ]
+    },
+    {
+      "id": "rimraf_glob_danger",
+      "pattern": "unexpected files deleted|glob pattern wrong|deleted too much",
+      "severity": "error",
+      "causes": [
+        "Glob pattern matched more than intended",
+        "Using rimraf with glob patterns",
+        "Root directory accidentally included"
+      ],
+      "solutions": [
+        "Test glob pattern with dry-run first",
+        "Use specific paths, not patterns when possible",
+        "v4+ requires explicit { glob: true } option",
+        "Always verify path before deletion"
+      ]
+    },
+    {
+      "id": "rimraf_native_alternative",
+      "pattern": "should I use rimraf|native rm recursive|fs\\.rm",
+      "severity": "info",
+      "causes": [
+        "Node 14.14+ has fs.rm with recursive",
+        "Reducing dependencies",
+        "Native solution available"
+      ],
+      "solutions": [
+        "Node 14.14+: fs.rmSync(path, { recursive: true, force: true })",
+        "Or: await fs.promises.rm(path, { recursive: true, force: true })",
+        "rimraf still handles edge cases better on Windows",
+        "fs-extra's remove() is another option"
+      ]
+    }
+  ]
+}

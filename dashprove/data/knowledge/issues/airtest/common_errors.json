@@ -1,0 +1,201 @@
+{
+  "tool": "airtest",
+  "version": "1.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "device_not_connected",
+      "pattern": "Device .* not found",
+      "message": "Cannot connect to device",
+      "cause": "Device disconnected, ADB not running, or wrong device serial",
+      "solutions": [
+        {
+          "approach": "Check ADB connection",
+          "code": "adb devices  # Verify device is listed",
+          "when": "Android device connection issue"
+        },
+        {
+          "approach": "Reconnect device",
+          "code": "adb kill-server && adb start-server",
+          "when": "ADB server unresponsive"
+        },
+        {
+          "approach": "Specify correct device",
+          "code": "connect_device(\"android:///device_serial?cap_method=JAVACAP\")",
+          "when": "Multiple devices connected"
+        }
+      ]
+    },
+    {
+      "id": "image_not_found",
+      "pattern": "Picture .* not found in screen",
+      "message": "Image recognition failed",
+      "cause": "Target image not visible or doesn't match",
+      "solutions": [
+        {
+          "approach": "Lower confidence threshold",
+          "code": "touch(Template('button.png', threshold=0.6))",
+          "when": "Image slightly different from template"
+        },
+        {
+          "approach": "Update template image",
+          "code": "# Recapture template with current screen",
+          "when": "UI has changed"
+        },
+        {
+          "approach": "Use larger search area",
+          "code": "touch(Template('button.png', target_pos=5, rgb=True))",
+          "when": "Button in unexpected position"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "wait(Template('button.png'), timeout=10)",
+          "when": "Element appears after delay"
+        }
+      ]
+    },
+    {
+      "id": "poco_element_not_found",
+      "pattern": "PocoNoSuchNodeException",
+      "message": "UI element not found via Poco",
+      "cause": "Element doesn't exist, wrong selector, or not visible",
+      "solutions": [
+        {
+          "approach": "Use correct hierarchy",
+          "code": "poco('parent').child('child').child('target').click()",
+          "when": "Element nested in hierarchy"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "poco('element').wait_for_appearance(timeout=10)",
+          "when": "Element loads dynamically"
+        },
+        {
+          "approach": "Use partial match",
+          "code": "poco(textMatches='^Submit.*').click()",
+          "when": "Text is dynamic"
+        },
+        {
+          "approach": "Check with freeze",
+          "code": "poco.freeze()  # Inspect current hierarchy",
+          "when": "Need to debug hierarchy"
+        }
+      ]
+    },
+    {
+      "id": "swipe_failed",
+      "pattern": "Swipe operation failed",
+      "message": "Swipe gesture not performed correctly",
+      "cause": "Invalid coordinates or gesture blocked",
+      "solutions": [
+        {
+          "approach": "Use normalized coordinates",
+          "code": "swipe((0.5, 0.8), (0.5, 0.2))  # Use 0-1 range",
+          "when": "Absolute coordinates wrong"
+        },
+        {
+          "approach": "Adjust swipe duration",
+          "code": "swipe(p1, p2, duration=0.5)  # Slower swipe",
+          "when": "Swipe too fast for app"
+        },
+        {
+          "approach": "Use Poco swipe",
+          "code": "poco.scroll('up', percent=0.3)",
+          "when": "Need element-aware scrolling"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "AssertionError",
+      "message": "Test assertion failed",
+      "cause": "Expected condition not met",
+      "solutions": [
+        {
+          "approach": "Add retry logic",
+          "code": "for i in range(3):\n    if exists(Template('success.png')):\n        break\n    sleep(1)",
+          "when": "Condition may take time"
+        },
+        {
+          "approach": "Use assert_exists",
+          "code": "assert_exists(Template('element.png'), msg='Element should be visible')",
+          "when": "Verifying element presence"
+        },
+        {
+          "approach": "Take screenshot on failure",
+          "code": "try:\n    assert_exists(t)\nexcept AssertionError:\n    snapshot('failure.png')\n    raise",
+          "when": "Need debug info on failure"
+        }
+      ]
+    },
+    {
+      "id": "screen_capture_failed",
+      "pattern": "Screen capture failed",
+      "message": "Cannot capture device screen",
+      "cause": "Screen mirroring disabled, permission denied, or device locked",
+      "solutions": [
+        {
+          "approach": "Use alternative capture method",
+          "code": "connect_device(\"android:///serial?cap_method=MINICAP\")",
+          "when": "Default capture not working"
+        },
+        {
+          "approach": "Enable USB debugging",
+          "code": "# On device: Developer Options > USB Debugging",
+          "when": "Permissions not granted"
+        },
+        {
+          "approach": "Unlock screen",
+          "code": "keyevent('POWER')\nsleep(1)\nswipe((0.5, 0.8), (0.5, 0.2))",
+          "when": "Device screen locked"
+        }
+      ]
+    },
+    {
+      "id": "ios_wda_error",
+      "pattern": "WebDriverAgent.*error",
+      "message": "iOS WebDriverAgent error",
+      "cause": "WDA not installed, not running, or connection failed",
+      "solutions": [
+        {
+          "approach": "Rebuild WDA",
+          "code": "# In Xcode: Product > Build WebDriverAgentRunner",
+          "when": "WDA needs reinstall"
+        },
+        {
+          "approach": "Check WDA status",
+          "code": "curl http://localhost:8100/status",
+          "when": "Verify WDA is running"
+        },
+        {
+          "approach": "Use tidevice",
+          "code": "tidevice wdaproxy -B com.facebook.WebDriverAgentRunner.xctrunner",
+          "when": "Need to proxy WDA connection"
+        }
+      ]
+    },
+    {
+      "id": "text_input_failed",
+      "pattern": "Text input failed",
+      "message": "Cannot input text",
+      "cause": "Keyboard not visible, focus not on input field, or IME issue",
+      "solutions": [
+        {
+          "approach": "Tap input field first",
+          "code": "touch(Template('input_field.png'))\nsleep(0.5)\ntext('Hello')",
+          "when": "Input not focused"
+        },
+        {
+          "approach": "Use Poco text input",
+          "code": "poco('EditText').set_text('Hello')",
+          "when": "Using Poco for UI automation"
+        },
+        {
+          "approach": "Use ADB for Android",
+          "code": "shell('input text \"Hello\"')",
+          "when": "Direct ADB text input"
+        }
+      ]
+    }
+  ]
+}

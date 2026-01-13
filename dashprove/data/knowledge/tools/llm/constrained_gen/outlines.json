@@ -1,0 +1,126 @@
+{
+  "id": "outlines",
+  "name": "Outlines",
+  "category": "llm_constrained_generation",
+  "subcategory": "structured_output",
+
+  "description": "Structured text generation with guaranteed valid outputs",
+  "long_description": "Outlines is a library for structured text generation that guarantees LLM outputs conform to specified schemas like JSON, regex patterns, or context-free grammars. It uses constrained decoding to ensure every token leads to a valid output, eliminating parsing failures.",
+
+  "capabilities": [
+    "json_schema_generation",
+    "regex_constrained_generation",
+    "cfg_constrained_generation",
+    "pydantic_model_generation",
+    "enum_choice",
+    "type_constrained_generation",
+    "multi_step_generation"
+  ],
+  "property_types": ["schema_conformance", "type_safety"],
+  "input_languages": ["python"],
+  "output_formats": ["json", "pydantic", "string"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install outlines"},
+      {"type": "pip_transformers", "command": "pip install outlines[transformers]"},
+      {"type": "pip_vllm", "command": "pip install outlines[vllm]"}
+    ],
+    "dependencies": ["transformers", "torch"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://outlines-dev.github.io/outlines/",
+    "tutorial": "https://outlines-dev.github.io/outlines/quickstart/",
+    "api_reference": "https://outlines-dev.github.io/outlines/reference/",
+    "examples": "https://github.com/outlines-dev/outlines/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "json_schema",
+      "description": "Generate valid JSON from schema",
+      "syntax": "outlines.generate.json(model, schema)",
+      "when_to_use": "When output must be valid JSON",
+      "examples": ["import outlines\nfrom pydantic import BaseModel\nclass User(BaseModel):\n    name: str\n    age: int\ngenerator = outlines.generate.json(model, User)\nresult = generator(prompt)"]
+    },
+    {
+      "name": "regex",
+      "description": "Generate text matching regex",
+      "syntax": "outlines.generate.regex(model, pattern)",
+      "when_to_use": "When output must match a pattern",
+      "examples": ["generator = outlines.generate.regex(model, r'\\d{3}-\\d{2}-\\d{4}')\nssn = generator('Generate an SSN:')"]
+    },
+    {
+      "name": "choice",
+      "description": "Generate from fixed choices",
+      "syntax": "outlines.generate.choice(model, choices)",
+      "when_to_use": "For classification or enum selection",
+      "examples": ["generator = outlines.generate.choice(model, ['positive', 'negative', 'neutral'])\nsentiment = generator(f'Sentiment of: {text}')"]
+    },
+    {
+      "name": "cfg",
+      "description": "Generate from context-free grammar",
+      "syntax": "outlines.generate.cfg(model, grammar)",
+      "when_to_use": "For complex structured outputs like code",
+      "examples": ["arithmetic_grammar = '''\n?start: expression\nexpression: term (('+' | '-') term)*\nterm: factor (('*' | '/') factor)*\nfactor: NUMBER | '(' expression ')'\n'''\ngenerator = outlines.generate.cfg(model, arithmetic_grammar)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "FSM.*cannot reach final state",
+      "meaning": "Impossible constraint",
+      "common_causes": ["Too restrictive regex", "Model cannot generate valid tokens"],
+      "fixes": ["Relax constraints", "Use different regex pattern"]
+    },
+    {
+      "pattern": "Schema validation failed",
+      "meaning": "Pydantic schema issue",
+      "common_causes": ["Invalid schema definition"],
+      "fixes": ["Check Pydantic model definition"]
+    },
+    {
+      "pattern": "Model.*not supported",
+      "meaning": "Model architecture not compatible",
+      "common_causes": ["Unsupported model type"],
+      "fixes": ["Use supported model", "Check compatibility docs"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["schema_conformance"],
+    "cli_command": "dashprove verify --backend outlines"
+  },
+
+  "performance": {
+    "typical_runtime": "Same as unconstrained generation",
+    "scalability": "Excellent",
+    "memory_usage": "FSM cache adds ~10-50MB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["guidance", "instructor", "lmql", "jsonformer"],
+    "advantages": [
+      "Guarantees valid output",
+      "No retry needed",
+      "Supports complex grammars",
+      "Fast constrained decoding",
+      "Multiple backends (HF, vLLM)"
+    ],
+    "disadvantages": [
+      "Requires model access for logits",
+      "Not all models supported",
+      "Complex setup for custom grammars"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.0.46",
+    "last_updated": "2025-12-22",
+    "maintainer": ".txt",
+    "license": "Apache-2.0"
+  }
+}

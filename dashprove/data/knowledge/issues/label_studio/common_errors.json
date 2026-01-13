@@ -1,0 +1,145 @@
+{
+  "tool": "label_studio",
+  "version": "1.12",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "database_error",
+      "pattern": "database.*error|migration.*failed|OperationalError|sqlite.*locked",
+      "message": "Database error",
+      "cause": "Database migration issue or SQLite locking",
+      "solutions": [
+        {
+          "approach": "Run migrations",
+          "code": "label-studio reset_db\nlabel-studio migrate",
+          "when": "Migration needed"
+        },
+        {
+          "approach": "Use PostgreSQL",
+          "code": "export DATABASE_URL=postgresql://user:pass@localhost/labelstudio\nlabel-studio start",
+          "when": "Production setup"
+        },
+        {
+          "approach": "Reset SQLite",
+          "code": "rm -rf ~/.local/share/label-studio/\nlabel-studio start",
+          "when": "Fresh start"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "import.*failed|Invalid JSON|task.*error|data format",
+      "message": "Data import error",
+      "cause": "Invalid task format or missing required fields",
+      "solutions": [
+        {
+          "approach": "JSON format",
+          "code": "[\n  {\"data\": {\"text\": \"Label this text\"}},\n  {\"data\": {\"image\": \"http://url.to/image.jpg\"}}\n]",
+          "when": "JSON tasks"
+        },
+        {
+          "approach": "CSV import",
+          "code": "# CSV with 'text' column:\ntext\n\"First task\"\n\"Second task\"",
+          "when": "CSV format"
+        },
+        {
+          "approach": "Cloud storage",
+          "code": "# Settings > Cloud Storage > Add Source Storage\n# S3, GCS, Azure supported",
+          "when": "External files"
+        }
+      ]
+    },
+    {
+      "id": "labeling_config_error",
+      "pattern": "labeling config.*error|XML.*invalid|template.*error|Validation error",
+      "message": "Labeling interface config error",
+      "cause": "Invalid XML template syntax",
+      "solutions": [
+        {
+          "approach": "Basic text",
+          "code": "<View>\n  <Text name=\"text\" value=\"$text\"/>\n  <Choices name=\"sentiment\" toName=\"text\">\n    <Choice value=\"Positive\"/>\n    <Choice value=\"Negative\"/>\n  </Choices>\n</View>",
+          "when": "Text classification"
+        },
+        {
+          "approach": "Image labels",
+          "code": "<View>\n  <Image name=\"image\" value=\"$image\"/>\n  <RectangleLabels name=\"label\" toName=\"image\">\n    <Label value=\"Cat\"/>\n    <Label value=\"Dog\"/>\n  </RectangleLabels>\n</View>",
+          "when": "Object detection"
+        },
+        {
+          "approach": "Use templates",
+          "code": "# Settings > Labeling Interface > Browse Templates",
+          "when": "Pre-built templates"
+        }
+      ]
+    },
+    {
+      "id": "storage_connection_error",
+      "pattern": "storage.*error|S3.*failed|connection.*storage|bucket.*access",
+      "message": "Cloud storage connection failed",
+      "cause": "Invalid credentials or bucket permissions",
+      "solutions": [
+        {
+          "approach": "S3 credentials",
+          "code": "export AWS_ACCESS_KEY_ID=xxx\nexport AWS_SECRET_ACCESS_KEY=xxx\n# Or use IAM role on EC2",
+          "when": "AWS S3"
+        },
+        {
+          "approach": "CORS for S3",
+          "code": "# Bucket CORS policy needed:\n[\n  {\"AllowedOrigins\": [\"*\"],\n   \"AllowedMethods\": [\"GET\"],\n   \"AllowedHeaders\": [\"*\"]}\n]",
+          "when": "Browser access"
+        },
+        {
+          "approach": "Local storage",
+          "code": "export LOCAL_FILES_SERVING_ENABLED=true\nlabel-studio start --data-dir /path/to/data",
+          "when": "Local files"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "export.*failed|cannot export|format.*unsupported",
+      "message": "Export error",
+      "cause": "No completed annotations or format issue",
+      "solutions": [
+        {
+          "approach": "JSON export",
+          "code": "# Data Manager > Export > JSON\n# Or API: GET /api/projects/{id}/export?exportType=JSON",
+          "when": "Standard export"
+        },
+        {
+          "approach": "COCO format",
+          "code": "# Export > COCO\n# For object detection tasks",
+          "when": "ML training"
+        },
+        {
+          "approach": "API export",
+          "code": "curl -H 'Authorization: Token YOUR_TOKEN' \\\n  http://localhost:8080/api/projects/1/export?exportType=JSON",
+          "when": "Programmatic"
+        }
+      ]
+    },
+    {
+      "id": "ml_backend_error",
+      "pattern": "ML backend.*error|prediction.*failed|model.*not responding",
+      "message": "ML backend connection error",
+      "cause": "ML backend not running or misconfigured",
+      "solutions": [
+        {
+          "approach": "Start backend",
+          "code": "label-studio-ml start ./my_ml_backend\n# Then add in Settings > Machine Learning",
+          "when": "Local ML backend"
+        },
+        {
+          "approach": "Check connection",
+          "code": "curl http://localhost:9090/health\ncurl http://localhost:9090/predict -X POST -d '{}'",
+          "when": "Test backend"
+        },
+        {
+          "approach": "Backend template",
+          "code": "label-studio-ml init my_backend --template bert\ncd my_backend && label-studio-ml start .",
+          "when": "Create backend"
+        }
+      ]
+    }
+  ]
+}

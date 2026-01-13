@@ -1,0 +1,186 @@
+{
+  "tool": "launchdarkly",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "sdk_key_invalid",
+      "pattern": "Invalid SDK key|unauthorized|401",
+      "message": "Invalid or missing SDK key",
+      "cause": "SDK key incorrect or for wrong environment",
+      "solutions": [
+        {
+          "approach": "Verify SDK key",
+          "code": "# SDK keys are environment-specific\n# Server-side SDK key starts with sdk-\n# Client-side key starts with cli-",
+          "when": "Using wrong key type"
+        },
+        {
+          "approach": "Check environment",
+          "code": "# Production vs Test environments have different keys\n# Verify in LaunchDarkly dashboard > Account Settings > Projects",
+          "when": "Wrong environment key"
+        },
+        {
+          "approach": "Use correct SDK",
+          "code": "# Server-side: use SDK key\n# Client-side (browser/mobile): use client-side ID",
+          "when": "SDK type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "flag_not_found",
+      "pattern": "flag.*not found|unknown flag|default value",
+      "message": "Flag not found, returning default",
+      "cause": "Flag key doesn't exist or SDK not initialized",
+      "solutions": [
+        {
+          "approach": "Check flag key",
+          "code": "# Flag keys are case-sensitive\n# Verify exact key in dashboard",
+          "when": "Typo in flag key"
+        },
+        {
+          "approach": "Wait for initialization",
+          "code": "await client.waitForInitialization();\nconst value = client.variation('my-flag', user, false);",
+          "when": "SDK not ready"
+        },
+        {
+          "approach": "Check targeting",
+          "code": "# Ensure flag is toggled on in environment\n# Check targeting rules match user context",
+          "when": "Flag exists but returns default"
+        }
+      ]
+    },
+    {
+      "id": "connection_timeout",
+      "pattern": "timeout|connection.*failed|network error",
+      "message": "Connection to LaunchDarkly failed",
+      "cause": "Network issues or firewall blocking",
+      "solutions": [
+        {
+          "approach": "Check connectivity",
+          "code": "curl -I https://app.launchdarkly.com",
+          "when": "Verify network access"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "const config = {\n  httpConfig: {\n    proxy: 'http://proxy:8080'\n  }\n};",
+          "when": "Behind proxy"
+        },
+        {
+          "approach": "Use Relay Proxy",
+          "code": "# For air-gapped or high-availability:\n# Deploy LaunchDarkly Relay Proxy",
+          "when": "Restricted network"
+        }
+      ]
+    },
+    {
+      "id": "user_context_missing",
+      "pattern": "user.*required|context.*missing|anonymous",
+      "message": "User/context not properly set",
+      "cause": "Evaluation requires user context",
+      "solutions": [
+        {
+          "approach": "Provide user context",
+          "code": "const user = {\n  key: 'user-123',\n  name: 'John Doe',\n  email: 'john@example.com',\n  custom: { plan: 'premium' }\n};\nconst value = client.variation('flag', user, default);",
+          "when": "Missing user for targeting"
+        },
+        {
+          "approach": "Use multi-context",
+          "code": "const context = {\n  kind: 'multi',\n  user: { key: 'user-123' },\n  organization: { key: 'org-456' }\n};",
+          "when": "Multiple context kinds"
+        },
+        {
+          "approach": "Anonymous users",
+          "code": "const user = { key: 'anon-' + uuid(), anonymous: true };",
+          "when": "No user identity"
+        }
+      ]
+    },
+    {
+      "id": "stale_flag_value",
+      "pattern": "stale|outdated|not updating",
+      "message": "Flag values not updating",
+      "cause": "Streaming not working or caching issues",
+      "solutions": [
+        {
+          "approach": "Enable streaming",
+          "code": "const config = { streaming: true };",
+          "when": "Streaming disabled"
+        },
+        {
+          "approach": "Force refresh",
+          "code": "await client.flush();\n// Or identify user again:\nawait client.identify(user);",
+          "when": "Need immediate update"
+        },
+        {
+          "approach": "Check SSE connection",
+          "code": "# Verify streaming events endpoint is accessible\n# Check browser DevTools Network tab for EventSource",
+          "when": "Streaming issues"
+        }
+      ]
+    },
+    {
+      "id": "targeting_not_working",
+      "pattern": "targeting.*not working|wrong variation",
+      "message": "Targeting rules not evaluating correctly",
+      "cause": "User attributes don't match rules",
+      "solutions": [
+        {
+          "approach": "Debug evaluation",
+          "code": "// Enable debug logging\nconst config = {\n  logger: LaunchDarkly.basicLogger({ level: 'debug' })\n};",
+          "when": "See evaluation details"
+        },
+        {
+          "approach": "Check attribute types",
+          "code": "// Ensure types match rule expectations\n// Numbers: custom: { age: 25 }  // Not '25'\n// Arrays: custom: { groups: ['admin', 'user'] }",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Use evaluation reasons",
+          "code": "const detail = client.variationDetail('flag', user, false);\nconsole.log(detail.reason);  // Shows why this value",
+          "when": "Understand evaluation"
+        }
+      ]
+    },
+    {
+      "id": "percentage_rollout_inconsistent",
+      "pattern": "percentage.*inconsistent|rollout.*changing",
+      "message": "Percentage rollout giving inconsistent results",
+      "cause": "User key changing or bucket calculation",
+      "solutions": [
+        {
+          "approach": "Use stable user key",
+          "code": "// User key must be stable for consistent bucketing\nconst user = { key: stableUserId };",
+          "when": "User key changes"
+        },
+        {
+          "approach": "Understand bucketing",
+          "code": "// Users are bucketed by hash of (flag.key + user.key)\n// Same user always gets same bucket for a flag",
+          "when": "Expecting randomization"
+        },
+        {
+          "approach": "Use custom bucket key",
+          "code": "const user = {\n  key: 'user-123',\n  custom: { bucketKey: 'stable-id' }\n};",
+          "when": "Need different bucketing"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "memory.*leak|growing memory",
+      "message": "Memory issues with SDK",
+      "cause": "Not closing client or many instances",
+      "solutions": [
+        {
+          "approach": "Close client properly",
+          "code": "await client.close();  // On shutdown",
+          "when": "Cleanup needed"
+        },
+        {
+          "approach": "Singleton pattern",
+          "code": "// Use one client instance per application\nconst client = singleton(() => LaunchDarkly.init(sdkKey));",
+          "when": "Multiple instances created"
+        }
+      ]
+    }
+  ]
+}

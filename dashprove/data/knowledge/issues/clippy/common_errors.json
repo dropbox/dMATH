@@ -1,0 +1,215 @@
+{
+  "tool": "clippy",
+  "version": "0.1.84",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unwrap_used",
+      "pattern": "unwrap_used|used `unwrap\\(\\)` on",
+      "message": "Using unwrap() is discouraged",
+      "cause": "unwrap() can panic; prefer error handling",
+      "solutions": [
+        {
+          "approach": "Use ? operator",
+          "code": "let value = result?;",
+          "when": "In function returning Result"
+        },
+        {
+          "approach": "Use unwrap_or",
+          "code": "let value = opt.unwrap_or(default);",
+          "when": "Have sensible default"
+        },
+        {
+          "approach": "Use expect",
+          "code": "let value = opt.expect(\"should never be None: <reason>\");",
+          "when": "Panic is acceptable with good message"
+        },
+        {
+          "approach": "Match on Result/Option",
+          "code": "match result {\n    Ok(v) => v,\n    Err(e) => handle_error(e),\n}",
+          "when": "Need custom handling"
+        }
+      ]
+    },
+    {
+      "id": "clone_on_copy",
+      "pattern": "clone_on_copy|using `clone` on a `Copy` type",
+      "message": "Using clone() on Copy type is unnecessary",
+      "cause": "Copy types are implicitly copied; clone() is redundant",
+      "solutions": [
+        {
+          "approach": "Remove clone()",
+          "code": "let x = y;  // Not y.clone() for Copy types",
+          "when": "Type is Copy"
+        },
+        {
+          "approach": "Dereference if needed",
+          "code": "let x = *y;  // For &i32 etc.",
+          "when": "Have reference to Copy type"
+        }
+      ]
+    },
+    {
+      "id": "needless_return",
+      "pattern": "needless_return|unneeded `return` statement",
+      "message": "Return statement is unnecessary",
+      "cause": "Final expression doesn't need explicit return",
+      "solutions": [
+        {
+          "approach": "Remove return keyword",
+          "code": "fn add(a: i32, b: i32) -> i32 {\n    a + b  // Not: return a + b;\n}",
+          "when": "Final expression"
+        },
+        {
+          "approach": "Use block expression",
+          "code": "let result = {\n    compute()  // No return/semicolon\n};",
+          "when": "In expression context"
+        }
+      ]
+    },
+    {
+      "id": "redundant_closure",
+      "pattern": "redundant_closure|this closure is redundant",
+      "message": "Closure can be replaced with function",
+      "cause": "Closure just calls a function with its arguments",
+      "solutions": [
+        {
+          "approach": "Use function directly",
+          "code": "iter.map(String::from)  // Not |s| String::from(s)",
+          "when": "Closure mirrors function signature"
+        },
+        {
+          "approach": "Use method reference",
+          "code": "iter.map(str::to_uppercase)",
+          "when": "Can use method as function"
+        }
+      ]
+    },
+    {
+      "id": "collapsible_if",
+      "pattern": "collapsible_if|this if statement can be collapsed",
+      "message": "Nested if can be combined",
+      "cause": "Two if statements can be merged with &&",
+      "solutions": [
+        {
+          "approach": "Combine conditions",
+          "code": "if a && b { ... }  // Not: if a { if b { ... } }",
+          "when": "No else branch"
+        },
+        {
+          "approach": "Use match",
+          "code": "match (cond1, cond2) {\n    (true, true) => ...,\n    _ => ...\n}",
+          "when": "Complex conditions"
+        }
+      ]
+    },
+    {
+      "id": "single_match",
+      "pattern": "single_match|this match could be replaced by `if let`",
+      "message": "Match with one arm should be if let",
+      "cause": "Match only handles one pattern plus wildcard",
+      "solutions": [
+        {
+          "approach": "Use if let",
+          "code": "if let Some(x) = opt { ... }",
+          "when": "One pattern to match"
+        },
+        {
+          "approach": "Use let-else",
+          "code": "let Some(x) = opt else { return; };",
+          "when": "Want early return on mismatch"
+        }
+      ]
+    },
+    {
+      "id": "large_enum_variant",
+      "pattern": "large_enum_variant|large size difference between variants",
+      "message": "Enum variant is much larger than others",
+      "cause": "One variant uses much more memory, wasting space",
+      "solutions": [
+        {
+          "approach": "Box the large variant",
+          "code": "enum E {\n    Small(i32),\n    Large(Box<BigStruct>),\n}",
+          "when": "Large variant less common"
+        },
+        {
+          "approach": "Restructure enum",
+          "code": "// Consider if large variant should be separate type",
+          "when": "Can refactor design"
+        }
+      ]
+    },
+    {
+      "id": "manual_map",
+      "pattern": "manual_map|manual implementation of `Option::map`",
+      "message": "Manual if-let can use map()",
+      "cause": "Hand-written Some/None handling",
+      "solutions": [
+        {
+          "approach": "Use map()",
+          "code": "opt.map(|x| x * 2)",
+          "when": "Transform Some value"
+        },
+        {
+          "approach": "Use and_then()",
+          "code": "opt.and_then(|x| other_fn(x))",
+          "when": "Returns another Option"
+        }
+      ]
+    },
+    {
+      "id": "type_complexity",
+      "pattern": "type_complexity|very complex type used",
+      "message": "Type is overly complex",
+      "cause": "Deeply nested or long type expression",
+      "solutions": [
+        {
+          "approach": "Use type alias",
+          "code": "type MyResult<T> = Result<T, Box<dyn Error + Send + Sync>>;",
+          "when": "Type used multiple times"
+        },
+        {
+          "approach": "Introduce newtype",
+          "code": "struct MyType(ComplexInner);",
+          "when": "Want to hide complexity"
+        }
+      ]
+    },
+    {
+      "id": "missing_docs",
+      "pattern": "missing_docs|missing documentation",
+      "message": "Public item lacks documentation",
+      "cause": "Public API missing doc comments",
+      "solutions": [
+        {
+          "approach": "Add doc comment",
+          "code": "/// Descriptive documentation\npub fn my_fn() { ... }",
+          "when": "Should document API"
+        },
+        {
+          "approach": "Allow for module",
+          "code": "#![allow(missing_docs)]  // At module top",
+          "when": "Internal module"
+        }
+      ]
+    },
+    {
+      "id": "cargo_common_metadata",
+      "pattern": "cargo_common_metadata|missing `license`|missing `description`",
+      "message": "Cargo.toml missing metadata",
+      "cause": "Package metadata incomplete for crates.io",
+      "solutions": [
+        {
+          "approach": "Add metadata",
+          "code": "[package]\nlicense = \"MIT\"\ndescription = \"...\"",
+          "when": "Publishing to crates.io"
+        },
+        {
+          "approach": "Allow if internal",
+          "code": "#![allow(clippy::cargo_common_metadata)]",
+          "when": "Not publishing"
+        }
+      ]
+    }
+  ]
+}

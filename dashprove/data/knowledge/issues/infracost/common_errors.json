@@ -1,0 +1,191 @@
+{
+  "tool": "infracost",
+  "version": "0.10.35",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "api_key_error",
+      "pattern": "INFRACOST_API_KEY|API key|unauthorized|401",
+      "message": "API key not set or invalid",
+      "cause": "Missing or invalid Infracost API key",
+      "solutions": [
+        {
+          "approach": "Register and set key",
+          "code": "infracost auth login\n# Or manually:\nexport INFRACOST_API_KEY=ico-xxx",
+          "when": "No API key"
+        },
+        {
+          "approach": "Check key validity",
+          "code": "infracost configure get api_key\ncurl -H \"X-Api-Key: $INFRACOST_API_KEY\" https://pricing.api.infracost.io/health",
+          "when": "Key may be invalid"
+        },
+        {
+          "approach": "Use self-hosted",
+          "code": "export INFRACOST_PRICING_API_ENDPOINT=https://your-api.example.com",
+          "when": "Self-hosted pricing API"
+        }
+      ]
+    },
+    {
+      "id": "no_resources_detected",
+      "pattern": "No cloud resources were detected|0 cloud resources",
+      "message": "No resources found to estimate",
+      "cause": "Terraform plan has no estimable resources",
+      "solutions": [
+        {
+          "approach": "Check terraform plan",
+          "code": "terraform plan -out=tfplan\ninfracost breakdown --path=tfplan",
+          "when": "Use plan file"
+        },
+        {
+          "approach": "Specify path",
+          "code": "infracost breakdown --path=/path/to/terraform",
+          "when": "Wrong directory"
+        },
+        {
+          "approach": "Check supported resources",
+          "code": "# Not all resources have pricing\n# See: https://infracost.io/docs/supported_resources",
+          "when": "Unsupported resources"
+        }
+      ]
+    },
+    {
+      "id": "terraform_error",
+      "pattern": "Error running terraform|terraform init|terraform plan",
+      "message": "Terraform execution failed",
+      "cause": "Underlying Terraform command failed",
+      "solutions": [
+        {
+          "approach": "Run terraform init",
+          "code": "terraform init\ninfracost breakdown --path=.",
+          "when": "Not initialized"
+        },
+        {
+          "approach": "Use existing plan",
+          "code": "terraform plan -out=tfplan.binary\nterraform show -json tfplan.binary > plan.json\ninfracost breakdown --path=plan.json",
+          "when": "Use saved plan"
+        },
+        {
+          "approach": "Skip terraform",
+          "code": "infracost breakdown --path=. --terraform-parse-hcl",
+          "when": "Parse HCL directly"
+        }
+      ]
+    },
+    {
+      "id": "usage_file_error",
+      "pattern": "usage file|infracost-usage\\.yml|usage data",
+      "message": "Usage file error",
+      "cause": "Invalid usage file format or path",
+      "solutions": [
+        {
+          "approach": "Generate usage file",
+          "code": "infracost breakdown --path=. --sync-usage-file --usage-file=infracost-usage.yml",
+          "when": "Create usage file"
+        },
+        {
+          "approach": "Fix format",
+          "code": "# infracost-usage.yml\nversion: 0.1\nresource_usage:\n  aws_lambda_function.my_func:\n    monthly_requests: 1000000\n    request_duration_ms: 500",
+          "when": "Format issue"
+        },
+        {
+          "approach": "Specify usage file",
+          "code": "infracost breakdown --path=. --usage-file=custom-usage.yml",
+          "when": "Custom path"
+        }
+      ]
+    },
+    {
+      "id": "config_file_error",
+      "pattern": "infracost\\.yml|config file|invalid config",
+      "message": "Config file error",
+      "cause": "Invalid infracost.yml configuration",
+      "solutions": [
+        {
+          "approach": "Validate config",
+          "code": "# infracost.yml\nversion: 0.1\nprojects:\n  - path: terraform/dev\n    name: dev\n  - path: terraform/prod\n    name: prod",
+          "when": "Config syntax"
+        },
+        {
+          "approach": "Use auto-detect",
+          "code": "infracost breakdown --path=. --config-file=infracost.yml",
+          "when": "Multiple projects"
+        },
+        {
+          "approach": "Generate config",
+          "code": "infracost generate config --repo-path=. --out-file=infracost.yml",
+          "when": "Auto-generate"
+        }
+      ]
+    },
+    {
+      "id": "diff_error",
+      "pattern": "infracost diff|base cost|no baseline",
+      "message": "Cost diff/comparison error",
+      "cause": "Cannot compare costs between versions",
+      "solutions": [
+        {
+          "approach": "Generate baseline",
+          "code": "infracost breakdown --path=main --format=json --out-file=baseline.json\ninfracost diff --path=. --compare-to=baseline.json",
+          "when": "Compare to baseline"
+        },
+        {
+          "approach": "Use git diff",
+          "code": "git checkout main\ninfracost breakdown --path=. --format=json --out-file=/tmp/base.json\ngit checkout feature\ninfracost diff --path=. --compare-to=/tmp/base.json",
+          "when": "Branch comparison"
+        },
+        {
+          "approach": "CI integration",
+          "code": "# Upload baseline: infracost upload --path=base.json\ninfracost diff --path=. --compare-to=\"infracost/base\"",
+          "when": "CI/CD pipeline"
+        }
+      ]
+    },
+    {
+      "id": "output_error",
+      "pattern": "output format|--format|template",
+      "message": "Output format error",
+      "cause": "Invalid output format or template",
+      "solutions": [
+        {
+          "approach": "Use standard format",
+          "code": "infracost breakdown --path=. --format=json\ninfracost breakdown --path=. --format=table\ninfracost breakdown --path=. --format=html",
+          "when": "Standard format"
+        },
+        {
+          "approach": "Custom template",
+          "code": "infracost output --path=result.json --format=slack-message",
+          "when": "Slack integration"
+        },
+        {
+          "approach": "GitHub comment",
+          "code": "infracost comment github --path=result.json --repo=owner/repo --pull-request=123",
+          "when": "PR comment"
+        }
+      ]
+    },
+    {
+      "id": "currency_error",
+      "pattern": "currency|USD|EUR|conversion",
+      "message": "Currency configuration error",
+      "cause": "Currency not supported or conversion issue",
+      "solutions": [
+        {
+          "approach": "Set currency",
+          "code": "export INFRACOST_CURRENCY=EUR\ninfracost breakdown --path=.",
+          "when": "Change currency"
+        },
+        {
+          "approach": "Use config",
+          "code": "# infracost.yml\ncurrency: GBP",
+          "when": "In config file"
+        },
+        {
+          "approach": "Check supported",
+          "code": "# Supported: USD, EUR, GBP, and 150+ others",
+          "when": "Verify currency code"
+        }
+      ]
+    }
+  ]
+}

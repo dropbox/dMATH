@@ -1,0 +1,207 @@
+{
+  "tool": "shfmt",
+  "version": "3.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "parse_error",
+      "pattern": "parse error|syntax error",
+      "message": "Shell syntax error",
+      "cause": "Invalid shell syntax in script",
+      "solutions": [
+        {
+          "approach": "Check syntax with bash",
+          "code": "bash -n script.sh",
+          "when": "Validate script first"
+        },
+        {
+          "approach": "Fix common issues",
+          "code": "# Missing 'then' after if\n# Missing 'do' after for/while\n# Unclosed quotes",
+          "when": "Basic syntax errors"
+        },
+        {
+          "approach": "Use shellcheck first",
+          "code": "shellcheck script.sh && shfmt script.sh",
+          "when": "Want detailed error info"
+        }
+      ]
+    },
+    {
+      "id": "binary_operators",
+      "pattern": "binary operator.*expected",
+      "message": "Binary operator expected in condition",
+      "cause": "Incomplete test expression",
+      "solutions": [
+        {
+          "approach": "Complete the test",
+          "code": "# Wrong:\nif [ $var ]; then\n# Right:\nif [ -n \"$var\" ]; then",
+          "when": "Checking non-empty"
+        },
+        {
+          "approach": "Use [[ for patterns",
+          "code": "if [[ $var == pattern* ]]; then",
+          "when": "Pattern matching"
+        }
+      ]
+    },
+    {
+      "id": "shell_detection",
+      "pattern": "invalid shell.*-ln",
+      "message": "Invalid shell language specified",
+      "cause": "Invalid -ln flag value",
+      "solutions": [
+        {
+          "approach": "Use valid language",
+          "code": "shfmt -ln bash script.sh\n# Valid: bash, posix, mksh, bats",
+          "when": "Specifying shell type"
+        },
+        {
+          "approach": "Let shfmt detect",
+          "code": "shfmt script.sh  # Detects from shebang",
+          "when": "Script has valid shebang"
+        }
+      ]
+    },
+    {
+      "id": "indent_conflict",
+      "pattern": "conflicting.*indent|tabs.*spaces",
+      "message": "Indentation conflict",
+      "cause": "Mixed tabs and spaces or conflicting settings",
+      "solutions": [
+        {
+          "approach": "Use tabs (default)",
+          "code": "shfmt script.sh",
+          "when": "Default behavior"
+        },
+        {
+          "approach": "Use spaces",
+          "code": "shfmt -i 2 script.sh  # 2 spaces\nshfmt -i 4 script.sh  # 4 spaces",
+          "when": "Prefer spaces"
+        },
+        {
+          "approach": "EditorConfig",
+          "code": "# .editorconfig:\n[*.sh]\nindent_style = space\nindent_size = 2",
+          "when": "Project-wide settings"
+        }
+      ]
+    },
+    {
+      "id": "heredoc_issues",
+      "pattern": "heredoc.*unexpected|EOF.*not found",
+      "message": "Here-document formatting issue",
+      "cause": "Heredoc delimiter or content problems",
+      "solutions": [
+        {
+          "approach": "No leading whitespace on delimiter",
+          "code": "cat <<EOF\ncontent\nEOF  # Must be at start of line",
+          "when": "Indented delimiter"
+        },
+        {
+          "approach": "Use <<- for indented",
+          "code": "cat <<-EOF\n\tcontent\n\tEOF",
+          "when": "Want indented content and delimiter (tabs only)"
+        },
+        {
+          "approach": "Quote delimiter for no expansion",
+          "code": "cat <<'EOF'\n$var  # Not expanded\nEOF",
+          "when": "Literal content"
+        }
+      ]
+    },
+    {
+      "id": "diff_output",
+      "pattern": "diff|would reformat",
+      "message": "File needs reformatting",
+      "cause": "File doesn't match shfmt style",
+      "solutions": [
+        {
+          "approach": "Format in place",
+          "code": "shfmt -w script.sh",
+          "when": "Want to update file"
+        },
+        {
+          "approach": "Preview changes",
+          "code": "shfmt -d script.sh  # Show diff",
+          "when": "Review before applying"
+        },
+        {
+          "approach": "Check in CI",
+          "code": "shfmt -d . || exit 1",
+          "when": "CI/CD verification"
+        }
+      ]
+    },
+    {
+      "id": "function_style",
+      "pattern": "function keyword|func.*parens",
+      "message": "Function syntax style mismatch",
+      "cause": "Different function declaration styles",
+      "solutions": [
+        {
+          "approach": "POSIX style",
+          "code": "myfunc() {\n  # body\n}",
+          "when": "Default, portable"
+        },
+        {
+          "approach": "Function keyword",
+          "code": "shfmt -fn script.sh  # Use 'function' keyword\n# Result: function myfunc() { }",
+          "when": "Prefer explicit keyword"
+        }
+      ]
+    },
+    {
+      "id": "case_indent",
+      "pattern": "case.*indent|esac.*align",
+      "message": "Case statement indentation",
+      "cause": "Inconsistent case/esac formatting",
+      "solutions": [
+        {
+          "approach": "Default formatting",
+          "code": "case $var in\npattern)\n\tcommand\n\t;;\nesac",
+          "when": "Standard style"
+        },
+        {
+          "approach": "Case indent option",
+          "code": "shfmt -ci script.sh",
+          "when": "Want switch case bodies indented more"
+        }
+      ]
+    },
+    {
+      "id": "redirect_space",
+      "pattern": "redirect.*space|>.*space",
+      "message": "Redirect spacing style",
+      "cause": "Space around redirects",
+      "solutions": [
+        {
+          "approach": "No space (default)",
+          "code": "command >file 2>&1",
+          "when": "Standard style"
+        },
+        {
+          "approach": "With space",
+          "code": "shfmt -sr script.sh\n# Result: command > file 2>&1",
+          "when": "Prefer space after redirect"
+        }
+      ]
+    },
+    {
+      "id": "binary_next_line",
+      "pattern": "binary.*next line|&&.*position",
+      "message": "Binary operator position",
+      "cause": "Line continuation style",
+      "solutions": [
+        {
+          "approach": "Operator at end (default)",
+          "code": "command1 &&\ncommand2",
+          "when": "Default style"
+        },
+        {
+          "approach": "Operator at start",
+          "code": "shfmt -bn script.sh\n# Result:\ncommand1 \\\n  && command2",
+          "when": "Prefer start of line"
+        }
+      ]
+    }
+  ]
+}

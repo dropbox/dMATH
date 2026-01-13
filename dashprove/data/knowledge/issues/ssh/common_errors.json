@@ -1,0 +1,168 @@
+{
+  "tool": "ssh",
+  "version": "9.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied_publickey",
+      "pattern": "Permission denied.*publickey|no more authentication methods",
+      "message": "Permission denied (publickey)",
+      "cause": "SSH key not accepted or not found",
+      "solutions": [
+        {
+          "approach": "Check key loaded",
+          "code": "ssh-add -l  (list loaded keys)",
+          "when": "Key not in agent"
+        },
+        {
+          "approach": "Add key to agent",
+          "code": "ssh-add ~/.ssh/id_ed25519",
+          "when": "Load key"
+        },
+        {
+          "approach": "Specify key",
+          "code": "ssh -i ~/.ssh/specific_key user@host",
+          "when": "Use specific key"
+        }
+      ]
+    },
+    {
+      "id": "host_key_verification",
+      "pattern": "Host key verification failed|REMOTE HOST IDENTIFICATION HAS CHANGED",
+      "message": "Host key verification failed",
+      "cause": "Server's host key changed (possible MITM or reinstall)",
+      "solutions": [
+        {
+          "approach": "Remove old key",
+          "code": "ssh-keygen -R hostname",
+          "when": "Server reinstalled, know it's safe"
+        },
+        {
+          "approach": "Verify fingerprint",
+          "code": "Compare fingerprint with server admin",
+          "when": "Unsure if legitimate"
+        },
+        {
+          "approach": "Check known_hosts",
+          "code": "cat ~/.ssh/known_hosts | grep hostname",
+          "when": "See stored key"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|connect.*port 22.*refused",
+      "message": "Connection refused",
+      "cause": "SSH server not running or firewall blocking",
+      "solutions": [
+        {
+          "approach": "Check server running",
+          "code": "sudo systemctl status sshd",
+          "when": "Verify SSH daemon"
+        },
+        {
+          "approach": "Check firewall",
+          "code": "sudo ufw status\nsudo iptables -L",
+          "when": "Firewall may block"
+        },
+        {
+          "approach": "Use different port",
+          "code": "ssh -p 2222 user@host",
+          "when": "Non-standard port"
+        }
+      ]
+    },
+    {
+      "id": "connection_timeout",
+      "pattern": "Connection timed out|Operation timed out",
+      "message": "Connection timed out",
+      "cause": "Network issue, host unreachable, or firewall",
+      "solutions": [
+        {
+          "approach": "Check connectivity",
+          "code": "ping hostname",
+          "when": "Test basic network"
+        },
+        {
+          "approach": "Verbose mode",
+          "code": "ssh -vvv user@host",
+          "when": "See where it stalls"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "ssh -o ConnectTimeout=30 user@host",
+          "when": "Slow network"
+        }
+      ]
+    },
+    {
+      "id": "too_many_authentication_failures",
+      "pattern": "Too many authentication failures|Received disconnect.*Too many",
+      "message": "Too many authentication failures",
+      "cause": "Agent offering too many keys before correct one",
+      "solutions": [
+        {
+          "approach": "Specify identity",
+          "code": "ssh -o IdentitiesOnly=yes -i key user@host",
+          "when": "Use specific key only"
+        },
+        {
+          "approach": "Clear agent",
+          "code": "ssh-add -D  (remove all keys)",
+          "when": "Too many keys loaded"
+        },
+        {
+          "approach": "Configure in ssh_config",
+          "code": "Host server\n  IdentityFile ~/.ssh/specific_key\n  IdentitiesOnly yes",
+          "when": "Permanent config"
+        }
+      ]
+    },
+    {
+      "id": "bad_permissions",
+      "pattern": "bad permissions|Permissions.*too open|UNPROTECTED PRIVATE KEY",
+      "message": "Bad permissions on key file",
+      "cause": "Private key file permissions too permissive",
+      "solutions": [
+        {
+          "approach": "Fix key permissions",
+          "code": "chmod 600 ~/.ssh/id_ed25519",
+          "when": "Private key"
+        },
+        {
+          "approach": "Fix .ssh directory",
+          "code": "chmod 700 ~/.ssh",
+          "when": "Directory permissions"
+        },
+        {
+          "approach": "Fix authorized_keys",
+          "code": "chmod 644 ~/.ssh/authorized_keys",
+          "when": "Server-side file"
+        }
+      ]
+    },
+    {
+      "id": "agent_not_running",
+      "pattern": "Could not open.*authentication agent|agent.*not running",
+      "message": "SSH agent not running",
+      "cause": "ssh-agent not started or socket not set",
+      "solutions": [
+        {
+          "approach": "Start agent",
+          "code": "eval $(ssh-agent -s)",
+          "when": "Start new agent"
+        },
+        {
+          "approach": "Add to shell profile",
+          "code": "eval $(ssh-agent -s)\nssh-add",
+          "when": "Auto-start"
+        },
+        {
+          "approach": "Use keychain",
+          "code": "ssh-add --apple-use-keychain ~/.ssh/id_ed25519",
+          "when": "macOS keychain"
+        }
+      ]
+    }
+  ]
+}

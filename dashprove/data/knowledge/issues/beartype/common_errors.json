@@ -1,0 +1,227 @@
+{
+  "tool": "beartype",
+  "version": "0.17.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "type_violation",
+      "pattern": "BeartypeCallHintViolation|violates.*type.*hint|expected.*got",
+      "message": "Runtime type hint violation",
+      "cause": "Function called with argument that doesn't match type hint",
+      "solutions": [
+        {
+          "approach": "Fix the argument",
+          "code": "from beartype import beartype\n\n@beartype\ndef greet(name: str) -> str:\n    return f\"Hello, {name}\"\n\n# Instead of:\n# greet(123)  # BeartypeCallHintViolation!\n\n# Use:\ngreet(\"Alice\")  # Correct type",
+          "when": "Wrong type passed"
+        },
+        {
+          "approach": "Convert type",
+          "code": "@beartype\ndef process(value: str) -> str:\n    return value.upper()\n\n# Convert before calling:\nprocess(str(123))  # Explicit conversion",
+          "when": "Type conversion needed"
+        },
+        {
+          "approach": "Use Union for multiple types",
+          "code": "from typing import Union\nfrom beartype import beartype\n\n@beartype\ndef process(value: Union[str, int]) -> str:\n    return str(value)\n\nprocess(\"hello\")  # OK\nprocess(42)        # OK",
+          "when": "Multiple types valid"
+        }
+      ]
+    },
+    {
+      "id": "return_type_violation",
+      "pattern": "return.*violates|BeartypeCallHintReturn",
+      "message": "Return value violates type hint",
+      "cause": "Function returns value that doesn't match return type",
+      "solutions": [
+        {
+          "approach": "Fix return value",
+          "code": "@beartype\ndef get_count() -> int:\n    # Instead of:\n    # return \"42\"  # Violation!\n    \n    return 42  # Correct type",
+          "when": "Wrong return type"
+        },
+        {
+          "approach": "Use Optional",
+          "code": "from typing import Optional\nfrom beartype import beartype\n\n@beartype\ndef find_user(id: int) -> Optional[User]:\n    if id <= 0:\n        return None  # Now valid\n    return User(id)",
+          "when": "Can return None"
+        },
+        {
+          "approach": "Check all return paths",
+          "code": "@beartype\ndef classify(n: int) -> str:\n    if n > 0:\n        return \"positive\"\n    elif n < 0:\n        return \"negative\"\n    else:\n        return \"zero\"  # Don't forget this!",
+          "when": "Missing return path"
+        }
+      ]
+    },
+    {
+      "id": "collection_item_violation",
+      "pattern": "item.*violates|List\\[.*\\].*violation|Dict.*violation",
+      "message": "Collection contains item of wrong type",
+      "cause": "List, Dict, or other collection contains incorrectly typed item",
+      "solutions": [
+        {
+          "approach": "Validate collection items",
+          "code": "from beartype import beartype\n\n@beartype\ndef sum_numbers(numbers: list[int]) -> int:\n    return sum(numbers)\n\n# Must be all ints:\nsum_numbers([1, 2, 3])        # OK\n# sum_numbers([1, \"2\", 3])   # Violation!",
+          "when": "List with wrong type"
+        },
+        {
+          "approach": "Use Any for mixed types",
+          "code": "from typing import Any\nfrom beartype import beartype\n\n@beartype\ndef process(items: list[Any]) -> None:\n    for item in items:\n        print(item)",
+          "when": "Mixed types allowed"
+        },
+        {
+          "approach": "Type narrowing with O(1) check",
+          "code": "from beartype import BeartypeConf\n\n# Beartype checks O(1) items by default\n# For full checking (slower):\nconf = BeartypeConf(is_pep484_tower=True)\n\n@beartype(conf=conf)\ndef process(items: list[int]) -> None:\n    pass",
+          "when": "Need comprehensive checking"
+        }
+      ]
+    },
+    {
+      "id": "missing_type_hint",
+      "pattern": "missing.*hint|not.*annotated|untyped",
+      "message": "Missing type hints on beartype-decorated function",
+      "cause": "Function decorated with @beartype but lacks type hints",
+      "solutions": [
+        {
+          "approach": "Add type hints",
+          "code": "# Instead of:\n@beartype\ndef add(a, b):  # No hints - beartype won't check!\n    return a + b\n\n# Add annotations:\n@beartype\ndef add(a: int, b: int) -> int:\n    return a + b",
+          "when": "Missing all hints"
+        },
+        {
+          "approach": "Partial hints OK",
+          "code": "# Beartype checks what's annotated:\n@beartype\ndef process(data: str, options=None):  # options unchecked\n    return data.upper()",
+          "when": "Some params untyped"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_hint",
+      "pattern": "unsupported.*hint|cannot.*validate|PEP.*not.*supported",
+      "message": "Unsupported type hint",
+      "cause": "Type hint uses feature not supported by beartype",
+      "solutions": [
+        {
+          "approach": "Use supported alternatives",
+          "code": "# Most PEP 484/544/585/604 hints supported\n# If issues, try simpler hints:\n\n# Instead of complex Callable:\n# Callable[[int, int], int]\n\n# Use Protocol:\nfrom typing import Protocol\n\nclass Adder(Protocol):\n    def __call__(self, a: int, b: int) -> int: ...",
+          "when": "Complex Callable"
+        },
+        {
+          "approach": "Check beartype version",
+          "code": "# Newer versions support more hints:\npip install --upgrade beartype\n\n# Check version:\nimport beartype\nprint(beartype.__version__)",
+          "when": "Older beartype"
+        }
+      ]
+    },
+    {
+      "id": "performance_issue",
+      "pattern": "slow|performance|overhead|O\\(n\\)",
+      "message": "Performance concern with beartype",
+      "cause": "Worried about runtime type checking overhead",
+      "solutions": [
+        {
+          "approach": "Beartype is O(1)",
+          "code": "# Beartype uses O(1) type checking by default\n# It checks a random sample, not all items\n\n@beartype\ndef process(items: list[int]) -> None:\n    # Only checks one random item, not all!\n    pass\n\nprocess(list(range(1_000_000)))  # Still fast!",
+          "when": "Large collections"
+        },
+        {
+          "approach": "Configure checking depth",
+          "code": "from beartype import BeartypeConf\n\n# Minimal checking:\nconf = BeartypeConf(strategy=BeartypeStrategy.O0)\n\n# Standard O(1) checking:\nconf = BeartypeConf(strategy=BeartypeStrategy.O1)\n\n@beartype(conf=conf)\ndef fast_function(data: list[int]) -> None:\n    pass",
+          "when": "Tuning performance"
+        },
+        {
+          "approach": "Disable in production",
+          "code": "import os\nfrom beartype import beartype\n\nif os.environ.get('ENV') == 'production':\n    # Use no-op decorator in production\n    def beartype(func):\n        return func",
+          "when": "Zero overhead in prod"
+        }
+      ]
+    },
+    {
+      "id": "integration_issues",
+      "pattern": "import.*error|decorator.*conflict|compatibility",
+      "message": "Integration issues with other libraries",
+      "cause": "Beartype conflicts with other decorators or libraries",
+      "solutions": [
+        {
+          "approach": "Order decorators correctly",
+          "code": "# Beartype should usually be innermost:\n@other_decorator\n@beartype\ndef my_function(x: int) -> int:\n    return x * 2\n\n# For dataclasses:\nfrom beartype import beartype\nfrom dataclasses import dataclass\n\n@beartype\n@dataclass\nclass MyClass:\n    value: int",
+          "when": "Multiple decorators"
+        },
+        {
+          "approach": "Use with pytest",
+          "code": "# beartype works with pytest:\n@beartype\ndef add(a: int, b: int) -> int:\n    return a + b\n\ndef test_add():\n    assert add(1, 2) == 3\n    # add(\"1\", 2)  # Would raise BeartypeCallHintViolation",
+          "when": "Testing with beartype"
+        },
+        {
+          "approach": "Use with Pydantic",
+          "code": "from beartype import beartype\nfrom pydantic import BaseModel\n\nclass User(BaseModel):\n    name: str\n    age: int\n\n@beartype\ndef process_user(user: User) -> str:\n    return user.name",
+          "when": "With Pydantic models"
+        }
+      ]
+    },
+    {
+      "id": "forward_reference",
+      "pattern": "forward.*reference|NameError|not.*defined",
+      "message": "Forward reference issues",
+      "cause": "Type hint references class defined later",
+      "solutions": [
+        {
+          "approach": "Use string annotation",
+          "code": "from beartype import beartype\n\n@beartype\ndef create_node(value: int) -> 'Node':  # String for forward ref\n    return Node(value)\n\nclass Node:\n    def __init__(self, value: int) -> None:\n        self.value = value",
+          "when": "Class defined later"
+        },
+        {
+          "approach": "Use from __future__",
+          "code": "from __future__ import annotations\nfrom beartype import beartype\n\n@beartype\ndef create_node(value: int) -> Node:  # No quotes needed\n    return Node(value)\n\nclass Node:\n    value: int",
+          "when": "Python 3.7+"
+        },
+        {
+          "approach": "Use TYPE_CHECKING",
+          "code": "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from heavy_module import HeavyType\n\n@beartype\ndef process(data: 'HeavyType') -> None:\n    pass",
+          "when": "Avoid import cycles"
+        }
+      ]
+    },
+    {
+      "id": "class_method_issues",
+      "pattern": "method|self|cls|classmethod|staticmethod",
+      "message": "Issues with class methods",
+      "cause": "Type hints for self/cls or class methods",
+      "solutions": [
+        {
+          "approach": "Type hint self correctly",
+          "code": "from __future__ import annotations\nfrom beartype import beartype\n\nclass MyClass:\n    @beartype\n    def method(self, value: int) -> MyClass:\n        return self\n    \n    @beartype\n    @classmethod\n    def create(cls, value: int) -> MyClass:\n        return cls()",
+          "when": "Instance methods"
+        },
+        {
+          "approach": "Use Self type",
+          "code": "from typing import Self  # Python 3.11+\nfrom beartype import beartype\n\nclass MyClass:\n    @beartype\n    def copy(self) -> Self:\n        return MyClass()",
+          "when": "Python 3.11+ Self type"
+        },
+        {
+          "approach": "Decorate class",
+          "code": "from beartype import beartype\n\n@beartype\nclass MyClass:\n    def method(self, value: int) -> int:\n        return value * 2\n\n# All methods automatically decorated",
+          "when": "Whole class checking"
+        }
+      ]
+    },
+    {
+      "id": "configuration",
+      "pattern": "config|BeartypeConf|customize",
+      "message": "Beartype configuration",
+      "cause": "Need to customize beartype behavior",
+      "solutions": [
+        {
+          "approach": "Configure globally",
+          "code": "from beartype import BeartypeConf, beartype\nfrom beartype.roar import BeartypeDecorHintPep585DeprecationWarning\nimport warnings\n\n# Suppress deprecation warnings:\nwarnings.filterwarnings('ignore', category=BeartypeDecorHintPep585DeprecationWarning)",
+          "when": "Global settings"
+        },
+        {
+          "approach": "Per-function config",
+          "code": "from beartype import BeartypeConf, beartype\n\n# Strict config:\nstrict_conf = BeartypeConf(is_pep484_tower=True)\n\n@beartype(conf=strict_conf)\ndef strict_function(x: int) -> int:\n    return x",
+          "when": "Per-function settings"
+        },
+        {
+          "approach": "Enable/disable features",
+          "code": "from beartype import BeartypeConf\n\nconf = BeartypeConf(\n    is_color=False,        # No colored output\n    is_debug=True,         # Debug mode\n    is_pep484_tower=True,  # Full numeric tower\n)",
+          "when": "Feature toggles"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "tool": "strace",
+  "version": "6.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "attach.*Permission denied|EPERM",
+      "message": "Cannot attach to process",
+      "cause": "ptrace restricted or process owned by different user",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo strace -p PID",
+          "when": "Tracing other user's process"
+        },
+        {
+          "approach": "Enable ptrace",
+          "code": "sudo sysctl kernel.yama.ptrace_scope=0",
+          "when": "ptrace disabled system-wide"
+        },
+        {
+          "approach": "Use capabilities",
+          "code": "sudo setcap cap_sys_ptrace=ep /usr/bin/strace",
+          "when": "Want non-root tracing"
+        }
+      ]
+    },
+    {
+      "id": "process_not_found",
+      "pattern": "No such process|attach.*failed",
+      "message": "Process not found",
+      "cause": "PID doesn't exist or process exited",
+      "solutions": [
+        {
+          "approach": "Verify PID",
+          "code": "ps aux | grep PROCESS_NAME",
+          "when": "Check process exists"
+        },
+        {
+          "approach": "Trace by name",
+          "code": "strace -p $(pgrep process_name)",
+          "when": "Find PID automatically"
+        },
+        {
+          "approach": "Start new process",
+          "code": "strace ./program",
+          "when": "Trace from start"
+        }
+      ]
+    },
+    {
+      "id": "too_much_output",
+      "pattern": "output.*overwhelming|large trace",
+      "message": "Trace output overwhelming",
+      "cause": "Too many syscalls to review",
+      "solutions": [
+        {
+          "approach": "Filter by syscall",
+          "code": "strace -e trace=open,read,write ./program",
+          "when": "Specific syscalls"
+        },
+        {
+          "approach": "Filter by category",
+          "code": "strace -e trace=file ./program     # File ops\nstrace -e trace=network ./program  # Network\nstrace -e trace=process ./program  # Process mgmt",
+          "when": "Category filtering"
+        },
+        {
+          "approach": "Output to file",
+          "code": "strace -o trace.log ./program",
+          "when": "Review later"
+        },
+        {
+          "approach": "Summary only",
+          "code": "strace -c ./program  # Count syscalls, no details",
+          "when": "Just statistics"
+        }
+      ]
+    },
+    {
+      "id": "string_truncated",
+      "pattern": "\\.\\.\\.|truncated",
+      "message": "String arguments truncated",
+      "cause": "Default string length limit",
+      "solutions": [
+        {
+          "approach": "Increase string length",
+          "code": "strace -s 1000 ./program",
+          "when": "Need full strings"
+        },
+        {
+          "approach": "Increase for paths",
+          "code": "strace -s 4096 ./program  # PATH_MAX",
+          "when": "Long file paths"
+        }
+      ]
+    },
+    {
+      "id": "timing_issues",
+      "pattern": "time.*measurement|latency",
+      "message": "Need timing information",
+      "cause": "Want to see syscall duration",
+      "solutions": [
+        {
+          "approach": "Show timestamps",
+          "code": "strace -t ./program   # HH:MM:SS\nstrace -tt ./program  # With microseconds\nstrace -ttt ./program # Unix timestamp",
+          "when": "Need time context"
+        },
+        {
+          "approach": "Show duration",
+          "code": "strace -T ./program  # Time spent in syscall",
+          "when": "Find slow syscalls"
+        },
+        {
+          "approach": "Relative timestamps",
+          "code": "strace -r ./program  # Time since last syscall",
+          "when": "Time between calls"
+        }
+      ]
+    },
+    {
+      "id": "fork_not_followed",
+      "pattern": "child.*not traced|fork",
+      "message": "Child processes not traced",
+      "cause": "strace doesn't follow forks by default",
+      "solutions": [
+        {
+          "approach": "Follow forks",
+          "code": "strace -f ./program",
+          "when": "Program spawns children"
+        },
+        {
+          "approach": "Follow forks with output",
+          "code": "strace -ff -o trace ./program",
+          "when": "Separate output per process"
+        }
+      ]
+    },
+    {
+      "id": "64bit_32bit_confusion",
+      "pattern": "32-bit|compat",
+      "message": "32-bit vs 64-bit confusion",
+      "cause": "Tracing process with different architecture",
+      "solutions": [
+        {
+          "approach": "Use correct strace",
+          "code": "# 32-bit program on 64-bit system may need:\nstrace -f ./32bit_program",
+          "when": "Architecture mismatch"
+        },
+        {
+          "approach": "Show instruction pointer",
+          "code": "strace -i ./program  # Show RIP/EIP",
+          "when": "Debugging"
+        }
+      ]
+    },
+    {
+      "id": "signal_handling",
+      "pattern": "signal|SIG",
+      "message": "Signal tracing issues",
+      "cause": "Need to trace signals",
+      "solutions": [
+        {
+          "approach": "Trace signals",
+          "code": "strace -e signal=all ./program",
+          "when": "Debug signal handling"
+        },
+        {
+          "approach": "Specific signals",
+          "code": "strace -e signal=SIGINT,SIGTERM ./program",
+          "when": "Specific signals only"
+        }
+      ]
+    },
+    {
+      "id": "program_slowdown",
+      "pattern": "slow|performance",
+      "message": "Program runs slow under strace",
+      "cause": "ptrace overhead is significant",
+      "solutions": [
+        {
+          "approach": "Filter syscalls",
+          "code": "strace -e trace=open ./program",
+          "when": "Reduce overhead"
+        },
+        {
+          "approach": "Use perf instead",
+          "code": "perf trace ./program",
+          "when": "Need lower overhead"
+        },
+        {
+          "approach": "Summary mode",
+          "code": "strace -c ./program",
+          "when": "Just need statistics"
+        }
+      ]
+    },
+    {
+      "id": "decode_flags",
+      "pattern": "decode|flags",
+      "message": "Flags not decoded",
+      "cause": "Raw numbers instead of symbolic names",
+      "solutions": [
+        {
+          "approach": "Verbose output",
+          "code": "strace -v ./program  # More verbose, decode more",
+          "when": "Want readable flags"
+        },
+        {
+          "approach": "Decode specific",
+          "code": "strace -y ./program  # Decode file descriptors\nstrace -yy ./program # Also decode socket addresses",
+          "when": "Need FD/socket info"
+        }
+      ]
+    }
+  ]
+}

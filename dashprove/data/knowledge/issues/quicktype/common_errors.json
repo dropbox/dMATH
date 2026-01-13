@@ -1,0 +1,145 @@
+{
+  "tool": "quicktype",
+  "version": "23.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_input",
+      "pattern": "Cannot read.*input|Input.*invalid|Failed to parse.*JSON|Syntax error.*input",
+      "message": "Failed to parse input data",
+      "cause": "Input JSON/schema is malformed or empty",
+      "solutions": [
+        {
+          "approach": "Validate JSON",
+          "code": "cat input.json | python -m json.tool",
+          "when": "JSON parse error"
+        },
+        {
+          "approach": "Use schema",
+          "code": "quicktype --src-lang schema -o types.ts schema.json",
+          "when": "Input is JSON Schema"
+        },
+        {
+          "approach": "Use GraphQL",
+          "code": "quicktype --src-lang graphql -o types.ts schema.graphql",
+          "when": "Input is GraphQL"
+        }
+      ]
+    },
+    {
+      "id": "unknown_language",
+      "pattern": "Unknown.*language|Target.*not found|Unsupported.*output",
+      "message": "Unknown target language",
+      "cause": "Target language not supported or typo",
+      "solutions": [
+        {
+          "approach": "List languages",
+          "code": "quicktype --help  # See supported languages",
+          "when": "Find available targets"
+        },
+        {
+          "approach": "Use correct name",
+          "code": "quicktype -l typescript  # Not 'ts'\nquicktype -l python  # Not 'py'",
+          "when": "Language name typo"
+        },
+        {
+          "approach": "Available targets",
+          "code": "# typescript, swift, go, rust, python, java, kotlin,\n# csharp, ruby, dart, c++, objective-c, etc.",
+          "when": "Reference"
+        }
+      ]
+    },
+    {
+      "id": "inference_failure",
+      "pattern": "Cannot infer.*type|Type inference failed|Conflicting types|Union.*too complex",
+      "message": "Type inference failed",
+      "cause": "Input data has conflicting or too complex types",
+      "solutions": [
+        {
+          "approach": "Provide schema",
+          "code": "quicktype --src-lang schema input.json -o types.ts",
+          "when": "Use explicit schema"
+        },
+        {
+          "approach": "Allow unions",
+          "code": "quicktype --all-properties-optional -o types.ts input.json",
+          "when": "Handle optional fields"
+        },
+        {
+          "approach": "Merge similar",
+          "code": "quicktype --combine-classes -o types.ts *.json",
+          "when": "Multiple input samples"
+        }
+      ]
+    },
+    {
+      "id": "naming_conflict",
+      "pattern": "Name.*conflict|Duplicate.*type|Reserved.*keyword|Invalid.*identifier",
+      "message": "Type naming conflict",
+      "cause": "Generated name conflicts with language keyword or existing type",
+      "solutions": [
+        {
+          "approach": "Set top-level name",
+          "code": "quicktype -t RootType -o types.ts input.json",
+          "when": "Customize root type name"
+        },
+        {
+          "approach": "Acronym style",
+          "code": "quicktype --acronym-style pascal -o types.ts input.json",
+          "when": "Control acronym handling"
+        },
+        {
+          "approach": "No combine",
+          "code": "quicktype --no-combine-classes -o types.ts input.json",
+          "when": "Keep types separate"
+        }
+      ]
+    },
+    {
+      "id": "url_fetch_error",
+      "pattern": "Failed to fetch|Network error|URL.*unreachable|HTTP.*error",
+      "message": "Failed to fetch remote schema",
+      "cause": "URL unreachable, network error, or CORS",
+      "solutions": [
+        {
+          "approach": "Download first",
+          "code": "curl -o schema.json https://example.com/schema.json\nquicktype schema.json -o types.ts",
+          "when": "Fetch manually"
+        },
+        {
+          "approach": "Use file input",
+          "code": "quicktype input.json -o types.ts  # Local file",
+          "when": "Use local file"
+        },
+        {
+          "approach": "Check URL",
+          "code": "curl -I https://example.com/schema.json",
+          "when": "Verify URL accessible"
+        }
+      ]
+    },
+    {
+      "id": "output_error",
+      "pattern": "Cannot write.*output|Output.*error|Permission denied|ENOENT.*output",
+      "message": "Failed to write output",
+      "cause": "Output directory doesn't exist or permission denied",
+      "solutions": [
+        {
+          "approach": "Create directory",
+          "code": "mkdir -p ./generated\nquicktype -o ./generated/types.ts input.json",
+          "when": "Directory missing"
+        },
+        {
+          "approach": "Use stdout",
+          "code": "quicktype input.json  # Outputs to stdout",
+          "when": "Write to pipe"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la ./generated/\nchmod 755 ./generated/",
+          "when": "Permission issue"
+        }
+      ]
+    }
+  ]
+}

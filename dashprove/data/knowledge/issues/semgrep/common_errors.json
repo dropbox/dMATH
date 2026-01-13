@@ -1,0 +1,67 @@
+{
+  "tool_id": "semgrep",
+  "tool_name": "Semgrep",
+  "description": "Lightweight static analysis tool for finding security vulnerabilities, bugs, and enforcing code standards using pattern-matching rules",
+  "common_errors": [
+    {
+      "id": "pattern_syntax_error",
+      "pattern": "invalid pattern syntax|could not parse pattern|semgrep error: parse error",
+      "category": "rule_authoring",
+      "severity": "medium",
+      "cause": "The Semgrep pattern contains syntax errors or uses constructs not supported by the target language",
+      "solution": "Validate pattern syntax against target language. Use semgrep --validate to check rules. Use metavariables ($X) correctly. Ensure pattern uses target language syntax.",
+      "example": "pattern: 'eval($X)'  -- metavariable $X captures argument",
+      "related_concepts": ["metavariables", "pattern_matching", "language_specific_syntax"]
+    },
+    {
+      "id": "rule_timeout",
+      "pattern": "timeout during rule matching|rule.*took too long|max steps exceeded",
+      "category": "performance",
+      "severity": "medium",
+      "cause": "Complex patterns or large files causing rule matching to exceed time limits, often due to expensive pattern operators",
+      "solution": "Simplify patterns. Avoid deep nesting. Use pattern-either instead of multiple pattern-inside. Increase --timeout if necessary. Split into multiple rules.",
+      "related_concepts": ["pattern_complexity", "matching_timeout", "rule_optimization"]
+    },
+    {
+      "id": "false_positive_generic",
+      "pattern": "many results for rule|false positive reported",
+      "category": "accuracy",
+      "severity": "low",
+      "cause": "Pattern too broad, matching safe code along with vulnerable code",
+      "solution": "Add pattern-not to exclude safe patterns. Use metavariable-comparison for value constraints. Add pattern-inside to require specific context. Use taint mode for data flow.",
+      "example": "pattern-not: 'sanitize($X)'  -- exclude sanitized calls",
+      "related_concepts": ["pattern_refinement", "false_positive_reduction", "metavariable_constraints"]
+    },
+    {
+      "id": "missing_language_support",
+      "pattern": "unsupported language|could not find parser for",
+      "category": "configuration",
+      "severity": "medium",
+      "cause": "Semgrep doesn't support the target language or file extension not recognized",
+      "solution": "Check supported languages with semgrep --help. Use --lang flag to specify language. Ensure files have correct extensions. Request language support at semgrep GitHub.",
+      "related_concepts": ["language_support", "parser_selection", "file_extensions"]
+    },
+    {
+      "id": "taint_no_source_sink",
+      "pattern": "no taint findings|taint mode.*no sources|taint mode.*no sinks",
+      "category": "taint_analysis",
+      "severity": "medium",
+      "cause": "Taint mode enabled but no sources or sinks defined, or they don't match any code",
+      "solution": "Define pattern-sources and pattern-sinks in rule. Verify patterns match actual code. Use metavariables to connect source to sink. Check propagators for indirect flows.",
+      "example": "pattern-sources: [{pattern: '$REQUEST.params'}]",
+      "related_concepts": ["taint_tracking", "source_sink_analysis", "propagators"]
+    }
+  ],
+  "best_practices": [
+    "Start with pre-built rulesets (semgrep --config auto)",
+    "Use metavariable-regex for flexible string matching",
+    "Combine patterns with pattern-either for multiple variants",
+    "Use focus-metavariable to narrow match locations",
+    "Test rules with semgrep --test before deployment"
+  ],
+  "references": [
+    "https://semgrep.dev/docs/",
+    "https://semgrep.dev/docs/writing-rules/overview/",
+    "https://github.com/semgrep/semgrep-rules"
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "terraform_docs",
+  "version": "0.17.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_terraform_files",
+      "pattern": "no Terraform files found|no \\*\\.tf files",
+      "message": "No Terraform files in directory",
+      "cause": "Directory doesn't contain .tf files",
+      "solutions": [
+        {
+          "approach": "Specify correct path",
+          "code": "terraform-docs markdown /path/to/module",
+          "when": "Wrong directory"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "ls *.tf",
+          "when": "Files may be named wrong"
+        },
+        {
+          "approach": "Use recursive",
+          "code": "terraform-docs markdown . --recursive",
+          "when": "Modules in subdirectories"
+        }
+      ]
+    },
+    {
+      "id": "output_file_error",
+      "pattern": "output file|--output-file|permission denied|cannot write",
+      "message": "Cannot write output file",
+      "cause": "Permission or path issue for output file",
+      "solutions": [
+        {
+          "approach": "Check permissions",
+          "code": "chmod +w README.md\nterraform-docs markdown . --output-file README.md",
+          "when": "File not writable"
+        },
+        {
+          "approach": "Create directory",
+          "code": "mkdir -p docs\nterraform-docs markdown . --output-file docs/README.md",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Output to stdout",
+          "code": "terraform-docs markdown . > README.md",
+          "when": "Use redirection"
+        }
+      ]
+    },
+    {
+      "id": "template_error",
+      "pattern": "template|--template|parse error|invalid template",
+      "message": "Template parsing error",
+      "cause": "Invalid Go template syntax",
+      "solutions": [
+        {
+          "approach": "Check template syntax",
+          "code": "# .terraform-docs.yml\noutput:\n  template: |-\n    {{ .Header }}\n    {{ .Requirements }}\n    {{ .Inputs }}\n    {{ .Outputs }}",
+          "when": "Template syntax error"
+        },
+        {
+          "approach": "Use built-in sections",
+          "code": "content: |\n  {{ include \"header\" . }}\n  {{ include \"table\" . }}",
+          "when": "Use includes"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "{{ \"{{\" }}literal braces{{ \"}}\" }}",
+          "when": "Need literal braces"
+        }
+      ]
+    },
+    {
+      "id": "config_file_error",
+      "pattern": "\\.terraform-docs\\.yml|config file|invalid configuration",
+      "message": "Configuration file error",
+      "cause": "Invalid .terraform-docs.yml syntax",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "# .terraform-docs.yml\nformatter: markdown table\nheader-from: main.tf\nsections:\n  show:\n    - header\n    - requirements\n    - inputs\n    - outputs",
+          "when": "YAML syntax error"
+        },
+        {
+          "approach": "Check formatter",
+          "code": "# Valid formatters: asciidoc, json, markdown, markdown document,\n# markdown table, pretty, tfvars hcl, tfvars json, toml, xml, yaml",
+          "when": "Invalid formatter"
+        },
+        {
+          "approach": "Use defaults",
+          "code": "terraform-docs markdown . --config=/dev/null",
+          "when": "Skip config file"
+        }
+      ]
+    },
+    {
+      "id": "anchor_error",
+      "pattern": "anchor|BEGIN_TF_DOCS|END_TF_DOCS|not found",
+      "message": "Document anchors not found",
+      "cause": "Missing injection anchors in file",
+      "solutions": [
+        {
+          "approach": "Add anchors",
+          "code": "# README.md\n## Module Documentation\n\n<!-- BEGIN_TF_DOCS -->\n<!-- END_TF_DOCS -->",
+          "when": "Using output-mode inject"
+        },
+        {
+          "approach": "Use replace mode",
+          "code": "terraform-docs markdown . --output-file README.md --output-mode replace",
+          "when": "Replace entire file"
+        },
+        {
+          "approach": "Custom anchors",
+          "code": "# In config:\noutput:\n  mode: inject\n  template: |-\n    <!-- DOCS_START -->\n    {{ .Content }}\n    <!-- DOCS_END -->",
+          "when": "Custom markers"
+        }
+      ]
+    },
+    {
+      "id": "sort_error",
+      "pattern": "sort|--sort|--sort-by",
+      "message": "Sorting configuration error",
+      "cause": "Invalid sort option",
+      "solutions": [
+        {
+          "approach": "Sort by name",
+          "code": "# .terraform-docs.yml\nsort:\n  enabled: true\n  by: name",
+          "when": "Sort alphabetically"
+        },
+        {
+          "approach": "Sort by required",
+          "code": "sort:\n  enabled: true\n  by: required",
+          "when": "Required inputs first"
+        },
+        {
+          "approach": "Sort by type",
+          "code": "sort:\n  enabled: true\n  by: type",
+          "when": "Group by type"
+        }
+      ]
+    },
+    {
+      "id": "lockfile_error",
+      "pattern": "lock file|--lockfile|\\.terraform\\.lock\\.hcl",
+      "message": "Lock file reading error",
+      "cause": "Cannot read provider versions from lock file",
+      "solutions": [
+        {
+          "approach": "Generate lock file",
+          "code": "terraform init\nterraform-docs markdown .",
+          "when": "No lock file"
+        },
+        {
+          "approach": "Skip lockfile",
+          "code": "terraform-docs markdown . --lockfile=false",
+          "when": "Don't need provider versions"
+        },
+        {
+          "approach": "Check path",
+          "code": "# Lock file should be at module root: .terraform.lock.hcl",
+          "when": "Wrong location"
+        }
+      ]
+    },
+    {
+      "id": "recursive_error",
+      "pattern": "recursive|--recursive|submodules",
+      "message": "Recursive documentation error",
+      "cause": "Issue with recursive module documentation",
+      "solutions": [
+        {
+          "approach": "Set recursive path",
+          "code": "terraform-docs markdown . --recursive --recursive-path=modules",
+          "when": "Modules in subdir"
+        },
+        {
+          "approach": "Include hidden",
+          "code": "terraform-docs markdown . --recursive-include-main=false",
+          "when": "Only submodules"
+        },
+        {
+          "approach": "Output per module",
+          "code": "terraform-docs markdown . --recursive --output-file README.md",
+          "when": "README in each module"
+        }
+      ]
+    }
+  ]
+}

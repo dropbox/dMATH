@@ -1,0 +1,117 @@
+{
+  "tool": "head",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "binary_file",
+      "pattern": "Binary file|binary data|non-printable",
+      "message": "File appears to be binary",
+      "cause": "Binary file being read as text",
+      "solutions": [
+        {
+          "approach": "Use hexdump",
+          "code": "hexdump -C file.bin | head -20\nxxd file.bin | head -20",
+          "when": "View binary"
+        },
+        {
+          "approach": "Force output",
+          "code": "head -c 100 file.bin  # First 100 bytes",
+          "when": "Raw bytes"
+        },
+        {
+          "approach": "Check type",
+          "code": "file filename  # Determine file type",
+          "when": "Verify format"
+        }
+      ]
+    },
+    {
+      "id": "wrong_line_count",
+      "pattern": "wrong.*lines|too many|not enough",
+      "message": "Unexpected number of lines",
+      "cause": "Wrong -n argument or line endings",
+      "solutions": [
+        {
+          "approach": "Specify lines",
+          "code": "head -n 20 file.txt  # First 20 lines\nhead -20 file.txt    # Same, shorter",
+          "when": "Explicit count"
+        },
+        {
+          "approach": "All but last N",
+          "code": "head -n -5 file.txt  # All but last 5",
+          "when": "Skip ending"
+        },
+        {
+          "approach": "Check endings",
+          "code": "file file.txt  # Check line endings\ncat -A file.txt | head  # Show invisible chars",
+          "when": "Windows files"
+        }
+      ]
+    },
+    {
+      "id": "no_output",
+      "pattern": "no output|empty|nothing displayed",
+      "message": "No output from head",
+      "cause": "Empty file or no matching content",
+      "solutions": [
+        {
+          "approach": "Check file",
+          "code": "ls -la file.txt\nwc -l file.txt",
+          "when": "Verify file"
+        },
+        {
+          "approach": "Check bytes",
+          "code": "head -c 1000 file.txt  # Byte mode",
+          "when": "Non-text file"
+        },
+        {
+          "approach": "Follow file",
+          "code": "head -f file.txt  # Like tail -f (GNU)",
+          "when": "Growing file"
+        }
+      ]
+    },
+    {
+      "id": "multiple_files",
+      "pattern": "multiple files|headers|==>.*<==",
+      "message": "Multiple file headers shown",
+      "cause": "Multiple files show headers by default",
+      "solutions": [
+        {
+          "approach": "Suppress headers",
+          "code": "head -q file1.txt file2.txt",
+          "when": "No headers"
+        },
+        {
+          "approach": "Force headers",
+          "code": "head -v file.txt  # Always show header",
+          "when": "Single file header"
+        },
+        {
+          "approach": "Process separately",
+          "code": "for f in *.txt; do head -1 \"$f\"; done",
+          "when": "Custom handling"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot open|cannot read",
+      "message": "Cannot read file",
+      "cause": "Insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo head /var/log/secure",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la file.txt",
+          "when": "Verify access"
+        }
+      ]
+    }
+  ]
+}

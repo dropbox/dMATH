@@ -1,0 +1,191 @@
+{
+  "tool": "semantic_release",
+  "version": "22.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_release",
+      "pattern": "There are no relevant changes|no new version|ENORELEASE",
+      "message": "No release triggered",
+      "cause": "No commits matching release rules",
+      "solutions": [
+        {
+          "approach": "Check commit format",
+          "code": "# Use conventional commits:\nfeat: add new feature\nfix: resolve bug\nfeat!: breaking change",
+          "when": "Commits not matching"
+        },
+        {
+          "approach": "Check release branches",
+          "code": "# .releaserc\n{\n  \"branches\": [\"main\", \"next\", {\"name\": \"beta\", \"prerelease\": true}]\n}",
+          "when": "Wrong branch"
+        },
+        {
+          "approach": "Dry run",
+          "code": "npx semantic-release --dry-run",
+          "when": "Debug release"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "EAUTH|authentication|GH_TOKEN|NPM_TOKEN|401|403",
+      "message": "Authentication failed",
+      "cause": "Missing or invalid tokens",
+      "solutions": [
+        {
+          "approach": "Set GitHub token",
+          "code": "export GH_TOKEN=ghp_xxxxxxxxxxxx\n# Or GITHUB_TOKEN in CI",
+          "when": "GitHub authentication"
+        },
+        {
+          "approach": "Set npm token",
+          "code": "export NPM_TOKEN=npm_xxxxxxxxxxxx",
+          "when": "npm publishing"
+        },
+        {
+          "approach": "Check token scopes",
+          "code": "# GitHub: repo, write:packages\n# npm: Automation token with publish",
+          "when": "Insufficient permissions"
+        }
+      ]
+    },
+    {
+      "id": "git_error",
+      "pattern": "EGIT|git push|detached HEAD|ref|branch",
+      "message": "Git operation failed",
+      "cause": "Git configuration or permission issue",
+      "solutions": [
+        {
+          "approach": "Configure git",
+          "code": "git config user.email \"ci@example.com\"\ngit config user.name \"CI Bot\"",
+          "when": "Git not configured"
+        },
+        {
+          "approach": "Check out branch",
+          "code": "git checkout main\ngit pull origin main",
+          "when": "Detached HEAD"
+        },
+        {
+          "approach": "Set git credentials",
+          "code": "# In CI:\ngit remote set-url origin https://x-access-token:$GH_TOKEN@github.com/owner/repo.git",
+          "when": "Push permission"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "Could not require|plugin|EPLUGIN|module not found",
+      "message": "Plugin not found or failed",
+      "cause": "Plugin not installed or misconfigured",
+      "solutions": [
+        {
+          "approach": "Install plugins",
+          "code": "npm install -D @semantic-release/git @semantic-release/changelog @semantic-release/npm",
+          "when": "Missing plugin"
+        },
+        {
+          "approach": "Configure plugins",
+          "code": "// .releaserc\n{\n  \"plugins\": [\n    \"@semantic-release/commit-analyzer\",\n    \"@semantic-release/release-notes-generator\",\n    \"@semantic-release/changelog\",\n    \"@semantic-release/npm\",\n    \"@semantic-release/git\"\n  ]\n}",
+          "when": "Plugin order"
+        },
+        {
+          "approach": "Check plugin options",
+          "code": "[\"@semantic-release/git\", {\n  \"assets\": [\"package.json\", \"CHANGELOG.md\"],\n  \"message\": \"chore(release): ${nextRelease.version}\"\n}]",
+          "when": "Plugin options"
+        }
+      ]
+    },
+    {
+      "id": "npm_publish_error",
+      "pattern": "ENPM|npm publish|npm ERR|tarball",
+      "message": "npm publish failed",
+      "cause": "npm publishing error",
+      "solutions": [
+        {
+          "approach": "Check package.json",
+          "code": "{\n  \"name\": \"@scope/package\",\n  \"version\": \"0.0.0-development\",\n  \"publishConfig\": {\n    \"access\": \"public\"\n  }\n}",
+          "when": "Scoped package"
+        },
+        {
+          "approach": "Skip npm",
+          "code": "// .releaserc\n{\n  \"plugins\": [\n    [\"@semantic-release/npm\", {\"npmPublish\": false}]\n  ]\n}",
+          "when": "No npm publish"
+        },
+        {
+          "approach": "Check .npmrc",
+          "code": "# .npmrc\n//registry.npmjs.org/:_authToken=${NPM_TOKEN}",
+          "when": "Auth configuration"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "Invalid configuration|EINVALIDCONFIG|releaserc",
+      "message": "Configuration error",
+      "cause": "Invalid .releaserc configuration",
+      "solutions": [
+        {
+          "approach": "Valid config format",
+          "code": "// .releaserc.json\n{\n  \"branches\": [\"main\"],\n  \"plugins\": [\n    \"@semantic-release/commit-analyzer\",\n    \"@semantic-release/release-notes-generator\",\n    \"@semantic-release/npm\",\n    \"@semantic-release/github\"\n  ]\n}",
+          "when": "JSON config"
+        },
+        {
+          "approach": "Package.json config",
+          "code": "// package.json\n{\n  \"release\": {\n    \"branches\": [\"main\"]\n  }\n}",
+          "when": "Inline config"
+        },
+        {
+          "approach": "Validate config",
+          "code": "npx semantic-release --verify-conditions",
+          "when": "Check config"
+        }
+      ]
+    },
+    {
+      "id": "changelog_error",
+      "pattern": "CHANGELOG|changelog|release notes",
+      "message": "Changelog generation error",
+      "cause": "Changelog plugin configuration issue",
+      "solutions": [
+        {
+          "approach": "Configure changelog",
+          "code": "[\"@semantic-release/changelog\", {\n  \"changelogFile\": \"CHANGELOG.md\",\n  \"changelogTitle\": \"# Changelog\"\n}]",
+          "when": "Changelog config"
+        },
+        {
+          "approach": "Custom template",
+          "code": "[\"@semantic-release/release-notes-generator\", {\n  \"preset\": \"conventionalcommits\",\n  \"presetConfig\": {\n    \"types\": [\n      {\"type\": \"feat\", \"section\": \"Features\"},\n      {\"type\": \"fix\", \"section\": \"Bug Fixes\"}\n    ]\n  }\n}]",
+          "when": "Custom format"
+        },
+        {
+          "approach": "Commit changelog",
+          "code": "[\"@semantic-release/git\", {\n  \"assets\": [\"CHANGELOG.md\"]\n}]",
+          "when": "Commit changes"
+        }
+      ]
+    },
+    {
+      "id": "branch_error",
+      "pattern": "branch|ERELEASEBRANCH|not a release branch",
+      "message": "Not a release branch",
+      "cause": "Current branch not in release branches config",
+      "solutions": [
+        {
+          "approach": "Add branch",
+          "code": "{\n  \"branches\": [\n    \"main\",\n    \"next\",\n    {\"name\": \"develop\", \"prerelease\": \"dev\"}\n  ]\n}",
+          "when": "Add release branch"
+        },
+        {
+          "approach": "Maintenance branches",
+          "code": "{\n  \"branches\": [\n    \"+([0-9])?(.{+([0-9]),x}).x\",\n    \"main\"\n  ]\n}",
+          "when": "Version branches"
+        },
+        {
+          "approach": "Check branch",
+          "code": "git branch --show-current",
+          "when": "Wrong branch"
+        }
+      ]
+    }
+  ]
+}

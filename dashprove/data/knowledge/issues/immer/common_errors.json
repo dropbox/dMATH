@@ -1,0 +1,145 @@
+{
+  "tool": "immer",
+  "version": "10.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_a_draft",
+      "pattern": "An immer producer returned a new value.*modified its draft|Cannot return a new value.*also modified",
+      "message": "Producer both modified draft and returned new value",
+      "cause": "Immer producers can either modify the draft OR return a new value, not both",
+      "solutions": [
+        {
+          "approach": "Modify draft only",
+          "code": "produce(state, draft => {\n  draft.value = 1;  // Don't return anything\n});",
+          "when": "Want to mutate existing structure"
+        },
+        {
+          "approach": "Return new value",
+          "code": "produce(state, draft => {\n  return { ...draft, value: 1 };  // Don't modify draft\n});",
+          "when": "Want complete replacement"
+        },
+        {
+          "approach": "Return undefined explicitly",
+          "code": "produce(state, draft => {\n  draft.value = 1;\n  return undefined;  // Explicit no-return\n});",
+          "when": "Avoid implicit return issues"
+        }
+      ]
+    },
+    {
+      "id": "draft_escape",
+      "pattern": "Error.*cannot be used outside.*producer|Draft leaked|Cannot use.*outside producer",
+      "message": "Draft object escaped producer scope",
+      "cause": "Assigned draft or nested draft to external variable used after producer finishes",
+      "solutions": [
+        {
+          "approach": "Copy if needed",
+          "code": "let copy;\nproduce(state, draft => {\n  copy = { ...draft.nested };  // Clone, don't reference\n});",
+          "when": "Need to extract data"
+        },
+        {
+          "approach": "Use finished result",
+          "code": "const newState = produce(state, draft => {\n  draft.value = 1;\n});\n// Use newState, not draft",
+          "when": "Work with result"
+        },
+        {
+          "approach": "Enable autoFreeze check",
+          "code": "setAutoFreeze(true);  // Will catch leaks in development",
+          "when": "Debug draft leaks"
+        }
+      ]
+    },
+    {
+      "id": "frozen_object",
+      "pattern": "Cannot assign to read only property|Cannot add property.*not extensible|frozen",
+      "message": "Attempting to modify frozen/non-draft object",
+      "cause": "Object is frozen (either Immer auto-freeze or Object.freeze) and being mutated directly",
+      "solutions": [
+        {
+          "approach": "Use produce",
+          "code": "const newState = produce(frozenState, draft => {\n  draft.value = 1;  // Drafts are mutable\n});",
+          "when": "Modify frozen Immer state"
+        },
+        {
+          "approach": "Disable auto-freeze",
+          "code": "import { setAutoFreeze } from 'immer';\nsetAutoFreeze(false);",
+          "when": "Performance optimization (not recommended)"
+        },
+        {
+          "approach": "Check if draft",
+          "code": "import { isDraft } from 'immer';\nif (isDraft(obj)) { obj.x = 1; }",
+          "when": "Conditional mutation"
+        }
+      ]
+    },
+    {
+      "id": "non_draftable",
+      "pattern": "Cannot create proxy|not draftable|Classes.*not draftable",
+      "message": "Object cannot be made into Immer draft",
+      "cause": "Object is a class instance, Map, Set (without enableMapSet), or other non-plain object",
+      "solutions": [
+        {
+          "approach": "Enable Map/Set",
+          "code": "import { enableMapSet } from 'immer';\nenableMapSet();",
+          "when": "Using Map or Set"
+        },
+        {
+          "approach": "Enable classes",
+          "code": "import { immerable } from 'immer';\nclass MyClass {\n  [immerable] = true;\n}",
+          "when": "Using class instances"
+        },
+        {
+          "approach": "Use plain objects",
+          "code": "const state = { items: [...], map: Object.fromEntries(map) };",
+          "when": "Convert to plain structures"
+        }
+      ]
+    },
+    {
+      "id": "async_producer",
+      "pattern": "First argument.*curried.*must be a function|cannot call produce.*async",
+      "message": "Async producer issues",
+      "cause": "Using async function incorrectly with produce",
+      "solutions": [
+        {
+          "approach": "Await produce",
+          "code": "const newState = await produce(state, async draft => {\n  draft.data = await fetchData();\n});",
+          "when": "Async mutations"
+        },
+        {
+          "approach": "Use currying correctly",
+          "code": "const updateUser = produce((draft, user) => {\n  Object.assign(draft, user);\n});\nconst newState = updateUser(state, { name: 'New' });",
+          "when": "Curried producer"
+        },
+        {
+          "approach": "Separate async logic",
+          "code": "const data = await fetchData();\nconst newState = produce(state, draft => {\n  draft.data = data;\n});",
+          "when": "Fetch outside producer"
+        }
+      ]
+    },
+    {
+      "id": "original_access",
+      "pattern": "Cannot use.*original.*non-draft|original() called on non-draft",
+      "message": "original() called on non-draft value",
+      "cause": "Using original() helper on object that's not inside a producer",
+      "solutions": [
+        {
+          "approach": "Check isDraft",
+          "code": "import { isDraft, original } from 'immer';\nconst orig = isDraft(obj) ? original(obj) : obj;",
+          "when": "Conditional original access"
+        },
+        {
+          "approach": "Use inside producer",
+          "code": "produce(state, draft => {\n  console.log(original(draft));  // Works\n});",
+          "when": "Compare draft to original"
+        },
+        {
+          "approach": "Store original first",
+          "code": "const snapshot = state;  // Before produce\nproduce(state, draft => { ... });",
+          "when": "Need reference outside"
+        }
+      ]
+    }
+  ]
+}

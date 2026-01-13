@@ -1,0 +1,173 @@
+{
+  "tool": "scp",
+  "version": "OpenSSH",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|publickey|authentication failed",
+      "message": "SSH authentication failed",
+      "cause": "Key/password authentication issue",
+      "solutions": [
+        {
+          "approach": "Check SSH key",
+          "code": "ssh-add -l  # List loaded keys\nssh-add ~/.ssh/id_rsa  # Add key",
+          "when": "Key not loaded"
+        },
+        {
+          "approach": "Specify identity",
+          "code": "scp -i ~/.ssh/my_key file user@host:/path/",
+          "when": "Non-default key"
+        },
+        {
+          "approach": "Use password",
+          "code": "scp -o PreferredAuthentications=password file user@host:/path/",
+          "when": "Force password"
+        },
+        {
+          "approach": "Verbose debug",
+          "code": "scp -v file user@host:/path/  # -vvv for more",
+          "when": "Debug auth"
+        }
+      ]
+    },
+    {
+      "id": "host_key_error",
+      "pattern": "Host key verification failed|ECDSA.*changed|REMOTE HOST IDENTIFICATION HAS CHANGED",
+      "message": "Server host key mismatch",
+      "cause": "Server key changed or MITM attack",
+      "solutions": [
+        {
+          "approach": "Remove old key",
+          "code": "ssh-keygen -R hostname",
+          "when": "Server reinstalled"
+        },
+        {
+          "approach": "Ignore (dangerous)",
+          "code": "scp -o StrictHostKeyChecking=no file user@host:/path/",
+          "when": "Dev only, MITM risk"
+        },
+        {
+          "approach": "Verify key",
+          "code": "# Contact admin to verify new server key fingerprint",
+          "when": "Production"
+        }
+      ]
+    },
+    {
+      "id": "not_a_regular_file",
+      "pattern": "not a regular file|Is a directory|No such file",
+      "message": "File/directory error",
+      "cause": "Trying to copy directory without -r",
+      "solutions": [
+        {
+          "approach": "Copy directory",
+          "code": "scp -r /local/dir user@host:/remote/",
+          "when": "Recursive copy"
+        },
+        {
+          "approach": "Preserve attributes",
+          "code": "scp -rp /local/dir user@host:/remote/",
+          "when": "Keep permissions/times"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la /path/to/source  # Verify local exists\nssh user@host 'ls -la /remote/path'  # Verify remote",
+          "when": "Verify paths"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|Connection timed out|No route to host",
+      "message": "Cannot connect to host",
+      "cause": "SSH server not running, firewall, or network issue",
+      "solutions": [
+        {
+          "approach": "Check connectivity",
+          "code": "ping hostname\nnc -zv hostname 22",
+          "when": "Basic connectivity"
+        },
+        {
+          "approach": "Alternative port",
+          "code": "scp -P 2222 file user@host:/path/",
+          "when": "Non-standard SSH port"
+        },
+        {
+          "approach": "Through jump host",
+          "code": "scp -o ProxyJump=jumphost file user@target:/path/",
+          "when": "Bastion/jump host"
+        }
+      ]
+    },
+    {
+      "id": "disk_quota",
+      "pattern": "No space left|Disk quota|write failed",
+      "message": "Destination out of space",
+      "cause": "Remote disk full or quota exceeded",
+      "solutions": [
+        {
+          "approach": "Check remote space",
+          "code": "ssh user@host 'df -h /path'",
+          "when": "Verify space"
+        },
+        {
+          "approach": "Compress transfer",
+          "code": "scp -C file user@host:/path/",
+          "when": "Compress in transit"
+        },
+        {
+          "approach": "Use rsync",
+          "code": "rsync -avz --progress file user@host:/path/",
+          "when": "Better for large/partial"
+        }
+      ]
+    },
+    {
+      "id": "filename_spaces",
+      "pattern": "No such file|ambiguous|too many",
+      "message": "Filename with spaces causes issues",
+      "cause": "Spaces not properly quoted",
+      "solutions": [
+        {
+          "approach": "Quote local",
+          "code": "scp 'my file.txt' user@host:/path/",
+          "when": "Local file with spaces"
+        },
+        {
+          "approach": "Quote remote",
+          "code": "scp user@host:'/path/my file.txt' ./",
+          "when": "Remote file with spaces"
+        },
+        {
+          "approach": "Escape spaces",
+          "code": "scp user@host:/path/my\\ file.txt ./",
+          "when": "Alternative escaping"
+        }
+      ]
+    },
+    {
+      "id": "slow_transfer",
+      "pattern": "slow|bandwidth|speed|throughput",
+      "message": "Transfer is slow",
+      "cause": "Encryption overhead, network, or disk I/O",
+      "solutions": [
+        {
+          "approach": "Faster cipher",
+          "code": "scp -c aes128-gcm@openssh.com file user@host:/path/",
+          "when": "CPU bottleneck"
+        },
+        {
+          "approach": "Compression",
+          "code": "scp -C file user@host:/path/",
+          "when": "Compressible data"
+        },
+        {
+          "approach": "Use rsync",
+          "code": "rsync -avz --progress file user@host:/path/",
+          "when": "Large files, resume support"
+        }
+      ]
+    }
+  ]
+}

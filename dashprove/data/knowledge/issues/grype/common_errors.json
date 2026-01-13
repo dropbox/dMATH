@@ -1,0 +1,232 @@
+{
+  "tool": "grype",
+  "version": "0.74.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "critical_cve",
+      "pattern": "Critical|CVSS.*9\\.[0-9]|critical vulnerability",
+      "message": "Critical CVE detected in image",
+      "cause": "Container image contains package with critical vulnerability",
+      "solutions": [
+        {
+          "approach": "Update package",
+          "code": "# In Dockerfile:\nRUN apt-get update && apt-get upgrade -y\n# Or specific package:\nRUN apt-get install -y package=version",
+          "when": "Package update available"
+        },
+        {
+          "approach": "Update base image",
+          "code": "FROM debian:bookworm-slim  # Use latest stable",
+          "when": "Base image is source of vulnerability"
+        },
+        {
+          "approach": "Use distroless",
+          "code": "FROM gcr.io/distroless/static-debian12",
+          "when": "Minimize attack surface"
+        }
+      ]
+    },
+    {
+      "id": "high_cve",
+      "pattern": "High|CVSS.*[78]\\.[0-9]",
+      "message": "High severity CVE detected",
+      "cause": "Image contains package with high severity vulnerability",
+      "solutions": [
+        {
+          "approach": "Upgrade vulnerable package",
+          "code": "grype db update  # Update vulnerability database\ngrype myimage:tag --only-fixed",
+          "when": "Check if fix available"
+        },
+        {
+          "approach": "Rebuild with updates",
+          "code": "docker build --no-cache -t myimage:tag .",
+          "when": "Ensure fresh packages"
+        }
+      ]
+    },
+    {
+      "id": "database_outdated",
+      "pattern": "database.*out.*date|stale.*database|db.*old",
+      "message": "Vulnerability database is outdated",
+      "cause": "Local Grype database needs update",
+      "solutions": [
+        {
+          "approach": "Update database",
+          "code": "grype db update",
+          "when": "Normal update"
+        },
+        {
+          "approach": "Force database refresh",
+          "code": "grype db delete\ngrype db update",
+          "when": "Database corrupted"
+        },
+        {
+          "approach": "Check database status",
+          "code": "grype db status",
+          "when": "Verify database state"
+        }
+      ]
+    },
+    {
+      "id": "image_not_found",
+      "pattern": "image.*not found|failed to.*image|pull.*error",
+      "message": "Cannot access container image",
+      "cause": "Image doesn't exist or registry authentication failed",
+      "solutions": [
+        {
+          "approach": "Check image exists",
+          "code": "docker images | grep myimage\n# Or pull first:\ndocker pull registry/myimage:tag",
+          "when": "Image not local"
+        },
+        {
+          "approach": "Authenticate to registry",
+          "code": "docker login registry.example.com\ngrype registry.example.com/myimage:tag",
+          "when": "Private registry"
+        },
+        {
+          "approach": "Scan local tarball",
+          "code": "docker save myimage:tag > image.tar\ngrype image.tar",
+          "when": "Registry issues"
+        }
+      ]
+    },
+    {
+      "id": "sbom_invalid",
+      "pattern": "SBOM.*invalid|failed to parse.*SBOM|unsupported.*format",
+      "message": "Invalid or unsupported SBOM format",
+      "cause": "SBOM file is malformed or wrong format",
+      "solutions": [
+        {
+          "approach": "Regenerate SBOM with Syft",
+          "code": "syft myimage:tag -o spdx-json > sbom.json\ngrype sbom:sbom.json",
+          "when": "SBOM needs regeneration"
+        },
+        {
+          "approach": "Specify format explicitly",
+          "code": "grype sbom:sbom.json --sbom-format spdx-json",
+          "when": "Format detection fails"
+        },
+        {
+          "approach": "Validate SBOM",
+          "code": "spdx-tools verify sbom.json",
+          "when": "Check SBOM validity"
+        }
+      ]
+    },
+    {
+      "id": "no_vulnerabilities",
+      "pattern": "No vulnerabilities found|0 vulnerabilities",
+      "message": "Grype found no vulnerabilities",
+      "cause": "Image clean or scan incomplete",
+      "solutions": [
+        {
+          "approach": "Verify scan scope",
+          "code": "grype myimage:tag -v  # Verbose output\ngrype myimage:tag --scope all-layers",
+          "when": "Ensure complete scan"
+        },
+        {
+          "approach": "Check SBOM coverage",
+          "code": "syft myimage:tag  # List detected packages",
+          "when": "Verify package detection"
+        },
+        {
+          "approach": "Update database",
+          "code": "grype db update && grype myimage:tag",
+          "when": "Database may be stale"
+        }
+      ]
+    },
+    {
+      "id": "config_invalid",
+      "pattern": "config.*invalid|yaml.*error|configuration.*failed",
+      "message": "Invalid Grype configuration",
+      "cause": "Malformed .grype.yaml or invalid options",
+      "solutions": [
+        {
+          "approach": "Validate config file",
+          "code": "cat .grype.yaml | yq  # Check YAML syntax",
+          "when": "YAML syntax error"
+        },
+        {
+          "approach": "Use default config",
+          "code": "rm .grype.yaml\ngrype myimage:tag",
+          "when": "Start fresh"
+        },
+        {
+          "approach": "Generate sample config",
+          "code": "grype config > .grype.yaml",
+          "when": "Need valid template"
+        }
+      ]
+    },
+    {
+      "id": "fail_on_severity",
+      "pattern": "fail.*severity|threshold.*exceeded|exit.*code.*1",
+      "message": "Scan failed due to severity threshold",
+      "cause": "Vulnerability severity exceeds configured threshold",
+      "solutions": [
+        {
+          "approach": "Adjust threshold",
+          "code": "grype myimage:tag --fail-on critical  # Only fail on critical",
+          "when": "Accept high severity for now"
+        },
+        {
+          "approach": "Ignore specific CVEs",
+          "code": "# .grype.yaml:\nignore:\n  - vulnerability: CVE-2023-12345\n    reason: \"False positive for our use case\"",
+          "when": "Known false positive"
+        },
+        {
+          "approach": "Fix vulnerabilities",
+          "code": "grype myimage:tag --only-fixed  # Show fixable vulns\n# Then update those packages",
+          "when": "Remediate issues"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_package_type",
+      "pattern": "unsupported.*package|unknown.*ecosystem|cannot.*identify",
+      "message": "Package type not supported",
+      "cause": "Grype cannot identify the package ecosystem",
+      "solutions": [
+        {
+          "approach": "Use Syft for SBOM",
+          "code": "syft myimage:tag -o cyclonedx-json > sbom.json\ngrype sbom:sbom.json",
+          "when": "Need better package detection"
+        },
+        {
+          "approach": "Scan specific directory",
+          "code": "grype dir:/app/node_modules",
+          "when": "Known package location"
+        },
+        {
+          "approach": "Check supported ecosystems",
+          "code": "# Grype supports: APK, DEB, RPM, npm, pip, gem, go, cargo, etc.",
+          "when": "Verify ecosystem support"
+        }
+      ]
+    },
+    {
+      "id": "network_error",
+      "pattern": "network.*error|timeout|connection.*refused|cannot.*reach",
+      "message": "Network error during scan",
+      "cause": "Cannot reach vulnerability database or registry",
+      "solutions": [
+        {
+          "approach": "Use offline database",
+          "code": "grype db update  # Pre-download\nexport GRYPE_DB_AUTO_UPDATE=false\ngrype myimage:tag",
+          "when": "Air-gapped environment"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "export HTTPS_PROXY=http://proxy:8080\ngrype db update",
+          "when": "Behind corporate proxy"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "grype myimage:tag --timeout 10m",
+          "when": "Slow network"
+        }
+      ]
+    }
+  ]
+}

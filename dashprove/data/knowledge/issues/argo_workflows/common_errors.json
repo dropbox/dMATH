@@ -1,0 +1,76 @@
+{
+  "tool": "argo_workflows",
+  "category": "cloud_native",
+  "common_errors": [
+    {
+      "pattern": "Workflow.*failed|step.*Failed",
+      "meaning": "Workflow step failed",
+      "causes": ["Container error", "Script failure", "Resource issue"],
+      "solutions": ["Check: argo logs <workflow>", "Review step output", "Check pod events: kubectl describe pod"]
+    },
+    {
+      "pattern": "ImagePullBackOff|ErrImagePull",
+      "meaning": "Cannot pull container image",
+      "causes": ["Image doesn't exist", "Private registry auth", "Tag wrong"],
+      "solutions": ["Verify image exists", "Add imagePullSecrets to workflow", "Check image name/tag"]
+    },
+    {
+      "pattern": "parameter.*not supplied|missing required input",
+      "meaning": "Missing workflow parameter",
+      "causes": ["Parameter not passed", "Wrong parameter name", "No default"],
+      "solutions": ["Pass all required parameters: argo submit -p key=value", "Check parameter names match", "Add defaults in workflow spec"]
+    },
+    {
+      "pattern": "artifact.*not found|failed to load artifacts",
+      "meaning": "Artifact retrieval failed",
+      "causes": ["Artifact repository not configured", "Previous step didn't produce", "Path wrong"],
+      "solutions": ["Configure artifact repository", "Verify previous step outputs artifact", "Check artifact path matches"]
+    },
+    {
+      "pattern": "permission denied|RBAC.*forbidden",
+      "meaning": "Kubernetes permission error",
+      "causes": ["ServiceAccount lacks permissions", "RBAC not configured", "Namespace restriction"],
+      "solutions": ["Add required Role/ClusterRole", "Bind to argo service account", "Check namespace permissions"]
+    },
+    {
+      "pattern": "exceeded quota|ResourceQuota",
+      "meaning": "Resource quota exceeded",
+      "causes": ["Too many pods", "CPU/memory limit hit", "PVC quota exceeded"],
+      "solutions": ["Request quota increase", "Reduce parallelism", "Clean up completed workflows"]
+    },
+    {
+      "pattern": "template.*not found|unable to find template",
+      "meaning": "Template reference error",
+      "causes": ["Template name typo", "Template not defined", "Wrong templateRef"],
+      "solutions": ["Verify template exists in workflow", "Check template name spelling", "Ensure WorkflowTemplate exists for templateRef"]
+    },
+    {
+      "pattern": "timeout|deadline exceeded",
+      "meaning": "Workflow or step timeout",
+      "causes": ["activeDeadlineSeconds exceeded", "Step took too long", "Pending pod"],
+      "solutions": ["Increase activeDeadlineSeconds", "Optimize step execution", "Check pod scheduling issues"]
+    },
+    {
+      "pattern": "DAG.*cycle|circular dependency",
+      "meaning": "DAG has circular dependency",
+      "causes": ["Task depends on itself", "Circular task chain", "Dependencies misconfigured"],
+      "solutions": ["Review DAG dependencies", "Break circular reference", "Use tasks dependency correctly"]
+    },
+    {
+      "pattern": "PodGC.*cannot collect|workflow.*stuck",
+      "meaning": "Workflow stuck or cleanup issue",
+      "causes": ["Pod stuck in terminating", "Node issues", "Finalizer blocking"],
+      "solutions": ["Check: kubectl get pods --field-selector=status.phase=Running", "Force delete stuck pods", "Review node status"]
+    }
+  ],
+  "debugging_commands": [
+    "argo logs <workflow> -f",
+    "argo get <workflow> -o yaml",
+    "argo list -n argo",
+    "kubectl logs -n argo deploy/argo-server"
+  ],
+  "documentation_urls": [
+    "https://argoproj.github.io/argo-workflows/",
+    "https://github.com/argoproj/argo-workflows"
+  ]
+}

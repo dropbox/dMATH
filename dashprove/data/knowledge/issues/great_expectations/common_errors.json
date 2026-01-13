@@ -1,0 +1,191 @@
+{
+  "tool": "great_expectations",
+  "version": "0.18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "expectation_failed",
+      "pattern": "ExpectationValidationResult.*success.*false",
+      "message": "Data expectation failed validation",
+      "cause": "Data does not meet defined expectation criteria",
+      "solutions": [
+        {
+          "approach": "Review expectation configuration",
+          "code": "expect_column_values_to_be_between(\n    'age', min_value=0, max_value=150\n)",
+          "when": "Expectation bounds too strict"
+        },
+        {
+          "approach": "Add mostly parameter",
+          "code": "expect_column_values_to_not_be_null('col', mostly=0.95)",
+          "when": "Some nulls are acceptable"
+        },
+        {
+          "approach": "Fix data quality issue",
+          "code": "# Data actually has quality issues - fix upstream",
+          "when": "Expectation is correct, data is wrong"
+        }
+      ]
+    },
+    {
+      "id": "datasource_not_found",
+      "pattern": "Datasource .* not found",
+      "message": "Cannot find configured datasource",
+      "cause": "Datasource not configured or config file missing",
+      "solutions": [
+        {
+          "approach": "Create datasource",
+          "code": "context.sources.add_pandas(name='my_datasource')",
+          "when": "Datasource doesn't exist"
+        },
+        {
+          "approach": "Check great_expectations.yml",
+          "code": "# Verify datasources section in config",
+          "when": "Config file issue"
+        },
+        {
+          "approach": "Use correct context path",
+          "code": "context = gx.get_context(project_root_dir='path/to/project')",
+          "when": "Running from wrong directory"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_failed",
+      "pattern": "Checkpoint validation failed",
+      "message": "Checkpoint execution failed",
+      "cause": "One or more expectation suites failed validation",
+      "solutions": [
+        {
+          "approach": "Run with data_docs",
+          "code": "checkpoint_result = context.run_checkpoint(checkpoint_name='my_cp')\ncontext.open_data_docs()",
+          "when": "Need to see detailed failure report"
+        },
+        {
+          "approach": "Check individual results",
+          "code": "for result in checkpoint_result.list_validation_results():\n    print(result.success)",
+          "when": "Need programmatic failure analysis"
+        },
+        {
+          "approach": "Configure action on failure",
+          "code": "action_list=[\n    {'name': 'store_validation_result'},\n    {'name': 'update_data_docs'}\n]",
+          "when": "Want to capture failures for debugging"
+        }
+      ]
+    },
+    {
+      "id": "store_backend_error",
+      "pattern": "StoreBackendError",
+      "message": "Cannot read/write to store backend",
+      "cause": "Storage backend (S3, GCS, filesystem) access issue",
+      "solutions": [
+        {
+          "approach": "Check credentials",
+          "code": "# Verify AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY",
+          "when": "Cloud storage authentication failed"
+        },
+        {
+          "approach": "Verify path exists",
+          "code": "mkdir -p great_expectations/uncommitted/validations",
+          "when": "Local directory doesn't exist"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "chmod -R 755 great_expectations/",
+          "when": "File permission issue"
+        }
+      ]
+    },
+    {
+      "id": "batch_request_error",
+      "pattern": "BatchRequestError",
+      "message": "Cannot create batch from batch request",
+      "cause": "Invalid batch identifiers or data not accessible",
+      "solutions": [
+        {
+          "approach": "Check batch parameters",
+          "code": "batch_request = BatchRequest(\n    datasource_name='my_ds',\n    data_asset_name='my_asset',\n    options={'path': 'data.csv'}\n)",
+          "when": "Batch identifiers wrong"
+        },
+        {
+          "approach": "Verify data exists",
+          "code": "# Check that data file/table exists and is readable",
+          "when": "Data source unavailable"
+        },
+        {
+          "approach": "Use data connector correctly",
+          "code": "batch_request = context.get_batch_request(\n    datasource_name='my_ds',\n    data_connector_name='default_inferred'\n)",
+          "when": "Data connector misconfigured"
+        }
+      ]
+    },
+    {
+      "id": "metric_resolution_error",
+      "pattern": "MetricResolutionError",
+      "message": "Cannot compute metric",
+      "cause": "Metric requires unavailable data or configuration",
+      "solutions": [
+        {
+          "approach": "Check column exists",
+          "code": "# Verify column name matches exactly (case-sensitive)",
+          "when": "Column not found in data"
+        },
+        {
+          "approach": "Use correct metric kwargs",
+          "code": "expect_column_quantile_values_to_be_between(\n    'col', quantile_ranges={'quantiles': [0.25, 0.75], 'value_ranges': [[1,5], [10,20]]}\n)",
+          "when": "Metric parameters incorrect"
+        },
+        {
+          "approach": "Install optional dependencies",
+          "code": "pip install 'great_expectations[spark]'",
+          "when": "Using Spark without dependencies"
+        }
+      ]
+    },
+    {
+      "id": "suite_not_found",
+      "pattern": "ExpectationSuiteNotFoundError",
+      "message": "Expectation suite not found",
+      "cause": "Named expectation suite doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create suite",
+          "code": "suite = context.add_expectation_suite(expectation_suite_name='my_suite')",
+          "when": "Suite not created yet"
+        },
+        {
+          "approach": "List available suites",
+          "code": "context.list_expectation_suite_names()",
+          "when": "Check what suites exist"
+        },
+        {
+          "approach": "Check suite file location",
+          "code": "ls great_expectations/expectations/",
+          "when": "Suite file in wrong location"
+        }
+      ]
+    },
+    {
+      "id": "profiler_error",
+      "pattern": "ProfilerError",
+      "message": "Data profiling failed",
+      "cause": "Cannot profile data due to type issues or missing data",
+      "solutions": [
+        {
+          "approach": "Handle mixed types",
+          "code": "# Cast column to consistent type before profiling",
+          "when": "Column has mixed types"
+        },
+        {
+          "approach": "Use specific profiler",
+          "code": "profiler = UserConfigurableProfiler(\n    profile_dataset=batch,\n    excluded_expectations=['expect_column_to_exist']\n)",
+          "when": "Default profiler too aggressive"
+        },
+        {
+          "approach": "Sample data first",
+          "code": "batch = batch.head(n=10000)  # Profile sample",
+          "when": "Dataset too large to profile"
+        }
+      ]
+    }
+  ]
+}

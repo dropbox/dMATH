@@ -1,0 +1,119 @@
+{
+  "tool": "webcrypto",
+  "category": "crypto",
+  "common_errors": [
+    {
+      "pattern": "NotSupportedError|The algorithm is not supported",
+      "meaning": "Browser doesn't support requested algorithm",
+      "causes": [
+        "Algorithm not in Web Crypto spec",
+        "Browser implementation incomplete",
+        "Using deprecated algorithm"
+      ],
+      "solutions": [
+        "Check Web Crypto spec for supported algorithms",
+        "AES-GCM, RSA-OAEP, ECDSA/ECDH widely supported",
+        "Use SubtleCrypto.digest() for hashing (SHA-256/384/512)"
+      ]
+    },
+    {
+      "pattern": "InvalidAccessError|key does not support",
+      "meaning": "Key usage doesn't allow operation",
+      "causes": [
+        "Key generated without needed usage",
+        "Using sign key for encryption",
+        "extractable:false prevents export"
+      ],
+      "solutions": [
+        "Include correct usages: generateKey(..., ['encrypt', 'decrypt'])",
+        "Sign/verify keys: ['sign', 'verify']",
+        "Set extractable:true if export needed"
+      ]
+    },
+    {
+      "pattern": "DataError|data provided to an operation does not meet requirements",
+      "meaning": "Input data format invalid",
+      "causes": [
+        "Wrong key format for importKey",
+        "Invalid JWK structure",
+        "Ciphertext wrong format"
+      ],
+      "solutions": [
+        "For raw key bytes: format='raw'",
+        "For JSON Web Key: format='jwk'",
+        "For PKCS#8: format='pkcs8'",
+        "Check ArrayBuffer vs typed array"
+      ]
+    },
+    {
+      "pattern": "OperationError|The operation failed",
+      "meaning": "Crypto operation failed",
+      "causes": [
+        "Decryption with wrong key",
+        "Invalid ciphertext",
+        "GCM auth tag verification failed"
+      ],
+      "solutions": [
+        "Verify correct key and IV/nonce",
+        "GCM tag is appended to ciphertext by default",
+        "Check ciphertext wasn't truncated"
+      ]
+    },
+    {
+      "pattern": "SecurityError|crypto.subtle.*insecure context",
+      "meaning": "Web Crypto requires secure context",
+      "causes": [
+        "Page served over HTTP (not HTTPS)",
+        "Not localhost exception",
+        "iframe from insecure origin"
+      ],
+      "solutions": [
+        "Use HTTPS in production",
+        "localhost is considered secure",
+        "Check window.isSecureContext"
+      ]
+    },
+    {
+      "pattern": "TypeError|Cannot read.*subtle|crypto is undefined",
+      "meaning": "Web Crypto not available",
+      "causes": [
+        "Old browser without Web Crypto",
+        "Not in browser environment",
+        "Node.js needs explicit import"
+      ],
+      "solutions": [
+        "Browser: window.crypto.subtle",
+        "Node.js: const { webcrypto } = require('crypto')",
+        "Feature detect: if (window.crypto?.subtle)"
+      ]
+    },
+    {
+      "pattern": "QuotaExceededError|The key is too long",
+      "meaning": "Key or data exceeds limits",
+      "causes": [
+        "RSA key too large (browser limits ~4096)",
+        "AES-KW data too long",
+        "Implementation limit"
+      ],
+      "solutions": [
+        "Use 2048 or 4096 bit RSA",
+        "Split large data for wrapping",
+        "Check browser-specific limits"
+      ]
+    },
+    {
+      "pattern": "The AES-GCM.*iv.*must|IV length",
+      "meaning": "GCM IV/nonce requirements not met",
+      "causes": [
+        "IV not provided or wrong length",
+        "Reusing IV with same key",
+        "Non-standard IV length"
+      ],
+      "solutions": [
+        "Use 12-byte IV for AES-GCM (recommended)",
+        "Generate: crypto.getRandomValues(new Uint8Array(12))",
+        "Never reuse IV with same key"
+      ]
+    }
+  ]
+}

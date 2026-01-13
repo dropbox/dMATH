@@ -1,0 +1,148 @@
+{
+  "tool": "useradd",
+  "version": "coreutils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "user_exists",
+      "pattern": "user '.*' already exists|useradd: user '.*' already exists",
+      "message": "User already exists",
+      "cause": "Username taken",
+      "solutions": [
+        {
+          "approach": "Choose different name",
+          "code": "useradd newusername",
+          "when": "Different user needed"
+        },
+        {
+          "approach": "Modify existing",
+          "code": "sudo usermod -aG group existing_user",
+          "when": "Update instead"
+        },
+        {
+          "approach": "Delete and recreate",
+          "code": "sudo userdel olduser && sudo useradd newuser",
+          "when": "Replace user"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|useradd: Permission denied|Only root may add",
+      "message": "Not authorized",
+      "cause": "Need root privileges",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo useradd username",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "invalid_name",
+      "pattern": "invalid user name|useradd: invalid user name",
+      "message": "Username format invalid",
+      "cause": "Username contains invalid characters",
+      "solutions": [
+        {
+          "approach": "Follow naming rules",
+          "code": "# Must start with lowercase letter or underscore\n# Contains lowercase, digits, underscores, hyphens\n# Max 32 characters typically\nuseradd valid_user_name",
+          "when": "Fix name format"
+        }
+      ]
+    },
+    {
+      "id": "uid_in_use",
+      "pattern": "UID .* is not unique|useradd: UID .* is not unique",
+      "message": "UID already used",
+      "cause": "Specified UID assigned to another user",
+      "solutions": [
+        {
+          "approach": "Find available UID",
+          "code": "getent passwd | awk -F: '{print $3}' | sort -n | tail -10",
+          "when": "See used UIDs"
+        },
+        {
+          "approach": "Use auto UID",
+          "code": "sudo useradd username  # System assigns UID",
+          "when": "Let system choose"
+        },
+        {
+          "approach": "Force non-unique",
+          "code": "sudo useradd -o -u 1000 username",
+          "when": "Allow duplicate (rare)"
+        }
+      ]
+    },
+    {
+      "id": "home_dir_exists",
+      "pattern": "home directory.*already exists|directory.*exists",
+      "message": "Home directory exists",
+      "cause": "Home path already has content",
+      "solutions": [
+        {
+          "approach": "Use existing",
+          "code": "sudo useradd -d /home/existing -M username",
+          "when": "-M skips home creation"
+        },
+        {
+          "approach": "Different home",
+          "code": "sudo useradd -d /home/newpath username",
+          "when": "Choose different path"
+        },
+        {
+          "approach": "Remove old",
+          "code": "sudo rm -rf /home/olddir && sudo useradd username",
+          "when": "Clean start"
+        }
+      ]
+    },
+    {
+      "id": "group_not_found",
+      "pattern": "group '.*' does not exist|useradd: group '.*' does not exist",
+      "message": "Specified group missing",
+      "cause": "Group doesn't exist yet",
+      "solutions": [
+        {
+          "approach": "Create group first",
+          "code": "sudo groupadd groupname && sudo useradd -g groupname username",
+          "when": "Need new group"
+        },
+        {
+          "approach": "Use existing group",
+          "code": "cat /etc/group | cut -d: -f1 | sort",
+          "when": "List available groups"
+        },
+        {
+          "approach": "Create user group",
+          "code": "sudo useradd -U username  # Creates user's own group",
+          "when": "Personal group"
+        }
+      ]
+    },
+    {
+      "id": "cannot_create_home",
+      "pattern": "cannot create home directory|cannot create directory",
+      "message": "Home creation failed",
+      "cause": "Parent directory issues or disk full",
+      "solutions": [
+        {
+          "approach": "Check disk space",
+          "code": "df -h /home",
+          "when": "Disk full"
+        },
+        {
+          "approach": "Create parent",
+          "code": "sudo mkdir -p /home && sudo useradd -m username",
+          "when": "Missing /home"
+        },
+        {
+          "approach": "Skip home",
+          "code": "sudo useradd -M username",
+          "when": "No home needed"
+        }
+      ]
+    }
+  ]
+}

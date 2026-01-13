@@ -1,0 +1,191 @@
+{
+  "tool": "jessie",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "unproved|goal not proved|invalid",
+      "message": "Proof obligation not discharged",
+      "cause": "Why3 provers could not verify the generated obligation",
+      "solutions": [
+        {
+          "approach": "Strengthen preconditions",
+          "code": "//@ requires param >= 0 && param < MAX;",
+          "when": "Insufficient input constraints"
+        },
+        {
+          "approach": "Add loop invariants",
+          "code": "//@ loop invariant 0 <= i <= n;\n//@ loop invariant sum == i * (i-1) / 2;",
+          "when": "Loop verification fails"
+        },
+        {
+          "approach": "Try different provers",
+          "code": "why3 prove -P cvc5 file.mlw",
+          "when": "Alt-Ergo times out"
+        }
+      ]
+    },
+    {
+      "id": "memory_model_error",
+      "pattern": "memory model|pointer arithmetic|invalid pointer",
+      "message": "Memory model verification error",
+      "cause": "Jessie's memory model cannot verify pointer operation",
+      "solutions": [
+        {
+          "approach": "Add pointer validity",
+          "code": "//@ requires \\valid(ptr);",
+          "when": "Pointer may be invalid"
+        },
+        {
+          "approach": "Specify separation",
+          "code": "//@ requires \\separated(p1, p2);",
+          "when": "Pointers may alias"
+        },
+        {
+          "approach": "Use offset bounds",
+          "code": "//@ requires \\valid(arr + (0..n-1));",
+          "when": "Array bounds needed"
+        }
+      ]
+    },
+    {
+      "id": "type_conversion_error",
+      "pattern": "type conversion|cast error|integer to pointer",
+      "message": "Type conversion verification failed",
+      "cause": "Jessie cannot verify safety of type cast",
+      "solutions": [
+        {
+          "approach": "Add cast annotation",
+          "code": "//@ assert (int)ptr >= 0; // Bounds after cast",
+          "when": "Documenting cast safety"
+        },
+        {
+          "approach": "Avoid integer-pointer casts",
+          "code": "// Use void* and explicit casts with annotations",
+          "when": "Complex pointer arithmetic"
+        },
+        {
+          "approach": "Use Jessie-specific types",
+          "code": "// Use intptr_t for integer representation of pointers",
+          "when": "Need integer-pointer conversion"
+        }
+      ]
+    },
+    {
+      "id": "why3_error",
+      "pattern": "Why3 error|translation failed|MLW error",
+      "message": "Why3 translation or verification error",
+      "cause": "Generated Why3 code has issues",
+      "solutions": [
+        {
+          "approach": "Check Why3 output",
+          "code": "jessie -why3 file.c # Examine generated .mlw",
+          "when": "Debug translation"
+        },
+        {
+          "approach": "Update Why3",
+          "code": "opam update && opam upgrade why3",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Configure provers",
+          "code": "why3 config detect",
+          "when": "Provers not found"
+        }
+      ]
+    },
+    {
+      "id": "floating_point_error",
+      "pattern": "floating point|real arithmetic|float",
+      "message": "Floating-point verification issue",
+      "cause": "Jessie has limited floating-point support",
+      "solutions": [
+        {
+          "approach": "Use real model",
+          "code": "//@ logic real abs_real(real x) = x >= 0 ? x : -x;",
+          "when": "Specify with reals"
+        },
+        {
+          "approach": "Add float bounds",
+          "code": "//@ requires \\is_finite(f);",
+          "when": "Ensure no NaN/Inf"
+        },
+        {
+          "approach": "Use Gappa",
+          "code": "why3 prove -P gappa file.mlw",
+          "when": "Float arithmetic proofs"
+        }
+      ]
+    },
+    {
+      "id": "bitwise_error",
+      "pattern": "bitwise operation|bit manipulation",
+      "message": "Bitwise operation verification failed",
+      "cause": "Jessie struggles with bitwise operations",
+      "solutions": [
+        {
+          "approach": "Add explicit lemmas",
+          "code": "//@ assert (x & 1) == x % 2;",
+          "when": "Connect bit ops to arithmetic"
+        },
+        {
+          "approach": "Use bitvector provers",
+          "code": "why3 prove -P cvc5 file.mlw # CVC5 handles bitvectors",
+          "when": "Need bitvector reasoning"
+        },
+        {
+          "approach": "Add bounds",
+          "code": "//@ requires 0 <= x <= 255; // 8-bit value",
+          "when": "Constrain to known range"
+        }
+      ]
+    },
+    {
+      "id": "recursive_function_error",
+      "pattern": "recursive function|termination|variant",
+      "message": "Recursive function verification issue",
+      "cause": "Cannot verify termination or correctness of recursion",
+      "solutions": [
+        {
+          "approach": "Add variant",
+          "code": "//@ decreases n; // Must decrease each call",
+          "when": "Prove termination"
+        },
+        {
+          "approach": "Add inductive spec",
+          "code": "//@ ensures n == 0 ==> \\result == 1;\n//@ ensures n > 0 ==> \\result == n * factorial(n-1);",
+          "when": "Recursive specification"
+        },
+        {
+          "approach": "Use lemma function",
+          "code": "/*@ lemma factorial_pos: \\forall int n; n >= 0 ==> factorial(n) > 0; @*/",
+          "when": "Need inductive property"
+        }
+      ]
+    },
+    {
+      "id": "struct_error",
+      "pattern": "struct field|record access|composite type",
+      "message": "Structure verification error",
+      "cause": "Jessie cannot verify structure access or invariant",
+      "solutions": [
+        {
+          "approach": "Specify type invariant",
+          "code": "/*@ type invariant valid_struct(struct S s) = s.field >= 0; @*/",
+          "when": "Structure has invariants"
+        },
+        {
+          "approach": "Add field bounds",
+          "code": "//@ requires \\valid(&s->field);",
+          "when": "Field access validity"
+        },
+        {
+          "approach": "Specify separation",
+          "code": "//@ requires \\separated(s1, s2);",
+          "when": "No aliasing between structs"
+        }
+      ]
+    }
+  ]
+}

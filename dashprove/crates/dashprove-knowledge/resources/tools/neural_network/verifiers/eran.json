@@ -1,0 +1,110 @@
+{
+  "id": "eran",
+  "name": "ERAN",
+  "category": "neural_network_verification",
+  "subcategory": "abstract_interpretation",
+
+  "description": "ETH Robustness Analyzer using abstract interpretation",
+  "long_description": "ERAN (ETH Robustness Analyzer for Neural Networks) is a state-of-the-art verifier for deep neural networks using abstract interpretation. It can prove robustness properties like certified adversarial robustness against Lp-norm bounded perturbations. ERAN supports multiple abstract domains including DeepPoly, DeepZono, and RefineZono.",
+
+  "capabilities": [
+    "certified_robustness",
+    "abstract_interpretation",
+    "deeppoly_domain",
+    "deepzono_domain",
+    "refinezono_domain",
+    "lp_norm_perturbations",
+    "onnx_support",
+    "gpu_acceleration"
+  ],
+  "property_types": ["robustness", "safety"],
+  "input_languages": ["onnx", "pytorch", "tensorflow"],
+  "output_formats": ["verification_result", "counterexample", "certified_bound"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install eran"},
+      {"type": "source", "url": "https://github.com/eth-sri/eran"}
+    ],
+    "dependencies": ["python", "onnx", "pytorch", "numpy"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/eth-sri/eran",
+    "tutorial": "https://github.com/eth-sri/eran#usage",
+    "api_reference": "https://github.com/eth-sri/eran/wiki",
+    "examples": "https://github.com/eth-sri/eran/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "deeppoly",
+      "description": "Use DeepPoly abstract domain",
+      "syntax": "--domain deeppoly",
+      "when_to_use": "Fast but less precise verification",
+      "examples": ["python analyzer.py --domain deeppoly --epsilon 0.01 model.onnx"]
+    },
+    {
+      "name": "deepzono",
+      "description": "Use DeepZono abstract domain",
+      "syntax": "--domain deepzono",
+      "when_to_use": "Balance of speed and precision",
+      "examples": ["python analyzer.py --domain deepzono --epsilon 0.01 model.onnx"]
+    },
+    {
+      "name": "refinezono",
+      "description": "Use RefineZono with MILP refinement",
+      "syntax": "--domain refinezono",
+      "when_to_use": "Most precise verification",
+      "examples": ["python analyzer.py --domain refinezono --epsilon 0.01 model.onnx"]
+    },
+    {
+      "name": "epsilon",
+      "description": "Set perturbation bound",
+      "syntax": "--epsilon VALUE",
+      "when_to_use": "Specifying robustness radius",
+      "examples": ["--epsilon 0.3 for MNIST", "--epsilon 8/255 for CIFAR"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "UNSAFE",
+      "meaning": "Property cannot be verified",
+      "common_causes": ["Property violated", "Abstraction too coarse"],
+      "fixes": ["Try more precise domain", "Reduce epsilon", "Retrain network"]
+    },
+    {
+      "pattern": "TIMEOUT",
+      "meaning": "Verification exceeded time limit",
+      "common_causes": ["Network too large", "Epsilon too large"],
+      "fixes": ["Increase timeout", "Use faster domain", "Reduce network size"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["robustness", "safety"],
+    "cli_command": "dashprove verify --backend eran"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes per image",
+    "scalability": "Handles networks with thousands of neurons",
+    "memory_usage": "Moderate to high"
+  },
+
+  "comparisons": {
+    "similar_tools": ["alpha-beta-crown", "marabou", "nnenum"],
+    "advantages": ["Multiple abstract domains", "GPU support", "State-of-the-art precision"],
+    "disadvantages": ["Complex setup", "Python only", "May be slow on large networks"]
+  },
+
+  "metadata": {
+    "version": "4.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "ETH Zurich SRI Lab",
+    "license": "Apache-2.0"
+  }
+}

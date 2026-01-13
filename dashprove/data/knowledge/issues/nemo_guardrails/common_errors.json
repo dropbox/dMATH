@@ -1,0 +1,133 @@
+{
+  "tool": "nemo_guardrails",
+  "version": "0.9.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_error",
+      "pattern": "(config|rails.*config|yaml)",
+      "message": "NeMo Guardrails configuration error",
+      "cause": "Invalid or missing config.yml",
+      "solutions": [
+        {
+          "approach": "Create config",
+          "code": "# config.yml\nmodels:\n  - type: main\n    engine: openai\n    model: gpt-3.5-turbo\n\nrails:\n  input:\n    flows:\n      - self check input\n  output:\n    flows:\n      - self check output",
+          "when": "Setting up config"
+        },
+        {
+          "approach": "Load from Python",
+          "code": "from nemoguardrails import RailsConfig, LLMRails\nconfig = RailsConfig.from_path('./config')\nrails = LLMRails(config)",
+          "when": "Loading config"
+        }
+      ]
+    },
+    {
+      "id": "colang_error",
+      "pattern": "(Colang|flow|define|syntax)",
+      "message": "Colang syntax error",
+      "cause": "Invalid Colang flow definition",
+      "solutions": [
+        {
+          "approach": "Define flow correctly",
+          "code": "# flows.co\ndefine user express greeting\n  \"hello\"\n  \"hi\"\n  \"hey\"\n\ndefine flow greeting\n  user express greeting\n  bot express greeting",
+          "when": "Creating flows"
+        },
+        {
+          "approach": "Check indentation",
+          "code": "# Colang uses indentation like Python\ndefine flow input check\n  $allowed = execute check_input(user_input=$user_message)\n  if not $allowed\n    bot refuse to respond\n    stop",
+          "when": "Flow syntax errors"
+        }
+      ]
+    },
+    {
+      "id": "action_error",
+      "pattern": "(action|execute|custom.*action)",
+      "message": "Custom action error",
+      "cause": "Action not registered or execution failed",
+      "solutions": [
+        {
+          "approach": "Register action",
+          "code": "from nemoguardrails.actions import action\n\n@action()\nasync def check_input(user_input: str) -> bool:\n    # Custom validation logic\n    return 'bad_word' not in user_input.lower()\n\nrails.register_action(check_input)",
+          "when": "Creating custom action"
+        },
+        {
+          "approach": "Use in flow",
+          "code": "# flows.co\ndefine flow check input\n  $valid = execute check_input(user_input=$user_message)\n  if not $valid\n    bot respond with blocked message",
+          "when": "Using action in flow"
+        }
+      ]
+    },
+    {
+      "id": "llm_call_error",
+      "pattern": "(LLM|generate|model.*error)",
+      "message": "LLM call failed",
+      "cause": "Error calling the underlying LLM",
+      "solutions": [
+        {
+          "approach": "Configure model",
+          "code": "# config.yml\nmodels:\n  - type: main\n    engine: openai\n    model: gpt-4\n    parameters:\n      temperature: 0.7",
+          "when": "Setting model params"
+        },
+        {
+          "approach": "Use local model",
+          "code": "# config.yml\nmodels:\n  - type: main\n    engine: huggingface\n    model: meta-llama/Llama-2-7b-chat-hf",
+          "when": "Using local model"
+        }
+      ]
+    },
+    {
+      "id": "embedding_error",
+      "pattern": "(embedding|vector|similarity)",
+      "message": "Embedding model error",
+      "cause": "Embedding computation failed for intent detection",
+      "solutions": [
+        {
+          "approach": "Configure embeddings",
+          "code": "# config.yml\nmodels:\n  - type: embeddings\n    engine: openai\n    model: text-embedding-ada-002",
+          "when": "Using OpenAI embeddings"
+        },
+        {
+          "approach": "Use local embeddings",
+          "code": "# config.yml\nmodels:\n  - type: embeddings\n    engine: SentenceTransformers\n    model: all-MiniLM-L6-v2",
+          "when": "Local embeddings"
+        }
+      ]
+    },
+    {
+      "id": "blocking_error",
+      "pattern": "(blocked|refuse|jailbreak)",
+      "message": "Input or output blocked by guardrails",
+      "cause": "Content triggered safety guardrail",
+      "solutions": [
+        {
+          "approach": "Check which rail blocked",
+          "code": "response = await rails.generate_async(\n    messages=[{'role': 'user', 'content': message}]\n)\nprint(f'Response: {response}')\nprint(f'Log: {rails.explain()}')",
+          "when": "Debugging blocks"
+        },
+        {
+          "approach": "Customize blocking behavior",
+          "code": "# flows.co\ndefine bot refuse to respond\n  \"I'm sorry, I can't help with that request.\"",
+          "when": "Custom block message"
+        }
+      ]
+    },
+    {
+      "id": "context_error",
+      "pattern": "(context|variable|\\$)",
+      "message": "Context variable error",
+      "cause": "Context variable not defined or wrong type",
+      "solutions": [
+        {
+          "approach": "Set context",
+          "code": "response = await rails.generate_async(\n    messages=messages,\n    context={\n        'user_name': 'John',\n        'user_role': 'admin'\n    }\n)",
+          "when": "Passing context"
+        },
+        {
+          "approach": "Use in flow",
+          "code": "define flow admin check\n  if $user_role == \"admin\"\n    bot respond as admin\n  else\n    bot refuse admin action",
+          "when": "Using context in flows"
+        }
+      ]
+    }
+  ]
+}

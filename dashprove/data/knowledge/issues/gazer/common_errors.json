@@ -1,0 +1,265 @@
+{
+  "tool_id": "gazer",
+  "tool_name": "Gazer",
+  "tool_version": "1.4",
+  "category": "sv_comp_verification",
+  "error_patterns": [
+    {
+      "id": "gazer_theta_backend_failure",
+      "pattern": "theta backend failed|solver timeout|CEGAR loop failed to converge",
+      "severity": "error",
+      "category": "backend_error",
+      "description": "Gazer's Theta backend failed during CEGAR-based verification",
+      "common_causes": [
+        "Program too complex for CEGAR abstraction",
+        "SMT solver timeout on refinement queries",
+        "Infinite refinement loop",
+        "Unsupported language features"
+      ],
+      "solutions": [
+        "Try different abstraction strategies (--domain pred, --domain expl)",
+        "Increase solver timeout with --solver-timeout",
+        "Simplify the program or add loop bounds",
+        "Use --refinement seq for sequential refinement"
+      ],
+      "examples": [
+        {
+          "error": "CEGAR loop did not converge after 100 iterations",
+          "context": "Program with complex loop invariants",
+          "fix": "gazer-theta --domain pred --refinement seq program.c"
+        }
+      ],
+      "related_errors": ["gazer_solver_error"],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_llvm_frontend_error",
+      "pattern": "LLVM frontend error|failed to parse|unsupported instruction|clang error",
+      "severity": "error",
+      "category": "input_error",
+      "description": "Gazer failed to process the input program through the LLVM frontend",
+      "common_causes": [
+        "C/C++ syntax errors",
+        "Unsupported C features",
+        "Missing header files",
+        "Inline assembly usage"
+      ],
+      "solutions": [
+        "Compile with clang to check for errors first",
+        "Remove inline assembly",
+        "Provide missing includes",
+        "Check Gazer's supported C subset"
+      ],
+      "examples": [
+        {
+          "error": "failed to parse: unsupported inline assembly",
+          "context": "Program with asm blocks",
+          "fix": "Remove or stub inline assembly sections"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_property_violation",
+      "pattern": "property violated|unsafe|ERROR state reachable|assert.* failed",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Gazer found a path that violates the specified property",
+      "common_causes": [
+        "Actual bug in the program",
+        "Assertion is too strong",
+        "Missing preconditions",
+        "Undefined behavior in the program"
+      ],
+      "solutions": [
+        "Examine the counterexample witness",
+        "Validate the counterexample with other tools",
+        "Check if preconditions are properly specified",
+        "Review the assertion logic"
+      ],
+      "examples": [
+        {
+          "error": "UNSAFE: ERROR state reachable at line 42",
+          "context": "Array bounds checking",
+          "fix": "Add bounds checking before array access"
+        }
+      ],
+      "related_errors": ["gazer_witness_validation_failed"],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_witness_validation_failed",
+      "pattern": "witness validation failed|counterexample not reproducible|spurious counterexample",
+      "severity": "warning",
+      "category": "verification_result",
+      "description": "The counterexample witness could not be validated",
+      "common_causes": [
+        "Abstraction introduced spurious behaviors",
+        "Witness format incompatibility",
+        "Floating-point precision issues",
+        "Non-determinism in the program"
+      ],
+      "solutions": [
+        "Try more precise abstraction domain",
+        "Use --validate-witness for automatic validation",
+        "Check witness against CPAchecker or CBMC",
+        "Refine the abstraction manually"
+      ],
+      "examples": [
+        {
+          "error": "witness validation failed: path not feasible",
+          "context": "Spurious error in abstracted model",
+          "fix": "gazer-theta --domain expl program.c"
+        }
+      ],
+      "related_errors": ["gazer_property_violation"],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_solver_error",
+      "pattern": "solver error|Z3 error|SMT solver failed|sat check failed",
+      "severity": "error",
+      "category": "backend_error",
+      "description": "The underlying SMT solver encountered an error",
+      "common_causes": [
+        "Unsupported theory combination",
+        "Solver timeout",
+        "Memory exhaustion in solver",
+        "Non-linear arithmetic"
+      ],
+      "solutions": [
+        "Increase solver memory limit",
+        "Try different solver (--solver z3, --solver mathsat)",
+        "Linearize non-linear expressions if possible",
+        "Simplify the verification problem"
+      ],
+      "examples": [
+        {
+          "error": "Z3 error: timeout",
+          "context": "Complex non-linear arithmetic",
+          "fix": "gazer-theta --solver-timeout 300 program.c"
+        }
+      ],
+      "related_errors": ["gazer_theta_backend_failure"],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_memory_limit",
+      "pattern": "memory limit exceeded|out of memory|OOM",
+      "severity": "error",
+      "category": "resource_exhaustion",
+      "description": "Gazer exceeded the memory limit during verification",
+      "common_causes": [
+        "Large program state space",
+        "Complex predicates in abstraction",
+        "Deep recursion or large arrays",
+        "Too many refinement iterations"
+      ],
+      "solutions": [
+        "Increase memory limit with --memlimit",
+        "Use coarser abstraction initially",
+        "Add bounds on arrays and loops",
+        "Decompose the verification problem"
+      ],
+      "examples": [
+        {
+          "error": "memory limit exceeded: 16GB",
+          "context": "Verifying large codebase",
+          "fix": "gazer-theta --memlimit 32000 program.c"
+        }
+      ],
+      "related_errors": ["gazer_theta_backend_failure"],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_intrinsic_not_supported",
+      "pattern": "unsupported intrinsic|builtin not implemented|unknown function __builtin",
+      "severity": "error",
+      "category": "input_error",
+      "description": "Gazer encountered an unsupported compiler intrinsic",
+      "common_causes": [
+        "Compiler-specific builtins",
+        "LLVM intrinsics not modeled",
+        "Platform-specific operations",
+        "Atomic operations"
+      ],
+      "solutions": [
+        "Replace intrinsics with equivalent C code",
+        "Provide stubs for unsupported functions",
+        "Use --inline-functions to expose behavior",
+        "Check if intrinsic is modeled in Gazer"
+      ],
+      "examples": [
+        {
+          "error": "unsupported intrinsic: __builtin_expect",
+          "context": "Likely/unlikely branch hints",
+          "fix": "Replace with equivalent expression without builtin"
+        }
+      ],
+      "related_errors": ["gazer_llvm_frontend_error"],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    },
+    {
+      "id": "gazer_safe_result",
+      "pattern": "SAFE|property holds|no error found",
+      "severity": "info",
+      "category": "verification_result",
+      "description": "Gazer verified the program is safe with respect to the property",
+      "common_causes": [
+        "Program is correct (no bugs found)",
+        "Property is too weak",
+        "Abstraction may be too coarse (false negative)"
+      ],
+      "solutions": [
+        "Verify result with other tools for confidence",
+        "Check coverage of the verification",
+        "Review property specification"
+      ],
+      "examples": [
+        {
+          "error": "SAFE: property holds",
+          "context": "Array bounds verification",
+          "fix": "N/A - verification successful"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://github.com/ftsrg/gazer"
+    }
+  ],
+  "general_tips": [
+    "Gazer uses Theta CEGAR framework for verification",
+    "Choice of abstraction domain significantly affects performance",
+    "Predicate abstraction (--domain pred) is more precise but slower",
+    "Explicit-value abstraction (--domain expl) is faster for simple programs",
+    "Gazer produces SV-COMP compatible witnesses",
+    "Use --inline-level to control function inlining depth"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic verification",
+      "steps": [
+        "gazer-theta program.c",
+        "Check result: SAFE or UNSAFE",
+        "Examine witness if UNSAFE"
+      ]
+    },
+    {
+      "name": "With specific domain",
+      "steps": [
+        "gazer-theta --domain pred program.c (predicate abstraction)",
+        "gazer-theta --domain expl program.c (explicit values)"
+      ]
+    },
+    {
+      "name": "SV-COMP mode",
+      "steps": [
+        "gazer-theta --sv-comp --witness witness.graphml program.c"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "1.4": "Improved SV-COMP 2023 performance, better witness generation",
+    "1.3": "Added support for recursive functions"
+  }
+}

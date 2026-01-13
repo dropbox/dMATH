@@ -1,0 +1,273 @@
+{
+  "tool_id": "coastal",
+  "tool_name": "COASTAL",
+  "tool_version": "2.0",
+  "category": "sv_comp_verification",
+  "error_patterns": [
+    {
+      "id": "coastal_constraint_solving_failure",
+      "pattern": "constraint solver failed|unsatisfiable constraints|solver timeout",
+      "severity": "error",
+      "category": "backend_error",
+      "description": "COASTAL's constraint solver (Green/Z3) failed to solve path constraints",
+      "common_causes": [
+        "Non-linear arithmetic in constraints",
+        "String constraints too complex",
+        "Timeout on large constraint systems",
+        "Unsupported constraint types"
+      ],
+      "solutions": [
+        "Simplify input domains",
+        "Increase solver timeout in configuration",
+        "Use constraint caching more aggressively",
+        "Avoid complex string operations"
+      ],
+      "examples": [
+        {
+          "error": "constraint solver timeout on path constraint",
+          "context": "Program with complex string operations",
+          "fix": "Reduce string length bounds or simplify operations"
+        }
+      ],
+      "related_errors": ["coastal_path_explosion"],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_path_explosion",
+      "pattern": "path explosion|too many paths|path limit exceeded|maximum paths reached",
+      "severity": "warning",
+      "category": "resource_exhaustion",
+      "description": "COASTAL encountered too many execution paths to explore exhaustively",
+      "common_causes": [
+        "Complex loops without bounds",
+        "Many conditional branches",
+        "Large input domains",
+        "Recursive calls"
+      ],
+      "solutions": [
+        "Use fuzzing mode for coverage (--strategy=FUZZER)",
+        "Set path limits in configuration",
+        "Add bounds to loops and inputs",
+        "Use hybrid concolic+fuzzing approach"
+      ],
+      "examples": [
+        {
+          "error": "path explosion: 1000000 paths explored, limit reached",
+          "context": "Program with many branches",
+          "fix": "coastal.limit.paths = 10000 in configuration"
+        }
+      ],
+      "related_errors": ["coastal_timeout"],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_assertion_failure",
+      "pattern": "assertion failed|assert.* violated|AssertionError",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "COASTAL found an input that causes an assertion to fail",
+      "common_causes": [
+        "Bug in the program logic",
+        "Missing input validation",
+        "Incorrect preconditions",
+        "Off-by-one errors"
+      ],
+      "solutions": [
+        "Examine the generated test case",
+        "Review the assertion and surrounding code",
+        "Add input validation",
+        "Fix the underlying bug"
+      ],
+      "examples": [
+        {
+          "error": "AssertionError at BinarySearch.java:42",
+          "context": "Binary search implementation",
+          "fix": "Fix boundary condition in comparison"
+        }
+      ],
+      "related_errors": ["coastal_exception_found"],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_exception_found",
+      "pattern": "uncaught exception|NullPointerException|ArrayIndexOutOfBoundsException|runtime exception",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "COASTAL found an input that causes an uncaught exception",
+      "common_causes": [
+        "Null pointer dereference",
+        "Array index out of bounds",
+        "Division by zero",
+        "Missing null checks"
+      ],
+      "solutions": [
+        "Add null checks before dereference",
+        "Validate array indices",
+        "Check for zero before division",
+        "Add try-catch blocks for expected exceptions"
+      ],
+      "examples": [
+        {
+          "error": "ArrayIndexOutOfBoundsException: index=-1",
+          "context": "Array access with symbolic index",
+          "fix": "Add bounds checking: if (index >= 0 && index < arr.length)"
+        }
+      ],
+      "related_errors": ["coastal_assertion_failure"],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_instrumentation_error",
+      "pattern": "instrumentation failed|cannot instrument|bytecode error|class load error",
+      "severity": "error",
+      "category": "input_error",
+      "description": "COASTAL failed to instrument the Java bytecode",
+      "common_causes": [
+        "Incompatible Java version",
+        "Protected/obfuscated classes",
+        "Missing dependencies",
+        "Native methods"
+      ],
+      "solutions": [
+        "Ensure compatible Java version (8-11)",
+        "Add all dependencies to classpath",
+        "Exclude native methods from instrumentation",
+        "Configure instrumentation scope"
+      ],
+      "examples": [
+        {
+          "error": "cannot instrument class: native method",
+          "context": "Class with JNI calls",
+          "fix": "Add class to coastal.instrument.exclude list"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_timeout",
+      "pattern": "timeout|time limit exceeded|analysis did not complete",
+      "severity": "warning",
+      "category": "resource_exhaustion",
+      "description": "COASTAL did not complete within the time limit",
+      "common_causes": [
+        "Program too complex",
+        "Path explosion",
+        "Slow constraint solving",
+        "Large number of symbolic variables"
+      ],
+      "solutions": [
+        "Reduce symbolic input size",
+        "Use hybrid strategy (FUZZER+CONCOLIC)",
+        "Increase timeout in configuration",
+        "Focus on specific methods with @Symbolic"
+      ],
+      "examples": [
+        {
+          "error": "timeout: 3600s elapsed",
+          "context": "Large program analysis",
+          "fix": "coastal.limit.time = 7200 or reduce scope"
+        }
+      ],
+      "related_errors": ["coastal_path_explosion"],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_unsupported_operation",
+      "pattern": "unsupported operation|not implemented|symbolic .* not supported",
+      "severity": "error",
+      "category": "limitation",
+      "description": "COASTAL encountered an operation it cannot handle symbolically",
+      "common_causes": [
+        "Floating-point symbolic operations",
+        "Complex object operations",
+        "Reflection usage",
+        "Non-linear operations"
+      ],
+      "solutions": [
+        "Concretize unsupported operations",
+        "Replace with supported equivalents",
+        "Mock complex objects",
+        "Use fuzzing for those code paths"
+      ],
+      "examples": [
+        {
+          "error": "symbolic floating-point not fully supported",
+          "context": "Financial calculation with doubles",
+          "fix": "Use integer arithmetic or concrete values"
+        }
+      ],
+      "related_errors": ["coastal_constraint_solving_failure"],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    },
+    {
+      "id": "coastal_configuration_error",
+      "pattern": "configuration error|invalid property|missing configuration",
+      "severity": "error",
+      "category": "input_error",
+      "description": "COASTAL configuration file has errors or missing required properties",
+      "common_causes": [
+        "Missing main class specification",
+        "Invalid trigger configuration",
+        "Incorrect classpath",
+        "Malformed properties file"
+      ],
+      "solutions": [
+        "Verify coastal.main is set correctly",
+        "Check trigger method signatures",
+        "Ensure classpath includes all dependencies",
+        "Review configuration syntax"
+      ],
+      "examples": [
+        {
+          "error": "missing configuration: coastal.main",
+          "context": "Configuration file incomplete",
+          "fix": "coastal.main = com.example.Main in config"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://github.com/DeepseaPlatform/coastal"
+    }
+  ],
+  "general_tips": [
+    "COASTAL is a concolic execution engine for Java bytecode",
+    "Use hybrid strategies (FUZZER+CONCOLIC) for better coverage",
+    "Green constraint solver provides constraint caching",
+    "Surfers explore paths, divers collect information",
+    "Configure symbolic inputs with @Symbolic annotations",
+    "COASTAL generates JUnit test cases automatically"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic concolic testing",
+      "steps": [
+        "Create configuration file (coastal.properties)",
+        "Set coastal.main, coastal.target, coastal.trigger",
+        "Run: java -jar coastal.jar coastal.properties",
+        "Review generated test cases"
+      ]
+    },
+    {
+      "name": "Hybrid fuzzing",
+      "steps": [
+        "coastal.strategy = HYBRID",
+        "Configure FUZZER and CONCOLIC strategies",
+        "Run COASTAL with hybrid configuration",
+        "Check coverage report"
+      ]
+    },
+    {
+      "name": "Bug finding",
+      "steps": [
+        "coastal.echooutput = true",
+        "coastal.strategy = DFS or BFS",
+        "Monitor for assertion failures or exceptions",
+        "Export failing test cases"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "2.0": "Major rewrite with modular architecture and plugin system",
+    "1.x": "Legacy version, consider upgrading"
+  }
+}

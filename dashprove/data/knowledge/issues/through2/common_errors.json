@@ -1,0 +1,60 @@
+{
+  "tool": "through2",
+  "category": "stream_utilities",
+  "common_errors": [
+    {
+      "pattern": "write after end",
+      "meaning": "Data written after stream ended",
+      "causes": [
+        "Calling write after .end()",
+        "Async callback writes late",
+        "Pipeline closes early on error"
+      ],
+      "solutions": [
+        "Ensure writes happen before end; buffer data first if needed",
+        "Handle error/end events to stop producers",
+        "Use stream.pipeline to manage lifecycle"
+      ]
+    },
+    {
+      "pattern": "Callback was already called|ERR_MULTIPLE_CALLBACK",
+      "meaning": "Transform callback invoked more than once",
+      "causes": [
+        "Calling cb twice in transform/flush",
+        "Promise resolution plus callback",
+        "Error path calling cb then throwing"
+      ],
+      "solutions": [
+        "Call cb exactly once per chunk",
+        "Use async/await then cb(null, chunk) without extra returns",
+        "Return after calling cb in error branches"
+      ]
+    },
+    {
+      "pattern": "Invalid non-string chunk|Cannot convert object to string",
+      "meaning": "Object written without objectMode",
+      "causes": [
+        "through2() defaults to buffer/string mode",
+        "Writing objects instead of Buffer/string"
+      ],
+      "solutions": [
+        "Enable objectMode: through2.obj(function (chunk, _, cb) { ... })",
+        "Convert objects to Buffer/string before writing"
+      ]
+    },
+    {
+      "pattern": "Stream not ending|pipeline hangs",
+      "meaning": "Flush callback not invoked or upstream not closed",
+      "causes": [
+        "Forgot to call cb in flush",
+        "Upstream source never emits 'end'",
+        "Backpressure ignoring callback completion"
+      ],
+      "solutions": [
+        "Always call cb() in flush even when no data",
+        "Ensure source pushes null/end when finished",
+        "Use pipeline with error/close handling to propagate completion"
+      ]
+    }
+  ]
+}

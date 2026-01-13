@@ -1,0 +1,106 @@
+{
+  "id": "libfuzzer",
+  "name": "LibFuzzer",
+  "category": "fuzzer",
+  "subcategory": "coverage_guided",
+
+  "description": "Coverage-guided evolutionary fuzzer for Rust/C/C++",
+  "long_description": "LibFuzzer is an in-process, coverage-guided, evolutionary fuzzing engine. It is linked with the target and runs in the same process, enabling fast fuzzing. In Rust, it's commonly used via cargo-fuzz.",
+
+  "capabilities": [
+    "coverage_guided_fuzzing",
+    "in_process",
+    "corpus_evolution",
+    "sanitizer_integration"
+  ],
+  "property_types": ["crash_detection", "assertion_violation"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["crash_artifact", "corpus"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo install cargo-fuzz"},
+      {"type": "apt", "command": "apt install libfuzzer-14-dev"}
+    ],
+    "dependencies": ["nightly_rust", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://llvm.org/docs/LibFuzzer.html",
+    "tutorial": "https://rust-fuzz.github.io/book/cargo-fuzz.html",
+    "api_reference": "https://llvm.org/docs/LibFuzzer.html",
+    "examples": "https://github.com/rust-fuzz/cargo-fuzz"
+  },
+
+  "tactics": [
+    {
+      "name": "basic",
+      "description": "Basic fuzzing",
+      "syntax": "cargo +nightly fuzz run target",
+      "when_to_use": "For general fuzzing",
+      "examples": ["cargo +nightly fuzz run my_target"]
+    },
+    {
+      "name": "dict",
+      "description": "Use dictionary",
+      "syntax": "-dict=file",
+      "when_to_use": "For format-aware fuzzing",
+      "examples": ["cargo +nightly fuzz run -- -dict=dict.txt"]
+    },
+    {
+      "name": "max_len",
+      "description": "Limit input length",
+      "syntax": "-max_len=N",
+      "when_to_use": "For bounded inputs",
+      "examples": ["cargo +nightly fuzz run -- -max_len=1024"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "SUMMARY: AddressSanitizer",
+      "meaning": "Memory bug found",
+      "common_causes": ["Buffer overflow", "Use after free"],
+      "fixes": ["Fix memory bug"]
+    },
+    {
+      "pattern": "panic",
+      "meaning": "Panic triggered",
+      "common_causes": ["Unwrap on None", "Index out of bounds"],
+      "fixes": ["Handle error case"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["crash_freedom"],
+    "cli_command": "dashprove verify --backend libfuzzer"
+  },
+
+  "performance": {
+    "typical_runtime": "continuous",
+    "scalability": "Very fast",
+    "memory_usage": "Low per execution"
+  },
+
+  "comparisons": {
+    "similar_tools": ["afl", "honggfuzz", "bolero"],
+    "advantages": [
+      "Fast (in-process)",
+      "LLVM integration",
+      "cargo-fuzz"
+    ],
+    "disadvantages": [
+      "Single process",
+      "Requires recompilation"
+    ]
+  },
+
+  "metadata": {
+    "version": "via LLVM",
+    "last_updated": "2025-12-22",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0"
+  }
+}

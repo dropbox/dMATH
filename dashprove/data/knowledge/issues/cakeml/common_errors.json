@@ -1,0 +1,168 @@
+{
+  "tool": "cakeml",
+  "version": "2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "Type mismatch|expected.*but got",
+      "message": "Type mismatch in CakeML expression",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "val x : int = 42;",
+          "when": "Type inference couldn't determine type"
+        },
+        {
+          "approach": "Use explicit conversion",
+          "code": "Int.toString n  (* int -> string *)",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Check function signature",
+          "code": "fun f (x : int) : bool = x > 0;",
+          "when": "Function argument types unclear"
+        }
+      ]
+    },
+    {
+      "id": "unbound_variable",
+      "pattern": "Unbound variable|not found in.*environment",
+      "message": "Variable not in scope",
+      "cause": "Reference to undefined variable or function",
+      "solutions": [
+        {
+          "approach": "Define before use",
+          "code": "val x = 1; val y = x + 1;  (* x defined before use *)",
+          "when": "Variable used before definition"
+        },
+        {
+          "approach": "Use let-in for local scope",
+          "code": "let val x = 1 in x + x end",
+          "when": "Variable should be local"
+        },
+        {
+          "approach": "Check module qualification",
+          "code": "List.map f xs  (* Qualify with module name *)",
+          "when": "Function is in another module"
+        }
+      ]
+    },
+    {
+      "id": "pattern_match_incomplete",
+      "pattern": "Warning: pattern match.*incomplete|non-exhaustive",
+      "message": "Non-exhaustive pattern match",
+      "cause": "Case expression doesn't cover all possible values",
+      "solutions": [
+        {
+          "approach": "Add missing cases",
+          "code": "case x of SOME y => y | NONE => default",
+          "when": "Missing constructor case"
+        },
+        {
+          "approach": "Add wildcard pattern",
+          "code": "case x of 0 => \"zero\" | _ => \"other\"",
+          "when": "Want catch-all case"
+        },
+        {
+          "approach": "Use option combinators",
+          "code": "Option.getOpt (opt, default)",
+          "when": "Handling option types"
+        }
+      ]
+    },
+    {
+      "id": "hol_proof_failed",
+      "pattern": "HOL4 proof failed|Could not prove",
+      "message": "HOL4 verification proof failed",
+      "cause": "Compiler correctness proof couldn't be completed",
+      "solutions": [
+        {
+          "approach": "Simplify expression",
+          "code": "(* Break complex expression into smaller parts *)",
+          "when": "Expression too complex for prover"
+        },
+        {
+          "approach": "Add intermediate lemmas",
+          "code": "(* Prove helper lemmas in HOL4 first *)",
+          "when": "Proof needs supporting lemmas"
+        },
+        {
+          "approach": "Check termination",
+          "code": "(* Ensure recursive functions terminate *)",
+          "when": "Function may not terminate"
+        }
+      ]
+    },
+    {
+      "id": "bootstrap_build_error",
+      "pattern": "Bootstrap.*failed|cake.*not found",
+      "message": "CakeML bootstrap build error",
+      "cause": "Building CakeML compiler from HOL4 sources failed",
+      "solutions": [
+        {
+          "approach": "Use pre-built binary",
+          "code": "wget https://cakeml.org/cake-x64-64.tar.gz && tar xf cake-x64-64.tar.gz",
+          "when": "Don't need to modify compiler"
+        },
+        {
+          "approach": "Build HOL4 first",
+          "code": "cd HOL && poly < tools/smart-configure.sml && bin/build",
+          "when": "HOL4 not built or outdated"
+        },
+        {
+          "approach": "Check PolyML version",
+          "code": "poly --version  # Need PolyML 5.8+",
+          "when": "PolyML version incompatible"
+        }
+      ]
+    },
+    {
+      "id": "ffi_error",
+      "pattern": "FFI error|foreign function.*failed",
+      "message": "Foreign function interface error",
+      "cause": "Call to external C function failed",
+      "solutions": [
+        {
+          "approach": "Check FFI signature",
+          "code": "(* CakeML FFI expects specific byte array format *)",
+          "when": "Argument format incorrect"
+        },
+        {
+          "approach": "Link C code",
+          "code": "gcc -c ffi_impl.c && ./cake --sexp=true < prog.cml | ./basis_ffi",
+          "when": "C implementation not linked"
+        },
+        {
+          "approach": "Use basis library",
+          "code": "TextIO.print \"Hello\";  (* Use standard FFI *)",
+          "when": "Standard I/O suffices"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit",
+      "pattern": "Out of memory|heap.*exhausted",
+      "message": "Memory limit exceeded",
+      "cause": "Program exceeded available heap space",
+      "solutions": [
+        {
+          "approach": "Increase heap size",
+          "code": "./cake --heap-size=2G < prog.cml",
+          "when": "Default heap too small"
+        },
+        {
+          "approach": "Optimize data structures",
+          "code": "(* Use more compact representations *)",
+          "when": "Program allocates too much"
+        },
+        {
+          "approach": "Add tail recursion",
+          "code": "fun sum acc [] = acc | sum acc (x::xs) = sum (acc+x) xs",
+          "when": "Stack overflow from recursion"
+        }
+      ]
+    }
+  ]
+}

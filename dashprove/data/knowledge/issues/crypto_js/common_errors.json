@@ -1,0 +1,119 @@
+{
+  "tool": "crypto_js",
+  "category": "crypto",
+  "common_errors": [
+    {
+      "pattern": "Malformed UTF-8 data|decoding error",
+      "meaning": "String/binary encoding mismatch",
+      "causes": [
+        "Encrypting string, decrypting as bytes",
+        "Missing encoding parameter",
+        "Binary data treated as UTF-8"
+      ],
+      "solutions": [
+        "Use CryptoJS.enc.Utf8 for strings",
+        "Use CryptoJS.enc.Base64 for binary",
+        "Encrypt: CryptoJS.AES.encrypt(msg, key).toString()",
+        "Decrypt: CryptoJS.AES.decrypt(ciphertext, key).toString(CryptoJS.enc.Utf8)"
+      ]
+    },
+    {
+      "pattern": "Error: key must be|invalid key",
+      "meaning": "Key format/type invalid",
+      "causes": [
+        "Passing string where WordArray expected",
+        "Key wrong size for algorithm",
+        "Using password directly as key"
+      ],
+      "solutions": [
+        "For password: CryptoJS.AES.encrypt(msg, password) derives key internally",
+        "For raw key: CryptoJS.lib.WordArray.create(keyBuffer)",
+        "Parse hex key: CryptoJS.enc.Hex.parse(hexKey)"
+      ]
+    },
+    {
+      "pattern": "Empty ciphertext|decryption returns empty",
+      "meaning": "Decryption produced empty result",
+      "causes": [
+        "Wrong key",
+        "Padding error silently fails",
+        "Wrong mode (CBC vs ECB)"
+      ],
+      "solutions": [
+        "Verify exact same key for encrypt/decrypt",
+        "Check mode matches: { mode: CryptoJS.mode.CBC }",
+        "Check padding matches: { padding: CryptoJS.pad.Pkcs7 }"
+      ]
+    },
+    {
+      "pattern": "Invalid IV length|iv must be",
+      "meaning": "Initialization vector wrong size",
+      "causes": [
+        "IV not 16 bytes for AES",
+        "IV encoding mismatch",
+        "Missing IV for CBC mode"
+      ],
+      "solutions": [
+        "AES uses 16-byte IV: CryptoJS.lib.WordArray.random(16)",
+        "Parse from hex: CryptoJS.enc.Hex.parse(ivHex)",
+        "Pass IV in options: { iv: iv }"
+      ]
+    },
+    {
+      "pattern": "Cannot read property.*of undefined|CryptoJS is not defined",
+      "meaning": "CryptoJS not loaded",
+      "causes": [
+        "Script not included",
+        "Module import issue",
+        "Loading order problem"
+      ],
+      "solutions": [
+        "npm install crypto-js; const CryptoJS = require('crypto-js')",
+        "Browser: <script src='crypto-js/crypto-js.js'></script>",
+        "ESM: import CryptoJS from 'crypto-js'"
+      ]
+    },
+    {
+      "pattern": "slow|performance|blocking",
+      "meaning": "PBKDF2/key derivation blocking",
+      "causes": [
+        "High iteration count",
+        "Synchronous operation on main thread",
+        "No Web Worker usage"
+      ],
+      "solutions": [
+        "CryptoJS is synchronous by design",
+        "Move to Web Worker for heavy operations",
+        "Consider native Web Crypto (async) for performance"
+      ]
+    },
+    {
+      "pattern": "OpenSSL format|key derivation|EVP_BytesToKey",
+      "meaning": "OpenSSL-compatible format issues",
+      "causes": [
+        "CryptoJS uses OpenSSL-compatible format by default",
+        "Interop with other libraries",
+        "Key derivation differences"
+      ],
+      "solutions": [
+        "Default format includes 'Salted__' prefix",
+        "For raw output: .ciphertext.toString(CryptoJS.enc.Base64)",
+        "Disable OpenSSL format: format: CryptoJS.format.Hex"
+      ]
+    },
+    {
+      "pattern": "Unknown word array type|invalid WordArray",
+      "meaning": "Internal data structure error",
+      "causes": [
+        "Passing wrong type to CryptoJS function",
+        "Corrupted WordArray",
+        "Version mismatch"
+      ],
+      "solutions": [
+        "Create WordArray properly: CryptoJS.lib.WordArray.create()",
+        "Parse strings: CryptoJS.enc.*.parse()",
+        "Check for undefined/null values"
+      ]
+    }
+  ]
+}

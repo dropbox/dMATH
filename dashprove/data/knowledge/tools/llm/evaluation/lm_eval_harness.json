@@ -1,0 +1,127 @@
+{
+  "id": "lm_eval_harness",
+  "name": "LM Evaluation Harness",
+  "category": "llm_evaluation",
+  "subcategory": "benchmarking",
+
+  "description": "Unified framework for evaluating language models on standard benchmarks",
+  "long_description": "EleutherAI's Language Model Evaluation Harness provides a unified framework for evaluating generative language models across 200+ tasks including MMLU, HellaSwag, ARC, TruthfulQA, Winogrande, and GSM8K. It is the standard for reproducible LLM evaluation and leaderboard comparisons.",
+
+  "capabilities": [
+    "benchmark_evaluation",
+    "task_suite",
+    "model_comparison",
+    "few_shot_prompting",
+    "chain_of_thought",
+    "batch_inference",
+    "caching",
+    "custom_tasks"
+  ],
+  "property_types": ["accuracy", "perplexity", "exact_match", "f1"],
+  "input_languages": ["python", "yaml"],
+  "output_formats": ["json", "csv", "wandb"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install lm-eval"},
+      {"type": "pip_extras", "command": "pip install lm-eval[vllm,anthropic,openai]"},
+      {"type": "source", "command": "pip install git+https://github.com/EleutherAI/lm-evaluation-harness"}
+    ],
+    "dependencies": ["torch", "transformers", "datasets"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/EleutherAI/lm-evaluation-harness",
+    "tutorial": "https://github.com/EleutherAI/lm-evaluation-harness#basic-usage",
+    "api_reference": "https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/interface.md",
+    "examples": "https://github.com/EleutherAI/lm-evaluation-harness/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "evaluate",
+      "description": "Run standard benchmark evaluation",
+      "syntax": "lm_eval --model hf --model_args pretrained=<model> --tasks <task>",
+      "when_to_use": "To evaluate a model on standard benchmarks",
+      "examples": ["lm_eval --model hf --model_args pretrained=meta-llama/Llama-2-7b-hf --tasks hellaswag,mmlu --batch_size 4"]
+    },
+    {
+      "name": "few_shot",
+      "description": "Configure few-shot prompting",
+      "syntax": "--num_fewshot N",
+      "when_to_use": "To test few-shot learning capabilities",
+      "examples": ["lm_eval --model hf --model_args pretrained=gpt2 --tasks arc_easy --num_fewshot 5"]
+    },
+    {
+      "name": "custom_task",
+      "description": "Create custom evaluation task",
+      "syntax": "include: _default_template_yaml\ntask: my_task\ndataset_path: my/dataset",
+      "when_to_use": "To evaluate on custom benchmarks",
+      "examples": ["task: custom_qa\ndataset_path: squad\nmetric_list:\n  - metric: exact_match"]
+    },
+    {
+      "name": "vllm_backend",
+      "description": "Use vLLM for fast inference",
+      "syntax": "--model vllm --model_args pretrained=<model>,tensor_parallel_size=N",
+      "when_to_use": "For faster evaluation with vLLM backend",
+      "examples": ["lm_eval --model vllm --model_args pretrained=meta-llama/Llama-2-70b-hf,tensor_parallel_size=8 --tasks mmlu"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CUDA out of memory",
+      "meaning": "Model too large for GPU memory",
+      "common_causes": ["Large model size", "High batch size"],
+      "fixes": ["Reduce batch_size", "Use quantization", "Use vLLM with tensor parallelism"]
+    },
+    {
+      "pattern": "Task .* not found",
+      "meaning": "Invalid task name",
+      "common_causes": ["Typo in task name", "Task not installed"],
+      "fixes": ["Check task list with --tasks list", "Install task dependencies"]
+    },
+    {
+      "pattern": "tokenizer.*not supported",
+      "meaning": "Model tokenizer incompatibility",
+      "common_causes": ["Old transformers version", "Custom tokenizer"],
+      "fixes": ["Update transformers", "Specify tokenizer explicitly"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["accuracy", "benchmark"],
+    "cli_command": "dashprove verify --backend lm-eval"
+  },
+
+  "performance": {
+    "typical_runtime": "Minutes to hours depending on model/tasks",
+    "scalability": "Excellent with vLLM/tensor parallelism",
+    "memory_usage": "Model-dependent"
+  },
+
+  "comparisons": {
+    "similar_tools": ["openai-evals", "helm", "bigbench"],
+    "advantages": [
+      "Standard for LLM leaderboards",
+      "200+ built-in tasks",
+      "Reproducible evaluations",
+      "Active community",
+      "Multiple inference backends"
+    ],
+    "disadvantages": [
+      "Complex configuration for custom tasks",
+      "Large dependency footprint",
+      "Some tasks require special setup"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.4.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "EleutherAI",
+    "license": "MIT"
+  }
+}

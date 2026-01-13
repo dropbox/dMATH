@@ -1,0 +1,191 @@
+{
+  "tool": "vercel",
+  "version": "33.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not logged in|authentication.*failed|token.*invalid|VERCEL_TOKEN",
+      "message": "Authentication error",
+      "cause": "Not logged in or token expired",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "vercel login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Token auth",
+          "code": "export VERCEL_TOKEN=your-token\nvercel --token $VERCEL_TOKEN deploy",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Re-auth",
+          "code": "vercel logout\nvercel login",
+          "when": "Token expired"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Build failed|Command.*failed|exit code 1|npm ERR!",
+      "message": "Build failed",
+      "cause": "Build command or dependencies error",
+      "solutions": [
+        {
+          "approach": "Check build command",
+          "code": "# In vercel.json:\n{\n  \"buildCommand\": \"npm run build\",\n  \"outputDirectory\": \"dist\"\n}",
+          "when": "Wrong build config"
+        },
+        {
+          "approach": "Local build",
+          "code": "npm run build\n# Fix errors locally first",
+          "when": "Test locally"
+        },
+        {
+          "approach": "Check Node version",
+          "code": "# In vercel.json or package.json engines\n{\n  \"engines\": {\n    \"node\": \"18.x\"\n  }\n}",
+          "when": "Node version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "function_timeout",
+      "pattern": "FUNCTION_INVOCATION_TIMEOUT|504.*timeout|execution.*exceeded",
+      "message": "Serverless function timeout",
+      "cause": "Function execution exceeded time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "// In vercel.json:\n{\n  \"functions\": {\n    \"api/*.js\": {\n      \"maxDuration\": 60\n    }\n  }\n}",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Optimize function",
+          "code": "// Add connection pooling, caching, etc.",
+          "when": "Function too slow"
+        },
+        {
+          "approach": "Background job",
+          "code": "// Use Vercel Cron or external queue for long tasks",
+          "when": "Long processing"
+        }
+      ]
+    },
+    {
+      "id": "function_error",
+      "pattern": "FUNCTION_INVOCATION_FAILED|500.*Internal|serverless.*error",
+      "message": "Serverless function error",
+      "cause": "Runtime error in function code",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "vercel logs your-deployment-url\nvercel logs --follow",
+          "when": "See error"
+        },
+        {
+          "approach": "Local test",
+          "code": "vercel dev\ncurl http://localhost:3000/api/endpoint",
+          "when": "Test locally"
+        },
+        {
+          "approach": "Add error handling",
+          "code": "export default async function handler(req, res) {\n  try {\n    // Your code\n  } catch (error) {\n    console.error(error);\n    res.status(500).json({ error: 'Internal error' });\n  }\n}",
+          "when": "Better errors"
+        }
+      ]
+    },
+    {
+      "id": "env_error",
+      "pattern": "environment.*undefined|Missing.*variable|process.env.*undefined",
+      "message": "Missing environment variable",
+      "cause": "Env var not configured for environment",
+      "solutions": [
+        {
+          "approach": "Add via CLI",
+          "code": "vercel env add API_KEY\n# Select environments: Production, Preview, Development",
+          "when": "Add new variable"
+        },
+        {
+          "approach": "Pull env",
+          "code": "vercel env pull .env.local",
+          "when": "Sync locally"
+        },
+        {
+          "approach": "Check dashboard",
+          "code": "# Project Settings > Environment Variables in Vercel dashboard",
+          "when": "View all vars"
+        }
+      ]
+    },
+    {
+      "id": "routing_error",
+      "pattern": "404.*not found|route.*not matched|rewrites.*failed",
+      "message": "Routing/rewrite error",
+      "cause": "Routes not configured correctly",
+      "solutions": [
+        {
+          "approach": "SPA rewrite",
+          "code": "// vercel.json for SPA:\n{\n  \"rewrites\": [\n    { \"source\": \"/(.*)\", \"destination\": \"/index.html\" }\n  ]\n}",
+          "when": "Client-side routing"
+        },
+        {
+          "approach": "API routes",
+          "code": "// Next.js: pages/api/endpoint.js or app/api/endpoint/route.js\n// Vercel: api/endpoint.js",
+          "when": "API 404"
+        },
+        {
+          "approach": "Check output",
+          "code": "vercel build\nls .vercel/output/functions",
+          "when": "Verify build output"
+        }
+      ]
+    },
+    {
+      "id": "domain_error",
+      "pattern": "domain.*failed|DNS.*error|certificate.*error|not verified",
+      "message": "Domain/SSL error",
+      "cause": "Domain not configured correctly",
+      "solutions": [
+        {
+          "approach": "Add domain",
+          "code": "vercel domains add example.com",
+          "when": "Add custom domain"
+        },
+        {
+          "approach": "Verify DNS",
+          "code": "vercel domains inspect example.com\n# Check DNS records are correct",
+          "when": "DNS not propagated"
+        },
+        {
+          "approach": "Check certificate",
+          "code": "vercel certs ls\nvercel certs issue example.com",
+          "when": "SSL issue"
+        }
+      ]
+    },
+    {
+      "id": "edge_error",
+      "pattern": "Edge.*error|middleware.*failed|EDGE_FUNCTION",
+      "message": "Edge function/middleware error",
+      "cause": "Edge runtime limitation or error",
+      "solutions": [
+        {
+          "approach": "Check runtime",
+          "code": "// Edge doesn't support all Node.js APIs\nexport const config = {\n  runtime: 'edge',  // or 'nodejs'\n};",
+          "when": "API not supported"
+        },
+        {
+          "approach": "Use Node runtime",
+          "code": "// Switch to Node.js runtime if needed\nexport const config = {\n  runtime: 'nodejs',\n};",
+          "when": "Need Node APIs"
+        },
+        {
+          "approach": "Check middleware",
+          "code": "// middleware.js must export default function\nexport default function middleware(request) {\n  return NextResponse.next();\n}",
+          "when": "Middleware error"
+        }
+      ]
+    }
+  ]
+}

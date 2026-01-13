@@ -1,0 +1,184 @@
+{
+  "tool": "cadence",
+  "category": "workflow_engine",
+  "common_errors": [
+    {
+      "error": "SERVICE_UNAVAILABLE",
+      "pattern": "service.*unavailable|connection refused|context deadline exceeded",
+      "severity": "critical",
+      "causes": [
+        "Cadence server not running",
+        "Wrong host/port configuration",
+        "Cassandra/MySQL backend unavailable",
+        "gRPC connection failure"
+      ],
+      "solutions": [
+        "Start Cadence: docker-compose up or cadence-server start",
+        "Verify connection: cadence --address host:7833 cluster health",
+        "Check backend health: nodetool status (Cassandra)",
+        "Review server logs: docker logs cadence"
+      ]
+    },
+    {
+      "error": "DOMAIN_NOT_FOUND",
+      "pattern": "Domain.*does not exist|DomainNotExistsError|domain not found",
+      "severity": "high",
+      "causes": [
+        "Domain not registered",
+        "Domain name typo",
+        "Domain deleted",
+        "Using wrong cluster"
+      ],
+      "solutions": [
+        "Register domain: cadence --domain mydomain domain register",
+        "List domains: cadence domain list",
+        "Check domain: cadence --domain mydomain domain describe",
+        "Verify cluster endpoint"
+      ]
+    },
+    {
+      "error": "WORKFLOW_ALREADY_STARTED",
+      "pattern": "Workflow.*already running|WorkflowExecutionAlreadyStartedError",
+      "severity": "medium",
+      "causes": [
+        "Duplicate workflow ID",
+        "Previous workflow still running",
+        "ID reuse policy configuration"
+      ],
+      "solutions": [
+        "Use unique workflow IDs",
+        "Set ID reuse policy: WorkflowIdReusePolicyAllowDuplicateFailedOnly",
+        "Terminate existing: cadence --domain d workflow terminate -w wfid",
+        "Query before starting: cadence workflow describe -w wfid"
+      ]
+    },
+    {
+      "error": "ACTIVITY_TIMEOUT",
+      "pattern": "activity.*timeout|ActivityTaskTimedOut|ScheduleToCloseTimeout",
+      "severity": "high",
+      "causes": [
+        "Activity execution exceeded timeout",
+        "No workers for activity task list",
+        "Worker crashed",
+        "Network issues"
+      ],
+      "solutions": [
+        "Increase timeout: WithScheduleToCloseTimeout(time.Hour)",
+        "Check workers: cadence tasklist describe --tasklist mylist",
+        "Implement heartbeating: RecordActivityHeartbeat()",
+        "Set ScheduleToStart timeout to detect missing workers"
+      ]
+    },
+    {
+      "error": "WORKFLOW_TASK_TIMEOUT",
+      "pattern": "DecisionTaskTimedOut|decision task.*timeout|workflow task.*timeout",
+      "severity": "critical",
+      "causes": [
+        "Workflow taking too long to respond",
+        "Non-deterministic code",
+        "No workers for workflow task list",
+        "Deadlock in workflow code"
+      ],
+      "solutions": [
+        "Check for non-determinism in workflow code",
+        "Verify workers polling: cadence tasklist describe -tl mylist",
+        "Break up long-running logic into activities",
+        "Review workflow code for blocking operations"
+      ]
+    },
+    {
+      "error": "NON_DETERMINISM_ERROR",
+      "pattern": "nondeterminism|non-deterministic|history mismatch|InternalServiceError.*nondeterminism",
+      "severity": "critical",
+      "causes": [
+        "Workflow code changed incompatibly",
+        "Using non-deterministic functions",
+        "External API calls in workflow",
+        "Different code versions across workers"
+      ],
+      "solutions": [
+        "Use GetVersion() for code changes",
+        "Move non-deterministic operations to activities",
+        "Use SideEffect for local non-determinism",
+        "Ensure all workers have same code version"
+      ]
+    },
+    {
+      "error": "TASK_LIST_NO_WORKERS",
+      "pattern": "no pollers.*task list|task list.*no workers|PollFor.*no tasks",
+      "severity": "high",
+      "causes": [
+        "Workers not started",
+        "Wrong task list name",
+        "Workers crashed",
+        "Task list isolation issues"
+      ],
+      "solutions": [
+        "Start workers: worker.Start()",
+        "Verify task list matches: WorkflowOptions.TaskList",
+        "Check task list: cadence tasklist describe --tasklist mylist --type workflow",
+        "Review worker registration"
+      ]
+    },
+    {
+      "error": "HISTORY_SIZE_EXCEEDED",
+      "pattern": "history size.*limit|WorkflowExecutionTerminatedCause.*Size",
+      "severity": "high",
+      "causes": [
+        "Too many events in workflow history",
+        "Long-running workflow without continue-as-new",
+        "Many activities or signals"
+      ],
+      "solutions": [
+        "Use ContinueAsNew for long-running workflows",
+        "Batch operations to reduce events",
+        "Split into child workflows",
+        "Review workflow design for event efficiency"
+      ]
+    },
+    {
+      "error": "QUERY_FAILED",
+      "pattern": "QueryFailed|query.*rejected|workflow query error",
+      "severity": "medium",
+      "causes": [
+        "Query handler not registered",
+        "Workflow not running",
+        "Query timeout",
+        "Query handler threw exception"
+      ],
+      "solutions": [
+        "Register query handler: SetQueryHandler(queryType, handler)",
+        "Check workflow state: cadence workflow describe -w wfid",
+        "Increase query timeout",
+        "Review query handler for errors"
+      ]
+    },
+    {
+      "error": "SIGNAL_DELIVERY_FAILED",
+      "pattern": "Signal.*failed|signal.*not delivered|WorkflowNotExistsError.*signal",
+      "severity": "medium",
+      "causes": [
+        "Workflow not running",
+        "Signal handler not registered",
+        "Wrong workflow ID",
+        "Workflow completed before signal"
+      ],
+      "solutions": [
+        "Verify workflow running: cadence workflow describe -w wfid",
+        "Register signal handler: SetSignalHandler(signalName, handler)",
+        "Use SignalWithStart to atomically start and signal",
+        "Check workflow ID and run ID"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use GetVersion() for all workflow code changes",
+    "Keep workflow code deterministic",
+    "Use ContinueAsNew for long-running workflows",
+    "Implement proper error handling and compensation",
+    "Set appropriate timeouts",
+    "Use heartbeating for long activities",
+    "Test with replay for non-determinism detection"
+  ],
+  "related_tools": ["temporal", "airflow", "prefect", "aws_step_functions"]
+}

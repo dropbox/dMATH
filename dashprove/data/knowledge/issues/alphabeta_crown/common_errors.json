@@ -1,0 +1,210 @@
+{
+  "tool": "alphabeta_crown",
+  "version": "2023.1",
+  "last_updated": "2025-12-22",
+  "description": "Neural network verifier using bound propagation and branch-and-bound (VNN-COMP winner)",
+  "errors": [
+    {
+      "id": "installation_error",
+      "pattern": "auto_LiRPA.*not found|import.*error|cuda.*not available",
+      "message": "Installation or import error",
+      "cause": "Missing dependencies or CUDA issues",
+      "solutions": [
+        {
+          "approach": "Install with conda",
+          "code": "conda create -n alpha-beta-crown python=3.9\nconda activate alpha-beta-crown\nconda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia\npip install auto_LiRPA",
+          "when": "Fresh installation"
+        },
+        {
+          "approach": "Install from source",
+          "code": "git clone https://github.com/Verified-Intelligence/alpha-beta-CROWN.git\ncd alpha-beta-CROWN/complete_verifier\npip install -r requirements.txt",
+          "when": "Need latest version"
+        },
+        {
+          "approach": "CPU only mode",
+          "code": "# Set device to CPU in config:\ndevice: cpu",
+          "when": "No GPU available"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "config.*error|yaml.*invalid|missing.*parameter",
+      "message": "Configuration file error",
+      "cause": "Invalid YAML config or missing parameters",
+      "solutions": [
+        {
+          "approach": "Use example config",
+          "code": "# Start from example:\ncp configs/cifar_cnn_a_adv.yaml my_config.yaml\n# Then modify",
+          "when": "Create new config"
+        },
+        {
+          "approach": "Check required fields",
+          "code": "model:\n  name: your_model\n  path: path/to/model.onnx\nspecification:\n  epsilon: 0.03\n  norm: inf",
+          "when": "Missing fields"
+        },
+        {
+          "approach": "Check YAML syntax",
+          "code": "python -c \"import yaml; yaml.safe_load(open('config.yaml'))\"",
+          "when": "YAML syntax error"
+        }
+      ]
+    },
+    {
+      "id": "onnx_error",
+      "pattern": "ONNX.*error|unsupported.*op|cannot load model",
+      "message": "ONNX model loading error",
+      "cause": "ONNX model format or operator issue",
+      "solutions": [
+        {
+          "approach": "Check ONNX version",
+          "code": "import onnx\nmodel = onnx.load('model.onnx')\nprint(model.opset_import)",
+          "when": "Version compatibility"
+        },
+        {
+          "approach": "Simplify ONNX",
+          "code": "# Use onnx-simplifier\npip install onnx-simplifier\npython -m onnxsim model.onnx model_simplified.onnx",
+          "when": "Complex operations"
+        },
+        {
+          "approach": "Export with correct opset",
+          "code": "torch.onnx.export(model, x, 'model.onnx', opset_version=12)",
+          "when": "Re-export model"
+        }
+      ]
+    },
+    {
+      "id": "specification_error",
+      "pattern": "specification.*error|vnnlib.*invalid|property.*parse",
+      "message": "Specification/property error",
+      "cause": "Invalid VNNLIB specification or property",
+      "solutions": [
+        {
+          "approach": "Check VNNLIB format",
+          "code": "; VNNLIB format example:\n(declare-const X_0 Real)\n(declare-const Y_0 Real)\n(assert (<= X_0 1.0))\n(assert (>= X_0 0.0))\n(assert (>= Y_0 0.0))  ; Output >= 0",
+          "when": "VNNLIB syntax"
+        },
+        {
+          "approach": "Use built-in specification",
+          "code": "specification:\n  type: Lp\n  epsilon: 0.03\n  norm: inf\n  # Or use VNNLIB:\n  vnnlib: property.vnnlib",
+          "when": "Standard perturbation"
+        },
+        {
+          "approach": "Generate VNNLIB",
+          "code": "# Use vnnlib generator script from alpha-beta-CROWN repo",
+          "when": "Create custom property"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|time limit|exceeded time",
+      "message": "Verification timeout",
+      "cause": "Verification taking too long",
+      "solutions": [
+        {
+          "approach": "Adjust timeout",
+          "code": "solver:\n  timeout: 300  # seconds\n  batch_size: 64  # increase for GPU",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Use faster method",
+          "code": "solver:\n  alpha-crown:\n    enable: true\n  beta-crown:\n    enable: false  # Disable for speed",
+          "when": "Speed over precision"
+        },
+        {
+          "approach": "Reduce branching",
+          "code": "bab:\n  max_domains: 1000  # Reduce from default\n  branching:\n    candidates: 3  # Reduce candidates",
+          "when": "Limit search space"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "CUDA out of memory|MemoryError|OOM",
+      "message": "Out of memory error",
+      "cause": "Model or batch too large for GPU memory",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "solver:\n  batch_size: 16  # Reduce from 64\n  alpha-crown:\n    batch_size: 16",
+          "when": "GPU memory full"
+        },
+        {
+          "approach": "Use CPU offload",
+          "code": "solver:\n  device: cuda\n  bab:\n    cut:\n      cplex_cuts: true  # Offload to CPU",
+          "when": "Partial CPU usage"
+        },
+        {
+          "approach": "Use CPU only",
+          "code": "solver:\n  device: cpu\n  batch_size: 1",
+          "when": "No GPU memory"
+        }
+      ]
+    },
+    {
+      "id": "vnncomp_error",
+      "pattern": "vnncomp.*error|benchmark.*failed",
+      "message": "VNN-COMP benchmark error",
+      "cause": "Issue running VNN-COMP benchmarks",
+      "solutions": [
+        {
+          "approach": "Download benchmarks",
+          "code": "git clone https://github.com/stanleybak/vnncomp2023_benchmarks",
+          "when": "Get benchmarks"
+        },
+        {
+          "approach": "Run benchmark",
+          "code": "python complete_verifier/abcrown.py --config configs/vnncomp/benchmark.yaml",
+          "when": "Run specific benchmark"
+        },
+        {
+          "approach": "Check benchmark format",
+          "code": "# VNN-COMP format:\n# instances.csv: model_path, spec_path, timeout\n# Each line is one verification instance",
+          "when": "Custom benchmark"
+        }
+      ]
+    },
+    {
+      "id": "branching_error",
+      "pattern": "branching.*error|split.*failed|invalid.*domain",
+      "message": "Branch-and-bound error",
+      "cause": "Issue in BaB splitting",
+      "solutions": [
+        {
+          "approach": "Change branching heuristic",
+          "code": "bab:\n  branching:\n    method: kfsb  # or naive, fsb, kfsb, sb",
+          "when": "Branching not working"
+        },
+        {
+          "approach": "Adjust split parameters",
+          "code": "bab:\n  branching:\n    input_split:\n      enable: true\n      adv_check: 1",
+          "when": "Enable input splitting"
+        }
+      ]
+    },
+    {
+      "id": "result_interpretation",
+      "pattern": "safe|unsafe|unknown|timeout",
+      "message": "Understanding verification results",
+      "cause": "Interpreting output",
+      "solutions": [
+        {
+          "approach": "Safe result",
+          "code": "# safe: Property VERIFIED\n# Network provably satisfies specification",
+          "when": "Safe output"
+        },
+        {
+          "approach": "Unsafe result",
+          "code": "# unsafe: Counterexample FOUND\n# Network violates specification\n# Check adversarial_example in output",
+          "when": "Unsafe output"
+        },
+        {
+          "approach": "Unknown/timeout",
+          "code": "# unknown: Verification INCOMPLETE\n# Try: more time, different settings, simpler property",
+          "when": "Inconclusive"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "fstar",
+  "version": "2024.09.05",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "subtyping_failed",
+      "pattern": "Subtyping check failed",
+      "message": "Expected type X but got type Y",
+      "cause": "Value does not satisfy the refinement type predicate",
+      "solutions": [
+        {
+          "approach": "Add assertion to guide prover",
+          "code": "assert (predicate x);\nlet result : refined_type = x",
+          "when": "Prover needs explicit hint"
+        },
+        {
+          "approach": "Strengthen precondition",
+          "code": "val f : x:t{precondition x} -> ...",
+          "when": "Function needs stronger input requirement"
+        },
+        {
+          "approach": "Use reveal/unfold",
+          "code": "reveal opaque_definition;",
+          "when": "Definition is opaque to prover"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_prove_precondition",
+      "pattern": "Could not prove: |assertion failed",
+      "message": "Cannot prove precondition at call site",
+      "cause": "Called function requires condition not established",
+      "solutions": [
+        {
+          "approach": "Establish precondition before call",
+          "code": "let _ = lemma_establishing_precondition () in\ncalled_function arg",
+          "when": "Need to invoke a lemma first"
+        },
+        {
+          "approach": "Add calc proof",
+          "code": "calc (==) {\n  lhs;\n  == { /* reason */ }\n  rhs;\n}",
+          "when": "Need step-by-step equality proof"
+        },
+        {
+          "approach": "Propagate requirement to caller",
+          "code": "val my_fn : x:t{required_precondition x} -> ...",
+          "when": "Cannot establish locally"
+        }
+      ]
+    },
+    {
+      "id": "termination_not_proven",
+      "pattern": "Could not prove termination",
+      "message": "Cannot prove function terminates",
+      "cause": "Recursive function lacks valid termination metric",
+      "solutions": [
+        {
+          "approach": "Add decreases clause",
+          "code": "let rec f (x:nat) : Tot t (decreases x) = ...",
+          "when": "Have obvious decreasing argument"
+        },
+        {
+          "approach": "Use lex ordering",
+          "code": "(decreases %[a; b])  // Lexicographic",
+          "when": "Multiple arguments decrease"
+        },
+        {
+          "approach": "Use well-founded relation",
+          "code": "(decreases {:well-founded relation argument})",
+          "when": "Complex termination argument"
+        },
+        {
+          "approach": "Mark as non-terminating",
+          "code": "let rec f x : Dv t = ...  // Divergent effect",
+          "when": "Intentionally non-terminating"
+        }
+      ]
+    },
+    {
+      "id": "effect_mismatch",
+      "pattern": "Expected effect .* but got",
+      "message": "Effect system violation",
+      "cause": "Function effect doesn't match signature",
+      "solutions": [
+        {
+          "approach": "Change effect annotation",
+          "code": "val f : x:t -> ML t'  // Allow side effects",
+          "when": "Function actually has effects"
+        },
+        {
+          "approach": "Use Tot for pure",
+          "code": "val f : x:t -> Tot t'  // Pure function",
+          "when": "Function should be pure"
+        },
+        {
+          "approach": "Lift with effect",
+          "code": "let x = st_get () in  // In ST monad",
+          "when": "Need to work in effectful context"
+        }
+      ]
+    },
+    {
+      "id": "z3_timeout",
+      "pattern": "Query succeeded|failed with SMT timeout",
+      "message": "Z3 SMT solver timed out",
+      "cause": "Proof obligation too complex for automatic solving",
+      "solutions": [
+        {
+          "approach": "Increase rlimit",
+          "code": "#push-options \"--z3rlimit 1000\"",
+          "when": "Proof needs more time"
+        },
+        {
+          "approach": "Add intermediate lemmas",
+          "code": "private let helper_lemma () : Lemma (...) = ...",
+          "when": "Break proof into steps"
+        },
+        {
+          "approach": "Use fuel",
+          "code": "#push-options \"--fuel 2 --ifuel 1\"",
+          "when": "Need more unfolding"
+        },
+        {
+          "approach": "Add SMT patterns",
+          "code": "[SMTPat (term)]  // Guide quantifier instantiation",
+          "when": "Prover missing instantiations"
+        }
+      ]
+    },
+    {
+      "id": "universe_inconsistency",
+      "pattern": "Universe inconsistency",
+      "message": "Type universe level mismatch",
+      "cause": "Type-in-type violation in universe hierarchy",
+      "solutions": [
+        {
+          "approach": "Add universe annotation",
+          "code": "val f (#a:Type u#a) : ...",
+          "when": "Need explicit universe level"
+        },
+        {
+          "approach": "Use universe polymorphism",
+          "code": "let id (#a:Type u#a) (x:a) : a = x",
+          "when": "Function should work at any level"
+        }
+      ]
+    },
+    {
+      "id": "pattern_not_exhaustive",
+      "pattern": "Pattern matching is not exhaustive",
+      "message": "Match expression missing cases",
+      "cause": "Pattern match doesn't cover all constructors",
+      "solutions": [
+        {
+          "approach": "Add missing cases",
+          "code": "match x with\n| Case1 -> ...\n| Case2 -> ...  // Add all cases",
+          "when": "Forgot a constructor"
+        },
+        {
+          "approach": "Use wildcard with refinement",
+          "code": "match x with\n| Known -> ...\n| _ -> impossible \"case ruled out by refinement\"",
+          "when": "Other cases impossible by type"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "Module .* not found",
+      "message": "Cannot find module dependency",
+      "cause": "Module not in include path or not compiled",
+      "solutions": [
+        {
+          "approach": "Add to include path",
+          "code": "fstar.exe --include path/to/modules file.fst",
+          "when": "Module exists but not found"
+        },
+        {
+          "approach": "Check module dependencies",
+          "code": "fstar.exe --dep full file.fst",
+          "when": "Need to see dependency graph"
+        },
+        {
+          "approach": "Compile dependencies first",
+          "code": "fstar.exe --cache_checked_modules dep.fst",
+          "when": "Dependency not yet compiled"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+Redirecting to [latest/][1]...
+
+[1]: latest/

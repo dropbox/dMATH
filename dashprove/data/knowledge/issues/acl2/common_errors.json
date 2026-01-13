@@ -1,0 +1,97 @@
+{
+  "tool": "acl2",
+  "version": "8.5",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "admission_failed",
+      "pattern": "ACL2 Error in (DEFUN|DEFTHM):.*not admitted",
+      "message": "Function or theorem not admitted",
+      "cause": "Guard/termination proof obligations unsatisfied",
+      "solutions": [
+        {
+          "approach": "Provide measure for recursion",
+          "code": "(defun fact (n)\n  (declare (xargs :measure (nfix n) :guard (natp n)))\n  (if (zp n) 1 (* n (fact (1- n)))))",
+          "when": "Recursive functions rejected"
+        },
+        {
+          "approach": "Enable :program mode for exploration",
+          "code": "(defun foo (x) (declare (xargs :mode :program)) ...)",
+          "when": "Prototype before proof"
+        }
+      ]
+    },
+    {
+      "id": "rewrite_loop",
+      "pattern": "ACL2 Error: Rewriting has looped|Run out of resources while rewriting",
+      "message": "Rewriter diverges",
+      "cause": "Rules rewrite back and forth without decreasing measure",
+      "solutions": [
+        {
+          "approach": "Add :rule-classes nil or restrict rewrite",
+          "code": "(defthm non-rewrite-version (implies (p x) (q x)) :rule-classes nil)",
+          "when": "Lemma should not rewrite"
+        },
+        {
+          "approach": "Use :rewrite limits",
+          "code": "(set-rewrite-stack-limit 1000)",
+          "when": "Temporary guard"
+        }
+      ]
+    },
+    {
+      "id": "stobj_guard",
+      "pattern": "single-threaded object violation|STOBJ not in scope",
+      "message": "Single-threaded object misused",
+      "cause": "STOBJ passed non-linearly or guard not proved",
+      "solutions": [
+        {
+          "approach": "Thread STOBJ through calls",
+          "code": "(mv stobj1 result) -> (foo stobj1) -> (bar stobj2)",
+          "when": "Maintaining linear usage"
+        },
+        {
+          "approach": "Add guard theorem",
+          "code": "(defthm foo-guard (implies (stobjp st) (stobjp (foo st))))",
+          "when": "Guard proof missing"
+        }
+      ]
+    },
+    {
+      "id": "type_reasoning_failed",
+      "pattern": "attempt to prove (NATP .* ) failed|not an INTEGERP",
+      "message": "Type-like reasoning fails",
+      "cause": "Missing type hypotheses or insufficient forward-chaining rules",
+      "solutions": [
+        {
+          "approach": "Add type hypothesis",
+          "code": "(defthm fact-nat (implies (natp n) (natp (fact n))))",
+          "when": "Theorem needs NATP assumption"
+        },
+        {
+          "approach": "Use type-prescription rules",
+          "code": "(defthm foo-type (integerp (foo x)) :rule-classes :type-prescription)",
+          "when": "Guide rewriter"
+        }
+      ]
+    },
+    {
+      "id": "hint_missing",
+      "pattern": "Goal not proved.*consider adding hints",
+      "message": "Proof search stuck",
+      "cause": "Automation cannot find induction or rewrite strategy",
+      "solutions": [
+        {
+          "approach": "Provide :use or :by hints",
+          "code": "(defthm lemma ... )\n(defthm main-thm (implies P Q) :hints ((\":use\" lemma)))",
+          "when": "Relevant lemma exists"
+        },
+        {
+          "approach": "Enable induction scheme",
+          "code": "(defthm main (implies P Q) :hints ((\":induct\" (foo x))))",
+          "when": "Need structural induction"
+        }
+      ]
+    }
+  ]
+}

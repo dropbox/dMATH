@@ -1,0 +1,166 @@
+{
+  "tool": "prusti",
+  "version": "latest",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "precondition_violated",
+      "pattern": "precondition might not hold",
+      "message": "Precondition might not hold",
+      "cause": "Calling function without establishing its requires clause",
+      "solutions": [
+        {
+          "approach": "Add assertion",
+          "code": "prusti_assert!(x > 0);\nlet y = func_requiring_positive(x);",
+          "when": "Verifier needs hint"
+        },
+        {
+          "approach": "Propagate precondition",
+          "code": "#[requires(x > 0)]\nfn caller(x: i32) { ... }",
+          "when": "Caller should require this"
+        },
+        {
+          "approach": "Add runtime check",
+          "code": "if x > 0 { call(x); }",
+          "when": "Condition unknown statically"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_violated",
+      "pattern": "postcondition might not hold",
+      "message": "Postcondition might not hold",
+      "cause": "Function doesn't establish its ensures clause",
+      "solutions": [
+        {
+          "approach": "Add body invariant",
+          "code": "body_invariant!(condition);",
+          "when": "Loop doesn't preserve enough info"
+        },
+        {
+          "approach": "Check all paths",
+          "code": "// Each return path must establish postcond",
+          "when": "Some branch doesn't satisfy ensures"
+        },
+        {
+          "approach": "Use prusti_assert",
+          "code": "prusti_assert!(postcond);  // Before return",
+          "when": "Help verifier see postcond holds"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_entry",
+      "pattern": "loop invariant might not hold on entry",
+      "message": "Loop invariant not established",
+      "cause": "Invariant false before loop starts",
+      "solutions": [
+        {
+          "approach": "Check initialization",
+          "code": "let mut i = 0;  // Ensure inv holds for i=0",
+          "when": "Initial value doesn't satisfy inv"
+        },
+        {
+          "approach": "Weaken invariant",
+          "code": "body_invariant!(i <= n);  // Not i < n",
+          "when": "Invariant too strong initially"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_preserved",
+      "pattern": "loop invariant might not be preserved",
+      "message": "Loop invariant not preserved",
+      "cause": "Loop body breaks invariant",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "body_invariant!(0 <= i && i <= n && partial_result);",
+          "when": "Missing key fact"
+        },
+        {
+          "approach": "Add intermediate assertion",
+          "code": "prusti_assert!(inv_holds_here);",
+          "when": "Verifier loses track"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "assertion might fail",
+      "message": "Assertion might fail",
+      "cause": "prusti_assert! condition may be false",
+      "solutions": [
+        {
+          "approach": "Check logic",
+          "code": "// Is the assertion actually true?",
+          "when": "Assertion may be wrong"
+        },
+        {
+          "approach": "Add more context",
+          "code": "prusti_assert!(premise);\nprusti_assert!(conclusion);",
+          "when": "Break into smaller steps"
+        }
+      ]
+    },
+    {
+      "id": "overflow",
+      "pattern": "overflow",
+      "message": "Possible integer overflow",
+      "cause": "Arithmetic may overflow",
+      "solutions": [
+        {
+          "approach": "Add bounds",
+          "code": "#[requires(a < i32::MAX - b)]",
+          "when": "Caller should ensure no overflow"
+        },
+        {
+          "approach": "Use checked arithmetic",
+          "code": "a.checked_add(b)",
+          "when": "Handle overflow at runtime"
+        }
+      ]
+    },
+    {
+      "id": "pledge_not_kept",
+      "pattern": "pledge might not be kept",
+      "message": "Pledge (old value) might not be preserved",
+      "cause": "Reference changed unexpectedly",
+      "solutions": [
+        {
+          "approach": "Check modifications",
+          "code": "// Ensure ref not modified through alias",
+          "when": "Aliasing causing issue"
+        },
+        {
+          "approach": "Use pledge correctly",
+          "code": "#[after_expiry(result.is_some() ==> x.value == old(x.value))]",
+          "when": "Need correct pledge syntax"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported",
+      "message": "Feature not supported by Prusti",
+      "cause": "Using Rust feature Prusti cannot verify",
+      "solutions": [
+        {
+          "approach": "Check documentation",
+          "code": "// See Prusti user guide for supported features",
+          "when": "May be workaround available"
+        },
+        {
+          "approach": "Use trusted function",
+          "code": "#[trusted]\nfn external_call() { ... }",
+          "when": "Must use unsupported feature"
+        },
+        {
+          "approach": "Refactor code",
+          "code": "// Rewrite using supported constructs",
+          "when": "Can avoid unsupported feature"
+        }
+      ]
+    }
+  ]
+}

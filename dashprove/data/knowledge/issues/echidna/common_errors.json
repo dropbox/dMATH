@@ -1,0 +1,153 @@
+{
+  "tool": "echidna",
+  "version": "2.2.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "property_failed",
+      "pattern": "echidna_.*: failed!",
+      "message": "Fuzzing found a property violation",
+      "cause": "Fuzzer discovered inputs that violate the property",
+      "solutions": [
+        {
+          "approach": "Analyze shrunk counterexample",
+          "code": "// Check the minimized call sequence in output",
+          "when": "Need to understand the attack vector"
+        },
+        {
+          "approach": "Reproduce with forge",
+          "code": "forge test --match-test testCounterexample",
+          "when": "Want to debug the failure"
+        },
+        {
+          "approach": "Fix the vulnerability",
+          "code": "// The property is correct - patch the contract",
+          "when": "Echidna found a real bug"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "Compilation failed|crytic-compile",
+      "message": "Contract compilation failed",
+      "cause": "Solidity code has errors or incompatible compiler version",
+      "solutions": [
+        {
+          "approach": "Fix Solidity errors",
+          "code": "// Run solc directly to see detailed errors",
+          "when": "Contract has syntax/type errors"
+        },
+        {
+          "approach": "Set compiler version",
+          "code": "echidna . --solc-version 0.8.19",
+          "when": "Need specific Solidity version"
+        },
+        {
+          "approach": "Install dependencies",
+          "code": "forge install && forge build",
+          "when": "Missing imported contracts"
+        }
+      ]
+    },
+    {
+      "id": "no_coverage",
+      "pattern": "coverage: 0%|No code coverage",
+      "message": "Fuzzer achieved no code coverage",
+      "cause": "Fuzzer cannot reach contract code",
+      "solutions": [
+        {
+          "approach": "Check deployment",
+          "code": "// Ensure contract is deployed in constructor or setUp",
+          "when": "Contract not being tested"
+        },
+        {
+          "approach": "Add setup function",
+          "code": "function setUp() public { target = new MyContract(); }",
+          "when": "Need initialization before fuzzing"
+        },
+        {
+          "approach": "Increase test limit",
+          "code": "echidna . --test-limit 100000",
+          "when": "Need more fuzzing iterations"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Test limit reached|time limit",
+      "message": "Fuzzing completed without finding bugs",
+      "cause": "Reached configured test limit",
+      "solutions": [
+        {
+          "approach": "Increase test limit",
+          "code": "echidna . --test-limit 1000000",
+          "when": "Want more thorough fuzzing"
+        },
+        {
+          "approach": "Use coverage guidance",
+          "code": "// Check coverage report to find untested paths",
+          "when": "Coverage is incomplete"
+        },
+        {
+          "approach": "Add corpus seeds",
+          "code": "echidna . --corpus-dir ./corpus",
+          "when": "Need targeted initial inputs"
+        }
+      ]
+    },
+    {
+      "id": "out_of_gas",
+      "pattern": "out of gas|gas exhausted",
+      "message": "Transaction ran out of gas",
+      "cause": "Function consumes more gas than limit allows",
+      "solutions": [
+        {
+          "approach": "Increase gas limit",
+          "code": "echidna . --gas-limit 10000000",
+          "when": "Function legitimately needs more gas"
+        },
+        {
+          "approach": "Check for infinite loops",
+          "code": "// Review function for unbounded iterations",
+          "when": "Contract may have DoS vulnerability"
+        }
+      ]
+    },
+    {
+      "id": "assertion_mode",
+      "pattern": "assertion mode|assertion failed",
+      "message": "Assertion in contract code failed",
+      "cause": "require/assert/revert triggered during fuzzing",
+      "solutions": [
+        {
+          "approach": "Use assertion mode",
+          "code": "echidna . --test-mode assertion",
+          "when": "Testing for assertion violations"
+        },
+        {
+          "approach": "Check assertion inputs",
+          "code": "// Analyze what inputs trigger the assertion",
+          "when": "Want to understand the failure"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "config error|yaml error",
+      "message": "Invalid echidna configuration",
+      "cause": "echidna.yaml has syntax or semantic errors",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "python -c \"import yaml; yaml.safe_load(open('echidna.yaml'))\"",
+          "when": "YAML syntax error"
+        },
+        {
+          "approach": "Check config options",
+          "code": "// Refer to echidna documentation for valid options",
+          "when": "Unknown configuration key"
+        }
+      ]
+    }
+  ]
+}

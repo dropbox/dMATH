@@ -1,0 +1,327 @@
+{
+  "tool_id": "leon",
+  "tool_name": "Leon",
+  "tool_version": "3.0",
+  "category": "scala_verification",
+  "error_patterns": [
+    {
+      "id": "leon_precondition_violation",
+      "pattern": "precondition violation|Precondition .* failed|require clause violated",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Leon found that a precondition may not be satisfied at a call site",
+      "common_causes": [
+        "Caller doesn't establish required precondition",
+        "Precondition incompatible with call context",
+        "Missing null/empty checks",
+        "Arithmetic constraints not satisfied"
+      ],
+      "solutions": [
+        "Add checks before calling the function",
+        "Strengthen caller's postcondition",
+        "Use pattern matching to handle edge cases",
+        "Add assertions to establish precondition"
+      ],
+      "examples": [
+        {
+          "error": "Precondition violation: require(n >= 0) for factorial(n)",
+          "context": "Calling factorial with potentially negative argument",
+          "fix": "if (n >= 0) factorial(n) else 1"
+        }
+      ],
+      "related_errors": ["leon_postcondition_violation"],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_postcondition_violation",
+      "pattern": "postcondition violation|Postcondition .* failed|ensuring clause violated",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Leon found that the implementation does not satisfy its postcondition",
+      "common_causes": [
+        "Implementation bug",
+        "Postcondition too strong",
+        "Missing case in recursion",
+        "Wrong return value"
+      ],
+      "solutions": [
+        "Fix the implementation",
+        "Weaken the postcondition",
+        "Add missing recursive cases",
+        "Check return expressions"
+      ],
+      "examples": [
+        {
+          "error": "Postcondition violation: ensuring(res => res >= 0)",
+          "context": "Function may return negative value",
+          "fix": "Add case handling or fix computation"
+        }
+      ],
+      "related_errors": ["leon_precondition_violation"],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_termination_failure",
+      "pattern": "termination check failed|non-terminating|Cannot prove termination",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Leon cannot prove that the function terminates on all inputs",
+      "common_causes": [
+        "Missing decreasing measure",
+        "Non-structural recursion",
+        "Mutual recursion complexity",
+        "Unbounded iteration"
+      ],
+      "solutions": [
+        "Add explicit measure with @induct annotation",
+        "Use structural recursion on ADTs",
+        "Provide decreasing tuple for mutual recursion",
+        "Replace loops with recursion"
+      ],
+      "examples": [
+        {
+          "error": "Cannot prove termination for collatz(n)",
+          "context": "Collatz conjecture - unknown termination",
+          "fix": "Add @ignore if termination is assumed"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_unknown_result",
+      "pattern": "unknown|timeout|Could not determine|Solver returned unknown",
+      "severity": "warning",
+      "category": "verification_result",
+      "description": "Leon could not prove or disprove the verification condition",
+      "common_causes": [
+        "Complex arithmetic",
+        "Insufficient induction",
+        "Solver timeout",
+        "Non-linear constraints"
+      ],
+      "solutions": [
+        "Add lemmas to guide the proof",
+        "Increase timeout with --timeout",
+        "Simplify specifications",
+        "Try different solver with --solvers"
+      ],
+      "examples": [
+        {
+          "error": "unknown: timeout (30000ms)",
+          "context": "Complex proof obligation",
+          "fix": "leon --timeout=60000 or add helper lemmas"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_parse_error",
+      "pattern": "parse error|syntax error|unexpected token|compilation failed",
+      "severity": "error",
+      "category": "input_error",
+      "description": "Leon failed to parse the Scala source file",
+      "common_causes": [
+        "Scala syntax errors",
+        "Unsupported Scala features",
+        "Wrong Scala version",
+        "Missing imports"
+      ],
+      "solutions": [
+        "Fix syntax errors",
+        "Use supported Scala subset",
+        "Check Leon's supported features",
+        "Add required imports"
+      ],
+      "examples": [
+        {
+          "error": "parse error: unexpected token 'for'",
+          "context": "Using for-comprehension",
+          "fix": "Replace with equivalent recursive function"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_unsupported_construct",
+      "pattern": "unsupported|not implemented|cannot handle|illegal in Leon",
+      "severity": "error",
+      "category": "limitation",
+      "description": "Leon encountered a Scala feature outside its supported subset",
+      "common_causes": [
+        "Mutable state",
+        "Exceptions",
+        "Null values",
+        "Advanced Scala features"
+      ],
+      "solutions": [
+        "Use immutable data structures",
+        "Replace exceptions with Option",
+        "Avoid null, use Option instead",
+        "Stick to Leon's pure subset"
+      ],
+      "examples": [
+        {
+          "error": "unsupported: var declarations",
+          "context": "Using mutable variable",
+          "fix": "Convert to val with recursion"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_synthesis_failure",
+      "pattern": "synthesis failed|could not synthesize|no solution found",
+      "severity": "warning",
+      "category": "synthesis_result",
+      "description": "Leon's synthesis engine could not find an implementation satisfying the spec",
+      "common_causes": [
+        "Specification too complex",
+        "No implementation exists",
+        "Search space too large",
+        "Conflicting constraints"
+      ],
+      "solutions": [
+        "Provide hints with choose syntax",
+        "Simplify the specification",
+        "Add intermediate specifications",
+        "Check spec is satisfiable"
+      ],
+      "examples": [
+        {
+          "error": "synthesis failed: could not find implementation",
+          "context": "Synthesizing sorting function",
+          "fix": "Add choose hints or simplify postcondition"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_repair_failure",
+      "pattern": "repair failed|could not repair|no fix found",
+      "severity": "warning",
+      "category": "repair_result",
+      "description": "Leon's repair feature could not automatically fix the bug",
+      "common_causes": [
+        "Bug too complex to repair automatically",
+        "Multiple possible fixes",
+        "Insufficient examples",
+        "Structural changes needed"
+      ],
+      "solutions": [
+        "Provide more failing test cases",
+        "Try manual repair guided by counterexample",
+        "Simplify the function",
+        "Use --repair with more examples"
+      ],
+      "examples": [
+        {
+          "error": "repair failed: no single-edit fix found",
+          "context": "Bug requires multiple changes",
+          "fix": "Manually repair using counterexample guidance"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_match_exhaustiveness",
+      "pattern": "match not exhaustive|missing case|Pattern match may fail",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Leon detected incomplete pattern matching",
+      "common_causes": [
+        "Missing case for ADT variant",
+        "Forgotten Nil case",
+        "New variants added to sealed type",
+        "Guards not exhaustive"
+      ],
+      "solutions": [
+        "Add all missing cases",
+        "Use default case with _",
+        "Review sealed hierarchy",
+        "Make guards complete"
+      ],
+      "examples": [
+        {
+          "error": "match not exhaustive: missing case Cons",
+          "context": "Pattern matching on custom list",
+          "fix": "case Cons(h, t) => ..."
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://leon.epfl.ch/"
+    },
+    {
+      "id": "leon_counterexample",
+      "pattern": "counterexample|Counterexample found|witness",
+      "severity": "info",
+      "category": "verification_result",
+      "description": "Leon found a concrete input that violates the specification",
+      "common_causes": [
+        "Actual bug in the code",
+        "Specification error",
+        "Edge case not handled",
+        "Overflow or boundary issue"
+      ],
+      "solutions": [
+        "Analyze the counterexample values",
+        "Fix the bug in implementation",
+        "Strengthen preconditions if input invalid",
+        "Correct the specification if wrong"
+      ],
+      "examples": [
+        {
+          "error": "Counterexample: n = -1, expected positive result",
+          "context": "Function doesn't handle negative input",
+          "fix": "Add require(n >= 0) or handle negative case"
+        }
+      ],
+      "related_errors": ["leon_precondition_violation", "leon_postcondition_violation"],
+      "documentation_url": "https://leon.epfl.ch/"
+    }
+  ],
+  "general_tips": [
+    "Leon is the predecessor to Stainless - consider upgrading for Scala 3 support",
+    "Leon verifies a pure subset of Scala with ADTs and pattern matching",
+    "Use BigInt for arithmetic to avoid overflow issues",
+    "Leon supports synthesis: specify what, let Leon find how",
+    "Repair feature can automatically fix simple bugs",
+    "Functions must be total and terminating",
+    "Use @library for trusted code that shouldn't be verified"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic verification",
+      "steps": [
+        "leon file.scala",
+        "Review verification results",
+        "Fix issues and re-run"
+      ]
+    },
+    {
+      "name": "Program synthesis",
+      "steps": [
+        "Write specification with choose()",
+        "leon --synthesis file.scala",
+        "Review synthesized implementation"
+      ]
+    },
+    {
+      "name": "Program repair",
+      "steps": [
+        "Identify failing test case",
+        "leon --repair file.scala",
+        "Review and accept suggested fix"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "3.0": "Final Leon release, consider migrating to Stainless",
+    "2.x": "Older version, limited features"
+  }
+}

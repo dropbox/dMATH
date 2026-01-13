@@ -1,0 +1,66 @@
+{
+  "tool": "sops",
+  "category": "secrets_management",
+  "common_errors": [
+    {
+      "error_pattern": "config file not found",
+      "cause": "No .sops.yaml configuration file in directory tree",
+      "solution": "Create .sops.yaml with creation_rules specifying encryption keys. See: sops README",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "MAC mismatch",
+      "cause": "File was modified outside SOPS (manual edit of encrypted values), breaking integrity check",
+      "solution": "Never manually edit encrypted files. Re-encrypt from clean source: sops -d file | sops -e",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "could not decrypt key",
+      "cause": "Don't have access to any of the keys used to encrypt the file",
+      "solution": "Ensure you have GPG key, AWS KMS access, or other configured key. Check .sops.yaml.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "error getting data key",
+      "cause": "Failed to retrieve or unwrap the data encryption key",
+      "solution": "Check key service access (KMS permissions, GPG keyring). Verify key hasn't been deleted.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "no matching creation rules",
+      "cause": "File path doesn't match any creation_rules path_regex in .sops.yaml",
+      "solution": "Add rule for file path in .sops.yaml or use --config to specify different config",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "age: no identity matched",
+      "cause": "age private key doesn't match any recipient in the encrypted file",
+      "solution": "Set SOPS_AGE_KEY_FILE env var to correct key file. Or add your public key as recipient.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "gpg: decryption failed",
+      "cause": "GPG key not available, wrong passphrase, or key expired",
+      "solution": "Check gpg --list-secret-keys. Import key if missing. Check key expiration.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "AccessDeniedException.*KMS",
+      "cause": "IAM policy doesn't grant decrypt permission on KMS key",
+      "solution": "Add kms:Decrypt permission to IAM role/user. Check KMS key policy allows your identity.",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "unknown file format",
+      "cause": "File extension doesn't match supported formats (yaml, json, env, ini, binary)",
+      "solution": "Use --input-type and --output-type to specify format explicitly",
+      "severity": "error"
+    },
+    {
+      "error_pattern": "file already encrypted",
+      "cause": "Trying to encrypt a file that's already encrypted by SOPS",
+      "solution": "Use sops -d to decrypt first, or sops <file> to edit in place",
+      "severity": "error"
+    }
+  ]
+}

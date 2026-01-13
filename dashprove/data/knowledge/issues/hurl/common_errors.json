@@ -1,0 +1,191 @@
+{
+  "tool": "hurl",
+  "version": "4.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "parse_error",
+      "pattern": "Parsing error|syntax error|expecting",
+      "message": "Hurl file syntax error",
+      "cause": "Invalid Hurl syntax",
+      "solutions": [
+        {
+          "approach": "Check request format",
+          "code": "GET https://api.example.com/users\nHTTP 200",
+          "when": "Basic request"
+        },
+        {
+          "approach": "Check headers",
+          "code": "GET https://api.example.com/users\nAuthorization: Bearer token123\nAccept: application/json\nHTTP 200",
+          "when": "Headers format"
+        },
+        {
+          "approach": "Check JSON body",
+          "code": "POST https://api.example.com/users\nContent-Type: application/json\n{\n  \"name\": \"John\",\n  \"email\": \"john@test.com\"\n}\nHTTP 201",
+          "when": "JSON body"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "Assert failure|actual:|expected:",
+      "message": "Assertion failed",
+      "cause": "Response doesn't match expected value",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "GET https://api.example.com/users/1\nHTTP 200",
+          "when": "Status code assertion"
+        },
+        {
+          "approach": "Check JSON path",
+          "code": "GET https://api.example.com/users/1\nHTTP 200\n[Asserts]\njsonpath \"$.name\" == \"John\"\njsonpath \"$.age\" >= 18",
+          "when": "JSONPath assertion"
+        },
+        {
+          "approach": "Check header",
+          "code": "GET https://api.example.com\nHTTP 200\n[Asserts]\nheader \"Content-Type\" contains \"application/json\"",
+          "when": "Header assertion"
+        }
+      ]
+    },
+    {
+      "id": "variable_error",
+      "pattern": "variable|undefined|{{.*}}",
+      "message": "Variable not defined",
+      "cause": "Variable used but not set",
+      "solutions": [
+        {
+          "approach": "Set via CLI",
+          "code": "hurl --variable host=api.example.com test.hurl",
+          "when": "Command line variable"
+        },
+        {
+          "approach": "Use variables file",
+          "code": "# vars.env\nhost=api.example.com\ntoken=abc123\n\nhurl --variables-file vars.env test.hurl",
+          "when": "Variables file"
+        },
+        {
+          "approach": "Capture from response",
+          "code": "POST https://api.example.com/login\n{\"user\": \"admin\"}\nHTTP 200\n[Captures]\ntoken: jsonpath \"$.token\"\n\nGET https://api.example.com/protected\nAuthorization: Bearer {{token}}\nHTTP 200",
+          "when": "Capture and reuse"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "Connection refused|Could not resolve host|timeout",
+      "message": "Connection failed",
+      "cause": "Server unreachable",
+      "solutions": [
+        {
+          "approach": "Check URL",
+          "code": "# Verify URL is correct and server is running",
+          "when": "URL may be wrong"
+        },
+        {
+          "approach": "Set timeout",
+          "code": "hurl --connect-timeout 30 test.hurl",
+          "when": "Slow connection"
+        },
+        {
+          "approach": "Retry",
+          "code": "hurl --retry 3 --retry-interval 1000 test.hurl",
+          "when": "Flaky connection"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate|TLS",
+      "message": "SSL/TLS error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Skip verification",
+          "code": "hurl --insecure test.hurl",
+          "when": "Self-signed cert"
+        },
+        {
+          "approach": "Client cert",
+          "code": "hurl --cert client.pem --key client-key.pem test.hurl",
+          "when": "Mutual TLS"
+        },
+        {
+          "approach": "CA cert",
+          "code": "hurl --cacert ca.pem test.hurl",
+          "when": "Custom CA"
+        }
+      ]
+    },
+    {
+      "id": "multipart_error",
+      "pattern": "multipart|file upload|form",
+      "message": "Multipart form error",
+      "cause": "Invalid multipart form syntax",
+      "solutions": [
+        {
+          "approach": "File upload",
+          "code": "POST https://api.example.com/upload\n[MultipartFormData]\nfile: file,photo.jpg;\nHTTP 200",
+          "when": "Upload file"
+        },
+        {
+          "approach": "Form fields",
+          "code": "POST https://api.example.com/submit\n[FormParams]\nname: John\nemail: john@test.com\nHTTP 200",
+          "when": "Form data"
+        },
+        {
+          "approach": "Mixed",
+          "code": "POST https://api.example.com/upload\n[MultipartFormData]\nname: John\nfile: file,document.pdf; application/pdf\nHTTP 200",
+          "when": "File with metadata"
+        }
+      ]
+    },
+    {
+      "id": "jsonpath_error",
+      "pattern": "jsonpath|Invalid JSONPath|no value",
+      "message": "JSONPath query error",
+      "cause": "JSONPath expression doesn't match",
+      "solutions": [
+        {
+          "approach": "Check path exists",
+          "code": "[Asserts]\njsonpath \"$.data\" exists",
+          "when": "Verify path"
+        },
+        {
+          "approach": "Array access",
+          "code": "[Asserts]\njsonpath \"$.users[0].name\" == \"John\"\njsonpath \"$.users\" count == 3",
+          "when": "Array queries"
+        },
+        {
+          "approach": "Optional check",
+          "code": "[Asserts]\njsonpath \"$.optional\" exists\njsonpath \"$.optional\" == null",
+          "when": "Nullable field"
+        }
+      ]
+    },
+    {
+      "id": "output_error",
+      "pattern": "output|--output|report",
+      "message": "Output generation error",
+      "cause": "Cannot generate output",
+      "solutions": [
+        {
+          "approach": "JSON report",
+          "code": "hurl --test --report-json report.json *.hurl",
+          "when": "JSON report"
+        },
+        {
+          "approach": "JUnit report",
+          "code": "hurl --test --report-junit junit.xml *.hurl",
+          "when": "CI integration"
+        },
+        {
+          "approach": "Verbose output",
+          "code": "hurl --very-verbose test.hurl",
+          "when": "Debug"
+        }
+      ]
+    }
+  ]
+}

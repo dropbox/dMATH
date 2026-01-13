@@ -1,0 +1,186 @@
+{
+  "tool": "cryptominisat",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT",
+      "message": "Solver timed out",
+      "cause": "CryptoMiniSat could not solve within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "cryptominisat5 --maxtime=600 file.cnf",
+          "when": "Problem may be solvable with more time"
+        },
+        {
+          "approach": "Use preprocessing",
+          "code": "cryptominisat5 --preprocess 1 file.cnf",
+          "when": "Preprocessing can simplify the formula"
+        },
+        {
+          "approach": "Enable XOR reasoning",
+          "code": "cryptominisat5 --xor 1 file.cnf",
+          "when": "Problem contains XOR constraints (crypto)"
+        },
+        {
+          "approach": "Try different restart policy",
+          "code": "cryptominisat5 --restart luby file.cnf",
+          "when": "Default restart strategy ineffective"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "parse error",
+      "message": "DIMACS parse error at line N",
+      "cause": "Invalid CNF format",
+      "solutions": [
+        {
+          "approach": "Check header format",
+          "code": "p cnf <num_vars> <num_clauses>",
+          "when": "Missing or malformed header"
+        },
+        {
+          "approach": "Check clause format",
+          "code": "1 -2 3 0  ; clauses must end with 0",
+          "when": "Missing clause terminator"
+        },
+        {
+          "approach": "Check variable range",
+          "code": "; Variables must be 1 to num_vars",
+          "when": "Variable index out of range"
+        },
+        {
+          "approach": "Remove comments properly",
+          "code": "c This is a comment line",
+          "when": "Malformed comments"
+        }
+      ]
+    },
+    {
+      "id": "invalid_xor",
+      "pattern": "XOR clause",
+      "message": "Invalid XOR clause format",
+      "cause": "XOR constraint syntax error",
+      "solutions": [
+        {
+          "approach": "Use correct XOR syntax",
+          "code": "x1 2 3 0  ; x prefix for XOR clauses",
+          "when": "Using CryptoMiniSat XOR extension"
+        },
+        {
+          "approach": "Convert to CNF",
+          "code": "; XOR(a,b,c) = (a v b v c) ^ (~a v ~b v c) ^ ...",
+          "when": "Need standard DIMACS compatibility"
+        }
+      ]
+    },
+    {
+      "id": "memory_exhausted",
+      "pattern": "out of memory",
+      "message": "Memory limit exceeded",
+      "cause": "Problem requires too much memory",
+      "solutions": [
+        {
+          "approach": "Enable memory limit",
+          "code": "cryptominisat5 --maxmem=4000 file.cnf",
+          "when": "Want to cap memory usage"
+        },
+        {
+          "approach": "Use clause database reduction",
+          "code": "cryptominisat5 --clreduce 1 file.cnf",
+          "when": "Too many learned clauses"
+        },
+        {
+          "approach": "Simplify the problem",
+          "code": "; Use external preprocessor like SatELite",
+          "when": "CNF can be simplified"
+        }
+      ]
+    },
+    {
+      "id": "conflict_limit",
+      "pattern": "conflict limit",
+      "message": "Conflict limit reached",
+      "cause": "Maximum conflicts exceeded without solution",
+      "solutions": [
+        {
+          "approach": "Increase conflict limit",
+          "code": "cryptominisat5 --maxconfl=10000000 file.cnf",
+          "when": "More search may help"
+        },
+        {
+          "approach": "Use different branching",
+          "code": "cryptominisat5 --branch vsids file.cnf",
+          "when": "Branching heuristic ineffective"
+        },
+        {
+          "approach": "Enable phase saving",
+          "code": "cryptominisat5 --phase 1 file.cnf",
+          "when": "Phase saving may help"
+        }
+      ]
+    },
+    {
+      "id": "unsatisfiable",
+      "pattern": "UNSATISFIABLE",
+      "message": "Formula is unsatisfiable",
+      "cause": "No satisfying assignment exists",
+      "solutions": [
+        {
+          "approach": "Get UNSAT proof",
+          "code": "cryptominisat5 --drup file.cnf",
+          "when": "Need proof of unsatisfiability"
+        },
+        {
+          "approach": "Find MUS",
+          "code": "; Use MUS extractor to find minimal unsat core",
+          "when": "Want to understand why unsat"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "; Verify CNF encoding is correct",
+          "when": "Encoding may have bugs"
+        }
+      ]
+    },
+    {
+      "id": "invalid_assumption",
+      "pattern": "invalid assumption",
+      "message": "Invalid assumption literal",
+      "cause": "Assumption uses undefined variable",
+      "solutions": [
+        {
+          "approach": "Check variable exists",
+          "code": "; Assumption literal must be within 1..num_vars",
+          "when": "Using non-existent variable"
+        },
+        {
+          "approach": "Use correct API",
+          "code": "solver.add_clause([assumption_lit])",
+          "when": "Wrong assumption interface"
+        }
+      ]
+    },
+    {
+      "id": "thread_error",
+      "pattern": "thread",
+      "message": "Threading error",
+      "cause": "Problem with parallel solving",
+      "solutions": [
+        {
+          "approach": "Disable threading",
+          "code": "cryptominisat5 --threads=1 file.cnf",
+          "when": "Threading causes issues"
+        },
+        {
+          "approach": "Reduce thread count",
+          "code": "cryptominisat5 --threads=4 file.cnf",
+          "when": "Too many threads"
+        }
+      ]
+    }
+  ]
+}

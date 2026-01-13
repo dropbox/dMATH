@@ -1,0 +1,168 @@
+{
+  "tool": "jepsen",
+  "version": "0.3.5",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "linearizability_violation",
+      "pattern": "Analysis invalid.*linearizable",
+      "message": "Linearizability violation detected",
+      "cause": "Operations on the distributed system cannot be arranged in a valid linear order",
+      "solutions": [
+        {
+          "approach": "Check read-your-writes guarantee",
+          "code": "; Verify client sees its own writes\n(def client-opts {:consistency :linearizable})",
+          "when": "Read operations return stale data"
+        },
+        {
+          "approach": "Verify quorum configuration",
+          "code": "; Ensure R + W > N for linearizability\n:read-quorum (inc (quot n 2))\n:write-quorum (inc (quot n 2))",
+          "when": "Quorum settings too relaxed"
+        },
+        {
+          "approach": "Check clock synchronization",
+          "code": "; Use logical clocks instead of wall clocks\n:timestamp-source :logical",
+          "when": "System relies on synchronized clocks"
+        }
+      ]
+    },
+    {
+      "id": "lost_write",
+      "pattern": "lost.*write|write.*lost",
+      "message": "Write operation was lost",
+      "cause": "A confirmed write was not persisted or was overwritten incorrectly",
+      "solutions": [
+        {
+          "approach": "Check durability settings",
+          "code": "; Ensure fsync on commit\n:sync-on-commit true",
+          "when": "Writes lost after crash"
+        },
+        {
+          "approach": "Verify conflict resolution",
+          "code": "; Use vector clocks for conflict detection\n:conflict-resolution :last-write-wins",
+          "when": "Concurrent writes cause loss"
+        },
+        {
+          "approach": "Check replication factor",
+          "code": ":replication-factor 3\n:min-insync-replicas 2",
+          "when": "Node failures cause data loss"
+        }
+      ]
+    },
+    {
+      "id": "stale_read",
+      "pattern": "stale.*read|read.*stale",
+      "message": "Read returned stale data",
+      "cause": "Read operation returned an outdated value that should have been updated",
+      "solutions": [
+        {
+          "approach": "Use read repair",
+          "code": ":read-repair :blocking",
+          "when": "Replicas have diverged"
+        },
+        {
+          "approach": "Increase read consistency",
+          "code": ":consistency-level :quorum",
+          "when": "Using eventual consistency"
+        },
+        {
+          "approach": "Check replica sync",
+          "code": "; Verify anti-entropy process is running\n:anti-entropy-interval 10000",
+          "when": "Replicas not synchronizing"
+        }
+      ]
+    },
+    {
+      "id": "network_partition_failure",
+      "pattern": "nemesis.*partition|partition.*failure",
+      "message": "System failed during network partition",
+      "cause": "System violated consistency or availability guarantees during partition",
+      "solutions": [
+        {
+          "approach": "Choose CP over AP",
+          "code": "; Reject writes during partition\n:partition-behavior :reject-writes",
+          "when": "Consistency is critical"
+        },
+        {
+          "approach": "Implement partition detection",
+          "code": "; Use heartbeats with appropriate timeout\n:heartbeat-interval 1000\n:failure-timeout 3000",
+          "when": "Need to detect partitions faster"
+        },
+        {
+          "approach": "Use CRDTs",
+          "code": "; Use conflict-free replicated data types\n:data-type :g-counter",
+          "when": "Need availability during partitions"
+        }
+      ]
+    },
+    {
+      "id": "clock_skew_error",
+      "pattern": "clock.*skew|timestamp.*inconsistent",
+      "message": "Clock skew caused incorrect ordering",
+      "cause": "Wall clock times across nodes are not synchronized",
+      "solutions": [
+        {
+          "approach": "Use hybrid logical clocks",
+          "code": "(defn hlc-timestamp []\n  (max (physical-time) (inc last-seen-timestamp)))",
+          "when": "Need causality with bounded skew"
+        },
+        {
+          "approach": "Use Lamport timestamps",
+          "code": ":timestamp-mode :lamport",
+          "when": "Only need happens-before ordering"
+        },
+        {
+          "approach": "Increase clock sync frequency",
+          "code": "; Run NTP more frequently\n:ntp-interval 1000",
+          "when": "Can improve clock synchronization"
+        }
+      ]
+    },
+    {
+      "id": "ssh_connection_failed",
+      "pattern": "SSH.*failed|connection.*refused",
+      "message": "Cannot connect to test node",
+      "cause": "SSH connection to distributed system node failed",
+      "solutions": [
+        {
+          "approach": "Check SSH key",
+          "code": "; Verify key permissions\nchmod 600 ~/.ssh/jepsen_key",
+          "when": "Authentication fails"
+        },
+        {
+          "approach": "Verify node is running",
+          "code": "(c/on-nodes test :all\n  (c/exec :systemctl :status :your-service))",
+          "when": "Service not started"
+        },
+        {
+          "approach": "Check firewall rules",
+          "code": "; Ensure port 22 is open\n:ssh-port 22",
+          "when": "Port blocked by firewall"
+        }
+      ]
+    },
+    {
+      "id": "indeterminate_result",
+      "pattern": "indeterminate|unknown.*result",
+      "message": "Operation result is indeterminate",
+      "cause": "Cannot determine if operation succeeded or failed (often due to timeout)",
+      "solutions": [
+        {
+          "approach": "Add operation idempotency",
+          "code": "; Use unique operation IDs\n:op-id (java.util.UUID/randomUUID)",
+          "when": "Retrying may cause duplicates"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": ":timeout 30000",
+          "when": "Operations taking longer than expected"
+        },
+        {
+          "approach": "Implement at-least-once with dedup",
+          "code": "; Track completed operation IDs\n:dedup-window 60000",
+          "when": "Need to retry safely"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "tool": "axios",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "network_error",
+      "pattern": "Network Error|ERR_NETWORK|ECONNREFUSED|getaddrinfo ENOTFOUND",
+      "message": "Network request failed",
+      "cause": "Server unreachable, DNS failure, or CORS blocked",
+      "solutions": [
+        {
+          "approach": "Check server availability",
+          "code": "curl -v https://api.example.com/health",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "axios.get(url, { proxy: { host: 'localhost', port: 8080 } })",
+          "when": "Behind corporate proxy"
+        },
+        {
+          "approach": "Handle CORS",
+          "code": "// Server must send Access-Control-Allow-Origin header\n// Or use server-side proxy",
+          "when": "Browser CORS issue"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timeout of \\d+ms exceeded|ETIMEDOUT|ESOCKETTIMEDOUT",
+      "message": "Request timed out",
+      "cause": "Server too slow or timeout too short",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "axios.get(url, { timeout: 30000 })",
+          "when": "Slow endpoint"
+        },
+        {
+          "approach": "Use AbortController",
+          "code": "const controller = new AbortController();\naxios.get(url, { signal: controller.signal });\nsetTimeout(() => controller.abort(), 5000);",
+          "when": "Custom cancellation"
+        },
+        {
+          "approach": "Add retry logic",
+          "code": "import axiosRetry from 'axios-retry';\naxiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });",
+          "when": "Transient failures"
+        }
+      ]
+    },
+    {
+      "id": "status_error",
+      "pattern": "Request failed with status code \\d+|status \\d+|AxiosError",
+      "message": "Server returned error status",
+      "cause": "4xx or 5xx HTTP response",
+      "solutions": [
+        {
+          "approach": "Handle error response",
+          "code": "axios.get(url).catch(err => {\n  if (err.response) {\n    console.log(err.response.status, err.response.data);\n  }\n});",
+          "when": "Need error details"
+        },
+        {
+          "approach": "Don't throw on errors",
+          "code": "axios.get(url, { validateStatus: status => status < 500 })",
+          "when": "Handle 4xx as success"
+        },
+        {
+          "approach": "Use interceptor",
+          "code": "axios.interceptors.response.use(null, err => {\n  if (err.response?.status === 401) { refreshToken(); }\n  return Promise.reject(err);\n});",
+          "when": "Global error handling"
+        }
+      ]
+    },
+    {
+      "id": "circular_json",
+      "pattern": "Converting circular structure|circular reference|cannot serialize",
+      "message": "Cannot serialize request data",
+      "cause": "Request body contains circular references",
+      "solutions": [
+        {
+          "approach": "Clone data",
+          "code": "const data = JSON.parse(JSON.stringify(circularData, getCircularReplacer()));",
+          "when": "Breaking circular refs"
+        },
+        {
+          "approach": "Extract needed fields",
+          "code": "axios.post(url, { id: obj.id, name: obj.name })",
+          "when": "Only need subset"
+        },
+        {
+          "approach": "Custom serializer",
+          "code": "axios.post(url, data, { transformRequest: [(data) => customSerialize(data)] })",
+          "when": "Custom serialization"
+        }
+      ]
+    },
+    {
+      "id": "content_type_mismatch",
+      "pattern": "Unexpected token.*JSON|parsing.*failed|invalid JSON",
+      "message": "Response format mismatch",
+      "cause": "Expected JSON but received HTML or plain text",
+      "solutions": [
+        {
+          "approach": "Check response type",
+          "code": "axios.get(url, { responseType: 'text' })\n  .then(res => console.log(typeof res.data));",
+          "when": "Debug response format"
+        },
+        {
+          "approach": "Set Accept header",
+          "code": "axios.get(url, { headers: { 'Accept': 'application/json' } })",
+          "when": "Request JSON explicitly"
+        },
+        {
+          "approach": "Handle HTML error pages",
+          "code": "// Check if response.data is string (HTML error page)\nif (typeof response.data === 'string' && response.data.includes('<html>')) { ... }",
+          "when": "Server returns HTML errors"
+        }
+      ]
+    }
+  ]
+}

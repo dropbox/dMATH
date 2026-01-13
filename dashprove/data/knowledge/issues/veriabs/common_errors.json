@@ -1,0 +1,148 @@
+{
+  "tool": "veriabs",
+  "version": "1.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "VERIFICATION FAILED|FALSE",
+      "message": "Property violation found",
+      "cause": "VeriAbs found counterexample after CEGAR",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "# Check output for error trace",
+          "when": "Need to see violation path"
+        },
+        {
+          "approach": "Add assumptions",
+          "code": "__VERIFIER_assume(condition);",
+          "when": "Missing preconditions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Counterexample shows real bug",
+          "when": "Found genuine error"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "UNKNOWN|INCONCLUSIVE",
+      "message": "Verification inconclusive",
+      "cause": "Abstraction-refinement didn't converge",
+      "solutions": [
+        {
+          "approach": "Increase iterations",
+          "code": "veriabs --max-iterations 100 program.c",
+          "when": "CEGAR needs more refinement"
+        },
+        {
+          "approach": "Use different backend",
+          "code": "veriabs --backend cpachecker program.c",
+          "when": "Try alternate verifier"
+        },
+        {
+          "approach": "Add loop bounds",
+          "code": "__VERIFIER_loop_bound(N);",
+          "when": "Unbounded loops causing issues"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|timed out",
+      "message": "Verification timed out",
+      "cause": "Analysis didn't complete in time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "veriabs --timeout 1800 program.c",
+          "when": "More time needed"
+        },
+        {
+          "approach": "Simplify abstraction",
+          "code": "veriabs --abstraction intervals program.c",
+          "when": "Simpler domain faster"
+        },
+        {
+          "approach": "Focus verification",
+          "code": "veriabs --entry specific_function program.c",
+          "when": "Can restrict scope"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "parsing.*error|syntax error",
+      "message": "C parsing failed",
+      "cause": "Invalid C syntax",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "gcc -fsyntax-only program.c",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Preprocess",
+          "code": "gcc -E program.c > program.i",
+          "when": "Complex macros"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemory|memory.*exhausted",
+      "message": "Out of memory",
+      "cause": "Abstraction state space too large",
+      "solutions": [
+        {
+          "approach": "Increase memory",
+          "code": "veriabs --memory 16384 program.c",
+          "when": "System has more RAM"
+        },
+        {
+          "approach": "Use coarser abstraction",
+          "code": "veriabs --abstraction signs program.c",
+          "when": "Less precise is acceptable"
+        }
+      ]
+    },
+    {
+      "id": "refinement_failed",
+      "pattern": "refinement.*failed|CEGAR.*failed",
+      "message": "CEGAR refinement failed",
+      "cause": "Could not refine spurious counterexample",
+      "solutions": [
+        {
+          "approach": "Try different strategy",
+          "code": "veriabs --refinement-strategy lazy program.c",
+          "when": "Default refinement struggling"
+        },
+        {
+          "approach": "Add manual predicates",
+          "code": "veriabs --initial-predicates preds.txt program.c",
+          "when": "Know important predicates"
+        }
+      ]
+    },
+    {
+      "id": "backend_error",
+      "pattern": "backend.*error|verifier.*crashed",
+      "message": "Backend verifier error",
+      "cause": "Underlying tool crashed or returned error",
+      "solutions": [
+        {
+          "approach": "Try different backend",
+          "code": "veriabs --backend ultimateautomizer program.c",
+          "when": "Backend-specific issue"
+        },
+        {
+          "approach": "Check backend installation",
+          "code": "# Verify backend tool is installed",
+          "when": "Missing dependency"
+        }
+      ]
+    }
+  ]
+}

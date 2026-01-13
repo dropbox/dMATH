@@ -1,0 +1,145 @@
+{
+  "tool": "oauth2",
+  "version": "Various (OAuth 2.0 protocol)",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_grant",
+      "pattern": "invalid_grant|authorization code.*expired|grant.*invalid",
+      "message": "Authorization grant is invalid",
+      "cause": "Auth code expired, already used, or invalid",
+      "solutions": [
+        {
+          "approach": "Exchange code immediately",
+          "code": "// Auth codes are single-use and expire quickly (often 10 min)\n// Exchange for tokens as soon as user is redirected back",
+          "when": "Code expired"
+        },
+        {
+          "approach": "Don't reuse codes",
+          "code": "// Each auth code can only be exchanged once\n// Store tokens, not the code",
+          "when": "Code already used"
+        },
+        {
+          "approach": "Check redirect URI",
+          "code": "// redirect_uri in token request must EXACTLY match authorization request",
+          "when": "URI mismatch"
+        }
+      ]
+    },
+    {
+      "id": "invalid_client",
+      "pattern": "invalid_client|client.*not found|authentication failed",
+      "message": "Client authentication failed",
+      "cause": "Wrong client ID/secret or invalid authentication method",
+      "solutions": [
+        {
+          "approach": "Verify credentials",
+          "code": "// Double-check client_id and client_secret\n// Ensure no extra whitespace or encoding issues",
+          "when": "Credentials wrong"
+        },
+        {
+          "approach": "Check auth method",
+          "code": "// Some providers expect Basic auth:\nAuthorization: Basic base64(client_id:client_secret)\n// Others expect in body:\nclient_id=...&client_secret=...",
+          "when": "Auth method mismatch"
+        },
+        {
+          "approach": "Use PKCE for public clients",
+          "code": "// For SPAs and mobile apps (no client_secret)\n// Use code_verifier and code_challenge",
+          "when": "Public client"
+        }
+      ]
+    },
+    {
+      "id": "invalid_scope",
+      "pattern": "invalid_scope|scope.*not allowed|insufficient.*scope",
+      "message": "Requested scope not allowed",
+      "cause": "Scope not approved for client or invalid format",
+      "solutions": [
+        {
+          "approach": "Check allowed scopes",
+          "code": "// Review OAuth provider's documentation for valid scopes\n// Some require approval for sensitive scopes",
+          "when": "Scope not enabled"
+        },
+        {
+          "approach": "Use space-separated scopes",
+          "code": "scope=openid profile email  // space-separated, not comma",
+          "when": "Format error"
+        },
+        {
+          "approach": "Request minimal scopes",
+          "code": "// Only request what you need\n// Users more likely to approve fewer permissions",
+          "when": "Over-requesting"
+        }
+      ]
+    },
+    {
+      "id": "redirect_uri_mismatch",
+      "pattern": "redirect_uri.*mismatch|redirect.*not.*registered|callback.*invalid",
+      "message": "Redirect URI doesn't match registered URI",
+      "cause": "Redirect URI differs from what's registered with provider",
+      "solutions": [
+        {
+          "approach": "Match exactly",
+          "code": "// Must match character-for-character:\n// https://app.com/callback != https://app.com/callback/\n// http != https\n// localhost:3000 != 127.0.0.1:3000",
+          "when": "Subtle mismatch"
+        },
+        {
+          "approach": "Register all URIs",
+          "code": "// Register development and production URIs:\n// http://localhost:3000/callback\n// https://myapp.com/callback",
+          "when": "Missing registration"
+        },
+        {
+          "approach": "Use env-specific config",
+          "code": "const redirectUri = process.env.NODE_ENV === 'production'\n  ? 'https://myapp.com/callback'\n  : 'http://localhost:3000/callback';",
+          "when": "Environment handling"
+        }
+      ]
+    },
+    {
+      "id": "token_expired",
+      "pattern": "access_token.*expired|token.*invalid|401.*unauthorized",
+      "message": "Access token expired or invalid",
+      "cause": "Token has expired or been revoked",
+      "solutions": [
+        {
+          "approach": "Use refresh token",
+          "code": "const { access_token } = await tokenClient.refreshAccessToken(refreshToken);\n// Store new access token",
+          "when": "Have refresh token"
+        },
+        {
+          "approach": "Handle token refresh",
+          "code": "axios.interceptors.response.use(null, async error => {\n  if (error.response?.status === 401 && !error.config._retry) {\n    error.config._retry = true;\n    const newToken = await refreshToken();\n    error.config.headers.Authorization = `Bearer ${newToken}`;\n    return axios(error.config);\n  }\n  throw error;\n});",
+          "when": "Automatic refresh"
+        },
+        {
+          "approach": "Re-authenticate",
+          "code": "// If refresh token also expired, redirect to authorization flow",
+          "when": "Full re-auth needed"
+        }
+      ]
+    },
+    {
+      "id": "csrf_state_mismatch",
+      "pattern": "state.*mismatch|CSRF.*detected|state parameter.*invalid",
+      "message": "State parameter doesn't match",
+      "cause": "CSRF protection triggered or state lost",
+      "solutions": [
+        {
+          "approach": "Store state properly",
+          "code": "// Generate random state before redirect\nconst state = crypto.randomBytes(16).toString('hex');\nreq.session.oauthState = state;\n// Include in auth URL: state=${state}",
+          "when": "State generation"
+        },
+        {
+          "approach": "Verify on callback",
+          "code": "if (req.query.state !== req.session.oauthState) {\n  throw new Error('Invalid state parameter');\n}\ndelete req.session.oauthState;",
+          "when": "State verification"
+        },
+        {
+          "approach": "Check session persistence",
+          "code": "// Ensure session is preserved across redirect\n// Check cookie settings, domain, SameSite attribute",
+          "when": "State lost"
+        }
+      ]
+    }
+  ]
+}

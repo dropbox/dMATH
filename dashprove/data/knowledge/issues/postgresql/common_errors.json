@@ -1,0 +1,77 @@
+{
+  "tool": "postgresql",
+  "category": "database",
+  "common_errors": [
+    {
+      "pattern": "FATAL:.*authentication failed",
+      "meaning": "PostgreSQL authentication failed",
+      "causes": ["Wrong password", "pg_hba.conf rejects connection", "Wrong auth method"],
+      "solutions": ["Verify password", "Check pg_hba.conf", "Use correct auth method (md5, scram-sha-256)"]
+    },
+    {
+      "pattern": "could not connect to server: Connection refused",
+      "meaning": "Cannot connect to PostgreSQL server",
+      "causes": ["Server not running", "Wrong port", "listen_addresses setting"],
+      "solutions": ["Start PostgreSQL", "Check port (default 5432)", "Set listen_addresses = '*' for remote"]
+    },
+    {
+      "pattern": "relation.*does not exist",
+      "meaning": "Table or view not found",
+      "causes": ["Table doesn't exist", "Wrong schema", "Case sensitivity"],
+      "solutions": ["Create table", "SET search_path = schema", "Quote identifier: \"TableName\""]
+    },
+    {
+      "pattern": "duplicate key value violates unique constraint",
+      "meaning": "Unique constraint violation",
+      "causes": ["Inserting duplicate", "Concurrent inserts", "Sequence out of sync"],
+      "solutions": ["Use ON CONFLICT", "Handle IntegrityError", "Reset sequence: setval()"]
+    },
+    {
+      "pattern": "deadlock detected",
+      "meaning": "Circular lock dependency detected",
+      "causes": ["Concurrent updates in different order", "Long transactions", "Row-level locks"],
+      "solutions": ["Retry transaction", "Access rows in consistent order", "Use SELECT FOR UPDATE SKIP LOCKED"]
+    },
+    {
+      "pattern": "canceling statement due to statement timeout",
+      "meaning": "Query exceeded statement_timeout",
+      "causes": ["Query too slow", "Missing indexes", "Lock wait"],
+      "solutions": ["Increase statement_timeout", "Add indexes", "Check for blocking queries"]
+    },
+    {
+      "pattern": "could not obtain lock on relation",
+      "meaning": "Cannot acquire table lock",
+      "causes": ["Concurrent DDL", "Long-running transaction", "Exclusive lock held"],
+      "solutions": ["Retry operation", "Kill blocking transaction", "Use lock_timeout"]
+    },
+    {
+      "pattern": "permission denied for",
+      "meaning": "Insufficient privileges",
+      "causes": ["User lacks permission", "Object owned by other user", "Schema permission missing"],
+      "solutions": ["GRANT required permission", "Change ownership: ALTER TABLE OWNER TO", "GRANT USAGE ON SCHEMA"]
+    },
+    {
+      "pattern": "remaining connection slots are reserved",
+      "meaning": "Connection limit reached",
+      "causes": ["max_connections limit hit", "Connection leaks", "superuser_reserved_connections"],
+      "solutions": ["Increase max_connections", "Close idle connections", "Use pgbouncer for pooling"]
+    },
+    {
+      "pattern": "violates foreign key constraint",
+      "meaning": "Foreign key reference invalid",
+      "causes": ["Referenced row doesn't exist", "Deleting referenced parent", "Wrong FK column"],
+      "solutions": ["Insert parent first", "Use ON DELETE CASCADE", "Check FK definition"]
+    }
+  ],
+  "debugging_commands": [
+    "SELECT * FROM pg_stat_activity;",
+    "SELECT * FROM pg_locks;",
+    "EXPLAIN ANALYZE SELECT ...;",
+    "SELECT * FROM pg_settings WHERE name = 'max_connections';",
+    "\\dt to list tables"
+  ],
+  "documentation_urls": [
+    "https://www.postgresql.org/docs/",
+    "https://github.com/postgres/postgres"
+  ]
+}

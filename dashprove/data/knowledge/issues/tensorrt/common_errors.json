@@ -1,0 +1,191 @@
+{
+  "tool": "tensorrt",
+  "version": "10.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unsupported_layer",
+      "pattern": "Unsupported layer|Layer.*not supported",
+      "message": "Layer type not supported by TensorRT",
+      "cause": "ONNX op has no TensorRT implementation",
+      "solutions": [
+        {
+          "approach": "Use plugin",
+          "code": "# Register custom plugin for unsupported layer",
+          "when": "Layer can be implemented as plugin"
+        },
+        {
+          "approach": "Modify model",
+          "code": "# Replace with supported operations",
+          "when": "Can rewrite layer"
+        },
+        {
+          "approach": "Use fallback",
+          "code": "config.set_flag(trt.BuilderFlag.OBEY_PRECISION_CONSTRAINTS)",
+          "when": "Need to disable optimization for layer"
+        }
+      ]
+    },
+    {
+      "id": "precision_error",
+      "pattern": "Precision.*error|FP16.*failed",
+      "message": "Precision conversion failed",
+      "cause": "Layer doesn't support requested precision",
+      "solutions": [
+        {
+          "approach": "Mark layer for FP32",
+          "code": "layer.precision = trt.DataType.FLOAT\nlayer.set_output_type(0, trt.DataType.FLOAT)",
+          "when": "Specific layer needs FP32"
+        },
+        {
+          "approach": "Use strict types",
+          "code": "config.set_flag(trt.BuilderFlag.STRICT_TYPES)",
+          "when": "Need exact precision control"
+        },
+        {
+          "approach": "Disable FP16",
+          "code": "config.clear_flag(trt.BuilderFlag.FP16)",
+          "when": "FP16 causing issues"
+        }
+      ]
+    },
+    {
+      "id": "calibration_error",
+      "pattern": "Calibration.*failed|INT8.*calibration",
+      "message": "INT8 calibration failed",
+      "cause": "Insufficient or invalid calibration data",
+      "solutions": [
+        {
+          "approach": "Increase calibration batches",
+          "code": "# Use more representative data batches",
+          "when": "Calibration data too small"
+        },
+        {
+          "approach": "Implement calibrator",
+          "code": "class MyCalibrator(trt.IInt8EntropyCalibrator2):\n    def get_batch(self, names):\n        # Return calibration batch",
+          "when": "Need custom calibration"
+        },
+        {
+          "approach": "Use cache",
+          "code": "def write_calibration_cache(self, cache):\n    with open('calib.cache', 'wb') as f:\n        f.write(cache)",
+          "when": "Cache calibration for reuse"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Engine build failed|build_cuda_engine.*None",
+      "message": "Engine build failed",
+      "cause": "Invalid network, insufficient memory, or CUDA error",
+      "solutions": [
+        {
+          "approach": "Enable verbose logging",
+          "code": "logger = trt.Logger(trt.Logger.VERBOSE)",
+          "when": "Need detailed error info"
+        },
+        {
+          "approach": "Reduce workspace",
+          "code": "config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 30)",
+          "when": "Out of GPU memory during build"
+        },
+        {
+          "approach": "Check CUDA version",
+          "code": "# TensorRT version must match CUDA version",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "serialization_error",
+      "pattern": "Serialization.*error|Engine.*load.*failed",
+      "message": "Engine serialization/deserialization failed",
+      "cause": "Version mismatch, corrupted file, or different GPU",
+      "solutions": [
+        {
+          "approach": "Rebuild for target GPU",
+          "code": "# Engines are GPU-specific, rebuild for target",
+          "when": "Different GPU architecture"
+        },
+        {
+          "approach": "Check TensorRT version",
+          "code": "# Engine format changes between versions",
+          "when": "TensorRT version mismatch"
+        },
+        {
+          "approach": "Use timing cache",
+          "code": "config.set_timing_cache(timing_cache, ignore_mismatch=True)",
+          "when": "Want faster rebuilds"
+        }
+      ]
+    },
+    {
+      "id": "dynamic_shape_error",
+      "pattern": "Dynamic.*shape.*error|Optimization profile.*failed",
+      "message": "Dynamic shape handling failed",
+      "cause": "Invalid optimization profile or shape mismatch",
+      "solutions": [
+        {
+          "approach": "Set optimization profile",
+          "code": "profile = builder.create_optimization_profile()\nprofile.set_shape('input', (1,3,224,224), (8,3,224,224), (32,3,224,224))\nconfig.add_optimization_profile(profile)",
+          "when": "Need dynamic batch size"
+        },
+        {
+          "approach": "Set profile at runtime",
+          "code": "context.set_optimization_profile_async(0, stream)",
+          "when": "Switching profiles"
+        },
+        {
+          "approach": "Check binding shapes",
+          "code": "context.set_input_shape('input', input_tensor.shape)",
+          "when": "Shape not set for dynamic input"
+        }
+      ]
+    },
+    {
+      "id": "output_mismatch",
+      "pattern": "Output.*differs|Accuracy.*degraded",
+      "message": "TensorRT output differs from ONNX/PyTorch",
+      "cause": "Precision loss or optimization differences",
+      "solutions": [
+        {
+          "approach": "Use FP32 precision",
+          "code": "# Build without FP16/INT8 for debugging",
+          "when": "Isolating precision issues"
+        },
+        {
+          "approach": "Compare layer by layer",
+          "code": "# Mark intermediate tensors as outputs for debugging",
+          "when": "Need to find divergence"
+        },
+        {
+          "approach": "Use polygraphy",
+          "code": "polygraphy run model.onnx --trt --onnxrt --validate",
+          "when": "Comprehensive comparison"
+        }
+      ]
+    },
+    {
+      "id": "execution_error",
+      "pattern": "Execution.*failed|execute.*error",
+      "message": "Inference execution failed",
+      "cause": "Invalid input, memory issue, or CUDA error",
+      "solutions": [
+        {
+          "approach": "Check input dimensions",
+          "code": "for i in range(engine.num_io_tensors):\n    name = engine.get_tensor_name(i)\n    print(f'{name}: {context.get_tensor_shape(name)}')",
+          "when": "Input shape might be wrong"
+        },
+        {
+          "approach": "Allocate correct memory",
+          "code": "# Ensure buffers are allocated for correct shapes",
+          "when": "Memory allocation issue"
+        },
+        {
+          "approach": "Check error code",
+          "code": "if not context.execute_async_v3(stream):\n    print('Execution failed')",
+          "when": "Need to catch failures"
+        }
+      ]
+    }
+  ]
+}

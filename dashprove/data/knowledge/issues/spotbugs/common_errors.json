@@ -1,0 +1,214 @@
+{
+  "tool": "spotbugs",
+  "version": "4.8.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "null_dereference",
+      "pattern": "NP_.*|Possible null pointer dereference",
+      "message": "Null pointer dereference risk",
+      "cause": "SpotBugs detected potential null dereference",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (obj != null) {\n    obj.method();\n}",
+          "when": "Value may be null"
+        },
+        {
+          "approach": "Use Optional",
+          "code": "Optional.ofNullable(obj).ifPresent(o -> o.method());",
+          "when": "Modern Java style"
+        },
+        {
+          "approach": "Add @NonNull annotation",
+          "code": "@NonNull Object getObject() { return obj; }",
+          "when": "Document contract"
+        }
+      ]
+    },
+    {
+      "id": "resource_leak",
+      "pattern": "OBL_.*|Resource leak|may fail to close",
+      "message": "Resource may not be closed",
+      "cause": "Stream, connection, or other resource not properly closed",
+      "solutions": [
+        {
+          "approach": "Use try-with-resources",
+          "code": "try (InputStream is = new FileInputStream(file)) {\n    // use is\n}",
+          "when": "AutoCloseable resource"
+        },
+        {
+          "approach": "Add finally block",
+          "code": "try {\n    resource.use();\n} finally {\n    resource.close();\n}",
+          "when": "Legacy code"
+        },
+        {
+          "approach": "Use utility method",
+          "code": "Files.readAllLines(path); // Auto-closes",
+          "when": "Simple file operations"
+        }
+      ]
+    },
+    {
+      "id": "synchronization_error",
+      "pattern": "IS2_.*|DC_.*|LI_.*|inconsistent synchronization",
+      "message": "Synchronization issue detected",
+      "cause": "Field accessed with inconsistent locking",
+      "solutions": [
+        {
+          "approach": "Synchronize consistently",
+          "code": "synchronized(lock) {\n    sharedField = value;\n}",
+          "when": "All accesses need sync"
+        },
+        {
+          "approach": "Make volatile",
+          "code": "private volatile int sharedField;",
+          "when": "Simple read/write"
+        },
+        {
+          "approach": "Use AtomicInteger",
+          "code": "private final AtomicInteger counter = new AtomicInteger();",
+          "when": "Atomic operations needed"
+        }
+      ]
+    },
+    {
+      "id": "equals_hashcode",
+      "pattern": "HE_.*|equals.*hashCode|hashCode.*equals",
+      "message": "equals/hashCode contract violated",
+      "cause": "Class defines equals but not hashCode or vice versa",
+      "solutions": [
+        {
+          "approach": "Implement both methods",
+          "code": "@Override\npublic int hashCode() {\n    return Objects.hash(field1, field2);\n}\n\n@Override\npublic boolean equals(Object o) {\n    if (this == o) return true;\n    if (!(o instanceof MyClass)) return false;\n    MyClass that = (MyClass) o;\n    return Objects.equals(field1, that.field1);\n}",
+          "when": "Need both methods"
+        },
+        {
+          "approach": "Use record",
+          "code": "public record MyData(String field1, int field2) {}",
+          "when": "Java 16+ data class"
+        },
+        {
+          "approach": "Use Lombok",
+          "code": "@EqualsAndHashCode\npublic class MyClass { }",
+          "when": "Using Lombok"
+        }
+      ]
+    },
+    {
+      "id": "inefficient_construction",
+      "pattern": "DM_.*|inefficient|boxing|string concatenation",
+      "message": "Inefficient code pattern detected",
+      "cause": "SpotBugs found performance anti-pattern",
+      "solutions": [
+        {
+          "approach": "Use primitive",
+          "code": "int x = Integer.parseInt(str); // Not new Integer(str)",
+          "when": "Avoid boxing"
+        },
+        {
+          "approach": "Use StringBuilder",
+          "code": "StringBuilder sb = new StringBuilder();\nfor (...) { sb.append(s); }",
+          "when": "Loop concatenation"
+        },
+        {
+          "approach": "Use static factory",
+          "code": "Boolean.valueOf(b); // Not new Boolean(b)",
+          "when": "Wrapper creation"
+        }
+      ]
+    },
+    {
+      "id": "security_vulnerability",
+      "pattern": "SQL_.*|XSS_.*|PT_.*|SECUR.*",
+      "message": "Security vulnerability detected",
+      "cause": "Potential injection or security issue",
+      "solutions": [
+        {
+          "approach": "Use PreparedStatement",
+          "code": "PreparedStatement ps = conn.prepareStatement(\"SELECT * FROM t WHERE id = ?\");\nps.setInt(1, id);",
+          "when": "SQL injection risk"
+        },
+        {
+          "approach": "Encode output",
+          "code": "String safe = HtmlUtils.htmlEscape(userInput);",
+          "when": "XSS risk"
+        },
+        {
+          "approach": "Validate paths",
+          "code": "Path resolved = baseDir.resolve(userPath).normalize();\nif (!resolved.startsWith(baseDir)) throw new SecurityException();",
+          "when": "Path traversal risk"
+        }
+      ]
+    },
+    {
+      "id": "bad_practice",
+      "pattern": "BC_.*|EC_.*|bad practice",
+      "message": "Bad coding practice",
+      "cause": "Code follows anti-pattern",
+      "solutions": [
+        {
+          "approach": "Use instanceof",
+          "code": "if (obj instanceof String s) { use(s); }",
+          "when": "Pattern matching"
+        },
+        {
+          "approach": "Check before cast",
+          "code": "if (obj instanceof List<?>) {\n    List<?> list = (List<?>) obj;\n}",
+          "when": "Type safety"
+        },
+        {
+          "approach": "Use proper comparison",
+          "code": "if (Objects.equals(a, b)) { }",
+          "when": "Null-safe equals"
+        }
+      ]
+    },
+    {
+      "id": "exception_handling",
+      "pattern": "REC_CATCH_EXCEPTION|DE_.*|catch.*Exception",
+      "message": "Exception handling issue",
+      "cause": "Broad exception catch or ignored exception",
+      "solutions": [
+        {
+          "approach": "Catch specific exceptions",
+          "code": "try {\n    // ...\n} catch (IOException | SQLException e) {\n    log.error(\"Error\", e);\n}",
+          "when": "Overly broad catch"
+        },
+        {
+          "approach": "Don't swallow exceptions",
+          "code": "catch (Exception e) {\n    log.error(\"Unexpected error\", e);\n    throw new RuntimeException(e);\n}",
+          "when": "Silent failure"
+        },
+        {
+          "approach": "Rethrow appropriately",
+          "code": "catch (IOException e) {\n    throw new UncheckedIOException(e);\n}",
+          "when": "Converting exception type"
+        }
+      ]
+    },
+    {
+      "id": "serialization_error",
+      "pattern": "SE_.*|serialVersionUID|Serializable",
+      "message": "Serialization issue",
+      "cause": "Class has serialization problem",
+      "solutions": [
+        {
+          "approach": "Add serialVersionUID",
+          "code": "private static final long serialVersionUID = 1L;",
+          "when": "Implementing Serializable"
+        },
+        {
+          "approach": "Make field transient",
+          "code": "private transient Logger logger;",
+          "when": "Non-serializable field"
+        },
+        {
+          "approach": "Consider record",
+          "code": "public record Data(String name) implements Serializable {}",
+          "when": "Simple data transfer"
+        }
+      ]
+    }
+  ]
+}

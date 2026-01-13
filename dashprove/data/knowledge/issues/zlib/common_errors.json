@@ -1,0 +1,120 @@
+{
+  "tool": "zlib",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "incorrect header check|invalid stored block lengths",
+      "meaning": "Data is not valid zlib/deflate format",
+      "causes": [
+        "Data is raw deflate without zlib header",
+        "Data is gzip format, not zlib",
+        "Data corrupted or truncated",
+        "Wrong decompression method used"
+      ],
+      "solutions": [
+        "For raw deflate: use inflateRaw() instead of inflate()",
+        "For gzip data: use gunzip() or createGunzip()",
+        "Check magic bytes: 0x78 (zlib), 0x1F 0x8B (gzip)",
+        "Verify data integrity before decompression"
+      ]
+    },
+    {
+      "pattern": "Z_DATA_ERROR|data error",
+      "meaning": "Compressed data integrity check failed",
+      "causes": [
+        "Adler-32 checksum mismatch",
+        "Data corrupted during transfer",
+        "Incomplete data stream"
+      ],
+      "solutions": [
+        "Verify complete data received before decompression",
+        "Check for network/disk corruption",
+        "Re-request or re-read source data"
+      ]
+    },
+    {
+      "pattern": "Z_BUF_ERROR|output buffer too small",
+      "meaning": "Output buffer insufficient for decompressed data",
+      "causes": [
+        "Compression ratio higher than expected",
+        "Streaming mode buffer underrun",
+        "Zip bomb or malicious compressed data"
+      ],
+      "solutions": [
+        "Use streaming API instead of one-shot: zlib.createInflate()",
+        "Increase buffer size or use dynamic allocation",
+        "Implement max output size check for untrusted data"
+      ]
+    },
+    {
+      "pattern": "Z_MEM_ERROR|not enough memory",
+      "meaning": "Memory allocation failed",
+      "causes": [
+        "System out of memory",
+        "Very large compression window",
+        "Memory leak from unclosed streams"
+      ],
+      "solutions": [
+        "Reduce windowBits parameter",
+        "Process data in chunks with streaming API",
+        "Call zlib.close() or end stream properly"
+      ]
+    },
+    {
+      "pattern": "Z_STREAM_ERROR|stream error",
+      "meaning": "Stream state inconsistent",
+      "causes": [
+        "Using stream after close/error",
+        "Invalid parameters to zlib function",
+        "Corrupted zlib stream state"
+      ],
+      "solutions": [
+        "Create new stream for each operation",
+        "Check parameters: level (0-9), windowBits (8-15)",
+        "Handle errors and don't reuse failed streams"
+      ]
+    },
+    {
+      "pattern": "Cannot read property.*of null.*zlib",
+      "meaning": "Zlib operation on null/undefined data",
+      "causes": [
+        "Empty buffer passed to compress/decompress",
+        "Async callback received error",
+        "Stream ended prematurely"
+      ],
+      "solutions": [
+        "Check buffer exists before operation: if (data) { zlib.gzip(data) }",
+        "Handle stream 'error' events",
+        "Check for 'close' vs 'finish' event order"
+      ]
+    },
+    {
+      "pattern": "unknown compression method",
+      "meaning": "Compression method not supported",
+      "causes": [
+        "Data uses non-deflate compression",
+        "Wrong windowBits for format",
+        "Encrypted or DRM-protected data misidentified"
+      ],
+      "solutions": [
+        "Verify source compression method",
+        "Use windowBits: 15+16 for gzip, 15 for zlib, -15 for raw",
+        "Check if data is actually compressed"
+      ]
+    },
+    {
+      "pattern": "EMFILE|too many open files",
+      "meaning": "File descriptor exhaustion from zlib streams",
+      "causes": [
+        "Creating many zlib streams without closing",
+        "Synchronous operations in tight loop",
+        "Memory leak from error handling paths"
+      ],
+      "solutions": [
+        "Always call .close() on streams",
+        "Use try/finally or 'close' event handler",
+        "Limit concurrent compression operations"
+      ]
+    }
+  ]
+}

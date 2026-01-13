@@ -1,0 +1,156 @@
+{
+  "tool": "whylogs",
+  "version": "1.3.22",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "profile_creation_error",
+      "pattern": "(profile|log|ResultSet)",
+      "message": "Profile creation failed",
+      "cause": "Data format or logging configuration issue",
+      "solutions": [
+        {
+          "approach": "Basic profiling",
+          "code": "import whylogs as why\nresult = why.log(df)\nprofile = result.profile()\nprofile_view = profile.view()",
+          "when": "Logging pandas DataFrame"
+        },
+        {
+          "approach": "Log with schema",
+          "code": "from whylogs.core.schema import DatasetSchema\nschema = DatasetSchema()\nresult = why.log(df, schema=schema)",
+          "when": "Need custom schema"
+        }
+      ]
+    },
+    {
+      "id": "constraint_validation_error",
+      "pattern": "(constraint|validation|check.*failed)",
+      "message": "Data constraint validation error",
+      "cause": "Data doesn't meet defined constraints",
+      "solutions": [
+        {
+          "approach": "Define constraints",
+          "code": "from whylogs.core.constraints import Constraints, ConstraintsBuilder\nbuilder = ConstraintsBuilder(dataset_profile_view=profile_view)\nbuilder.add_constraint(column_name='age', \n    constraint_type='greater_than', value=0)\nconstraints = builder.build()\nconstraints.validate()",
+          "when": "Setting up validation"
+        },
+        {
+          "approach": "Check constraint results",
+          "code": "report = constraints.validate()\nfor name, result in report.items():\n    print(f'{name}: {result}')",
+          "when": "Understanding failures"
+        }
+      ]
+    },
+    {
+      "id": "merge_error",
+      "pattern": "(merge|combine|profiles)",
+      "message": "Profile merge failed",
+      "cause": "Profiles have incompatible schemas",
+      "solutions": [
+        {
+          "approach": "Merge profiles",
+          "code": "merged_profile = profile1.merge(profile2)\nmerged_view = merged_profile.view()",
+          "when": "Combining batch profiles"
+        },
+        {
+          "approach": "Check compatibility",
+          "code": "# Ensure same columns\nprint(profile1.view().get_columns().keys())\nprint(profile2.view().get_columns().keys())",
+          "when": "Merge failing"
+        }
+      ]
+    },
+    {
+      "id": "write_error",
+      "pattern": "(write|save|serialize|file)",
+      "message": "Profile write/save error",
+      "cause": "File path or format issue",
+      "solutions": [
+        {
+          "approach": "Write to file",
+          "code": "result.writer('local').write(dest='profiles/')",
+          "when": "Saving locally"
+        },
+        {
+          "approach": "Write to WhyLabs",
+          "code": "import os\nos.environ['WHYLABS_API_KEY'] = 'your-api-key'\nos.environ['WHYLABS_DEFAULT_ORG_ID'] = 'org-id'\nos.environ['WHYLABS_DEFAULT_DATASET_ID'] = 'model-id'\nresult.writer('whylabs').write()",
+          "when": "Using WhyLabs platform"
+        },
+        {
+          "approach": "Custom path",
+          "code": "profile.write(path='output/profile.bin')",
+          "when": "Specific file location"
+        }
+      ]
+    },
+    {
+      "id": "read_error",
+      "pattern": "(read|load|deserialize)",
+      "message": "Profile read/load error",
+      "cause": "File format or version mismatch",
+      "solutions": [
+        {
+          "approach": "Read profile",
+          "code": "from whylogs import read\nprofile_view = read('profiles/profile.bin').view()",
+          "when": "Loading saved profile"
+        },
+        {
+          "approach": "Read multiple",
+          "code": "from pathlib import Path\nprofiles = []\nfor f in Path('profiles/').glob('*.bin'):\n    profiles.append(read(f))",
+          "when": "Loading batch profiles"
+        }
+      ]
+    },
+    {
+      "id": "drift_detection_error",
+      "pattern": "(drift|compare|baseline)",
+      "message": "Drift detection error",
+      "cause": "Profile comparison configuration issue",
+      "solutions": [
+        {
+          "approach": "Compare profiles",
+          "code": "from whylogs.viz import NotebookProfileVisualizer\nviz = NotebookProfileVisualizer()\nviz.set_profiles(target_profile_view=current, reference_profile_view=baseline)\nviz.summary_drift_report()",
+          "when": "Comparing two profiles"
+        },
+        {
+          "approach": "Get drift summary",
+          "code": "from whylogs.viz.drift import calculate_drift_scores\nscores = calculate_drift_scores(\n    target_view=current_view,\n    reference_view=baseline_view,\n    statistic='psi'\n)",
+          "when": "Programmatic drift scores"
+        }
+      ]
+    },
+    {
+      "id": "visualization_error",
+      "pattern": "(viz|plot|visualization|html)",
+      "message": "Visualization generation error",
+      "cause": "Visualization configuration or environment issue",
+      "solutions": [
+        {
+          "approach": "Generate HTML report",
+          "code": "from whylogs.viz import NotebookProfileVisualizer\nviz = NotebookProfileVisualizer()\nviz.set_profiles(target_profile_view=profile_view)\nviz.write(\n    preferred_path='report.html',\n    html_file_name='profile_report'\n)",
+          "when": "Creating HTML report"
+        },
+        {
+          "approach": "Use in Jupyter",
+          "code": "viz.profile_summary()  # In Jupyter notebook\nviz.distribution_chart(column='feature_name')",
+          "when": "Interactive visualization"
+        }
+      ]
+    },
+    {
+      "id": "column_type_error",
+      "pattern": "(column.*type|dtype|inferred)",
+      "message": "Column type inference error",
+      "cause": "WhyLogs couldn't determine column type",
+      "solutions": [
+        {
+          "approach": "Specify types",
+          "code": "from whylogs.core.schema import DatasetSchema, DeclarativeSchema\nfrom whylogs.core.resolvers import StandardResolver\nschema = DeclarativeSchema([\n    ColumnSchema('age', dtype=float),\n    ColumnSchema('name', dtype=str)\n])\nresult = why.log(df, schema=schema)",
+          "when": "Need explicit types"
+        },
+        {
+          "approach": "Convert before logging",
+          "code": "df['column'] = df['column'].astype(float)\nresult = why.log(df)",
+          "when": "Wrong type inferred"
+        }
+      ]
+    }
+  ]
+}

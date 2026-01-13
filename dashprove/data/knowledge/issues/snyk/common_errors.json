@@ -1,0 +1,227 @@
+{
+  "tool": "snyk",
+  "version": "1.1260.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "critical_vulnerability",
+      "pattern": "Critical severity|CVSS.*9\\.[0-9]|critical vulnerability",
+      "message": "Critical severity vulnerability found",
+      "cause": "Dependency has known critical security flaw (CVSS >= 9.0)",
+      "solutions": [
+        {
+          "approach": "Upgrade dependency",
+          "code": "snyk wizard  # Interactive upgrade\n# Or manually:\nnpm update <package>@<safe-version>",
+          "when": "Safe upgrade available"
+        },
+        {
+          "approach": "Apply patch",
+          "code": "snyk protect",
+          "when": "No upgrade available, patch exists"
+        },
+        {
+          "approach": "Ignore with reason",
+          "code": "snyk ignore --id=SNYK-JS-EXAMPLE-12345 --reason='No sensitive data processed'",
+          "when": "Risk accepted and documented"
+        }
+      ]
+    },
+    {
+      "id": "high_vulnerability",
+      "pattern": "High severity|CVSS.*[78]\\.[0-9]|high vulnerability",
+      "message": "High severity vulnerability found",
+      "cause": "Dependency has known high severity security flaw",
+      "solutions": [
+        {
+          "approach": "Upgrade to safe version",
+          "code": "# Check upgrade path:\nsnyk test --show-vulnerable-paths=all\n# Then upgrade:\nnpm install <package>@<fixed-version>",
+          "when": "Fix available"
+        },
+        {
+          "approach": "Use alternative package",
+          "code": "npm uninstall <vulnerable-package>\nnpm install <alternative-package>",
+          "when": "No fix available"
+        }
+      ]
+    },
+    {
+      "id": "outdated_base_image",
+      "pattern": "base image.*outdated|Image tag.*vulnerable",
+      "message": "Container base image is outdated",
+      "cause": "Docker image uses old base with known vulnerabilities",
+      "solutions": [
+        {
+          "approach": "Update base image",
+          "code": "FROM node:20-alpine  # Use latest LTS",
+          "when": "Can update base image"
+        },
+        {
+          "approach": "Use distroless",
+          "code": "FROM gcr.io/distroless/nodejs20-debian12",
+          "when": "Minimize attack surface"
+        },
+        {
+          "approach": "Use Snyk base image recommendations",
+          "code": "snyk container test myimage --file=Dockerfile --exclude-base-image-vulns",
+          "when": "Focus on app vulnerabilities"
+        }
+      ]
+    },
+    {
+      "id": "license_issue",
+      "pattern": "license.*issue|GPL|LGPL|AGPL|copyleft",
+      "message": "License compliance issue detected",
+      "cause": "Dependency has incompatible or copyleft license",
+      "solutions": [
+        {
+          "approach": "Review license policy",
+          "code": "snyk license --org=<org-id> --json | jq '.issues'",
+          "when": "Understand license implications"
+        },
+        {
+          "approach": "Find alternative package",
+          "code": "# Search for MIT/Apache alternatives\nnpms.io / bundlephobia.com",
+          "when": "License incompatible"
+        },
+        {
+          "approach": "Update policy",
+          "code": "// .snyk file:\nlicense-policies:\n  - LGPL-2.1: allow",
+          "when": "License acceptable for use case"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "authentication.*failed|not authenticated|auth.*error",
+      "message": "Snyk authentication failed",
+      "cause": "Missing or invalid API token",
+      "solutions": [
+        {
+          "approach": "Authenticate with browser",
+          "code": "snyk auth",
+          "when": "Interactive environment"
+        },
+        {
+          "approach": "Set token directly",
+          "code": "snyk config set api=<token>\n# Or via environment:\nexport SNYK_TOKEN=<token>",
+          "when": "CI/CD or headless"
+        },
+        {
+          "approach": "Check token validity",
+          "code": "snyk whoami",
+          "when": "Verify authentication"
+        }
+      ]
+    },
+    {
+      "id": "no_supported_manifests",
+      "pattern": "Could not detect.*manifest|No supported.*found|no lockfile",
+      "message": "No supported package manifest found",
+      "cause": "Snyk cannot find package.json, requirements.txt, etc.",
+      "solutions": [
+        {
+          "approach": "Specify manifest file",
+          "code": "snyk test --file=path/to/package.json",
+          "when": "Manifest in non-standard location"
+        },
+        {
+          "approach": "Generate lockfile",
+          "code": "npm install  # Creates package-lock.json\npip freeze > requirements.txt",
+          "when": "Missing lockfile"
+        },
+        {
+          "approach": "Specify project type",
+          "code": "snyk test --package-manager=pip",
+          "when": "Auto-detection fails"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit",
+      "pattern": "rate limit|too many requests|429",
+      "message": "API rate limit exceeded",
+      "cause": "Too many API calls in time window",
+      "solutions": [
+        {
+          "approach": "Wait and retry",
+          "code": "sleep 60 && snyk test",
+          "when": "Temporary rate limiting"
+        },
+        {
+          "approach": "Use caching",
+          "code": "snyk test --json > snyk-results.json\n# Reuse results instead of re-testing",
+          "when": "CI/CD pipeline"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Contact Snyk for enterprise rate limits",
+          "when": "Consistent rate limiting"
+        }
+      ]
+    },
+    {
+      "id": "container_no_dockerfile",
+      "pattern": "Dockerfile.*not found|cannot find Dockerfile",
+      "message": "Dockerfile not found for container scan",
+      "cause": "Container test without associated Dockerfile",
+      "solutions": [
+        {
+          "approach": "Specify Dockerfile path",
+          "code": "snyk container test myimage --file=docker/Dockerfile",
+          "when": "Dockerfile exists elsewhere"
+        },
+        {
+          "approach": "Test without Dockerfile",
+          "code": "snyk container test myimage",
+          "when": "No Dockerfile available"
+        }
+      ]
+    },
+    {
+      "id": "dependency_not_found",
+      "pattern": "dependency.*not found|package.*not exist|resolution.*failed",
+      "message": "Dependency resolution failed",
+      "cause": "Package not found in registry or private package inaccessible",
+      "solutions": [
+        {
+          "approach": "Install dependencies first",
+          "code": "npm install  # or pip install -r requirements.txt\nsnyk test",
+          "when": "Dependencies not installed"
+        },
+        {
+          "approach": "Configure private registry",
+          "code": "snyk config set registry https://private.registry.com/",
+          "when": "Private packages"
+        },
+        {
+          "approach": "Skip unavailable packages",
+          "code": "snyk test --skip-unresolved",
+          "when": "Optional dependencies"
+        }
+      ]
+    },
+    {
+      "id": "code_no_issues",
+      "pattern": "No issues found|no security issues",
+      "message": "Snyk found no security issues",
+      "cause": "Dependencies have no known vulnerabilities (or not scanned properly)",
+      "solutions": [
+        {
+          "approach": "Verify scan completed",
+          "code": "snyk test --debug 2>&1 | grep -i 'tested'",
+          "when": "Confirm dependencies were scanned"
+        },
+        {
+          "approach": "Check policy ignores",
+          "code": "cat .snyk  # Review ignored vulnerabilities",
+          "when": "May have ignored issues"
+        },
+        {
+          "approach": "Update vulnerability database",
+          "code": "snyk test --remote-repo-url=<url>",
+          "when": "Ensure latest vuln data"
+        }
+      ]
+    }
+  ]
+}

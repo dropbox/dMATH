@@ -1,0 +1,140 @@
+{
+  "tool": "watch",
+  "version": "procps-ng",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "watch:.*command not found|watch:.*not found",
+      "message": "watch command not available",
+      "cause": "watch not installed (not standard on macOS)",
+      "solutions": [
+        {
+          "approach": "Install on macOS",
+          "code": "brew install watch",
+          "when": "macOS"
+        },
+        {
+          "approach": "Use while loop alternative",
+          "code": "while true; do clear; date; df -h; sleep 2; done",
+          "when": "watch unavailable"
+        },
+        {
+          "approach": "Install on Debian/Ubuntu",
+          "code": "sudo apt install procps",
+          "when": "Minimal Linux"
+        }
+      ]
+    },
+    {
+      "id": "bad_command",
+      "pattern": "sh:.*not found|command not found|error running",
+      "message": "Watched command failed",
+      "cause": "Command doesn't exist or requires shell features",
+      "solutions": [
+        {
+          "approach": "Quote the command",
+          "code": "watch 'ps aux | grep nginx'  # Single quotes for pipes",
+          "when": "Pipes/redirects"
+        },
+        {
+          "approach": "Use full path",
+          "code": "watch /usr/local/bin/mycommand",
+          "when": "PATH issues"
+        },
+        {
+          "approach": "Run in shell",
+          "code": "watch 'bash -c \"complex command\"'",
+          "when": "Complex commands"
+        }
+      ]
+    },
+    {
+      "id": "no_color",
+      "pattern": "\\[0m|escape|garbled",
+      "message": "Color output not working",
+      "cause": "Color escapes not interpreted",
+      "solutions": [
+        {
+          "approach": "Enable color",
+          "code": "watch --color 'ls --color=always'",
+          "when": "Want colors"
+        },
+        {
+          "approach": "Force colors",
+          "code": "watch -c 'grep --color=always pattern file'",
+          "when": "Commands with color"
+        },
+        {
+          "approach": "Disable colors",
+          "code": "watch 'ls --color=never'",
+          "when": "Clean output"
+        }
+      ]
+    },
+    {
+      "id": "interval_error",
+      "pattern": "watch:.*invalid|watch:.*interval|seconds.*invalid",
+      "message": "Invalid interval specified",
+      "cause": "Interval must be positive number",
+      "solutions": [
+        {
+          "approach": "Correct syntax",
+          "code": "watch -n 5 command  # Every 5 seconds",
+          "when": "Set interval"
+        },
+        {
+          "approach": "Fractional seconds",
+          "code": "watch -n 0.5 command  # Every 500ms (GNU watch)",
+          "when": "High frequency"
+        },
+        {
+          "approach": "Minimum interval",
+          "code": "watch -n 0.1 command  # 100ms minimum usually",
+          "when": "Very fast refresh"
+        }
+      ]
+    },
+    {
+      "id": "exec_vs_shell",
+      "pattern": "exec.*failed|cannot exec|wrong output",
+      "message": "Command interpretation differs",
+      "cause": "watch -x vs default shell mode",
+      "solutions": [
+        {
+          "approach": "Use exec mode",
+          "code": "watch -x ls -la  # Don't use shell",
+          "when": "Direct execution"
+        },
+        {
+          "approach": "Use shell mode",
+          "code": "watch 'cmd1 | cmd2'  # Default uses sh -c",
+          "when": "Need shell features"
+        }
+      ]
+    },
+    {
+      "id": "differences_not_shown",
+      "pattern": "no highlight|same output",
+      "message": "Differences not highlighted",
+      "cause": "-d flag not used or nothing changed",
+      "solutions": [
+        {
+          "approach": "Enable differences",
+          "code": "watch -d command  # Highlight changes",
+          "when": "See what changed"
+        },
+        {
+          "approach": "Permanent highlight",
+          "code": "watch -d=cumulative command  # Keep all highlights",
+          "when": "Track all changes"
+        },
+        {
+          "approach": "Precise mode",
+          "code": "watch -dp command  # Highlight individual chars",
+          "when": "Character-level diff"
+        }
+      ]
+    }
+  ]
+}

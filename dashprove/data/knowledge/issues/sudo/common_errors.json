@@ -1,0 +1,148 @@
+{
+  "tool": "sudo",
+  "version": "1.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_in_sudoers",
+      "pattern": "is not in the sudoers file|not allowed to run sudo|user .* is not allowed",
+      "message": "User not in sudoers",
+      "cause": "User not authorized for sudo",
+      "solutions": [
+        {
+          "approach": "Add to sudo group",
+          "code": "# As root:\nusermod -aG sudo username  # Debian\nusermod -aG wheel username  # RHEL/Fedora",
+          "when": "Grant sudo access"
+        },
+        {
+          "approach": "Edit sudoers",
+          "code": "# As root:\nvisudo\n# Add line: username ALL=(ALL:ALL) ALL",
+          "when": "Manual configuration"
+        },
+        {
+          "approach": "Use root",
+          "code": "su -\n# Enter root password",
+          "when": "Direct root access"
+        }
+      ]
+    },
+    {
+      "id": "incorrect_password",
+      "pattern": "incorrect password attempt|Sorry, try again|Authentication failure",
+      "message": "Wrong password",
+      "cause": "Incorrect user password (not root password)",
+      "solutions": [
+        {
+          "approach": "Use YOUR password",
+          "code": "# sudo uses YOUR password, not root's\nsudo command  # Enter your login password",
+          "when": "Common confusion"
+        },
+        {
+          "approach": "Reset password",
+          "code": "# As root or another sudo user:\nsudo passwd username",
+          "when": "Forgot password"
+        }
+      ]
+    },
+    {
+      "id": "sudo_timeout",
+      "pattern": "timestamp too far in the future|sudo: timestamp too old",
+      "message": "Sudo timestamp issue",
+      "cause": "System clock changed or timestamp corrupted",
+      "solutions": [
+        {
+          "approach": "Reset timestamp",
+          "code": "sudo -K  # Remove timestamp\nsudo -v  # Re-authenticate",
+          "when": "Clear cache"
+        },
+        {
+          "approach": "Fix clock",
+          "code": "# Sync system time\nsudo ntpdate pool.ntp.org\nsudo timedatectl set-ntp true",
+          "when": "Clock issue"
+        }
+      ]
+    },
+    {
+      "id": "command_not_allowed",
+      "pattern": "is not allowed to execute|command not allowed",
+      "message": "Command not permitted",
+      "cause": "Sudoers restricts which commands user can run",
+      "solutions": [
+        {
+          "approach": "Check permissions",
+          "code": "sudo -l  # List what you can run",
+          "when": "See allowed commands"
+        },
+        {
+          "approach": "Update sudoers",
+          "code": "# As root, edit with visudo:\nusername ALL=(ALL) /usr/bin/specific_command",
+          "when": "Add permission"
+        }
+      ]
+    },
+    {
+      "id": "tty_required",
+      "pattern": "no tty present|sudo requires a tty",
+      "message": "TTY required",
+      "cause": "Running in script/cron without TTY",
+      "solutions": [
+        {
+          "approach": "Disable requiretty",
+          "code": "# In /etc/sudoers (use visudo):\nDefaults:username !requiretty",
+          "when": "Script usage"
+        },
+        {
+          "approach": "Use NOPASSWD",
+          "code": "# In sudoers:\nusername ALL=(ALL) NOPASSWD: /path/to/command",
+          "when": "Automated scripts"
+        }
+      ]
+    },
+    {
+      "id": "environment_variables",
+      "pattern": "env_reset|environment|PATH",
+      "message": "Environment not preserved",
+      "cause": "sudo resets environment by default",
+      "solutions": [
+        {
+          "approach": "Preserve env",
+          "code": "sudo -E command  # Preserve environment",
+          "when": "Keep env vars"
+        },
+        {
+          "approach": "Pass specific var",
+          "code": "sudo VAR=value command\nsudo HOME=$HOME command",
+          "when": "Specific variables"
+        },
+        {
+          "approach": "Edit sudoers",
+          "code": "# In sudoers:\nDefaults env_keep += \"VAR1 VAR2\"",
+          "when": "Permanent config"
+        }
+      ]
+    },
+    {
+      "id": "sudo_su_confusion",
+      "pattern": "sudo su|root shell",
+      "message": "Getting root shell",
+      "cause": "Different ways to get root access",
+      "solutions": [
+        {
+          "approach": "Root shell (best)",
+          "code": "sudo -i  # Login shell as root",
+          "when": "Full root environment"
+        },
+        {
+          "approach": "Keep environment",
+          "code": "sudo -s  # Shell keeping current env",
+          "when": "Quick root shell"
+        },
+        {
+          "approach": "Run as root",
+          "code": "sudo su -  # Traditional method",
+          "when": "Alternative"
+        }
+      ]
+    }
+  ]
+}

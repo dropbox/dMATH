@@ -1,0 +1,99 @@
+{
+  "tool": "ec2",
+  "category": "aws_compute",
+  "description": "Amazon Elastic Compute Cloud - virtual server instances",
+  "common_errors": [
+    {
+      "id": "insufficient_capacity",
+      "pattern": "InsufficientInstanceCapacity",
+      "regex": "(?i)insufficient.*capacity|not.*enough.*capacity|capacity.*constraint|no.*availability",
+      "cause": "AWS does not have enough capacity for requested instance type in AZ",
+      "solution": "Try different instance type, different AZ, use capacity reservations, or wait and retry",
+      "severity": "high",
+      "category": "capacity"
+    },
+    {
+      "id": "instance_limit",
+      "pattern": "InstanceLimitExceeded",
+      "regex": "(?i)instance.*limit|vCPU.*limit|quota.*exceeded|max.*instances",
+      "cause": "Account instance or vCPU limit exceeded",
+      "solution": "Request service quota increase via Service Quotas, terminate unused instances",
+      "severity": "high",
+      "category": "limits"
+    },
+    {
+      "id": "invalid_ami",
+      "pattern": "InvalidAMI",
+      "regex": "(?i)invalid.*ami|ami.*not.*found|image.*not.*available|deregistered",
+      "cause": "AMI does not exist or is not available in region",
+      "solution": "Verify AMI ID and region, check if AMI was deregistered, copy AMI to target region",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "invalid_keypair",
+      "pattern": "InvalidKeyPair",
+      "regex": "(?i)invalid.*key.*pair|key.*not.*found|no.*key.*pair",
+      "cause": "Specified key pair does not exist",
+      "solution": "Create key pair in target region, import existing public key, use EC2 Instance Connect instead",
+      "severity": "high",
+      "category": "access"
+    },
+    {
+      "id": "vpc_not_found",
+      "pattern": "InvalidSubnet",
+      "regex": "(?i)invalid.*subnet|subnet.*not.*found|vpc.*not.*found|no.*default.*vpc",
+      "cause": "Specified VPC or subnet does not exist",
+      "solution": "Create VPC and subnets, verify subnet IDs, check region for default VPC",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "security_group_error",
+      "pattern": "InvalidGroup",
+      "regex": "(?i)invalid.*group|security.*group.*not.*found|group.*does.*not.*exist",
+      "cause": "Security group does not exist or not in same VPC",
+      "solution": "Create security group in correct VPC, use security group ID (not name) for non-default VPC",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "ebs_volume_error",
+      "pattern": "InvalidVolume",
+      "regex": "(?i)invalid.*volume|volume.*not.*found|volume.*in.*use|attachment.*error",
+      "cause": "EBS volume error (not found, wrong AZ, already attached)",
+      "solution": "Volume must be in same AZ as instance, detach from other instances first",
+      "severity": "medium",
+      "category": "storage"
+    },
+    {
+      "id": "spot_bid",
+      "pattern": "SpotMaxPriceTooLow",
+      "regex": "(?i)spot.*price|bid.*too.*low|capacity.*not.*available|interrupted",
+      "cause": "Spot price exceeds max price or capacity unavailable",
+      "solution": "Increase max price, use Spot Fleet for multiple instance types/AZs, implement interruption handling",
+      "severity": "medium",
+      "category": "spot"
+    },
+    {
+      "id": "instance_state",
+      "pattern": "IncorrectInstanceState",
+      "regex": "(?i)incorrect.*state|instance.*not.*running|invalid.*state.*transition|pending|stopping",
+      "cause": "Instance operation not valid for current state",
+      "solution": "Wait for instance to reach target state, check instance status checks",
+      "severity": "medium",
+      "category": "state"
+    },
+    {
+      "id": "eip_limit",
+      "pattern": "AddressLimitExceeded",
+      "regex": "(?i)address.*limit|elastic.*ip.*limit|eip.*quota|cannot.*allocate",
+      "cause": "Elastic IP address limit exceeded",
+      "solution": "Release unused EIPs, request quota increase, use NAT Gateway instead for outbound",
+      "severity": "medium",
+      "category": "limits"
+    }
+  ],
+  "related_tools": ["aws_cli", "vpc", "ebs", "cloudwatch"],
+  "documentation_url": "https://docs.aws.amazon.com/ec2/"
+}

@@ -1,0 +1,217 @@
+{
+  "tool": "loom",
+  "version": "0.7.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "deadlock_detected",
+      "pattern": "deadlock|all threads blocked|no progress",
+      "message": "Deadlock detected in concurrent code",
+      "cause": "All threads are blocked waiting for each other",
+      "solutions": [
+        {
+          "approach": "Check lock ordering",
+          "code": "// Always acquire locks in consistent order\nlet _a = lock_a.lock().unwrap();\nlet _b = lock_b.lock().unwrap();  // Same order everywhere",
+          "when": "Circular lock dependency"
+        },
+        {
+          "approach": "Use try_lock",
+          "code": "if let Ok(guard) = mutex.try_lock() {\n    // Use guard\n} else {\n    // Handle contention\n}",
+          "when": "Can handle lock failure"
+        },
+        {
+          "approach": "Reduce lock scope",
+          "code": "{\n    let data = mutex.lock().unwrap();\n    let value = data.clone();\n}  // Lock released here\n// Use value without lock",
+          "when": "Holding locks too long"
+        }
+      ]
+    },
+    {
+      "id": "data_race",
+      "pattern": "data race|concurrent.*access|unsynchronized",
+      "message": "Data race detected",
+      "cause": "Multiple threads accessing same data without synchronization",
+      "solutions": [
+        {
+          "approach": "Use atomic operations",
+          "code": "use loom::sync::atomic::AtomicUsize;\nlet counter = AtomicUsize::new(0);\ncounter.fetch_add(1, Ordering::SeqCst);",
+          "when": "Simple atomic data"
+        },
+        {
+          "approach": "Protect with mutex",
+          "code": "use loom::sync::Mutex;\nlet data = Mutex::new(value);\nlet mut guard = data.lock().unwrap();\n*guard = new_value;",
+          "when": "Complex data structure"
+        },
+        {
+          "approach": "Use channels",
+          "code": "use loom::sync::mpsc::channel;\nlet (tx, rx) = channel();\ntx.send(value).unwrap();",
+          "when": "Can use message passing"
+        }
+      ]
+    },
+    {
+      "id": "memory_ordering_bug",
+      "pattern": "ordering|Ordering::Relaxed.*incorrect|fence.*missing",
+      "message": "Memory ordering issue",
+      "cause": "Atomic operations using too weak memory ordering",
+      "solutions": [
+        {
+          "approach": "Use SeqCst for safety",
+          "code": "value.store(1, Ordering::SeqCst);\nlet v = value.load(Ordering::SeqCst);",
+          "when": "Not sure about ordering"
+        },
+        {
+          "approach": "Use Acquire/Release for synchronization",
+          "code": "// Writer:\nvalue.store(1, Ordering::Release);\n// Reader:\nlet v = value.load(Ordering::Acquire);",
+          "when": "Synchronizing between threads"
+        },
+        {
+          "approach": "Add fence",
+          "code": "use loom::sync::atomic::fence;\nfence(Ordering::SeqCst);",
+          "when": "Need explicit barrier"
+        }
+      ]
+    },
+    {
+      "id": "condvar_spurious_wakeup",
+      "pattern": "spurious.*wakeup|condition.*not.*met|wait.*returned.*early",
+      "message": "Condition variable woke without condition being true",
+      "cause": "Condvar wait returned but condition wasn't satisfied",
+      "solutions": [
+        {
+          "approach": "Use wait_while",
+          "code": "let guard = cvar.wait_while(guard, |data| !data.ready).unwrap();",
+          "when": "Have simple predicate"
+        },
+        {
+          "approach": "Loop on condition",
+          "code": "let mut guard = mutex.lock().unwrap();\nwhile !guard.ready {\n    guard = cvar.wait(guard).unwrap();\n}",
+          "when": "Need custom loop logic"
+        }
+      ]
+    },
+    {
+      "id": "thread_panic",
+      "pattern": "thread.*panicked|panic.*occurred|unwrap.*failed",
+      "message": "Thread panicked during execution",
+      "cause": "Panic in spawned thread",
+      "solutions": [
+        {
+          "approach": "Handle panic in join",
+          "code": "match handle.join() {\n    Ok(result) => result,\n    Err(panic) => {\n        // Handle panic\n    }\n}",
+          "when": "Need to handle thread panic"
+        },
+        {
+          "approach": "Use catch_unwind",
+          "code": "use std::panic::catch_unwind;\nlet result = catch_unwind(|| {\n    // Potentially panicking code\n});",
+          "when": "Need panic recovery"
+        },
+        {
+          "approach": "Check poison",
+          "code": "match mutex.lock() {\n    Ok(guard) => { /* use guard */ }\n    Err(poisoned) => {\n        let guard = poisoned.into_inner();\n        // Recover\n    }\n}",
+          "when": "Mutex poisoned by panic"
+        }
+      ]
+    },
+    {
+      "id": "state_explosion",
+      "pattern": "state space.*too large|exceeded.*iterations|out of memory",
+      "message": "State space too large for exhaustive exploration",
+      "cause": "Too many possible interleavings to explore",
+      "solutions": [
+        {
+          "approach": "Reduce thread count",
+          "code": "loom::model(|| {\n    // Use fewer threads in test\n    let t1 = thread::spawn(...);\n    // Instead of many threads\n});",
+          "when": "Can simplify test"
+        },
+        {
+          "approach": "Use smaller bounds",
+          "code": "let builder = loom::model::Builder::new();\nbuilder.max_iterations = 10000;\nbuilder.check(|| { ... });",
+          "when": "Need bounded exploration"
+        },
+        {
+          "approach": "Simplify synchronization",
+          "code": "// Reduce number of sync points\n// Combine operations where possible",
+          "when": "Too many sync points"
+        }
+      ]
+    },
+    {
+      "id": "arc_reference_cycle",
+      "pattern": "reference.*cycle|Arc.*leak|memory.*leak",
+      "message": "Reference cycle with Arc causing memory leak",
+      "cause": "Circular Arc references preventing deallocation",
+      "solutions": [
+        {
+          "approach": "Use Weak references",
+          "code": "use loom::sync::{Arc, Weak};\nlet weak: Weak<T> = Arc::downgrade(&arc);\n// Check if still alive:\nif let Some(arc) = weak.upgrade() { ... }",
+          "when": "Have back-references"
+        },
+        {
+          "approach": "Break cycle explicitly",
+          "code": "impl Drop for Node {\n    fn drop(&mut self) {\n        self.next = None;  // Break cycle\n    }\n}",
+          "when": "Can clear in destructor"
+        }
+      ]
+    },
+    {
+      "id": "rwlock_starvation",
+      "pattern": "starvation|writer.*never.*runs|reader.*blocked",
+      "message": "Reader/writer starvation",
+      "cause": "Readers or writers unfairly blocked",
+      "solutions": [
+        {
+          "approach": "Use fair RwLock",
+          "code": "// Loom's RwLock provides some fairness\n// Consider parking_lot for production",
+          "when": "Need fairness guarantees"
+        },
+        {
+          "approach": "Prefer write",
+          "code": "// Hold write lock for shorter time\n// Batch reads where possible",
+          "when": "Writers starved by readers"
+        }
+      ]
+    },
+    {
+      "id": "channel_closed",
+      "pattern": "channel.*closed|SendError|RecvError.*Disconnected",
+      "message": "Channel unexpectedly closed",
+      "cause": "Sender or receiver dropped while other end still active",
+      "solutions": [
+        {
+          "approach": "Handle send error",
+          "code": "if tx.send(msg).is_err() {\n    // Receiver dropped, handle gracefully\n}",
+          "when": "Receiver might drop"
+        },
+        {
+          "approach": "Handle recv error",
+          "code": "match rx.recv() {\n    Ok(msg) => { /* process */ }\n    Err(_) => { /* sender dropped */ }\n}",
+          "when": "Sender might drop"
+        },
+        {
+          "approach": "Use try_recv for polling",
+          "code": "while let Ok(msg) = rx.try_recv() {\n    // Process available messages\n}",
+          "when": "Non-blocking receive"
+        }
+      ]
+    },
+    {
+      "id": "once_initialization",
+      "pattern": "Once.*poisoned|call_once.*failed|initialization.*race",
+      "message": "Once initialization issue",
+      "cause": "Error during lazy/once initialization",
+      "solutions": [
+        {
+          "approach": "Handle panic in call_once",
+          "code": "use loom::sync::Once;\nlet once = Once::new();\nonce.call_once(|| {\n    // Must not panic\n});",
+          "when": "Initialization panics"
+        },
+        {
+          "approach": "Use try_call_once",
+          "code": "if once.is_completed() {\n    // Already initialized\n} else {\n    once.call_once(|| init());\n}",
+          "when": "Need conditional init"
+        }
+      ]
+    }
+  ]
+}

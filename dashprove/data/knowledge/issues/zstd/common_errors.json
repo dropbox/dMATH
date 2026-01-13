@@ -1,0 +1,118 @@
+{
+  "tool": "zstd",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "ZSTD_error_prefix_unknown|Unknown frame descriptor",
+      "meaning": "Data is not valid zstd format",
+      "causes": [
+        "Data is gzip/brotli, not zstd",
+        "Magic number mismatch (not 0x28B52FFD)",
+        "Data corrupted or truncated"
+      ],
+      "solutions": [
+        "Check magic bytes: 0xFD 0x2F 0xB5 0x28",
+        "Verify source compression format",
+        "Ensure complete data before decompression"
+      ]
+    },
+    {
+      "pattern": "ZSTD_error_memory_allocation|Cannot allocate memory",
+      "meaning": "Memory allocation failed",
+      "causes": [
+        "System out of memory",
+        "Very large window size",
+        "Memory not freed from previous operations"
+      ],
+      "solutions": [
+        "Reduce compression level (memory scales with level)",
+        "Use streaming API for large data",
+        "Free compression/decompression context when done"
+      ]
+    },
+    {
+      "pattern": "ZSTD_error_srcSize_wrong|Src size is incorrect",
+      "meaning": "Declared source size doesn't match actual",
+      "causes": [
+        "Content size header mismatch",
+        "Truncated or appended data",
+        "Multiple frames concatenated incorrectly"
+      ],
+      "solutions": [
+        "Verify data integrity before decompression",
+        "Check for multiple frames: zstd supports frame concatenation",
+        "Re-compress without content size: -no-content-size flag"
+      ]
+    },
+    {
+      "pattern": "ZSTD_error_dictionary_wrong|Dictionary mismatch",
+      "meaning": "Wrong dictionary for decompression",
+      "causes": [
+        "Compressed with dictionary, decompressing without",
+        "Dictionary ID mismatch",
+        "Dictionary corrupted"
+      ],
+      "solutions": [
+        "Provide same dictionary used for compression",
+        "Check dictionary ID in frame header",
+        "Store dictionary ID with compressed data for retrieval"
+      ]
+    },
+    {
+      "pattern": "ZSTD_error_checksum_wrong|Checksum doesn't match",
+      "meaning": "Data integrity check failed",
+      "causes": [
+        "Data corrupted during transfer/storage",
+        "Partial frame",
+        "Bit flip or truncation"
+      ],
+      "solutions": [
+        "Re-download or re-read source data",
+        "Verify complete transfer",
+        "Check storage/network reliability"
+      ]
+    },
+    {
+      "pattern": "ZSTD_error_frameParameter_windowTooLarge|Window too large",
+      "meaning": "Decompression window exceeds limit",
+      "causes": [
+        "Compressed with very large window",
+        "Potential zip bomb attack",
+        "Memory constrained environment"
+      ],
+      "solutions": [
+        "Set ZSTD_d_windowLogMax to limit window size",
+        "Reject files with excessively large windows",
+        "Re-compress with smaller window: --long=27 max"
+      ]
+    },
+    {
+      "pattern": "cannot load zstd|module not found",
+      "meaning": "zstd native module not available",
+      "causes": [
+        "Native addon not compiled",
+        "Platform not supported",
+        "Node.js version incompatible"
+      ],
+      "solutions": [
+        "Install from npm: npm install @mongodb-js/zstd or zstd-codec",
+        "Ensure build tools for native compilation",
+        "Use WASM-based alternative: zstd-wasm"
+      ]
+    },
+    {
+      "pattern": "streaming.*incomplete|ZSTD_error_stage_wrong",
+      "meaning": "Streaming decompression state error",
+      "causes": [
+        "Stream ended in middle of frame",
+        "Operations called in wrong order",
+        "Reusing context incorrectly"
+      ],
+      "solutions": [
+        "Check for complete frame before ending stream",
+        "Follow streaming API sequence correctly",
+        "Reset context between operations: ZSTD_CCtx_reset()"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "graphql_tools",
+  "category": "graphql",
+  "common_errors": [
+    {
+      "error": "SCHEMA_MERGING_CONFLICT",
+      "pattern": "Type.*conflict|Field.*defined.*multiple|Unable to merge|Duplicate type",
+      "severity": "high",
+      "causes": [
+        "Same type name in multiple schemas",
+        "Conflicting field definitions",
+        "Incompatible type extensions",
+        "Duplicate directive definitions"
+      ],
+      "solutions": [
+        "Use type merging: mergeTypeDefs with onTypeConflict handler",
+        "Rename conflicting types: transformSchema",
+        "Use extend type for additions",
+        "Configure mergeCandidatesSelector for conflict resolution"
+      ]
+    },
+    {
+      "error": "RESOLVER_COMPOSITION_ERROR",
+      "pattern": "Resolver.*chain.*failed|middleware.*error|compose.*undefined",
+      "severity": "high",
+      "causes": [
+        "Middleware returning undefined",
+        "Resolver chain broken",
+        "Missing next() call in middleware",
+        "Async middleware not awaited"
+      ],
+      "solutions": [
+        "Ensure middleware calls next/resolver function",
+        "Return resolver result: return next()",
+        "Add proper async/await handling",
+        "Check middleware order in composition"
+      ]
+    },
+    {
+      "error": "STITCHING_DELEGATION_FAILED",
+      "pattern": "Delegation.*failed|delegateToSchema.*error|Cannot delegate",
+      "severity": "high",
+      "causes": [
+        "Target schema unavailable",
+        "Field mapping incorrect",
+        "Arguments not properly forwarded",
+        "Context not propagated"
+      ],
+      "solutions": [
+        "Verify subschema is accessible",
+        "Check fieldName and args in delegation",
+        "Forward necessary context: context",
+        "Use transforms for field/type mapping"
+      ]
+    },
+    {
+      "error": "LOAD_FILES_FAILED",
+      "pattern": "loadFilesSync.*error|No files found|Could not load.*graphql",
+      "severity": "medium",
+      "causes": [
+        "Wrong file path pattern",
+        "Files not matching extension",
+        "Directory doesn't exist",
+        "Glob pattern mismatch"
+      ],
+      "solutions": [
+        "Check glob pattern: loadFilesSync('./src/**/*.graphql')",
+        "Verify file extensions match: extensions: ['.graphql', '.gql']",
+        "Use absolute paths if relative fails",
+        "Check directory exists: fs.existsSync(path)"
+      ]
+    },
+    {
+      "error": "SCALAR_TYPE_ERROR",
+      "pattern": "Scalar.*serialize|cannot.*serialize|Invalid scalar value",
+      "severity": "medium",
+      "causes": [
+        "Custom scalar missing serialize/parseValue",
+        "Value doesn't match scalar type",
+        "Scalar coercion failure",
+        "Input not matching scalar format"
+      ],
+      "solutions": [
+        "Implement all scalar functions: serialize, parseValue, parseLiteral",
+        "Validate input in parseValue",
+        "Use graphql-scalars for common types",
+        "Add proper error messages for validation failures"
+      ]
+    },
+    {
+      "error": "DIRECTIVE_NOT_IMPLEMENTED",
+      "pattern": "Directive.*not.*implemented|Unknown directive|directive.*resolver.*missing",
+      "severity": "medium",
+      "causes": [
+        "Schema directive without transformer",
+        "Directive name mismatch",
+        "Missing directive implementation",
+        "Directive not applied to schema"
+      ],
+      "solutions": [
+        "Implement directive transformer: mapSchema(schema, { ... })",
+        "Register directive: schemaDirectives: { directiveName: DirectiveClass }",
+        "Use @graphql-tools/utils directive helpers",
+        "Verify directive name matches schema declaration"
+      ]
+    },
+    {
+      "error": "INTERFACE_RESOLVE_TYPE_MISSING",
+      "pattern": "Abstract type.*must resolve|resolveType.*required|__resolveType.*missing",
+      "severity": "high",
+      "causes": [
+        "Interface without resolveType",
+        "Union type missing type resolution",
+        "Incorrect __typename handling",
+        "Type resolver returning wrong type"
+      ],
+      "solutions": [
+        "Add __resolveType to interface resolver",
+        "Return correct type name: __resolveType: (obj) => obj.__typename",
+        "Use isTypeOf on implementing types",
+        "Check __typename is set correctly on data"
+      ]
+    },
+    {
+      "error": "SUBSCRIPTION_NOT_WORKING",
+      "pattern": "Subscription.*error|asyncIterator.*undefined|PubSub.*not.*defined",
+      "severity": "medium",
+      "causes": [
+        "PubSub not initialized",
+        "asyncIterator not returned",
+        "Subscribe function missing",
+        "WebSocket server not configured"
+      ],
+      "solutions": [
+        "Create PubSub instance: const pubsub = new PubSub()",
+        "Return asyncIterator: subscribe: () => pubsub.asyncIterator(['EVENT'])",
+        "Configure WebSocket server for subscriptions",
+        "Use graphql-subscriptions or graphql-redis-subscriptions"
+      ]
+    },
+    {
+      "error": "SCHEMA_TRANSFORM_ERROR",
+      "pattern": "Transform.*failed|wrapSchema.*error|Cannot transform",
+      "severity": "medium",
+      "causes": [
+        "Invalid transform configuration",
+        "Type not found for transformation",
+        "Circular transformation dependency",
+        "Transform function throwing"
+      ],
+      "solutions": [
+        "Check transform configuration",
+        "Verify type/field exists before transforming",
+        "Order transforms correctly",
+        "Add error handling in custom transforms"
+      ]
+    },
+    {
+      "error": "FEDERATION_COMPOSITION_ERROR",
+      "pattern": "Federation.*composition.*failed|_Entity.*not found|@key.*invalid",
+      "severity": "high",
+      "causes": [
+        "@key directive misconfiguration",
+        "Missing federation directives",
+        "_entities resolver not implemented",
+        "Type conflicts between subgraphs"
+      ],
+      "solutions": [
+        "Add federation directives: buildSubgraphSchema",
+        "Implement __resolveReference for entities",
+        "Verify @key fields are resolvable",
+        "Use rover graph check for composition validation"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use type extensions instead of type duplication",
+    "Implement proper resolveType for interfaces/unions",
+    "Test schema composition before deployment",
+    "Use schema validation during development",
+    "Leverage graphql-tools transforms for clean stitching",
+    "Document custom scalars and directives",
+    "Version subgraphs in federated architecture"
+  ],
+  "related_tools": ["apollo_server", "hasura", "nexus", "type_graphql"]
+}

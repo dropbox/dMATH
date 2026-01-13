@@ -1,0 +1,70 @@
+{
+  "tool": "stream_chain",
+  "category": "streams",
+  "common_errors": [
+    {
+      "id": "stream_chain_type_mismatch",
+      "pattern": "invalid type|objectMode mismatch|cannot chain",
+      "severity": "error",
+      "causes": [
+        "Mixing objectMode and buffer streams",
+        "Type mismatch between transforms",
+        "Inconsistent stream types"
+      ],
+      "solutions": [
+        "Use chain.chain() with consistent types",
+        "All streams should be objectMode or all buffer",
+        "Use chain({ objectMode: true }) explicitly",
+        "Convert types at boundaries"
+      ]
+    },
+    {
+      "id": "stream_chain_function_transform",
+      "pattern": "function not working|generator issues|async generator",
+      "severity": "warning",
+      "causes": [
+        "Function signature wrong",
+        "Generator not yielding correctly",
+        "Async generator issues"
+      ],
+      "solutions": [
+        "Generator: function*(data) { yield data; }",
+        "Async generator: async function*(data) { yield await process(data); }",
+        "Can yield multiple values per input",
+        "Return nothing or yield nothing to filter"
+      ]
+    },
+    {
+      "id": "stream_chain_error_propagation",
+      "pattern": "error not caught|error lost|chain error",
+      "severity": "error",
+      "causes": [
+        "Error in middle of chain",
+        "Error handler not attached",
+        "Error not propagating"
+      ],
+      "solutions": [
+        "Attach error handler to chain: chain.on('error', handler)",
+        "Errors propagate to final stream",
+        "Use try-catch in transform functions",
+        "Check individual stream error events"
+      ]
+    },
+    {
+      "id": "stream_chain_empty_output",
+      "pattern": "no output|empty stream|data not flowing",
+      "severity": "warning",
+      "causes": [
+        "Transform filtering all data",
+        "Not calling callback in transform",
+        "Generator not yielding"
+      ],
+      "solutions": [
+        "Verify transform yields/pushes data",
+        "Check filter conditions aren't too strict",
+        "Debug: add pass-through to log data",
+        "Ensure source stream has data"
+      ]
+    }
+  ]
+}

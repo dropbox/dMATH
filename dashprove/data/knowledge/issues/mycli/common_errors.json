@@ -1,0 +1,145 @@
+{
+  "tool": "mycli",
+  "version": "1.27",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Can't connect|Connection refused|ERROR 2003|socket.*error",
+      "message": "Cannot connect to MySQL server",
+      "cause": "Server not running, wrong host/port, or firewall",
+      "solutions": [
+        {
+          "approach": "Check service",
+          "code": "mysqladmin -u root ping\nsystemctl status mysql",
+          "when": "Verify server running"
+        },
+        {
+          "approach": "Use socket",
+          "code": "mycli -S /var/run/mysqld/mysqld.sock -u root",
+          "when": "Local socket"
+        },
+        {
+          "approach": "Full connection",
+          "code": "mycli -h 127.0.0.1 -P 3306 -u user -p dbname",
+          "when": "Explicit parameters"
+        }
+      ]
+    },
+    {
+      "id": "access_denied",
+      "pattern": "Access denied|ERROR 1045|authentication failed|password",
+      "message": "Authentication failure",
+      "cause": "Wrong credentials or user lacks permissions",
+      "solutions": [
+        {
+          "approach": "Prompt password",
+          "code": "mycli -u myuser -p  # Prompts securely",
+          "when": "Enter password"
+        },
+        {
+          "approach": "Use config",
+          "code": "# ~/.my.cnf\n[client]\nuser = myuser\npassword = mypass\nhost = localhost",
+          "when": "Store credentials"
+        },
+        {
+          "approach": "Reset password",
+          "code": "mysql -u root\nALTER USER 'myuser'@'localhost' IDENTIFIED BY 'newpass';",
+          "when": "Reset user password"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL.*error|ssl-mode|TLS|certificate",
+      "message": "SSL/TLS connection error",
+      "cause": "SSL required or certificate issues",
+      "solutions": [
+        {
+          "approach": "Disable SSL",
+          "code": "mycli --ssl-mode DISABLED -u user -h host",
+          "when": "Skip SSL (dev only)"
+        },
+        {
+          "approach": "Require SSL",
+          "code": "mycli --ssl-mode REQUIRED -u user -h host",
+          "when": "Force SSL"
+        },
+        {
+          "approach": "With certificates",
+          "code": "mycli --ssl-ca=/path/ca.pem --ssl-cert=/path/client.pem --ssl-key=/path/client-key.pem",
+          "when": "mTLS"
+        }
+      ]
+    },
+    {
+      "id": "database_not_found",
+      "pattern": "Unknown database|ERROR 1049|database.*doesn't exist",
+      "message": "Database does not exist",
+      "cause": "Wrong database name or not created",
+      "solutions": [
+        {
+          "approach": "List databases",
+          "code": "mycli -u root -e 'SHOW DATABASES;'",
+          "when": "Find databases"
+        },
+        {
+          "approach": "Connect without db",
+          "code": "mycli -u root  # Then USE dbname;",
+          "when": "Connect first"
+        },
+        {
+          "approach": "Create database",
+          "code": "mycli -u root -e 'CREATE DATABASE mydb;'",
+          "when": "Create new"
+        }
+      ]
+    },
+    {
+      "id": "charset_error",
+      "pattern": "character set|encoding|utf8|collation|Incorrect string",
+      "message": "Character set or encoding error",
+      "cause": "Client/server charset mismatch",
+      "solutions": [
+        {
+          "approach": "Set charset",
+          "code": "mycli --charset utf8mb4 -u user dbname",
+          "when": "Specify charset"
+        },
+        {
+          "approach": "In session",
+          "code": "SET NAMES utf8mb4;\nSET character_set_results = utf8mb4;",
+          "when": "Runtime change"
+        },
+        {
+          "approach": "Config file",
+          "code": "# ~/.my.cnf\n[client]\ndefault-character-set = utf8mb4",
+          "when": "Persistent setting"
+        }
+      ]
+    },
+    {
+      "id": "pager_error",
+      "pattern": "pager.*error|less.*not found|PAGER",
+      "message": "Output pager error",
+      "cause": "Pager program not found or terminal issue",
+      "solutions": [
+        {
+          "approach": "Disable pager",
+          "code": "mycli --no-auto-vertical-output\n# Or inside: \\P disable",
+          "when": "Turn off pager"
+        },
+        {
+          "approach": "Set pager",
+          "code": "export PAGER='less -S'\nmycli -u user",
+          "when": "Custom pager"
+        },
+        {
+          "approach": "Config option",
+          "code": "# ~/.myclirc\n[main]\npager = less -SRXF",
+          "when": "Persistent pager"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "tool": "whois",
+  "version": "5.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_match",
+      "pattern": "No match|NOT FOUND|No entries found|Domain not found|No Data Found",
+      "message": "Domain not registered",
+      "cause": "Domain doesn't exist or is available",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "whois example.com  # Verify domain name",
+          "when": "Typo in domain"
+        },
+        {
+          "approach": "Try variations",
+          "code": "whois example.net\nwhois example.org\nwhois example.io",
+          "when": "Different TLD"
+        },
+        {
+          "approach": "Register domain",
+          "code": "# Domain available for registration",
+          "when": "Intent to register"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|connect.*failed|Unable to connect",
+      "message": "WHOIS server unreachable",
+      "cause": "Server down or port 43 blocked",
+      "solutions": [
+        {
+          "approach": "Try different server",
+          "code": "whois -h whois.verisign-grs.com example.com",
+          "when": "Default server down"
+        },
+        {
+          "approach": "Web WHOIS",
+          "code": "# Use web interfaces:\n# https://whois.icann.org\n# https://lookup.icann.org",
+          "when": "Port 43 blocked"
+        },
+        {
+          "approach": "Retry later",
+          "code": "sleep 60 && whois example.com",
+          "when": "Temporary outage"
+        }
+      ]
+    },
+    {
+      "id": "rate_limited",
+      "pattern": "rate limit|quota exceeded|too many queries|Please wait|Query limit|429",
+      "message": "Query rate limit exceeded",
+      "cause": "Too many queries in short time",
+      "solutions": [
+        {
+          "approach": "Wait and retry",
+          "code": "sleep 300 && whois example.com  # Wait 5 min",
+          "when": "Rate limited"
+        },
+        {
+          "approach": "Different server",
+          "code": "whois -h whois.iana.org example.com",
+          "when": "Try other server"
+        },
+        {
+          "approach": "Cache results",
+          "code": "whois example.com > example_whois.txt",
+          "when": "Save for reuse"
+        }
+      ]
+    },
+    {
+      "id": "unknown_tld",
+      "pattern": "No whois server|unknown TLD|TLD.*not found|no server for",
+      "message": "Unknown or unsupported TLD",
+      "cause": "No known WHOIS server for TLD",
+      "solutions": [
+        {
+          "approach": "Specify server",
+          "code": "whois -h whois.nic.xyz example.xyz",
+          "when": "Know WHOIS server"
+        },
+        {
+          "approach": "Check IANA",
+          "code": "whois -h whois.iana.org xyz  # Find TLD server",
+          "when": "Find WHOIS server"
+        },
+        {
+          "approach": "Web lookup",
+          "code": "# Use: https://lookup.icann.org",
+          "when": "CLI not working"
+        }
+      ]
+    },
+    {
+      "id": "privacy_protected",
+      "pattern": "REDACTED|Privacy|Protected|Registrant.*Proxy|Data protected|GDPR",
+      "message": "Registrant data is private",
+      "cause": "WHOIS privacy service enabled",
+      "solutions": [
+        {
+          "approach": "Check abuse contact",
+          "code": "whois example.com | grep -i abuse",
+          "when": "Report abuse"
+        },
+        {
+          "approach": "Check registrar",
+          "code": "whois example.com | grep -i registrar",
+          "when": "Find registrar"
+        },
+        {
+          "approach": "Legal channels",
+          "code": "# Contact registrar through official channels\n# ICANN WHOIS Disclosure Procedure",
+          "when": "Legal need"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timed out|Timeout|No response|connection.*timeout",
+      "message": "WHOIS query timed out",
+      "cause": "Server slow or network issue",
+      "solutions": [
+        {
+          "approach": "Retry",
+          "code": "whois example.com",
+          "when": "Transient issue"
+        },
+        {
+          "approach": "Different server",
+          "code": "whois -h whois.internic.net example.com",
+          "when": "Server slow"
+        },
+        {
+          "approach": "Check connectivity",
+          "code": "nc -zv whois.verisign-grs.com 43",
+          "when": "Network issue"
+        }
+      ]
+    }
+  ]
+}

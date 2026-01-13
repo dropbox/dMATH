@@ -14,3 +14,18 @@ This file tracks published preview releases.
 | Tag | Date | Source Commit | Notes |
 |-----|------|---------------|-------|
 | kani_fast-preview-2026.01.13 | 2026-01-13 | 43eebe5 | Initial preview release |
+
+## zksolve
+
+| Tag | Date | Source Commit | Notes |
+|-----|------|---------------|-------|
+
+## proverif-rs
+
+| Tag | Date | Source Commit | Notes |
+|-----|------|---------------|-------|
+
+## galg
+
+| Tag | Date | Source Commit | Notes |
+|-----|------|---------------|-------|

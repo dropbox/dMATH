@@ -1,0 +1,186 @@
+{
+  "tool": "wasm_pack",
+  "version": "0.12.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "target_not_installed",
+      "pattern": "wasm32.*target|target.*not installed|can't find crate",
+      "message": "WebAssembly target not installed",
+      "cause": "wasm32-unknown-unknown target not installed",
+      "solutions": [
+        {
+          "approach": "Install target",
+          "code": "rustup target add wasm32-unknown-unknown",
+          "when": "Missing target"
+        },
+        {
+          "approach": "Check targets",
+          "code": "rustup target list --installed",
+          "when": "Verify installation"
+        }
+      ]
+    },
+    {
+      "id": "cargo_toml_error",
+      "pattern": "Cargo.toml.*error|crate-type|lib.*missing",
+      "message": "Cargo.toml configuration error",
+      "cause": "Missing or incorrect crate-type for wasm",
+      "solutions": [
+        {
+          "approach": "Add crate-type",
+          "code": "[lib]\ncrate-type = [\"cdylib\", \"rlib\"]",
+          "when": "Library config"
+        },
+        {
+          "approach": "Add wasm-bindgen",
+          "code": "[dependencies]\nwasm-bindgen = \"0.2\"",
+          "when": "Missing dependency"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "Build failed|Compiling.*failed|error\\[E",
+      "message": "Wasm build compilation failed",
+      "cause": "Rust compilation error",
+      "solutions": [
+        {
+          "approach": "Check errors",
+          "code": "wasm-pack build --verbose",
+          "when": "Debug build"
+        },
+        {
+          "approach": "Check features",
+          "code": "[dependencies]\ngetrandom = { version = \"0.2\", features = [\"js\"] }",
+          "when": "Crate needs wasm features"
+        },
+        {
+          "approach": "Use wasm feature",
+          "code": "wasm-pack build --features wasm",
+          "when": "Enable wasm features"
+        }
+      ]
+    },
+    {
+      "id": "wasm_bindgen_error",
+      "pattern": "wasm-bindgen.*error|#\\[wasm_bindgen\\]|binding.*failed",
+      "message": "wasm-bindgen error",
+      "cause": "wasm-bindgen attribute or type error",
+      "solutions": [
+        {
+          "approach": "Check types",
+          "code": "// Only certain types work with wasm-bindgen\n#[wasm_bindgen]\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", name)\n}",
+          "when": "Type compatibility"
+        },
+        {
+          "approach": "Use JsValue",
+          "code": "use wasm_bindgen::JsValue;\n\n#[wasm_bindgen]\npub fn process(val: JsValue) -> JsValue { ... }",
+          "when": "Complex types"
+        },
+        {
+          "approach": "Check version match",
+          "code": "# Ensure wasm-pack and wasm-bindgen versions are compatible",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "target_option_error",
+      "pattern": "Invalid target|--target.*error|web|nodejs|bundler",
+      "message": "Invalid target option",
+      "cause": "Invalid --target value specified",
+      "solutions": [
+        {
+          "approach": "Use web target",
+          "code": "wasm-pack build --target web",
+          "when": "Browser without bundler"
+        },
+        {
+          "approach": "Use bundler target",
+          "code": "wasm-pack build --target bundler",
+          "when": "webpack/vite/etc"
+        },
+        {
+          "approach": "Use nodejs target",
+          "code": "wasm-pack build --target nodejs",
+          "when": "Node.js environment"
+        },
+        {
+          "approach": "Use no-modules",
+          "code": "wasm-pack build --target no-modules",
+          "when": "No module system"
+        }
+      ]
+    },
+    {
+      "id": "publish_error",
+      "pattern": "publish.*error|npm.*failed|registry.*error",
+      "message": "npm publish failed",
+      "cause": "Error publishing to npm registry",
+      "solutions": [
+        {
+          "approach": "Login to npm",
+          "code": "wasm-pack login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Check package.json",
+          "code": "# Ensure pkg/package.json has correct name and version",
+          "when": "Package config issue"
+        },
+        {
+          "approach": "Build first",
+          "code": "wasm-pack build --release --target bundler\nwasm-pack publish",
+          "when": "Missing build"
+        }
+      ]
+    },
+    {
+      "id": "test_error",
+      "pattern": "test.*failed|wasm-pack test|browser.*error",
+      "message": "wasm-pack test failed",
+      "cause": "Test execution error",
+      "solutions": [
+        {
+          "approach": "Run headless tests",
+          "code": "wasm-pack test --headless --firefox",
+          "when": "CI environment"
+        },
+        {
+          "approach": "Run Chrome tests",
+          "code": "wasm-pack test --headless --chrome",
+          "when": "Use Chrome"
+        },
+        {
+          "approach": "Node tests",
+          "code": "wasm-pack test --node",
+          "when": "Node.js tests"
+        }
+      ]
+    },
+    {
+      "id": "size_optimization",
+      "pattern": "wasm.*large|file size|optimize",
+      "message": "Wasm binary too large",
+      "cause": "Unoptimized wasm output",
+      "solutions": [
+        {
+          "approach": "Release build",
+          "code": "wasm-pack build --release",
+          "when": "Use release mode"
+        },
+        {
+          "approach": "Enable LTO",
+          "code": "[profile.release]\nlto = true\nopt-level = 's'",
+          "when": "Cargo.toml optimization"
+        },
+        {
+          "approach": "Use wasm-opt",
+          "code": "wasm-opt -Oz -o output.wasm input.wasm",
+          "when": "Additional optimization"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "tool": "rmmod",
+  "version": "kmod",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted",
+      "message": "Need root privileges",
+      "cause": "Kernel module unloading requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo rmmod modulename",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "module_in_use",
+      "pattern": "Module .* is in use|Module .* is builtin|Resource temporarily unavailable",
+      "message": "Module in use",
+      "cause": "Module has active users or dependencies",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "lsmod | grep modulename\n# \"Used by\" column shows dependents",
+          "when": "Find users"
+        },
+        {
+          "approach": "Remove deps first",
+          "code": "sudo rmmod dependent_module\nsudo rmmod modulename",
+          "when": "Unload in order"
+        },
+        {
+          "approach": "Use modprobe -r",
+          "code": "sudo modprobe -r modulename\n# Auto-removes unused dependencies",
+          "when": "Auto handle deps"
+        },
+        {
+          "approach": "Find processes using",
+          "code": "lsof | grep modulename\nfuser -v /dev/device_file",
+          "when": "Find active users"
+        }
+      ]
+    },
+    {
+      "id": "module_not_loaded",
+      "pattern": "Module .* is not currently loaded|not found",
+      "message": "Module not loaded",
+      "cause": "Module isn't in kernel",
+      "solutions": [
+        {
+          "approach": "Check loaded modules",
+          "code": "lsmod | grep modulename",
+          "when": "Verify state"
+        },
+        {
+          "approach": "Check if built-in",
+          "code": "# Built-in modules cannot be removed\ncat /lib/modules/$(uname -r)/modules.builtin | grep modulename",
+          "when": "May be built-in"
+        }
+      ]
+    },
+    {
+      "id": "force_removal",
+      "pattern": "force|dangerous|crash",
+      "message": "Forcing module removal",
+      "cause": "Module stuck or unresponsive",
+      "solutions": [
+        {
+          "approach": "Force remove (dangerous)",
+          "code": "sudo rmmod -f modulename\n# WARNING: May cause system instability or crash",
+          "when": "Last resort"
+        },
+        {
+          "approach": "Safer alternative",
+          "code": "# Reboot is often safer than force-removing",
+          "when": "Consider reboot"
+        }
+      ]
+    },
+    {
+      "id": "wait_option",
+      "pattern": "wait|blocking|-w",
+      "message": "Wait for module release",
+      "cause": "Module temporarily busy",
+      "solutions": [
+        {
+          "approach": "Wait option",
+          "code": "sudo rmmod -w modulename\n# Waits until module is unused",
+          "when": "Temporary use"
+        },
+        {
+          "approach": "Check refcount",
+          "code": "cat /sys/module/modulename/refcnt\n# 0 = safe to remove",
+          "when": "Check usage"
+        }
+      ]
+    }
+  ]
+}

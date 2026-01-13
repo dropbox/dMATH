@@ -1,0 +1,92 @@
+{
+  "tool": "groupadd",
+  "version": "coreutils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "group_exists",
+      "pattern": "group '.*' already exists|groupadd: group '.*' already exists",
+      "message": "Group already exists",
+      "cause": "Group name taken",
+      "solutions": [
+        {
+          "approach": "Use existing",
+          "code": "getent group groupname",
+          "when": "Check if usable"
+        },
+        {
+          "approach": "Choose different name",
+          "code": "sudo groupadd newgroupname",
+          "when": "Need new group"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|groupadd: Permission denied",
+      "message": "Not authorized",
+      "cause": "Need root privileges",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo groupadd groupname",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "invalid_name",
+      "pattern": "invalid group name|groupadd: invalid group name",
+      "message": "Group name invalid",
+      "cause": "Name contains invalid characters",
+      "solutions": [
+        {
+          "approach": "Follow naming rules",
+          "code": "# Start with lowercase letter or underscore\n# Contain lowercase, digits, underscore, hyphen\nsudo groupadd valid_group",
+          "when": "Fix name format"
+        }
+      ]
+    },
+    {
+      "id": "gid_in_use",
+      "pattern": "GID .* is not unique|groupadd: GID .* is not unique",
+      "message": "GID already used",
+      "cause": "Specified GID assigned to another group",
+      "solutions": [
+        {
+          "approach": "Find available GID",
+          "code": "getent group | awk -F: '{print $3}' | sort -n | tail -10",
+          "when": "See used GIDs"
+        },
+        {
+          "approach": "Use auto GID",
+          "code": "sudo groupadd groupname",
+          "when": "Let system choose"
+        },
+        {
+          "approach": "Force non-unique",
+          "code": "sudo groupadd -o -g 1000 groupname",
+          "when": "Allow duplicate (rare)"
+        }
+      ]
+    },
+    {
+      "id": "cannot_update_group_file",
+      "pattern": "cannot open|cannot lock|group file busy",
+      "message": "Cannot modify group file",
+      "cause": "File locked or permissions issue",
+      "solutions": [
+        {
+          "approach": "Check locks",
+          "code": "ls -la /etc/group*\nrm /etc/group.lock  # If stale",
+          "when": "Lock file present"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "sudo chmod 644 /etc/group\nsudo chown root:root /etc/group",
+          "when": "Wrong permissions"
+        }
+      ]
+    }
+  ]
+}

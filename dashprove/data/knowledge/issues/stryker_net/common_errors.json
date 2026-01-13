@@ -1,0 +1,191 @@
+{
+  "tool": "stryker_net",
+  "version": "4.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "no_tests_found",
+      "pattern": "No tests found|Test discovery|0 tests",
+      "message": "Stryker cannot find any tests",
+      "cause": "Test project not configured correctly or tests not discovered",
+      "solutions": [
+        {
+          "approach": "Check test project path",
+          "code": "dotnet stryker -p YourTests.csproj",
+          "when": "Running from wrong directory"
+        },
+        {
+          "approach": "Verify tests run normally",
+          "code": "dotnet test",
+          "when": "Ensure tests pass first"
+        },
+        {
+          "approach": "Check test framework",
+          "code": "# Stryker supports xUnit, NUnit, MSTest",
+          "when": "Using unsupported framework"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Build failed|Compilation error|CS\\d+",
+      "message": "Project failed to build",
+      "cause": "Source code has compilation errors or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Build first",
+          "code": "dotnet build && dotnet stryker",
+          "when": "Ensure code compiles"
+        },
+        {
+          "approach": "Restore packages",
+          "code": "dotnet restore && dotnet stryker",
+          "when": "Missing NuGet packages"
+        },
+        {
+          "approach": "Check solution file",
+          "code": "dotnet stryker -s YourSolution.sln",
+          "when": "Multi-project solution"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout|Test.*timed out|Mutation.*timeout",
+      "message": "Mutation testing timed out",
+      "cause": "Tests take too long to run on mutants",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "// stryker-config.json\n{\n  \"stryker-config\": {\n    \"additional-timeout\": 30000\n  }\n}",
+          "when": "Tests are slow"
+        },
+        {
+          "approach": "Reduce scope",
+          "code": "dotnet stryker --mutate \"**/Specific*.cs\"",
+          "when": "Mutation testing too slow"
+        },
+        {
+          "approach": "Use fast tests only",
+          "code": "dotnet stryker --test-case \"!IntegrationTests\"",
+          "when": "Skip slow integration tests"
+        }
+      ]
+    },
+    {
+      "id": "no_mutations",
+      "pattern": "No mutations|0 mutants|Nothing to mutate",
+      "message": "No mutations were created",
+      "cause": "File pattern doesn't match source files or code not mutatable",
+      "solutions": [
+        {
+          "approach": "Check mutate pattern",
+          "code": "dotnet stryker --mutate \"**/src/**/*.cs\"",
+          "when": "Pattern too restrictive"
+        },
+        {
+          "approach": "Exclude test files",
+          "code": "{\n  \"stryker-config\": {\n    \"mutate\": [\"**/*.cs\", \"!**/*Test*.cs\"]\n  }\n}",
+          "when": "Including test files"
+        },
+        {
+          "approach": "Check for excluded mutators",
+          "code": "// Remove excluded-mutations if set",
+          "when": "Mutators disabled"
+        }
+      ]
+    },
+    {
+      "id": "coverage_issue",
+      "pattern": "Coverage.*error|No coverage|Uncovered mutant",
+      "message": "Code coverage issues",
+      "cause": "Cannot determine which tests cover which code",
+      "solutions": [
+        {
+          "approach": "Enable coverage analysis",
+          "code": "{\n  \"stryker-config\": {\n    \"coverage-analysis\": \"perTest\"\n  }\n}",
+          "when": "Per-test coverage needed"
+        },
+        {
+          "approach": "Use all mode",
+          "code": "{\n  \"stryker-config\": {\n    \"coverage-analysis\": \"all\"\n  }\n}",
+          "when": "Coverage analysis failing"
+        },
+        {
+          "approach": "Check for async issues",
+          "code": "# Async tests may have coverage tracking issues",
+          "when": "Using async/await heavily"
+        }
+      ]
+    },
+    {
+      "id": "survived_mutants",
+      "pattern": "Survived|Mutation survived|Not killed",
+      "message": "Mutant survived (test gap found)",
+      "cause": "Tests don't detect the mutation - this is the intended behavior",
+      "solutions": [
+        {
+          "approach": "Add missing test",
+          "code": "# Write test that would fail with the mutation",
+          "when": "Test coverage insufficient"
+        },
+        {
+          "approach": "Review mutant location",
+          "code": "# Check HTML report for exact mutation",
+          "when": "Understanding the gap"
+        },
+        {
+          "approach": "Ignore if equivalent",
+          "code": "// stryker disable once: Equivalent mutant\nvar x = value + 0;",
+          "when": "Mutation doesn't change behavior"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "OutOfMemory|Memory.*error|System.OutOfMemoryException",
+      "message": "Stryker ran out of memory",
+      "cause": "Too many mutations or large project",
+      "solutions": [
+        {
+          "approach": "Reduce concurrency",
+          "code": "dotnet stryker --concurrency 2",
+          "when": "Running too many in parallel"
+        },
+        {
+          "approach": "Mutate subset",
+          "code": "dotnet stryker --since:main",
+          "when": "Only test changed files"
+        },
+        {
+          "approach": "Increase memory",
+          "code": "# Increase available memory for dotnet process",
+          "when": "System has more memory available"
+        }
+      ]
+    },
+    {
+      "id": "reporter_error",
+      "pattern": "Reporter.*error|Dashboard.*error|Cannot upload",
+      "message": "Report generation or upload failed",
+      "cause": "Reporter configuration incorrect or dashboard unreachable",
+      "solutions": [
+        {
+          "approach": "Use HTML reporter",
+          "code": "dotnet stryker --reporter html",
+          "when": "Local report needed"
+        },
+        {
+          "approach": "Check dashboard config",
+          "code": "{\n  \"stryker-config\": {\n    \"reporters\": [\"html\", \"dashboard\"],\n    \"dashboard-api-key\": \"your-key\"\n  }\n}",
+          "when": "Using Stryker dashboard"
+        },
+        {
+          "approach": "Use JSON reporter",
+          "code": "dotnet stryker --reporter json",
+          "when": "Machine-readable output"
+        }
+      ]
+    }
+  ]
+}

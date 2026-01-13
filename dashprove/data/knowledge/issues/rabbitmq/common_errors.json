@@ -1,0 +1,173 @@
+{
+  "tool": "rabbitmq",
+  "version": "3.13.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "CONNECTION_FORCED|connection_closed_abruptly|ECONNREFUSED",
+      "message": "Connection to RabbitMQ refused or closed",
+      "cause": "Server unreachable, connection limit exceeded, or server-initiated close",
+      "solutions": [
+        {
+          "approach": "Check server status",
+          "code": "rabbitmqctl status",
+          "when": "Server may not be running"
+        },
+        {
+          "approach": "Increase connection limit",
+          "code": "# rabbitmq.conf\nchannel_max = 2047\nconnection_max = infinity",
+          "when": "Connection limit exceeded"
+        },
+        {
+          "approach": "Implement reconnection logic",
+          "code": "connection.add_on_connection_blocked_callback(on_blocked)\nconnection.add_on_connection_unblocked_callback(on_unblocked)",
+          "when": "Need resilient connection handling"
+        }
+      ]
+    },
+    {
+      "id": "channel_closed",
+      "pattern": "CHANNEL_ERROR|ChannelClosedByBroker|PRECONDITION_FAILED",
+      "message": "Channel closed by broker",
+      "cause": "Protocol error, queue/exchange declaration mismatch, or ACK issue",
+      "solutions": [
+        {
+          "approach": "Check queue declaration",
+          "code": "channel.queue_declare(queue='my_queue', durable=True, exclusive=False, auto_delete=False)",
+          "when": "Queue properties don't match existing queue"
+        },
+        {
+          "approach": "Use passive declaration",
+          "code": "channel.queue_declare(queue='my_queue', passive=True)",
+          "when": "Want to check if queue exists without creating"
+        },
+        {
+          "approach": "Delete and recreate queue",
+          "code": "rabbitmqadmin delete queue name=my_queue\n# Then declare with correct properties",
+          "when": "Queue properties must change"
+        }
+      ]
+    },
+    {
+      "id": "memory_alarm",
+      "pattern": "mem_alarm|memory_alarm|resource_alarm",
+      "message": "Memory alarm - producers blocked",
+      "cause": "RabbitMQ memory usage exceeded high watermark",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "# rabbitmq.conf\nvm_memory_high_watermark.relative = 0.6",
+          "when": "Server has available memory"
+        },
+        {
+          "approach": "Enable lazy queues",
+          "code": "channel.queue_declare(queue='my_queue', arguments={'x-queue-mode': 'lazy'})",
+          "when": "Queue holds many messages"
+        },
+        {
+          "approach": "Add more consumers",
+          "code": "// Scale consumer count to reduce queue depth",
+          "when": "Messages accumulating faster than processing"
+        },
+        {
+          "approach": "Set message TTL",
+          "code": "arguments={'x-message-ttl': 60000}  // 60 seconds",
+          "when": "Old messages can be discarded"
+        }
+      ]
+    },
+    {
+      "id": "disk_alarm",
+      "pattern": "disk_alarm|DISK_FULL|disk_free_alarm",
+      "message": "Disk alarm - producers blocked",
+      "cause": "Available disk space below threshold",
+      "solutions": [
+        {
+          "approach": "Increase disk space",
+          "code": "# Add disk or clean up files",
+          "when": "Physical disk is nearly full"
+        },
+        {
+          "approach": "Adjust threshold",
+          "code": "# rabbitmq.conf\ndisk_free_limit.absolute = 1GB",
+          "when": "Threshold too conservative"
+        },
+        {
+          "approach": "Purge queues",
+          "code": "rabbitmqadmin purge queue name=my_queue",
+          "when": "Messages can be safely discarded"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failure",
+      "pattern": "ACCESS_REFUSED|authentication_failure|NOT_ALLOWED",
+      "message": "Authentication or authorization failed",
+      "cause": "Invalid credentials, missing permissions, or wrong vhost",
+      "solutions": [
+        {
+          "approach": "Verify credentials",
+          "code": "rabbitmqctl authenticate_user myuser mypassword",
+          "when": "Password may be incorrect"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "rabbitmqctl list_permissions -p myvhost",
+          "when": "User may lack required permissions"
+        },
+        {
+          "approach": "Set permissions",
+          "code": "rabbitmqctl set_permissions -p myvhost myuser \".*\" \".*\" \".*\"",
+          "when": "Need to grant permissions"
+        }
+      ]
+    },
+    {
+      "id": "unacked_messages",
+      "pattern": "TIMEOUT|consumer_timeout|delivery_limit|unacked",
+      "message": "Consumer timeout or unacknowledged message limit",
+      "cause": "Consumer not acknowledging messages fast enough",
+      "solutions": [
+        {
+          "approach": "Increase consumer timeout",
+          "code": "# rabbitmq.conf\nconsumer_timeout = 1800000  // 30 minutes",
+          "when": "Processing takes legitimately long"
+        },
+        {
+          "approach": "Reduce prefetch count",
+          "code": "channel.basic_qos(prefetch_count=10)",
+          "when": "Consumer overwhelmed with messages"
+        },
+        {
+          "approach": "Enable manual acks",
+          "code": "channel.basic_consume(queue='my_queue', on_message_callback=callback, auto_ack=False)\n# In callback: channel.basic_ack(delivery_tag=method.delivery_tag)",
+          "when": "Want explicit acknowledgment control"
+        }
+      ]
+    },
+    {
+      "id": "queue_not_found",
+      "pattern": "NOT_FOUND|queue_not_found|no queue",
+      "message": "Queue does not exist",
+      "cause": "Queue was deleted, auto-deleted, or never created",
+      "solutions": [
+        {
+          "approach": "Ensure queue declared",
+          "code": "channel.queue_declare(queue='my_queue', durable=True)",
+          "when": "Queue should be created if missing"
+        },
+        {
+          "approach": "Check for auto-delete",
+          "code": "// Remove auto_delete=True if queue should persist",
+          "when": "Queue unexpectedly deleted"
+        },
+        {
+          "approach": "Use durable queue",
+          "code": "channel.queue_declare(queue='my_queue', durable=True)",
+          "when": "Queue should survive server restart"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "id": "checkov",
+  "name": "Checkov",
+  "category": "security",
+  "subcategory": "iac_security",
+
+  "description": "Static analysis tool for Infrastructure as Code security and compliance",
+  "long_description": "Checkov is an open-source static analysis tool for infrastructure as code (IaC). It scans cloud infrastructure provisioned using Terraform, CloudFormation, Kubernetes, Helm, ARM templates, and Serverless framework for security and compliance misconfigurations. It has over 1000 built-in policies covering AWS, Azure, GCP, and Kubernetes.",
+
+  "capabilities": [
+    "terraform_scanning",
+    "cloudformation_scanning",
+    "kubernetes_scanning",
+    "helm_scanning",
+    "arm_scanning",
+    "dockerfile_scanning",
+    "secrets_detection",
+    "custom_policies",
+    "supply_chain_scanning"
+  ],
+  "property_types": ["security", "compliance", "configuration"],
+  "input_languages": ["hcl", "yaml", "json", "dockerfile"],
+  "output_formats": ["cli", "json", "junitxml", "sarif", "github_actions"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install checkov"},
+      {"type": "brew", "command": "brew install checkov", "platform": "macos"},
+      {"type": "docker", "command": "docker pull bridgecrew/checkov"}
+    ],
+    "dependencies": ["python>=3.7"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://www.checkov.io/",
+    "tutorial": "https://www.checkov.io/2.Basics/Installing%20Checkov.html",
+    "api_reference": "https://www.checkov.io/5.Policy%20Index/all.html",
+    "examples": "https://github.com/bridgecrewio/checkov/tree/main/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "scan_directory",
+      "description": "Scan IaC directory",
+      "syntax": "checkov -d /path/to/iac",
+      "when_to_use": "Scanning terraform/k8s configs",
+      "examples": ["checkov -d ./terraform --framework terraform"]
+    },
+    {
+      "name": "scan_file",
+      "description": "Scan single file",
+      "syntax": "checkov -f /path/to/file",
+      "when_to_use": "Scanning specific config",
+      "examples": ["checkov -f main.tf --check CKV_AWS_1"]
+    },
+    {
+      "name": "skip_checks",
+      "description": "Skip specific checks",
+      "syntax": "checkov -d . --skip-check CKV_AWS_1",
+      "when_to_use": "Accepted risks",
+      "examples": ["checkov -d . --skip-check CKV_AWS_1,CKV_AWS_2"]
+    },
+    {
+      "name": "custom_policy",
+      "description": "Run custom policies",
+      "syntax": "checkov -d . --external-checks-dir ./policies",
+      "when_to_use": "Organization-specific rules",
+      "examples": ["checkov -d . --external-checks-dir ./custom-policies"]
+    },
+    {
+      "name": "ci_output",
+      "description": "Generate CI-friendly output",
+      "syntax": "checkov -d . -o junitxml > results.xml",
+      "when_to_use": "CI/CD integration",
+      "examples": ["checkov -d . -o sarif --output-file-path results.sarif"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CKV_AWS_\\d+.*FAILED",
+      "meaning": "AWS security misconfiguration",
+      "common_causes": ["Missing encryption", "Public access", "Weak auth"],
+      "fixes": ["Follow check remediation guidance"]
+    },
+    {
+      "pattern": "CKV_K8S_\\d+.*FAILED",
+      "meaning": "Kubernetes security issue",
+      "common_causes": ["Privileged container", "Missing limits"],
+      "fixes": ["Apply security context", "Set resource limits"]
+    },
+    {
+      "pattern": "CKV2.*supply chain",
+      "meaning": "Supply chain security issue",
+      "common_causes": ["Unpinned image", "Missing verification"],
+      "fixes": ["Pin versions", "Add integrity checks"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security", "compliance"],
+    "cli_command": "dashprove verify --backend checkov"
+  },
+
+  "performance": {
+    "typical_runtime": "Fast; scales with file count",
+    "scalability": "Good; can scan large repos",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["tfsec", "terrascan", "snyk_iac", "kics"],
+    "advantages": ["Multi-framework", "Large policy library", "Active development", "Free"],
+    "disadvantages": ["Can be noisy", "Some false positives"]
+  },
+
+  "metadata": {
+    "version": "3.2.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Bridgecrew/Palo Alto",
+    "license": "Apache-2.0"
+  }
+}

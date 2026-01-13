@@ -1,0 +1,125 @@
+{
+  "id": "nemo_asr",
+  "name": "NVIDIA NeMo ASR",
+  "category": "speech_recognition",
+  "subcategory": "asr",
+
+  "description": "NVIDIA's conversational AI toolkit for ASR",
+  "long_description": "NVIDIA NeMo is a toolkit for building, training, and fine-tuning GPU-accelerated speech and language models. The ASR collection includes state-of-the-art models like Conformer, FastConformer, and Parakeet with streaming support, multi-language recognition, and production-ready inference.",
+
+  "capabilities": [
+    "speech_to_text",
+    "streaming_asr",
+    "speaker_diarization",
+    "voice_activity_detection",
+    "punctuation_restoration",
+    "inverse_text_normalization",
+    "multilingual_asr"
+  ],
+  "property_types": ["wer", "cer", "rtf", "latency"],
+  "input_languages": ["python"],
+  "output_formats": ["text", "json", "riva"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install nemo_toolkit[asr]"},
+      {"type": "docker", "command": "docker pull nvcr.io/nvidia/nemo:24.01"}
+    ],
+    "dependencies": ["torch", "torchaudio", "hydra-core"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://docs.nvidia.com/deeplearning/nemo/user-guide/docs/en/stable/asr/intro.html",
+    "tutorial": "https://docs.nvidia.com/deeplearning/nemo/user-guide/docs/en/stable/asr/examples/kinyarwanda_asr.html",
+    "api_reference": "https://docs.nvidia.com/deeplearning/nemo/user-guide/docs/en/stable/core/api.html",
+    "examples": "https://github.com/NVIDIA/NeMo/tree/main/examples/asr"
+  },
+
+  "tactics": [
+    {
+      "name": "transcribe",
+      "description": "Transcribe audio",
+      "syntax": "model.transcribe(paths)",
+      "when_to_use": "For speech-to-text",
+      "examples": ["import nemo.collections.asr as nemo_asr\n\nmodel = nemo_asr.models.ASRModel.from_pretrained(\n    'nvidia/parakeet-ctc-1.1b'\n)\ntranscriptions = model.transcribe(['audio.wav'])"]
+    },
+    {
+      "name": "streaming",
+      "description": "Streaming recognition",
+      "syntax": "FrameBatchASR",
+      "when_to_use": "For real-time ASR",
+      "examples": ["from nemo.collections.asr.models import EncDecRNNTBPEModel\nfrom nemo.collections.asr.parts.utils.streaming_utils import FrameBatchASR\n\nmodel = EncDecRNNTBPEModel.from_pretrained('nvidia/parakeet-rnnt-0.6b')\nstreaming = FrameBatchASR(model, frame_len=0.1)\nfor audio_chunk in stream:\n    text = streaming.transcribe(audio_chunk)"]
+    },
+    {
+      "name": "fine_tune",
+      "description": "Fine-tune on custom data",
+      "syntax": "trainer.fit(model)",
+      "when_to_use": "For domain adaptation",
+      "examples": ["from nemo.collections.asr.models import EncDecCTCModel\nimport pytorch_lightning as pl\n\nmodel = EncDecCTCModel.from_pretrained('nvidia/parakeet-ctc-1.1b')\ntrainer = pl.Trainer(max_epochs=10)\ntrainer.fit(model)"]
+    },
+    {
+      "name": "evaluate",
+      "description": "Calculate WER",
+      "syntax": "model.evaluate(test_manifest)",
+      "when_to_use": "For model evaluation",
+      "examples": ["wer = model.evaluate(\n    paths=['test_manifest.json'],\n    batch_size=16\n)\nprint(f'WER: {wer:.2%}')"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "CUDA.*not available",
+      "meaning": "No GPU detected",
+      "common_causes": ["Missing CUDA", "No GPU"],
+      "fixes": ["Install CUDA", "Use CPU mode"]
+    },
+    {
+      "pattern": "manifest.*invalid",
+      "meaning": "Bad manifest format",
+      "common_causes": ["Wrong JSON format"],
+      "fixes": ["Check manifest format: {audio_filepath, text, duration}"]
+    },
+    {
+      "pattern": "OOM",
+      "meaning": "Out of memory",
+      "common_causes": ["Large batch", "Long audio"],
+      "fixes": ["Reduce batch size", "Split long audio"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["wer", "latency"],
+    "cli_command": "dashprove verify --backend nemo-asr"
+  },
+
+  "performance": {
+    "typical_runtime": "Faster than real-time on GPU",
+    "scalability": "Excellent with multi-GPU",
+    "memory_usage": "2-16GB depending on model"
+  },
+
+  "comparisons": {
+    "similar_tools": ["whisper", "speechbrain", "fairseq"],
+    "advantages": [
+      "Production-ready",
+      "Streaming support",
+      "NVIDIA optimization",
+      "Pre-trained models",
+      "Riva deployment"
+    ],
+    "disadvantages": [
+      "NVIDIA GPU required",
+      "Linux only",
+      "Large dependencies"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.23.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "NVIDIA",
+    "license": "Apache-2.0"
+  }
+}

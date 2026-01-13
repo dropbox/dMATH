@@ -1,0 +1,117 @@
+{
+  "tool": "hostname",
+  "version": "3.23",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "temporary_vs_permanent",
+      "pattern": "temporary|permanent|persists|reboot|save",
+      "message": "Hostname change doesn't persist",
+      "cause": "hostname command changes only runtime hostname",
+      "solutions": [
+        {
+          "approach": "Use hostnamectl",
+          "code": "sudo hostnamectl set-hostname newhostname  # Persistent",
+          "when": "systemd systems"
+        },
+        {
+          "approach": "Edit files",
+          "code": "# Edit /etc/hostname\necho 'newhostname' | sudo tee /etc/hostname\n# Also update /etc/hosts\nsudo sed -i 's/oldhostname/newhostname/g' /etc/hosts",
+          "when": "Manual"
+        },
+        {
+          "approach": "macOS",
+          "code": "sudo scutil --set HostName newhostname\nsudo scutil --set LocalHostName newhostname\nsudo scutil --set ComputerName newhostname",
+          "when": "macOS"
+        }
+      ]
+    },
+    {
+      "id": "fqdn_vs_short",
+      "pattern": "FQDN|full|domain|short|qualified",
+      "message": "Get FQDN vs short hostname",
+      "cause": "Need full or short version",
+      "solutions": [
+        {
+          "approach": "Short name",
+          "code": "hostname -s  # Short hostname\nhostname  # Usually short",
+          "when": "Short"
+        },
+        {
+          "approach": "FQDN",
+          "code": "hostname -f  # Fully qualified\nhostname --fqdn",
+          "when": "Full domain"
+        },
+        {
+          "approach": "Domain only",
+          "code": "hostname -d  # Domain name only\ndomainname",
+          "when": "Domain"
+        }
+      ]
+    },
+    {
+      "id": "ip_address",
+      "pattern": "IP address|IP|addresses",
+      "message": "Get IP address from hostname",
+      "cause": "Need IP address",
+      "solutions": [
+        {
+          "approach": "All addresses",
+          "code": "hostname -I  # All IP addresses (Linux)\nhostname -i  # Primary IP",
+          "when": "List IPs"
+        },
+        {
+          "approach": "Specific interface",
+          "code": "ip addr show eth0 | grep 'inet '\nifconfig en0 | grep 'inet '",
+          "when": "Specific interface"
+        },
+        {
+          "approach": "External IP",
+          "code": "curl -s ifconfig.me\ncurl -s ipinfo.io/ip",
+          "when": "Public IP"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted|cannot set",
+      "message": "Cannot change hostname",
+      "cause": "Need root privileges",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo hostname newhostname\nsudo hostnamectl set-hostname newhostname",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check SELinux",
+          "code": "getenforce  # SELinux may block\nsudo setenforce 0  # Temporarily disable",
+          "when": "SELinux"
+        }
+      ]
+    },
+    {
+      "id": "types_of_hostname",
+      "pattern": "static|pretty|transient|type",
+      "message": "Different types of hostname",
+      "cause": "systemd has multiple hostname types",
+      "solutions": [
+        {
+          "approach": "View all",
+          "code": "hostnamectl  # Shows all hostname types",
+          "when": "See all"
+        },
+        {
+          "approach": "Set specific",
+          "code": "sudo hostnamectl --static set-hostname name\nsudo hostnamectl --transient set-hostname name\nsudo hostnamectl --pretty set-hostname 'Friendly Name'",
+          "when": "Set type"
+        },
+        {
+          "approach": "Understand types",
+          "code": "# static: stored in /etc/hostname\n# transient: kernel hostname, may change (DHCP)\n# pretty: UTF-8 presentation name",
+          "when": "Reference"
+        }
+      ]
+    }
+  ]
+}

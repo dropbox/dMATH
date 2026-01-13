@@ -1,0 +1,176 @@
+{
+  "tool": "venus",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Verification timed out",
+      "cause": "MILP solving took too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "venus --timeout 3600 model.onnx spec.vnnlib",
+          "when": "May succeed with more time"
+        },
+        {
+          "approach": "Use approximation",
+          "code": "venus --approx model.onnx spec.vnnlib",
+          "when": "Exact solving too slow"
+        },
+        {
+          "approach": "Reduce epsilon",
+          "code": "# Smaller perturbation in spec",
+          "when": "Large input region"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Out of memory",
+      "cause": "MILP solver ran out of memory",
+      "solutions": [
+        {
+          "approach": "Use Gurobi",
+          "code": "# Gurobi often more memory-efficient",
+          "when": "Using default solver"
+        },
+        {
+          "approach": "Reduce network",
+          "code": "# Verify smaller network",
+          "when": "Network too large"
+        },
+        {
+          "approach": "Limit MILP nodes",
+          "code": "# Set node limit in solver",
+          "when": "BnB explosion"
+        }
+      ]
+    },
+    {
+      "id": "model_error",
+      "pattern": "model",
+      "message": "Model loading failed",
+      "cause": "Unsupported ONNX model",
+      "solutions": [
+        {
+          "approach": "Check ONNX opset",
+          "code": "# Use supported ONNX version",
+          "when": "Wrong opset"
+        },
+        {
+          "approach": "Check layers",
+          "code": "# ReLU networks only",
+          "when": "Non-ReLU activation"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "# Remove unsupported ops",
+          "when": "Complex model"
+        }
+      ]
+    },
+    {
+      "id": "spec_error",
+      "pattern": "specification",
+      "message": "Invalid specification",
+      "cause": "VNN-LIB parsing error",
+      "solutions": [
+        {
+          "approach": "Check VNN-LIB syntax",
+          "code": "(declare-const X_0 Real)\n(assert (<= X_0 1.0))",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Check variable names",
+          "code": "# X_i for inputs, Y_j for outputs",
+          "when": "Wrong variable naming"
+        },
+        {
+          "approach": "Validate dimensions",
+          "code": "# Variables must match network I/O",
+          "when": "Dimension mismatch"
+        }
+      ]
+    },
+    {
+      "id": "milp_error",
+      "pattern": "MILP",
+      "message": "MILP solver error",
+      "cause": "Solver encountered problem",
+      "solutions": [
+        {
+          "approach": "Check solver installation",
+          "code": "# Verify Gurobi/CPLEX license",
+          "when": "Solver not working"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "venus --solver cplex model.onnx spec.vnnlib",
+          "when": "Solver-specific issue"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "# Enable debug output",
+          "when": "Encoding bug"
+        }
+      ]
+    },
+    {
+      "id": "unsafe",
+      "pattern": "UNSAFE",
+      "message": "Property violated",
+      "cause": "Found adversarial example",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "# Examine adversarial input in output",
+          "when": "Understanding attack"
+        },
+        {
+          "approach": "Verify counterexample",
+          "code": "# Forward pass on original model",
+          "when": "Confirming result"
+        }
+      ]
+    },
+    {
+      "id": "unknown",
+      "pattern": "UNKNOWN",
+      "message": "Verification inconclusive",
+      "cause": "Could not determine property",
+      "solutions": [
+        {
+          "approach": "Increase resources",
+          "code": "# More time/memory",
+          "when": "Resource limited"
+        },
+        {
+          "approach": "Use tighter bounds",
+          "code": "# Better LP relaxation",
+          "when": "Bounds too loose"
+        }
+      ]
+    },
+    {
+      "id": "numerical_error",
+      "pattern": "numerical",
+      "message": "Numerical instability",
+      "cause": "MILP numerical issues",
+      "solutions": [
+        {
+          "approach": "Increase tolerance",
+          "code": "# Adjust solver tolerances",
+          "when": "Near-boundary solutions"
+        },
+        {
+          "approach": "Scale network",
+          "code": "# Normalize weights",
+          "when": "Large weight values"
+        }
+      ]
+    }
+  ]
+}

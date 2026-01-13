@@ -1,0 +1,207 @@
+{
+  "tool": "go_fuzz",
+  "version": "go1.23",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "fuzz_no_fuzz_target",
+      "pattern": "no fuzz targets",
+      "message": "No fuzz targets found",
+      "cause": "No functions matching func FuzzXxx(f *testing.F) in test files",
+      "solutions": [
+        {
+          "approach": "Add fuzz function",
+          "code": "func FuzzMyFunction(f *testing.F) {\n    f.Add(\"seed\")  // Add seed corpus\n    f.Fuzz(func(t *testing.T, input string) {\n        MyFunction(input)\n    })\n}",
+          "when": "Need to create fuzz target"
+        },
+        {
+          "approach": "Check file naming",
+          "code": "// File must be named *_test.go\n// Function must start with Fuzz",
+          "when": "Fuzz function exists but not found"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_wrong_signature",
+      "pattern": "wrong signature for fuzz target",
+      "message": "Fuzz target has wrong signature",
+      "cause": "Fuzz function doesn't match required signature",
+      "solutions": [
+        {
+          "approach": "Use correct signature",
+          "code": "func FuzzParser(f *testing.F) {  // *testing.F parameter\n    f.Fuzz(func(t *testing.T, data []byte) {  // *testing.T + fuzzer args\n        Parse(data)\n    })\n}",
+          "when": "Signature is wrong"
+        },
+        {
+          "approach": "Use supported types",
+          "code": "// Supported: string, []byte, int, int8-64, uint, uint8-64, float32, float64, bool\nf.Fuzz(func(t *testing.T, s string, n int) { ... })",
+          "when": "Using unsupported parameter type"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_corpus_panic",
+      "pattern": "panic:.*fuzz",
+      "message": "Fuzz test found panic",
+      "cause": "Fuzzer found input that causes panic in code",
+      "solutions": [
+        {
+          "approach": "Examine failing input",
+          "code": "// Check testdata/fuzz/FuzzXxx for failing input\n// go test -run=FuzzXxx/crashfile",
+          "when": "Need to debug crash"
+        },
+        {
+          "approach": "Add input validation",
+          "code": "func Parse(data []byte) error {\n    if len(data) == 0 {\n        return errors.New(\"empty input\")\n    }\n    // ... rest of parsing\n}",
+          "when": "Missing input validation"
+        },
+        {
+          "approach": "Add to seed corpus",
+          "code": "f.Add(crashingInput)  // Add as regression test",
+          "when": "Bug is fixed"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_timeout",
+      "pattern": "fuzz: elapsed:.*timed out",
+      "message": "Fuzz test timed out",
+      "cause": "Fuzzing exceeded time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "go test -fuzz=FuzzXxx -fuzztime=1h",
+          "when": "Need longer fuzzing duration"
+        },
+        {
+          "approach": "Use iteration count",
+          "code": "go test -fuzz=FuzzXxx -fuzztime=10000x  // Run 10000 iterations",
+          "when": "Want specific number of runs"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_minimize_failed",
+      "pattern": "minimization.*failed",
+      "message": "Failed to minimize crashing input",
+      "cause": "Fuzzer couldn't reduce input size while keeping crash",
+      "solutions": [
+        {
+          "approach": "Use verbose output",
+          "code": "go test -fuzz=FuzzXxx -v",
+          "when": "Need more debug info"
+        },
+        {
+          "approach": "Manual minimization",
+          "code": "// Manually edit testdata/fuzz/FuzzXxx/crashfile",
+          "when": "Auto-minimize fails"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_corpus_invalid",
+      "pattern": "malformed corpus file",
+      "message": "Invalid corpus file format",
+      "cause": "Seed corpus file has wrong format",
+      "solutions": [
+        {
+          "approach": "Use f.Add for seeds",
+          "code": "func FuzzXxx(f *testing.F) {\n    f.Add(\"seed1\")\n    f.Add(\"seed2\")\n    f.Fuzz(...)\n}",
+          "when": "Adding seed programmatically"
+        },
+        {
+          "approach": "Delete corrupted files",
+          "code": "rm -rf testdata/fuzz/FuzzXxx/",
+          "when": "Corpus is corrupted"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_coverage_not_increasing",
+      "pattern": "new coverage:.*0",
+      "message": "Fuzzing not finding new coverage",
+      "cause": "Fuzzer has saturated discoverable code paths",
+      "solutions": [
+        {
+          "approach": "Add better seeds",
+          "code": "f.Add(validJSON)\nf.Add(invalidJSON)\nf.Add(edgeCase)",
+          "when": "Need diverse starting inputs"
+        },
+        {
+          "approach": "Use dictionary",
+          "code": "// Create testdata/fuzz/FuzzXxx/dict with keywords\n// key1\\nkey2\\n...",
+          "when": "Fuzzing structured format"
+        },
+        {
+          "approach": "Consider complete",
+          "code": "// Coverage saturation may mean good coverage achieved",
+          "when": "All paths may be covered"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_mutator_failure",
+      "pattern": "mutator.*error|failed to mutate",
+      "message": "Fuzzer mutation failed",
+      "cause": "Fuzzer couldn't generate valid mutations",
+      "solutions": [
+        {
+          "approach": "Simplify input type",
+          "code": "// Use []byte instead of complex structs\nf.Fuzz(func(t *testing.T, data []byte) {\n    var input MyStruct\n    json.Unmarshal(data, &input)\n})",
+          "when": "Complex input types"
+        },
+        {
+          "approach": "Add more seeds",
+          "code": "f.Add(example1)\nf.Add(example2)\nf.Add(example3)",
+          "when": "Mutations need base examples"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_oom",
+      "pattern": "out of memory|signal: killed",
+      "message": "Fuzzer ran out of memory",
+      "cause": "Fuzzing allocated too much memory (possible memory leak)",
+      "solutions": [
+        {
+          "approach": "Limit input size",
+          "code": "f.Fuzz(func(t *testing.T, data []byte) {\n    if len(data) > 1024 {\n        return  // Skip large inputs\n    }\n})",
+          "when": "Large inputs cause OOM"
+        },
+        {
+          "approach": "Set memory limit",
+          "code": "GOMEMLIMIT=1GiB go test -fuzz=FuzzXxx",
+          "when": "Need to limit memory usage"
+        },
+        {
+          "approach": "Check for leaks",
+          "code": "// The OOM may indicate memory leak in tested code",
+          "when": "Code may have memory leak"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_parallel_race",
+      "pattern": "race detected|DATA RACE",
+      "message": "Race condition detected during fuzzing",
+      "cause": "Concurrent fuzz workers found data race",
+      "solutions": [
+        {
+          "approach": "Run with race detector",
+          "code": "go test -race -fuzz=FuzzXxx",
+          "when": "Need to find race"
+        },
+        {
+          "approach": "Add synchronization",
+          "code": "var mu sync.Mutex\nf.Fuzz(func(t *testing.T, input string) {\n    mu.Lock()\n    defer mu.Unlock()\n    // shared state access\n})",
+          "when": "Fuzz function accesses shared state"
+        },
+        {
+          "approach": "Reduce parallelism",
+          "code": "go test -fuzz=FuzzXxx -parallel=1",
+          "when": "Code not thread-safe"
+        }
+      ]
+    }
+  ]
+}

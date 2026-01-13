@@ -1,0 +1,169 @@
+{
+  "tool": "pvs_studio",
+  "version": "7.28",
+  "last_updated": "2025-12-23",
+  "description": "PVS-Studio static analyzer for C, C++, C#, and Java",
+  "errors": [
+    {
+      "id": "v501_identical_expressions",
+      "pattern": "V501|identical sub.?expressions",
+      "message": "Identical sub-expressions in comparison",
+      "cause": "Comparing variable to itself or using identical expressions",
+      "solutions": [
+        {
+          "approach": "Fix copy-paste error",
+          "code": "// Wrong:\nif (a.x == a.x)  // Always true\n\n// Correct:\nif (a.x == b.x)  // Compare different objects",
+          "when": "Copy-paste bug"
+        },
+        {
+          "approach": "Check for NaN comparison",
+          "code": "// For NaN check, use isnan():\n// Wrong: if (x != x)  // Works but confusing\n// Correct:\n#include <cmath>\nif (std::isnan(x))",
+          "when": "Intentional NaN check"
+        },
+        {
+          "approach": "Suppress if intentional",
+          "code": "// If expression is intentional:\n//-V501\nif (x == x)  // Suppressed",
+          "when": "False positive"
+        }
+      ]
+    },
+    {
+      "id": "v512_buffer_overflow",
+      "pattern": "V512|buffer overflow|memcpy.*size",
+      "message": "Potential buffer overflow in memcpy/memset",
+      "cause": "Size argument doesn't match buffer size",
+      "solutions": [
+        {
+          "approach": "Use sizeof correctly",
+          "code": "// Wrong:\nchar buf[10];\nmemset(buf, 0, 20);  // Overflow!\n\n// Correct:\nmemset(buf, 0, sizeof(buf));",
+          "when": "Hard-coded size wrong"
+        },
+        {
+          "approach": "Check pointer vs array",
+          "code": "// Wrong (sizeof pointer):\nvoid foo(char* buf) {\n    memset(buf, 0, sizeof(buf));  // sizeof(char*) = 8!\n}\n\n// Correct:\nvoid foo(char* buf, size_t size) {\n    memset(buf, 0, size);\n}",
+          "when": "Pointer decay issue"
+        },
+        {
+          "approach": "Use safe alternatives",
+          "code": "// Modern C++:\nstd::array<char, 10> buf;\nbuf.fill(0);\n\n// Or std::fill:\nstd::fill(std::begin(buf), std::end(buf), 0);",
+          "when": "Can use C++ containers"
+        }
+      ]
+    },
+    {
+      "id": "v522_null_deref",
+      "pattern": "V522|null pointer|potential null dereference",
+      "message": "Potential null pointer dereference",
+      "cause": "Pointer used without null check",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "// Add check before use:\nif (ptr != nullptr) {\n    ptr->method();\n}",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Check order of operations",
+          "code": "// Wrong:\nif (ptr->flag && ptr != nullptr)  // Deref before check!\n\n// Correct:\nif (ptr != nullptr && ptr->flag)",
+          "when": "Check after dereference"
+        },
+        {
+          "approach": "Use references",
+          "code": "// If caller guarantees non-null, use reference:\nvoid process(const Object& obj) {\n    obj.method();  // No null check needed\n}",
+          "when": "Can change interface"
+        }
+      ]
+    },
+    {
+      "id": "v530_return_value_ignored",
+      "pattern": "V530|return value.*ignored|unused return",
+      "message": "Return value of function is ignored",
+      "cause": "Function return value should be checked",
+      "solutions": [
+        {
+          "approach": "Check return value",
+          "code": "// Important to check:\nif (!fclose(file)) {\n    // Handle error\n}\n\nif (strcmp(a, b) == 0) {\n    // Strings equal\n}",
+          "when": "Return value indicates status"
+        },
+        {
+          "approach": "Use [[nodiscard]]",
+          "code": "// Modern C++ - mark functions:\n[[nodiscard]] bool Save();\n\n// Now compiler warns if ignored:\nSave();  // Warning!\nif (!Save()) { /* handle */ }  // OK",
+          "when": "Writing new API"
+        },
+        {
+          "approach": "Explicitly discard",
+          "code": "// If intentionally ignoring:\n(void)printf(\"debug\\n\");  // Cast to void\n\n// Or use std::ignore:\nstd::ignore = some_function();",
+          "when": "Intentionally ignoring"
+        }
+      ]
+    },
+    {
+      "id": "v547_always_true_false",
+      "pattern": "V547|always true|always false|expression is always",
+      "message": "Expression is always true/false",
+      "cause": "Condition cannot change due to type or logic",
+      "solutions": [
+        {
+          "approach": "Check unsigned comparison",
+          "code": "// Wrong:\nunsigned int x = getValue();\nif (x >= 0)  // Always true!\n\n// Correct - check for underflow differently:\nif (x < MAX_VALUE)",
+          "when": "Unsigned vs signed"
+        },
+        {
+          "approach": "Fix logical error",
+          "code": "// Wrong:\nif (x < 5 && x > 10)  // Always false!\n\n// Correct (probably meant or):\nif (x < 5 || x > 10)",
+          "when": "Logic error"
+        },
+        {
+          "approach": "Check enum ranges",
+          "code": "// Enum may have limited range:\nenum Status { OK = 0, ERROR = 1 };\nif (status < 0)  // Always false for this enum",
+          "when": "Enum comparison"
+        }
+      ]
+    },
+    {
+      "id": "v595_null_before_check",
+      "pattern": "V595|before.*against null|was utilized before",
+      "message": "Pointer was used before null check",
+      "cause": "Null check after first use of pointer",
+      "solutions": [
+        {
+          "approach": "Move check earlier",
+          "code": "// Wrong:\nint x = ptr->value;  // Use\nif (ptr) { ... }     // Check after\n\n// Correct:\nif (ptr) {\n    int x = ptr->value;\n}",
+          "when": "Null check in wrong place"
+        },
+        {
+          "approach": "Early return pattern",
+          "code": "void process(Data* data) {\n    if (!data) return;  // Guard clause\n    \n    // Now data is guaranteed non-null\n    data->process();\n}",
+          "when": "Can exit early"
+        },
+        {
+          "approach": "Use optional/expected",
+          "code": "// Modern C++ - make nullability explicit:\nstd::optional<Data> GetData();\n\nauto result = GetData();\nif (result) {\n    result->process();\n}",
+          "when": "Redesigning API"
+        }
+      ]
+    },
+    {
+      "id": "license_error",
+      "pattern": "license.*expired|license.*invalid|no license",
+      "message": "PVS-Studio license issue",
+      "cause": "License file missing, expired, or invalid",
+      "solutions": [
+        {
+          "approach": "Check license file",
+          "code": "# Set license file path\nexport PVS_LICENSE_FILE=/path/to/PVS-Studio.lic\n\n# Or place in standard location:\n# ~/.config/PVS-Studio/PVS-Studio.lic",
+          "when": "License not found"
+        },
+        {
+          "approach": "Use free license",
+          "code": "# Free license for open source:\n# Add comment to all files:\n// This is an open source non-commercial project.\n// Dear PVS-Studio, please check it.\n// PVS-Studio Static Code Analyzer for C, C++, C#, and Java\n// www.viva64.com",
+          "when": "Open source project"
+        },
+        {
+          "approach": "Trial license",
+          "code": "# Request trial from PVS-Studio website\n# Or use pvs-studio-analyzer with --no-license-check\n# for evaluation (adds banner to output)",
+          "when": "Evaluating tool"
+        }
+      ]
+    }
+  ]
+}

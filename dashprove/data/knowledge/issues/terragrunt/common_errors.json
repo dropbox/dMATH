@@ -1,0 +1,191 @@
+{
+  "tool": "terragrunt",
+  "version": "0.55.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "dependency_cycle",
+      "pattern": "Dependency cycle detected|circular dependency",
+      "message": "Circular dependency between modules",
+      "cause": "Modules depend on each other creating a cycle",
+      "solutions": [
+        {
+          "approach": "Check dependency blocks",
+          "code": "dependency \"vpc\" {\n  config_path = \"../vpc\"\n  # Ensure vpc doesn't depend back on this module\n}",
+          "when": "Review dependencies"
+        },
+        {
+          "approach": "Use mock outputs",
+          "code": "dependency \"vpc\" {\n  config_path = \"../vpc\"\n  mock_outputs = {\n    vpc_id = \"mock-vpc-id\"\n  }\n  mock_outputs_allowed_terraform_commands = [\"validate\"]\n}",
+          "when": "Need to break cycle for validate"
+        },
+        {
+          "approach": "Restructure modules",
+          "code": "# Split shared resources into separate base module",
+          "when": "True circular dependency"
+        }
+      ]
+    },
+    {
+      "id": "dependency_not_applied",
+      "pattern": "dependency .* has not been applied yet",
+      "message": "Dependent module not yet applied",
+      "cause": "Trying to use outputs from unapplied module",
+      "solutions": [
+        {
+          "approach": "Run with run-all",
+          "code": "terragrunt run-all apply",
+          "when": "Apply all modules in order"
+        },
+        {
+          "approach": "Apply dependency first",
+          "code": "cd ../vpc && terragrunt apply",
+          "when": "Apply specific dependency"
+        },
+        {
+          "approach": "Use mock for plan",
+          "code": "mock_outputs = {\n  output_name = \"temp-value\"\n}\nmock_outputs_merge_strategy_with_state = \"shallow\"",
+          "when": "Just need to plan"
+        }
+      ]
+    },
+    {
+      "id": "locals_error",
+      "pattern": "Error in function call|Unknown variable|locals\\.",
+      "message": "Error in locals block",
+      "cause": "Invalid expression in terragrunt.hcl locals",
+      "solutions": [
+        {
+          "approach": "Check function syntax",
+          "code": "locals {\n  env = basename(get_terragrunt_dir())\n  config = read_terragrunt_config(find_in_parent_folders(\"env.hcl\"))\n}",
+          "when": "Function call issue"
+        },
+        {
+          "approach": "Reference correctly",
+          "code": "inputs = {\n  env = local.env\n  region = local.config.locals.region\n}",
+          "when": "Accessing local values"
+        },
+        {
+          "approach": "Debug with output",
+          "code": "terragrunt console\n> local.env",
+          "when": "Test expression"
+        }
+      ]
+    },
+    {
+      "id": "include_not_found",
+      "pattern": "Could not find.*terragrunt\\.hcl|parent folders",
+      "message": "Parent config not found",
+      "cause": "find_in_parent_folders couldn't locate file",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "include \"root\" {\n  path = find_in_parent_folders()\n}",
+          "when": "Using default name"
+        },
+        {
+          "approach": "Specify filename",
+          "code": "include \"root\" {\n  path = find_in_parent_folders(\"root.hcl\")\n}",
+          "when": "Custom config name"
+        },
+        {
+          "approach": "Use fallback",
+          "code": "find_in_parent_folders(\"env.hcl\", \"fallback.hcl\")",
+          "when": "Optional parent config"
+        }
+      ]
+    },
+    {
+      "id": "state_lock",
+      "pattern": "Error acquiring the state lock|state is locked",
+      "message": "State lock acquisition failed",
+      "cause": "Another process holds lock or crashed",
+      "solutions": [
+        {
+          "approach": "Wait for other process",
+          "code": "# Check if another terragrunt/terraform is running",
+          "when": "Concurrent runs"
+        },
+        {
+          "approach": "Force unlock",
+          "code": "terragrunt force-unlock LOCK_ID",
+          "when": "Previous run crashed"
+        },
+        {
+          "approach": "Skip lock",
+          "code": "terragrunt plan -lock=false",
+          "when": "Read-only operation"
+        }
+      ]
+    },
+    {
+      "id": "cache_error",
+      "pattern": "\\.terragrunt-cache|download failed|cache",
+      "message": "Cache or download error",
+      "cause": "Issue with module cache or download",
+      "solutions": [
+        {
+          "approach": "Clear cache",
+          "code": "find . -type d -name \".terragrunt-cache\" -exec rm -rf {} +",
+          "when": "Cache corrupted"
+        },
+        {
+          "approach": "Force download",
+          "code": "terragrunt init --terragrunt-source-update",
+          "when": "Need latest source"
+        },
+        {
+          "approach": "Check source URL",
+          "code": "terraform {\n  source = \"git::https://github.com/org/repo.git//module?ref=v1.0.0\"\n}",
+          "when": "Source path wrong"
+        }
+      ]
+    },
+    {
+      "id": "hook_error",
+      "pattern": "Error running hook|before_hook|after_hook",
+      "message": "Hook execution failed",
+      "cause": "Before or after hook command failed",
+      "solutions": [
+        {
+          "approach": "Check command",
+          "code": "terraform {\n  before_hook \"validate\" {\n    commands = [\"apply\", \"plan\"]\n    execute  = [\"tflint\"]\n  }\n}",
+          "when": "Hook syntax issue"
+        },
+        {
+          "approach": "Make executable",
+          "code": "chmod +x scripts/validate.sh",
+          "when": "Script not executable"
+        },
+        {
+          "approach": "Skip hooks",
+          "code": "terragrunt apply --terragrunt-no-auto-init",
+          "when": "Debug without hooks"
+        }
+      ]
+    },
+    {
+      "id": "generate_error",
+      "pattern": "Error generating|generate block|already exists",
+      "message": "File generation error",
+      "cause": "Issue with generate block",
+      "solutions": [
+        {
+          "approach": "Allow overwrite",
+          "code": "generate \"provider\" {\n  path      = \"provider.tf\"\n  if_exists = \"overwrite_terragrunt\"\n  contents  = <<EOF\nprovider \"aws\" {}\nEOF\n}",
+          "when": "File already exists"
+        },
+        {
+          "approach": "Use skip",
+          "code": "if_exists = \"skip\"",
+          "when": "Don't overwrite existing"
+        },
+        {
+          "approach": "Check contents",
+          "code": "# Ensure contents is valid HCL",
+          "when": "Invalid generated content"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "tool": "ses",
+  "category": "email_services",
+  "description": "Amazon Simple Email Service",
+  "errors": [
+    {
+      "pattern": "MessageRejected.*not verified",
+      "meaning": "Sender email/domain not verified",
+      "causes": ["Email address not verified in SES", "Domain not verified", "Sending from sandbox without verified recipient"],
+      "solutions": ["Verify sender identity in SES console", "Complete domain verification with DNS", "Request production access"]
+    },
+    {
+      "pattern": "AccessDenied|not authorized",
+      "meaning": "IAM permission denied",
+      "causes": ["IAM policy missing ses:SendEmail", "Wrong region specified", "Resource-based policy restriction"],
+      "solutions": ["Add ses:SendEmail permission to IAM role/user", "Verify AWS_REGION matches SES region", "Check SES identity policies"]
+    },
+    {
+      "pattern": "Throttling|rate exceeded",
+      "meaning": "Sending rate limit exceeded",
+      "causes": ["Exceeded emails per second limit", "Daily quota reached", "New account with low limits"],
+      "solutions": ["Implement rate limiting", "Request sending limit increase", "Use SES sending quotas API to check limits"]
+    },
+    {
+      "pattern": "AccountSendingPaused",
+      "meaning": "SES sending paused by AWS",
+      "causes": ["High bounce rate", "High complaint rate", "Suspicious activity detected"],
+      "solutions": ["Review and fix bounce/complaint rates", "Contact AWS support", "Improve list hygiene"]
+    },
+    {
+      "pattern": "ConfigurationSetDoesNotExist",
+      "meaning": "Referenced configuration set not found",
+      "causes": ["Typo in configuration set name", "Set deleted", "Wrong region"],
+      "solutions": ["Verify configuration set exists", "Create configuration set", "Check region consistency"]
+    },
+    {
+      "pattern": "sandbox.*recipient.*not verified",
+      "meaning": "Sandbox mode recipient restriction",
+      "causes": ["Account in sandbox mode", "Recipient not verified"],
+      "solutions": ["Verify recipient email address", "Request production access", "Add recipient to verified list"]
+    },
+    {
+      "pattern": "InvalidParameterValue.*MAIL FROM",
+      "meaning": "Custom MAIL FROM domain issue",
+      "causes": ["MAIL FROM domain not verified", "MX record missing", "DNS not propagated"],
+      "solutions": ["Add MX record for MAIL FROM subdomain", "Wait for DNS propagation", "Verify domain in SES console"]
+    },
+    {
+      "pattern": "Bounce.*Permanent",
+      "meaning": "Hard bounce occurred",
+      "causes": ["Invalid recipient address", "Domain doesn't exist", "Mailbox doesn't exist"],
+      "solutions": ["Remove address from list", "Implement bounce handling via SNS", "Validate emails before sending"]
+    }
+  ]
+}

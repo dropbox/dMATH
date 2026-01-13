@@ -1,0 +1,184 @@
+{
+  "tool": "solhint",
+  "version": "4.1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "avoid_tx_origin",
+      "pattern": "avoid-tx-origin",
+      "message": "Avoid using tx.origin",
+      "cause": "tx.origin is vulnerable to phishing attacks",
+      "solutions": [
+        {
+          "approach": "Use msg.sender",
+          "code": "require(msg.sender == owner, \"Not owner\");",
+          "when": "Checking authorization"
+        },
+        {
+          "approach": "Disable rule",
+          "code": "// solhint-disable-next-line avoid-tx-origin",
+          "when": "Intentionally checking EOA"
+        }
+      ]
+    },
+    {
+      "id": "reentrancy",
+      "pattern": "reentrancy|state-visibility",
+      "message": "Potential reentrancy or state visibility issue",
+      "cause": "Code pattern that may be vulnerable",
+      "solutions": [
+        {
+          "approach": "Use CEI pattern",
+          "code": "// Checks, Effects, Interactions\nbalance[msg.sender] = 0;\n(bool ok,) = msg.sender.call{value: amt}(\"\");",
+          "when": "External call present"
+        },
+        {
+          "approach": "Add explicit visibility",
+          "code": "uint256 public value;  // or private/internal",
+          "when": "Missing visibility specifier"
+        }
+      ]
+    },
+    {
+      "id": "func_visibility",
+      "pattern": "func-visibility|visibility-modifier-order",
+      "message": "Function visibility issue",
+      "cause": "Missing or misordered visibility modifier",
+      "solutions": [
+        {
+          "approach": "Add visibility",
+          "code": "function foo() external returns (uint256) { ... }",
+          "when": "Visibility not specified"
+        },
+        {
+          "approach": "Correct order",
+          "code": "function foo() public view override returns (uint256)",
+          "when": "Modifiers in wrong order"
+        }
+      ]
+    },
+    {
+      "id": "naming_convention",
+      "pattern": "func-name-mixedcase|var-name-mixedcase|const-name-snakecase",
+      "message": "Naming convention violation",
+      "cause": "Name doesn't follow Solidity conventions",
+      "solutions": [
+        {
+          "approach": "Use mixedCase for functions",
+          "code": "function calculateTotal() public { ... }",
+          "when": "Function name error"
+        },
+        {
+          "approach": "Use UPPER_CASE for constants",
+          "code": "uint256 constant MAX_SUPPLY = 1000000;",
+          "when": "Constant name error"
+        },
+        {
+          "approach": "Use mixedCase for variables",
+          "code": "uint256 totalAmount;",
+          "when": "Variable name error"
+        }
+      ]
+    },
+    {
+      "id": "compiler_version",
+      "pattern": "compiler-version",
+      "message": "Compiler version issue",
+      "cause": "Floating pragma or outdated version",
+      "solutions": [
+        {
+          "approach": "Pin version",
+          "code": "pragma solidity 0.8.19;  // Pinned, not ^0.8.0",
+          "when": "Using floating pragma"
+        },
+        {
+          "approach": "Update version",
+          "code": "pragma solidity 0.8.19;",
+          "when": "Outdated compiler"
+        }
+      ]
+    },
+    {
+      "id": "no_empty_blocks",
+      "pattern": "no-empty-blocks",
+      "message": "Empty block detected",
+      "cause": "Function or block has no implementation",
+      "solutions": [
+        {
+          "approach": "Add implementation",
+          "code": "function foo() public {\n    // actual logic\n}",
+          "when": "Forgot to implement"
+        },
+        {
+          "approach": "Add comment",
+          "code": "receive() external payable {\n    // Intentionally empty to receive ETH\n}",
+          "when": "Empty is intentional"
+        },
+        {
+          "approach": "Disable rule",
+          "code": "// solhint-disable-next-line no-empty-blocks",
+          "when": "Intentionally empty"
+        }
+      ]
+    },
+    {
+      "id": "max_line_length",
+      "pattern": "max-line-length",
+      "message": "Line exceeds maximum length",
+      "cause": "Line too long for readability",
+      "solutions": [
+        {
+          "approach": "Break line",
+          "code": "function foo(\n    uint256 param1,\n    uint256 param2\n) public { ... }",
+          "when": "Line has many parameters"
+        },
+        {
+          "approach": "Configure limit",
+          "code": "// In .solhint.json: \"rules\": { \"max-line-length\": [\"error\", 120] }",
+          "when": "Need longer lines"
+        }
+      ]
+    },
+    {
+      "id": "reason_string",
+      "pattern": "reason-string",
+      "message": "Missing or improper revert reason",
+      "cause": "Require/revert without message or too long",
+      "solutions": [
+        {
+          "approach": "Add reason",
+          "code": "require(amount > 0, \"Amount must be positive\");",
+          "when": "Missing error message"
+        },
+        {
+          "approach": "Use custom errors",
+          "code": "error InsufficientBalance(uint256 available, uint256 required);\nif (balance < amount) revert InsufficientBalance(balance, amount);",
+          "when": "Want gas-efficient errors"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "Error parsing|configuration error",
+      "message": "Invalid solhint configuration",
+      "cause": ".solhint.json has syntax or rule errors",
+      "solutions": [
+        {
+          "approach": "Validate JSON",
+          "code": "python -c \"import json; json.load(open('.solhint.json'))\"",
+          "when": "JSON syntax error"
+        },
+        {
+          "approach": "Check rule names",
+          "code": "// Refer to solhint docs for valid rules",
+          "when": "Unknown rule name"
+        },
+        {
+          "approach": "Use init",
+          "code": "solhint --init",
+          "when": "Need fresh configuration"
+        }
+      ]
+    }
+  ]
+}

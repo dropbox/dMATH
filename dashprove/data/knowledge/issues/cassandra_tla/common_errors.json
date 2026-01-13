@@ -1,0 +1,65 @@
+{
+  "tool_id": "cassandra_tla",
+  "tool_name": "Cassandra TLA+ Specification",
+  "description": "TLA+ specification of Apache Cassandra's distributed architecture including consistent hashing, gossip protocol, lightweight transactions, and repair mechanisms",
+  "common_errors": [
+    {
+      "id": "lwt_paxos_contention",
+      "pattern": "Cas operation failed due to contention|Paxos prepare rejected",
+      "category": "lightweight_transactions",
+      "severity": "high",
+      "cause": "Multiple lightweight transactions (LWT) competing for the same partition, causing Paxos rounds to fail",
+      "solution": "Reduce contention by batching operations or partitioning data differently. Set appropriate Paxos proposal timeout. Consider IF NOT EXISTS vs IF conditions.",
+      "example": "INSERT INTO users (id, email) VALUES (?, ?) IF NOT EXISTS  -- uses Paxos internally",
+      "related_concepts": ["paxos_serial_consistency", "compare_and_set", "conditional_update"]
+    },
+    {
+      "id": "gossip_partition_split",
+      "pattern": "Node unreachable|Cluster partition detected|Gossip convergence timeout",
+      "category": "membership",
+      "severity": "critical",
+      "cause": "Network partition causing gossip protocol to fail converging on cluster membership, leading to split-brain scenarios",
+      "solution": "Configure gossip failure detector appropriately (phi_convict_threshold). Use consistent topology by avoiding flapping nodes. Verify network connectivity.",
+      "related_concepts": ["failure_detection", "phi_accrual_detector", "node_status"]
+    },
+    {
+      "id": "read_repair_inconsistency",
+      "pattern": "Digest mismatch during read|Read repair triggered",
+      "category": "consistency",
+      "severity": "medium",
+      "cause": "Replicas have divergent data due to failed writes, hinted handoff delays, or anti-entropy not yet completing",
+      "solution": "Run nodetool repair periodically. Use read_repair_chance to probabilistically fix inconsistencies. Consider QUORUM reads for stronger consistency.",
+      "related_concepts": ["eventual_consistency", "anti_entropy", "merkle_trees"]
+    },
+    {
+      "id": "hinted_handoff_overflow",
+      "pattern": "Hints directory at capacity|Hints dropped for node",
+      "category": "write_path",
+      "severity": "high",
+      "cause": "A node is down for too long, and the hints storage for that node exceeds configured limits, causing writes to be lost",
+      "solution": "Increase max_hint_window_in_ms cautiously. Monitor hints_dropped metric. Bring failed nodes back online promptly or decommission them.",
+      "related_concepts": ["hinted_handoff", "write_availability", "node_recovery"]
+    },
+    {
+      "id": "tombstone_overwhelm",
+      "pattern": "TombstoneOverwhelmingException|Query aborted due to tombstone limit",
+      "category": "compaction",
+      "severity": "high",
+      "cause": "Too many tombstones encountered during a read, typically from deleting many rows without compaction",
+      "solution": "Run compaction to remove tombstones past gc_grace_seconds. Avoid patterns that create many deletes. Use TTL instead of explicit deletes when possible.",
+      "related_concepts": ["gc_grace", "compaction_strategies", "sstable_tombstones"]
+    }
+  ],
+  "best_practices": [
+    "Model the gossip protocol with message delays and node failures",
+    "Specify consistency levels (ONE, QUORUM, ALL) and their tradeoffs in the spec",
+    "Include hinted handoff and read repair as repair mechanisms",
+    "Model the Paxos rounds for lightweight transactions explicitly",
+    "Test with various replication factors and network partition scenarios"
+  ],
+  "references": [
+    "https://cassandra.apache.org/_/index.html",
+    "https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/architecture/archTOC.html",
+    "https://www.datastax.com/blog/lightweight-transactions-cassandra-20"
+  ]
+}

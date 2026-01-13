@@ -1,0 +1,122 @@
+{
+  "tool": "tyk",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "redis_unreachable",
+      "pattern": "redis.*connection|dial tcp .*6379|Cannot connect to Redis",
+      "message": "Gateway cannot connect to Redis",
+      "cause": "Redis host/port wrong, TLS required, or network blocked",
+      "solutions": [
+        {
+          "approach": "Verify URL",
+          "code": "\"storage\": { \"type\": \"redis\", \"host\": \"redis:6379\" }",
+          "when": "Incorrect host or port"
+        },
+        {
+          "approach": "Check TLS settings",
+          "code": "\"enable_cluster\": true, \"use_ssl\": true",
+          "when": "Redis requires TLS/auth"
+        },
+        {
+          "approach": "Test connectivity",
+          "code": "redis-cli -h redis -p 6379 PING",
+          "when": "Network suspected"
+        }
+      ]
+    },
+    {
+      "id": "jwt_validation_failed",
+      "pattern": "JWT validation failed|Signature is invalid|Token has expired",
+      "message": "JWT rejected",
+      "cause": "Wrong signing key/algorithm or expired token",
+      "solutions": [
+        {
+          "approach": "Match signing method",
+          "code": "\"jwt_signing_method\": \"rsa\" or \"hmac\"",
+          "when": "Algorithm mismatch"
+        },
+        {
+          "approach": "Configure key or JWK",
+          "code": "\"jwt_source\": \"-----BEGIN PUBLIC KEY-----...\"",
+          "when": "Public key not set"
+        },
+        {
+          "approach": "Refresh token",
+          "code": "Issue new JWT with valid exp/nbf claims",
+          "when": "Token expired or not yet valid"
+        }
+      ]
+    },
+    {
+      "id": "key_not_authorised",
+      "pattern": "Key not authorised|Access to this API has been disallowed|Authorization failed",
+      "message": "Request key not authorised",
+      "cause": "API definition not linked to key or policy, or key expired",
+      "solutions": [
+        {
+          "approach": "Check key policies",
+          "code": "curl -H 'x-tyk-authorization: <admin>' http://gateway:8080/tyk/keys/<key> | jq '.policies'",
+          "when": "Key missing API policy"
+        },
+        {
+          "approach": "Bind API to policy",
+          "code": "\"policies\": { \"default\": { \"apIs\": [ \"api-id\" ] } }",
+          "when": "API not included in policy"
+        },
+        {
+          "approach": "Regenerate key",
+          "code": "tyk-cli create key --api-id <id> --policy default",
+          "when": "Key expired or revoked"
+        }
+      ]
+    },
+    {
+      "id": "upstream_unreachable",
+      "pattern": "Upstream host unreachable|dial tcp|context deadline exceeded",
+      "message": "Gateway cannot reach upstream",
+      "cause": "Target URL wrong, TLS verification failing, or network blocked",
+      "solutions": [
+        {
+          "approach": "Test upstream",
+          "code": "curl -v <target_url>",
+          "when": "Verify service reachable"
+        },
+        {
+          "approach": "Disable cert verify (dev)",
+          "code": "\"proxy\": { \"disable_strip_auth\": true, \"transport\": { \"ssl_insecure_skip_verify\": true } }",
+          "when": "Self-signed upstream cert"
+        },
+        {
+          "approach": "Update target",
+          "code": "\"target_url\": \"http://svc:8080\"",
+          "when": "Host/port incorrect"
+        }
+      ]
+    },
+    {
+      "id": "config_reload_failed",
+      "pattern": "Unable to reload configuration|failed to load API config|invalid character",
+      "message": "Gateway failed to reload configuration",
+      "cause": "tyk.conf or API definition JSON invalid",
+      "solutions": [
+        {
+          "approach": "Validate JSON",
+          "code": "jq . /opt/tyk-gateway/tyk.conf",
+          "when": "Catch syntax errors"
+        },
+        {
+          "approach": "Check file permissions",
+          "code": "ls -l /opt/tyk-gateway/tyk.conf",
+          "when": "Gateway cannot read config"
+        },
+        {
+          "approach": "Reload safely",
+          "code": "curl -H 'x-tyk-authorization: <admin>' -X POST http://localhost:8080/tyk/reload",
+          "when": "Apply config after fix"
+        }
+      ]
+    }
+  ]
+}

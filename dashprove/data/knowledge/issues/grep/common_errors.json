@@ -1,0 +1,207 @@
+{
+  "tool": "grep",
+  "version": "GNU grep",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_match",
+      "pattern": "no match|no output|nothing found|exit status 1",
+      "message": "No matches found",
+      "cause": "Pattern doesn't match any lines",
+      "solutions": [
+        {
+          "approach": "Case insensitive",
+          "code": "grep -i 'pattern' file",
+          "when": "Case mismatch"
+        },
+        {
+          "approach": "Extended regex",
+          "code": "grep -E 'pattern1|pattern2' file\negrep 'pattern1|pattern2' file",
+          "when": "Need OR patterns"
+        },
+        {
+          "approach": "Check file exists",
+          "code": "ls -la file\ncat file | head",
+          "when": "Verify file"
+        }
+      ]
+    },
+    {
+      "id": "regex_errors",
+      "pattern": "Invalid.*expression|Trailing backslash|Unmatched|repetition.*empty",
+      "message": "Invalid regex",
+      "cause": "Regular expression syntax error",
+      "solutions": [
+        {
+          "approach": "Escape special chars",
+          "code": "# Special chars: . * + ? [ ] ^ $ { } ( ) | \\\ngrep 'file\\.txt' files\ngrep '\\$HOME' script\ngrep '\\[error\\]' log",
+          "when": "Literal match"
+        },
+        {
+          "approach": "Fixed string",
+          "code": "grep -F 'literal.string[with]special' file",
+          "when": "No regex needed"
+        },
+        {
+          "approach": "Extended regex",
+          "code": "grep -E '(pattern1|pattern2)+' file\n# ERE doesn't need escaping for: + ? { } ( ) |",
+          "when": "Extended syntax"
+        }
+      ]
+    },
+    {
+      "id": "binary_file",
+      "pattern": "Binary file.*matches|Binary file",
+      "message": "Binary file detected",
+      "cause": "File contains binary data",
+      "solutions": [
+        {
+          "approach": "Treat as text",
+          "code": "grep -a 'pattern' binary_file",
+          "when": "Search anyway"
+        },
+        {
+          "approach": "Show text only",
+          "code": "grep --text 'pattern' file",
+          "when": "Force text mode"
+        },
+        {
+          "approach": "Use strings first",
+          "code": "strings binary_file | grep 'pattern'",
+          "when": "Extract text"
+        }
+      ]
+    },
+    {
+      "id": "recursive_issues",
+      "pattern": "recursive|directory|Is a directory",
+      "message": "Directory as argument",
+      "cause": "grep needs -r for directories",
+      "solutions": [
+        {
+          "approach": "Recursive search",
+          "code": "grep -r 'pattern' directory/\ngrep -R 'pattern' directory/  # Follow symlinks",
+          "when": "Search dir tree"
+        },
+        {
+          "approach": "With file patterns",
+          "code": "grep -r --include='*.py' 'pattern' .\ngrep -r --exclude='*.log' 'pattern' .",
+          "when": "Filter files"
+        }
+      ]
+    },
+    {
+      "id": "context_lines",
+      "pattern": "context|before|after|surrounding",
+      "message": "Need context around match",
+      "cause": "Want lines around matches",
+      "solutions": [
+        {
+          "approach": "Context lines",
+          "code": "grep -A 3 'pattern' file  # 3 lines after\ngrep -B 3 'pattern' file  # 3 lines before\ngrep -C 3 'pattern' file  # 3 lines before and after",
+          "when": "Show context"
+        },
+        {
+          "approach": "Line numbers",
+          "code": "grep -n 'pattern' file",
+          "when": "Show line numbers"
+        }
+      ]
+    },
+    {
+      "id": "counting",
+      "pattern": "count|how many|number of",
+      "message": "Count matches",
+      "cause": "Need match count",
+      "solutions": [
+        {
+          "approach": "Count matches",
+          "code": "grep -c 'pattern' file     # Lines with matches\ngrep -o 'pattern' file | wc -l  # Total occurrences",
+          "when": "Count"
+        },
+        {
+          "approach": "Files with matches",
+          "code": "grep -l 'pattern' *.txt   # List files\ngrep -L 'pattern' *.txt   # Files without match",
+          "when": "List files"
+        }
+      ]
+    },
+    {
+      "id": "color_issues",
+      "pattern": "color|highlight|colour",
+      "message": "Color output",
+      "cause": "Need colored highlighting",
+      "solutions": [
+        {
+          "approach": "Enable color",
+          "code": "grep --color=auto 'pattern' file\ngrep --color=always 'pattern' file | less -R",
+          "when": "Highlight matches"
+        },
+        {
+          "approach": "Alias setup",
+          "code": "alias grep='grep --color=auto'",
+          "when": "Permanent color"
+        }
+      ]
+    },
+    {
+      "id": "word_boundary",
+      "pattern": "whole word|word boundary|exact word",
+      "message": "Match whole words only",
+      "cause": "Pattern matching partial words",
+      "solutions": [
+        {
+          "approach": "Word boundary",
+          "code": "grep -w 'word' file       # Match whole word\ngrep '\\bword\\b' file    # Same with regex",
+          "when": "Exact word"
+        },
+        {
+          "approach": "Line match",
+          "code": "grep -x 'exact line' file  # Match whole line",
+          "when": "Exact line"
+        }
+      ]
+    },
+    {
+      "id": "invert_match",
+      "pattern": "not|exclude|invert|without",
+      "message": "Exclude matches",
+      "cause": "Want lines NOT matching",
+      "solutions": [
+        {
+          "approach": "Invert match",
+          "code": "grep -v 'pattern' file  # Lines NOT matching",
+          "when": "Exclude pattern"
+        },
+        {
+          "approach": "Multiple excludes",
+          "code": "grep -v -e 'pat1' -e 'pat2' file\ngrep -vE 'pat1|pat2' file",
+          "when": "Multiple exclusions"
+        }
+      ]
+    },
+    {
+      "id": "performance",
+      "pattern": "slow|performance|large file|fast",
+      "message": "Performance issues",
+      "cause": "grep is slow on large files/dirs",
+      "solutions": [
+        {
+          "approach": "Use ripgrep",
+          "code": "rg 'pattern' directory/\n# Much faster than grep -r",
+          "when": "Large codebase"
+        },
+        {
+          "approach": "Fixed string",
+          "code": "grep -F 'literal' file  # Faster than regex",
+          "when": "No regex needed"
+        },
+        {
+          "approach": "Limit search",
+          "code": "grep -m 10 'pattern' file  # Stop after 10 matches",
+          "when": "First few matches"
+        }
+      ]
+    }
+  ]
+}

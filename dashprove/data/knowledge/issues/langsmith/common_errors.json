@@ -1,0 +1,133 @@
+{
+  "tool": "langsmith",
+  "version": "0.1.99",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "api_key_error",
+      "pattern": "(API.*key|LANGCHAIN_API_KEY|unauthorized)",
+      "message": "LangSmith API key not configured",
+      "cause": "Missing or invalid API key",
+      "solutions": [
+        {
+          "approach": "Set environment variables",
+          "code": "import os\nos.environ['LANGCHAIN_API_KEY'] = 'your-api-key'\nos.environ['LANGCHAIN_TRACING_V2'] = 'true'\nos.environ['LANGCHAIN_PROJECT'] = 'my-project'",
+          "when": "Setting up tracing"
+        },
+        {
+          "approach": "Create client directly",
+          "code": "from langsmith import Client\nclient = Client(api_key='your-api-key')",
+          "when": "Programmatic access"
+        }
+      ]
+    },
+    {
+      "id": "tracing_not_enabled",
+      "pattern": "(tracing|not.*enabled|no runs)",
+      "message": "Tracing not enabled",
+      "cause": "LangSmith tracing not configured for LangChain",
+      "solutions": [
+        {
+          "approach": "Enable tracing",
+          "code": "import os\nos.environ['LANGCHAIN_TRACING_V2'] = 'true'\nos.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'",
+          "when": "Before running LangChain code"
+        },
+        {
+          "approach": "Use context manager",
+          "code": "from langsmith import trace\nwith trace(name='my-trace'):\n    result = chain.invoke(input)",
+          "when": "Manual tracing"
+        }
+      ]
+    },
+    {
+      "id": "dataset_error",
+      "pattern": "(dataset|examples|create.*dataset)",
+      "message": "Dataset operation error",
+      "cause": "Dataset creation or access issue",
+      "solutions": [
+        {
+          "approach": "Create dataset",
+          "code": "from langsmith import Client\nclient = Client()\ndataset = client.create_dataset(\n    dataset_name='my-dataset',\n    description='Test dataset'\n)\nclient.create_example(\n    inputs={'question': 'What is AI?'},\n    outputs={'answer': 'Artificial Intelligence'},\n    dataset_id=dataset.id\n)",
+          "when": "Creating dataset"
+        },
+        {
+          "approach": "Upload examples",
+          "code": "from langsmith import Client\nclient = Client()\nclient.upload_csv(\n    csv_file='examples.csv',\n    input_keys=['input'],\n    output_keys=['output'],\n    name='my-dataset'\n)",
+          "when": "Uploading from CSV"
+        }
+      ]
+    },
+    {
+      "id": "evaluation_error",
+      "pattern": "(evaluate|evaluator|score.*failed)",
+      "message": "Evaluation error",
+      "cause": "Evaluator configuration or execution issue",
+      "solutions": [
+        {
+          "approach": "Run evaluation",
+          "code": "from langsmith.evaluation import evaluate\nresults = evaluate(\n    lambda x: chain.invoke(x),\n    data='my-dataset',\n    evaluators=['qa', 'context_qa'],\n    experiment_prefix='test-run'\n)",
+          "when": "Running evaluation"
+        },
+        {
+          "approach": "Custom evaluator",
+          "code": "from langsmith.evaluation import EvaluationResult\ndef my_evaluator(run, example):\n    score = 1.0 if run.outputs == example.outputs else 0.0\n    return EvaluationResult(key='accuracy', score=score)\n\nresults = evaluate(..., evaluators=[my_evaluator])",
+          "when": "Custom evaluation"
+        }
+      ]
+    },
+    {
+      "id": "feedback_error",
+      "pattern": "(feedback|annotation|score)",
+      "message": "Feedback submission error",
+      "cause": "Invalid feedback format or run not found",
+      "solutions": [
+        {
+          "approach": "Add feedback",
+          "code": "from langsmith import Client\nclient = Client()\nclient.create_feedback(\n    run_id='run-id',\n    key='correctness',\n    score=1.0,\n    comment='Correct answer'\n)",
+          "when": "Adding feedback to run"
+        },
+        {
+          "approach": "Get run ID",
+          "code": "# From traced run\nfrom langsmith import trace\nwith trace(name='my-run') as run_tree:\n    result = chain.invoke(input)\n    run_id = run_tree.id",
+          "when": "Getting run ID for feedback"
+        }
+      ]
+    },
+    {
+      "id": "project_not_found",
+      "pattern": "(project|workspace|not found)",
+      "message": "Project not found",
+      "cause": "Project doesn't exist or access denied",
+      "solutions": [
+        {
+          "approach": "Create project",
+          "code": "from langsmith import Client\nclient = Client()\nproject = client.create_project(project_name='my-project')",
+          "when": "Project doesn't exist"
+        },
+        {
+          "approach": "Set project",
+          "code": "import os\nos.environ['LANGCHAIN_PROJECT'] = 'existing-project'",
+          "when": "Using existing project"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_error",
+      "pattern": "(rate.*limit|429|too many)",
+      "message": "API rate limit exceeded",
+      "cause": "Too many API calls",
+      "solutions": [
+        {
+          "approach": "Batch operations",
+          "code": "from langsmith import Client\nclient = Client()\n# Batch create examples\nclient.create_examples(\n    inputs=[{'q': 'Q1'}, {'q': 'Q2'}],\n    outputs=[{'a': 'A1'}, {'a': 'A2'}],\n    dataset_id=dataset.id\n)",
+          "when": "Many operations"
+        },
+        {
+          "approach": "Add delay",
+          "code": "import time\nfor example in examples:\n    client.create_example(...)\n    time.sleep(0.1)  # Rate limit delay",
+          "when": "Hitting rate limits"
+        }
+      ]
+    }
+  ]
+}

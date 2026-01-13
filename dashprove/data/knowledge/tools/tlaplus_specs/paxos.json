@@ -1,0 +1,122 @@
+{
+  "id": "tlaplus_paxos",
+  "name": "Paxos TLA+ Specification",
+  "category": "tlaplus_specifications",
+  "subcategory": "consensus",
+
+  "description": "Formal TLA+ specification of the Paxos consensus algorithm by Leslie Lamport",
+  "long_description": "The canonical TLA+ specification of Paxos, written by Leslie Lamport himself. Paxos is the foundational consensus algorithm for distributed systems. This specification covers basic single-decree Paxos, with extensions available for Multi-Paxos, Cheap Paxos, Fast Paxos, and Byzantine Paxos. Used as the reference for implementations in Google Spanner, Chubby, and Apache Zookeeper.",
+
+  "capabilities": [
+    "consensus_specification",
+    "fault_tolerance",
+    "safety_verification",
+    "liveness_properties",
+    "model_checking"
+  ],
+  "property_types": ["safety", "liveness", "invariants"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/tlaplus/Examples/tree/master/specifications/Paxos",
+    "lamport": "https://lamport.azurewebsites.net/tla/paxos.html",
+    "paper": "https://lamport.azurewebsites.net/pubs/paxos-simple.pdf"
+  },
+
+  "documentation": {
+    "official": "https://lamport.azurewebsites.net/pubs/paxos-simple.pdf",
+    "tla_spec": "https://github.com/tlaplus/Examples/tree/master/specifications/Paxos",
+    "video": "https://www.youtube.com/watch?v=s8JqcZtvnsM"
+  },
+
+  "key_properties": [
+    {
+      "name": "Nontriviality",
+      "description": "Only a proposed value can be chosen",
+      "tla_formula": "chosen \\subseteq proposed"
+    },
+    {
+      "name": "Consistency",
+      "description": "At most one value can be chosen",
+      "tla_formula": "Cardinality(chosen) <= 1"
+    },
+    {
+      "name": "P1",
+      "description": "An acceptor must accept the first proposal it receives",
+      "tla_formula": "First proposal is accepted"
+    },
+    {
+      "name": "P2",
+      "description": "If a proposal with value v is chosen, then every higher-numbered proposal has value v",
+      "tla_formula": "\\A p1, p2 \\in Proposal : p1.n < p2.n /\\ Chosen(p1) => p2.v = p1.v"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "maxBal", "type": "Ballot \\cup {-1}", "description": "Maximum ballot acceptor has seen"},
+    {"name": "maxVBal", "type": "Ballot \\cup {-1}", "description": "Ballot of most recent vote"},
+    {"name": "maxVal", "type": "Value \\cup {None}", "description": "Value of most recent vote"},
+    {"name": "msgs", "type": "Set(Message)", "description": "Messages sent"}
+  ],
+
+  "phases": [
+    {
+      "name": "Phase1a",
+      "description": "Proposer sends prepare request with ballot number",
+      "action": "Proposer chooses new ballot b and sends <prepare, b> to acceptors"
+    },
+    {
+      "name": "Phase1b",
+      "description": "Acceptor responds to prepare with promise",
+      "action": "Acceptor responds with <promise, b, maxVBal, maxVal> if b > maxBal"
+    },
+    {
+      "name": "Phase2a",
+      "description": "Proposer sends accept request with value",
+      "action": "Proposer sends <accept, b, v> where v is highest maxVal or proposer's value"
+    },
+    {
+      "name": "Phase2b",
+      "description": "Acceptor accepts proposal",
+      "action": "Acceptor accepts if ballot matches maxBal and records vote"
+    }
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Acceptor": "{a1, a2, a3}",
+      "Value": "{v1, v2}",
+      "Ballot": "0..3",
+      "Quorum": "{{a1, a2}, {a1, a3}, {a2, a3}}"
+    },
+    "invariants": ["TypeOK", "Consistency", "Nontriviality"],
+    "expected_states": "Thousands to millions"
+  },
+
+  "variants": [
+    {"name": "Multi-Paxos", "description": "Multiple Paxos instances for log replication"},
+    {"name": "Fast Paxos", "description": "Reduces latency when no conflicts"},
+    {"name": "Cheap Paxos", "description": "Uses fewer acceptors in normal case"},
+    {"name": "Byzantine Paxos", "description": "Tolerates Byzantine failures"},
+    {"name": "Flexible Paxos", "description": "Allows flexible quorum sizes"}
+  ],
+
+  "related_specs": ["raft", "viewstamped_replication", "zab", "pbft"],
+
+  "implementations_verified": [
+    "Google Spanner",
+    "Google Chubby",
+    "Apache Zookeeper",
+    "Cassandra (Paxos CAS)",
+    "Azure Cosmos DB"
+  ],
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Leslie Lamport",
+    "license": "MIT"
+  }
+}

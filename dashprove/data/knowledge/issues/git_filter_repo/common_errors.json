@@ -1,0 +1,101 @@
+{
+  "tool": "git_filter_repo",
+  "version": "2.38",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "dirty_worktree",
+      "pattern": "refusing to run on dirty repository|working tree has unstaged changes",
+      "message": "git-filter-repo requires clean working tree",
+      "cause": "Uncommitted changes present",
+      "solutions": [
+        {
+          "approach": "Commit or stash",
+          "code": "git status\ngit commit -am 'WIP' || git stash",
+          "when": "Before running filter"
+        },
+        {
+          "approach": "Use temporary clone",
+          "code": "git clone --mirror <url> repo-filter && cd repo-filter",
+          "when": "Want to keep original untouched"
+        }
+      ]
+    },
+    {
+      "id": "shallow_clone",
+      "pattern": "cannot rewrite shallow repository|fatal: --force not allowed with shallow repository",
+      "message": "Shallow clone not supported",
+      "cause": "Repository cloned with --depth",
+      "solutions": [
+        {
+          "approach": "Unshallow repository",
+          "code": "git fetch --unshallow",
+          "when": "Convert to full history"
+        },
+        {
+          "approach": "Clone with --mirror",
+          "code": "git clone --mirror <url>",
+          "when": "Fresh clone for filtering"
+        }
+      ]
+    },
+    {
+      "id": "original_refs_present",
+      "pattern": "refs/original exists|filter-branch backup refs detected",
+      "message": "Existing backup refs block rewrite",
+      "cause": "Previous filter-branch/filter-repo left refs/original/*",
+      "solutions": [
+        {
+          "approach": "Delete backup refs",
+          "code": "git for-each-ref --format='%(refname)' refs/original | xargs -r -n1 git update-ref -d",
+          "when": "Backups not needed"
+        },
+        {
+          "approach": "Rename refs",
+          "code": "git update-ref refs/before-filter refs/original/refs/heads/master && git update-ref -d refs/original/refs/heads/master",
+          "when": "Need to keep backup under different name"
+        }
+      ]
+    },
+    {
+      "id": "pathspec_missing",
+      "pattern": "pathspec .* did not match any files|No matching paths",
+      "message": "Filter paths do not exist",
+      "cause": "Wrong path casing or path removed in history",
+      "solutions": [
+        {
+          "approach": "List available paths",
+          "code": "git ls-tree -r --name-only HEAD | head",
+          "when": "Verify exact path names"
+        },
+        {
+          "approach": "Use path rename",
+          "code": "git filter-repo --path old/ --path-rename old/:new/",
+          "when": "Moving directory while filtering"
+        }
+      ]
+    },
+    {
+      "id": "python_version",
+      "pattern": "requires Python 3|No module named git_filter_repo",
+      "message": "git-filter-repo Python environment issues",
+      "cause": "Using Python2 or package not installed",
+      "solutions": [
+        {
+          "approach": "Run with python3",
+          "code": "python3 -m pip install git-filter-repo",
+          "when": "Script not on PATH"
+        },
+        {
+          "approach": "Invoke from Git contrib",
+          "code": "/usr/share/doc/git/contrib/filter-repo/git-filter-repo --help",
+          "when": "Using distro packaged script"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://github.com/newren/git-filter-repo",
+    "https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/blob/docs/html/git-filter-repo.html"
+  ]
+}

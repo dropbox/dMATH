@@ -1,0 +1,108 @@
+{
+  "id": "tlaplus_two_phase_commit",
+  "name": "Two-Phase Commit TLA+ Specification",
+  "category": "tlaplus_specifications",
+  "subcategory": "distributed_transactions",
+
+  "description": "TLA+ specification of the Two-Phase Commit distributed transaction protocol",
+  "long_description": "Two-Phase Commit (2PC) is the canonical protocol for distributed atomic transactions. The TLA+ specification covers the prepare and commit phases, coordinator and participant behavior, and recovery from failures. This is a foundational spec for understanding distributed transaction protocols. While blocking on coordinator failure, 2PC remains widely used in practice.",
+
+  "capabilities": [
+    "atomic_commit",
+    "distributed_transactions",
+    "coordinator_recovery",
+    "participant_recovery"
+  ],
+  "property_types": ["safety", "atomicity"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/tlaplus/Examples/tree/master/specifications/transaction_commit",
+    "lamport_video": "https://www.youtube.com/watch?v=I3tZvTlWQQ4"
+  },
+
+  "documentation": {
+    "official": "https://github.com/tlaplus/Examples/tree/master/specifications/transaction_commit",
+    "video": "https://www.youtube.com/watch?v=I3tZvTlWQQ4"
+  },
+
+  "protocol_phases": [
+    {
+      "name": "Prepare",
+      "description": "Coordinator asks participants to prepare",
+      "message": "PREPARE",
+      "action": "Coordinator sends PREPARE, participants vote YES/NO"
+    },
+    {
+      "name": "Commit/Abort",
+      "description": "Coordinator decides and broadcasts decision",
+      "message": "COMMIT or ABORT",
+      "action": "If all YES: COMMIT; else ABORT"
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "Atomicity",
+      "description": "All participants commit or all abort",
+      "tla_formula": "\\A p1, p2 \\in Participant : state[p1] = Committed <=> state[p2] = Committed"
+    },
+    {
+      "name": "Consistency",
+      "description": "Commit only if all participants voted YES",
+      "tla_formula": "state = Committed => \\A p \\in Participant : vote[p] = Yes"
+    },
+    {
+      "name": "Validity",
+      "description": "If all participants vote YES and no failures, transaction commits",
+      "tla_formula": "(\\A p : vote[p] = Yes) /\\ NoFailures => <>(state = Committed)"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "rmState", "type": "RM -> {working, prepared, committed, aborted}", "description": "Resource manager state"},
+    {"name": "tmState", "type": "{init, done}", "description": "Transaction manager state"},
+    {"name": "tmPrepared", "type": "Set(RM)", "description": "RMs that have prepared"},
+    {"name": "msgs", "type": "Set(Message)", "description": "Messages sent"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "RM": "{rm1, rm2, rm3}",
+      "MaxRetry": "2"
+    },
+    "invariants": ["TypeOK", "Consistency"],
+    "expected_states": "Thousands"
+  },
+
+  "limitations": [
+    "Blocking on coordinator failure",
+    "Participants hold locks during 2PC",
+    "No progress if coordinator fails after prepare",
+    "Requires reliable coordinator"
+  ],
+
+  "variants": [
+    {"name": "3PC", "description": "Three-Phase Commit - adds pre-commit phase"},
+    {"name": "Paxos Commit", "description": "Uses Paxos for non-blocking commit"},
+    {"name": "Saga", "description": "Long-running transactions with compensations"}
+  ],
+
+  "related_specs": ["paxos", "three_phase_commit", "saga"],
+
+  "implementations": [
+    "MySQL XA",
+    "PostgreSQL PREPARE TRANSACTION",
+    "Microsoft DTC",
+    "Oracle XA"
+  ],
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "TLA+ Examples",
+    "license": "MIT"
+  }
+}

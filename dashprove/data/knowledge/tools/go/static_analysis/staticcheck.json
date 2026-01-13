@@ -1,0 +1,151 @@
+{
+  "id": "staticcheck",
+  "name": "Staticcheck",
+  "category": "go_static_analysis",
+  "subcategory": "linter",
+
+  "description": "Advanced static analysis for Go with 150+ checks",
+  "long_description": "Staticcheck is the most comprehensive static analysis tool for Go. It goes beyond basic linting to find bugs, performance issues, and non-idiomatic code. It includes checks for correctness (SA category), code simplification (S), style (ST), deprecation (SA1019), and performance issues. Staticcheck is used by major Go projects and is often considered the gold standard for Go static analysis.",
+
+  "capabilities": [
+    "bug_detection",
+    "correctness_checking",
+    "performance_analysis",
+    "code_simplification",
+    "deprecation_detection",
+    "style_enforcement",
+    "concurrency_issues",
+    "resource_leaks"
+  ],
+  "property_types": ["assertion", "lint_rule", "performance_hint"],
+  "input_languages": ["go"],
+  "output_formats": ["text", "json", "sarif", "stylish"],
+
+  "installation": {
+    "methods": [
+      {"type": "go_install", "command": "go install honnef.co/go/tools/cmd/staticcheck@latest"},
+      {"type": "binary", "url": "https://github.com/dominikh/go-tools/releases"}
+    ],
+    "dependencies": ["go"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://staticcheck.io/docs/",
+    "checks_reference": "https://staticcheck.io/docs/checks/",
+    "configuration": "https://staticcheck.io/docs/configuration/",
+    "examples": "https://staticcheck.io/docs/running-staticcheck/"
+  },
+
+  "checks": [
+    {
+      "category": "SA",
+      "name": "Static Analysis",
+      "description": "Correctness checks that find actual bugs",
+      "examples": ["SA1000 - Invalid regexp", "SA4006 - Unused value", "SA5000 - Nil pointer dereference"]
+    },
+    {
+      "category": "S",
+      "name": "Simple",
+      "description": "Code simplification suggestions",
+      "examples": ["S1000 - Use plain channel send/receive", "S1002 - Omit bool comparison", "S1008 - Simplify returning bool"]
+    },
+    {
+      "category": "ST",
+      "name": "Style",
+      "description": "Style checks for idiomatic Go",
+      "examples": ["ST1000 - Package comment style", "ST1003 - Naming conventions", "ST1016 - Receiver naming"]
+    },
+    {
+      "category": "QF",
+      "name": "Quick Fix",
+      "description": "Suggestions with automated fixes",
+      "examples": ["QF1001 - Apply De Morgan's law", "QF1003 - Convert if/else to switch"]
+    }
+  ],
+
+  "tactics": [
+    {
+      "name": "run_all",
+      "description": "Run all checks on package",
+      "syntax": "staticcheck ./...",
+      "when_to_use": "Standard CI/CD check",
+      "examples": ["staticcheck ./...", "staticcheck ./pkg/..."]
+    },
+    {
+      "name": "select_checks",
+      "description": "Run specific check categories",
+      "syntax": "staticcheck -checks=CHECKS ./...",
+      "when_to_use": "When you want to focus on specific issue types",
+      "examples": ["staticcheck -checks='SA*' ./...", "staticcheck -checks='SA,S1000' ./..."]
+    },
+    {
+      "name": "json_output",
+      "description": "Output in JSON format for tooling",
+      "syntax": "staticcheck -f json ./...",
+      "when_to_use": "Integration with CI/CD or other tools",
+      "examples": ["staticcheck -f json ./... | jq .", "staticcheck -f sarif ./..."]
+    },
+    {
+      "name": "ignore_check",
+      "description": "Disable specific check via comment",
+      "syntax": "//lint:ignore CHECK reason",
+      "when_to_use": "When a check is a false positive",
+      "examples": ["//lint:ignore SA4006 this value is used via reflection"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "SA\\d{4}",
+      "meaning": "Static analysis (correctness) issue found",
+      "common_causes": ["Actual bug", "Dead code", "Incorrect API usage"],
+      "fixes": ["Fix the bug", "Remove dead code", "Use correct API"]
+    },
+    {
+      "pattern": "S\\d{4}",
+      "meaning": "Code can be simplified",
+      "common_causes": ["Verbose code", "Non-idiomatic patterns"],
+      "fixes": ["Apply suggested simplification"]
+    },
+    {
+      "pattern": "could not load package",
+      "meaning": "Go module/package resolution failed",
+      "common_causes": ["Missing go.mod", "Dependency issues", "Invalid package path"],
+      "fixes": ["Run go mod tidy", "Check module path", "Ensure dependencies are available"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "goland", "vim", "emacs"],
+    "ci_integration": ["github_actions", "gitlab_ci", "jenkins"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds",
+    "scalability": "Handles large codebases efficiently",
+    "memory_usage": "Low to moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["golangci-lint", "go_vet", "golint", "revive"],
+    "advantages": [
+      "Most comprehensive check coverage",
+      "High accuracy with few false positives",
+      "Clear explanations for each check",
+      "SARIF output for security tooling"
+    ],
+    "disadvantages": [
+      "Slower than basic linters",
+      "Some checks can be opinionated"
+    ]
+  },
+
+  "metadata": {
+    "version": "2024.1",
+    "last_updated": "2025-12-22",
+    "maintainer": "Dominik Honnef",
+    "license": "MIT"
+  }
+}

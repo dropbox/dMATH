@@ -1,0 +1,177 @@
+{
+  "tool": "kubesec",
+  "version": "2.14.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cap_sys_admin",
+      "pattern": "CAP_SYS_ADMIN|SYS_ADMIN capability",
+      "message": "Container has SYS_ADMIN capability",
+      "cause": "capabilities.add includes SYS_ADMIN (equivalent to root)",
+      "solutions": [
+        {
+          "approach": "Remove SYS_ADMIN",
+          "code": "securityContext:\n  capabilities:\n    drop: [\"ALL\"]",
+          "when": "Container doesn't need admin capabilities"
+        },
+        {
+          "approach": "Use specific capabilities",
+          "code": "capabilities:\n  add: [\"SYS_PTRACE\"]  # Only what's needed",
+          "when": "Need specific admin functions"
+        }
+      ]
+    },
+    {
+      "id": "privileged_container",
+      "pattern": "Privileged|privileged.*true",
+      "message": "Container runs in privileged mode",
+      "cause": "securityContext.privileged: true gives full host access",
+      "solutions": [
+        {
+          "approach": "Disable privileged mode",
+          "code": "securityContext:\n  privileged: false",
+          "when": "Standard container"
+        },
+        {
+          "approach": "Use PodSecurityPolicy/Standards",
+          "code": "apiVersion: policy/v1beta1\nkind: PodSecurityPolicy\nmetadata:\n  name: restricted\nspec:\n  privileged: false",
+          "when": "Enforce cluster-wide"
+        }
+      ]
+    },
+    {
+      "id": "host_network",
+      "pattern": "hostNetwork|host network",
+      "message": "Pod uses host network namespace",
+      "cause": "hostNetwork: true exposes pod to host network",
+      "solutions": [
+        {
+          "approach": "Disable host network",
+          "code": "spec:\n  hostNetwork: false",
+          "when": "Container doesn't need host network"
+        },
+        {
+          "approach": "Use network policies",
+          "code": "apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: default-deny\nspec:\n  podSelector: {}\n  policyTypes: [\"Ingress\", \"Egress\"]",
+          "when": "Need network isolation"
+        }
+      ]
+    },
+    {
+      "id": "host_pid",
+      "pattern": "hostPID|host PID",
+      "message": "Pod shares host PID namespace",
+      "cause": "hostPID: true allows seeing host processes",
+      "solutions": [
+        {
+          "approach": "Disable host PID",
+          "code": "spec:\n  hostPID: false",
+          "when": "Container doesn't need to see host processes"
+        }
+      ]
+    },
+    {
+      "id": "host_ipc",
+      "pattern": "hostIPC|host IPC",
+      "message": "Pod shares host IPC namespace",
+      "cause": "hostIPC: true allows access to host shared memory",
+      "solutions": [
+        {
+          "approach": "Disable host IPC",
+          "code": "spec:\n  hostIPC: false",
+          "when": "Container doesn't need shared memory"
+        }
+      ]
+    },
+    {
+      "id": "allow_privilege_escalation",
+      "pattern": "allowPrivilegeEscalation|privilege escalation",
+      "message": "Container allows privilege escalation",
+      "cause": "allowPrivilegeEscalation not set to false",
+      "solutions": [
+        {
+          "approach": "Disable privilege escalation",
+          "code": "securityContext:\n  allowPrivilegeEscalation: false",
+          "when": "Container doesn't need setuid binaries"
+        },
+        {
+          "approach": "Combined secure context",
+          "code": "securityContext:\n  allowPrivilegeEscalation: false\n  runAsNonRoot: true\n  readOnlyRootFilesystem: true\n  capabilities:\n    drop: [\"ALL\"]",
+          "when": "Full security hardening"
+        }
+      ]
+    },
+    {
+      "id": "root_user",
+      "pattern": "root.*user|runAsUser.*0",
+      "message": "Container runs as root user",
+      "cause": "runAsUser: 0 or not specified (defaults to root)",
+      "solutions": [
+        {
+          "approach": "Run as non-root",
+          "code": "securityContext:\n  runAsNonRoot: true\n  runAsUser: 65534  # nobody",
+          "when": "Container can run as non-root"
+        },
+        {
+          "approach": "Use specific user",
+          "code": "securityContext:\n  runAsUser: 1000\n  runAsGroup: 1000\n  fsGroup: 1000",
+          "when": "Need specific UID/GID"
+        }
+      ]
+    },
+    {
+      "id": "service_account_token",
+      "pattern": "serviceAccountToken|automount.*token",
+      "message": "ServiceAccount token auto-mounted",
+      "cause": "automountServiceAccountToken not disabled",
+      "solutions": [
+        {
+          "approach": "Disable token mount",
+          "code": "spec:\n  automountServiceAccountToken: false",
+          "when": "Pod doesn't need Kubernetes API access"
+        },
+        {
+          "approach": "Use projected volume",
+          "code": "volumes:\n- name: token\n  projected:\n    sources:\n    - serviceAccountToken:\n        path: token\n        expirationSeconds: 3600",
+          "when": "Need short-lived token"
+        }
+      ]
+    },
+    {
+      "id": "seccomp_unconfined",
+      "pattern": "seccomp.*unconfined|Seccomp.*not",
+      "message": "Container has no seccomp profile",
+      "cause": "Missing seccompProfile annotation or spec",
+      "solutions": [
+        {
+          "approach": "Use runtime default",
+          "code": "securityContext:\n  seccompProfile:\n    type: RuntimeDefault",
+          "when": "Standard container"
+        },
+        {
+          "approach": "Use custom profile",
+          "code": "securityContext:\n  seccompProfile:\n    type: Localhost\n    localhostProfile: profiles/audit.json",
+          "when": "Need custom syscall restrictions"
+        }
+      ]
+    },
+    {
+      "id": "apparmor_unconfined",
+      "pattern": "AppArmor.*unconfined|apparmor.*not",
+      "message": "Container has no AppArmor profile",
+      "cause": "Missing container.apparmor.security.beta.kubernetes.io annotation",
+      "solutions": [
+        {
+          "approach": "Use runtime default",
+          "code": "annotations:\n  container.apparmor.security.beta.kubernetes.io/app: runtime/default",
+          "when": "Standard container"
+        },
+        {
+          "approach": "Use custom profile",
+          "code": "annotations:\n  container.apparmor.security.beta.kubernetes.io/app: localhost/k8s-apparmor-example-deny-write",
+          "when": "Need custom restrictions"
+        }
+      ]
+    }
+  ]
+}

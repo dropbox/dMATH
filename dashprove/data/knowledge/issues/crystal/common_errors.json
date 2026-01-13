@@ -1,0 +1,163 @@
+{
+  "tool": "crystal",
+  "version": "1.11.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_inference_failed",
+      "pattern": "can't infer.*type|type must be.*not",
+      "message": "Type inference failed",
+      "cause": "Compiler cannot determine variable type",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "arr = [] of String  # Specify element type\nhash = {} of String => Int32",
+          "when": "Empty collection"
+        },
+        {
+          "approach": "Use type restriction",
+          "code": "def f(x : Int32) : String\n  x.to_s\nend",
+          "when": "Function parameter types"
+        },
+        {
+          "approach": "Initialize with value",
+          "code": "x = 0_i64  # Infers Int64",
+          "when": "Variable needs initial value"
+        }
+      ]
+    },
+    {
+      "id": "nil_check_failed",
+      "pattern": "undefined method.*for Nil|Nil assertion failed",
+      "message": "Nil check required",
+      "cause": "Value might be nil but method expects non-nil",
+      "solutions": [
+        {
+          "approach": "Use not_nil!",
+          "code": "value = maybe_nil.not_nil!",
+          "when": "Sure value is not nil"
+        },
+        {
+          "approach": "Use if check",
+          "code": "if value = maybe_nil\n  # value is non-nil here\nend",
+          "when": "Handle nil case"
+        },
+        {
+          "approach": "Use try",
+          "code": "value = maybe_nil.try &.method",
+          "when": "Optional chaining"
+        }
+      ]
+    },
+    {
+      "id": "union_type_error",
+      "pattern": "can't call.*on.*\\|.*union",
+      "message": "Method not available on union type",
+      "cause": "Union type contains members without required method",
+      "solutions": [
+        {
+          "approach": "Use case/when",
+          "code": "case value\nwhen String then value.upcase\nwhen Int32 then value.to_s\nend",
+          "when": "Different handling per type"
+        },
+        {
+          "approach": "Use is_a? check",
+          "code": "if value.is_a?(String)\n  value.upcase  # value is String here\nend",
+          "when": "Want type narrowing"
+        },
+        {
+          "approach": "Use as type cast",
+          "code": "str = value.as(String)",
+          "when": "Sure about type"
+        }
+      ]
+    },
+    {
+      "id": "abstract_method",
+      "pattern": "abstract.*def.*must be implemented",
+      "message": "Abstract method not implemented",
+      "cause": "Subclass doesn't implement required abstract method",
+      "solutions": [
+        {
+          "approach": "Implement method",
+          "code": "class Child < Parent\n  def abstract_method\n    # implementation\n  end\nend",
+          "when": "Subclass needs method"
+        },
+        {
+          "approach": "Make class abstract",
+          "code": "abstract class MyClass\n  abstract def method\nend",
+          "when": "Class shouldn't be instantiated"
+        }
+      ]
+    },
+    {
+      "id": "macro_error",
+      "pattern": "macro.*error|can't.*macro",
+      "message": "Macro expansion error",
+      "cause": "Macro cannot be expanded correctly",
+      "solutions": [
+        {
+          "approach": "Debug with pp",
+          "code": "{% debug %}\npp typeof(x)",
+          "when": "Understanding macro context"
+        },
+        {
+          "approach": "Check macro syntax",
+          "code": "macro my_macro(x)\n  {{ x }}  # Double braces for interpolation\nend",
+          "when": "Macro syntax issue"
+        },
+        {
+          "approach": "Use stringify",
+          "code": "{{ x.stringify }}",
+          "when": "Need string representation"
+        }
+      ]
+    },
+    {
+      "id": "fiber_error",
+      "pattern": "fiber.*error|channel.*closed",
+      "message": "Fiber/channel error",
+      "cause": "Concurrent operation failed",
+      "solutions": [
+        {
+          "approach": "Check channel state",
+          "code": "unless channel.closed?\n  channel.send(data)\nend",
+          "when": "Channel may be closed"
+        },
+        {
+          "approach": "Use select",
+          "code": "select\nwhen data = channel.receive\n  # process data\nwhen timeout(5.seconds)\n  # handle timeout\nend",
+          "when": "Need timeout"
+        },
+        {
+          "approach": "Use spawn with rescue",
+          "code": "spawn do\n  begin\n    risky_op\n  rescue ex\n    # handle error\n  end\nend",
+          "when": "Fiber may raise"
+        }
+      ]
+    },
+    {
+      "id": "shards_error",
+      "pattern": "shard.*error|Could not find.*shard",
+      "message": "Shards dependency error",
+      "cause": "Dependency installation or resolution failed",
+      "solutions": [
+        {
+          "approach": "Update shards",
+          "code": "shards update",
+          "when": "Dependencies outdated"
+        },
+        {
+          "approach": "Install shards",
+          "code": "shards install",
+          "when": "Dependencies not fetched"
+        },
+        {
+          "approach": "Check shard.yml",
+          "code": "# Verify dependency specification",
+          "when": "Shard configuration error"
+        }
+      ]
+    }
+  ]
+}

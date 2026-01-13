@@ -1,0 +1,77 @@
+{
+  "tool": "cassandra",
+  "category": "database",
+  "common_errors": [
+    {
+      "pattern": "NoHostAvailable",
+      "meaning": "Cannot connect to any Cassandra node",
+      "causes": ["All nodes down", "Network issue", "Wrong contact points"],
+      "solutions": ["Check node status: nodetool status", "Verify contact points", "Check network connectivity"]
+    },
+    {
+      "pattern": "Unavailable.*consistency",
+      "meaning": "Not enough replicas available for consistency level",
+      "causes": ["Nodes down", "Consistency level too high", "Data center unavailable"],
+      "solutions": ["Use lower consistency level", "Repair/bring up nodes", "Use LOCAL_ consistency for multi-DC"]
+    },
+    {
+      "pattern": "WriteTimeout",
+      "meaning": "Write didn't complete in time",
+      "causes": ["Node overloaded", "Network latency", "Replica unavailable"],
+      "solutions": ["Increase timeout", "Reduce load", "Check node health"]
+    },
+    {
+      "pattern": "ReadTimeout",
+      "meaning": "Read didn't complete in time",
+      "causes": ["Query too slow", "Node overloaded", "Large result set"],
+      "solutions": ["Add indexes or denormalize", "Increase timeout", "Reduce result set size"]
+    },
+    {
+      "pattern": "InvalidQuery.*PRIMARY KEY",
+      "meaning": "Query doesn't include partition key",
+      "causes": ["Missing partition key in WHERE", "Trying to scan full table", "Wrong query pattern"],
+      "solutions": ["Include partition key in query", "Use ALLOW FILTERING (carefully)", "Redesign data model"]
+    },
+    {
+      "pattern": "tombstone_warn_threshold",
+      "meaning": "Query scanning too many tombstones",
+      "causes": ["Many deletes", "TTL expired data", "Wide partitions"],
+      "solutions": ["Increase gc_grace_seconds and compact", "Redesign deletion strategy", "Use smaller partitions"]
+    },
+    {
+      "pattern": "Compaction.*stuck",
+      "meaning": "Compaction not progressing",
+      "causes": ["Disk full", "Too many compaction tasks", "Node overloaded"],
+      "solutions": ["Free disk space", "Reduce write load", "Tune compaction throughput"]
+    },
+    {
+      "pattern": "ConfigurationException.*keyspace.*does not exist",
+      "meaning": "Keyspace not found",
+      "causes": ["Keyspace not created", "Typo in keyspace name", "Connected to wrong cluster"],
+      "solutions": ["Create keyspace: CREATE KEYSPACE", "Verify keyspace name", "Check cluster connection"]
+    },
+    {
+      "pattern": "OperationTimedOut",
+      "meaning": "Operation exceeded timeout",
+      "causes": ["Query too slow", "Cross-data-center operation", "Node GC pause"],
+      "solutions": ["Optimize query", "Use LOCAL_ consistency", "Tune JVM GC settings"]
+    },
+    {
+      "pattern": "Batch.*too large",
+      "meaning": "Batch size exceeds limit",
+      "causes": ["Too many statements in batch", "Large data in batch", "batch_size_warn_threshold_in_kb exceeded"],
+      "solutions": ["Split into smaller batches", "Use unlogged batch", "Increase threshold (not recommended)"]
+    }
+  ],
+  "debugging_commands": [
+    "nodetool status",
+    "nodetool info",
+    "nodetool tablestats <keyspace>.<table>",
+    "nodetool compactionstats",
+    "nodetool tpstats"
+  ],
+  "documentation_urls": [
+    "https://cassandra.apache.org/doc/",
+    "https://github.com/apache/cassandra"
+  ]
+}

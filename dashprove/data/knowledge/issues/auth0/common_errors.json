@@ -1,0 +1,191 @@
+{
+  "tool": "auth0",
+  "version": "4.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_error",
+      "pattern": "invalid_client|client_id.*invalid|domain.*not configured",
+      "message": "Configuration error",
+      "cause": "Invalid domain, client ID, or secret",
+      "solutions": [
+        {
+          "approach": "Check config",
+          "code": "const auth0 = new Auth0Client({\n  domain: 'your-tenant.auth0.com',\n  clientId: 'your-client-id'\n});",
+          "when": "Client setup"
+        },
+        {
+          "approach": "Environment vars",
+          "code": "AUTH0_DOMAIN=your-tenant.auth0.com\nAUTH0_CLIENT_ID=your-client-id\nAUTH0_CLIENT_SECRET=your-secret",
+          "when": "Env config"
+        },
+        {
+          "approach": "Verify in dashboard",
+          "code": "# Auth0 Dashboard > Applications > Your App\n# Copy Domain, Client ID, Client Secret",
+          "when": "Get credentials"
+        }
+      ]
+    },
+    {
+      "id": "callback_error",
+      "pattern": "callback.*mismatch|redirect_uri.*not.*allowed|invalid_redirect_uri",
+      "message": "Callback URL mismatch",
+      "cause": "Callback URL not in allowed list",
+      "solutions": [
+        {
+          "approach": "Add callback",
+          "code": "# Auth0 Dashboard > Applications > Your App > Settings\n# Allowed Callback URLs: http://localhost:3000/callback\n# Allowed Logout URLs: http://localhost:3000\n# Allowed Web Origins: http://localhost:3000",
+          "when": "Add URL"
+        },
+        {
+          "approach": "Match exactly",
+          "code": "// URL must match exactly, including trailing slash\nauth0.loginWithRedirect({\n  authorizationParams: {\n    redirect_uri: 'http://localhost:3000/callback'  // Exact match\n  }\n});",
+          "when": "Exact match"
+        },
+        {
+          "approach": "Multiple URLs",
+          "code": "# Allowed Callback URLs (comma-separated):\nhttp://localhost:3000/callback, https://myapp.com/callback",
+          "when": "Multiple environments"
+        }
+      ]
+    },
+    {
+      "id": "token_error",
+      "pattern": "invalid_token|token.*expired|jwt.*invalid|id_token.*error",
+      "message": "Token error",
+      "cause": "Invalid or expired token",
+      "solutions": [
+        {
+          "approach": "Refresh token",
+          "code": "// Use refresh token to get new access token:\nconst { access_token } = await auth0.getTokenSilently();\n// Or with refresh token:\nawait auth0.getTokenSilently({ cacheMode: 'off' });",
+          "when": "Token expired"
+        },
+        {
+          "approach": "Check audience",
+          "code": "auth0.loginWithRedirect({\n  authorizationParams: {\n    audience: 'https://your-api.com',\n    scope: 'openid profile email'\n  }\n});",
+          "when": "API audience"
+        },
+        {
+          "approach": "Verify token",
+          "code": "const { expressjwt } = require('express-jwt');\nconst jwksRsa = require('jwks-rsa');\n\nconst checkJwt = expressjwt({\n  secret: jwksRsa.expressJwtSecret({\n    cache: true,\n    jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`\n  }),\n  audience: 'YOUR_API_AUDIENCE',\n  issuer: `https://${AUTH0_DOMAIN}/`,\n  algorithms: ['RS256']\n});",
+          "when": "Backend verification"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection.*not found|social.*error|identity provider|IdP",
+      "message": "Connection/IdP error",
+      "cause": "Social connection not configured",
+      "solutions": [
+        {
+          "approach": "Enable connection",
+          "code": "# Auth0 Dashboard > Authentication > Social\n# Enable Google, Facebook, etc.\n# Configure client ID and secret from provider",
+          "when": "Enable social"
+        },
+        {
+          "approach": "Specify connection",
+          "code": "auth0.loginWithRedirect({\n  authorizationParams: {\n    connection: 'google-oauth2'\n  }\n});",
+          "when": "Force provider"
+        },
+        {
+          "approach": "Enable for app",
+          "code": "# Auth0 Dashboard > Applications > Your App > Connections\n# Enable the social connections for this app",
+          "when": "App connections"
+        }
+      ]
+    },
+    {
+      "id": "rule_action_error",
+      "pattern": "rule.*failed|action.*error|custom.*script|pipeline",
+      "message": "Rules/Actions error",
+      "cause": "Custom rule or action failed",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "# Auth0 Dashboard > Logs\n# Filter by 'Failed Login' or 'Failed Exchange'",
+          "when": "View errors"
+        },
+        {
+          "approach": "Debug action",
+          "code": "// In Action code:\nexports.onExecutePostLogin = async (event, api) => {\n  console.log('Event:', JSON.stringify(event, null, 2));\n  // Your logic\n};",
+          "when": "Add logging"
+        },
+        {
+          "approach": "Test action",
+          "code": "# Auth0 Dashboard > Actions > Library > Your Action\n# Use 'Test' tab with sample event",
+          "when": "Test locally"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_error",
+      "pattern": "rate.*limit|429|too many requests",
+      "message": "Rate limit exceeded",
+      "cause": "API rate limit reached",
+      "solutions": [
+        {
+          "approach": "Check limits",
+          "code": "# Free: 1000 Monthly Active Users, limited API calls\n# Check current usage in Auth0 Dashboard",
+          "when": "View limits"
+        },
+        {
+          "approach": "Implement retry",
+          "code": "// Add exponential backoff:\nconst retry = async (fn) => {\n  for (let i = 0; i < 3; i++) {\n    try {\n      return await fn();\n    } catch (e) {\n      if (e.statusCode === 429) {\n        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));\n      } else throw e;\n    }\n  }\n};",
+          "when": "Add retries"
+        },
+        {
+          "approach": "Cache tokens",
+          "code": "// Use token caching:\nconst { access_token } = await auth0.getTokenSilently();\n// SDK caches tokens automatically",
+          "when": "Reduce calls"
+        }
+      ]
+    },
+    {
+      "id": "mfa_error",
+      "pattern": "mfa.*required|enrollment.*required|authenticator.*error",
+      "message": "MFA error",
+      "cause": "MFA required but not completed",
+      "solutions": [
+        {
+          "approach": "Handle MFA",
+          "code": "// Check for MFA requirement:\ntry {\n  await auth0.loginWithRedirect();\n} catch (e) {\n  if (e.error === 'mfa_required') {\n    await auth0.loginWithRedirect({\n      authorizationParams: { acr_values: 'http://schemas.openid.net/pape/policies/2007/06/multi-factor' }\n    });\n  }\n}",
+          "when": "MFA flow"
+        },
+        {
+          "approach": "Configure MFA",
+          "code": "# Auth0 Dashboard > Security > Multi-factor Auth\n# Enable factors: SMS, Authenticator App, etc.",
+          "when": "Enable MFA"
+        },
+        {
+          "approach": "MFA policy",
+          "code": "# Set MFA policy per application:\n# Auth0 Dashboard > Applications > Your App > Settings > Advanced\n# Require MFA: Always, For New Devices, Never",
+          "when": "MFA policy"
+        }
+      ]
+    },
+    {
+      "id": "cors_error",
+      "pattern": "CORS|cross-origin|blocked by CORS|Access-Control",
+      "message": "CORS error",
+      "cause": "Origin not allowed",
+      "solutions": [
+        {
+          "approach": "Add origin",
+          "code": "# Auth0 Dashboard > Applications > Your App > Settings\n# Allowed Web Origins: http://localhost:3000",
+          "when": "Add origin"
+        },
+        {
+          "approach": "Check protocol",
+          "code": "// Origin must match exactly:\n// http://localhost:3000 ≠ https://localhost:3000\n// localhost:3000 ≠ 127.0.0.1:3000",
+          "when": "Exact match"
+        },
+        {
+          "approach": "Wildcard",
+          "code": "# For development, use wildcard (not recommended for production):\n# Allowed Web Origins: http://localhost:*",
+          "when": "Dev only"
+        }
+      ]
+    }
+  ]
+}

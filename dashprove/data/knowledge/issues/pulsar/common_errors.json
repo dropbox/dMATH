@@ -1,0 +1,167 @@
+{
+  "tool": "pulsar",
+  "category": "message_broker",
+  "common_errors": [
+    {
+      "error": "BROKER_NOT_AVAILABLE",
+      "pattern": "BrokerServiceException|Cannot connect to broker|No available broker",
+      "severity": "critical",
+      "causes": [
+        "Pulsar broker not running",
+        "ZooKeeper connection failure",
+        "Broker not registered in ZooKeeper",
+        "Network connectivity issues"
+      ],
+      "solutions": [
+        "Start broker: bin/pulsar broker",
+        "Check ZooKeeper: bin/pulsar zookeeper-shell",
+        "Verify broker registration: ls /loadbalance/brokers",
+        "Check broker logs: logs/pulsar-broker-*.log"
+      ]
+    },
+    {
+      "error": "TOPIC_NOT_FOUND",
+      "pattern": "TopicNotFoundException|Topic not found|persistent://.*not found",
+      "severity": "medium",
+      "causes": [
+        "Topic doesn't exist and auto-creation disabled",
+        "Wrong tenant/namespace/topic path",
+        "Tenant or namespace not created",
+        "Permissions deny topic access"
+      ],
+      "solutions": [
+        "Create topic: bin/pulsar-admin topics create persistent://tenant/ns/topic",
+        "Enable auto-creation: allowAutoTopicCreation=true",
+        "Verify tenant: bin/pulsar-admin tenants list",
+        "Check namespace: bin/pulsar-admin namespaces list tenant"
+      ]
+    },
+    {
+      "error": "AUTHENTICATION_FAILED",
+      "pattern": "AuthenticationException|Authentication failed|authentication required",
+      "severity": "high",
+      "causes": [
+        "Invalid JWT token",
+        "Token expired",
+        "Wrong authentication plugin",
+        "Missing authentication configuration"
+      ],
+      "solutions": [
+        "Verify token: bin/pulsar tokens show",
+        "Generate new token: bin/pulsar tokens create --secret-key file:///path/secret.key",
+        "Check client auth config: authPlugin, authParams",
+        "Verify broker authenticationEnabled=true"
+      ]
+    },
+    {
+      "error": "AUTHORIZATION_FAILED",
+      "pattern": "AuthorizationException|not authorized|permission denied",
+      "severity": "high",
+      "causes": [
+        "User lacks produce/consume permission",
+        "Namespace policy restricts access",
+        "Super user required for admin operation",
+        "Subscription type not allowed"
+      ],
+      "solutions": [
+        "Grant permission: bin/pulsar-admin namespaces grant-permission ns --role user --actions produce,consume",
+        "Check permissions: bin/pulsar-admin namespaces permissions ns",
+        "Add super user: superUserRoles=[\"admin\"]",
+        "Review namespace policies: bin/pulsar-admin namespaces policies ns"
+      ]
+    },
+    {
+      "error": "BOOKIE_NOT_AVAILABLE",
+      "pattern": "BKException|Not enough bookies|BookKeeper.*unavailable",
+      "severity": "critical",
+      "causes": [
+        "BookKeeper nodes down",
+        "Not enough bookies for write quorum",
+        "Disk full on bookies",
+        "ZooKeeper connection lost"
+      ],
+      "solutions": [
+        "Check bookies: bin/bookkeeper shell listbookies -rw",
+        "Start bookie: bin/pulsar bookie",
+        "Verify disk space on bookie nodes",
+        "Check bookie logs: logs/pulsar-bookie-*.log"
+      ]
+    },
+    {
+      "error": "CONSUMER_BUSY",
+      "pattern": "ConsumerBusyException|Exclusive consumer.*already connected|consumer is busy",
+      "severity": "medium",
+      "causes": [
+        "Exclusive subscription already has consumer",
+        "Previous consumer not cleanly disconnected",
+        "Subscription type mismatch"
+      ],
+      "solutions": [
+        "Use Shared or Key_Shared subscription for multiple consumers",
+        "Unsubscribe previous consumer: bin/pulsar-admin topics unsubscribe topic -s subscription",
+        "Wait for consumer timeout",
+        "Check subscription type matches producer expectation"
+      ]
+    },
+    {
+      "error": "BACKLOG_QUOTA_EXCEEDED",
+      "pattern": "BacklogQuotaExceeded|Topic backlog quota exceeded|producer blocked",
+      "severity": "high",
+      "causes": [
+        "Consumers not keeping up",
+        "Backlog quota limit reached",
+        "Consumer offline for too long",
+        "Message TTL not configured"
+      ],
+      "solutions": [
+        "Increase quota: bin/pulsar-admin namespaces set-backlog-quota ns --limit 10G",
+        "Set message TTL: bin/pulsar-admin namespaces set-message-ttl ns --messageTTL 3600",
+        "Skip messages: bin/pulsar-admin topics skip topic -s sub -n 1000",
+        "Monitor consumer lag: bin/pulsar-admin topics stats topic"
+      ]
+    },
+    {
+      "error": "LEDGER_FENCED",
+      "pattern": "LedgerFencedException|Ledger fenced|BKLedgerFencedException",
+      "severity": "critical",
+      "causes": [
+        "Multiple brokers claiming same topic",
+        "Split-brain scenario",
+        "Broker failover in progress",
+        "ZooKeeper session timeout"
+      ],
+      "solutions": [
+        "Wait for automatic recovery (broker restart)",
+        "Force topic ownership: bin/pulsar-admin topics unload topic",
+        "Check for duplicate broker registrations",
+        "Increase ZooKeeper session timeout"
+      ]
+    },
+    {
+      "error": "SCHEMA_INCOMPATIBLE",
+      "pattern": "IncompatibleSchemaException|Schema.*incompatible|schema validation failed",
+      "severity": "medium",
+      "causes": [
+        "Producer schema doesn't match topic schema",
+        "Schema evolution violated compatibility",
+        "Schema registry mismatch"
+      ],
+      "solutions": [
+        "Check schema: bin/pulsar-admin schemas get topic",
+        "Set compatibility: bin/pulsar-admin namespaces set-schema-compatibility-strategy ns --compatibility BACKWARD",
+        "Delete schema if needed: bin/pulsar-admin schemas delete topic",
+        "Update producer to use compatible schema"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use schema registry for data governance",
+    "Configure appropriate retention policies",
+    "Monitor backlog and consumer lag",
+    "Use tiered storage for cost-effective retention",
+    "Enable TLS for production",
+    "Set up geo-replication for disaster recovery",
+    "Use namespace isolation for multi-tenancy"
+  ],
+  "related_tools": ["kafka", "nats", "rabbitmq", "bookkeeper", "zookeeper"]
+}

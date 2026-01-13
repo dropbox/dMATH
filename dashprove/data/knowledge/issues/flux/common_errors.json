@@ -1,0 +1,181 @@
+{
+  "tool": "flux",
+  "version": "0.1.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "refinement_failed",
+      "pattern": "refinement type error|cannot prove",
+      "message": "Cannot prove refinement type constraint",
+      "cause": "Value does not satisfy the refinement predicate",
+      "solutions": [
+        {
+          "approach": "Add assertion",
+          "code": "flux::assert!(constraint);",
+          "when": "Help Flux see constraint holds"
+        },
+        {
+          "approach": "Strengthen precondition",
+          "code": "#[flux::sig(fn(x: i32{x > 0}) -> ...)]",
+          "when": "Caller should provide stronger guarantee"
+        },
+        {
+          "approach": "Use trusted attribute",
+          "code": "#[flux::trusted]\nfn external_fn() { ... }",
+          "when": "External code Flux cannot analyze"
+        }
+      ]
+    },
+    {
+      "id": "precondition_not_met",
+      "pattern": "precondition .* not satisfied",
+      "message": "Function precondition not established",
+      "cause": "Called function with argument not satisfying refinement",
+      "solutions": [
+        {
+          "approach": "Check before calling",
+          "code": "if x > 0 {\n    positive_fn(x)\n}",
+          "when": "Can guard call"
+        },
+        {
+          "approach": "Use assume",
+          "code": "flux::assume!(x > 0);\npositive_fn(x)",
+          "when": "Know constraint from external info"
+        },
+        {
+          "approach": "Propagate requirement",
+          "code": "#[flux::sig(fn(x: i32{x > 0}) -> ...)]",
+          "when": "Push to caller"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_not_proven",
+      "pattern": "postcondition .* not proved",
+      "message": "Cannot prove function postcondition",
+      "cause": "Return value doesn't satisfy ensures clause",
+      "solutions": [
+        {
+          "approach": "Add intermediate assertion",
+          "code": "flux::assert!(property);\nresult",
+          "when": "Help prover see property"
+        },
+        {
+          "approach": "Fix implementation",
+          "code": "// Ensure return value satisfies refinement",
+          "when": "Logic error in code"
+        },
+        {
+          "approach": "Weaken postcondition",
+          "code": "// If ensures clause is too strong",
+          "when": "Postcondition unrealistic"
+        }
+      ]
+    },
+    {
+      "id": "invariant_violation",
+      "pattern": "loop invariant|invariant not preserved",
+      "message": "Loop invariant issue",
+      "cause": "Loop invariant not established or not preserved",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "#[flux::invariant(i >= 0 && i <= n)]",
+          "when": "Need more facts"
+        },
+        {
+          "approach": "Initialize correctly",
+          "code": "let mut i: i32[0] = 0; // Flux refined literal",
+          "when": "Invariant not initially true"
+        },
+        {
+          "approach": "Add variant for termination",
+          "code": "// Ensure loop terminates",
+          "when": "Termination related"
+        }
+      ]
+    },
+    {
+      "id": "liquid_type_mismatch",
+      "pattern": "liquid type mismatch|expected .* found",
+      "message": "Refinement type mismatch",
+      "cause": "Expression has different refinement than expected",
+      "solutions": [
+        {
+          "approach": "Cast with assertion",
+          "code": "flux::assert!(constraint);\nvalue as RefinedType",
+          "when": "Know types are compatible"
+        },
+        {
+          "approach": "Use explicit annotation",
+          "code": "let x: i32{x > 0} = expr;",
+          "when": "Clarify expected type"
+        }
+      ]
+    },
+    {
+      "id": "smt_timeout",
+      "pattern": "timeout|solver timeout",
+      "message": "SMT solver timed out",
+      "cause": "Constraint too complex for automatic solving",
+      "solutions": [
+        {
+          "approach": "Simplify constraints",
+          "code": "// Use simpler refinement predicates",
+          "when": "Constraint overly complex"
+        },
+        {
+          "approach": "Add intermediate lemmas",
+          "code": "flux::assert!(simpler_fact);",
+          "when": "Break into steps"
+        },
+        {
+          "approach": "Use trusted for complex parts",
+          "code": "#[flux::trusted]",
+          "when": "Part of code too hard to verify"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported|not yet supported",
+      "message": "Rust feature not supported by Flux",
+      "cause": "Code uses feature Flux cannot verify",
+      "solutions": [
+        {
+          "approach": "Mark as trusted",
+          "code": "#[flux::trusted]\nfn uses_unsupported() { ... }",
+          "when": "Can trust without verification"
+        },
+        {
+          "approach": "Rewrite without feature",
+          "code": "// Use Flux-supported subset",
+          "when": "Can restructure"
+        },
+        {
+          "approach": "Use opaque types",
+          "code": "#[flux::opaque]",
+          "when": "Hide implementation"
+        }
+      ]
+    },
+    {
+      "id": "ownership_error",
+      "pattern": "ownership|borrow checker",
+      "message": "Flux-specific ownership issue",
+      "cause": "Refinement interacts poorly with ownership",
+      "solutions": [
+        {
+          "approach": "Clone refined value",
+          "code": "let x_copy = x.clone();",
+          "when": "Need to use value twice"
+        },
+        {
+          "approach": "Restructure borrows",
+          "code": "// Avoid simultaneous borrows of refined values",
+          "when": "Borrow conflicts"
+        }
+      ]
+    }
+  ]
+}

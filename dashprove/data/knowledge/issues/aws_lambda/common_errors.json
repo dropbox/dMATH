@@ -1,0 +1,216 @@
+{
+  "tool": "aws_lambda",
+  "version": "2023.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "Task timed out|timeout|Duration.*exceeded configured timeout",
+      "message": "Lambda function execution timed out",
+      "cause": "Function execution exceeded configured timeout limit (max 15 minutes)",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "# AWS CLI\naws lambda update-function-configuration --function-name myFunc --timeout 60\n\n# serverless.yml\nfunctions:\n  myFunc:\n    timeout: 60",
+          "when": "Function legitimately needs more time"
+        },
+        {
+          "approach": "Optimize cold start",
+          "code": "# Use provisioned concurrency\naws lambda put-provisioned-concurrency-config \\\n  --function-name myFunc --provisioned-concurrent-executions 5",
+          "when": "Cold starts causing timeout"
+        },
+        {
+          "approach": "Use Step Functions",
+          "code": "# Break into smaller functions orchestrated by Step Functions",
+          "when": "Task exceeds 15 min limit"
+        },
+        {
+          "approach": "Check external calls",
+          "code": "// Add timeouts to HTTP clients\nconst axios = require('axios');\nawait axios.get(url, { timeout: 5000 });",
+          "when": "External API calls hanging"
+        }
+      ]
+    },
+    {
+      "id": "memory_exceeded",
+      "pattern": "Runtime exited with error.*memory|ENOMEM|out of memory|MemorySize",
+      "message": "Lambda function ran out of memory",
+      "cause": "Memory usage exceeded configured limit (128MB-10GB)",
+      "solutions": [
+        {
+          "approach": "Increase memory",
+          "code": "aws lambda update-function-configuration --function-name myFunc --memory-size 1024",
+          "when": "Function needs more memory"
+        },
+        {
+          "approach": "Stream large data",
+          "code": "// Instead of loading entire file\nconst stream = s3.getObject(params).createReadStream();\nstream.pipe(transformer).pipe(outputStream);",
+          "when": "Processing large files"
+        },
+        {
+          "approach": "Use /tmp wisely",
+          "code": "// /tmp has 10GB ephemeral storage\nfs.writeFileSync('/tmp/large-file', data);",
+          "when": "Need disk space instead of memory"
+        }
+      ]
+    },
+    {
+      "id": "cold_start",
+      "pattern": "Init Duration|Cold start|INIT_START",
+      "message": "Lambda cold start causing latency",
+      "cause": "New execution environment being initialized",
+      "solutions": [
+        {
+          "approach": "Provisioned concurrency",
+          "code": "aws lambda put-provisioned-concurrency-config \\\n  --function-name myFunc --qualifier prod \\\n  --provisioned-concurrent-executions 10",
+          "when": "Need consistent latency"
+        },
+        {
+          "approach": "Reduce package size",
+          "code": "# Use webpack/esbuild to bundle\n# Remove unused dependencies\nnpm prune --production",
+          "when": "Large deployment package"
+        },
+        {
+          "approach": "Use Lambda Layers",
+          "code": "aws lambda publish-layer-version --layer-name myDeps --zip-file fileb://layer.zip",
+          "when": "Common dependencies across functions"
+        },
+        {
+          "approach": "SnapStart (Java)",
+          "code": "aws lambda update-function-configuration --function-name myFunc --snap-start ApplyOn=PublishedVersions",
+          "when": "Java functions with slow init"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "AccessDenied|not authorized|AssumeRole|sts:AssumeRole",
+      "message": "Lambda lacks required IAM permissions",
+      "cause": "Execution role missing permissions for AWS services",
+      "solutions": [
+        {
+          "approach": "Add IAM policy",
+          "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Effect\": \"Allow\",\n    \"Action\": [\"s3:GetObject\", \"s3:PutObject\"],\n    \"Resource\": \"arn:aws:s3:::mybucket/*\"\n  }]\n}",
+          "when": "Missing service permissions"
+        },
+        {
+          "approach": "Check trust policy",
+          "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Effect\": \"Allow\",\n    \"Principal\": {\"Service\": \"lambda.amazonaws.com\"},\n    \"Action\": \"sts:AssumeRole\"\n  }]\n}",
+          "when": "Role can't be assumed by Lambda"
+        },
+        {
+          "approach": "Use resource-based policy",
+          "code": "aws lambda add-permission --function-name myFunc --statement-id s3-invoke \\\n  --action lambda:InvokeFunction --principal s3.amazonaws.com \\\n  --source-arn arn:aws:s3:::mybucket",
+          "when": "Other services need to invoke Lambda"
+        }
+      ]
+    },
+    {
+      "id": "invoke_error",
+      "pattern": "RequestId.*Error|Invoke Error|errorType|errorMessage",
+      "message": "Lambda invocation returned an error",
+      "cause": "Function code threw an exception or returned error",
+      "solutions": [
+        {
+          "approach": "Check CloudWatch Logs",
+          "code": "aws logs filter-log-events \\\n  --log-group-name /aws/lambda/myFunc \\\n  --filter-pattern ERROR",
+          "when": "Need to see error details"
+        },
+        {
+          "approach": "Add error handling",
+          "code": "exports.handler = async (event) => {\n  try {\n    return await processEvent(event);\n  } catch (err) {\n    console.error('Error:', err);\n    throw err; // Or return error response\n  }\n};",
+          "when": "Unhandled exceptions"
+        },
+        {
+          "approach": "Validate input",
+          "code": "if (!event.body) {\n  return { statusCode: 400, body: 'Missing body' };\n}",
+          "when": "Bad input causing errors"
+        }
+      ]
+    },
+    {
+      "id": "throttling",
+      "pattern": "Rate exceeded|TooManyRequestsException|Throttl|429",
+      "message": "Lambda function invocations throttled",
+      "cause": "Concurrent executions exceeded account/function limit",
+      "solutions": [
+        {
+          "approach": "Request limit increase",
+          "code": "# Request via AWS Support Console\n# Default: 1000 concurrent executions per region",
+          "when": "Hitting account limits"
+        },
+        {
+          "approach": "Reserve concurrency",
+          "code": "aws lambda put-function-concurrency --function-name myFunc --reserved-concurrent-executions 100",
+          "when": "Critical function needs guaranteed capacity"
+        },
+        {
+          "approach": "Use SQS for buffering",
+          "code": "# Add SQS trigger with batch processing\naws lambda create-event-source-mapping \\\n  --function-name myFunc --event-source-arn arn:aws:sqs:... \\\n  --batch-size 10",
+          "when": "Spiky traffic causing throttling"
+        },
+        {
+          "approach": "Implement backoff",
+          "code": "const retry = async (fn, retries = 3, delay = 1000) => {\n  try { return await fn(); }\n  catch (e) {\n    if (retries > 0) {\n      await new Promise(r => setTimeout(r, delay));\n      return retry(fn, retries - 1, delay * 2);\n    }\n    throw e;\n  }\n};",
+          "when": "Client-side retry needed"
+        }
+      ]
+    },
+    {
+      "id": "vpc_timeout",
+      "pattern": "ETIMEDOUT|connect ETIMEDOUT|ENI|VPC",
+      "message": "Lambda in VPC cannot reach internet or services",
+      "cause": "VPC-connected Lambda lacks NAT Gateway or VPC endpoints",
+      "solutions": [
+        {
+          "approach": "Add NAT Gateway",
+          "code": "# Lambda in private subnet needs NAT Gateway in public subnet\n# Route table: 0.0.0.0/0 -> nat-gateway-id",
+          "when": "Need internet access"
+        },
+        {
+          "approach": "Use VPC endpoints",
+          "code": "aws ec2 create-vpc-endpoint --vpc-id vpc-xxx \\\n  --service-name com.amazonaws.region.s3 --route-table-ids rtb-xxx",
+          "when": "Only need AWS service access"
+        },
+        {
+          "approach": "Check security groups",
+          "code": "# Security group needs outbound rules\naws ec2 authorize-security-group-egress \\\n  --group-id sg-xxx --protocol tcp --port 443 --cidr 0.0.0.0/0",
+          "when": "Security group blocking traffic"
+        },
+        {
+          "approach": "Remove VPC if not needed",
+          "code": "aws lambda update-function-configuration --function-name myFunc --vpc-config SubnetIds=[],SecurityGroupIds=[]",
+          "when": "VPC not actually required"
+        }
+      ]
+    },
+    {
+      "id": "handler_not_found",
+      "pattern": "Cannot find module|Unable to import module|handler.*not found|ModuleNotFoundError",
+      "message": "Lambda cannot find handler or module",
+      "cause": "Handler path incorrect or dependency missing",
+      "solutions": [
+        {
+          "approach": "Verify handler path",
+          "code": "# Handler format: filename.functionName\n# For index.js with exports.handler:\naws lambda update-function-configuration --function-name myFunc --handler index.handler",
+          "when": "Handler misconfigured"
+        },
+        {
+          "approach": "Check file structure",
+          "code": "# Ensure handler file at root of zip\nzip -r function.zip index.js node_modules/",
+          "when": "File not at expected path"
+        },
+        {
+          "approach": "Install dependencies",
+          "code": "# Include node_modules in deployment\nnpm install --production\nzip -r function.zip .",
+          "when": "Missing node_modules"
+        },
+        {
+          "approach": "Use Lambda layers",
+          "code": "# Put dependencies in layer at /opt/nodejs/node_modules\naws lambda update-function-configuration \\\n  --function-name myFunc --layers arn:aws:lambda:...",
+          "when": "Dependencies in layer"
+        }
+      ]
+    }
+  ]
+}

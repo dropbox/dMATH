@@ -1,0 +1,130 @@
+{
+  "tool": "free",
+  "version": "4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "command not found|not found",
+      "message": "free command not available",
+      "cause": "Not installed or not on macOS",
+      "solutions": [
+        {
+          "approach": "macOS alternative",
+          "code": "vm_stat  # Virtual memory stats\ntop -l 1 | head -n 10  # Memory summary\nsysctl hw.memsize  # Total physical memory",
+          "when": "macOS"
+        },
+        {
+          "approach": "Install procps",
+          "code": "# Ubuntu/Debian\nsudo apt install procps",
+          "when": "Linux missing"
+        }
+      ]
+    },
+    {
+      "id": "human_readable",
+      "pattern": "human readable|KB|MB|GB|bytes",
+      "message": "Want human-readable output",
+      "cause": "Default shows kilobytes",
+      "solutions": [
+        {
+          "approach": "Human readable",
+          "code": "free -h  # Human readable (K, M, G)",
+          "when": "Auto units"
+        },
+        {
+          "approach": "Specific unit",
+          "code": "free -m  # Megabytes\nfree -g  # Gigabytes\nfree -b  # Bytes",
+          "when": "Fixed unit"
+        },
+        {
+          "approach": "SI units",
+          "code": "free --si -h  # Powers of 1000",
+          "when": "SI units"
+        }
+      ]
+    },
+    {
+      "id": "available_vs_free",
+      "pattern": "available|free|actual|really free|how much",
+      "message": "Confused by free vs available",
+      "cause": "Linux uses free memory for cache",
+      "solutions": [
+        {
+          "approach": "Read available",
+          "code": "free -h\n# 'available' = memory apps can use\n# 'free' = truly unused (ignore this)",
+          "when": "Check available"
+        },
+        {
+          "approach": "Understand",
+          "code": "# Linux aggressively caches to disk\n# buffers = filesystem metadata cache\n# cache = page cache (file contents)\n# These are reclaimed when apps need memory",
+          "when": "Learn Linux memory"
+        }
+      ]
+    },
+    {
+      "id": "continuous_monitoring",
+      "pattern": "continuous|watch|repeat|monitor",
+      "message": "Want continuous updates",
+      "cause": "Need to monitor over time",
+      "solutions": [
+        {
+          "approach": "Repeat mode",
+          "code": "free -h -s 2  # Every 2 seconds\nfree -h -c 10 -s 1  # 10 times, 1 sec interval",
+          "when": "Built-in"
+        },
+        {
+          "approach": "Use watch",
+          "code": "watch -n 2 free -h",
+          "when": "With watch"
+        },
+        {
+          "approach": "Use top/htop",
+          "code": "htop  # Interactive monitoring",
+          "when": "Better tool"
+        }
+      ]
+    },
+    {
+      "id": "swap_usage",
+      "pattern": "swap|swapping|high swap|out of memory",
+      "message": "High swap usage",
+      "cause": "System using swap heavily",
+      "solutions": [
+        {
+          "approach": "Check swap",
+          "code": "free -h\nswapon --show\ncat /proc/swaps",
+          "when": "View swap"
+        },
+        {
+          "approach": "Find swap users",
+          "code": "for file in /proc/*/status; do awk '/VmSwap|Name/{printf $2 \" \" $3}END{print \"\"}' $file 2>/dev/null; done | sort -k 2 -n -r | head",
+          "when": "Find culprits"
+        },
+        {
+          "approach": "Clear swap",
+          "code": "# Only if enough RAM:\nsudo swapoff -a && sudo swapon -a",
+          "when": "Reset swap"
+        }
+      ]
+    },
+    {
+      "id": "total_differs",
+      "pattern": "total|less than|different.*RAM|missing memory",
+      "message": "Total memory less than installed",
+      "cause": "Kernel or hardware reserving memory",
+      "solutions": [
+        {
+          "approach": "Check reserved",
+          "code": "dmesg | grep -i memory\ncat /proc/meminfo",
+          "when": "See reservation"
+        },
+        {
+          "approach": "Hardware info",
+          "code": "sudo dmidecode -t memory | grep Size",
+          "when": "Physical RAM"
+        }
+      ]
+    }
+  ]
+}

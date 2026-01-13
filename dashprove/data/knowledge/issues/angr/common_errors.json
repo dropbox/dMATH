@@ -1,0 +1,171 @@
+{
+  "tool": "angr",
+  "version": "9.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unsupported_arch",
+      "pattern": "unsupported architecture",
+      "message": "Unsupported architecture",
+      "cause": "Binary architecture not supported",
+      "solutions": [
+        {
+          "approach": "Check supported architectures",
+          "code": "# angr supports x86, x64, ARM, MIPS, PPC",
+          "when": "Using exotic architecture"
+        },
+        {
+          "approach": "Use archinfo",
+          "code": "import archinfo\narch = archinfo.arch_from_id('amd64')",
+          "when": "Need to specify architecture"
+        }
+      ]
+    },
+    {
+      "id": "load_error",
+      "pattern": "could not load",
+      "message": "Failed to load binary",
+      "cause": "Binary loading failed",
+      "solutions": [
+        {
+          "approach": "Check file format",
+          "code": "p = angr.Project('binary', auto_load_libs=False)",
+          "when": "Library loading issues"
+        },
+        {
+          "approach": "Specify base address",
+          "code": "p = angr.Project('binary', main_opts={'base_addr': 0x400000})",
+          "when": "Position-independent code issues"
+        },
+        {
+          "approach": "Use raw loading",
+          "code": "p = angr.Project('binary', load_options={'auto_load_libs': False})",
+          "when": "Complex loading requirements"
+        }
+      ]
+    },
+    {
+      "id": "path_explosion",
+      "pattern": "state explosion",
+      "message": "State/path explosion",
+      "cause": "Too many symbolic states to explore",
+      "solutions": [
+        {
+          "approach": "Use veritesting",
+          "code": "simgr = p.factory.simulation_manager(state)\nsimgr.use_technique(angr.exploration_techniques.Veritesting())",
+          "when": "Many branching paths"
+        },
+        {
+          "approach": "Limit exploration depth",
+          "code": "simgr.explore(find=target, avoid=avoid_addrs, num_find=1)",
+          "when": "Looking for specific state"
+        },
+        {
+          "approach": "Concretize variables",
+          "code": "state.solver.add(sym_var == concrete_val)",
+          "when": "Can reduce symbolic complexity"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Analysis timed out",
+      "cause": "Symbolic execution too slow",
+      "solutions": [
+        {
+          "approach": "Use DFS instead of BFS",
+          "code": "simgr.use_technique(angr.exploration_techniques.DFS())",
+          "when": "Deep paths preferred"
+        },
+        {
+          "approach": "Hook complex functions",
+          "code": "@p.hook(addr)\ndef hook_func(state):\n    # simplified behavior",
+          "when": "Complex function slowing analysis"
+        },
+        {
+          "approach": "Use concolic execution",
+          "code": "# Provide concrete inputs to guide execution",
+          "when": "Can provide sample inputs"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_syscall",
+      "pattern": "unsupported syscall",
+      "message": "System call not implemented",
+      "cause": "Syscall simulation missing",
+      "solutions": [
+        {
+          "approach": "Hook the syscall",
+          "code": "angr.SIM_PROCEDURES['linux_kernel']['syscall_name'] = MyProcedure",
+          "when": "Can implement syscall"
+        },
+        {
+          "approach": "Return symbolic value",
+          "code": "# Hook to return unconstrained symbolic value",
+          "when": "Don't care about exact behavior"
+        }
+      ]
+    },
+    {
+      "id": "solver_timeout",
+      "pattern": "solver timeout",
+      "message": "Constraint solver timed out",
+      "cause": "Constraints too complex for Z3",
+      "solutions": [
+        {
+          "approach": "Simplify constraints",
+          "code": "state.solver.simplify()",
+          "when": "Constraints can be simplified"
+        },
+        {
+          "approach": "Add concrete values",
+          "code": "state.solver.add(x == 5)  # reduce symbolic state",
+          "when": "Can constrain variables"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "state.solver._solver.timeout = 60000  # 60 seconds",
+          "when": "Solver may succeed with more time"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory",
+      "message": "Symbolic memory error",
+      "cause": "Symbolic pointer dereference issues",
+      "solutions": [
+        {
+          "approach": "Use concretization strategy",
+          "code": "state.memory.read_strategies.insert(0, angr.concretization_strategies.SimConcretizationStrategyRange(32))",
+          "when": "Too many possible addresses"
+        },
+        {
+          "approach": "Constrain pointers",
+          "code": "state.solver.add(ptr >= base, ptr < base + size)",
+          "when": "Know valid memory region"
+        }
+      ]
+    },
+    {
+      "id": "unsat_state",
+      "pattern": "unsat",
+      "message": "State became unsatisfiable",
+      "cause": "Constraints are contradictory",
+      "solutions": [
+        {
+          "approach": "Check state feasibility",
+          "code": "if state.solver.satisfiable():\n    continue",
+          "when": "Need to filter states"
+        },
+        {
+          "approach": "Debug constraints",
+          "code": "state.solver.constraints  # inspect constraints",
+          "when": "Need to understand why unsat"
+        }
+      ]
+    }
+  ]
+}

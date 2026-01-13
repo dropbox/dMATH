@@ -1,0 +1,125 @@
+{
+  "tool": "operator_sdk",
+  "version": "1.33",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "init_failed",
+      "pattern": "operator-sdk init failed|unsupported go version|module path .* invalid",
+      "message": "Project initialization failed",
+      "cause": "Go version too old or module path not set",
+      "solutions": [
+        {
+          "approach": "Upgrade Go",
+          "code": "go version  # ensure >=1.20",
+          "when": "Toolchain outdated"
+        },
+        {
+          "approach": "Set repo path",
+          "code": "operator-sdk init --domain example.com --repo github.com/org/operator",
+          "when": "Module path detection failed"
+        }
+      ]
+    },
+    {
+      "id": "kustomize_missing",
+      "pattern": "kustomize not found|failed to find kustomize binary",
+      "message": "kustomize dependency missing",
+      "cause": "kustomize not installed before running make manifests/deploy",
+      "solutions": [
+        {
+          "approach": "Install via operator-sdk",
+          "code": "make kustomize",
+          "when": "Using Makefile targets"
+        },
+        {
+          "approach": "Manual install",
+          "code": "go install sigs.k8s.io/kustomize/kustomize/v5@v5.3.0",
+          "when": "Need pinned version"
+        }
+      ]
+    },
+    {
+      "id": "controller_gen_missing",
+      "pattern": "controller-gen: command not found|failed to run controller-gen",
+      "message": "controller-gen tool missing",
+      "cause": "CRD/code generation tool not installed",
+      "solutions": [
+        {
+          "approach": "Install tools",
+          "code": "make install-tools",
+          "when": "Fresh environment"
+        },
+        {
+          "approach": "Install manually",
+          "code": "go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0",
+          "when": "Outside make targets"
+        }
+      ]
+    },
+    {
+      "id": "scorecard_crd_missing",
+      "pattern": "could not find the requested resource|no matches for kind|failed to create CR|CRD not installed",
+      "message": "Scorecard or tests cannot find CRD",
+      "cause": "CRDs not applied to cluster before running scorecard/tests",
+      "solutions": [
+        {
+          "approach": "Install CRDs",
+          "code": "make install",
+          "when": "Before scorecard or e2e"
+        },
+        {
+          "approach": "Use envtest",
+          "code": "make test ENVTEST_KUBERNETES_VERSION=1.29",
+          "when": "Running locally without cluster"
+        }
+      ]
+    },
+    {
+      "id": "bundle_validation_failed",
+      "pattern": "bundle validation errors|invalid bundle|csv validation failed",
+      "message": "Operator bundle failed validation",
+      "cause": "ClusterServiceVersion metadata incomplete or annotations missing",
+      "solutions": [
+        {
+          "approach": "Regenerate bundle",
+          "code": "make bundle IMG=<image> && make bundle-build bundle-push",
+          "when": "Out-of-date manifests"
+        },
+        {
+          "approach": "Run validate",
+          "code": "operator-sdk bundle validate ./bundle --select-optional-name=operatorhub",
+          "when": "Need detailed errors"
+        },
+        {
+          "approach": "Check required fields",
+          "code": "Ensure spec.install.spec.deployments, relatedImages, and alm-examples present",
+          "when": "CSV incomplete"
+        }
+      ]
+    },
+    {
+      "id": "image_build_failed",
+      "pattern": "no space left|permission denied|failed to solve with frontend dockerfile.v0",
+      "message": "Operator image build failed",
+      "cause": "Docker/Podman build errors or registry auth missing",
+      "solutions": [
+        {
+          "approach": "Login to registry",
+          "code": "docker login <registry>",
+          "when": "Push denied"
+        },
+        {
+          "approach": "Clean build cache",
+          "code": "docker system prune -f",
+          "when": "Space issues"
+        },
+        {
+          "approach": "Use podman",
+          "code": "make docker-build docker-push IMG=<registry>/<name>:tag",
+          "when": "Docker daemon unavailable"
+        }
+      ]
+    }
+  ]
+}

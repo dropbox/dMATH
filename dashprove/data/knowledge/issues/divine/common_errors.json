@@ -1,0 +1,268 @@
+{
+  "tool_id": "divine",
+  "tool_name": "DIVINE",
+  "tool_version": "4.4",
+  "category": "sv_comp_verification",
+  "error_patterns": [
+    {
+      "id": "divine_state_space_explosion",
+      "pattern": "state space too large|out of memory|memory limit exceeded",
+      "severity": "error",
+      "category": "resource_exhaustion",
+      "description": "DIVINE exhausted memory due to state space explosion in explicit-state model checking",
+      "common_causes": [
+        "Unbounded data structures or arrays",
+        "Too many threads or interleaving combinations",
+        "Large input domains without abstraction",
+        "Missing state space reduction techniques"
+      ],
+      "solutions": [
+        "Use partial order reduction (--por) to reduce interleavings",
+        "Apply abstraction techniques to reduce state space",
+        "Add assume statements to constrain input domains",
+        "Use symmetry reduction for symmetric systems",
+        "Consider bounded verification with --max-memory"
+      ],
+      "examples": [
+        {
+          "error": "divine: out of memory (used 16 GB)",
+          "context": "Verifying concurrent program with 5+ threads",
+          "fix": "divine verify --por --symmetry program.c"
+        }
+      ],
+      "related_errors": ["divine_timeout"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_assertion_violation",
+      "pattern": "assertion violation|ASSERTION FAILED|assertion .* failed",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "DIVINE found an execution path that violates an assertion",
+      "common_causes": [
+        "Logic error in the program",
+        "Race condition in concurrent code",
+        "Missing synchronization",
+        "Incorrect initialization"
+      ],
+      "solutions": [
+        "Examine the counterexample trace with --trace",
+        "Use --draw to visualize the error path",
+        "Check for data races with --detect-races",
+        "Review the interleaving in the counterexample"
+      ],
+      "examples": [
+        {
+          "error": "ASSERTION FAILED at mutex.c:42",
+          "context": "Concurrent mutex implementation",
+          "fix": "divine verify --trace --detect-races mutex.c"
+        }
+      ],
+      "related_errors": ["divine_deadlock"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_deadlock",
+      "pattern": "deadlock detected|cycle in wait-for graph|all threads blocked",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "DIVINE detected a deadlock where all threads are waiting",
+      "common_causes": [
+        "Incorrect lock ordering causing circular wait",
+        "Missing unlock in error paths",
+        "Condition variable signaling issues",
+        "Thread join without corresponding thread creation"
+      ],
+      "solutions": [
+        "Examine the wait-for graph in the counterexample",
+        "Use consistent lock ordering across all code paths",
+        "Verify all locks are released in error handling",
+        "Check condition variable signal/wait pairs"
+      ],
+      "examples": [
+        {
+          "error": "deadlock detected: threads {1,2,3} in circular wait",
+          "context": "Dining philosophers implementation",
+          "fix": "Implement resource ordering or use trylock with backoff"
+        }
+      ],
+      "related_errors": ["divine_assertion_violation"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_ltl_violation",
+      "pattern": "LTL property violated|accepting cycle found|lasso-shaped counterexample",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "DIVINE found an execution violating an LTL property",
+      "common_causes": [
+        "Liveness property violation (something eventually doesn't happen)",
+        "Safety property violation in infinite execution",
+        "Fairness assumption not enforced",
+        "Property specification error"
+      ],
+      "solutions": [
+        "Examine the lasso counterexample (prefix + cycle)",
+        "Add fairness constraints if appropriate",
+        "Check if the LTL formula correctly captures intent",
+        "Use --fair for weak fairness assumptions"
+      ],
+      "examples": [
+        {
+          "error": "LTL property 'G F grant' violated: accepting cycle found",
+          "context": "Arbiter verification",
+          "fix": "divine ltl --fair 'G F grant' arbiter.c"
+        }
+      ],
+      "related_errors": ["divine_property_syntax_error"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_parsing_error",
+      "pattern": "parse error|syntax error|undefined reference|unknown function",
+      "severity": "error",
+      "category": "input_error",
+      "description": "DIVINE failed to parse or compile the input program",
+      "common_causes": [
+        "C/C++ syntax error in source code",
+        "Missing header files or includes",
+        "Undefined functions not stubbed",
+        "Unsupported language features"
+      ],
+      "solutions": [
+        "Compile with clang first to check for errors",
+        "Provide missing function stubs",
+        "Use divine cc to see compilation details",
+        "Check DIVINE's supported C/C++ subset"
+      ],
+      "examples": [
+        {
+          "error": "undefined reference to 'pthread_create'",
+          "context": "Using pthreads without proper setup",
+          "fix": "divine cc --pthread program.c"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_timeout",
+      "pattern": "timeout|time limit exceeded|verification did not finish",
+      "severity": "warning",
+      "category": "resource_exhaustion",
+      "description": "DIVINE did not complete verification within the time limit",
+      "common_causes": [
+        "State space too large for exhaustive exploration",
+        "Complex arithmetic or pointer operations",
+        "Many threads with deep interleavings",
+        "Inefficient verification strategy"
+      ],
+      "solutions": [
+        "Use bounded verification with depth limits",
+        "Enable partial order reduction",
+        "Apply CEGAR or abstraction refinement",
+        "Simplify the model or add constraints"
+      ],
+      "examples": [
+        {
+          "error": "divine: timeout after 3600s",
+          "context": "Complex concurrent algorithm",
+          "fix": "divine verify --por --max-depth 1000 program.c"
+        }
+      ],
+      "related_errors": ["divine_state_space_explosion"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_memory_error",
+      "pattern": "memory error|invalid memory access|use after free|double free",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "DIVINE detected a memory safety violation",
+      "common_causes": [
+        "Use after free in concurrent code",
+        "Buffer overflow",
+        "Double free",
+        "Null pointer dereference"
+      ],
+      "solutions": [
+        "Use --detect-leaks for memory leak detection",
+        "Examine the counterexample for the error path",
+        "Check memory allocation/deallocation patterns",
+        "Review pointer arithmetic and bounds"
+      ],
+      "examples": [
+        {
+          "error": "memory error: use after free at pool.c:87",
+          "context": "Custom memory pool implementation",
+          "fix": "Add synchronization around pool operations"
+        }
+      ],
+      "related_errors": ["divine_assertion_violation"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    },
+    {
+      "id": "divine_data_race",
+      "pattern": "data race detected|conflicting access|unsynchronized access",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "DIVINE detected a data race between concurrent threads",
+      "common_causes": [
+        "Missing synchronization on shared variables",
+        "Incorrect assumption about atomicity",
+        "Publication safety violation",
+        "Lock-free code errors"
+      ],
+      "solutions": [
+        "Add appropriate synchronization (mutex, atomic)",
+        "Use memory barriers for lock-free code",
+        "Review memory model assumptions",
+        "Consider using thread-safe data structures"
+      ],
+      "examples": [
+        {
+          "error": "data race on variable 'counter' at line 23 and 45",
+          "context": "Shared counter without synchronization",
+          "fix": "Use atomic_int or protect with mutex"
+        }
+      ],
+      "related_errors": ["divine_assertion_violation"],
+      "documentation_url": "https://divine.fi.muni.cz/manual.html"
+    }
+  ],
+  "general_tips": [
+    "DIVINE excels at finding concurrency bugs through explicit-state model checking",
+    "Use partial order reduction (--por) for better scalability with threads",
+    "DiVM (DIVINE Virtual Machine) provides faithful C/C++ semantics",
+    "Counterexamples include full interleaving information",
+    "DIVINE can verify LLVM bitcode directly",
+    "Use --relaxed-memory for weak memory model verification"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic concurrent verification",
+      "steps": [
+        "divine cc program.c -o program.bc",
+        "divine verify --por program.bc",
+        "divine draw --trace program.bc (if error found)"
+      ]
+    },
+    {
+      "name": "LTL property checking",
+      "steps": [
+        "divine ltl --property 'G (request -> F grant)' program.c",
+        "Use --fair for fairness assumptions"
+      ]
+    },
+    {
+      "name": "Memory safety verification",
+      "steps": [
+        "divine verify --detect-leaks --detect-races program.c"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "4.0+": "DiVM provides accurate C11/C++11 memory model",
+    "4.4": "Improved parallel verification and LLVM 14 support"
+  }
+}

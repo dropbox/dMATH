@@ -1,0 +1,237 @@
+{
+  "tool": "yarn",
+  "version": "4.0+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "version_mismatch",
+      "pattern": "This project.*different.*yarn|corepack.*error|packageManager",
+      "message": "Yarn version mismatch",
+      "cause": "Project requires different Yarn version",
+      "solutions": [
+        {
+          "approach": "Use corepack",
+          "code": "corepack enable && corepack prepare yarn@4.0.0 --activate",
+          "when": "Enable corepack"
+        },
+        {
+          "approach": "Set version in project",
+          "code": "yarn set version stable",
+          "when": "Update Yarn version"
+        },
+        {
+          "approach": "Check packageManager",
+          "code": "# package.json: \"packageManager\": \"yarn@4.0.0\"",
+          "when": "Verify expected version"
+        }
+      ]
+    },
+    {
+      "id": "resolution_failed",
+      "pattern": "Resolution failed|can't be resolved|conflict",
+      "message": "Dependency resolution failed",
+      "cause": "Incompatible dependencies",
+      "solutions": [
+        {
+          "approach": "Use resolutions",
+          "code": "\"resolutions\": { \"packagename\": \"^2.0.0\" }",
+          "when": "Force version"
+        },
+        {
+          "approach": "Check why",
+          "code": "yarn why packagename",
+          "when": "Debug conflict"
+        },
+        {
+          "approach": "Dedupe",
+          "code": "yarn dedupe",
+          "when": "Reduce duplicates"
+        }
+      ]
+    },
+    {
+      "id": "pnp_error",
+      "pattern": "PnP.*error|.pnp.cjs|Cannot find module",
+      "message": "Plug'n'Play error",
+      "cause": "PnP module resolution issue",
+      "solutions": [
+        {
+          "approach": "Use node_modules",
+          "code": "yarn config set nodeLinker node-modules",
+          "when": "Disable PnP"
+        },
+        {
+          "approach": "Install SDKs",
+          "code": "yarn dlx @yarnpkg/sdks vscode",
+          "when": "IDE support"
+        },
+        {
+          "approach": "Rebuild",
+          "code": "yarn rebuild",
+          "when": "Corrupted state"
+        }
+      ]
+    },
+    {
+      "id": "integrity_error",
+      "pattern": "integrity check|YN0018|checksum mismatch",
+      "message": "Package integrity check failed",
+      "cause": "Package checksum doesn't match",
+      "solutions": [
+        {
+          "approach": "Clear cache",
+          "code": "yarn cache clean --all",
+          "when": "Corrupted cache"
+        },
+        {
+          "approach": "Refresh lockfile",
+          "code": "rm yarn.lock && yarn install",
+          "when": "Regenerate lock"
+        },
+        {
+          "approach": "Update checksums",
+          "code": "yarn install --mode update-lockfile",
+          "when": "Update hashes"
+        }
+      ]
+    },
+    {
+      "id": "workspace_error",
+      "pattern": "workspace.*not found|YN0030|Invalid workspace",
+      "message": "Workspace configuration error",
+      "cause": "Invalid workspaces config",
+      "solutions": [
+        {
+          "approach": "Fix workspaces config",
+          "code": "\"workspaces\": [\"packages/*\"]",
+          "when": "Wrong glob pattern"
+        },
+        {
+          "approach": "Check package names",
+          "code": "# Each workspace needs unique name in package.json",
+          "when": "Duplicate names"
+        },
+        {
+          "approach": "Use workspace protocol",
+          "code": "\"dep\": \"workspace:^\"",
+          "when": "Link workspace packages"
+        }
+      ]
+    },
+    {
+      "id": "network_error",
+      "pattern": "network.*error|ETIMEDOUT|Request failed",
+      "message": "Network error",
+      "cause": "Cannot reach registry",
+      "solutions": [
+        {
+          "approach": "Set registry",
+          "code": "yarn config set npmRegistryServer https://registry.npmjs.org",
+          "when": "Wrong registry"
+        },
+        {
+          "approach": "Enable offline",
+          "code": "yarn config set enableNetwork false",
+          "when": "Use cache only"
+        },
+        {
+          "approach": "Set proxy",
+          "code": "yarn config set httpProxy http://proxy:8080",
+          "when": "Behind proxy"
+        }
+      ]
+    },
+    {
+      "id": "postinstall_error",
+      "pattern": "postinstall.*failed|build.*error|script.*failed",
+      "message": "Post-install script failed",
+      "cause": "Build script error",
+      "solutions": [
+        {
+          "approach": "Skip scripts",
+          "code": "yarn install --mode skip-build",
+          "when": "Skip build scripts"
+        },
+        {
+          "approach": "Install build tools",
+          "code": "# Install native build dependencies",
+          "when": "Missing compiler"
+        },
+        {
+          "approach": "Ignore optional",
+          "code": "yarn config set optionalDependencies false",
+          "when": "Skip optional deps"
+        }
+      ]
+    },
+    {
+      "id": "peer_dependency",
+      "pattern": "peer dependency|YN0002|unmet peer",
+      "message": "Peer dependency warning",
+      "cause": "Missing or incompatible peer dependency",
+      "solutions": [
+        {
+          "approach": "Add peer dependency",
+          "code": "yarn add peerdepname",
+          "when": "Missing peer dep"
+        },
+        {
+          "approach": "Use packageExtensions",
+          "code": "\"packageExtensions\": { \"pkg@*\": { \"peerDependencies\": { \"react\": \"*\" } } }",
+          "when": "Fix missing peer meta"
+        },
+        {
+          "approach": "Ignore warnings",
+          "code": "yarn config set enablePeerDependencies false",
+          "when": "Suppress warnings"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin.*error|YN0000|cannot load plugin",
+      "message": "Yarn plugin error",
+      "cause": "Plugin issue",
+      "solutions": [
+        {
+          "approach": "Update plugins",
+          "code": "yarn plugin import @yarnpkg/plugin-xxx",
+          "when": "Reinstall plugin"
+        },
+        {
+          "approach": "List plugins",
+          "code": "yarn plugin list",
+          "when": "Check installed"
+        },
+        {
+          "approach": "Remove plugin",
+          "code": "yarn plugin remove @yarnpkg/plugin-xxx",
+          "when": "Remove problematic"
+        }
+      ]
+    },
+    {
+      "id": "cache_error",
+      "pattern": "cache.*corrupted|YN0012|cache.*error",
+      "message": "Cache error",
+      "cause": "Corrupted cache",
+      "solutions": [
+        {
+          "approach": "Clean cache",
+          "code": "yarn cache clean",
+          "when": "Clear all cache"
+        },
+        {
+          "approach": "Clean specific",
+          "code": "yarn cache clean packagename",
+          "when": "Clear one package"
+        },
+        {
+          "approach": "Reset install state",
+          "code": "rm -rf .yarn/cache .yarn/install-state.gz && yarn install",
+          "when": "Full reset"
+        }
+      ]
+    }
+  ]
+}

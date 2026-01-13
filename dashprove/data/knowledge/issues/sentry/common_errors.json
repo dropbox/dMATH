@@ -1,0 +1,76 @@
+{
+  "tool": "sentry",
+  "category": "observability",
+  "common_errors": [
+    {
+      "pattern": "DSN.*invalid|Sentry.*not initialized",
+      "meaning": "Sentry SDK not configured properly",
+      "causes": ["DSN missing or wrong", "SDK not initialized", "Environment variable not set"],
+      "solutions": ["Set SENTRY_DSN environment variable", "Call Sentry.init() at app start", "Verify DSN format is correct"]
+    },
+    {
+      "pattern": "events.*dropped|rate limit.*exceeded",
+      "meaning": "Events being rate limited",
+      "causes": ["Too many events", "Quota exceeded", "Spike in errors"],
+      "solutions": ["Enable sample_rate for transactions", "Increase quota or upgrade plan", "Use beforeSend to filter noise"]
+    },
+    {
+      "pattern": "sourcemap.*not found|minified.*no sourcemap",
+      "meaning": "Source maps not available",
+      "causes": ["Source maps not uploaded", "Release mismatch", "URL mismatch"],
+      "solutions": ["Upload source maps: sentry-cli sourcemaps upload", "Set release version correctly", "Configure urlPrefix"]
+    },
+    {
+      "pattern": "authentication.*failed|API key.*invalid",
+      "meaning": "API authentication error",
+      "causes": ["Wrong auth token", "Token expired", "Insufficient permissions"],
+      "solutions": ["Generate new auth token", "Use token with project:write scope", "Check organization access"]
+    },
+    {
+      "pattern": "context.*missing|user.*undefined",
+      "meaning": "Event context not captured",
+      "causes": ["Scope not configured", "Context lost in async", "User not set"],
+      "solutions": ["Use Sentry.setUser() for user context", "Use withScope for async boundaries", "Configure tags and context"]
+    },
+    {
+      "pattern": "CORS.*blocked|CSP.*violation",
+      "meaning": "Browser security blocking Sentry",
+      "causes": ["CSP not configured", "CORS policy blocking", "Wrong tunnel URL"],
+      "solutions": ["Add sentry to CSP connect-src", "Use tunnel endpoint for CORS", "Check browser console for details"]
+    },
+    {
+      "pattern": "transport.*error|network.*failed",
+      "meaning": "Cannot send events to Sentry",
+      "causes": ["Network issue", "Proxy blocking", "Self-hosted server down"],
+      "solutions": ["Check network connectivity", "Configure proxy settings", "Verify Sentry server is reachable"]
+    },
+    {
+      "pattern": "breadcrumb.*limit|performance.*disabled",
+      "meaning": "SDK feature limited or disabled",
+      "causes": ["maxBreadcrumbs too low", "tracesSampleRate is 0", "Feature not enabled"],
+      "solutions": ["Increase maxBreadcrumbs", "Set tracesSampleRate > 0", "Enable desired integrations"]
+    },
+    {
+      "pattern": "release.*not found|commits.*not associated",
+      "meaning": "Release tracking issues",
+      "causes": ["Release not created", "Commits not linked", "Wrong release name"],
+      "solutions": ["Create release: sentry-cli releases new VERSION", "Associate commits: sentry-cli releases set-commits", "Match release in SDK init"]
+    },
+    {
+      "pattern": "PII.*scrubbed|filtered by.*beforeSend",
+      "meaning": "Data filtered or scrubbed",
+      "causes": ["Data scrubbing enabled", "beforeSend returning null", "PII detected"],
+      "solutions": ["Check beforeSend callback logic", "Review data scrubbing settings", "Whitelist fields if needed (carefully)"]
+    }
+  ],
+  "debugging_commands": [
+    "sentry-cli info",
+    "sentry-cli releases list",
+    "sentry-cli sourcemaps explain",
+    "DEBUG=sentry:* node app.js"
+  ],
+  "documentation_urls": [
+    "https://docs.sentry.io/",
+    "https://github.com/getsentry/sentry"
+  ]
+}

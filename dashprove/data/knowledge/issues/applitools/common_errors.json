@@ -1,0 +1,194 @@
+{
+  "tool": "applitools",
+  "version": "5.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "missing_api_key",
+      "pattern": "APPLITOOLS_API_KEY.*not|API key.*missing|Invalid API key",
+      "message": "Applitools API key not configured",
+      "cause": "APPLITOOLS_API_KEY environment variable not set",
+      "solutions": [
+        {
+          "approach": "Set environment variable",
+          "code": "export APPLITOOLS_API_KEY=your_api_key",
+          "when": "Running locally"
+        },
+        {
+          "approach": "Pass in code",
+          "code": "eyes.setApiKey('your_api_key');",
+          "when": "Programmatic setup"
+        },
+        {
+          "approach": "CI configuration",
+          "code": "env:\n  APPLITOOLS_API_KEY: ${{ secrets.APPLITOOLS_API_KEY }}",
+          "when": "GitHub Actions"
+        }
+      ]
+    },
+    {
+      "id": "eyes_not_opened",
+      "pattern": "Eyes not open|must call open|session not started",
+      "message": "Eyes session not started",
+      "cause": "check() called before open()",
+      "solutions": [
+        {
+          "approach": "Open session first",
+          "code": "await eyes.open(driver, 'App', 'Test');\nawait eyes.check('Step', Target.window());\nawait eyes.close();",
+          "when": "Forgot to open"
+        },
+        {
+          "approach": "Use runner pattern",
+          "code": "const runner = new VisualGridRunner();\nconst eyes = new Eyes(runner);\nawait eyes.open(...);",
+          "when": "Using Ultrafast Grid"
+        }
+      ]
+    },
+    {
+      "id": "stale_element",
+      "pattern": "Stale element|Element no longer|DOM changed",
+      "message": "Element reference became stale",
+      "cause": "Page changed between finding element and taking screenshot",
+      "solutions": [
+        {
+          "approach": "Use selectors instead",
+          "code": "await eyes.check('Step', Target.region(By.css('.my-element')));",
+          "when": "Instead of element reference"
+        },
+        {
+          "approach": "Wait for stability",
+          "code": "await eyes.check('Step', Target.window().layoutBreakpoints(true));",
+          "when": "Dynamic content"
+        }
+      ]
+    },
+    {
+      "id": "diff_detected",
+      "pattern": "Mismatch|Differences detected|Test failed",
+      "message": "Visual differences detected",
+      "cause": "Application appearance changed from baseline",
+      "solutions": [
+        {
+          "approach": "Review in dashboard",
+          "code": "# Visit eyes.applitools.com to review",
+          "when": "Check differences"
+        },
+        {
+          "approach": "Use match level",
+          "code": "eyes.setMatchLevel(MatchLevel.Layout);",
+          "when": "Content varies but layout same"
+        },
+        {
+          "approach": "Ignore regions",
+          "code": "await eyes.check('Step', Target.window().ignoreRegions('.dynamic-content'));",
+          "when": "Dynamic regions"
+        },
+        {
+          "approach": "Accept as baseline",
+          "code": "# Accept in dashboard or use auto-maintenance",
+          "when": "Changes are intentional"
+        }
+      ]
+    },
+    {
+      "id": "ultrafast_grid_error",
+      "pattern": "Grid.*error|Render failed|UFG",
+      "message": "Ultrafast Grid rendering failed",
+      "cause": "Issue with cloud rendering or configuration",
+      "solutions": [
+        {
+          "approach": "Check browser config",
+          "code": "const config = new Configuration();\nconfig.addBrowser(1024, 768, BrowserType.CHROME);",
+          "when": "Invalid browser config"
+        },
+        {
+          "approach": "Fall back to classic",
+          "code": "const eyes = new Eyes(); // Not VisualGridRunner",
+          "when": "Grid issues persist"
+        },
+        {
+          "approach": "Check assets",
+          "code": "# Ensure all assets are accessible to Applitools servers",
+          "when": "Asset loading issues"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Timeout|took too long|Connection timeout",
+      "message": "Operation timed out",
+      "cause": "Page load or API call took too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "eyes.setWaitBeforeScreenshots(5000);",
+          "when": "Page needs more time"
+        },
+        {
+          "approach": "Wait for content",
+          "code": "await eyes.check('Step', Target.window().waitBeforeCapture(3000));",
+          "when": "Async content loading"
+        },
+        {
+          "approach": "Check network",
+          "code": "# Verify connectivity to applitools.com",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "viewport_issue",
+      "pattern": "Viewport.*error|Invalid viewport|window size",
+      "message": "Viewport configuration error",
+      "cause": "Invalid or unsupported viewport dimensions",
+      "solutions": [
+        {
+          "approach": "Set viewport explicitly",
+          "code": "await eyes.open(driver, 'App', 'Test', { width: 1200, height: 800 });",
+          "when": "Need specific size"
+        },
+        {
+          "approach": "Use device emulation",
+          "code": "config.addDeviceEmulation(DeviceName.iPhone_X);",
+          "when": "Testing mobile"
+        }
+      ]
+    },
+    {
+      "id": "close_not_called",
+      "pattern": "Session not closed|eyes\\.close|Results not retrieved",
+      "message": "Eyes session not properly closed",
+      "cause": "Test ended without calling close()",
+      "solutions": [
+        {
+          "approach": "Always close in finally",
+          "code": "try {\n  await eyes.check(...);\n} finally {\n  await eyes.close();\n}",
+          "when": "Ensure cleanup"
+        },
+        {
+          "approach": "Abort if open",
+          "code": "afterEach(async () => {\n  await eyes.abortIfNotClosed();\n});",
+          "when": "Test framework hook"
+        }
+      ]
+    },
+    {
+      "id": "batch_error",
+      "pattern": "Batch.*error|BatchInfo|Invalid batch",
+      "message": "Batch configuration error",
+      "cause": "Batch setup incorrect or missing",
+      "solutions": [
+        {
+          "approach": "Set batch info",
+          "code": "const batch = new BatchInfo('My Batch');\neyes.setBatch(batch);",
+          "when": "Group tests"
+        },
+        {
+          "approach": "Use CI batch ID",
+          "code": "batch.setId(process.env.APPLITOOLS_BATCH_ID || process.env.CI_BUILD_ID);",
+          "when": "CI integration"
+        }
+      ]
+    }
+  ]
+}

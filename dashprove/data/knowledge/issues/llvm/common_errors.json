@@ -1,0 +1,168 @@
+{
+  "tool": "llvm",
+  "version": "19.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "target_not_supported",
+      "pattern": "target.*not supported|unknown target|triple",
+      "message": "Target triple not supported",
+      "cause": "LLVM not built with target support",
+      "solutions": [
+        {
+          "approach": "Check targets",
+          "code": "llc --version  # Lists supported targets",
+          "when": "See available targets"
+        },
+        {
+          "approach": "Use native target",
+          "code": "-march=native",
+          "when": "Compile for current machine"
+        },
+        {
+          "approach": "Rebuild with target",
+          "code": "-DLLVM_TARGETS_TO_BUILD=\"X86;ARM;AArch64\"",
+          "when": "Need specific target"
+        }
+      ]
+    },
+    {
+      "id": "invalid_bitcode",
+      "pattern": "Invalid bitcode|bitcode reader error|malformed",
+      "message": "Invalid bitcode",
+      "cause": "Bitcode file corrupted or version mismatch",
+      "solutions": [
+        {
+          "approach": "Check version",
+          "code": "llvm-dis -version-only file.bc",
+          "when": "Version mismatch"
+        },
+        {
+          "approach": "Regenerate bitcode",
+          "code": "clang -emit-llvm -c source.c -o source.bc",
+          "when": "Regenerate from source"
+        },
+        {
+          "approach": "Check file integrity",
+          "code": "file file.bc",
+          "when": "Verify file type"
+        }
+      ]
+    },
+    {
+      "id": "opaque_pointers",
+      "pattern": "opaque pointer|typed pointer.*deprecated",
+      "message": "Opaque pointer transition issue",
+      "cause": "LLVM 15+ uses opaque pointers by default",
+      "solutions": [
+        {
+          "approach": "Enable opaque pointers",
+          "code": "-opaque-pointers or update IR",
+          "when": "Migrate to opaque"
+        },
+        {
+          "approach": "Disable opaque (legacy)",
+          "code": "-no-opaque-pointers (deprecated in LLVM 17+)",
+          "when": "Temporary compatibility"
+        },
+        {
+          "approach": "Update IR",
+          "code": "Remove type from pointer: i32* -> ptr",
+          "when": "Modernize code"
+        }
+      ]
+    },
+    {
+      "id": "instruction_illegal",
+      "pattern": "Instruction does not dominate|illegal.*instruction",
+      "message": "Invalid IR - instruction doesn't dominate use",
+      "cause": "SSA violation - using value before definition",
+      "solutions": [
+        {
+          "approach": "Check dominance",
+          "code": "Value must be defined before use in control flow",
+          "when": "Fix definition order"
+        },
+        {
+          "approach": "Use phi nodes",
+          "code": "Insert phi at control flow merge points",
+          "when": "Multiple predecessors"
+        },
+        {
+          "approach": "Verify module",
+          "code": "opt -verify module.bc",
+          "when": "Find IR issues"
+        }
+      ]
+    },
+    {
+      "id": "linking_error",
+      "pattern": "undefined symbol|multiple definition|link error",
+      "message": "Linking error",
+      "cause": "Symbol not found or duplicated",
+      "solutions": [
+        {
+          "approach": "Check libraries",
+          "code": "llvm-config --libs",
+          "when": "Get link flags"
+        },
+        {
+          "approach": "Order matters",
+          "code": "Put libraries after objects: clang main.o -lLLVM",
+          "when": "Fix link order"
+        },
+        {
+          "approach": "Use shared lib",
+          "code": "-DLLVM_BUILD_LLVM_DYLIB=ON",
+          "when": "Use single shared library"
+        }
+      ]
+    },
+    {
+      "id": "pass_manager",
+      "pattern": "pass.*not registered|unknown pass|PassManager",
+      "message": "Pass not registered",
+      "cause": "Pass name wrong or pass manager mismatch",
+      "solutions": [
+        {
+          "approach": "List passes",
+          "code": "opt --print-passes",
+          "when": "See available passes"
+        },
+        {
+          "approach": "New pass manager",
+          "code": "opt -passes='pass1,pass2' (LLVM 14+)",
+          "when": "Use new syntax"
+        },
+        {
+          "approach": "Legacy pass manager",
+          "code": "opt -enable-new-pm=0 -passname",
+          "when": "Use legacy passes"
+        }
+      ]
+    },
+    {
+      "id": "intrinsic_mismatch",
+      "pattern": "Intrinsic.*wrong type|intrinsic.*signature",
+      "message": "Intrinsic type mismatch",
+      "cause": "Calling intrinsic with wrong types",
+      "solutions": [
+        {
+          "approach": "Check signature",
+          "code": "See LangRef for intrinsic signatures",
+          "when": "Verify types"
+        },
+        {
+          "approach": "Use correct overload",
+          "code": "llvm.memcpy.p0.p0.i64 for 64-bit size",
+          "when": "Type-specific intrinsic"
+        },
+        {
+          "approach": "Add casts",
+          "code": "bitcast or ptrtoint/inttoptr as needed",
+          "when": "Type conversion needed"
+        }
+      ]
+    }
+  ]
+}

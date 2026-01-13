@@ -1,0 +1,120 @@
+{
+  "tool": "etcd",
+  "version": "3.5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "leader_election_failure",
+      "pattern": "(election|leader|no leader|raft)",
+      "message": "Leader election failed",
+      "cause": "Cluster cannot elect a leader",
+      "solutions": [
+        {
+          "approach": "Check quorum",
+          "code": "# Need majority of nodes (2/3 or 3/5)\netcdctl endpoint status --cluster\netcdctl member list",
+          "when": "Checking cluster health"
+        },
+        {
+          "approach": "Check connectivity",
+          "code": "# Verify peer URLs are reachable\netcdctl endpoint health --endpoints=http://node1:2379,http://node2:2379",
+          "when": "Nodes cannot communicate"
+        }
+      ]
+    },
+    {
+      "id": "mvcc_revision_error",
+      "pattern": "(mvcc|revision|compaction|required revision)",
+      "message": "MVCC revision compacted",
+      "cause": "Requested revision has been compacted",
+      "solutions": [
+        {
+          "approach": "Get current revision",
+          "code": "# Check current revision\netcdctl get --prefix / --write-out=json | jq '.header.revision'",
+          "when": "Finding valid revision"
+        },
+        {
+          "approach": "Adjust compaction",
+          "code": "# Keep more history\netcd --auto-compaction-retention=24h\n# Or disable auto-compaction\netcd --auto-compaction-mode=revision --auto-compaction-retention=0",
+          "when": "Need more history"
+        }
+      ]
+    },
+    {
+      "id": "database_space_exceeded",
+      "pattern": "(space|quota|mvcc: database space exceeded)",
+      "message": "Database space quota exceeded",
+      "cause": "etcd database size exceeds quota",
+      "solutions": [
+        {
+          "approach": "Compact and defrag",
+          "code": "# Compact to remove old revisions\netcdctl compact $(etcdctl get --prefix / --write-out=json | jq '.header.revision')\n# Defragment to reclaim space\netcdctl defrag --endpoints=...",
+          "when": "Reclaiming space"
+        },
+        {
+          "approach": "Increase quota",
+          "code": "# Default is 2GB, increase if needed\netcd --quota-backend-bytes=$((8*1024*1024*1024))",
+          "when": "Need larger database"
+        },
+        {
+          "approach": "Re-enable alarms",
+          "code": "# Disable alarm after fixing\netcdctl alarm list\netcdctl alarm disarm",
+          "when": "Cluster in alarm state"
+        }
+      ]
+    },
+    {
+      "id": "watch_error",
+      "pattern": "(watch|event|stream|cancelled)",
+      "message": "Watch stream error",
+      "cause": "Watch connection lost or compacted",
+      "solutions": [
+        {
+          "approach": "Recreate watch",
+          "code": "import etcd3\nclient = etcd3.client()\nevents, cancel = client.watch_prefix('/keys/')\nfor event in events:\n    if event.type == 'PUT':\n        process(event.key, event.value)",
+          "when": "Setting up watch"
+        },
+        {
+          "approach": "Handle reconnection",
+          "code": "while True:\n    try:\n        for event in client.watch_prefix('/keys/'):\n            process(event)\n    except Exception:\n        time.sleep(1)  # Reconnect",
+          "when": "Watch reconnection"
+        }
+      ]
+    },
+    {
+      "id": "transaction_error",
+      "pattern": "(transaction|txn|compare.*failed)",
+      "message": "Transaction failed",
+      "cause": "Transaction compare condition not met",
+      "solutions": [
+        {
+          "approach": "Use transactions",
+          "code": "# Atomic compare-and-swap\netcdctl txn <<<'\ncompare:\nvalue(\"key\") = \"old_value\"\n\nsuccess:\nput key new_value\n\nfailure:\nget key'",
+          "when": "Atomic operations"
+        },
+        {
+          "approach": "Retry on failure",
+          "code": "while True:\n    current = client.get('key')\n    success, _ = client.transaction(\n        compare=[client.transactions.value('key') == current],\n        success=[client.transactions.put('key', new_value)],\n        failure=[]\n    )\n    if success:\n        break",
+          "when": "CAS with retry"
+        }
+      ]
+    },
+    {
+      "id": "member_add_error",
+      "pattern": "(member.*add|peer.*url|learner)",
+      "message": "Failed to add cluster member",
+      "cause": "Member add configuration error",
+      "solutions": [
+        {
+          "approach": "Add member correctly",
+          "code": "# Add as learner first (recommended)\netcdctl member add node4 --learner --peer-urls=http://node4:2380\n# Then start the new node with correct config",
+          "when": "Adding new member"
+        },
+        {
+          "approach": "Promote learner",
+          "code": "# After learner catches up\netcdctl member promote <member-id>",
+          "when": "Learner ready"
+        }
+      ]
+    }
+  ]
+}

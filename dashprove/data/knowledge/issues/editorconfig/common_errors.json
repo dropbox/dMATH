@@ -1,0 +1,101 @@
+{
+  "tool": "editorconfig",
+  "version": "2.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "file_missing",
+      "pattern": "No .*\\.editorconfig found|No section for .*",
+      "message": "EditorConfig file not detected",
+      "cause": ".editorconfig not present or not in parent directories",
+      "solutions": [
+        {
+          "approach": "Create root file",
+          "code": "cat > .editorconfig <<'CONF'\\nroot = true\\n\\n[*]\\nend_of_line = lf\\ninsert_final_newline = true\\nCONF",
+          "when": "Project missing baseline file"
+        },
+        {
+          "approach": "Place in repository root",
+          "code": "mv config/.editorconfig .",
+          "when": "File buried in subfolder"
+        }
+      ]
+    },
+    {
+      "id": "parse_error",
+      "pattern": "Parse Error|Invalid wildcard pattern|Invalid property",
+      "message": "EditorConfig parse failed",
+      "cause": "Malformed glob or unsupported property name",
+      "solutions": [
+        {
+          "approach": "Validate globs",
+          "code": "# ** requires EditorConfig core >= 0.12.0\\n# Use [*.{js,ts}] syntax for sets",
+          "when": "Pattern rejected"
+        },
+        {
+          "approach": "Use supported properties",
+          "code": "# Common: indent_style, indent_size, end_of_line, charset, trim_trailing_whitespace",
+          "when": "Property not recognized"
+        }
+      ]
+    },
+    {
+      "id": "rule_not_applied",
+      "pattern": "rule not applied|settings ignored",
+      "message": "Expected formatting not enforced",
+      "cause": "More specific section overrides or missing root marker",
+      "solutions": [
+        {
+          "approach": "Set root",
+          "code": "root = true",
+          "when": "Stop traversal to parent directories"
+        },
+        {
+          "approach": "Reorder sections",
+          "code": "# Put more specific globs later e.g. [*.py] after [*]",
+          "when": "Generic rule overriding specific one"
+        }
+      ]
+    },
+    {
+      "id": "plugin_missing",
+      "pattern": "editorconfig-checker: command not found|Plugin not installed",
+      "message": "Editor/CI tool cannot enforce .editorconfig",
+      "cause": "EditorConfig plugin or checker missing",
+      "solutions": [
+        {
+          "approach": "Install checker",
+          "code": "brew install editorconfig-checker  # or npm i -g editorconfig-checker",
+          "when": "CI/lint failures"
+        },
+        {
+          "approach": "Enable IDE plugin",
+          "code": "# VS Code: install EditorConfig extension\\n# JetBrains: Settings > Plugins > EditorConfig",
+          "when": "Local editor not applying rules"
+        }
+      ]
+    },
+    {
+      "id": "line_endings_mixed",
+      "pattern": "inconsistent line endings|expected lf but found crlf",
+      "message": "Files violate end_of_line rule",
+      "cause": "Existing files created with different newline convention",
+      "solutions": [
+        {
+          "approach": "Convert line endings",
+          "code": "find . -name '*.py' -print0 | xargs -0 dos2unix",
+          "when": "Normalize repository"
+        },
+        {
+          "approach": "Ensure git autocrlf off",
+          "code": "git config core.autocrlf false",
+          "when": "Cross-platform team hitting CRLF"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://editorconfig.org/",
+    "https://github.com/editorconfig/editorconfig"
+  ]
+}

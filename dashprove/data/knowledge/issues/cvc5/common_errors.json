@@ -1,0 +1,242 @@
+{
+  "tool": "cvc5",
+  "version": "1.1.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unknown_result",
+      "pattern": "unknown|result.*unknown",
+      "message": "Solver returned unknown",
+      "cause": "Solver couldn't determine satisfiability within resource limits",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "(set-option :tlimit 60000)  ; 60 seconds",
+          "when": "Query might be solvable with more time"
+        },
+        {
+          "approach": "Increase memory",
+          "code": "(set-option :rlimit 100000000)",
+          "when": "Running out of memory"
+        },
+        {
+          "approach": "Simplify query",
+          "code": "; Break into smaller sub-queries\n(push)\n; Part 1\n(check-sat)\n(pop)",
+          "when": "Query too complex"
+        },
+        {
+          "approach": "Try different logic",
+          "code": "(set-logic QF_LIA)  ; Simpler logic if applicable",
+          "when": "Simpler logic suffices"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "type.*error|sort.*mismatch|expected.*sort",
+      "message": "Type/sort mismatch in expression",
+      "cause": "Function applied to arguments of wrong types",
+      "solutions": [
+        {
+          "approach": "Check declarations",
+          "code": "(declare-const x Int)  ; Use correct sort",
+          "when": "Variable has wrong type"
+        },
+        {
+          "approach": "Add type conversion",
+          "code": "(to_real x)  ; Convert Int to Real",
+          "when": "Need type coercion"
+        },
+        {
+          "approach": "Match function signature",
+          "code": "; Check function expects these argument types\n(define-fun f ((x Int)) Int ...)",
+          "when": "Function argument mismatch"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_logic",
+      "pattern": "unsupported|not.*supported.*logic|logic.*not.*available",
+      "message": "Requested logic or feature not supported",
+      "cause": "Using features not available in current logic or CVC5 configuration",
+      "solutions": [
+        {
+          "approach": "Change logic",
+          "code": "(set-logic ALL)  ; Most permissive",
+          "when": "Need multiple theories"
+        },
+        {
+          "approach": "Enable incremental mode",
+          "code": "(set-option :incremental true)",
+          "when": "Using push/pop"
+        },
+        {
+          "approach": "Check feature availability",
+          "code": "; See: cvc5 --help for options",
+          "when": "Feature requires special build"
+        }
+      ]
+    },
+    {
+      "id": "unsat_core_failed",
+      "pattern": "unsat.*core.*not.*available|cannot.*get.*core",
+      "message": "Cannot retrieve unsat core",
+      "cause": "Unsat core requested but not enabled or result was sat/unknown",
+      "solutions": [
+        {
+          "approach": "Enable unsat cores",
+          "code": "(set-option :produce-unsat-cores true)",
+          "when": "Feature not enabled"
+        },
+        {
+          "approach": "Name assertions",
+          "code": "(assert (! (> x 0) :named pos))",
+          "when": "Need to identify assertions in core"
+        },
+        {
+          "approach": "Check result first",
+          "code": "; Only call (get-unsat-core) after unsat result",
+          "when": "Result wasn't unsat"
+        }
+      ]
+    },
+    {
+      "id": "model_not_available",
+      "pattern": "model.*not.*available|cannot.*get.*model",
+      "message": "Cannot retrieve satisfying model",
+      "cause": "Model requested but not enabled or result was unsat/unknown",
+      "solutions": [
+        {
+          "approach": "Enable model generation",
+          "code": "(set-option :produce-models true)",
+          "when": "Models not enabled"
+        },
+        {
+          "approach": "Check satisfiability first",
+          "code": "; Only call (get-value) or (get-model) after sat",
+          "when": "Result wasn't sat"
+        }
+      ]
+    },
+    {
+      "id": "quantifier_instantiation",
+      "pattern": "quantifier.*instantiation|incomplete.*for.*quantifiers",
+      "message": "Quantifier handling may be incomplete",
+      "cause": "CVC5's quantifier instantiation heuristics couldn't find solution",
+      "solutions": [
+        {
+          "approach": "Add triggers",
+          "code": "(forall ((x Int)) (! (P x) :pattern ((f x))))",
+          "when": "Can provide instantiation patterns"
+        },
+        {
+          "approach": "Use finite model finding",
+          "code": "(set-option :finite-model-find true)",
+          "when": "Finite domain expected"
+        },
+        {
+          "approach": "Try E-matching options",
+          "code": "(set-option :quant-e-matching true)",
+          "when": "Need aggressive instantiation"
+        },
+        {
+          "approach": "Avoid quantifiers",
+          "code": "; Rewrite to quantifier-free if possible",
+          "when": "Can eliminate quantifiers"
+        }
+      ]
+    },
+    {
+      "id": "nonlinear_arithmetic",
+      "pattern": "nonlinear|multiplication.*non-constant|division.*error",
+      "message": "Nonlinear arithmetic difficulty",
+      "cause": "Problem contains nonlinear arithmetic which is hard/undecidable",
+      "solutions": [
+        {
+          "approach": "Use nonlinear solver",
+          "code": "(set-logic QF_NRA)  ; Nonlinear real arithmetic",
+          "when": "Problem requires nonlinear"
+        },
+        {
+          "approach": "Linearize if possible",
+          "code": "; Replace x*y with fresh variable and constraints",
+          "when": "Can approximate or bound"
+        },
+        {
+          "approach": "Enable nl-ext",
+          "code": "(set-option :nl-ext true)",
+          "when": "Using nonlinear extensions"
+        }
+      ]
+    },
+    {
+      "id": "bitvector_overflow",
+      "pattern": "bitvector.*overflow|bv.*width|bit-width",
+      "message": "Bitvector width issue",
+      "cause": "Operation on bitvectors of different widths or overflow",
+      "solutions": [
+        {
+          "approach": "Match bitvector widths",
+          "code": "((_ zero_extend 8) x)  ; Extend to match",
+          "when": "Mismatched widths"
+        },
+        {
+          "approach": "Use correct literals",
+          "code": "#b00001010  ; Binary literal\n#x0A       ; Hex literal (4 bits per char)",
+          "when": "Literal width wrong"
+        },
+        {
+          "approach": "Check extraction bounds",
+          "code": "((_ extract 7 0) x)  ; Extract bits 7 down to 0",
+          "when": "Extract out of bounds"
+        }
+      ]
+    },
+    {
+      "id": "array_theory",
+      "pattern": "array.*store|array.*select|extensionality",
+      "message": "Array theory issue",
+      "cause": "Problem with array select/store operations or array equality",
+      "solutions": [
+        {
+          "approach": "Use correct array syntax",
+          "code": "(select arr idx)  ; Read\n(store arr idx val)  ; Write",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Declare array types properly",
+          "code": "(declare-const arr (Array Int Int))",
+          "when": "Array type wrong"
+        },
+        {
+          "approach": "Consider extensionality",
+          "code": "; Two arrays equal iff same elements everywhere",
+          "when": "Array equality issues"
+        }
+      ]
+    },
+    {
+      "id": "string_theory",
+      "pattern": "string.*error|str\\.|seq\\.",
+      "message": "String theory error",
+      "cause": "Issue with string operations or regular expressions",
+      "solutions": [
+        {
+          "approach": "Use correct string functions",
+          "code": "(str.++ s1 s2)  ; Concatenation\n(str.len s)     ; Length\n(str.contains s1 s2)  ; Contains",
+          "when": "Wrong function name"
+        },
+        {
+          "approach": "Enable strings",
+          "code": "(set-logic QF_SLIA)  ; Strings + Linear Int Arithmetic",
+          "when": "Logic doesn't include strings"
+        },
+        {
+          "approach": "Use string literals correctly",
+          "code": "\"hello\"  ; String literal",
+          "when": "Literal syntax wrong"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "id": "clang_tidy",
+  "name": "clang-tidy",
+  "category": "static_analysis",
+  "subcategory": "cpp_linter",
+
+  "description": "LLVM-based C++ linter and static analyzer with 400+ checks",
+  "long_description": "clang-tidy is a clang-based C++ linter tool that provides an extensible framework for diagnosing and fixing typical programming errors. It has over 400 checks across multiple categories including bugprone, modernize, performance, portability, readability, and cppcoreguidelines. It can automatically fix many issues and integrates well with build systems.",
+
+  "capabilities": [
+    "static_analysis",
+    "auto_fix",
+    "custom_checks",
+    "modernization",
+    "bug_detection",
+    "performance_hints",
+    "core_guidelines_enforcement",
+    "cert_compliance"
+  ],
+  "property_types": ["code_quality", "safety", "correctness", "performance"],
+  "input_languages": ["c", "cpp", "objective-c", "objective-cpp"],
+  "output_formats": ["text_report", "yaml_fixes", "json"],
+
+  "installation": {
+    "methods": [
+      {"type": "package", "command": "apt install clang-tidy", "platform": "linux"},
+      {"type": "package", "command": "brew install llvm", "platform": "macos"},
+      {"type": "binary", "url": "https://releases.llvm.org/"}
+    ],
+    "dependencies": ["llvm", "clang"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://clang.llvm.org/extra/clang-tidy/",
+    "tutorial": "https://clang.llvm.org/extra/clang-tidy/index.html#using-clang-tidy",
+    "api_reference": "https://clang.llvm.org/extra/clang-tidy/checks/list.html",
+    "examples": "https://github.com/llvm/llvm-project/tree/main/clang-tools-extra/clang-tidy"
+  },
+
+  "tactics": [
+    {
+      "name": "run_all_checks",
+      "description": "Run all available checks",
+      "syntax": "clang-tidy -checks='*' file.cpp -- -std=c++17",
+      "when_to_use": "Initial analysis of codebase",
+      "examples": ["clang-tidy -checks='*,-llvm*' src/*.cpp"]
+    },
+    {
+      "name": "modernize_code",
+      "description": "Apply modernization transformations",
+      "syntax": "clang-tidy -checks='modernize-*' -fix file.cpp",
+      "when_to_use": "Upgrading to modern C++ standards",
+      "examples": ["clang-tidy -checks='modernize-use-nullptr,modernize-use-auto' -fix src/*.cpp"]
+    },
+    {
+      "name": "safety_critical",
+      "description": "Run safety-focused checks",
+      "syntax": "clang-tidy -checks='bugprone-*,cert-*,cppcoreguidelines-*' file.cpp",
+      "when_to_use": "Safety-critical code review",
+      "examples": ["clang-tidy -checks='bugprone-*,cert-*' --warnings-as-errors='*' src/"]
+    },
+    {
+      "name": "with_compile_db",
+      "description": "Use compilation database for accurate analysis",
+      "syntax": "clang-tidy -p build/ file.cpp",
+      "when_to_use": "Complex projects with custom flags",
+      "examples": ["cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON . && clang-tidy -p . src/main.cpp"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "bugprone-use-after-move",
+      "meaning": "Use of moved-from object detected",
+      "common_causes": ["Accessing variable after std::move", "Reusing moved container"],
+      "fixes": ["Don't use object after move", "Reset object before reuse"]
+    },
+    {
+      "pattern": "modernize-use-nullptr",
+      "meaning": "Using NULL or 0 instead of nullptr",
+      "common_causes": ["Legacy C++ code"],
+      "fixes": ["Replace NULL/0 with nullptr", "Use -fix for automatic replacement"]
+    },
+    {
+      "pattern": "cppcoreguidelines-owning-memory",
+      "meaning": "Raw owning pointer without proper RAII",
+      "common_causes": ["Manual memory management"],
+      "fixes": ["Use std::unique_ptr or std::shared_ptr", "Apply RAII pattern"]
+    },
+    {
+      "pattern": "performance-unnecessary-copy-initialization",
+      "meaning": "Unnecessary copy when reference would suffice",
+      "common_causes": ["Copying large objects in loops"],
+      "fixes": ["Use const reference", "Use move semantics"]
+    },
+    {
+      "pattern": "cert-err58-cpp",
+      "meaning": "Static object exception in constructor",
+      "common_causes": ["Static initialization order fiasco"],
+      "fixes": ["Use Meyers singleton", "Avoid static objects with throwing constructors"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["code_quality", "safety"],
+    "cli_command": "dashprove verify --backend clang-tidy"
+  },
+
+  "performance": {
+    "typical_runtime": "Moderate; depends on check count and AST complexity",
+    "scalability": "Good with compilation database; can parallelize per-file",
+    "memory_usage": "Moderate to high for large translation units"
+  },
+
+  "comparisons": {
+    "similar_tools": ["cppcheck", "cpplint", "clang-analyzer", "pvs-studio"],
+    "advantages": ["Extensive check library", "Auto-fix capability", "Active LLVM community", "Customizable"],
+    "disadvantages": ["Requires compilation database for best results", "Some false positives"]
+  },
+
+  "metadata": {
+    "version": "18.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "LLVM Project",
+    "license": "Apache-2.0 with LLVM Exception"
+  }
+}

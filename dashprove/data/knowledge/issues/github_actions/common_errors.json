@@ -1,0 +1,191 @@
+{
+  "tool": "github_actions",
+  "version": "2024",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "workflow_not_triggering",
+      "pattern": "workflow.*not.*trigger|skipped|no workflows",
+      "message": "Workflow not triggering",
+      "cause": "Workflow file not in correct location, wrong trigger, or branch filter mismatch",
+      "solutions": [
+        {
+          "approach": "Check file location",
+          "code": "# Workflow must be in .github/workflows/\nmkdir -p .github/workflows\nmv workflow.yml .github/workflows/",
+          "when": "File in wrong directory"
+        },
+        {
+          "approach": "Verify trigger event",
+          "code": "on:\n  push:\n    branches: [main, develop]\n  pull_request:\n    branches: [main]",
+          "when": "Trigger event may not match"
+        },
+        {
+          "approach": "Check path filters",
+          "code": "on:\n  push:\n    paths:\n      - 'src/**'\n      - '!**/*.md'  # Exclude docs",
+          "when": "Path filter may exclude changes"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "permission denied|403|Resource not accessible|GITHUB_TOKEN",
+      "message": "Permission denied",
+      "cause": "Insufficient GITHUB_TOKEN permissions or missing secrets",
+      "solutions": [
+        {
+          "approach": "Set workflow permissions",
+          "code": "permissions:\n  contents: write\n  pull-requests: write\n  packages: write",
+          "when": "GITHUB_TOKEN lacks permissions"
+        },
+        {
+          "approach": "Use PAT for cross-repo",
+          "code": "# Store PAT in secrets\n${{ secrets.MY_PAT }}\n# PAT needs appropriate scopes",
+          "when": "Accessing other repos"
+        },
+        {
+          "approach": "Check org settings",
+          "code": "# Settings -> Actions -> General\n# Workflow permissions section",
+          "when": "Org may restrict permissions"
+        }
+      ]
+    },
+    {
+      "id": "checkout_failed",
+      "pattern": "checkout|clone|fetch|shallow",
+      "message": "Repository checkout failed",
+      "cause": "Authentication issue, LFS, or shallow clone limitation",
+      "solutions": [
+        {
+          "approach": "Full checkout",
+          "code": "- uses: actions/checkout@v4\n  with:\n    fetch-depth: 0  # Full history",
+          "when": "Need git history"
+        },
+        {
+          "approach": "Enable LFS",
+          "code": "- uses: actions/checkout@v4\n  with:\n    lfs: true",
+          "when": "Repo uses Git LFS"
+        },
+        {
+          "approach": "Checkout with token",
+          "code": "- uses: actions/checkout@v4\n  with:\n    token: ${{ secrets.PAT }}",
+          "when": "Accessing private submodules"
+        }
+      ]
+    },
+    {
+      "id": "cache_miss",
+      "pattern": "cache miss|cache not found|restoring cache",
+      "message": "Cache miss or restoration failed",
+      "cause": "Cache key mismatch or cache evicted",
+      "solutions": [
+        {
+          "approach": "Use restore-keys",
+          "code": "- uses: actions/cache@v4\n  with:\n    path: ~/.npm\n    key: npm-${{ hashFiles('**/package-lock.json') }}\n    restore-keys: |\n      npm-",
+          "when": "Want fallback to older cache"
+        },
+        {
+          "approach": "Check cache size",
+          "code": "# GitHub limits cache to 10GB per repo\n# Older caches evicted when limit reached",
+          "when": "Cache may have been evicted"
+        },
+        {
+          "approach": "Verify hash files exist",
+          "code": "# hashFiles() returns empty if files not found\n# Ensure lock files are committed",
+          "when": "Hash-based key may be empty"
+        }
+      ]
+    },
+    {
+      "id": "artifact_upload_failed",
+      "pattern": "artifact.*failed|upload.*error|size limit",
+      "message": "Artifact upload failed",
+      "cause": "Path not found, size limit exceeded, or permission issue",
+      "solutions": [
+        {
+          "approach": "Check path exists",
+          "code": "- run: ls -la ./build/  # Verify path\n- uses: actions/upload-artifact@v4\n  with:\n    name: build-output\n    path: ./build/",
+          "when": "Path may not exist"
+        },
+        {
+          "approach": "Use if-no-files-found",
+          "code": "- uses: actions/upload-artifact@v4\n  with:\n    name: logs\n    path: ./logs/\n    if-no-files-found: warn  # warn, error, ignore",
+          "when": "Files may not always exist"
+        },
+        {
+          "approach": "Compress large artifacts",
+          "code": "- run: tar -czvf artifact.tar.gz ./large-directory/\n- uses: actions/upload-artifact@v4\n  with:\n    name: compressed-artifact\n    path: artifact.tar.gz",
+          "when": "Artifact size too large"
+        }
+      ]
+    },
+    {
+      "id": "job_timeout",
+      "pattern": "timeout|cancelled|exceeded.*time",
+      "message": "Job timed out",
+      "cause": "Job exceeded 6-hour limit or step exceeded timeout",
+      "solutions": [
+        {
+          "approach": "Set job timeout",
+          "code": "jobs:\n  build:\n    timeout-minutes: 30",
+          "when": "Want custom timeout"
+        },
+        {
+          "approach": "Set step timeout",
+          "code": "- name: Long running task\n  timeout-minutes: 10\n  run: ./slow-script.sh",
+          "when": "Specific step hangs"
+        },
+        {
+          "approach": "Split into parallel jobs",
+          "code": "strategy:\n  matrix:\n    shard: [1, 2, 3, 4]\n# Split work across shards",
+          "when": "Job too large"
+        }
+      ]
+    },
+    {
+      "id": "secret_not_found",
+      "pattern": "secret.*not.*found|undefined|empty string",
+      "message": "Secret not found or empty",
+      "cause": "Secret not defined, wrong scope, or fork limitation",
+      "solutions": [
+        {
+          "approach": "Check secret scope",
+          "code": "# Secrets are case-sensitive\n${{ secrets.MY_SECRET }}\n# Check: Settings -> Secrets and variables -> Actions",
+          "when": "Secret may not exist"
+        },
+        {
+          "approach": "Handle forks",
+          "code": "# Secrets not available in PRs from forks\nif: github.event.pull_request.head.repo.full_name == github.repository",
+          "when": "PR from fork"
+        },
+        {
+          "approach": "Use environment secrets",
+          "code": "jobs:\n  deploy:\n    environment: production\n    # Uses production environment secrets",
+          "when": "Using environment-specific secrets"
+        }
+      ]
+    },
+    {
+      "id": "matrix_error",
+      "pattern": "matrix|strategy|combination",
+      "message": "Matrix configuration error",
+      "cause": "Invalid matrix syntax or too many combinations",
+      "solutions": [
+        {
+          "approach": "Check matrix syntax",
+          "code": "strategy:\n  matrix:\n    os: [ubuntu-latest, windows-latest]\n    node: [18, 20]\n    exclude:\n      - os: windows-latest\n        node: 18",
+          "when": "Matrix syntax may be wrong"
+        },
+        {
+          "approach": "Limit combinations",
+          "code": "strategy:\n  max-parallel: 4\n  matrix:\n    # ... (256 job limit)",
+          "when": "Too many matrix combinations"
+        },
+        {
+          "approach": "Use include for specific combos",
+          "code": "strategy:\n  matrix:\n    include:\n      - os: ubuntu-latest\n        node: 20\n        experimental: true",
+          "when": "Need specific combinations"
+        }
+      ]
+    }
+  ]
+}

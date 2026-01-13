@@ -1,0 +1,105 @@
+{
+  "tool": "route",
+  "version": "net-tools",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|SIOC.*: Operation not permitted",
+      "message": "Need root privileges",
+      "cause": "Routing changes require root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo route add default gw 192.168.1.1",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "network_unreachable",
+      "pattern": "Network is unreachable|SIOCADDRT: Network is unreachable",
+      "message": "Gateway not reachable",
+      "cause": "Gateway not on local network",
+      "solutions": [
+        {
+          "approach": "Check gateway",
+          "code": "# Gateway must be on same subnet as interface\nip addr show eth0\nping -c1 192.168.1.1",
+          "when": "Verify connectivity"
+        },
+        {
+          "approach": "Bring up interface",
+          "code": "sudo ifconfig eth0 up\nsudo ip link set eth0 up",
+          "when": "Interface down"
+        }
+      ]
+    },
+    {
+      "id": "file_exists",
+      "pattern": "File exists|SIOCADDRT: File exists",
+      "message": "Route already exists",
+      "cause": "Duplicate route entry",
+      "solutions": [
+        {
+          "approach": "Delete first",
+          "code": "sudo route del default\nsudo route add default gw 192.168.1.1",
+          "when": "Replace route"
+        },
+        {
+          "approach": "Check existing",
+          "code": "route -n\nnetstat -rn",
+          "when": "View routes"
+        }
+      ]
+    },
+    {
+      "id": "no_such_process",
+      "pattern": "No such process|SIOCDELRT: No such process",
+      "message": "Route doesn't exist",
+      "cause": "Trying to delete non-existent route",
+      "solutions": [
+        {
+          "approach": "List routes",
+          "code": "route -n",
+          "when": "Find correct route"
+        },
+        {
+          "approach": "Match exactly",
+          "code": "# Route deletion must match exactly:\nsudo route del -net 10.0.0.0 netmask 255.0.0.0 gw 192.168.1.254",
+          "when": "Specific route"
+        }
+      ]
+    },
+    {
+      "id": "deprecated_warning",
+      "pattern": "DEPRECATED|net-tools|prefer.*ip route",
+      "message": "Command deprecated",
+      "cause": "net-tools being replaced by iproute2",
+      "solutions": [
+        {
+          "approach": "Use ip route",
+          "code": "# Modern equivalents:\nip route show            # route -n\nip route add default via 192.168.1.1\nip route del default\nip route add 10.0.0.0/8 via 192.168.1.254",
+          "when": "Recommended"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "route: command not found",
+      "message": "net-tools not installed",
+      "cause": "Package not installed",
+      "solutions": [
+        {
+          "approach": "Install net-tools",
+          "code": "sudo apt install net-tools  # Debian\nsudo yum install net-tools  # RHEL",
+          "when": "Install legacy tools"
+        },
+        {
+          "approach": "Use ip instead",
+          "code": "ip route show\nip route add/del ...",
+          "when": "Modern alternative"
+        }
+      ]
+    }
+  ]
+}

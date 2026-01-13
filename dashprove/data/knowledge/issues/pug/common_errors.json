@@ -1,0 +1,168 @@
+{
+  "tool": "pug",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "indentation_error",
+      "pattern": "Invalid indentation|unexpected indent|inconsistent indentation",
+      "message": "Indentation structure invalid",
+      "cause": "Pug uses significant whitespace; mixing tabs/spaces or wrong nesting",
+      "solutions": [
+        {
+          "approach": "Use consistent indentation",
+          "code": "// Use either tabs OR spaces, not both\nhtml\n  head\n    title My Site\n  body\n    h1 Hello",
+          "when": "Mixed tabs/spaces"
+        },
+        {
+          "approach": "Configure editor",
+          "code": "// .editorconfig\n[*.pug]\nindent_style = space\nindent_size = 2",
+          "when": "Editor settings"
+        },
+        {
+          "approach": "Check nesting level",
+          "code": "// Each child must be indented exactly one level\ndiv\n  p First\n  p Second  // same level as First\n    span Nested  // one level deeper",
+          "when": "Wrong nesting"
+        }
+      ]
+    },
+    {
+      "id": "undefined_variable",
+      "pattern": "is not defined|Cannot read propert.*undefined|ReferenceError",
+      "message": "Variable not in template context",
+      "cause": "Variable used in template but not passed in locals",
+      "solutions": [
+        {
+          "approach": "Pass variables to render",
+          "code": "pug.renderFile('template.pug', { name: 'John', items: [] });",
+          "when": "Missing data"
+        },
+        {
+          "approach": "Check variable existence",
+          "code": "if user\n  p= user.name\nelse\n  p Guest",
+          "when": "Optional variable"
+        },
+        {
+          "approach": "Use default values",
+          "code": "- const name = typeof name !== 'undefined' ? name : 'Guest'\np= name",
+          "when": "Provide defaults"
+        }
+      ]
+    },
+    {
+      "id": "tag_syntax_error",
+      "pattern": "Unexpected token|unexpected text|syntax error|end of.*expected",
+      "message": "Invalid Pug syntax",
+      "cause": "Incorrect tag, attribute, or text syntax",
+      "solutions": [
+        {
+          "approach": "Check attribute syntax",
+          "code": "// Correct:\na(href=\"/home\" class=\"nav-link\") Home\n// Wrong:\na href=\"/home\" Home",
+          "when": "Attributes"
+        },
+        {
+          "approach": "Use proper text syntax",
+          "code": "p This is text\np= variable\np!= rawHtml\np.\n  Multi-line\n  block text",
+          "when": "Text content"
+        },
+        {
+          "approach": "Check JavaScript syntax",
+          "code": "- const x = 1\n- const arr = [1, 2, 3]\neach item in arr\n  li= item",
+          "when": "Embedded JS"
+        }
+      ]
+    },
+    {
+      "id": "mixin_not_found",
+      "pattern": "mixin.*not.*found|Unknown mixin|undefined mixin",
+      "message": "Mixin not defined",
+      "cause": "Using mixin before defining it or in wrong file",
+      "solutions": [
+        {
+          "approach": "Define before use",
+          "code": "mixin card(title)\n  .card\n    h3= title\n\n+card('Hello')  // use after definition",
+          "when": "Order issue"
+        },
+        {
+          "approach": "Include mixin file",
+          "code": "include mixins/cards\n\n+card('Hello')",
+          "when": "Mixins in separate file"
+        },
+        {
+          "approach": "Check mixin name",
+          "code": "// Definition and usage must match exactly\nmixin myCard(title)  // definition\n+myCard('Hi')        // usage - case sensitive",
+          "when": "Name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "include_error",
+      "pattern": "ENOENT|include.*not found|no such file|failed to load",
+      "message": "Included file not found",
+      "cause": "Include path doesn't resolve to existing file",
+      "solutions": [
+        {
+          "approach": "Set basedir option",
+          "code": "pug.renderFile('template.pug', {\n  basedir: '/path/to/views'\n});",
+          "when": "Absolute includes"
+        },
+        {
+          "approach": "Use relative paths",
+          "code": "include ../partials/header\ninclude ./footer",
+          "when": "Relative to current file"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "include header       // looks for header.pug\ninclude header.html  // looks for header.html",
+          "when": "Non-.pug files"
+        }
+      ]
+    },
+    {
+      "id": "html_escaping",
+      "pattern": "&lt;|&gt;|&amp;|escaped HTML",
+      "message": "HTML content is escaped",
+      "cause": "Using = (escaped) instead of != (unescaped)",
+      "solutions": [
+        {
+          "approach": "Use unescaped interpolation",
+          "code": "div!= rawHtml\np!= '<strong>Bold</strong>'",
+          "when": "Trusted HTML"
+        },
+        {
+          "approach": "Keep escaped for security",
+          "code": "p= userInput  // prevents XSS",
+          "when": "Untrusted content"
+        },
+        {
+          "approach": "String interpolation",
+          "code": "p Safe: #{escaped}\np Unsafe: !{unescaped}",
+          "when": "Inline values"
+        }
+      ]
+    },
+    {
+      "id": "extend_layout_error",
+      "pattern": "extends.*not found|layout.*missing|block.*not defined",
+      "message": "Template inheritance error",
+      "cause": "Layout file not found or block names don't match",
+      "solutions": [
+        {
+          "approach": "Check layout path",
+          "code": "extends ../layouts/base\n\nblock content\n  h1 Page Content",
+          "when": "Path issue"
+        },
+        {
+          "approach": "Match block names",
+          "code": "// layout.pug\nhtml\n  head\n    block head\n  body\n    block content\n\n// page.pug - blocks must match\nextends layout\nblock head\n  title My Page\nblock content\n  p Hello",
+          "when": "Block mismatch"
+        },
+        {
+          "approach": "Use append/prepend",
+          "code": "extends layout\nblock append head\n  script(src=\"extra.js\")",
+          "when": "Add to existing block"
+        }
+      ]
+    }
+  ]
+}

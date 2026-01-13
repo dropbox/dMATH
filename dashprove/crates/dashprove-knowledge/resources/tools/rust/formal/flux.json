@@ -1,0 +1,117 @@
+{
+  "id": "flux",
+  "name": "Flux",
+  "category": "rust_formal_verification",
+  "subcategory": "refinement_types",
+
+  "description": "Refinement type checker for Rust",
+  "long_description": "Flux is a refinement type checker for Rust developed at UC San Diego. It extends Rust's type system with refinement types, enabling verification of properties like array bounds, integer ranges, and custom invariants directly in the type system with minimal annotation burden.",
+
+  "capabilities": [
+    "refinement_types",
+    "bounds_checking",
+    "integer_ranges",
+    "custom_invariants",
+    "null_safety",
+    "index_verification",
+    "ownership_aware"
+  ],
+  "property_types": ["refinement", "type_invariant"],
+  "input_languages": ["rust"],
+  "output_formats": ["type_error", "refinement_error"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/flux-rs/flux", "command": "git clone https://github.com/flux-rs/flux && cd flux && cargo install --path crates/flux-bin"}
+    ],
+    "dependencies": ["z3", "rust-nightly"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://flux-rs.github.io/flux/",
+    "tutorial": "https://flux-rs.github.io/flux/guide/",
+    "api_reference": "https://flux-rs.github.io/flux/reference/",
+    "examples": "https://github.com/flux-rs/flux/tree/main/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "refined_type",
+      "description": "Add refinement to type",
+      "syntax": "#[flux::sig(fn(x: i32{x > 0}) -> i32{v: v > 0})]",
+      "when_to_use": "To add value constraints to types",
+      "examples": ["#[flux::sig(fn(x: i32{x > 0}) -> i32{v: v >= x})]"]
+    },
+    {
+      "name": "refined_struct",
+      "description": "Add refinements to struct fields",
+      "syntax": "#[flux::refined_by(len: int)]",
+      "when_to_use": "To track abstract properties in structs",
+      "examples": ["#[flux::refined_by(len: int)]\nstruct Vec<T> { ... }"]
+    },
+    {
+      "name": "trusted",
+      "description": "Trust function without verification",
+      "syntax": "#[flux::trusted]",
+      "when_to_use": "For FFI or manually verified code",
+      "examples": ["#[flux::trusted]\nfn external_fn() { ... }"]
+    },
+    {
+      "name": "invariant",
+      "description": "Type invariant",
+      "syntax": "#[flux::invariant(...)]",
+      "when_to_use": "To maintain struct invariants",
+      "examples": ["#[flux::invariant(len >= 0)]"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "refinement type error",
+      "meaning": "Value doesn't satisfy type refinement",
+      "common_causes": ["Missing bounds check", "Arithmetic overflow possible"],
+      "fixes": ["Add runtime check", "Strengthen input refinement"]
+    },
+    {
+      "pattern": "cannot verify .* < .*",
+      "meaning": "Bound check cannot be proven",
+      "common_causes": ["Loop variable not constrained", "Missing precondition"],
+      "fixes": ["Add loop invariant", "Add precondition on function"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["refinement", "type_invariant"],
+    "cli_command": "dashprove verify --backend flux"
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to seconds",
+    "scalability": "Scales well with modular checking",
+    "memory_usage": "1-4GB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["liquidhaskell", "prusti", "verus"],
+    "advantages": [
+      "Lightweight annotation burden",
+      "Fast verification",
+      "Familiar type system approach",
+      "Good IDE integration potential"
+    ],
+    "disadvantages": [
+      "Limited to refinement-expressible properties",
+      "Newer tool, less mature",
+      "Nightly Rust required"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.1.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "UC San Diego",
+    "license": "MIT"
+  }
+}

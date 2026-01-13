@@ -1,0 +1,146 @@
+{
+  "tool": "paxos_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specification of the Paxos consensus algorithm (Lamport's original spec)",
+  "errors": [
+    {
+      "id": "agreement_violation",
+      "pattern": "Agreement.*FALSE|different.*values.*chosen",
+      "message": "Agreement property violated - different values chosen",
+      "cause": "Two different values were marked as chosen",
+      "solutions": [
+        {
+          "approach": "Check ballot number uniqueness",
+          "code": "\\* Each ballot number used by exactly one proposer\nBallot(p) == <<p, ballotNum[p]>>\nBallotLessThan(b1, b2) == b1[2] < b2[2] \\/ (b1[2] = b2[2] /\\ b1[1] < b2[1])",
+          "when": "Multiple proposers using same ballot"
+        },
+        {
+          "approach": "Verify promise handling",
+          "code": "Phase1b(a, b) ==\n    /\\ maxBal[a] < b\n    /\\ maxBal' = [maxBal EXCEPT ![a] = b]\n    /\\ Send([type |-> \"promise\", acc |-> a, bal |-> b,\n             maxVBal |-> maxVBal[a], maxVal |-> maxVal[a]])",
+          "when": "Acceptor not reporting highest accepted"
+        },
+        {
+          "approach": "Check Phase2 value selection",
+          "code": "Phase2a(p, b, v) ==\n    LET promises == {m \\in msgs : m.type = \"promise\" /\\ m.bal = b}\n        maxAccepted == CHOOSE m \\in promises :\n            \\A m2 \\in promises : m.maxVBal >= m2.maxVBal\n    IN IF maxAccepted.maxVBal = -1 THEN v ELSE maxAccepted.maxVal",
+          "when": "Not using highest accepted value"
+        }
+      ]
+    },
+    {
+      "id": "validity_violation",
+      "pattern": "Validity.*FALSE|chosen.*not proposed",
+      "message": "Validity property violated - chosen value was never proposed",
+      "cause": "A value was chosen that no proposer ever proposed",
+      "solutions": [
+        {
+          "approach": "Track proposed values",
+          "code": "proposed == {v \\in Values : \\E m \\in msgs : m.type = \"propose\" /\\ m.val = v}\nValidity == chosen \\subseteq proposed",
+          "when": "Not tracking proposals"
+        },
+        {
+          "approach": "Verify value propagation",
+          "code": "Phase2a(p, b, v) ==\n    /\\ v \\in Values  \\* Must be a valid value\n    /\\ ...",
+          "when": "Accepting invalid values"
+        },
+        {
+          "approach": "Check initial value",
+          "code": "Init == \n    /\\ chosen = {}\n    /\\ msgs = {}  \\* No messages initially",
+          "when": "Spurious initial chosen value"
+        }
+      ]
+    },
+    {
+      "id": "promise_conflict",
+      "pattern": "promise.*conflict|acceptor.*promised.*higher",
+      "message": "Acceptor broke promise to higher ballot",
+      "cause": "Acceptor accepted a lower ballot after promising a higher one",
+      "solutions": [
+        {
+          "approach": "Check maxBal update",
+          "code": "Phase1b(a, b) ==\n    /\\ maxBal[a] < b\n    /\\ maxBal' = [maxBal EXCEPT ![a] = b]\n    \\* Must reject all lower ballots after this",
+          "when": "maxBal not updated"
+        },
+        {
+          "approach": "Verify Phase2b check",
+          "code": "Phase2b(a, b, v) ==\n    /\\ maxBal[a] <= b  \\* Can only accept if promised\n    /\\ maxBal' = [maxBal EXCEPT ![a] = b]\n    /\\ maxVBal' = [maxVBal EXCEPT ![a] = b]\n    /\\ maxVal' = [maxVal EXCEPT ![a] = v]",
+          "when": "Accepting below promised ballot"
+        },
+        {
+          "approach": "Ensure persistence",
+          "code": "\\* maxBal must be durable before response\nPersist(a) == maxBal[a] \\in persisted[a].maxBal",
+          "when": "Promise not persisted before ack"
+        }
+      ]
+    },
+    {
+      "id": "quorum_too_small",
+      "pattern": "quorum.*insufficient|not enough.*acceptors",
+      "message": "Quorum size insufficient for safety",
+      "cause": "Quorum does not guarantee intersection",
+      "solutions": [
+        {
+          "approach": "Use majority quorums",
+          "code": "Quorum == {Q \\in SUBSET Acceptors : Cardinality(Q) * 2 > Cardinality(Acceptors)}",
+          "when": "Using simple sets as quorums"
+        },
+        {
+          "approach": "Verify quorum intersection",
+          "code": "QuorumsIntersect == \\A Q1, Q2 \\in Quorum : Q1 \\cap Q2 # {}",
+          "when": "Non-overlapping quorums defined"
+        },
+        {
+          "approach": "Check flexible quorum config",
+          "code": "\\* If using flexible quorums: read_quorum + write_quorum > N\nFlexQuorum == read_quorum + write_quorum > Cardinality(Acceptors)",
+          "when": "Using flexible Paxos"
+        }
+      ]
+    },
+    {
+      "id": "state_space_explosion",
+      "pattern": "out of memory|state space too large",
+      "message": "TLC exhausted memory exploring states",
+      "cause": "Paxos spec state space is too large for model checking",
+      "solutions": [
+        {
+          "approach": "Bound ballot numbers",
+          "code": "CONSTANT MaxBallot\nTypeOK == \\A p \\in Proposers : ballotNum[p] <= MaxBallot",
+          "when": "Unbounded ballot numbers"
+        },
+        {
+          "approach": "Limit number of proposals",
+          "code": "CONSTANT MaxProposals\nCanPropose == Cardinality({m \\in msgs : m.type = \"propose\"}) < MaxProposals",
+          "when": "Too many proposals"
+        },
+        {
+          "approach": "Use symmetry reduction",
+          "code": "\\* Proposers and acceptors are symmetric\nSYMMETRY Permutations(Proposers) \\union Permutations(Acceptors)",
+          "when": "Many identical processes"
+        }
+      ]
+    },
+    {
+      "id": "multi_paxos_reconfiguration_error",
+      "pattern": "reconfiguration.*error|config.*mismatch",
+      "message": "Multi-Paxos reconfiguration error",
+      "cause": "Cluster membership change violated safety",
+      "solutions": [
+        {
+          "approach": "Use joint consensus",
+          "code": "\\* During reconfiguration, both old and new config must agree\nJointQuorum == \\E Q1 \\in OldQuorum, Q2 \\in NewQuorum : \n    accepted(Q1) /\\ accepted(Q2)",
+          "when": "Direct config switch"
+        },
+        {
+          "approach": "Log configuration changes",
+          "code": "\\* Configuration change is a special log entry\nConfigEntry(newConfig) == [type |-> \"config\", config |-> newConfig]",
+          "when": "Config not in log"
+        },
+        {
+          "approach": "Wait for config commit",
+          "code": "\\* New config active only after committed\nActiveConfig == IF configCommitted THEN newConfig ELSE oldConfig",
+          "when": "Using uncommitted config"
+        }
+      ]
+    }
+  ]
+}

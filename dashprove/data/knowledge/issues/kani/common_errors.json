@@ -1,0 +1,173 @@
+{
+  "tool": "kani",
+  "version": "0.66.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unwinding_assertion",
+      "pattern": "unwinding assertion loop .* iteration \\d+",
+      "message": "VERIFICATION FAILED (unwinding assertion)",
+      "cause": "Loop executed more iterations than the specified unwind bound",
+      "solutions": [
+        {
+          "approach": "Increase unwind bound",
+          "code": "#[kani::unwind(N)]  // Increase N",
+          "when": "Loop has a known bounded iteration count"
+        },
+        {
+          "approach": "Add loop invariant",
+          "code": "kani::assume(condition);  // Inside loop",
+          "when": "Loop has a complex termination condition"
+        },
+        {
+          "approach": "Use stub for expensive function",
+          "code": "#[kani::stub(original_fn, stub_fn)]",
+          "when": "Loop is in library code you can't modify"
+        }
+      ]
+    },
+    {
+      "id": "memory_safety_violation",
+      "pattern": "CBMC ERROR: dereference failure",
+      "message": "Memory safety violation detected",
+      "cause": "Attempted to access invalid memory (null, out of bounds, or freed)",
+      "solutions": [
+        {
+          "approach": "Check pointer validity",
+          "code": "if !ptr.is_null() { /* use ptr */ }",
+          "when": "Pointer may be null"
+        },
+        {
+          "approach": "Use safe slice indexing",
+          "code": "slice.get(index)  // Returns Option instead of panicking",
+          "when": "Array index may be out of bounds"
+        },
+        {
+          "approach": "Review unsafe block",
+          "code": "// Ensure all preconditions are met before unsafe",
+          "when": "Error is in unsafe code"
+        }
+      ]
+    },
+    {
+      "id": "arithmetic_overflow",
+      "pattern": "arithmetic overflow",
+      "message": "VERIFICATION FAILED: arithmetic overflow on",
+      "cause": "Integer operation overflowed (add, sub, mul, etc.)",
+      "solutions": [
+        {
+          "approach": "Use checked arithmetic",
+          "code": "a.checked_add(b).unwrap_or(default)",
+          "when": "Overflow is unexpected but should be handled"
+        },
+        {
+          "approach": "Use saturating arithmetic",
+          "code": "a.saturating_add(b)",
+          "when": "Clamping to max/min is acceptable"
+        },
+        {
+          "approach": "Use wrapping arithmetic",
+          "code": "a.wrapping_add(b)",
+          "when": "Wrapping behavior is intended"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "kani::assume(a < MAX - b);",
+          "when": "Caller should guarantee no overflow"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "assertion failed",
+      "message": "VERIFICATION FAILED: assertion failed",
+      "cause": "An assert! or debug_assert! macro failed",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "// Run with --visualize to see failing inputs",
+          "when": "Need to understand why assertion failed"
+        },
+        {
+          "approach": "Strengthen preconditions",
+          "code": "kani::assume(precondition);",
+          "when": "Assertion assumes certain inputs"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// The assertion caught a real bug - fix the logic",
+          "when": "Assertion is correct and code is wrong"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "Kani does not support",
+      "message": "Feature not supported by Kani",
+      "cause": "Code uses a Rust feature Kani cannot verify",
+      "solutions": [
+        {
+          "approach": "Use stub",
+          "code": "#[kani::stub(unsupported_fn, mock_fn)]",
+          "when": "Can mock the unsupported functionality"
+        },
+        {
+          "approach": "Conditional compilation",
+          "code": "#[cfg(not(kani))]\nfn real_impl() { ... }\n#[cfg(kani)]\nfn real_impl() { simplified_version() }",
+          "when": "Need different code for verification"
+        },
+        {
+          "approach": "Check Kani version",
+          "code": "cargo install --locked kani-verifier  # Update Kani",
+          "when": "Feature may be supported in newer version"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Verification timed out",
+      "message": "CBMC timed out",
+      "cause": "Verification took too long (state space explosion)",
+      "solutions": [
+        {
+          "approach": "Reduce input space",
+          "code": "let x: u8 = kani::any();  // Instead of u64",
+          "when": "Smaller types are sufficient for verification"
+        },
+        {
+          "approach": "Add assumptions",
+          "code": "kani::assume(x < 100);",
+          "when": "Can constrain inputs meaningfully"
+        },
+        {
+          "approach": "Decompose verification",
+          "code": "// Split into multiple smaller proofs",
+          "when": "Function does too many things"
+        },
+        {
+          "approach": "Use stubs",
+          "code": "#[kani::stub(complex_fn, simple_stub)]",
+          "when": "Some functions don't need full verification"
+        }
+      ]
+    },
+    {
+      "id": "concrete_playback_fail",
+      "pattern": "concrete playback failed",
+      "message": "Failed to reproduce counterexample",
+      "cause": "The generated test case cannot reproduce the verification failure",
+      "solutions": [
+        {
+          "approach": "Check for non-determinism",
+          "code": "// Ensure code doesn't use time, random, etc.",
+          "when": "Code has hidden non-determinism"
+        },
+        {
+          "approach": "Update Kani",
+          "code": "cargo install --locked kani-verifier",
+          "when": "May be a Kani bug fixed in newer version"
+        }
+      ]
+    }
+  ]
+}

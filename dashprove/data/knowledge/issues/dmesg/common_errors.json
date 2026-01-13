@@ -1,0 +1,150 @@
+{
+  "tool": "dmesg",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted|read kernel",
+      "message": "Cannot read kernel messages",
+      "cause": "Non-root users may be restricted",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo dmesg",
+          "when": "Need root"
+        },
+        {
+          "approach": "Check sysctl",
+          "code": "# Check restriction:\ncat /proc/sys/kernel/dmesg_restrict\n# 0 = all users, 1 = root only\n# To change:\nsudo sysctl kernel.dmesg_restrict=0",
+          "when": "Policy setting"
+        },
+        {
+          "approach": "Use journalctl",
+          "code": "journalctl -k  # Kernel messages via systemd",
+          "when": "systemd systems"
+        }
+      ]
+    },
+    {
+      "id": "too_much_output",
+      "pattern": "scroll|too much|filter|grep",
+      "message": "Output overwhelming",
+      "cause": "Full kernel buffer displayed",
+      "solutions": [
+        {
+          "approach": "Recent only",
+          "code": "dmesg | tail -50  # Last 50 lines\ndmesg -T | tail -50  # With timestamps",
+          "when": "Recent messages"
+        },
+        {
+          "approach": "Filter by level",
+          "code": "dmesg -l err,warn  # Only errors and warnings\ndmesg -l crit,alert,emerg  # Critical issues",
+          "when": "By severity"
+        },
+        {
+          "approach": "Filter by facility",
+          "code": "dmesg -f kern     # Kernel messages\ndmesg -f daemon   # Daemon messages",
+          "when": "By source"
+        },
+        {
+          "approach": "Search pattern",
+          "code": "dmesg | grep -i usb\ndmesg | grep -i error\ndmesg | grep -i eth0",
+          "when": "Specific topic"
+        }
+      ]
+    },
+    {
+      "id": "timestamps",
+      "pattern": "timestamp|time|when|\\[.*\\]",
+      "message": "Understanding timestamps",
+      "cause": "Default shows seconds since boot",
+      "solutions": [
+        {
+          "approach": "Human timestamps",
+          "code": "dmesg -T  # Human-readable time",
+          "when": "Real dates"
+        },
+        {
+          "approach": "ISO timestamps",
+          "code": "dmesg --time-format=iso",
+          "when": "ISO format"
+        },
+        {
+          "approach": "Relative time",
+          "code": "dmesg --time-format=reltime",
+          "when": "Time ago"
+        },
+        {
+          "approach": "Calculate from boot",
+          "code": "# Default [12345.67890] = seconds since boot\nuptime  # See when system booted",
+          "when": "Understand default"
+        }
+      ]
+    },
+    {
+      "id": "buffer_wrap",
+      "pattern": "old messages|buffer|lost|wrapped",
+      "message": "Old messages lost",
+      "cause": "Ring buffer has limited size",
+      "solutions": [
+        {
+          "approach": "Check buffer size",
+          "code": "dmesg | wc -l\ncat /proc/sys/kernel/printk_devkmsg",
+          "when": "See capacity"
+        },
+        {
+          "approach": "Use journalctl",
+          "code": "journalctl -k --since='1 hour ago'\njournalctl -k -b  # Since boot",
+          "when": "Persistent logs"
+        },
+        {
+          "approach": "Log to file",
+          "code": "# Configure rsyslog to save kernel messages\n# /etc/rsyslog.conf: kern.* /var/log/kern.log",
+          "when": "Persistent kernel log"
+        }
+      ]
+    },
+    {
+      "id": "follow_mode",
+      "pattern": "follow|watch|live|real-time",
+      "message": "Monitor kernel messages live",
+      "cause": "Want to see new messages",
+      "solutions": [
+        {
+          "approach": "Follow dmesg",
+          "code": "dmesg -w  # Watch for new messages\ndmesg -wT  # With timestamps",
+          "when": "Live monitoring"
+        },
+        {
+          "approach": "Clear and watch",
+          "code": "sudo dmesg -C  # Clear buffer\ndmesg -w  # Watch fresh",
+          "when": "Start clean"
+        },
+        {
+          "approach": "tail /dev/kmsg",
+          "code": "sudo tail -f /dev/kmsg",
+          "when": "Alternative method"
+        }
+      ]
+    },
+    {
+      "id": "color_output",
+      "pattern": "color|highlight|level",
+      "message": "Colorize output by severity",
+      "cause": "Want visual distinction",
+      "solutions": [
+        {
+          "approach": "Enable color",
+          "code": "dmesg --color=always | less -R",
+          "when": "Colored output"
+        },
+        {
+          "approach": "Decode facility/level",
+          "code": "dmesg -x  # Show facility and level\ndmesg -d  # Show level prefix",
+          "when": "See message types"
+        }
+      ]
+    }
+  ]
+}

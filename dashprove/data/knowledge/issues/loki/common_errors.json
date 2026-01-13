@@ -1,0 +1,76 @@
+{
+  "tool": "loki",
+  "category": "logging",
+  "common_errors": [
+    {
+      "pattern": "entry out of order",
+      "meaning": "Log entries have timestamps out of order",
+      "causes": ["Clock skew", "Batch with mixed timestamps", "Reprocessing old logs"],
+      "solutions": ["Fix client time sync", "Enable unordered_writes", "Sort entries before sending"]
+    },
+    {
+      "pattern": "rate limit exceeded",
+      "meaning": "Ingestion rate limit hit",
+      "causes": ["Too many log streams", "High ingestion rate", "Cardinality explosion"],
+      "solutions": ["Reduce label cardinality", "Increase rate limits", "Batch logs client-side"]
+    },
+    {
+      "pattern": "stream limit exceeded",
+      "meaning": "Too many active streams",
+      "causes": ["High-cardinality labels", "New streams created rapidly", "Labels with unique values"],
+      "solutions": ["Reduce unique label combinations", "Use static labels", "Increase max_streams_per_user"]
+    },
+    {
+      "pattern": "max streams.*limit",
+      "meaning": "Per-tenant stream limit exceeded",
+      "causes": ["Label explosion", "Too many unique label sets", "Dynamic labels"],
+      "solutions": ["Reduce label cardinality", "Remove high-cardinality labels", "Increase limit in config"]
+    },
+    {
+      "pattern": "query.*timeout",
+      "meaning": "LogQL query timed out",
+      "causes": ["Query too broad", "Large time range", "Complex regex"],
+      "solutions": ["Add stream selectors", "Reduce time range", "Simplify regex patterns"]
+    },
+    {
+      "pattern": "failed to connect",
+      "meaning": "Cannot connect to Loki server",
+      "causes": ["Loki not running", "Wrong address", "Network issue"],
+      "solutions": ["Start Loki", "Check push URL", "Verify network connectivity"]
+    },
+    {
+      "pattern": "chunk.*not found",
+      "meaning": "Log chunk not in storage",
+      "causes": ["Storage backend issue", "Chunk expired", "Index/chunk mismatch"],
+      "solutions": ["Check storage backend", "Review retention settings", "Verify index points to valid chunks"]
+    },
+    {
+      "pattern": "compactor.*error",
+      "meaning": "Index compaction failed",
+      "causes": ["Storage access error", "Compactor not running", "Index corruption"],
+      "solutions": ["Check storage permissions", "Restart compactor", "Rebuild index"]
+    },
+    {
+      "pattern": "invalid label",
+      "meaning": "Label name/value invalid",
+      "causes": ["Reserved label used", "Invalid characters", "Empty label value"],
+      "solutions": ["Use valid label names", "Remove special characters", "Provide label values"]
+    },
+    {
+      "pattern": "per-stream rate limit",
+      "meaning": "Single stream rate limit hit",
+      "causes": ["One stream receiving too much data", "Aggregated logs to single stream"],
+      "solutions": ["Split logs across multiple streams", "Increase per_stream_rate_limit", "Add differentiating labels"]
+    }
+  ],
+  "debugging_commands": [
+    "curl -G 'http://localhost:3100/loki/api/v1/labels'",
+    "curl -G 'http://localhost:3100/ready'",
+    "logcli query '{job=\"varlogs\"}'",
+    "curl 'http://localhost:3100/metrics'"
+  ],
+  "documentation_urls": [
+    "https://grafana.com/docs/loki/latest/",
+    "https://github.com/grafana/loki"
+  ]
+}

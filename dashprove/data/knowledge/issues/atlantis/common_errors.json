@@ -1,0 +1,191 @@
+{
+  "tool": "atlantis",
+  "version": "0.27.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "webhook_error",
+      "pattern": "webhook|signature verification failed|unauthorized",
+      "message": "Webhook configuration error",
+      "cause": "GitHub/GitLab webhook misconfigured",
+      "solutions": [
+        {
+          "approach": "Verify webhook secret",
+          "code": "# In atlantis.yaml or env\nATLANTIS_GH_WEBHOOK_SECRET=your-secret",
+          "when": "Secret mismatch"
+        },
+        {
+          "approach": "Check webhook URL",
+          "code": "# Webhook URL should be: https://atlantis.example.com/events",
+          "when": "Wrong endpoint"
+        },
+        {
+          "approach": "Verify SSL",
+          "code": "# Ensure SSL certificate is valid\ncurl -v https://atlantis.example.com/events",
+          "when": "SSL issues"
+        }
+      ]
+    },
+    {
+      "id": "token_error",
+      "pattern": "token|authentication failed|401|403",
+      "message": "API token error",
+      "cause": "GitHub/GitLab token invalid or insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Check token permissions",
+          "code": "# GitHub token needs: repo scope\n# GitLab token needs: api scope",
+          "when": "Insufficient permissions"
+        },
+        {
+          "approach": "Regenerate token",
+          "code": "ATLANTIS_GH_TOKEN=ghp_new_token_here",
+          "when": "Token expired"
+        },
+        {
+          "approach": "Use app authentication",
+          "code": "ATLANTIS_GH_APP_ID=12345\nATLANTIS_GH_APP_KEY_FILE=/path/to/key.pem",
+          "when": "GitHub App preferred"
+        }
+      ]
+    },
+    {
+      "id": "plan_error",
+      "pattern": "plan failed|Error: |terraform plan",
+      "message": "Terraform plan failed",
+      "cause": "Terraform error during plan",
+      "solutions": [
+        {
+          "approach": "Check workspace",
+          "code": "# In atlantis.yaml\nprojects:\n- name: myproject\n  workspace: dev",
+          "when": "Wrong workspace"
+        },
+        {
+          "approach": "Set variables",
+          "code": "# In repo atlantis.yaml\nworkflows:\n  myworkflow:\n    plan:\n      steps:\n      - env:\n          name: TF_VAR_region\n          value: us-east-1\n      - plan",
+          "when": "Missing variables"
+        },
+        {
+          "approach": "Check terraform version",
+          "code": "# In atlantis.yaml\nprojects:\n- name: myproject\n  terraform_version: v1.5.0",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "repo_config_error",
+      "pattern": "atlantis\\.yaml|repo config|invalid configuration",
+      "message": "Repository configuration error",
+      "cause": "Invalid atlantis.yaml in repo",
+      "solutions": [
+        {
+          "approach": "Validate syntax",
+          "code": "# atlantis.yaml\nversion: 3\nprojects:\n- name: infrastructure\n  dir: terraform/\n  workspace: default",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Check allowed config",
+          "code": "# Server must allow repo config\n--allow-repo-config",
+          "when": "Server doesn't allow"
+        },
+        {
+          "approach": "Use server-side config",
+          "code": "# repos.yaml on server\nrepos:\n- id: github.com/org/repo\n  allowed_overrides: [workflow]",
+          "when": "Restrict repo config"
+        }
+      ]
+    },
+    {
+      "id": "lock_error",
+      "pattern": "lock|already locked|another pull request",
+      "message": "Project lock conflict",
+      "cause": "Another PR has the lock on this project",
+      "solutions": [
+        {
+          "approach": "Check locks",
+          "code": "# Comment on PR: atlantis unlock",
+          "when": "Need to release lock"
+        },
+        {
+          "approach": "Force unlock",
+          "code": "# Admin: atlantis unlock --force",
+          "when": "Lock stuck"
+        },
+        {
+          "approach": "Wait for other PR",
+          "code": "# Merge or close the PR that holds the lock",
+          "when": "Legitimate conflict"
+        }
+      ]
+    },
+    {
+      "id": "apply_error",
+      "pattern": "apply failed|must be approved|not approved",
+      "message": "Apply failed or not allowed",
+      "cause": "Apply requirements not met",
+      "solutions": [
+        {
+          "approach": "Get approval",
+          "code": "# PR must be approved by required reviewers",
+          "when": "Needs approval"
+        },
+        {
+          "approach": "Check mergeable",
+          "code": "# PR must be mergeable (no conflicts)",
+          "when": "Has conflicts"
+        },
+        {
+          "approach": "Configure requirements",
+          "code": "# repos.yaml\nrepos:\n- id: /.*/ \n  apply_requirements: [approved, mergeable]",
+          "when": "Change requirements"
+        }
+      ]
+    },
+    {
+      "id": "autoplan_not_triggered",
+      "pattern": "autoplan|not triggered|no changes detected",
+      "message": "Autoplan didn't trigger",
+      "cause": "File changes didn't match autoplan config",
+      "solutions": [
+        {
+          "approach": "Check when_modified",
+          "code": "# atlantis.yaml\nprojects:\n- name: infra\n  dir: terraform\n  autoplan:\n    when_modified: [\"*.tf\", \"*.tfvars\", \"modules/**\"]",
+          "when": "Pattern doesn't match"
+        },
+        {
+          "approach": "Enable autoplan",
+          "code": "autoplan:\n  enabled: true",
+          "when": "Autoplan disabled"
+        },
+        {
+          "approach": "Manual plan",
+          "code": "# Comment: atlantis plan -d terraform/",
+          "when": "Trigger manually"
+        }
+      ]
+    },
+    {
+      "id": "workspace_error",
+      "pattern": "workspace|workspace .* does not exist",
+      "message": "Terraform workspace error",
+      "cause": "Workspace doesn't exist or mismatch",
+      "solutions": [
+        {
+          "approach": "Create workspace",
+          "code": "# Pre-workflow hook to create workspace\npre_workflow_hooks:\n- run: terraform workspace new $WORKSPACE || true",
+          "when": "Workspace doesn't exist"
+        },
+        {
+          "approach": "Specify workspace",
+          "code": "# atlantis.yaml\nprojects:\n- dir: .\n  workspace: production",
+          "when": "Using workspaces"
+        },
+        {
+          "approach": "Use default",
+          "code": "workspace: default",
+          "when": "Don't use workspaces"
+        }
+      ]
+    }
+  ]
+}

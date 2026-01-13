@@ -1,0 +1,160 @@
+{
+  "tool": "certbot",
+  "version": "2.8",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "domain_validation_failed",
+      "pattern": "Domain.*not resolve|DNS problem|Challenge failed|Timeout during connect|NXDOMAIN",
+      "message": "Domain validation failed",
+      "cause": "DNS not pointing to server or ports blocked",
+      "solutions": [
+        {
+          "approach": "Check DNS",
+          "code": "dig +short example.com\ndig +short www.example.com\n# Should return your server IP",
+          "when": "Verify DNS"
+        },
+        {
+          "approach": "Check ports",
+          "code": "# Port 80 required for HTTP-01 challenge\nsudo netstat -tlnp | grep ':80'\nsudo ss -tlnp | grep ':80'",
+          "when": "Port blocked"
+        },
+        {
+          "approach": "Use DNS challenge",
+          "code": "certbot certonly --manual --preferred-challenges dns -d example.com",
+          "when": "HTTP blocked"
+        }
+      ]
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "Address already in use|bind.*port 80|port 443.*in use|Could not bind",
+      "message": "Port 80/443 already in use",
+      "cause": "Web server using required ports",
+      "solutions": [
+        {
+          "approach": "Use webroot",
+          "code": "certbot certonly --webroot -w /var/www/html -d example.com",
+          "when": "Web server running"
+        },
+        {
+          "approach": "Use nginx plugin",
+          "code": "certbot --nginx -d example.com",
+          "when": "Nginx running"
+        },
+        {
+          "approach": "Use apache plugin",
+          "code": "certbot --apache -d example.com",
+          "when": "Apache running"
+        },
+        {
+          "approach": "Stop server briefly",
+          "code": "sudo systemctl stop nginx && certbot certonly --standalone -d example.com && sudo systemctl start nginx",
+          "when": "Can stop server"
+        }
+      ]
+    },
+    {
+      "id": "rate_limited",
+      "pattern": "too many certificates|Rate Limit|rate limit exceeded|too many registrations",
+      "message": "Let's Encrypt rate limit hit",
+      "cause": "Too many certificates issued recently",
+      "solutions": [
+        {
+          "approach": "Check limits",
+          "code": "# Limits:\n# 50 certs per domain per week\n# 5 duplicate certs per week\n# 5 failed validations per hour",
+          "when": "Know the limits"
+        },
+        {
+          "approach": "Use staging",
+          "code": "certbot --staging -d example.com\n# Higher limits for testing",
+          "when": "Testing"
+        },
+        {
+          "approach": "Wait",
+          "code": "# Wait until rate limit window passes (usually 1 week)",
+          "when": "Production"
+        },
+        {
+          "approach": "SAN cert",
+          "code": "certbot -d example.com -d www.example.com -d api.example.com\n# Single cert for multiple domains",
+          "when": "Multiple subdomains"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|PermissionError|EACCES|unable to write|could not create",
+      "message": "Permission denied",
+      "cause": "Running without sufficient privileges",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo certbot --nginx -d example.com",
+          "when": "Standard install"
+        },
+        {
+          "approach": "Custom paths",
+          "code": "certbot certonly --config-dir ~/certs --work-dir ~/certs/work --logs-dir ~/certs/logs -d example.com",
+          "when": "Non-root user"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "sudo chown -R root:root /etc/letsencrypt\nsudo chmod -R 755 /etc/letsencrypt/live\nsudo chmod -R 755 /etc/letsencrypt/archive",
+          "when": "Permission corruption"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "The requested.*plugin|No module named|plugin.*not installed|authenticator.*not found",
+      "message": "Plugin not available",
+      "cause": "Required certbot plugin not installed",
+      "solutions": [
+        {
+          "approach": "Install nginx plugin",
+          "code": "# Ubuntu/Debian\nsudo apt install python3-certbot-nginx\n# RHEL/CentOS\nsudo dnf install python3-certbot-nginx",
+          "when": "Nginx"
+        },
+        {
+          "approach": "Install apache plugin",
+          "code": "# Ubuntu/Debian\nsudo apt install python3-certbot-apache\n# RHEL/CentOS  \nsudo dnf install python3-certbot-apache",
+          "when": "Apache"
+        },
+        {
+          "approach": "Install DNS plugin",
+          "code": "sudo apt install python3-certbot-dns-cloudflare\n# Or for other providers: dns-route53, dns-google, etc.",
+          "when": "DNS challenge"
+        }
+      ]
+    },
+    {
+      "id": "renewal_failed",
+      "pattern": "renewal.*failed|not yet due for renewal|cert not yet due|renewal configuration invalid",
+      "message": "Certificate renewal failed",
+      "cause": "Renewal configuration or timing issue",
+      "solutions": [
+        {
+          "approach": "Force renewal",
+          "code": "sudo certbot renew --force-renewal",
+          "when": "Force immediate"
+        },
+        {
+          "approach": "Dry run",
+          "code": "sudo certbot renew --dry-run",
+          "when": "Test renewal"
+        },
+        {
+          "approach": "Check config",
+          "code": "sudo cat /etc/letsencrypt/renewal/example.com.conf",
+          "when": "Debug config"
+        },
+        {
+          "approach": "Delete and reissue",
+          "code": "sudo certbot delete --cert-name example.com\nsudo certbot certonly --nginx -d example.com",
+          "when": "Config broken"
+        }
+      ]
+    }
+  ]
+}

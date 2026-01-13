@@ -1,0 +1,105 @@
+{
+  "id": "tlaplus_zab",
+  "name": "Zab TLA+ Specification",
+  "category": "tlaplus_specifications",
+  "subcategory": "consensus",
+
+  "description": "TLA+ specification of Zookeeper Atomic Broadcast protocol",
+  "long_description": "Zab (Zookeeper Atomic Broadcast) is the consensus protocol used by Apache Zookeeper for total order broadcast. The TLA+ specification covers leader election, atomic broadcast, and recovery phases. Zab provides stronger ordering guarantees than Paxos for primary-backup systems and is designed for high throughput state machine replication.",
+
+  "capabilities": [
+    "total_order_broadcast",
+    "leader_election",
+    "recovery",
+    "state_transfer",
+    "primary_order"
+  ],
+  "property_types": ["safety", "liveness", "total_ordering"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/fpaxos/zookeeper-fpaxos/tree/master/tla",
+    "paper": "https://www.usenix.org/conference/usenix-atc-10/zab-high-performance-broadcast-primary-backup-systems"
+  },
+
+  "documentation": {
+    "official": "https://zookeeper.apache.org/doc/current/",
+    "internals": "https://zookeeper.apache.org/doc/current/zookeeperInternals.html"
+  },
+
+  "protocol_phases": [
+    {
+      "name": "Discovery",
+      "description": "Prospective leader discovers latest epoch",
+      "action": "Leader candidate collects epoch numbers from followers"
+    },
+    {
+      "name": "Synchronization",
+      "description": "Leader synchronizes followers",
+      "action": "Leader sends missing transactions to followers"
+    },
+    {
+      "name": "Broadcast",
+      "description": "Leader broadcasts new transactions",
+      "action": "Two-phase commit for each transaction"
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "Integrity",
+      "description": "If follower delivers message m, some leader broadcast m",
+      "tla_formula": "delivered(m) => broadcast(m) by some leader"
+    },
+    {
+      "name": "TotalOrder",
+      "description": "All processes deliver messages in same order",
+      "tla_formula": "\\A p1, p2 : order(p1) = order(p2)"
+    },
+    {
+      "name": "Agreement",
+      "description": "If one correct process delivers m, all correct processes deliver m",
+      "tla_formula": "delivered(p1, m) => <>(\\A p : correct(p) => delivered(p, m))"
+    },
+    {
+      "name": "PrimaryOrder",
+      "description": "If leader broadcasts a before b, then a is delivered before b",
+      "tla_formula": "broadcast_order(a, b) => deliver_order(a, b)"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "epoch", "type": "Nat", "description": "Current epoch number"},
+    {"name": "history", "type": "Seq(Transaction)", "description": "Transaction history"},
+    {"name": "state", "type": "{Election, Discovery, Sync, Broadcast}", "description": "Protocol phase"},
+    {"name": "acceptedEpoch", "type": "Nat", "description": "Last accepted epoch"},
+    {"name": "currentEpoch", "type": "Nat", "description": "Current epoch"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Server": "{s1, s2, s3}",
+      "Value": "{v1, v2}",
+      "MaxEpoch": "3"
+    },
+    "invariants": ["TypeOK", "TotalOrder", "PrimaryOrder"],
+    "expected_states": "Millions"
+  },
+
+  "related_specs": ["paxos", "raft", "viewstamped_replication"],
+
+  "implementations": [
+    "Apache Zookeeper",
+    "Apache BookKeeper",
+    "Apache Kafka (controller)"
+  ],
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Yahoo Research",
+    "license": "Apache-2.0"
+  }
+}

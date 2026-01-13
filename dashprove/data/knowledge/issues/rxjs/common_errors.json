@@ -1,0 +1,118 @@
+{
+  "tool": "rxjs",
+  "category": "reactive",
+  "common_errors": [
+    {
+      "id": "rxjs_import_path",
+      "pattern": "import from 'rxjs/operators'|deep import error|module not found",
+      "severity": "error",
+      "causes": [
+        "RxJS 7+ changed import paths",
+        "Using old import patterns",
+        "Tree-shaking imports different"
+      ],
+      "solutions": [
+        "RxJS 7+: import { map, filter } from 'rxjs'",
+        "Old: import { map } from 'rxjs/operators' - deprecated",
+        "Creation: import { of, from, interval } from 'rxjs'",
+        "Use direct imports for tree-shaking"
+      ]
+    },
+    {
+      "id": "rxjs_subscription_leak",
+      "pattern": "memory leak|subscription not cleaned|observable keeps running",
+      "severity": "error",
+      "causes": [
+        "Not unsubscribing from observables",
+        "Long-lived observables without cleanup",
+        "Component destroyed but subscription lives"
+      ],
+      "solutions": [
+        "Always unsubscribe: sub.unsubscribe()",
+        "Use takeUntil with destroy$ subject",
+        "Use async pipe in Angular (auto-unsubscribes)",
+        "Use first(), take(1) for single-value observables"
+      ]
+    },
+    {
+      "id": "rxjs_cold_vs_hot",
+      "pattern": "observable runs multiple times|shared subscription|unexpected re-execution",
+      "severity": "warning",
+      "causes": [
+        "Cold observable re-executes per subscriber",
+        "Not sharing observable execution",
+        "Expecting hot observable behavior"
+      ],
+      "solutions": [
+        "Use shareReplay() to share and cache",
+        "Use share() for hot observable behavior",
+        "BehaviorSubject for stateful shared value",
+        "Understand cold (per-subscriber) vs hot (shared)"
+      ]
+    },
+    {
+      "id": "rxjs_error_handling",
+      "pattern": "observable stopped on error|error kills stream|unhandled error",
+      "severity": "error",
+      "causes": [
+        "Error terminates observable by default",
+        "No error handler in subscribe",
+        "catchError not used properly"
+      ],
+      "solutions": [
+        "Use catchError operator: catchError(err => of(fallback))",
+        "Provide error handler: subscribe({ error: e => {} })",
+        "Use retry() or retryWhen() for transient errors",
+        "catchError should return observable to continue"
+      ]
+    },
+    {
+      "id": "rxjs_switchmap_cancel",
+      "pattern": "request cancelled|switchMap losing values|inner cancelled",
+      "severity": "warning",
+      "causes": [
+        "switchMap cancels previous inner observable",
+        "Wrong operator choice",
+        "Losing data from fast emissions"
+      ],
+      "solutions": [
+        "switchMap: cancels prev, good for search/autocomplete",
+        "mergeMap: runs all in parallel",
+        "concatMap: runs in order, waits for each",
+        "exhaustMap: ignores new while current running"
+      ]
+    },
+    {
+      "id": "rxjs_async_pipe_null",
+      "pattern": "async pipe null|initial value undefined|template null check",
+      "severity": "warning",
+      "causes": [
+        "Observable hasn't emitted yet",
+        "Async pipe returns null initially",
+        "Template error before first emit"
+      ],
+      "solutions": [
+        "Use startWith() to provide initial value",
+        "Use *ngIf=\"obs$ | async as data\"",
+        "Use BehaviorSubject with initial value",
+        "Safe navigation: (obs$ | async)?.property"
+      ]
+    },
+    {
+      "id": "rxjs_subject_complete",
+      "pattern": "subject complete|no more emissions|subject dead",
+      "severity": "error",
+      "causes": [
+        "Called complete() on Subject",
+        "Subject cannot emit after complete",
+        "Unintentional completion"
+      ],
+      "solutions": [
+        "Don't call complete() unless done forever",
+        "Create new Subject if needed again",
+        "Use error only for actual errors",
+        "Check subject closed state: subject.closed"
+      ]
+    }
+  ]
+}

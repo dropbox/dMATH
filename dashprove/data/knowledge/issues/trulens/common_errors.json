@@ -1,0 +1,138 @@
+{
+  "tool": "trulens",
+  "version": "0.32.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "provider_error",
+      "pattern": "(provider|OpenAI|Huggingface|API.*key)",
+      "message": "Feedback provider not configured",
+      "cause": "LLM provider for feedback functions not set up",
+      "solutions": [
+        {
+          "approach": "Configure OpenAI provider",
+          "code": "from trulens_eval import OpenAI\nimport os\nos.environ['OPENAI_API_KEY'] = 'your-key'\nprovider = OpenAI()",
+          "when": "Using OpenAI"
+        },
+        {
+          "approach": "Use HuggingFace",
+          "code": "from trulens_eval import Huggingface\nprovider = Huggingface()",
+          "when": "Using local models"
+        }
+      ]
+    },
+    {
+      "id": "app_wrapper_error",
+      "pattern": "(TruChain|TruLlama|instrument|wrapper)",
+      "message": "App wrapper error",
+      "cause": "Failed to instrument LLM application",
+      "solutions": [
+        {
+          "approach": "Wrap LangChain app",
+          "code": "from trulens_eval import TruChain\ntru_recorder = TruChain(\n    chain,\n    app_id='my-app',\n    feedbacks=[f_relevance, f_groundedness]\n)\nwith tru_recorder as recording:\n    response = chain.invoke(query)",
+          "when": "Using LangChain"
+        },
+        {
+          "approach": "Wrap LlamaIndex",
+          "code": "from trulens_eval import TruLlama\ntru_recorder = TruLlama(\n    query_engine,\n    app_id='my-app',\n    feedbacks=[f_relevance]\n)",
+          "when": "Using LlamaIndex"
+        },
+        {
+          "approach": "Custom app",
+          "code": "from trulens_eval import TruCustomApp\ntru_recorder = TruCustomApp(\n    app_id='my-app',\n    feedbacks=[f_relevance]\n)",
+          "when": "Custom application"
+        }
+      ]
+    },
+    {
+      "id": "feedback_error",
+      "pattern": "(feedback|Feedback|selector|on_)",
+      "message": "Feedback function error",
+      "cause": "Feedback function misconfigured",
+      "solutions": [
+        {
+          "approach": "Define feedback",
+          "code": "from trulens_eval import Feedback\nfrom trulens_eval.feedback import Groundedness\n\ngrounded = Groundedness(groundedness_provider=provider)\nf_groundedness = Feedback(\n    grounded.groundedness_measure_with_cot_reasons\n).on(\n    TruLlama.select_source_nodes().node.text\n).on_output()",
+          "when": "Setting up groundedness"
+        },
+        {
+          "approach": "Simple relevance",
+          "code": "f_relevance = Feedback(\n    provider.relevance\n).on_input_output()",
+          "when": "Basic relevance check"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "(database|Tru|sqlite|connection)",
+      "message": "Database error",
+      "cause": "TruLens database configuration issue",
+      "solutions": [
+        {
+          "approach": "Initialize Tru",
+          "code": "from trulens_eval import Tru\ntru = Tru()  # Uses default SQLite\ntru.reset_database()  # Clear if needed",
+          "when": "Basic setup"
+        },
+        {
+          "approach": "Custom database",
+          "code": "from trulens_eval import Tru\ntru = Tru(database_url='postgresql://user:pass@host/db')",
+          "when": "Using PostgreSQL"
+        }
+      ]
+    },
+    {
+      "id": "selector_error",
+      "pattern": "(select|selector|path|attribute)",
+      "message": "Selector path error",
+      "cause": "Feedback selector couldn't find data",
+      "solutions": [
+        {
+          "approach": "Check selectors",
+          "code": "# For LangChain\nfrom trulens_eval.schema import Select\nf = Feedback(provider.relevance).on(\n    Select.RecordInput[:].page_content  # Source docs\n).on_output()",
+          "when": "Debugging selectors"
+        },
+        {
+          "approach": "Use context",
+          "code": "# Select from RAG context\nf_context = Feedback(\n    provider.context_relevance\n).on_input().on(\n    TruLlama.select_context()\n)",
+          "when": "RAG context selection"
+        }
+      ]
+    },
+    {
+      "id": "dashboard_error",
+      "pattern": "(dashboard|run_dashboard|streamlit)",
+      "message": "Dashboard error",
+      "cause": "Dashboard failed to launch",
+      "solutions": [
+        {
+          "approach": "Run dashboard",
+          "code": "from trulens_eval import Tru\ntru = Tru()\ntru.run_dashboard()  # Opens Streamlit dashboard",
+          "when": "Launching dashboard"
+        },
+        {
+          "approach": "Get records directly",
+          "code": "# Skip dashboard, access data directly\nrecords = tru.get_records_and_feedback(app_ids=['my-app'])\nprint(records)",
+          "when": "Programmatic access"
+        }
+      ]
+    },
+    {
+      "id": "deferred_feedback_error",
+      "pattern": "(deferred|async|pending)",
+      "message": "Deferred feedback error",
+      "cause": "Feedback evaluation didn't complete",
+      "solutions": [
+        {
+          "approach": "Wait for feedback",
+          "code": "with tru_recorder as recording:\n    response = chain.invoke(query)\n# Get record with feedback\nrecord = recording.get()\n# Wait for all feedback\nfor feedback, result in record.wait_for_feedback_results().items():\n    print(f'{feedback.name}: {result.result}')",
+          "when": "Waiting for results"
+        },
+        {
+          "approach": "Run synchronously",
+          "code": "tru_recorder = TruChain(\n    chain,\n    feedbacks=[f_relevance],\n    feedback_mode='immediate'  # Not deferred\n)",
+          "when": "Want immediate feedback"
+        }
+      ]
+    }
+  ]
+}

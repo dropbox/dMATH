@@ -1,0 +1,260 @@
+{
+  "tool": "yosys",
+  "version": "0.38",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "syntax.*error|parse.*error|unexpected.*token",
+      "message": "Verilog/SystemVerilog syntax error",
+      "cause": "Invalid HDL syntax or unsupported construct",
+      "solutions": [
+        {
+          "approach": "Enable SystemVerilog mode",
+          "code": "read_verilog -sv design.sv\n# Or via command line:\nyosys -p \"read_verilog -sv design.sv\"",
+          "when": "Using SV features"
+        },
+        {
+          "approach": "Check for common syntax issues",
+          "code": "// Common issues:\n// Missing semicolons:\nwire [7:0] data;  // Required\n\n// Wrong always syntax:\nalways @(*)        // Verilog-2001\nalways_comb        // SystemVerilog\nalways @(posedge clk)  // Sequential",
+          "when": "Syntax mistake"
+        },
+        {
+          "approach": "Use preprocessing",
+          "code": "read_verilog -sv -DDEFINE_NAME design.sv\n# Or with includes:\nread_verilog -sv -I./include design.sv",
+          "when": "Preprocessor issues"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "module.*not.*found|unknown.*module|hierarchy.*incomplete",
+      "message": "Module not found in design",
+      "cause": "Missing module definition or file not read",
+      "solutions": [
+        {
+          "approach": "Read all source files",
+          "code": "read_verilog -sv file1.sv file2.sv file3.sv\n# Or read directory:\nread_verilog -sv rtl/*.sv",
+          "when": "Missing files"
+        },
+        {
+          "approach": "Check hierarchy after read",
+          "code": "read_verilog -sv design.sv\nhierarchy -check -top top_module\n# Reports missing modules",
+          "when": "Verifying completeness"
+        },
+        {
+          "approach": "Use library cells",
+          "code": "read_verilog -lib lib/cells.v\nread_verilog -sv design.sv\nhierarchy -check",
+          "when": "Standard cells needed"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_construct",
+      "pattern": "unsupported|not.*implemented|cannot.*handle",
+      "message": "Unsupported Verilog/SV construct",
+      "cause": "Yosys doesn't support certain language features",
+      "solutions": [
+        {
+          "approach": "Check supported features",
+          "code": "# Yosys doesn't support:\n# - Some SystemVerilog assertions (use workarounds)\n# - Some complex generate constructs\n# - Real numbers (use fixed point)\n# - Some UVM constructs",
+          "when": "Using advanced features"
+        },
+        {
+          "approach": "Use plugin for SV assertions",
+          "code": "# Use SVA plugin:\nread_verilog -sv -formal design.sv\n# For formal assertions",
+          "when": "Need SVA support"
+        },
+        {
+          "approach": "Rewrite construct",
+          "code": "// Instead of unsupported:\n// interface my_if; ... endinterface\n// Use struct or explicit ports:\nmodule my_module(\n  input wire clk,\n  input wire [7:0] data,\n  output wire valid\n);",
+          "when": "Interface not supported"
+        }
+      ]
+    },
+    {
+      "id": "synthesis_loop",
+      "pattern": "combinational.*loop|loop.*detected|circular.*dependency",
+      "message": "Combinational loop in design",
+      "cause": "Circular combinational logic path",
+      "solutions": [
+        {
+          "approach": "Find the loop",
+          "code": "read_verilog design.v\nproc\nopt\nscc  # Shows strongly connected components\nshow -colors 10  # Visualize",
+          "when": "Need to locate loop"
+        },
+        {
+          "approach": "Fix the logic",
+          "code": "// Bad - combinational loop:\nwire a = b & c;\nwire b = a | d;  // Loop!\n\n// Fix with register:\nalways @(posedge clk) b <= a | d;",
+          "when": "Actual design bug"
+        },
+        {
+          "approach": "Break false loop",
+          "code": "// Sometimes Yosys sees false loops\n// Add (* keep *) to help:\n(* keep *) wire intermediate = ...;",
+          "when": "False positive"
+        }
+      ]
+    },
+    {
+      "id": "memory_mapping",
+      "pattern": "memory|bram|no.*fitting.*memory",
+      "message": "Memory mapping or inference issue",
+      "cause": "Memory not inferred or mapped correctly",
+      "solutions": [
+        {
+          "approach": "Infer memory",
+          "code": "read_verilog design.v\nproc; opt\nmemory  # Infer memories\nopt",
+          "when": "Memory not inferred"
+        },
+        {
+          "approach": "Map to BRAM",
+          "code": "# For FPGA targets:\nsynth_ice40 -top top_module\n# Or manually:\nmemory_bram -rules ice40_brams.txt",
+          "when": "Need BRAM mapping"
+        },
+        {
+          "approach": "Keep as logic",
+          "code": "// Small memories can stay as logic:\nmemory_dff  # Convert to D-FFs\n# Or:\nmemory -nomap",
+          "when": "Prefer distributed RAM"
+        }
+      ]
+    },
+    {
+      "id": "timing_issue",
+      "pattern": "timing|setup.*violation|hold.*violation|critical.*path",
+      "message": "Timing constraints not met",
+      "cause": "Design too slow for target frequency",
+      "solutions": [
+        {
+          "approach": "Report timing",
+          "code": "# Use with place and route tools:\n# Yosys does synthesis, PnR tools do timing\n# For nextpnr:\nnextpnr-ice40 --freq 50 ...\n# Check timing report",
+          "when": "Need timing analysis"
+        },
+        {
+          "approach": "Add pipeline stages",
+          "code": "// Add registers in critical path:\nalways @(posedge clk) begin\n  stage1 <= input_data;\n  stage2 <= process(stage1);\n  output_data <= stage2;\nend",
+          "when": "Path too long"
+        },
+        {
+          "approach": "Optimize logic",
+          "code": "proc; opt -full\n# More aggressive optimization:\nabc -lut 4  # For LUT-based FPGAs\nabc -g AND  # For ASIC",
+          "when": "Need smaller logic"
+        }
+      ]
+    },
+    {
+      "id": "formal_verification_error",
+      "pattern": "assert.*fail|assume.*fail|cover.*fail|formal",
+      "message": "Formal verification issue",
+      "cause": "Error in formal property or verification setup",
+      "solutions": [
+        {
+          "approach": "Enable formal mode",
+          "code": "read_verilog -sv -formal design.sv\nprep -top top_module",
+          "when": "Properties not recognized"
+        },
+        {
+          "approach": "Use SymbiYosys",
+          "code": "# Create .sby file:\n[options]\nmode bmc\ndepth 20\n\n[engines]\nsmtbmc z3\n\n[script]\nread -formal design.sv\nprep -top top_module\n\n[files]\ndesign.sv",
+          "when": "Need proper formal flow"
+        },
+        {
+          "approach": "Check property syntax",
+          "code": "// Use immediate assertions:\nalways @(posedge clk) begin\n  assert(valid |-> data != 0);\n  cover(state == DONE);\nend",
+          "when": "SVA issues"
+        }
+      ]
+    },
+    {
+      "id": "clock_detection",
+      "pattern": "clock|clk2fflogic|no.*clock.*found",
+      "message": "Clock signal not properly detected",
+      "cause": "Clock not recognized or multiple clocks",
+      "solutions": [
+        {
+          "approach": "Use clk2fflogic",
+          "code": "read_verilog design.v\nproc\nclk2fflogic  # Convert clocked logic to pure logic\n# Needed for formal verification",
+          "when": "Formal verification"
+        },
+        {
+          "approach": "Specify clock",
+          "code": "# In preparation:\nprep -top top_module -flatten\n# Clock should be inferred from always blocks",
+          "when": "Clock not found"
+        },
+        {
+          "approach": "Handle multiple clocks",
+          "code": "# Multiple clock domains:\nproc\nasync2sync  # Handle async resets\n# Or partition by clock domain",
+          "when": "Multi-clock design"
+        }
+      ]
+    },
+    {
+      "id": "latch_inference",
+      "pattern": "latch|incomplete.*case|missing.*else",
+      "message": "Unintended latch inferred",
+      "cause": "Incomplete conditional assignment in combinational logic",
+      "solutions": [
+        {
+          "approach": "Find latches",
+          "code": "read_verilog design.v\nproc\nstat  # Check for latches in statistics",
+          "when": "Detecting latches"
+        },
+        {
+          "approach": "Fix incomplete case",
+          "code": "// Bad - creates latch:\nalways @(*)\n  case(sel)\n    2'b00: out = a;\n    2'b01: out = b;\n  endcase\n\n// Good - complete:\nalways @(*)\n  case(sel)\n    2'b00: out = a;\n    2'b01: out = b;\n    default: out = 0;\n  endcase",
+          "when": "Incomplete case"
+        },
+        {
+          "approach": "Fix missing else",
+          "code": "// Bad - creates latch:\nalways @(*)\n  if (en) out = data;\n\n// Good:\nalways @(*)\n  if (en) out = data;\n  else out = 0;",
+          "when": "Missing else branch"
+        }
+      ]
+    },
+    {
+      "id": "target_mapping",
+      "pattern": "mapping|no.*cells|target.*library",
+      "message": "Technology mapping issue",
+      "cause": "Can't map to target technology",
+      "solutions": [
+        {
+          "approach": "Use target-specific synth",
+          "code": "# For specific FPGA:\nsynth_ice40 -top top_module\nsynth_ecp5 -top top_module\nsynth_xilinx -top top_module\n\n# For ASIC:\nsynth -top top_module",
+          "when": "Need target mapping"
+        },
+        {
+          "approach": "Load cell library",
+          "code": "# For ASIC with Liberty:\nread_liberty -lib cells.lib\nsynth -top top_module\nabc -liberty cells.lib",
+          "when": "ASIC flow"
+        },
+        {
+          "approach": "Use generic gates",
+          "code": "synth -top top_module\nabc -g cmos  # Generic CMOS gates\n# Or:\nabc -g gates  # AND/OR/NOT",
+          "when": "No specific target"
+        }
+      ]
+    },
+    {
+      "id": "output_format",
+      "pattern": "write.*error|output.*format|unsupported.*format",
+      "message": "Output file format issue",
+      "cause": "Can't write to requested format",
+      "solutions": [
+        {
+          "approach": "Use correct writer",
+          "code": "# Verilog output:\nwrite_verilog output.v\n\n# JSON for viewing:\nwrite_json output.json\n\n# BLIF for place and route:\nwrite_blif output.blif\n\n# EDIF:\nwrite_edif output.edif",
+          "when": "Need specific format"
+        },
+        {
+          "approach": "Prepare design first",
+          "code": "# Some formats need clean design:\nclean -purge\nopt_clean -purge\nwrite_verilog -noattr clean_output.v",
+          "when": "Output has issues"
+        },
+        {
+          "approach": "Use appropriate target",
+          "code": "# For iCE40 bitstream:\nsynth_ice40 -top top -json hardware.json\n# Then use nextpnr-ice40",
+          "when": "Need bitstream"
+        }
+      ]
+    }
+  ]
+}

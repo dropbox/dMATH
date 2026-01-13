@@ -1,0 +1,120 @@
+{
+  "tool": "interpretml",
+  "version": "0.6.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "ebm_fit_error",
+      "pattern": "(EBM.*fit|ExplainableBoostingClassifier|memory)",
+      "message": "EBM fitting failed",
+      "cause": "EBM training can be memory intensive for large datasets",
+      "solutions": [
+        {
+          "approach": "Reduce interactions",
+          "code": "ebm = ExplainableBoostingClassifier(\n    interactions=0,  # Disable pairwise interactions\n    max_bins=256     # Reduce bins\n)",
+          "when": "Memory or time issues"
+        },
+        {
+          "approach": "Sample data",
+          "code": "# Train on sample\nfrom sklearn.model_selection import train_test_split\nX_sample, _, y_sample, _ = train_test_split(X, y, train_size=10000)",
+          "when": "Dataset too large"
+        },
+        {
+          "approach": "Reduce outer bags",
+          "code": "ebm = ExplainableBoostingClassifier(\n    outer_bags=4,  # Default is 8\n    inner_bags=0   # Disable inner bagging\n)",
+          "when": "Training too slow"
+        }
+      ]
+    },
+    {
+      "id": "feature_types_error",
+      "pattern": "(feature.*type|continuous|categorical)",
+      "message": "Feature type specification error",
+      "cause": "EBM needs correct feature type specification",
+      "solutions": [
+        {
+          "approach": "Specify feature types",
+          "code": "ebm = ExplainableBoostingClassifier(\n    feature_names=['age', 'income', 'gender'],\n    feature_types=['continuous', 'continuous', 'categorical']\n)",
+          "when": "Auto-detection failing"
+        },
+        {
+          "approach": "Let EBM detect",
+          "code": "# Pass DataFrame with proper dtypes\ndf['gender'] = df['gender'].astype('category')\nebm.fit(df[features], df['target'])",
+          "when": "Using pandas DataFrame"
+        }
+      ]
+    },
+    {
+      "id": "explanation_error",
+      "pattern": "(explain|global.*explanation|local.*explanation)",
+      "message": "Explanation generation failed",
+      "cause": "Model not fitted or data format issue",
+      "solutions": [
+        {
+          "approach": "Ensure model is fitted",
+          "code": "ebm.fit(X_train, y_train)\nglobal_exp = ebm.explain_global()\nlocal_exp = ebm.explain_local(X_test[:5], y_test[:5])",
+          "when": "Model not trained"
+        },
+        {
+          "approach": "Check data format",
+          "code": "# Ensure consistent data format\nX_test_df = pd.DataFrame(X_test, columns=feature_names)\nlocal_exp = ebm.explain_local(X_test_df)",
+          "when": "Data format mismatch"
+        }
+      ]
+    },
+    {
+      "id": "dashboard_error",
+      "pattern": "(show|dashboard|visualization|widget)",
+      "message": "Dashboard visualization error",
+      "cause": "Jupyter widget or browser compatibility issue",
+      "solutions": [
+        {
+          "approach": "Enable widgets",
+          "code": "# In Jupyter\n!pip install ipywidgets\n!jupyter nbextension enable --py widgetsnbextension",
+          "when": "Widgets not showing"
+        },
+        {
+          "approach": "Export to HTML",
+          "code": "from interpret import show\nshow(global_exp, share_tables=True)\n# Or save to file\nfrom interpret.provider import InlineProvider\nInlineProvider.render(global_exp)",
+          "when": "Dashboard not rendering"
+        },
+        {
+          "approach": "Access data directly",
+          "code": "# Get explanation data without visualization\ndata = global_exp.data()\nprint(data)",
+          "when": "Don't need visualization"
+        }
+      ]
+    },
+    {
+      "id": "blackbox_explainer_error",
+      "pattern": "(LIME|SHAP|blackbox)",
+      "message": "Blackbox explainer error",
+      "cause": "Model prediction function format issue",
+      "solutions": [
+        {
+          "approach": "Wrap prediction function",
+          "code": "from interpret.blackbox import LimeTabular\nlime = LimeTabular(\n    predict_fn=model.predict_proba,\n    data=X_train,\n    feature_names=feature_names\n)\nexplanation = lime.explain_local(X_test[:5], y_test[:5])",
+          "when": "Using LIME explainer"
+        },
+        {
+          "approach": "Use correct predict method",
+          "code": "# For classification, use predict_proba\n# For regression, use predict\nlime = LimeTabular(\n    predict_fn=lambda x: model.predict_proba(x)[:, 1],  # Binary prob\n    data=X_train\n)",
+          "when": "Wrong prediction format"
+        }
+      ]
+    },
+    {
+      "id": "merge_error",
+      "pattern": "(merge|combine|MergedEBM)",
+      "message": "EBM merge operation failed",
+      "cause": "Cannot merge EBMs with different structures",
+      "solutions": [
+        {
+          "approach": "Ensure compatible models",
+          "code": "# Models must have same features\nebm1 = ExplainableBoostingClassifier(feature_names=features)\nebm2 = ExplainableBoostingClassifier(feature_names=features)\nebm1.fit(X1, y1)\nebm2.fit(X2, y2)\nmerged = ebm1.merge([ebm2])",
+          "when": "Merging multiple EBMs"
+        }
+      ]
+    }
+  ]
+}

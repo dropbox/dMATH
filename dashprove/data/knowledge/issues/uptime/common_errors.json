@@ -1,0 +1,99 @@
+{
+  "tool": "uptime",
+  "version": "3.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "load_average_meaning",
+      "pattern": "load average|what is|meaning|explain|high load",
+      "message": "Understanding load average",
+      "cause": "Load average numbers are confusing",
+      "solutions": [
+        {
+          "approach": "Understand load",
+          "code": "# Three numbers: 1min, 5min, 15min averages\n# Load = processes waiting for CPU + processes running\n# Load 1.0 on single core = 100% utilized\n# Load 4.0 on 4 cores = 100% utilized\n# Check cores: nproc",
+          "when": "Reference"
+        },
+        {
+          "approach": "Check cores",
+          "code": "nproc  # Number of CPUs\ncat /proc/cpuinfo | grep processor | wc -l\n# Load should be < number of CPUs for healthy system",
+          "when": "Context"
+        },
+        {
+          "approach": "High load debug",
+          "code": "top  # See what's using CPU\nps aux --sort=-%cpu | head\ndmesg | tail  # System messages",
+          "when": "Debug high load"
+        }
+      ]
+    },
+    {
+      "id": "parseable_output",
+      "pattern": "parse|script|just uptime|days only",
+      "message": "Get specific uptime value",
+      "cause": "Need machine-readable output",
+      "solutions": [
+        {
+          "approach": "Since timestamp",
+          "code": "uptime -s  # Boot timestamp (YYYY-MM-DD HH:MM:SS)",
+          "when": "Boot time"
+        },
+        {
+          "approach": "Pretty format",
+          "code": "uptime -p  # \"up 3 days, 2 hours, 15 minutes\"",
+          "when": "Human readable"
+        },
+        {
+          "approach": "Seconds since boot",
+          "code": "cat /proc/uptime | cut -d' ' -f1\nawk '{print $1}' /proc/uptime",
+          "when": "Numeric"
+        }
+      ]
+    },
+    {
+      "id": "different_format",
+      "pattern": "format|output|macos|different",
+      "message": "Output format differs by OS",
+      "cause": "BSD/macOS uptime differs from Linux",
+      "solutions": [
+        {
+          "approach": "Linux format",
+          "code": "uptime  # 10:30:15 up 3 days, 2:15, 2 users, load average: 0.15, 0.10, 0.05",
+          "when": "Linux"
+        },
+        {
+          "approach": "macOS format",
+          "code": "uptime  # 10:30 up 3 days, 2:15, 2 users, load averages: 1.52 1.43 1.38",
+          "when": "macOS"
+        },
+        {
+          "approach": "Portable parsing",
+          "code": "# Parse boot time instead:\nwho -b  # Last system boot\nlast reboot | head -1",
+          "when": "Cross-platform"
+        }
+      ]
+    },
+    {
+      "id": "reboot_history",
+      "pattern": "reboot|restart|history|last boot",
+      "message": "See reboot history",
+      "cause": "Need to know when system rebooted",
+      "solutions": [
+        {
+          "approach": "Last reboot",
+          "code": "last reboot | head -5\nwho -b",
+          "when": "Recent reboots"
+        },
+        {
+          "approach": "System log",
+          "code": "journalctl --list-boots  # All boots\njournalctl -b -1  # Previous boot logs",
+          "when": "With logs"
+        },
+        {
+          "approach": "Kernel messages",
+          "code": "dmesg | grep -i 'kernel command line'\nlast -x | grep shutdown | head -5",
+          "when": "Boot details"
+        }
+      ]
+    }
+  ]
+}

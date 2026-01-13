@@ -1,0 +1,168 @@
+{
+  "tool": "shelljs",
+  "version": "0.8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "not found|command failed|ENOENT|which.*null",
+      "message": "Shell command not found",
+      "cause": "Executable not in PATH or not installed",
+      "solutions": [
+        {
+          "approach": "Check command exists",
+          "code": "if (!shell.which('git')) {\n  shell.echo('Git is not installed');\n  shell.exit(1);\n}",
+          "when": "Before using"
+        },
+        {
+          "approach": "Use full path",
+          "code": "shell.exec('/usr/local/bin/node script.js');",
+          "when": "PATH issues"
+        },
+        {
+          "approach": "Set PATH",
+          "code": "shell.env['PATH'] = '/usr/local/bin:' + shell.env['PATH'];",
+          "when": "Missing path entries"
+        }
+      ]
+    },
+    {
+      "id": "silent_mode_errors",
+      "pattern": "error not shown|silent failure|no output|stderr empty",
+      "message": "Errors hidden in silent mode",
+      "cause": "shell.config.silent = true hides all output",
+      "solutions": [
+        {
+          "approach": "Check return code",
+          "code": "shell.config.silent = true;\nconst result = shell.exec('command');\nif (result.code !== 0) {\n  console.error(result.stderr);\n}",
+          "when": "Silent mode"
+        },
+        {
+          "approach": "Disable silent temporarily",
+          "code": "shell.config.silent = false;\nshell.exec('failing_command');\nshell.config.silent = true;",
+          "when": "Debug output"
+        },
+        {
+          "approach": "Use fatal mode",
+          "code": "shell.config.fatal = true;  // throws on error\ntry {\n  shell.exec('command');\n} catch (e) {\n  console.error('Failed:', e);\n}",
+          "when": "Error as exception"
+        }
+      ]
+    },
+    {
+      "id": "glob_no_match",
+      "pattern": "no such file|ENOENT|empty result|nothing matched",
+      "message": "Glob pattern matched nothing",
+      "cause": "No files match the glob pattern",
+      "solutions": [
+        {
+          "approach": "Check matches first",
+          "code": "const files = shell.ls('*.txt');\nif (files.length === 0) {\n  console.log('No .txt files found');\n} else {\n  files.forEach(f => process(f));\n}",
+          "when": "Empty result"
+        },
+        {
+          "approach": "Use find for recursion",
+          "code": "const files = shell.find('.').filter(f => f.endsWith('.js'));",
+          "when": "Recursive search"
+        },
+        {
+          "approach": "Escape special characters",
+          "code": "// For literal brackets, asterisks, etc.\nshell.ls('file[1].txt');  // may match file1.txt\nshell.ls('file\\\\[1\\\\].txt');  // literal [1]",
+          "when": "Special chars in names"
+        }
+      ]
+    },
+    {
+      "id": "exec_blocking",
+      "pattern": "blocking|freeze|hang|async.*undefined|callback not called",
+      "message": "Exec blocks or async doesn't work",
+      "cause": "Using sync exec when async needed, or async incorrectly",
+      "solutions": [
+        {
+          "approach": "Use async exec",
+          "code": "shell.exec('long_command', { async: true }, (code, stdout, stderr) => {\n  console.log('Exit code:', code);\n  console.log('Output:', stdout);\n});",
+          "when": "Non-blocking"
+        },
+        {
+          "approach": "Promise wrapper",
+          "code": "function execAsync(cmd) {\n  return new Promise((resolve, reject) => {\n    shell.exec(cmd, { async: true, silent: true }, (code, stdout, stderr) => {\n      code === 0 ? resolve(stdout) : reject(new Error(stderr));\n    });\n  });\n}",
+          "when": "Promise-based"
+        },
+        {
+          "approach": "Set timeout",
+          "code": "const child = shell.exec('command', { async: true });\nsetTimeout(() => child.kill(), 30000);",
+          "when": "Timeout needed"
+        }
+      ]
+    },
+    {
+      "id": "path_issues",
+      "pattern": "ENOENT|path.*not found|directory.*exist|permission denied",
+      "message": "Path or permission error",
+      "cause": "Path doesn't exist or no permissions",
+      "solutions": [
+        {
+          "approach": "Check and create",
+          "code": "if (!shell.test('-d', 'output')) {\n  shell.mkdir('-p', 'output');\n}",
+          "when": "Create if missing"
+        },
+        {
+          "approach": "Use test for existence",
+          "code": "shell.test('-e', 'file.txt')  // exists\nshell.test('-f', 'file.txt')  // is file\nshell.test('-d', 'dir')       // is directory\nshell.test('-L', 'link')      // is symlink",
+          "when": "Check before use"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "shell.chmod(755, 'script.sh');\nshell.chmod('u+x', 'script.sh');",
+          "when": "Permission issue"
+        }
+      ]
+    },
+    {
+      "id": "cd_scope",
+      "pattern": "cd.*not.*persist|directory changed back|wrong cwd",
+      "message": "cd doesn't persist as expected",
+      "cause": "cd changes directory for shelljs commands but Node.js cwd is separate",
+      "solutions": [
+        {
+          "approach": "Understand cd scope",
+          "code": "shell.cd('/tmp');\nshell.exec('pwd');  // /tmp - shelljs respects cd\nconsole.log(process.cwd());  // original - Node unchanged",
+          "when": "Scope confusion"
+        },
+        {
+          "approach": "Change Node cwd too",
+          "code": "shell.cd('/tmp');\nprocess.chdir('/tmp');  // also change Node's cwd",
+          "when": "Need both"
+        },
+        {
+          "approach": "Use pushd/popd",
+          "code": "shell.pushd('/tmp');\nshell.exec('pwd');  // /tmp\nshell.popd();\nshell.exec('pwd');  // back to original",
+          "when": "Temporary change"
+        }
+      ]
+    },
+    {
+      "id": "special_characters",
+      "pattern": "unexpected token|syntax error|argument.*invalid|escaping",
+      "message": "Special characters not handled",
+      "cause": "Shell metacharacters need escaping",
+      "solutions": [
+        {
+          "approach": "Quote arguments",
+          "code": "const filename = 'file with spaces.txt';\nshell.exec(`cat \"${filename}\"`);",
+          "when": "Spaces in names"
+        },
+        {
+          "approach": "Use ShellString",
+          "code": "const content = shell.cat('file.txt');\nshell.ShellString(content).to('output.txt');",
+          "when": "Pipe content"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "const safe = filename.replace(/([\"$`\\\\])/g, '\\\\$1');\nshell.exec(`echo \"${safe}\"`);",
+          "when": "Manual escaping"
+        }
+      ]
+    }
+  ]
+}

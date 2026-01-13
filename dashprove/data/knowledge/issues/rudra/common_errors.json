@@ -1,0 +1,150 @@
+{
+  "tool": "rudra",
+  "version": "0.1.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "panic_safety",
+      "pattern": "PanicSafety|panic safety",
+      "message": "Potential panic safety issue",
+      "cause": "Unsafe code may leave data in inconsistent state if panic occurs",
+      "solutions": [
+        {
+          "approach": "Use catch_unwind",
+          "code": "std::panic::catch_unwind(|| {\n    // Code that might panic\n}).ok();",
+          "when": "Need to handle panic gracefully"
+        },
+        {
+          "approach": "Avoid panic in unsafe",
+          "code": "// Use checked operations instead of assert!/panic!\nif condition { ... } else { return Err(...) }",
+          "when": "Can convert panic to error"
+        },
+        {
+          "approach": "Use ManuallyDrop",
+          "code": "let guard = ManuallyDrop::new(value);\n// Only call ManuallyDrop::drop after all panic points",
+          "when": "Need to delay drop"
+        },
+        {
+          "approach": "Scopeguard pattern",
+          "code": "let _guard = scopeguard::guard((), |_| cleanup());",
+          "when": "Need cleanup even on panic"
+        }
+      ]
+    },
+    {
+      "id": "send_sync_variance",
+      "pattern": "SendSyncVariance|Send/Sync variance",
+      "message": "Incorrect Send/Sync implementation",
+      "cause": "Manual Send/Sync impl may be unsound due to variance issues",
+      "solutions": [
+        {
+          "approach": "Use derive or auto-impl",
+          "code": "// Remove manual impl, let compiler derive",
+          "when": "No special requirements"
+        },
+        {
+          "approach": "Use PhantomData",
+          "code": "struct MyType<T> {\n    _marker: PhantomData<T>,\n}",
+          "when": "Need correct variance"
+        },
+        {
+          "approach": "Review bounds carefully",
+          "code": "unsafe impl<T: Send> Send for MyType<T> {}",
+          "when": "Manual impl is necessary"
+        }
+      ]
+    },
+    {
+      "id": "unsafe_destructor",
+      "pattern": "UnsafeDestructor|unsafe destructor",
+      "message": "Drop impl may cause undefined behavior",
+      "cause": "Drop implementation has unsound memory access",
+      "solutions": [
+        {
+          "approach": "Use ptr::drop_in_place carefully",
+          "code": "unsafe { std::ptr::drop_in_place(ptr); }",
+          "when": "Need manual drop"
+        },
+        {
+          "approach": "Don't double-free",
+          "code": "// Set pointer to null after free, or use ManuallyDrop",
+          "when": "May drop twice"
+        },
+        {
+          "approach": "Check for uninitialized",
+          "code": "if self.initialized {\n    // Only drop if valid\n}",
+          "when": "May drop uninitialized memory"
+        }
+      ]
+    },
+    {
+      "id": "higher_order_invariant",
+      "pattern": "HigherOrderInvariant|higher order|closure",
+      "message": "Unsafe code with closures may be unsound",
+      "cause": "Higher-order function may allow invariant violation via closure",
+      "solutions": [
+        {
+          "approach": "Don't expose internals to closures",
+          "code": "// Closure should not get &mut access to container internals",
+          "when": "Passing closure that could break invariants"
+        },
+        {
+          "approach": "Clone before calling closure",
+          "code": "let copy = value.clone();\nclosure(&copy);",
+          "when": "Closure might cause aliasing"
+        },
+        {
+          "approach": "Use RefCell/Mutex",
+          "code": "// Runtime borrow checking prevents aliasing",
+          "when": "Need dynamic borrow checking"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_memory",
+      "pattern": "ReadUninitialized|uninitialized",
+      "message": "Potential read of uninitialized memory",
+      "cause": "Code may read memory before it's initialized",
+      "solutions": [
+        {
+          "approach": "Use MaybeUninit",
+          "code": "let mut val = MaybeUninit::<T>::uninit();\n// Write to val\nunsafe { val.assume_init() }",
+          "when": "Working with uninitialized memory"
+        },
+        {
+          "approach": "Zero-initialize",
+          "code": "let val: [u8; N] = [0; N];",
+          "when": "Zero is valid"
+        },
+        {
+          "approach": "Use ptr::write",
+          "code": "unsafe { std::ptr::write(ptr, value); }",
+          "when": "Writing to uninitialized"
+        }
+      ]
+    },
+    {
+      "id": "lifetime_extension",
+      "pattern": "LifetimeExtension|lifetime",
+      "message": "Potential lifetime safety issue",
+      "cause": "Unsafe code may extend lifetime inappropriately",
+      "solutions": [
+        {
+          "approach": "Don't transmute lifetimes",
+          "code": "// Avoid std::mem::transmute on references",
+          "when": "Transmuting reference lifetimes"
+        },
+        {
+          "approach": "Use proper lifetime bounds",
+          "code": "fn f<'a, 'b: 'a>(...)",
+          "when": "Can express relationship"
+        },
+        {
+          "approach": "Use owning type",
+          "code": "// Store owned data instead of references",
+          "when": "Can avoid references"
+        }
+      ]
+    }
+  ]
+}

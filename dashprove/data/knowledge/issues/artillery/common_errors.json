@@ -1,0 +1,191 @@
+{
+  "tool": "artillery",
+  "version": "2.0.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_parse_error",
+      "pattern": "YAMLException|YAML parsing|Invalid YAML|config validation failed",
+      "message": "Configuration file parsing failed",
+      "cause": "Invalid YAML syntax or schema",
+      "solutions": [
+        {
+          "approach": "Validate YAML",
+          "code": "# Use online YAML validator or:\nyamlint artillery.yml",
+          "when": "YAML syntax error"
+        },
+        {
+          "approach": "Fix indentation",
+          "code": "config:\n  target: 'http://localhost:3000'\n  phases:\n    - duration: 60\n      arrivalRate: 10",
+          "when": "Indentation wrong"
+        },
+        {
+          "approach": "Check schema",
+          "code": "artillery validate artillery.yml",
+          "when": "Schema validation"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "ECONNREFUSED|ENOTFOUND|getaddrinfo|connect ETIMEDOUT",
+      "message": "Cannot connect to target",
+      "cause": "Target server unreachable",
+      "solutions": [
+        {
+          "approach": "Verify target",
+          "code": "curl -I http://localhost:3000/health",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Fix config",
+          "code": "config:\n  target: 'http://correct-host:port'",
+          "when": "Wrong URL"
+        },
+        {
+          "approach": "Check DNS",
+          "code": "nslookup api.example.com",
+          "when": "DNS resolution failing"
+        }
+      ]
+    },
+    {
+      "id": "threshold_exceeded",
+      "pattern": "ensure.*failed|threshold.*exceeded|apdex.*below",
+      "message": "Performance threshold not met",
+      "cause": "Response time or error rate exceeded limit",
+      "solutions": [
+        {
+          "approach": "Adjust thresholds",
+          "code": "config:\n  ensure:\n    p99: 1000  # Increase from lower value\n    maxErrorRate: 5  # Allow more errors",
+          "when": "Thresholds too strict"
+        },
+        {
+          "approach": "Profile endpoints",
+          "code": "artillery run --output report.json test.yml\nartillery report report.json",
+          "when": "Need to identify slow endpoints"
+        },
+        {
+          "approach": "Reduce load",
+          "code": "config:\n  phases:\n    - duration: 60\n      arrivalRate: 5  # Reduce from higher",
+          "when": "System overwhelmed"
+        }
+      ]
+    },
+    {
+      "id": "plugin_not_found",
+      "pattern": "Cannot find module|Plugin.*not found|Error loading plugin",
+      "message": "Plugin not installed",
+      "cause": "Required plugin missing or wrong name",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "npm install artillery-plugin-expect",
+          "when": "Plugin not installed"
+        },
+        {
+          "approach": "Check plugin name",
+          "code": "config:\n  plugins:\n    expect: {}  # Use correct plugin name",
+          "when": "Plugin name wrong"
+        },
+        {
+          "approach": "Local plugin",
+          "code": "config:\n  plugins:\n    my-plugin:\n      path: ./plugins/my-plugin.js",
+          "when": "Custom plugin"
+        }
+      ]
+    },
+    {
+      "id": "csv_feeder_error",
+      "pattern": "payload.*not found|CSV.*error|Cannot read file",
+      "message": "CSV payload file error",
+      "cause": "CSV file missing or malformed",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "config:\n  payload:\n    path: './data/users.csv'  # Relative to yml file\n    fields:\n      - username\n      - password",
+          "when": "File path wrong"
+        },
+        {
+          "approach": "Verify CSV",
+          "code": "head -5 data/users.csv\n# Should have header row matching fields",
+          "when": "CSV format issue"
+        },
+        {
+          "approach": "Use JSON",
+          "code": "config:\n  payload:\n    path: './data/users.json'\n    fields:\n      - username",
+          "when": "Switch to JSON"
+        }
+      ]
+    },
+    {
+      "id": "capture_failed",
+      "pattern": "capture.*failed|jsonpath.*undefined|body.*undefined",
+      "message": "Response capture failed",
+      "cause": "Response doesn't match capture specification",
+      "solutions": [
+        {
+          "approach": "Debug response",
+          "code": "scenarios:\n  - flow:\n    - get:\n        url: '/api/users'\n        capture:\n          - json: '$.data'\n            as: 'users'\n        beforeResponse: 'logResponse'",
+          "when": "Need to see response"
+        },
+        {
+          "approach": "Fix JSONPath",
+          "code": "capture:\n  - json: '$.data.items[0].id'  # Correct path\n    as: 'itemId'",
+          "when": "JSONPath wrong"
+        },
+        {
+          "approach": "Handle missing",
+          "code": "capture:\n  - json: '$.data.optional'\n    as: 'value'\n    strict: false  # Don't fail if missing",
+          "when": "Field optional"
+        }
+      ]
+    },
+    {
+      "id": "expect_failed",
+      "pattern": "expect.*failed|assertion.*failed|statusCode.*expected",
+      "message": "Expectation assertion failed",
+      "cause": "Response didn't match expected values",
+      "solutions": [
+        {
+          "approach": "Fix status check",
+          "code": "scenarios:\n  - flow:\n    - get:\n        url: '/api/data'\n        expect:\n          - statusCode: 200\n          - statusCode: 201  # Allow multiple",
+          "when": "Wrong expected status"
+        },
+        {
+          "approach": "Content check",
+          "code": "expect:\n  - contentType: application/json\n  - hasProperty: data.id",
+          "when": "Check response content"
+        },
+        {
+          "approach": "Skip on error",
+          "code": "# Use think time and continue on failure\nflow:\n  - think: 1\n  - get:\n      url: '/api'\n      ifTrue: '{{ canContinue }}'",
+          "when": "Need conditional flow"
+        }
+      ]
+    },
+    {
+      "id": "socket_hangup",
+      "pattern": "socket hang up|ECONNRESET|connection reset",
+      "message": "Connection reset by server",
+      "cause": "Server closed connection unexpectedly",
+      "solutions": [
+        {
+          "approach": "Add keepalive",
+          "code": "config:\n  http:\n    timeout: 30\n    pool: 10",
+          "when": "Connection pool issues"
+        },
+        {
+          "approach": "Reduce rate",
+          "code": "config:\n  phases:\n    - duration: 60\n      arrivalRate: 5  # Lower rate",
+          "when": "Server overwhelmed"
+        },
+        {
+          "approach": "Check server logs",
+          "code": "# Server may have connection limits or errors",
+          "when": "Server-side issue"
+        }
+      ]
+    }
+  ]
+}

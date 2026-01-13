@@ -1,0 +1,145 @@
+{
+  "tool": "screen",
+  "version": "4.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_screen_attached",
+      "pattern": "There is no screen|No screen session found|Cannot open.*tty",
+      "message": "No screen session to attach",
+      "cause": "No running sessions or detached screens",
+      "solutions": [
+        {
+          "approach": "List sessions",
+          "code": "screen -ls",
+          "when": "Find sessions"
+        },
+        {
+          "approach": "Create new",
+          "code": "screen -S myname",
+          "when": "Start session"
+        },
+        {
+          "approach": "Reattach",
+          "code": "screen -r  # Or: screen -r myname",
+          "when": "Known session"
+        }
+      ]
+    },
+    {
+      "id": "already_attached",
+      "pattern": "already attached|Attaching from inside|There is a screen on",
+      "message": "Session already attached elsewhere",
+      "cause": "Session attached to another terminal",
+      "solutions": [
+        {
+          "approach": "Detach and attach",
+          "code": "screen -d -r myname",
+          "when": "Take over session"
+        },
+        {
+          "approach": "Multi-attach",
+          "code": "screen -x myname",
+          "when": "Share session"
+        },
+        {
+          "approach": "Force detach",
+          "code": "screen -D -r myname",
+          "when": "Force takeover"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot open|Cannot make directory",
+      "message": "Permission error",
+      "cause": "Socket directory permission or ownership issue",
+      "solutions": [
+        {
+          "approach": "Fix socket dir",
+          "code": "chmod 700 /var/run/screen/S-$USER\nchown $USER /var/run/screen/S-$USER",
+          "when": "Socket permissions"
+        },
+        {
+          "approach": "Custom socket",
+          "code": "export SCREENDIR=$HOME/.screen\nmkdir -p $SCREENDIR && chmod 700 $SCREENDIR",
+          "when": "Alternative directory"
+        },
+        {
+          "approach": "Remove dead",
+          "code": "screen -wipe",
+          "when": "Clean dead sessions"
+        }
+      ]
+    },
+    {
+      "id": "dead_session",
+      "pattern": "Dead|removing dead|No more screens",
+      "message": "Session is dead",
+      "cause": "Session crashed or shell exited",
+      "solutions": [
+        {
+          "approach": "Wipe dead",
+          "code": "screen -wipe",
+          "when": "Clean up"
+        },
+        {
+          "approach": "Start new",
+          "code": "screen -S newname",
+          "when": "Fresh session"
+        },
+        {
+          "approach": "Check logs",
+          "code": "cat ~/screenlog.0  # If logging enabled",
+          "when": "Debug crash"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "screenrc.*error|unknown.*command|syntax error",
+      "message": "Configuration error",
+      "cause": "Invalid ~/.screenrc syntax",
+      "solutions": [
+        {
+          "approach": "Skip config",
+          "code": "screen -c /dev/null",
+          "when": "Test without config"
+        },
+        {
+          "approach": "Syntax check",
+          "code": "# Common issues:\n# No 'set' keyword: hardstatus alwayslastline\n# No quotes around strings with spaces",
+          "when": "Fix syntax"
+        },
+        {
+          "approach": "Reset config",
+          "code": "mv ~/.screenrc ~/.screenrc.bak",
+          "when": "Start fresh"
+        }
+      ]
+    },
+    {
+      "id": "terminal_flow_control",
+      "pattern": "frozen|Ctrl-S|flow control|xoff",
+      "message": "Screen appears frozen",
+      "cause": "Accidentally hit Ctrl-S (XOFF flow control)",
+      "solutions": [
+        {
+          "approach": "Unfreeze",
+          "code": "# Press Ctrl-Q (XON) to resume",
+          "when": "Immediate fix"
+        },
+        {
+          "approach": "Disable flow",
+          "code": "# In ~/.screenrc:\ndefflow off\n# Or: stty -ixon in shell",
+          "when": "Prevent future"
+        },
+        {
+          "approach": "Check status",
+          "code": "# Ctrl-a : hardstatus\n# Shows if session responsive",
+          "when": "Debug freeze"
+        }
+      ]
+    }
+  ]
+}

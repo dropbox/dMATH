@@ -1,0 +1,145 @@
+{
+  "tool": "async_lib",
+  "version": "3.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "callback_called_twice",
+      "pattern": "Callback was already called|called multiple times|double callback",
+      "message": "Callback invoked more than once",
+      "cause": "Iterator function calls callback multiple times",
+      "solutions": [
+        {
+          "approach": "Return after callback",
+          "code": "async.each(items, (item, callback) => {\n  if (error) {\n    return callback(error);  // return prevents further execution\n  }\n  // ... more code\n  callback();  // only called once\n}, finalCallback);",
+          "when": "Multiple code paths"
+        },
+        {
+          "approach": "Use once wrapper",
+          "code": "const once = require('once');\nasync.each(items, (item, cb) => {\n  const callback = once(cb);\n  // Now safe even if called multiple times\n}, done);",
+          "when": "Complex control flow"
+        },
+        {
+          "approach": "Check async paths",
+          "code": "async.each(items, (item, callback) => {\n  doAsync(item, (err, result) => {\n    if (err) return callback(err);\n    callback(null, result);\n  });\n  // Don't call callback here too!\n}, done);",
+          "when": "Async iterator"
+        }
+      ]
+    },
+    {
+      "id": "iterator_sync_error",
+      "pattern": "callback is not a function|TypeError.*callback|undefined.*callback",
+      "message": "Callback not provided or misused",
+      "cause": "Using async functions incorrectly with callbacks",
+      "solutions": [
+        {
+          "approach": "Use asyncify for async/await",
+          "code": "async.mapLimit(items, 5, async.asyncify(async (item) => {\n  const result = await processItem(item);\n  return result;\n}), (err, results) => {\n  // done\n});",
+          "when": "async/await in iterator"
+        },
+        {
+          "approach": "Correct callback signature",
+          "code": "// each: (item, callback)\n// map: (item, callback) where callback(err, transformedItem)\n// reduce: (memo, item, callback) where callback(err, newMemo)",
+          "when": "Wrong signature"
+        },
+        {
+          "approach": "Use promise version",
+          "code": "const async = require('async');\nconst results = await async.mapLimit(items, 5, async (item) => {\n  return await processItem(item);\n});",
+          "when": "Modern async/await"
+        }
+      ]
+    },
+    {
+      "id": "series_vs_parallel",
+      "pattern": "race condition|order matters|unexpected order|concurrent modification",
+      "message": "Wrong choice of series vs parallel",
+      "cause": "Using parallel when order matters, or series when it doesn't",
+      "solutions": [
+        {
+          "approach": "Use series for order",
+          "code": "async.series([\n  cb => step1(cb),\n  cb => step2(cb),  // waits for step1\n  cb => step3(cb)   // waits for step2\n], finalCallback);",
+          "when": "Order dependent"
+        },
+        {
+          "approach": "Use parallel for independence",
+          "code": "async.parallel([\n  cb => fetchUsers(cb),\n  cb => fetchPosts(cb),\n  cb => fetchComments(cb)\n], (err, [users, posts, comments]) => {\n  // All fetched concurrently\n});",
+          "when": "Independent operations"
+        },
+        {
+          "approach": "Use waterfall for data passing",
+          "code": "async.waterfall([\n  cb => getUser(id, cb),\n  (user, cb) => getPosts(user.id, cb),\n  (posts, cb) => formatPosts(posts, cb)\n], (err, formattedPosts) => {\n  // Each step passes result to next\n});",
+          "when": "Data flows through steps"
+        }
+      ]
+    },
+    {
+      "id": "concurrency_limit",
+      "pattern": "EMFILE|ECONNRESET|too many open|rate limit|throttle",
+      "message": "Too many concurrent operations",
+      "cause": "Using each/map without concurrency limit",
+      "solutions": [
+        {
+          "approach": "Use eachLimit",
+          "code": "async.eachLimit(files, 10, (file, callback) => {\n  fs.readFile(file, callback);\n}, done);",
+          "when": "File operations"
+        },
+        {
+          "approach": "Use mapLimit",
+          "code": "async.mapLimit(urls, 5, (url, callback) => {\n  request(url, (err, response) => {\n    callback(err, response?.body);\n  });\n}, (err, bodies) => {\n  // All fetched with max 5 concurrent\n});",
+          "when": "Network operations"
+        },
+        {
+          "approach": "Use queue",
+          "code": "const q = async.queue((task, callback) => {\n  processTask(task, callback);\n}, 10);  // concurrency\n\nq.push(tasks);\nq.drain(() => console.log('All done'));",
+          "when": "Dynamic task queue"
+        }
+      ]
+    },
+    {
+      "id": "queue_drain_timing",
+      "pattern": "drain called early|empty queue|tasks not processed",
+      "message": "Queue drain fires unexpectedly",
+      "cause": "Drain callback fires when queue empties, even briefly",
+      "solutions": [
+        {
+          "approach": "Set drain before pushing",
+          "code": "const q = async.queue(worker, 5);\nq.drain(() => console.log('Done'));\nq.push(tasks);  // drain set before push",
+          "when": "Timing issue"
+        },
+        {
+          "approach": "Use empty instead",
+          "code": "q.empty(() => {\n  console.log('Queue empty, but workers may still be running');\n});\nq.drain(() => {\n  console.log('All workers finished');\n});",
+          "when": "Need both events"
+        },
+        {
+          "approach": "Check queue state",
+          "code": "console.log('Running:', q.running());\nconsole.log('Waiting:', q.length());\nconsole.log('Idle:', q.idle());  // true when nothing running",
+          "when": "Debug state"
+        }
+      ]
+    },
+    {
+      "id": "error_stops_iteration",
+      "pattern": "stopped early|partial results|first error|remaining not processed",
+      "message": "Error halts entire operation",
+      "cause": "Default behavior stops on first error",
+      "solutions": [
+        {
+          "approach": "Use reflect",
+          "code": "async.map(items, async.reflect((item, cb) => {\n  process(item, cb);\n}), (err, results) => {\n  results.forEach(r => {\n    if (r.error) console.log('Failed:', r.error);\n    else console.log('Success:', r.value);\n  });\n});",
+          "when": "Continue on errors"
+        },
+        {
+          "approach": "Handle errors in iterator",
+          "code": "async.each(items, (item, callback) => {\n  process(item, (err) => {\n    if (err) console.log('Item failed:', err);\n    callback();  // always call without error to continue\n  });\n}, done);",
+          "when": "Log and continue"
+        },
+        {
+          "approach": "Collect errors",
+          "code": "const errors = [];\nasync.each(items, (item, cb) => {\n  process(item, (err) => {\n    if (err) errors.push({ item, err });\n    cb();\n  });\n}, () => {\n  if (errors.length) console.log('Some failed:', errors);\n});",
+          "when": "Track failures"
+        }
+      ]
+    }
+  ]
+}

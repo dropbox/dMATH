@@ -1,0 +1,168 @@
+{
+  "tool": "lldb",
+  "version": "18.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_debug_info",
+      "pattern": "no debug info|debug info.*not found",
+      "message": "No debug information available",
+      "cause": "Binary not compiled with debug symbols",
+      "solutions": [
+        {
+          "approach": "Compile with -g",
+          "code": "clang -g -O0 source.c -o program",
+          "when": "Recompile with debug info"
+        },
+        {
+          "approach": "Use dSYM (macOS)",
+          "code": "dsymutil program\nlldb program",
+          "when": "Generate separate debug symbols"
+        },
+        {
+          "approach": "Add symbol file",
+          "code": "target symbols add program.dSYM",
+          "when": "dSYM exists separately"
+        }
+      ]
+    },
+    {
+      "id": "invalid_address",
+      "pattern": "error: invalid address|memory read failed",
+      "message": "Invalid memory address",
+      "cause": "Attempting to read unmapped or invalid memory",
+      "solutions": [
+        {
+          "approach": "Check pointer",
+          "code": "p pointer  (examine pointer value)",
+          "when": "Verify pointer validity"
+        },
+        {
+          "approach": "View memory regions",
+          "code": "memory region --all",
+          "when": "See valid memory"
+        },
+        {
+          "approach": "Check allocation",
+          "code": "Use MallocStackLogging for allocation history",
+          "when": "Track allocations"
+        }
+      ]
+    },
+    {
+      "id": "codesign_error",
+      "pattern": "code signing|codesign|not signed",
+      "message": "Code signing prevents debugging",
+      "cause": "macOS code signing restrictions",
+      "solutions": [
+        {
+          "approach": "Sign for debug",
+          "code": "codesign -s - --entitlements ent.plist program",
+          "when": "Self-sign with entitlements"
+        },
+        {
+          "approach": "Disable SIP (temporary)",
+          "code": "csrutil disable  (requires recovery mode)",
+          "when": "System Integrity Protection blocking"
+        },
+        {
+          "approach": "Use entitlements",
+          "code": "Add com.apple.security.get-task-allow to entitlements",
+          "when": "App needs debugging"
+        }
+      ]
+    },
+    {
+      "id": "expression_failed",
+      "pattern": "error.*evaluating expression|expression.*failed",
+      "message": "Expression evaluation failed",
+      "cause": "Expression contains error or needs context",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "expr -- variable_name  (use -- for complex expressions)",
+          "when": "Ambiguous expression"
+        },
+        {
+          "approach": "Specify language",
+          "code": "expr -l swift -- swiftCode\nexpr -l objc -- objcCode",
+          "when": "Mixed language debugging"
+        },
+        {
+          "approach": "Use frame variable",
+          "code": "frame variable name  (faster, no expression eval)",
+          "when": "Just viewing variable"
+        }
+      ]
+    },
+    {
+      "id": "process_not_running",
+      "pattern": "process.*not running|no running process",
+      "message": "No process running",
+      "cause": "Trying to debug without active process",
+      "solutions": [
+        {
+          "approach": "Create target and run",
+          "code": "target create program\nrun",
+          "when": "Start debugging"
+        },
+        {
+          "approach": "Attach to process",
+          "code": "attach --pid PID\nattach --name processname",
+          "when": "Debug running process"
+        },
+        {
+          "approach": "Wait for launch",
+          "code": "process attach --name app --waitfor",
+          "when": "Attach when app launches"
+        }
+      ]
+    },
+    {
+      "id": "swift_runtime_error",
+      "pattern": "Swift runtime|swift_beginAccess|exclusivity violation",
+      "message": "Swift runtime error",
+      "cause": "Swift exclusivity violation or runtime issue",
+      "solutions": [
+        {
+          "approach": "Enable exclusivity checking",
+          "code": "swift build -Xswiftc -enforce-exclusivity=checked",
+          "when": "Find exclusivity violations"
+        },
+        {
+          "approach": "Check thread access",
+          "code": "bt all  (check all thread backtraces)",
+          "when": "Concurrent access issue"
+        },
+        {
+          "approach": "Use Thread Sanitizer",
+          "code": "swift build -sanitize=thread",
+          "when": "Find race conditions"
+        }
+      ]
+    },
+    {
+      "id": "breakpoint_not_resolved",
+      "pattern": "breakpoint.*unresolved|pending|no locations",
+      "message": "Breakpoint not resolved",
+      "cause": "Code not loaded or symbol not found",
+      "solutions": [
+        {
+          "approach": "Check module loaded",
+          "code": "image list",
+          "when": "Verify library loaded"
+        },
+        {
+          "approach": "Set by address",
+          "code": "breakpoint set -a 0x1000",
+          "when": "Use raw address"
+        },
+        {
+          "approach": "Use regex",
+          "code": "breakpoint set -r 'functionPattern'",
+          "when": "Match function pattern"
+        }
+      ]
+    }
+  ]
+}

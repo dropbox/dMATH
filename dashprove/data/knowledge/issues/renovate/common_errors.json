@@ -1,0 +1,189 @@
+{
+  "tool": "renovate",
+  "version": "37.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_not_found",
+      "pattern": "No config found|renovate.json|configuration.*missing",
+      "message": "Renovate configuration file not found",
+      "cause": "Missing renovate.json or renovate config in package.json",
+      "solutions": [
+        {
+          "approach": "Create config file",
+          "code": "// renovate.json\n{\n  \"$schema\": \"https://docs.renovatebot.com/renovate-schema.json\",\n  \"extends\": [\"config:base\"]\n}",
+          "when": "New setup"
+        },
+        {
+          "approach": "Use package.json",
+          "code": "// In package.json:\n\"renovate\": {\n  \"extends\": [\"config:base\"]\n}",
+          "when": "Prefer package.json"
+        },
+        {
+          "approach": "Use .github config",
+          "code": "// .github/renovate.json or .github/renovate.json5",
+          "when": "GitHub directory"
+        }
+      ]
+    },
+    {
+      "id": "invalid_preset",
+      "pattern": "Cannot find preset|Invalid preset|preset.*error",
+      "message": "Preset configuration not found or invalid",
+      "cause": "Referenced preset doesn't exist",
+      "solutions": [
+        {
+          "approach": "Use built-in presets",
+          "code": "{\n  \"extends\": [\n    \"config:base\",\n    \":automergeMinor\",\n    \":semanticCommits\"\n  ]\n}",
+          "when": "Standard presets"
+        },
+        {
+          "approach": "Check preset name",
+          "code": "// Built-in presets: config:base, config:js-app, config:js-lib, etc.",
+          "when": "Verify spelling"
+        },
+        {
+          "approach": "Local preset",
+          "code": "{\n  \"extends\": [\"local>my-org/renovate-config\"]\n}",
+          "when": "Using org preset"
+        }
+      ]
+    },
+    {
+      "id": "rate_limited",
+      "pattern": "Rate limit|API limit|429|Too many requests",
+      "message": "API rate limit exceeded",
+      "cause": "Too many API calls to package registry or Git host",
+      "solutions": [
+        {
+          "approach": "Add delay",
+          "code": "{\n  \"minimumReleaseAge\": \"3 days\",\n  \"schedule\": [\"after 10pm and before 5am\"]\n}",
+          "when": "Reduce frequency"
+        },
+        {
+          "approach": "Use token",
+          "code": "// Set GITHUB_COM_TOKEN or registry credentials",
+          "when": "Increase rate limit"
+        },
+        {
+          "approach": "Configure concurrency",
+          "code": "{\n  \"prConcurrentLimit\": 5,\n  \"branchConcurrentLimit\": 3\n}",
+          "when": "Limit concurrent updates"
+        }
+      ]
+    },
+    {
+      "id": "auth_error",
+      "pattern": "Authentication|401|403|EAUTH|credentials",
+      "message": "Authentication failed for registry or host",
+      "cause": "Missing or invalid credentials",
+      "solutions": [
+        {
+          "approach": "Add hostRules",
+          "code": "{\n  \"hostRules\": [{\n    \"matchHost\": \"npm.pkg.github.com\",\n    \"hostType\": \"npm\",\n    \"token\": \"${NPM_TOKEN}\"\n  }]\n}",
+          "when": "Private registry"
+        },
+        {
+          "approach": "Docker credentials",
+          "code": "{\n  \"hostRules\": [{\n    \"matchHost\": \"docker.io\",\n    \"username\": \"${DOCKER_USERNAME}\",\n    \"password\": \"${DOCKER_PASSWORD}\"\n  }]\n}",
+          "when": "Private Docker registry"
+        }
+      ]
+    },
+    {
+      "id": "regex_manager_error",
+      "pattern": "regex.*error|regexManagers|invalid pattern",
+      "message": "Custom regex manager configuration error",
+      "cause": "Invalid regex pattern or missing capture groups",
+      "solutions": [
+        {
+          "approach": "Check capture groups",
+          "code": "{\n  \"regexManagers\": [{\n    \"fileMatch\": [\"Dockerfile\"],\n    \"matchStrings\": [\"ARG IMAGE_VERSION=(?<currentValue>.*)\\n\"],\n    \"depNameTemplate\": \"my-image\",\n    \"datasourceTemplate\": \"docker\"\n  }]\n}",
+          "when": "Define regex manager"
+        },
+        {
+          "approach": "Test regex",
+          "code": "// Test pattern at regex101.com with sample content",
+          "when": "Debug pattern"
+        }
+      ]
+    },
+    {
+      "id": "schedule_error",
+      "pattern": "Invalid schedule|schedule.*parse|cron",
+      "message": "Schedule configuration invalid",
+      "cause": "Invalid schedule expression",
+      "solutions": [
+        {
+          "approach": "Use text schedule",
+          "code": "{\n  \"schedule\": [\"after 10pm and before 5am every weekday\"]\n}",
+          "when": "Human-readable"
+        },
+        {
+          "approach": "Predefined schedules",
+          "code": "{\n  \"extends\": [\"schedule:weekly\", \"schedule:nonOfficeHours\"]\n}",
+          "when": "Use preset"
+        }
+      ]
+    },
+    {
+      "id": "lockfile_error",
+      "pattern": "lockfile|lock file|package-lock|yarn.lock",
+      "message": "Lock file update failed",
+      "cause": "Cannot update lock file properly",
+      "solutions": [
+        {
+          "approach": "Configure lock maintenance",
+          "code": "{\n  \"lockFileMaintenance\": {\n    \"enabled\": true,\n    \"schedule\": [\"before 5am on monday\"]\n  }\n}",
+          "when": "Periodic lock updates"
+        },
+        {
+          "approach": "Set package manager",
+          "code": "{\n  \"packageRules\": [{\n    \"matchManagers\": [\"npm\"],\n    \"rangeStrategy\": \"bump\"\n  }]\n}",
+          "when": "Control update strategy"
+        }
+      ]
+    },
+    {
+      "id": "automerge_failed",
+      "pattern": "Automerge.*failed|cannot automerge|merge conflict",
+      "message": "Automerge failed",
+      "cause": "PR cannot be automatically merged",
+      "solutions": [
+        {
+          "approach": "Configure automerge",
+          "code": "{\n  \"packageRules\": [{\n    \"matchUpdateTypes\": [\"patch\"],\n    \"automerge\": true,\n    \"automergeType\": \"branch\"\n  }]\n}",
+          "when": "Auto-merge patches"
+        },
+        {
+          "approach": "Require passing checks",
+          "code": "{\n  \"automerge\": true,\n  \"platformAutomerge\": true\n}",
+          "when": "Use platform automerge"
+        },
+        {
+          "approach": "Rebase and retry",
+          "code": "// Renovate will auto-rebase if configured",
+          "when": "Conflicts from base"
+        }
+      ]
+    },
+    {
+      "id": "package_rule_error",
+      "pattern": "packageRules.*error|Invalid rule|match.*invalid",
+      "message": "Package rule configuration error",
+      "cause": "Invalid package rule syntax",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "{\n  \"packageRules\": [{\n    \"matchPackageNames\": [\"lodash\"],\n    \"matchUpdateTypes\": [\"major\"],\n    \"enabled\": false\n  }]\n}",
+          "when": "Disable major updates"
+        },
+        {
+          "approach": "Use patterns",
+          "code": "{\n  \"packageRules\": [{\n    \"matchPackagePatterns\": [\"^@types/\"],\n    \"groupName\": \"type definitions\"\n  }]\n}",
+          "when": "Match multiple packages"
+        }
+      ]
+    }
+  ]
+}

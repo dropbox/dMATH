@@ -1,0 +1,120 @@
+{
+  "tool": "fdisk",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|fdisk: cannot open|must be root",
+      "message": "Need root privileges",
+      "cause": "Disk partitioning requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo fdisk /dev/sda\nsudo fdisk -l",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "device_busy",
+      "pattern": "Device .* is busy|busy|in use",
+      "message": "Device is busy",
+      "cause": "Partition is mounted or in use",
+      "solutions": [
+        {
+          "approach": "Unmount first",
+          "code": "sudo umount /dev/sda1\nsudo fdisk /dev/sda",
+          "when": "Partition mounted"
+        },
+        {
+          "approach": "Check what's using it",
+          "code": "lsof /dev/sda1\nfuser -m /dev/sda1",
+          "when": "Find processes"
+        },
+        {
+          "approach": "Use live USB",
+          "code": "# Boot from live USB to modify system disk",
+          "when": "System partition"
+        }
+      ]
+    },
+    {
+      "id": "no_such_device",
+      "pattern": "No such file or directory|cannot open .*/dev/",
+      "message": "Device not found",
+      "cause": "Wrong device path",
+      "solutions": [
+        {
+          "approach": "List devices",
+          "code": "lsblk\nfdisk -l\nls /dev/sd*\nls /dev/nvme*",
+          "when": "Find correct device"
+        },
+        {
+          "approach": "Check dmesg",
+          "code": "dmesg | tail -50\n# Look for newly attached disk",
+          "when": "Recent attachment"
+        }
+      ]
+    },
+    {
+      "id": "gpt_warning",
+      "pattern": "GPT|PMBR|protective MBR|GPT signatures",
+      "message": "GPT disk detected",
+      "cause": "fdisk prefers MBR, disk has GPT",
+      "solutions": [
+        {
+          "approach": "Use gdisk for GPT",
+          "code": "sudo gdisk /dev/sda",
+          "when": "GPT partitioning"
+        },
+        {
+          "approach": "Use parted",
+          "code": "sudo parted /dev/sda print",
+          "when": "Universal tool"
+        },
+        {
+          "approach": "Convert to MBR",
+          "code": "# WARNING: destroys all data\nsudo fdisk /dev/sda\n# g for new GPT, o for new MBR",
+          "when": "Need MBR"
+        }
+      ]
+    },
+    {
+      "id": "partition_table_error",
+      "pattern": "invalid partition table|no partition table|unrecognized",
+      "message": "No/invalid partition table",
+      "cause": "Disk has no partition table or corrupted",
+      "solutions": [
+        {
+          "approach": "Create new table",
+          "code": "sudo fdisk /dev/sda\n# o = new MBR table\n# g = new GPT table",
+          "when": "New disk"
+        },
+        {
+          "approach": "Recover table",
+          "code": "sudo testdisk /dev/sda",
+          "when": "Data recovery"
+        }
+      ]
+    },
+    {
+      "id": "changes_not_written",
+      "pattern": "changes will remain in memory|write.*table|not written",
+      "message": "Changes not saved",
+      "cause": "Must write changes before exit",
+      "solutions": [
+        {
+          "approach": "Write changes",
+          "code": "# In fdisk:\nw  # Write and exit\n# Or:\nq  # Quit without saving",
+          "when": "Save changes"
+        },
+        {
+          "approach": "Update kernel",
+          "code": "# If write fails to update:\nsudo partprobe /dev/sda\nsudo hdparm -z /dev/sda",
+          "when": "Kernel not updated"
+        }
+      ]
+    }
+  ]
+}

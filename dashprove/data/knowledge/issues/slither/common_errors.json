@@ -1,0 +1,176 @@
+{
+  "tool": "slither",
+  "version": "0.10.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "reentrancy",
+      "pattern": "Reentrancy in",
+      "message": "Potential reentrancy vulnerability detected",
+      "cause": "External call before state update (CEI pattern violation)",
+      "solutions": [
+        {
+          "approach": "Use Checks-Effects-Interactions",
+          "code": "// Update state BEFORE external calls\nbalances[msg.sender] = 0;\n(bool success,) = msg.sender.call{value: amount}(\"\");",
+          "when": "Can reorder state updates"
+        },
+        {
+          "approach": "Add reentrancy guard",
+          "code": "import \"@openzeppelin/contracts/security/ReentrancyGuard.sol\";\nfunction withdraw() external nonReentrant { ... }",
+          "when": "Cannot easily reorder operations"
+        },
+        {
+          "approach": "Mark as false positive",
+          "code": "// slither-disable-next-line reentrancy-eth",
+          "when": "Analyzed and confirmed safe"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_state",
+      "pattern": "uninitialized state variable|Uninitialized",
+      "message": "State variable not initialized",
+      "cause": "Variable may have unexpected zero/null value",
+      "solutions": [
+        {
+          "approach": "Initialize in declaration",
+          "code": "uint256 public value = 100;",
+          "when": "Default value is known"
+        },
+        {
+          "approach": "Initialize in constructor",
+          "code": "constructor() { value = computeInitial(); }",
+          "when": "Initialization requires computation"
+        },
+        {
+          "approach": "Document intentional zero",
+          "code": "uint256 public value; // intentionally zero-initialized",
+          "when": "Zero is the correct initial value"
+        }
+      ]
+    },
+    {
+      "id": "unchecked_transfer",
+      "pattern": "Unchecked transfer|return value not checked",
+      "message": "ERC20 transfer return value not checked",
+      "cause": "Some tokens return false instead of reverting on failure",
+      "solutions": [
+        {
+          "approach": "Use SafeERC20",
+          "code": "import \"@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol\";\nusing SafeERC20 for IERC20;\ntoken.safeTransfer(to, amount);",
+          "when": "Interacting with arbitrary ERC20 tokens"
+        },
+        {
+          "approach": "Check return value",
+          "code": "require(token.transfer(to, amount), \"Transfer failed\");",
+          "when": "Simple check is sufficient"
+        }
+      ]
+    },
+    {
+      "id": "low_level_call",
+      "pattern": "Low level call|call\\(\\)|delegatecall",
+      "message": "Low-level call detected",
+      "cause": "Using call/delegatecall instead of typed interface",
+      "solutions": [
+        {
+          "approach": "Use typed interface",
+          "code": "IContract(addr).specificFunction(args);",
+          "when": "Interface is known"
+        },
+        {
+          "approach": "Check return value",
+          "code": "(bool success, bytes memory data) = addr.call(payload);\nrequire(success, \"Call failed\");",
+          "when": "Low-level call is necessary"
+        },
+        {
+          "approach": "Validate target",
+          "code": "require(addr.code.length > 0, \"Not a contract\");",
+          "when": "Target address is user-provided"
+        }
+      ]
+    },
+    {
+      "id": "tx_origin",
+      "pattern": "tx.origin",
+      "message": "Dangerous use of tx.origin",
+      "cause": "tx.origin can be manipulated via phishing attacks",
+      "solutions": [
+        {
+          "approach": "Use msg.sender",
+          "code": "require(msg.sender == owner);  // Instead of tx.origin",
+          "when": "Checking authorization"
+        },
+        {
+          "approach": "Document intentional use",
+          "code": "// slither-disable-next-line tx-origin",
+          "when": "Specifically need EOA check"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "Compilation failed|solc error",
+      "message": "Contract compilation failed",
+      "cause": "Solidity code has errors",
+      "solutions": [
+        {
+          "approach": "Install dependencies",
+          "code": "npm install @openzeppelin/contracts",
+          "when": "Missing imports"
+        },
+        {
+          "approach": "Set Solidity version",
+          "code": "slither . --solc-version 0.8.19",
+          "when": "Need specific compiler version"
+        },
+        {
+          "approach": "Use remappings",
+          "code": "slither . --solc-remaps \"@openzeppelin/=node_modules/@openzeppelin/\"",
+          "when": "Import paths need remapping"
+        }
+      ]
+    },
+    {
+      "id": "arbitrary_send",
+      "pattern": "arbitrary send|Arbitrary Send",
+      "message": "Funds sent to arbitrary destination",
+      "cause": "User-controlled address receives ETH/tokens",
+      "solutions": [
+        {
+          "approach": "Validate destination",
+          "code": "require(allowedRecipients[to], \"Invalid recipient\");",
+          "when": "Should restrict recipients"
+        },
+        {
+          "approach": "Use pull pattern",
+          "code": "// Let users withdraw instead of pushing funds",
+          "when": "Can restructure payment flow"
+        },
+        {
+          "approach": "Document as intended",
+          "code": "// slither-disable-next-line arbitrary-send-eth",
+          "when": "Arbitrary send is by design"
+        }
+      ]
+    },
+    {
+      "id": "shadowing",
+      "pattern": "shadows|Shadowing",
+      "message": "Variable shadows another declaration",
+      "cause": "Local variable has same name as state variable",
+      "solutions": [
+        {
+          "approach": "Rename variable",
+          "code": "function foo(uint256 _value) { ... }  // Use underscore prefix",
+          "when": "Can rename parameter"
+        },
+        {
+          "approach": "Use explicit this",
+          "code": "this.value;  // Explicitly access state variable",
+          "when": "Need to access shadowed variable"
+        }
+      ]
+    }
+  ]
+}

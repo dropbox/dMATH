@@ -1,0 +1,107 @@
+{
+  "id": "tlaplus_pbft",
+  "name": "PBFT TLA+ Specification",
+  "category": "tlaplus_specifications",
+  "subcategory": "byzantine_consensus",
+
+  "description": "TLA+ specification of Practical Byzantine Fault Tolerance consensus",
+  "long_description": "PBFT (Practical Byzantine Fault Tolerance) is a consensus algorithm that tolerates Byzantine (arbitrary) failures. The TLA+ specification covers the three-phase protocol (pre-prepare, prepare, commit), view changes, and checkpoint mechanisms. PBFT requires 3f+1 replicas to tolerate f Byzantine failures and is used in blockchain systems and high-security distributed systems.",
+
+  "capabilities": [
+    "byzantine_consensus",
+    "view_change",
+    "checkpoint",
+    "watermarks",
+    "state_transfer"
+  ],
+  "property_types": ["safety", "liveness", "byzantine_tolerance"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/tlaplus/Examples/tree/master/specifications/Pbft",
+    "paper": "http://pmg.csail.mit.edu/papers/osdi99.pdf"
+  },
+
+  "documentation": {
+    "official": "http://pmg.csail.mit.edu/papers/osdi99.pdf",
+    "tutorial": "https://sawtooth.hyperledger.org/docs/pbft/",
+    "examples": "https://github.com/tlaplus/Examples/tree/master/specifications/Pbft"
+  },
+
+  "protocol_phases": [
+    {
+      "name": "Pre-prepare",
+      "description": "Primary assigns sequence number to request",
+      "message": "<PRE-PREPARE, v, n, d>",
+      "action": "Primary broadcasts pre-prepare with view v, sequence n, digest d"
+    },
+    {
+      "name": "Prepare",
+      "description": "Backups acknowledge pre-prepare",
+      "message": "<PREPARE, v, n, d, i>",
+      "action": "Replicas send prepare after receiving valid pre-prepare"
+    },
+    {
+      "name": "Commit",
+      "description": "Replicas ready to commit",
+      "message": "<COMMIT, v, n, D(m), i>",
+      "action": "Replicas send commit after receiving 2f+1 prepares"
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "Safety",
+      "description": "Non-faulty replicas agree on total order of requests",
+      "tla_formula": "\\A r1, r2 \\in NonFaulty : committed(r1, n) /\\ committed(r2, n) => request(r1, n) = request(r2, n)"
+    },
+    {
+      "name": "Liveness",
+      "description": "Requests eventually complete if at most f failures",
+      "tla_formula": "<>(request executed) given |faulty| <= f"
+    },
+    {
+      "name": "ViewChangeSafety",
+      "description": "View changes preserve committed requests",
+      "tla_formula": "Committed requests are included in new view"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "view", "type": "Nat", "description": "Current view number"},
+    {"name": "prepareLog", "type": "Seq(Prepare)", "description": "Prepare messages received"},
+    {"name": "commitLog", "type": "Seq(Commit)", "description": "Commit messages received"},
+    {"name": "state", "type": "{Normal, ViewChange}", "description": "Replica state"},
+    {"name": "checkpoint", "type": "Nat", "description": "Last stable checkpoint"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Replica": "{r1, r2, r3, r4}",
+      "Request": "{req1, req2}",
+      "MaxView": "2",
+      "MaxSeq": "3",
+      "f": "1"
+    },
+    "invariants": ["TypeOK", "Safety", "Agreement"],
+    "expected_states": "Millions"
+  },
+
+  "related_specs": ["paxos", "raft", "hotstuff", "tendermint"],
+
+  "implementations": [
+    "Hyperledger Sawtooth",
+    "Hyperledger Fabric (v0.6)",
+    "Tendermint (inspired)",
+    "HotStuff (improved)"
+  ],
+
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Castro & Liskov",
+    "license": "MIT"
+  }
+}

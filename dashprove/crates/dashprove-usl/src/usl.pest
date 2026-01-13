@@ -1,0 +1,470 @@
+// USL Grammar for pest parser
+// Unified Specification Language for DashProve
+// See docs/DESIGN.md for specification
+
+// =============================================================================
+// Top-Level
+// =============================================================================
+
+spec = { SOI ~ item* ~ EOI }
+
+item = _{ type_def | property }
+
+// =============================================================================
+// Type Definitions
+// =============================================================================
+
+type_def = { "type" ~ ident ~ "=" ~ type_body }
+
+type_body = { "{" ~ field_list ~ "}" }
+
+field_list = { (field ~ ("," ~ field)*)? ~ ","? }
+
+field = { ident ~ ":" ~ type_expr }
+
+// =============================================================================
+// Type Expressions
+// =============================================================================
+
+type_expr = { type_function | type_atom }
+
+type_function = { type_atom ~ "->" ~ type_expr }
+
+type_atom = {
+    type_unit
+  | type_result
+  | type_set
+  | type_list
+  | type_map
+  | type_relation
+  | type_graph
+  | type_graph_path
+  | type_named
+  | "(" ~ type_expr ~ ")"
+}
+
+// Graph type for DashFlow execution graphs
+// Graph<NodeType, EdgeType> represents a directed graph
+type_graph = { "Graph" ~ "<" ~ type_expr ~ "," ~ type_expr ~ ">" }
+
+// Path type for graph paths
+// Path<NodeType> represents a sequence of nodes in a graph
+type_graph_path = { "Path" ~ "<" ~ type_expr ~ ">" }
+
+type_unit = { "(" ~ ")" }
+type_result = { "Result" ~ "<" ~ type_expr ~ ">" }
+type_set = { "Set" ~ "<" ~ type_expr ~ ">" }
+type_list = { "List" ~ "<" ~ type_expr ~ ">" }
+type_map = { "Map" ~ "<" ~ type_expr ~ "," ~ type_expr ~ ">" }
+type_relation = { "Relation" ~ "<" ~ type_expr ~ "," ~ type_expr ~ ">" }
+type_named = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" | "'")* }
+
+// =============================================================================
+// Properties
+// =============================================================================
+
+property = _{ composed_theorem | theorem | temporal | contract | invariant | refinement | probabilistic | security | semantic_property | platform_api | bisimulation | version_spec | capability_spec | distributed_invariant | distributed_temporal | improvement_proposal | verification_gate | rollback_spec }
+
+// Composed theorem: combines multiple existing properties
+// Allows modular proof construction by referencing other theorems/lemmas
+// Example:
+//   composed theorem modular_safety {
+//       uses { theorem1, lemma1, invariant1 }
+//       (theorem1 and lemma1) implies goal
+//   }
+composed_theorem = { "composed" ~ "theorem" ~ ident ~ "{" ~ uses_clause ~ expr ~ "}" }
+
+// Uses clause: declares dependencies on other properties
+uses_clause = { "uses" ~ "{" ~ ident_list ~ "}" }
+
+// Theorem: mathematical property to prove
+theorem = { "theorem" ~ ident ~ "{" ~ expr ~ "}" }
+
+// Temporal: TLA+ style temporal logic with optional fairness constraints
+// Syntax: temporal name { [fair (weak|strong) action [on vars]]* temporal_expr }
+temporal = { "temporal" ~ ident ~ "{" ~ fairness_clause* ~ temporal_expr ~ "}" }
+
+// Fairness constraints for liveness properties
+// - "fair weak Action" generates WF_vars(Action) in TLA+
+// - "fair strong Action" generates SF_vars(Action) in TLA+
+// - Optional "on vars" specifies the state variables for the fairness formula
+fairness_clause = { "fair" ~ fairness_kind ~ ident ~ ("on" ~ ident)? }
+fairness_kind = { "weak" | "strong" }
+
+// Contract: pre/post conditions for functions
+contract = { "contract" ~ function_sig ~ "{" ~ contract_body ~ "}" }
+
+// Invariant: always-true property
+invariant = { "invariant" ~ ident ~ "{" ~ expr ~ "}" }
+
+// Refinement: proves implementation refines spec
+refinement = { "refinement" ~ ident ~ "refines" ~ ident ~ "{" ~ refinement_body ~ "}" }
+
+// Probabilistic: probability bounds (compiles to Storm/PRISM)
+probabilistic = { "probabilistic" ~ ident ~ "{" ~ prob_expr ~ "}" }
+
+// Security: information flow properties (compiles to Tamarin/ProVerif)
+security = { "security" ~ ident ~ "{" ~ expr ~ "}" }
+
+// Semantic properties: embedding-based / fuzzy verification
+semantic_property = { "semantic_property" ~ ident ~ "{" ~ expr ~ "}" }
+
+// Platform API: external API state machine constraints
+// Models state machines for external APIs (Metal, CUDA, Vulkan, POSIX, etc.)
+// Example:
+//   platform_api Metal {
+//       state MTLCommandBuffer {
+//           enum Status { Created, Encoding, Committed, Completed }
+//           transition commit() {
+//               requires { status in { Created, Encoding } }
+//               ensures { status == Committed }
+//           }
+//       }
+//   }
+platform_api = { "platform_api" ~ ident ~ "{" ~ api_state* ~ "}" }
+
+api_state = { "state" ~ ident ~ "{" ~ api_state_body ~ "}" }
+
+api_state_body = { state_enum? ~ api_transition* ~ api_invariant* }
+
+state_enum = { "enum" ~ ident ~ "{" ~ ident_list ~ "}" }
+
+ident_list = { ident ~ ("," ~ ident)* ~ ","? }
+
+api_transition = { "transition" ~ ident ~ "(" ~ param_list ~ ")" ~ "{" ~ transition_body ~ "}" }
+
+transition_body = { transition_requires* ~ transition_ensures* }
+
+transition_requires = { "requires" ~ block }
+transition_ensures = { "ensures" ~ block }
+
+api_invariant = { "invariant" ~ block }
+
+// Bisimulation: behavioral equivalence checking between implementations
+// Example:
+//   bisimulation ClaudeCodeParity {
+//       oracle: "./claude-code"
+//       subject: "./claude-code-rs"
+//       equivalent on { api_requests, tool_calls, output }
+//       tolerance { timing: 0.1, semantic: 0.95 }
+//       forall input: TestInput . traces_equivalent(oracle(input), subject(input))
+//   }
+bisimulation = { "bisimulation" ~ ident ~ "{" ~ bisim_body ~ "}" }
+
+bisim_body = { bisim_oracle ~ bisim_subject ~ bisim_equivalent ~ bisim_tolerance? ~ bisim_property? }
+
+bisim_oracle = { "oracle" ~ ":" ~ string }
+bisim_subject = { "subject" ~ ":" ~ string }
+bisim_equivalent = { "equivalent" ~ "on" ~ "{" ~ ident_list ~ "}" }
+bisim_tolerance = { "tolerance" ~ "{" ~ tolerance_item_list ~ "}" }
+
+tolerance_item_list = { (tolerance_item ~ ("," ~ tolerance_item)*)? ~ ","? }
+tolerance_item = { ident ~ ":" ~ number }
+
+bisim_property = { "forall" ~ typed_var ~ "." ~ bisim_expr }
+typed_var = { ident ~ ":" ~ type_expr }
+bisim_expr = { "traces_equivalent" ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+
+// Version specification: proves one version improves another
+// For recursive self-improvement (Dasher writing better versions of itself)
+// Example:
+//   version DasherV2 improves DasherV1 {
+//       capability { V2.speed >= V1.speed }
+//       preserves { V1.soundness }
+//   }
+version_spec = { "version" ~ ident ~ "improves" ~ ident ~ "{" ~ version_body ~ "}" }
+
+version_body = { (version_capability | version_preserves)* }
+
+version_capability = { "capability" ~ block }
+version_preserves = { "preserves" ~ block }
+
+// Capability specification: defines what a system can do
+// Used for proving capability preservation across version upgrades
+// Example:
+//   capability DasherCapability {
+//       can verify_rust_code(code: RustCode) -> VerificationResult
+//       requires { soundness_preserved }
+//   }
+capability_spec = { "capability" ~ ident ~ "{" ~ capability_body ~ "}" }
+
+capability_body = { (capability_can | capability_requires)* }
+
+capability_can = { "can" ~ ident ~ "(" ~ param_list ~ ")" ~ ("->" ~ type_expr)? }
+capability_requires = { "requires" ~ block }
+
+// Distributed invariant: properties that must hold across multiple agents
+// For verifying distributed systems like multiple Dashers coordinating
+// Example:
+//   distributed invariant proof_consensus {
+//       forall d1 d2: Dasher, prop: Property .
+//           (d1.proves(prop) and d2.proves(prop)) implies (d1.result == d2.result)
+//   }
+distributed_invariant = { "distributed" ~ "invariant" ~ ident ~ "{" ~ expr ~ "}" }
+
+// Distributed temporal: temporal properties about agent coordination
+// For verifying eventual consistency, consensus, etc.
+// Example:
+//   distributed temporal version_convergence {
+//       eventually(forall d1 d2: Dasher . d1.version == d2.version)
+//   }
+distributed_temporal = { "distributed" ~ "temporal" ~ ident ~ "{" ~ fairness_clause* ~ temporal_expr ~ "}" }
+
+// =============================================================================
+// Self-Improvement Verification Loop (Phase 17.6)
+// =============================================================================
+
+// Improvement proposal: specifies what a proposed improvement must satisfy
+// For recursive self-improvement where Dasher proposes changes to itself
+// Example:
+//   improvement_proposal CodeOptimization {
+//       target { Dasher.verify_rust_code }
+//       improves { execution_speed >= 1.1 * baseline }
+//       preserves { soundness, completeness }
+//       requires { valid_rust_syntax(new_code) }
+//   }
+improvement_proposal = { "improvement_proposal" ~ ident ~ "{" ~ improvement_body ~ "}" }
+
+improvement_body = { improvement_target ~ improvement_improves* ~ improvement_preserves* ~ improvement_requires* }
+
+// target: what is being improved (a function, module, or capability)
+improvement_target = { "target" ~ block }
+
+// improves: what properties must be strictly better
+improvement_improves = { "improves" ~ block }
+
+// preserves: what properties must remain unchanged (at least as good)
+improvement_preserves = { "preserves" ~ block }
+
+// requires: preconditions the improvement proposal must satisfy
+improvement_requires = { "requires" ~ block }
+
+// Verification gate: specifies mandatory checks before accepting any improvement
+// This is the hardcoded, immutable verification checkpoint
+// Example:
+//   verification_gate SelfModificationGate {
+//       inputs { current: DasherVersion, proposed: Improvement }
+//       checks {
+//           check soundness_preserved { verify_soundness(current, proposed) }
+//           check capability_preserved { verify_capabilities(current, proposed) }
+//           check termination_safe { verify_termination(proposed) }
+//       }
+//       on_pass { result = apply(proposed) }
+//       on_fail { result = reject(proposed, verification_errors) }
+//   }
+verification_gate = { "verification_gate" ~ ident ~ "{" ~ gate_body ~ "}" }
+
+gate_body = { gate_inputs ~ gate_checks ~ gate_on_pass ~ gate_on_fail }
+
+// inputs: parameters to the verification gate
+gate_inputs = { "inputs" ~ "{" ~ param_list ~ "}" }
+
+// checks: named verification checks that must pass
+gate_checks = { "checks" ~ "{" ~ gate_check* ~ "}" }
+
+gate_check = { "check" ~ ident ~ block }
+
+// on_pass: what happens when all checks pass
+gate_on_pass = { "on_pass" ~ block }
+
+// on_fail: what happens when any check fails
+gate_on_fail = { "on_fail" ~ block }
+
+// Rollback spec: specifies safe rollback conditions and invariants
+// For safely reverting failed improvements
+// Example:
+//   rollback_spec SafeRollback {
+//       state { current: DasherVersion, history: List<DasherVersion> }
+//       invariant { |history| > 0 }
+//       trigger { verification_failed or runtime_error }
+//       action {
+//           current = history.last()
+//           ensure { verified(current) }
+//       }
+//       guarantee { always(verified(current)) }
+//   }
+rollback_spec = { "rollback_spec" ~ ident ~ "{" ~ rollback_body ~ "}" }
+
+rollback_body = { rollback_state ~ rollback_invariant* ~ rollback_trigger ~ rollback_action ~ rollback_guarantee* }
+
+// state: state variables tracked for rollback
+rollback_state = { "state" ~ "{" ~ param_list ~ "}" }
+
+// invariant: invariants that must hold before and after rollback
+rollback_invariant = { "invariant" ~ block }
+
+// trigger: conditions that initiate rollback
+rollback_trigger = { "trigger" ~ block }
+
+// action: what happens during rollback
+rollback_action = { "action" ~ "{" ~ rollback_action_body ~ "}" }
+
+rollback_action_body = { (ident ~ "=" ~ expr ~ ";")* ~ ("ensure" ~ block)? }
+
+// guarantee: properties guaranteed after rollback completes
+rollback_guarantee = { "guarantee" ~ block }
+
+// =============================================================================
+// Function Signature (for contracts)
+// =============================================================================
+
+function_sig = { type_path ~ "(" ~ param_list ~ ")" ~ ("->" ~ type_expr)? }
+
+type_path = { ident ~ ("::" ~ ident)* }
+
+param_list = { (param ~ ("," ~ param)*)? }
+
+param = { ident ~ ":" ~ type_expr }
+
+// =============================================================================
+// Contract Body
+// =============================================================================
+
+contract_body = { requires_clause* ~ ensures_clause* ~ ensures_err_clause* }
+
+requires_clause = { "requires" ~ block }
+ensures_clause = { "ensures" ~ block }
+ensures_err_clause = { "ensures_err" ~ block }
+
+block = { "{" ~ expr ~ "}" }
+
+// =============================================================================
+// Refinement Body
+// =============================================================================
+
+// Enhanced refinement body with optional mapping, invariant, and action clauses
+// All clauses are optional, but abstraction and simulation are required
+// Order: mapping* ~ invariant* ~ abstraction ~ simulation ~ action*
+refinement_body = { refinement_mapping_clause* ~ refinement_invariant_clause* ~ abstraction_clause ~ simulation_clause ~ action_mapping_clause* }
+
+// Variable mapping: mapping { spec.var <-> impl.var }
+refinement_mapping_clause = { "mapping" ~ "{" ~ var_mapping* ~ "}" }
+
+// Individual variable mapping: spec.streams <-> impl.m_streams
+var_mapping = { access_expr ~ "<->" ~ access_expr }
+
+// Refinement-level invariant: invariant { |impl.m_streams| == MAX_STREAMS }
+refinement_invariant_clause = { "invariant" ~ block }
+
+abstraction_clause = { "abstraction" ~ block }
+simulation_clause = { "simulation" ~ block }
+
+// Action mapping: action name { spec: ActionName; impl: Type::method() }
+action_mapping_clause = { "action" ~ ident ~ "{" ~ action_spec_clause ~ action_impl_clause ~ action_guard_clause? ~ "}" }
+
+// spec: AcquireStream
+action_spec_clause = { "spec" ~ ":" ~ ident }
+
+// impl: MPSStreamPool::acquireStream()
+action_impl_clause = { "impl" ~ ":" ~ type_path ~ "(" ~ ")" }
+
+// guard { condition } - optional condition when mapping applies
+action_guard_clause = { "guard" ~ block }
+
+// =============================================================================
+// Temporal Expressions
+// =============================================================================
+
+temporal_expr = { temporal_binary | temporal_primary }
+
+temporal_binary = { temporal_primary ~ "~>" ~ temporal_expr }
+
+temporal_primary = _{ temporal_always | temporal_eventually | temporal_paren | temporal_atom_expr }
+
+temporal_always = { "always" ~ "(" ~ temporal_expr ~ ")" }
+temporal_eventually = { "eventually" ~ "(" ~ temporal_expr ~ ")" }
+temporal_paren = { "(" ~ temporal_expr ~ ")" }
+temporal_atom_expr = { expr }
+
+// =============================================================================
+// Probabilistic Expressions
+// =============================================================================
+
+prob_expr = { "probability" ~ "(" ~ expr ~ ")" ~ cmp_op ~ number }
+
+// =============================================================================
+// Expressions
+// =============================================================================
+
+// Quantified expressions bind loosely - allow them anywhere an expr is expected
+expr = { implies_expr }
+
+implies_expr = { or_expr ~ ("implies" ~ or_expr)* }
+
+or_expr = { and_expr ~ ("or" ~ and_expr)* }
+
+and_expr = { comparison_expr ~ ("and" ~ comparison_expr)* }
+
+// Comparison (==, !=, <, etc.) has lower precedence than boolean not
+comparison_expr = { not_expr ~ (cmp_op ~ not_expr)? }
+
+not_expr = { "not" ~ not_expr | additive_expr }
+
+cmp_op = { "==" | "!=" | "<=" | ">=" | "<" | ">" }
+
+additive_expr = { multiplicative_expr ~ (add_op ~ multiplicative_expr)* }
+
+add_op = { "+" | "-" }
+
+multiplicative_expr = { unary_expr ~ (mul_op ~ unary_expr)* }
+
+mul_op = { "*" | "/" | "%" }
+
+unary_expr = { neg_op ~ unary_expr | atom }
+
+neg_op = { "-" | "!" }
+
+// Atomic expression: quantifier, literal, variable/call/access, or parenthesized expression
+atom = { quantified_expr | number | string | bool_lit | access_expr | "(" ~ expr ~ ")" }
+
+quantified_expr = { quantifier ~ binding_list ~ "." ~ expr }
+
+quantifier = { "forall" | "exists" }
+
+binding_list = { binding ~ ("," ~ binding)* }
+
+// Binding: x: Type or x in collection or just x
+// For "in" clause, use only identifier - field access like g.nodes should be (g.nodes)
+binding = { ident ~ ":" ~ type_expr | ident ~ "in" ~ binding_collection | ident }
+
+// Collection in binding: simple identifier or parenthesized expression
+binding_collection = { ident | "(" ~ expr ~ ")" }
+
+// Boolean literal with word boundary
+bool_lit = @{ ("true" | "false") ~ !(ASCII_ALPHANUMERIC | "_" | "'") }
+
+// =============================================================================
+// Access expressions (variables, field access, method calls)
+// =============================================================================
+
+access_expr = { ident ~ accessor* }
+
+accessor = _{ call_accessor | field_accessor }
+
+call_accessor = { "(" ~ arg_list ~ ")" }
+field_accessor = { "." ~ ident }
+
+arg_list = { (expr ~ ("," ~ expr)*)? }
+
+// =============================================================================
+// Literals
+// =============================================================================
+
+number = @{ float | integer }
+float = @{ integer ~ "." ~ ASCII_DIGIT+ }
+integer = @{ "-"? ~ ASCII_DIGIT+ }
+
+string = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+
+// =============================================================================
+// Identifiers
+// =============================================================================
+
+ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" | "'")* }
+
+// =============================================================================
+// Whitespace and Comments
+// =============================================================================
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }

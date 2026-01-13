@@ -1,0 +1,145 @@
+{
+  "tool": "xargs",
+  "version": "4.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "argument_too_long",
+      "pattern": "Argument list too long|cannot fork|argument line too long",
+      "message": "Command line too long",
+      "cause": "Too many arguments for single execution",
+      "solutions": [
+        {
+          "approach": "Limit arguments",
+          "code": "find . -name '*.txt' | xargs -n 100 rm",
+          "when": "Batch by count"
+        },
+        {
+          "approach": "Limit size",
+          "code": "find . -name '*.txt' | xargs -s 32768 rm",
+          "when": "Limit line size"
+        },
+        {
+          "approach": "Process individually",
+          "code": "find . -name '*.txt' | xargs -n 1 rm",
+          "when": "One at a time"
+        }
+      ]
+    },
+    {
+      "id": "spaces_in_filenames",
+      "pattern": "No such file|unterminated quote|unmatched|unexpected end of string",
+      "message": "Filenames with special characters",
+      "cause": "Spaces, quotes, or special chars in names",
+      "solutions": [
+        {
+          "approach": "Null terminator",
+          "code": "find . -name '*.txt' -print0 | xargs -0 rm",
+          "when": "Best practice"
+        },
+        {
+          "approach": "Quote handling",
+          "code": "find . -name '*.txt' | xargs -I {} rm '{}'",
+          "when": "With placeholder"
+        },
+        {
+          "approach": "Delimiter",
+          "code": "echo 'a b c' | xargs -d ' ' -n 1 echo",
+          "when": "Custom delimiter"
+        }
+      ]
+    },
+    {
+      "id": "no_input",
+      "pattern": "xargs.*without.*argument|input is empty",
+      "message": "No input provided",
+      "cause": "Empty input or command requires input",
+      "solutions": [
+        {
+          "approach": "Check for input",
+          "code": "find . -name '*.txt' | head -1  # Verify results first",
+          "when": "Debug input"
+        },
+        {
+          "approach": "No-run-if-empty",
+          "code": "find . -name '*.txt' | xargs -r rm  # -r = no run if empty",
+          "when": "GNU xargs"
+        },
+        {
+          "approach": "Conditional",
+          "code": "find . -name '*.txt' | xargs sh -c 'test $# -gt 0 && rm \"$@\"' _",
+          "when": "Portable"
+        }
+      ]
+    },
+    {
+      "id": "exit_status_confusion",
+      "pattern": "xargs:.*returned|exited with status|terminated",
+      "message": "Command returned error",
+      "cause": "Executed command failed",
+      "solutions": [
+        {
+          "approach": "Check exit status",
+          "code": "find . -name '*.txt' | xargs rm\necho $?  # Check xargs exit status",
+          "when": "Debug failure"
+        },
+        {
+          "approach": "Verbose mode",
+          "code": "find . -name '*.txt' | xargs -t rm  # Print commands",
+          "when": "See what runs"
+        },
+        {
+          "approach": "Interactive",
+          "code": "find . -name '*.txt' | xargs -p rm  # Prompt before running",
+          "when": "Confirm actions"
+        }
+      ]
+    },
+    {
+      "id": "placeholder_not_working",
+      "pattern": "argument.*not found|{} not replaced|placeholder",
+      "message": "Placeholder {} not substituted",
+      "cause": "Need -I flag for placeholder replacement",
+      "solutions": [
+        {
+          "approach": "Use -I flag",
+          "code": "find . -name '*.txt' | xargs -I {} cp {} {}.bak",
+          "when": "Replace placeholder"
+        },
+        {
+          "approach": "Custom placeholder",
+          "code": "find . -name '*.txt' | xargs -I FILE mv FILE /backup/",
+          "when": "Avoid {} conflicts"
+        },
+        {
+          "approach": "Multiple uses",
+          "code": "echo 'file.txt' | xargs -I {} sh -c 'cp {} {}.bak && rm {}'",
+          "when": "Use multiple times"
+        }
+      ]
+    },
+    {
+      "id": "parallel_execution",
+      "pattern": "parallel|concurrent|simultaneous|speed up",
+      "message": "How to run in parallel",
+      "cause": "Want to speed up execution",
+      "solutions": [
+        {
+          "approach": "GNU parallel",
+          "code": "find . -name '*.txt' | parallel gzip",
+          "when": "Best parallelism"
+        },
+        {
+          "approach": "xargs -P",
+          "code": "find . -name '*.txt' | xargs -P 4 -n 1 gzip",
+          "when": "4 parallel jobs"
+        },
+        {
+          "approach": "Combined",
+          "code": "find . -name '*.txt' -print0 | xargs -0 -P 8 -n 10 gzip",
+          "when": "8 procs, 10 files each"
+        }
+      ]
+    }
+  ]
+}

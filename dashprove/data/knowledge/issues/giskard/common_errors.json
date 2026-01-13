@@ -1,0 +1,191 @@
+{
+  "tool": "giskard",
+  "version": "2.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_wrap_error",
+      "pattern": "Cannot wrap model|Model wrapper failed|Invalid model type",
+      "message": "Failed to create Giskard model wrapper",
+      "cause": "Model format not supported or prediction function incorrect",
+      "solutions": [
+        {
+          "approach": "Use correct wrapper",
+          "code": "from giskard import Model\nmodel = Model(prediction_fn, model_type='classification')",
+          "when": "Wrapping custom model"
+        },
+        {
+          "approach": "Specify feature names",
+          "code": "model = Model(predict_fn, feature_names=['feat1', 'feat2'])",
+          "when": "Model needs explicit features"
+        },
+        {
+          "approach": "Use sklearn wrapper",
+          "code": "from giskard.models.sklearn import SKLearnModel\nmodel = SKLearnModel(clf)",
+          "when": "Using scikit-learn model"
+        }
+      ]
+    },
+    {
+      "id": "dataset_error",
+      "pattern": "Dataset.*error|Invalid dataset|Column.*not found",
+      "message": "Dataset configuration error",
+      "cause": "Dataset format incorrect or missing required columns",
+      "solutions": [
+        {
+          "approach": "Wrap DataFrame correctly",
+          "code": "from giskard import Dataset\nds = Dataset(df, target='label', name='my_dataset')",
+          "when": "Creating Giskard dataset"
+        },
+        {
+          "approach": "Specify column types",
+          "code": "ds = Dataset(df, target='y', cat_columns=['cat1', 'cat2'])",
+          "when": "Categorical columns not detected"
+        },
+        {
+          "approach": "Check column names",
+          "code": "print(df.columns.tolist())  # Verify column names match",
+          "when": "Column name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "scan_timeout",
+      "pattern": "Scan timeout|Timeout.*scan|TimeoutError",
+      "message": "Model scan timed out",
+      "cause": "Scanning takes too long due to large dataset or slow model",
+      "solutions": [
+        {
+          "approach": "Reduce sample size",
+          "code": "results = giskard.scan(model, dataset, max_rows=1000)",
+          "when": "Dataset is very large"
+        },
+        {
+          "approach": "Select specific tests",
+          "code": "results = giskard.scan(model, dataset, only=['performance', 'robustness'])",
+          "when": "Only need specific vulnerability tests"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "results = giskard.scan(model, dataset, timeout=3600)",
+          "when": "Model is slow but scan should complete"
+        }
+      ]
+    },
+    {
+      "id": "hub_connection",
+      "pattern": "Hub connection|Cannot connect|Authentication failed",
+      "message": "Cannot connect to Giskard Hub",
+      "cause": "Hub URL incorrect or authentication token invalid",
+      "solutions": [
+        {
+          "approach": "Set Hub URL",
+          "code": "giskard.hub_url = 'http://localhost:9000'\ngiskard.api_key = 'your-api-key'",
+          "when": "Using local Hub instance"
+        },
+        {
+          "approach": "Check API key",
+          "code": "# Verify API key in Giskard Hub settings",
+          "when": "Authentication failing"
+        },
+        {
+          "approach": "Use local mode",
+          "code": "# Run scan locally without Hub upload\nresults = giskard.scan(model, dataset)",
+          "when": "Don't need Hub features"
+        }
+      ]
+    },
+    {
+      "id": "llm_client_error",
+      "pattern": "LLM client error|OpenAI.*error|API key.*invalid",
+      "message": "LLM-based testing failed",
+      "cause": "LLM API configuration incorrect for AI-powered tests",
+      "solutions": [
+        {
+          "approach": "Set OpenAI key",
+          "code": "import os\nos.environ['OPENAI_API_KEY'] = 'sk-...'",
+          "when": "Using OpenAI for LLM tests"
+        },
+        {
+          "approach": "Configure LLM client",
+          "code": "from giskard.llm.client import set_default_client\nset_default_client('anthropic')",
+          "when": "Using alternative LLM provider"
+        },
+        {
+          "approach": "Disable LLM tests",
+          "code": "results = giskard.scan(model, dataset, only=['performance'])",
+          "when": "Don't want LLM-based vulnerability tests"
+        }
+      ]
+    },
+    {
+      "id": "test_failed",
+      "pattern": "Test failed|Vulnerability detected|FAILED",
+      "message": "Giskard test detected a vulnerability",
+      "cause": "Model has bias, robustness, or performance issues",
+      "solutions": [
+        {
+          "approach": "Review test results",
+          "code": "for issue in results.issues:\n    print(issue.name, issue.description)",
+          "when": "Understanding what failed"
+        },
+        {
+          "approach": "Generate test suite",
+          "code": "suite = results.generate_test_suite()\nsuite.run()",
+          "when": "Creating regression tests"
+        },
+        {
+          "approach": "Export report",
+          "code": "results.to_html('vulnerability_report.html')",
+          "when": "Sharing results with team"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "MemoryError|Out of memory|Cannot allocate",
+      "message": "Insufficient memory for scan",
+      "cause": "Dataset or model too large for available RAM",
+      "solutions": [
+        {
+          "approach": "Use sampling",
+          "code": "results = giskard.scan(model, dataset, max_rows=500)",
+          "when": "Dataset is very large"
+        },
+        {
+          "approach": "Batch processing",
+          "code": "# Process dataset in chunks",
+          "when": "Model inference is memory intensive"
+        },
+        {
+          "approach": "Use cloud Hub",
+          "code": "# Upload to Giskard Hub for distributed scan",
+          "when": "Local resources insufficient"
+        }
+      ]
+    },
+    {
+      "id": "slicing_error",
+      "pattern": "Slicing.*error|Cannot slice|Invalid slice",
+      "message": "Data slicing failed",
+      "cause": "Slice function or specification is invalid",
+      "solutions": [
+        {
+          "approach": "Use valid slice function",
+          "code": "from giskard.slicing import SlicingFunction\n@SlicingFunction\ndef adult_slice(df):\n    return df[df['age'] > 50]",
+          "when": "Creating custom slice"
+        },
+        {
+          "approach": "Check slice returns DataFrame",
+          "code": "# Slice function must return pandas DataFrame subset",
+          "when": "Slice returns wrong type"
+        },
+        {
+          "approach": "Use built-in slices",
+          "code": "from giskard.slicing import categorical_slicer\nslicer = categorical_slicer(column='gender')",
+          "when": "Simple categorical slicing"
+        }
+      ]
+    }
+  ]
+}

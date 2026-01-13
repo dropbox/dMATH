@@ -1,0 +1,118 @@
+{
+  "tool": "capnproto",
+  "category": "serialization",
+  "common_errors": [
+    {
+      "pattern": "Message contains more than .* segments|segment table too large",
+      "meaning": "Message segment limit exceeded",
+      "causes": [
+        "Message too fragmented",
+        "Potential DoS attack",
+        "Deeply nested structure"
+      ],
+      "solutions": [
+        "Increase segment limit with ReaderOptions",
+        "Set traversalLimitInWords for protection",
+        "Restructure to reduce segment count"
+      ]
+    },
+    {
+      "pattern": "Exceeded message traversal limit|too many pointers",
+      "meaning": "Message traversal safety limit hit",
+      "causes": [
+        "Very large message",
+        "Circular pointer attempt (blocked)",
+        "Attack payload"
+      ],
+      "solutions": [
+        "Increase traversalLimitInWords for large messages",
+        "Check message source is trusted",
+        "Default limit is 64MB of data"
+      ]
+    },
+    {
+      "pattern": "Can't get field .* of non-struct type|Null pointer",
+      "meaning": "Accessing field on null/void pointer",
+      "causes": [
+        "Reading unset union member",
+        "Pointer field not initialized",
+        "Schema version mismatch"
+      ],
+      "solutions": [
+        "Check which() on union before access",
+        "Check hasX() before getX() on optional fields",
+        "Use default values in schema"
+      ]
+    },
+    {
+      "pattern": "type mismatch|expected .* but got",
+      "meaning": "Schema/data type mismatch",
+      "causes": [
+        "Reading with wrong schema",
+        "Field type changed between versions",
+        "Using wrong message type"
+      ],
+      "solutions": [
+        "Regenerate code from current schema",
+        "Cap'n Proto supports schema evolution if done correctly",
+        "Check @0, @1 field ordinals match"
+      ]
+    },
+    {
+      "pattern": "Orphan.*already adopted|OrphanBuilder error",
+      "meaning": "Orphan lifecycle error",
+      "causes": [
+        "Using orphan after adoption",
+        "Orphan not adopted before builder destroyed",
+        "Double-adoption"
+      ],
+      "solutions": [
+        "Orphan can only be adopted once",
+        "Adopt orphan before exiting scope",
+        "Don't use orphan reference after adoption"
+      ]
+    },
+    {
+      "pattern": "capnp compile.*error|schema compilation",
+      "meaning": "Cap'n Proto schema compiler error",
+      "causes": [
+        "Syntax error in .capnp file",
+        "Missing unique ID annotation",
+        "Import not found"
+      ],
+      "solutions": [
+        "Generate unique IDs: capnp id",
+        "Add @0x... annotation to file",
+        "Check import paths with -I flag"
+      ]
+    },
+    {
+      "pattern": "List has incompatible element size|wrong element type",
+      "meaning": "List type mismatch",
+      "causes": [
+        "Reading list with wrong element type",
+        "Trying to modify list elements incorrectly",
+        "Pointer vs primitive list confusion"
+      ],
+      "solutions": [
+        "Use correct list accessor (getList, getTextList, etc.)",
+        "Check schema element type",
+        "Lists are immutable once built"
+      ]
+    },
+    {
+      "pattern": "capnproto-rust|capnp-rpc|async error",
+      "meaning": "Cap'n Proto RPC error",
+      "causes": [
+        "Promise not awaited",
+        "RPC connection closed",
+        "Capability dropped"
+      ],
+      "solutions": [
+        "Await all RPC promises",
+        "Handle disconnection errors",
+        "Keep capability references alive during call"
+      ]
+    }
+  ]
+}

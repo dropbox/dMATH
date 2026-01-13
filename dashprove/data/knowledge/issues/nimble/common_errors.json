@@ -1,0 +1,242 @@
+{
+  "tool": "nimble",
+  "version": "13.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "expectation_failed",
+      "pattern": "expected to|got:|but got|to equal",
+      "message": "Nimble expectation failed",
+      "cause": "Actual value didn't match expected value",
+      "solutions": [
+        {
+          "approach": "Check actual vs expected",
+          "code": "expect(actual).to(equal(expected))  // Nimble shows both",
+          "when": "Debugging value mismatch"
+        },
+        {
+          "approach": "Use appropriate matcher",
+          "code": "expect(value).to(beCloseTo(3.14, within: 0.01))",
+          "when": "Floating point comparison"
+        },
+        {
+          "approach": "Add custom failure message",
+          "code": "expect(value).to(equal(expected), description: \"context info\")",
+          "when": "Need more context"
+        }
+      ]
+    },
+    {
+      "id": "async_timeout",
+      "pattern": "timed out|toEventually.*timeout|waitUntil.*expired",
+      "message": "Async expectation timed out",
+      "cause": "Condition not met within timeout period",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "expect(value).toEventually(equal(expected), timeout: .seconds(10))",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Adjust polling interval",
+          "code": "expect(value).toEventually(equal(expected), pollInterval: .milliseconds(100))",
+          "when": "Check more/less frequently"
+        },
+        {
+          "approach": "Check async code actually completes",
+          "code": "// Ensure callback/completion handler is called",
+          "when": "Async never completes"
+        }
+      ]
+    },
+    {
+      "id": "type_mismatch",
+      "pattern": "cannot convert|type.*mismatch|expected.*got",
+      "message": "Type mismatch in expectation",
+      "cause": "Comparing values of incompatible types",
+      "solutions": [
+        {
+          "approach": "Cast to matching type",
+          "code": "expect(value as? String).to(equal(expected))",
+          "when": "Need explicit cast"
+        },
+        {
+          "approach": "Use beAKindOf for type checking",
+          "code": "expect(instance).to(beAKindOf(MyClass.self))",
+          "when": "Checking type not value"
+        },
+        {
+          "approach": "Ensure Equatable conformance",
+          "code": "extension MyType: Equatable { }",
+          "when": "Custom type comparison"
+        }
+      ]
+    },
+    {
+      "id": "benil_error",
+      "pattern": "beNil.*non-optional|expected nil|to be nil",
+      "message": "beNil matcher used incorrectly",
+      "cause": "Using beNil() on non-optional or optional mismatch",
+      "solutions": [
+        {
+          "approach": "Use with optional values",
+          "code": "expect(optionalValue).to(beNil())",
+          "when": "Value should be optional"
+        },
+        {
+          "approach": "Use beNil vs notTo beNil",
+          "code": "expect(value).notTo(beNil())",
+          "when": "Expecting non-nil"
+        },
+        {
+          "approach": "Unwrap first if needed",
+          "code": "expect(optional).toNot(beNil())\nlet value = optional!",
+          "when": "Need unwrapped value"
+        }
+      ]
+    },
+    {
+      "id": "collection_matchers",
+      "pattern": "contain.*not found|beEmpty.*failed|haveCount",
+      "message": "Collection matcher issue",
+      "cause": "Collection doesn't match expected contents",
+      "solutions": [
+        {
+          "approach": "Use contain for subset",
+          "code": "expect(array).to(contain(element))",
+          "when": "Check element presence"
+        },
+        {
+          "approach": "Use containElementSatisfying",
+          "code": "expect(array).to(containElementSatisfying { $0.name == \"test\" })",
+          "when": "Complex element matching"
+        },
+        {
+          "approach": "Use haveCount for size",
+          "code": "expect(array).to(haveCount(5))",
+          "when": "Check collection size"
+        },
+        {
+          "approach": "Use beEmpty",
+          "code": "expect(array).to(beEmpty())",
+          "when": "Check empty collection"
+        }
+      ]
+    },
+    {
+      "id": "throw_error_matcher",
+      "pattern": "throwError.*not called|expected.*to throw|didn't throw",
+      "message": "Expected error not thrown",
+      "cause": "Code didn't throw expected error",
+      "solutions": [
+        {
+          "approach": "Use throwError matcher",
+          "code": "expect { try throwingFunc() }.to(throwError())",
+          "when": "Any error expected"
+        },
+        {
+          "approach": "Match specific error",
+          "code": "expect { try func() }.to(throwError(MyError.specific))",
+          "when": "Specific error expected"
+        },
+        {
+          "approach": "Use closure form",
+          "code": "expect { try func() }.to(throwError { error in\n    expect(error as? MyError).to(equal(.specific))\n})",
+          "when": "Complex error validation"
+        }
+      ]
+    },
+    {
+      "id": "satisfy_matcher",
+      "pattern": "satisfy.*failed|predicate.*false",
+      "message": "satisfy matcher predicate returned false",
+      "cause": "Custom predicate didn't match",
+      "solutions": [
+        {
+          "approach": "Debug predicate",
+          "code": "expect(value).to(satisfy { v in\n    print(\"Value: \\(v)\")\n    return condition(v)\n})",
+          "when": "Debugging predicate"
+        },
+        {
+          "approach": "Use satisfyAnyOf",
+          "code": "expect(value).to(satisfyAnyOf(condition1, condition2))",
+          "when": "Multiple valid conditions"
+        },
+        {
+          "approach": "Use satisfyAllOf",
+          "code": "expect(value).to(satisfyAllOf(cond1, cond2))",
+          "when": "All conditions must pass"
+        }
+      ]
+    },
+    {
+      "id": "custom_matcher_error",
+      "pattern": "Predicate.*error|MatcherFunc.*failed",
+      "message": "Custom matcher error",
+      "cause": "Custom matcher implementation has issues",
+      "solutions": [
+        {
+          "approach": "Return proper PredicateResult",
+          "code": "func beValid() -> Predicate<MyType> {\n    return Predicate { actual in\n        let msg = ExpectationMessage.expectedActualValueTo(\"be valid\")\n        return PredicateResult(bool: actual.isValid, message: msg)\n    }\n}",
+          "when": "Creating custom matcher"
+        },
+        {
+          "approach": "Handle nil values",
+          "code": "guard let actual = try actualExpression.evaluate() else {\n    return PredicateResult(status: .fail, message: .fail(\"got nil\"))\n}",
+          "when": "Input might be nil"
+        },
+        {
+          "approach": "Include helpful message",
+          "code": "let message = ExpectationMessage.expectedCustomValueTo(\"...\", actual: \"\\(actualValue)\")",
+          "when": "Better failure messages"
+        }
+      ]
+    },
+    {
+      "id": "poll_not_working",
+      "pattern": "toEventually.*never matched|polling.*failed",
+      "message": "toEventually polling not matching",
+      "cause": "Condition never becomes true during polling",
+      "solutions": [
+        {
+          "approach": "Check if value is reactive",
+          "code": "// toEventually re-evaluates each poll - ensure value changes",
+          "when": "Value not actually changing"
+        },
+        {
+          "approach": "Use closure form",
+          "code": "expect { viewModel.isLoading }.toEventually(beFalse())",
+          "when": "Need fresh evaluation"
+        },
+        {
+          "approach": "Ensure main thread for UI",
+          "code": "expect(view.isHidden).toEventually(beFalse())  // UI updates on main",
+          "when": "Testing UI state"
+        }
+      ]
+    },
+    {
+      "id": "befirst_belast",
+      "pattern": "beFirst.*failed|beLast.*failed|sequence",
+      "message": "Sequence position matcher failed",
+      "cause": "Element not at expected position in sequence",
+      "solutions": [
+        {
+          "approach": "Check array bounds",
+          "code": "expect(array).toNot(beEmpty())\nexpect(array.first).to(equal(expected))",
+          "when": "Array might be empty"
+        },
+        {
+          "approach": "Use element at index",
+          "code": "expect(array[0]).to(equal(first))",
+          "when": "Check specific index"
+        },
+        {
+          "approach": "Use beginWith/endWith",
+          "code": "expect(array).to(beginWith([a, b]))",
+          "when": "Check sequence start"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "tool": "buildah",
+  "category": "container_build",
+  "description": "Buildah - tool for building OCI container images",
+  "common_errors": [
+    {
+      "id": "base_image_not_found",
+      "pattern": "image not known",
+      "regex": "(?i)image.*not known|unable to find|initializing source|manifest unknown",
+      "cause": "Base image could not be found in configured registries",
+      "solution": "Verify image name, use full registry path (docker.io/library/), check registries.conf",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "storage_error",
+      "pattern": "storage error",
+      "regex": "(?i)storage.*error|overlay.*driver|unable to create.*layer|graph.*driver",
+      "cause": "Container storage subsystem error",
+      "solution": "Check storage.conf configuration, reset with 'buildah containers --all -rm && buildah images -a -q | xargs buildah rmi'",
+      "severity": "high",
+      "category": "storage"
+    },
+    {
+      "id": "rootless_permission_error",
+      "pattern": "rootless permission error",
+      "regex": "(?i)newuidmap|newgidmap|user.*namespace|unshare|permission denied",
+      "cause": "Rootless build failed due to user namespace configuration",
+      "solution": "Configure /etc/subuid and /etc/subgid, install newuidmap/newgidmap utilities",
+      "severity": "high",
+      "category": "rootless"
+    },
+    {
+      "id": "copy_failed",
+      "pattern": "COPY/ADD failed",
+      "regex": "(?i)copier.*error|no such file|destination.*does not exist|stat.*no such",
+      "cause": "File copy operation failed",
+      "solution": "Verify source path exists and is accessible, check working directory context",
+      "severity": "medium",
+      "category": "build"
+    },
+    {
+      "id": "run_command_failed",
+      "pattern": "RUN command failed",
+      "regex": "(?i)error running|command.*failed|exit.*code|subprocess.*error",
+      "cause": "Command executed during build returned non-zero exit code",
+      "solution": "Check command syntax, verify required packages are installed, review command output",
+      "severity": "medium",
+      "category": "build"
+    },
+    {
+      "id": "container_not_found",
+      "pattern": "container not found",
+      "regex": "(?i)container.*not found|no container.*found|working container.*error",
+      "cause": "Referenced working container does not exist",
+      "solution": "List containers with 'buildah containers', create with 'buildah from'",
+      "severity": "medium",
+      "category": "containers"
+    },
+    {
+      "id": "commit_error",
+      "pattern": "commit error",
+      "regex": "(?i)commit.*error|unable to commit|committing.*failed",
+      "cause": "Error committing container to image",
+      "solution": "Check image name is valid, verify storage has space, ensure container exists",
+      "severity": "high",
+      "category": "images"
+    },
+    {
+      "id": "mount_error",
+      "pattern": "mount error",
+      "regex": "(?i)mount.*error|unable to mount|fusermount|overlay mount",
+      "cause": "Cannot mount container filesystem",
+      "solution": "Check if fuse-overlayfs is installed for rootless, verify mount permissions",
+      "severity": "medium",
+      "category": "filesystem"
+    },
+    {
+      "id": "push_error",
+      "pattern": "push error",
+      "regex": "(?i)push.*error|unauthorized|manifest.*invalid|blob.*upload",
+      "cause": "Error pushing image to registry",
+      "solution": "Authenticate with 'buildah login', verify registry URL and image name format",
+      "severity": "medium",
+      "category": "registry"
+    },
+    {
+      "id": "bud_dockerfile_error",
+      "pattern": "Dockerfile parse error",
+      "regex": "(?i)dockerfile.*error|parse.*error|unknown instruction|invalid syntax",
+      "cause": "Error parsing Dockerfile with 'buildah bud'",
+      "solution": "Check Dockerfile syntax, verify instruction names are uppercase, review file path",
+      "severity": "medium",
+      "category": "build"
+    }
+  ],
+  "related_tools": ["podman", "skopeo", "docker", "kaniko"],
+  "documentation_url": "https://buildah.io/"
+}

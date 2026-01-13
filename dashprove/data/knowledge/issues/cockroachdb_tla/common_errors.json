@@ -1,0 +1,146 @@
+{
+  "tool": "cockroachdb_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specifications for CockroachDB's distributed SQL and Raft-based replication",
+  "errors": [
+    {
+      "id": "serializable_anomaly",
+      "pattern": "serializable.*anomaly|write.*skew",
+      "message": "Serializable isolation anomaly detected",
+      "cause": "Write skew or other anomaly despite SERIALIZABLE isolation",
+      "solutions": [
+        {
+          "approach": "Check transaction timestamp ordering",
+          "code": "\\* SSI: transactions must serialize by commit timestamp\nCommit(txn) ==\n    /\\ txn.commitTs > txn.readTs\n    /\\ \\A other \\in concurrentTxns : \n       NoConflict(txn, other)",
+          "when": "Timestamp ordering violated"
+        },
+        {
+          "approach": "Verify read refresh",
+          "code": "\\* Refresh reads if timestamp pushed\nRefreshReads(txn) ==\n    /\\ txn.commitTs > txn.originalReadTs\n    /\\ \\A read \\in txn.reads : \n       Read(read.key, txn.commitTs) = read.value",
+          "when": "Read refresh failing"
+        },
+        {
+          "approach": "Check write intent handling",
+          "code": "\\* Must wait for or push conflicting intents\nHandleIntent(reader, intent) ==\n    \\/ WaitForIntentResolved(intent)\n    \\/ PushTimestamp(reader, intent.txn)",
+          "when": "Not handling intents correctly"
+        }
+      ]
+    },
+    {
+      "id": "closed_timestamp_lag",
+      "pattern": "closed.*timestamp.*lag|follower.*read.*stale",
+      "message": "Closed timestamp lagging causing stale follower reads",
+      "cause": "Closed timestamp not advancing fast enough",
+      "solutions": [
+        {
+          "approach": "Check closed timestamp advancement",
+          "code": "\\* Leader closes timestamps periodically\nCloseTimestamp(range) ==\n    /\\ range.closedTs' = min(now - targetDuration, \n                             range.pendingCmds.minTs)",
+          "when": "Closed timestamp stuck"
+        },
+        {
+          "approach": "Verify side transport",
+          "code": "\\* Closed timestamp sent via side transport\nSideTransport(follower, closedTs) ==\n    /\\ follower.closedTs' = Max(follower.closedTs, closedTs)",
+          "when": "Side transport not working"
+        },
+        {
+          "approach": "Model pending commands",
+          "code": "\\* Can't close past pending commands\nCanClose(range, ts) ==\n    \\A cmd \\in range.pendingCmds : cmd.ts >= ts",
+          "when": "Closing past pending"
+        }
+      ]
+    },
+    {
+      "id": "range_split_races",
+      "pattern": "split.*race|post.?split.*inconsistency",
+      "message": "Range split caused inconsistency",
+      "cause": "Commands applied incorrectly during split",
+      "solutions": [
+        {
+          "approach": "Check split trigger ordering",
+          "code": "\\* Split applied atomically via Raft\nSplit(range, splitKey) ==\n    /\\ ApplyViaRaft([type |-> \"split\", key |-> splitKey])\n    /\\ LHS' = {kv \\in range : kv.key < splitKey}\n    /\\ RHS' = {kv \\in range : kv.key >= splitKey}",
+          "when": "Split not through Raft"
+        },
+        {
+          "approach": "Verify command routing",
+          "code": "\\* Post-split, route to correct range\nRouteCommand(cmd) ==\n    IF cmd.key < splitKey\n    THEN LHS.Apply(cmd)\n    ELSE RHS.Apply(cmd)",
+          "when": "Command sent to wrong range"
+        },
+        {
+          "approach": "Check range descriptor",
+          "code": "\\* Descriptor updated atomically\nSplitDescriptor(oldDesc, splitKey) ==\n    /\\ newLHS.endKey = splitKey\n    /\\ newRHS.startKey = splitKey\n    /\\ newLHS.generation = oldDesc.generation + 1",
+          "when": "Stale range descriptor"
+        }
+      ]
+    },
+    {
+      "id": "lease_transfer_races",
+      "pattern": "lease.*transfer.*race|stale.*lease",
+      "message": "Lease transfer caused read/write inconsistency",
+      "cause": "Old leaseholder accepted command after transfer",
+      "solutions": [
+        {
+          "approach": "Check lease sequence",
+          "code": "\\* Each lease has monotonic sequence\nNewLease(range, newHolder) ==\n    /\\ lease' = [holder |-> newHolder, \n                 seq |-> range.lease.seq + 1,\n                 start |-> now]",
+          "when": "Lease sequence not incremented"
+        },
+        {
+          "approach": "Verify lease disjointness",
+          "code": "\\* Leases don't overlap in time\nLeasesDisjoint(l1, l2) ==\n    l1.end <= l2.start \\/ l2.end <= l1.start",
+          "when": "Overlapping leases"
+        },
+        {
+          "approach": "Check command lease check",
+          "code": "\\* Command checks lease at eval and apply time\nApplyCommand(range, cmd) ==\n    /\\ cmd.leaseSeq = range.lease.seq\n    /\\ Apply(cmd)",
+          "when": "Not checking lease at apply"
+        }
+      ]
+    },
+    {
+      "id": "timestamp_cache_miss",
+      "pattern": "timestamp.*cache.*miss|read.*not.*tracked",
+      "message": "Timestamp cache didn't track read for write conflict",
+      "cause": "Write proceeded without seeing conflicting read",
+      "solutions": [
+        {
+          "approach": "Update timestamp cache on read",
+          "code": "\\* Track read timestamps\nRead(range, key, ts) ==\n    /\\ range.tsCache[key]' = Max(range.tsCache[key], ts)\n    /\\ Return(range.data[key])",
+          "when": "Read not updating cache"
+        },
+        {
+          "approach": "Check write timestamp bump",
+          "code": "\\* Write timestamp bumped if cached read is higher\nWrite(range, key, value, ts) ==\n    LET readTs == range.tsCache[key] IN\n    IF ts <= readTs\n    THEN Write(range, key, value, readTs + 1)\n    ELSE WriteAt(range, key, value, ts)",
+          "when": "Write not checking cache"
+        },
+        {
+          "approach": "Verify cache eviction",
+          "code": "\\* Don't evict entries for uncommitted txns\nEvictCache(range) ==\n    range.tsCache' = {e \\in range.tsCache : \n                       e.ts > now - cacheWindow \\/ \n                       e.txn \\in uncommittedTxns}",
+          "when": "Premature cache eviction"
+        }
+      ]
+    },
+    {
+      "id": "gc_threshold_violation",
+      "pattern": "gc.*threshold|intent.*resolved.*wrong",
+      "message": "GC removed data needed by transaction",
+      "cause": "Garbage collection removed MVCC versions still needed",
+      "solutions": [
+        {
+          "approach": "Check protected timestamp",
+          "code": "\\* GC respects protected timestamps\nCanGC(version) ==\n    /\\ version.ts < gcThreshold\n    /\\ \\A pts \\in protectedTimestamps : version.ts < pts",
+          "when": "GC ignoring protected timestamps"
+        },
+        {
+          "approach": "Verify intent resolution",
+          "code": "\\* Only GC resolved intents\nGCIntent(intent) ==\n    /\\ intent.status \\in {COMMITTED, ABORTED}\n    /\\ intent.ts < gcThreshold",
+          "when": "GCing unresolved intents"
+        },
+        {
+          "approach": "Model transaction record GC",
+          "code": "\\* Transaction record needed for intent resolution\nCanGCTxnRecord(txn) ==\n    /\\ txn.status \\in {COMMITTED, ABORTED}\n    /\\ AllIntentsResolved(txn)\n    /\\ txn.timestamp < gcThreshold",
+          "when": "Premature txn record GC"
+        }
+      ]
+    }
+  ]
+}

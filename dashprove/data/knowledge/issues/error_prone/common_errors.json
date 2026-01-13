@@ -1,0 +1,214 @@
+{
+  "tool": "error_prone",
+  "version": "2.24.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "null_away",
+      "pattern": "NullAway|dereferenced .* may be null|assigning @Nullable",
+      "message": "Null safety violation (NullAway)",
+      "cause": "Nullable value used where non-null expected",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (value != null) {\n    return value.toString();\n}\nreturn \"\";",
+          "when": "Handle null case"
+        },
+        {
+          "approach": "Add @Nullable annotation",
+          "code": "@Nullable String getValue() { return possiblyNull; }",
+          "when": "Document nullable return"
+        },
+        {
+          "approach": "Use requireNonNull",
+          "code": "this.field = Objects.requireNonNull(param, \"param cannot be null\");",
+          "when": "Fail fast on null"
+        }
+      ]
+    },
+    {
+      "id": "unused_return",
+      "pattern": "ReturnValueIgnored|CheckReturnValue",
+      "message": "Return value ignored",
+      "cause": "Method return value should be used but was ignored",
+      "solutions": [
+        {
+          "approach": "Use return value",
+          "code": "String trimmed = str.trim(); // Don't just call str.trim();",
+          "when": "Return value is result"
+        },
+        {
+          "approach": "Check for failure",
+          "code": "if (!file.delete()) {\n    log.warn(\"Failed to delete file\");\n}",
+          "when": "Boolean return indicates success"
+        },
+        {
+          "approach": "Suppress if intentional",
+          "code": "@SuppressWarnings(\"ReturnValueIgnored\")\nvoid method() { builder.append(x); }",
+          "when": "Builder returns this"
+        }
+      ]
+    },
+    {
+      "id": "string_comparison",
+      "pattern": "StringEquality|== comparison",
+      "message": "String compared with == instead of equals()",
+      "cause": "Reference comparison instead of content comparison",
+      "solutions": [
+        {
+          "approach": "Use equals()",
+          "code": "if (str.equals(\"expected\")) { }",
+          "when": "String content comparison"
+        },
+        {
+          "approach": "Use equalsIgnoreCase",
+          "code": "if (str.equalsIgnoreCase(other)) { }",
+          "when": "Case-insensitive comparison"
+        },
+        {
+          "approach": "Handle null",
+          "code": "if (Objects.equals(str1, str2)) { }",
+          "when": "Either may be null"
+        }
+      ]
+    },
+    {
+      "id": "format_string",
+      "pattern": "FormatString|MissingFormatArgument|format specifier",
+      "message": "Format string error",
+      "cause": "Format string has wrong specifiers or wrong number of arguments",
+      "solutions": [
+        {
+          "approach": "Fix specifiers",
+          "code": "String.format(\"%s has %d items\", name, count);",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Match argument count",
+          "code": "log.info(\"User {} logged in at {}\", user, time);",
+          "when": "Argument count mismatch"
+        },
+        {
+          "approach": "Use MessageFormat",
+          "code": "MessageFormat.format(\"Hello {0}\", name);",
+          "when": "Index-based formatting"
+        }
+      ]
+    },
+    {
+      "id": "immutable_collection",
+      "pattern": "ImmutableCollection|UnmodifiableCollectionMethod",
+      "message": "Mutation of immutable collection",
+      "cause": "Attempting to modify unmodifiable collection",
+      "solutions": [
+        {
+          "approach": "Create mutable copy",
+          "code": "List<String> mutable = new ArrayList<>(immutableList);\nmutable.add(newItem);",
+          "when": "Need to modify"
+        },
+        {
+          "approach": "Use builder",
+          "code": "ImmutableList.Builder<String> builder = ImmutableList.builder();\nbuilder.addAll(existing).add(newItem);\nreturn builder.build();",
+          "when": "Building new immutable"
+        },
+        {
+          "approach": "Return new collection",
+          "code": "return ImmutableList.<String>builder().addAll(list).add(item).build();",
+          "when": "Functional style"
+        }
+      ]
+    },
+    {
+      "id": "async_error",
+      "pattern": "FutureReturnValueIgnored|AsyncCallable",
+      "message": "Async result ignored",
+      "cause": "Future or async result not handled",
+      "solutions": [
+        {
+          "approach": "Handle future",
+          "code": "CompletableFuture<Result> future = asyncMethod();\nfuture.whenComplete((result, error) -> {\n    if (error != null) log.error(\"Async error\", error);\n});",
+          "when": "Need to handle result"
+        },
+        {
+          "approach": "Block if needed",
+          "code": "Result result = future.get(30, TimeUnit.SECONDS);",
+          "when": "Need synchronous result"
+        },
+        {
+          "approach": "Use Futures utility",
+          "code": "Futures.addCallback(future, callback, executor);",
+          "when": "Using Guava"
+        }
+      ]
+    },
+    {
+      "id": "finally_error",
+      "pattern": "Finally|return in finally|throw in finally",
+      "message": "Control flow in finally block",
+      "cause": "Return or throw in finally can swallow exceptions",
+      "solutions": [
+        {
+          "approach": "Remove return from finally",
+          "code": "try {\n    return compute();\n} finally {\n    cleanup(); // Don't return here\n}",
+          "when": "Return swallows exception"
+        },
+        {
+          "approach": "Use try-with-resources",
+          "code": "try (Resource r = acquire()) {\n    return r.use();\n}",
+          "when": "Resource cleanup"
+        },
+        {
+          "approach": "Catch in finally",
+          "code": "finally {\n    try {\n        cleanup();\n    } catch (Exception e) {\n        log.warn(\"Cleanup failed\", e);\n    }\n}",
+          "when": "Cleanup may throw"
+        }
+      ]
+    },
+    {
+      "id": "thread_safety",
+      "pattern": "GuardedBy|SynchronizationOnGetClass|InconsistentCapitalizedMethodName",
+      "message": "Thread safety issue",
+      "cause": "Potential threading bug or inconsistent synchronization",
+      "solutions": [
+        {
+          "approach": "Add @GuardedBy",
+          "code": "@GuardedBy(\"lock\")\nprivate int counter;",
+          "when": "Document lock requirement"
+        },
+        {
+          "approach": "Synchronize on class",
+          "code": "synchronized (MyClass.class) { }",
+          "when": "Need class-level lock"
+        },
+        {
+          "approach": "Use concurrent type",
+          "code": "private final ConcurrentHashMap<K, V> map = new ConcurrentHashMap<>();",
+          "when": "Concurrent access needed"
+        }
+      ]
+    },
+    {
+      "id": "builder_pattern",
+      "pattern": "MissingCasesInEnumSwitch|AutoValueSubclassLeaked",
+      "message": "Builder/AutoValue issue",
+      "cause": "Incomplete switch or builder pattern issue",
+      "solutions": [
+        {
+          "approach": "Add default case",
+          "code": "switch (enumVal) {\n    case A -> handleA();\n    case B -> handleB();\n    default -> throw new IllegalStateException(\"Unknown: \" + enumVal);\n}",
+          "when": "Switch on enum"
+        },
+        {
+          "approach": "Handle all cases",
+          "code": "return switch (status) {\n    case PENDING -> \"pending\";\n    case DONE -> \"done\";\n};",
+          "when": "Exhaustive switch"
+        },
+        {
+          "approach": "Fix AutoValue",
+          "code": "@AutoValue\npublic abstract class MyValue {\n    public static MyValue create(...) { return new AutoValue_MyValue(...); }\n}",
+          "when": "AutoValue pattern"
+        }
+      ]
+    }
+  ]
+}

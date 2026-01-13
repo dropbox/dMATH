@@ -1,0 +1,167 @@
+{
+  "tool": "cryptoverif",
+  "version": "2.08",
+  "last_updated": "2025-12-22",
+  "description": "Computational cryptographic protocol verifier with game-based security proofs",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "Syntax error|Parse error|unexpected",
+      "message": "CryptoVerif syntax error",
+      "cause": "Invalid CryptoVerif syntax",
+      "solutions": [
+        {
+          "approach": "Check process structure",
+          "code": "process\n  Ostart() :=\n    k <-R key;\n    return();\n    foreach i <= N do\n      Oencrypt(m: bitstring) :=\n        return(enc(m, k))",
+          "when": "Oracle syntax"
+        },
+        {
+          "approach": "Check type declarations",
+          "code": "type key [fixed].\ntype nonce [large].\ntype ciphertext.",
+          "when": "Type definitions"
+        },
+        {
+          "approach": "Check function syntax",
+          "code": "fun enc(bitstring, key): ciphertext.\nfun dec(ciphertext, key): bitstring\n  reduc forall m: bitstring, k: key;\n    dec(enc(m, k), k) = m.",
+          "when": "Function definitions"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type error|type mismatch",
+      "message": "Type mismatch in term",
+      "cause": "Expression has wrong type",
+      "solutions": [
+        {
+          "approach": "Check variable types",
+          "code": "new k: key;  (* explicit type *)\nlet x: bitstring = m in  (* type annotation *)",
+          "when": "Unclear types"
+        },
+        {
+          "approach": "Check function return types",
+          "code": "(* enc: bitstring × key -> ciphertext *)\nlet c: ciphertext = enc(m, k) in",
+          "when": "Return type"
+        },
+        {
+          "approach": "Use type conversions",
+          "code": "const_to_bitstring(c: const): bitstring.",
+          "when": "Need type conversion"
+        }
+      ]
+    },
+    {
+      "id": "proof_failed",
+      "pattern": "Could not prove|proof failed|RESULT.*false",
+      "message": "Security proof failed",
+      "cause": "Cannot prove security property",
+      "solutions": [
+        {
+          "approach": "Check security definition",
+          "code": "query secret s [cv_onesession].\nquery secret s.  (* multi-session security *)",
+          "when": "Query type"
+        },
+        {
+          "approach": "Add proof instructions",
+          "code": "proof {\n  crypto enc;\n  crypto mac;\n  success\n}",
+          "when": "Guide the prover"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "(* Start with simpler adversary model *)",
+          "when": "Complex proof"
+        }
+      ]
+    },
+    {
+      "id": "assumption_error",
+      "pattern": "assumption.*not found|crypto.*invalid",
+      "message": "Cryptographic assumption error",
+      "cause": "Invalid or missing crypto assumption",
+      "solutions": [
+        {
+          "approach": "Define IND-CPA",
+          "code": "proba Penc.\nequiv\n  foreach i <= N do new k: key;\n    (foreach j <= N' do Oenc(m: bitstring) := return(enc(m, k)))\n<=(N * Penc(time, N'))=>\n  foreach i <= N do new k: key;\n    (foreach j <= N' do Oenc(m: bitstring) := return(enc_r(Zbitstring(m), k))).",
+          "when": "Encryption assumption"
+        },
+        {
+          "approach": "Use library assumption",
+          "code": "(* Use provided crypto library *)\n#include \"aead.cvl\"",
+          "when": "Standard primitive"
+        }
+      ]
+    },
+    {
+      "id": "oracle_error",
+      "pattern": "oracle.*error|Oname.*not found",
+      "message": "Oracle declaration error",
+      "cause": "Invalid oracle syntax or missing oracle",
+      "solutions": [
+        {
+          "approach": "Check oracle syntax",
+          "code": "Oenc(m: bitstring) :=\n  return(enc(m, k))",
+          "when": "Oracle definition"
+        },
+        {
+          "approach": "Check oracle return",
+          "code": "Otest() :=\n  if cond then\n    return(true)\n  else\n    return(false)",
+          "when": "Conditional return"
+        }
+      ]
+    },
+    {
+      "id": "equivalence_error",
+      "pattern": "equivalence.*failed|games not equivalent",
+      "message": "Game equivalence proof failed",
+      "cause": "Games are distinguishable",
+      "solutions": [
+        {
+          "approach": "Check game transformation",
+          "code": "proof {\n  show_game occ;  (* show current game *)\n  crypto enc(k);  (* apply assumption *)\n  show_game\n}",
+          "when": "Debug transformation"
+        },
+        {
+          "approach": "Add intermediate games",
+          "code": "(* Break proof into smaller steps *)",
+          "when": "Large proof gap"
+        }
+      ]
+    },
+    {
+      "id": "probability_error",
+      "pattern": "probability.*error|advantage.*computation",
+      "message": "Probability/advantage computation error",
+      "cause": "Cannot compute security bound",
+      "solutions": [
+        {
+          "approach": "Define probability",
+          "code": "proba Pcoll.  (* collision probability *)\nproba Penc.   (* encryption advantage *)",
+          "when": "Missing probability"
+        },
+        {
+          "approach": "Check time function",
+          "code": "letfun time(n: int, m: int): int = n + m.",
+          "when": "Time complexity"
+        }
+      ]
+    },
+    {
+      "id": "foreach_error",
+      "pattern": "foreach.*error|replication.*bounds",
+      "message": "Replication bounds error",
+      "cause": "Invalid foreach bounds or usage",
+      "solutions": [
+        {
+          "approach": "Declare bounds",
+          "code": "param N, N'.",
+          "when": "Missing parameter"
+        },
+        {
+          "approach": "Use foreach correctly",
+          "code": "foreach i <= N do\n  Oquery(x: bitstring) [useful_change] :=\n    ...",
+          "when": "Foreach syntax"
+        }
+      ]
+    }
+  ]
+}

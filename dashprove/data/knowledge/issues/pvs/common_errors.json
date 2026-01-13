@@ -1,0 +1,102 @@
+{
+  "tool": "pvs",
+  "version": "7.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "tcc_failed",
+      "pattern": "TCC generation failed|unproved TCCs remain",
+      "message": "Type-correctness conditions not discharged",
+      "cause": "Partial functions, subtype constraints, or missing lemmas",
+      "solutions": [
+        {
+          "approach": "Inspect generated TCCs",
+          "code": "M-x show-tccs",
+          "when": "Understand obligations"
+        },
+        {
+          "approach": "Strengthen preconditions",
+          "code": "foo(x: nonzero): nonzero = ...",
+          "when": "Subtype assumptions missing"
+        },
+        {
+          "approach": "Prove TCCs separately",
+          "code": "foo_TCC1: THEOREM ...",
+          "when": "Automation fails"
+        }
+      ]
+    },
+    {
+      "id": "type_check_error",
+      "pattern": "Type error in expression|Expecting .* got",
+      "message": "Expression fails type checking",
+      "cause": "Implicit conversions not available or wrong subtype",
+      "solutions": [
+        {
+          "approach": "Add coercions explicitly",
+          "code": "IMPORTING real_props\ncoerce(x): real = x",
+          "when": "Subtype needs lifting"
+        },
+        {
+          "approach": "Use conversion rules",
+          "code": "x::real",
+          "when": "Cast between numeric towers"
+        }
+      ]
+    },
+    {
+      "id": "grind_nonterminating",
+      "pattern": "grind failed|proof command aborted",
+      "message": "Automated strategy stuck",
+      "cause": "Recursive rewriting or huge case splits",
+      "solutions": [
+        {
+          "approach": "Use simpler strategy",
+          "code": "(then (flatten) (inst?) (assert))",
+          "when": "grind too aggressive"
+        },
+        {
+          "approach": "Provide skolem constants manually",
+          "code": "(skolem!)",
+          "when": "Quantifiers cause blowup"
+        }
+      ]
+    },
+    {
+      "id": "name_conflict",
+      "pattern": "already declared in theory|identifier clashes",
+      "message": "Identifier conflicts within or across theories",
+      "cause": "Overlapping imports or redeclarations",
+      "solutions": [
+        {
+          "approach": "Use theory aliases",
+          "code": "IMPORTING real_props AS RP",
+          "when": "Avoid collisions"
+        },
+        {
+          "approach": "Rename symbols via exporting",
+          "code": "EXPORTING foo AS bar",
+          "when": "Need local name"
+        }
+      ]
+    },
+    {
+      "id": "proof_obligation_unproved",
+      "pattern": "Proof not completed|Q.E.D. missing",
+      "message": "Interactive proof leaves subgoals",
+      "cause": "Missing induction or wrong instantiation",
+      "solutions": [
+        {
+          "approach": "Try induction schema",
+          "code": "(induct \"n\" \"measure\")",
+          "when": "Recursive functions"
+        },
+        {
+          "approach": "Case split on boolean/constructors",
+          "code": "(case)",
+          "when": "Need exhaustive cases"
+        }
+      ]
+    }
+  ]
+}

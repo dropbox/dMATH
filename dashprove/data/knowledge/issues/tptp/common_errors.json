@@ -1,0 +1,169 @@
+{
+  "tool": "tptp",
+  "version": "8.2.0",
+  "last_updated": "2025-12-23",
+  "description": "TPTP (Thousands of Problems for Theorem Provers) benchmark library",
+  "errors": [
+    {
+      "id": "syntax_error_fof",
+      "pattern": "syntax error.*fof|parse error.*fof",
+      "message": "First-order formula syntax error",
+      "cause": "Invalid first-order formula (FOF) syntax",
+      "solutions": [
+        {
+          "approach": "Check quantifier syntax",
+          "code": "% Correct FOF quantifier syntax:\nfof(ax1, axiom, ![X]: (p(X) => q(X))).\nfof(ax2, axiom, ?[X,Y]: (r(X,Y) & s(Y))).",
+          "when": "Quantifier binding error"
+        },
+        {
+          "approach": "Verify connective syntax",
+          "code": "% FOF connectives:\n% & (and), | (or), => (implies), <=> (iff), ~ (not)\nfof(ex, axiom, (p & q) => (r | ~s)).",
+          "when": "Using wrong connective symbols"
+        },
+        {
+          "approach": "Check parentheses balance",
+          "code": "% Parentheses must be balanced\nfof(good, axiom, ((a => b) & (b => c)) => (a => c)).",
+          "when": "Unbalanced parentheses"
+        }
+      ]
+    },
+    {
+      "id": "type_error_tff",
+      "pattern": "type error|ill.?typed.*term",
+      "message": "Type error in typed first-order formula",
+      "cause": "Term or formula violates type constraints",
+      "solutions": [
+        {
+          "approach": "Declare types properly",
+          "code": "% TFF type declarations\ntff(nat_type, type, nat: $tType).\ntff(plus_type, type, plus: (nat * nat) > nat).\ntff(zero_type, type, zero: nat).",
+          "when": "Missing type declaration"
+        },
+        {
+          "approach": "Check function application",
+          "code": "% Arguments must match declared types\ntff(ax1, axiom, ![X:nat, Y:nat]: plus(X,Y) = plus(Y,X)).",
+          "when": "Type mismatch in application"
+        },
+        {
+          "approach": "Use polymorphic types correctly",
+          "code": "% Polymorphic type usage\ntff(list_type, type, list: $tType > $tType).\ntff(cons_type, type, cons: !>[A:$tType]: (A * list(A)) > list(A)).",
+          "when": "Polymorphism errors"
+        }
+      ]
+    },
+    {
+      "id": "include_not_found",
+      "pattern": "include.*not found|cannot open.*include",
+      "message": "Included file not found",
+      "cause": "TPTP include directive references missing file",
+      "solutions": [
+        {
+          "approach": "Set TPTP environment variable",
+          "code": "# Set TPTP library path\nexport TPTP=/path/to/tptp-library\n# Files are in $TPTP/Problems/, $TPTP/Axioms/, etc.",
+          "when": "TPTP variable not set"
+        },
+        {
+          "approach": "Use correct include path",
+          "code": "% Include axiom files correctly\ninclude('Axioms/SET006+0.ax').\ninclude('Axioms/NUM005+0.ax', [ax1, ax2, ax3]).",
+          "when": "Wrong relative path"
+        },
+        {
+          "approach": "Check TPTP version",
+          "code": "# Verify axiom file exists in your TPTP version\nls $TPTP/Axioms/SET006+0.ax",
+          "when": "Axiom file moved or renamed"
+        }
+      ]
+    },
+    {
+      "id": "szs_timeout",
+      "pattern": "SZS status Timeout|time limit exceeded",
+      "message": "Prover timed out without result",
+      "cause": "Problem too hard or time limit too short",
+      "solutions": [
+        {
+          "approach": "Increase time limit",
+          "code": "# Give prover more time\nvampire --time_limit 300 problem.p  # 5 minutes\neprover -T 300 problem.p",
+          "when": "Simple problem, short timeout"
+        },
+        {
+          "approach": "Try different prover",
+          "code": "# Different provers excel at different problem types\n# E, Vampire, SPASS, Z3 for FOF\n# CVC5, Zipperposition for TFF",
+          "when": "Problem type suits another prover"
+        },
+        {
+          "approach": "Simplify the problem",
+          "code": "% Remove unnecessary axioms\n% Use include with selection\ninclude('Axioms/SET006+0.ax', [needed_axiom1, needed_axiom2]).",
+          "when": "Too many axioms"
+        }
+      ]
+    },
+    {
+      "id": "szs_unknown",
+      "pattern": "SZS status Unknown|GaveUp",
+      "message": "Prover cannot determine satisfiability",
+      "cause": "Problem is undecidable or prover limitations",
+      "solutions": [
+        {
+          "approach": "Check problem rating",
+          "code": "% Problem header shows difficulty\n% File : SET001+1.p\n% Rating : 0.25 v8.1.0 (25% solved by provers)",
+          "when": "Very hard problem"
+        },
+        {
+          "approach": "Try finite model finder",
+          "code": "# For satisfiability, try model finders\nmace4 -f problem.p\nparadox problem.p",
+          "when": "Looking for countermodel"
+        },
+        {
+          "approach": "Use hints/lemmas",
+          "code": "% Add intermediate lemmas\nfof(lemma1, lemma, ...).\nfof(goal, conjecture, ..., [lemma1]).",
+          "when": "Proof requires guidance"
+        }
+      ]
+    },
+    {
+      "id": "thf_higher_order_error",
+      "pattern": "higher.?order.*error|thf.*not supported",
+      "message": "Higher-order formula not supported",
+      "cause": "Prover doesn't support THF (typed higher-order)",
+      "solutions": [
+        {
+          "approach": "Use THF-capable prover",
+          "code": "# THF-capable provers\nleo2 problem.thf\nsatallax problem.thf\nzipperposition --mode=ho problem.thf",
+          "when": "Prover only handles FOF/TFF"
+        },
+        {
+          "approach": "Check THF syntax",
+          "code": "% THF syntax for lambda and application\nthf(f_type, type, f: ($i > $o) > $i).\nthf(ax, axiom, f @ (^[X:$i]: p @ X) = c).",
+          "when": "Syntax error in THF"
+        },
+        {
+          "approach": "Defunctionalize if possible",
+          "code": "% Convert HOF to FOF using defunctionalization\n% Replace: f(g) where g: $i > $o\n% With: f(g_code) and apply(g_code, X)",
+          "when": "Can avoid higher-order"
+        }
+      ]
+    },
+    {
+      "id": "smt_conversion_error",
+      "pattern": "SMT.*conversion.*error|cannot translate to SMT",
+      "message": "Cannot convert TPTP to SMT-LIB format",
+      "cause": "TPTP constructs not expressible in SMT-LIB",
+      "solutions": [
+        {
+          "approach": "Use TFF instead of FOF",
+          "code": "% TFF translates better to SMT-LIB\n% Add explicit types\ntff(ax1, axiom, ![X:$int, Y:$int]: plus(X,Y) = plus(Y,X)).",
+          "when": "FOF to SMT conversion fails"
+        },
+        {
+          "approach": "Avoid non-SMT constructs",
+          "code": "% Avoid: conditional definitions, choice operators\n% Use: direct function definitions\ntff(f_def, axiom, ![X:$int]: f(X) = ite($greater(X,0), X, $uminus(X))).",
+          "when": "Using unsupported features"
+        },
+        {
+          "approach": "Use direct SMT-LIB",
+          "code": "; Write directly in SMT-LIB2 format\n(declare-sort T 0)\n(declare-fun f (T) T)\n(assert (forall ((x T)) (= (f (f x)) x)))",
+          "when": "Need SMT solver features"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "hey",
+  "version": "0.1.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_error",
+      "pattern": "dial tcp.*connection refused|no such host|connection reset",
+      "message": "Cannot connect to target",
+      "cause": "Server not running or wrong URL",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl -I http://localhost:8080/",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check URL",
+          "code": "hey -n 10 http://correct-host:port/path",
+          "when": "Wrong URL"
+        },
+        {
+          "approach": "Local test",
+          "code": "hey -n 1 http://127.0.0.1:8080/",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|context deadline exceeded|request timeout",
+      "message": "Request timed out",
+      "cause": "Server response too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "hey -t 60 -n 100 http://localhost:8080/",
+          "when": "Slow requests"
+        },
+        {
+          "approach": "Reduce concurrency",
+          "code": "hey -c 10 -n 100 http://localhost:8080/",
+          "when": "Server overwhelmed"
+        },
+        {
+          "approach": "Check server",
+          "code": "# Profile server to find bottlenecks",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "tls_error",
+      "pattern": "tls: handshake failure|x509|certificate",
+      "message": "TLS/SSL error",
+      "cause": "Certificate issue",
+      "solutions": [
+        {
+          "approach": "Disable verification",
+          "code": "hey -disable-keepalive -n 100 https://localhost:8443/",
+          "when": "Self-signed cert"
+        },
+        {
+          "approach": "Use HTTP",
+          "code": "hey -n 100 http://localhost:8080/",
+          "when": "Don't need HTTPS"
+        },
+        {
+          "approach": "Fix certificate",
+          "code": "# Ensure valid certificate on server",
+          "when": "Production"
+        }
+      ]
+    },
+    {
+      "id": "http2_error",
+      "pattern": "http2|protocol error|stream",
+      "message": "HTTP/2 protocol error",
+      "cause": "HTTP/2 compatibility issue",
+      "solutions": [
+        {
+          "approach": "Force HTTP/1",
+          "code": "hey -http1 -n 100 https://localhost:8443/",
+          "when": "HTTP/2 not supported"
+        },
+        {
+          "approach": "Disable keepalive",
+          "code": "hey -disable-keepalive -n 100 http://localhost:8080/",
+          "when": "Connection reuse issues"
+        },
+        {
+          "approach": "Check server config",
+          "code": "# Verify server HTTP/2 configuration",
+          "when": "Server-side issue"
+        }
+      ]
+    },
+    {
+      "id": "body_error",
+      "pattern": "body.*not found|cannot read|file.*no such",
+      "message": "Request body file not found",
+      "cause": "Specified body file doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "hey -m POST -D ./body.json -T application/json -n 100 http://localhost:8080/api",
+          "when": "Wrong file path"
+        },
+        {
+          "approach": "Inline body",
+          "code": "hey -m POST -d '{\"key\":\"value\"}' -T application/json -n 100 http://localhost:8080/api",
+          "when": "Small body"
+        },
+        {
+          "approach": "Verify file",
+          "code": "cat body.json && ls -la body.json",
+          "when": "Check file exists"
+        }
+      ]
+    },
+    {
+      "id": "high_latency",
+      "pattern": "Slowest.*ms|Average.*ms|Latency distribution",
+      "message": "Understanding latency output",
+      "cause": "Not an error - output explanation",
+      "solutions": [
+        {
+          "approach": "Read output",
+          "code": "# Summary shows: Total, Slowest, Fastest, Average, Requests/sec\n# Latency distribution shows percentiles (10%, 25%, 50%, 75%, 90%, 95%, 99%)\n# Status code distribution shows response codes",
+          "when": "Understanding results"
+        },
+        {
+          "approach": "CSV output",
+          "code": "hey -o csv -n 1000 http://localhost:8080/ > results.csv",
+          "when": "Need data export"
+        },
+        {
+          "approach": "More detail",
+          "code": "hey -more -n 100 http://localhost:8080/",
+          "when": "Additional stats"
+        }
+      ]
+    },
+    {
+      "id": "error_responses",
+      "pattern": "Status code distribution|\\[5[0-9][0-9]\\]|errors",
+      "message": "High error rate in responses",
+      "cause": "Server returning error status codes",
+      "solutions": [
+        {
+          "approach": "Add auth",
+          "code": "hey -H \"Authorization: Bearer token\" -n 100 http://localhost:8080/api",
+          "when": "Auth required"
+        },
+        {
+          "approach": "Add headers",
+          "code": "hey -H \"Content-Type: application/json\" -H \"Accept: application/json\" -n 100 http://localhost:8080/",
+          "when": "Headers needed"
+        },
+        {
+          "approach": "Debug manually",
+          "code": "curl -v http://localhost:8080/api",
+          "when": "Investigate error"
+        }
+      ]
+    },
+    {
+      "id": "qps_rate",
+      "pattern": "rate limit|q option|requests per second",
+      "message": "Configuring request rate",
+      "cause": "Need to control request rate",
+      "solutions": [
+        {
+          "approach": "Set QPS",
+          "code": "hey -q 100 -n 1000 http://localhost:8080/  # 100 requests/sec",
+          "when": "Control rate"
+        },
+        {
+          "approach": "Duration based",
+          "code": "hey -z 30s -q 50 http://localhost:8080/  # 50 qps for 30s",
+          "when": "Time-based test"
+        },
+        {
+          "approach": "Max throughput",
+          "code": "hey -c 200 -n 10000 http://localhost:8080/  # No rate limit",
+          "when": "Find max capacity"
+        }
+      ]
+    }
+  ]
+}

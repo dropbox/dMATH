@@ -1,0 +1,186 @@
+{
+  "tool": "cbmc",
+  "version": "5.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assertion_failure",
+      "pattern": "VERIFICATION FAILED",
+      "message": "Assertion failure found",
+      "cause": "CBMC found a trace violating an assertion",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "cbmc --trace file.c  # Show violation trace",
+          "when": "Need to understand the bug"
+        },
+        {
+          "approach": "Fix the code",
+          "code": "// The assertion caught a real bug",
+          "when": "Code is incorrect"
+        },
+        {
+          "approach": "Add precondition",
+          "code": "__CPROVER_assume(precondition);",
+          "when": "Need to constrain inputs"
+        }
+      ]
+    },
+    {
+      "id": "unwinding_assertion",
+      "pattern": "unwinding assertion",
+      "message": "Unwinding assertion failed",
+      "cause": "Loop required more iterations than bound",
+      "solutions": [
+        {
+          "approach": "Increase unwind bound",
+          "code": "cbmc --unwind N file.c  # Increase N",
+          "when": "Loop has known bounded iterations"
+        },
+        {
+          "approach": "Use function-specific bound",
+          "code": "cbmc --unwindset func.0:N file.c",
+          "when": "Different loops need different bounds"
+        },
+        {
+          "approach": "Add loop invariant",
+          "code": "__CPROVER_loop_invariant(condition)",
+          "when": "Want unbounded verification"
+        }
+      ]
+    },
+    {
+      "id": "pointer_dereference",
+      "pattern": "dereference failure",
+      "message": "Invalid pointer dereference",
+      "cause": "Dereferencing NULL or invalid pointer",
+      "solutions": [
+        {
+          "approach": "Add NULL check",
+          "code": "if (ptr != NULL) { *ptr = value; }",
+          "when": "Pointer may be NULL"
+        },
+        {
+          "approach": "Add assumption",
+          "code": "__CPROVER_assume(ptr != NULL);",
+          "when": "Caller guarantees non-NULL"
+        },
+        {
+          "approach": "Check array bounds",
+          "code": "__CPROVER_assume(i < array_size);",
+          "when": "Array index out of bounds"
+        }
+      ]
+    },
+    {
+      "id": "buffer_overflow",
+      "pattern": "array bounds violated",
+      "message": "Array bounds violation",
+      "cause": "Array access outside allocated bounds",
+      "solutions": [
+        {
+          "approach": "Add bounds check",
+          "code": "if (i < len) { arr[i] = val; }",
+          "when": "Index may exceed bounds"
+        },
+        {
+          "approach": "Constrain input",
+          "code": "__CPROVER_assume(0 <= i && i < N);",
+          "when": "Input should be bounded"
+        },
+        {
+          "approach": "Fix buffer size",
+          "code": "char buf[SUFFICIENT_SIZE];",
+          "when": "Buffer too small"
+        }
+      ]
+    },
+    {
+      "id": "arithmetic_overflow",
+      "pattern": "arithmetic overflow",
+      "message": "Integer overflow detected",
+      "cause": "Integer operation overflows",
+      "solutions": [
+        {
+          "approach": "Use wider type",
+          "code": "int64_t result = (int64_t)a * b;",
+          "when": "Intermediate result needs more bits"
+        },
+        {
+          "approach": "Add bounds check",
+          "code": "if (a <= INT_MAX - b) { result = a + b; }",
+          "when": "Need runtime overflow check"
+        },
+        {
+          "approach": "Constrain inputs",
+          "code": "__CPROVER_assume(a < 1000 && b < 1000);",
+          "when": "Inputs have natural bounds"
+        }
+      ]
+    },
+    {
+      "id": "division_by_zero",
+      "pattern": "division by zero",
+      "message": "Division by zero",
+      "cause": "Divisor may be zero",
+      "solutions": [
+        {
+          "approach": "Add check",
+          "code": "if (divisor != 0) { result = a / divisor; }",
+          "when": "Divisor may be zero"
+        },
+        {
+          "approach": "Add assumption",
+          "code": "__CPROVER_assume(divisor != 0);",
+          "when": "Caller guarantees non-zero"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT",
+      "message": "Verification timed out",
+      "cause": "State space too large",
+      "solutions": [
+        {
+          "approach": "Reduce unwind bound",
+          "code": "cbmc --unwind 5 file.c  # Start small",
+          "when": "Over-approximating loop bounds"
+        },
+        {
+          "approach": "Constrain inputs",
+          "code": "__CPROVER_assume(size < 10);",
+          "when": "Can verify with smaller inputs"
+        },
+        {
+          "approach": "Use slicing",
+          "code": "cbmc --slice-formula file.c",
+          "when": "Want to remove irrelevant code"
+        },
+        {
+          "approach": "Modularize",
+          "code": "// Verify functions separately",
+          "when": "Program too complex as whole"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "memory leak",
+      "message": "Memory leak detected",
+      "cause": "Allocated memory not freed",
+      "solutions": [
+        {
+          "approach": "Add free",
+          "code": "free(ptr); ptr = NULL;",
+          "when": "Forgot to free memory"
+        },
+        {
+          "approach": "Fix control flow",
+          "code": "// Ensure free is called on all paths",
+          "when": "Some paths leak memory"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "purescript",
+  "version": "0.15.15",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "Could not match type|Type.*does not unify",
+      "message": "Type mismatch",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Add type annotation",
+          "code": "f :: Int -> String\nf n = show n",
+          "when": "Type inference failed"
+        },
+        {
+          "approach": "Check effect rows",
+          "code": "-- Effect a vs Aff a vs Effect Unit",
+          "when": "Effect type mismatch"
+        },
+        {
+          "approach": "Use explicit forall",
+          "code": "f :: forall a. Show a => a -> String",
+          "when": "Need polymorphic function"
+        }
+      ]
+    },
+    {
+      "id": "unknown_value",
+      "pattern": "Unknown value|not in scope",
+      "message": "Value not in scope",
+      "cause": "Variable or function not defined or imported",
+      "solutions": [
+        {
+          "approach": "Import module",
+          "code": "import Data.Array (head, tail)\nimport Prelude",
+          "when": "Value in another module"
+        },
+        {
+          "approach": "Check exports",
+          "code": "module Main (main) where  -- Explicit exports",
+          "when": "Value not exported"
+        },
+        {
+          "approach": "Install package",
+          "code": "spago install package-name",
+          "when": "Package not installed"
+        }
+      ]
+    },
+    {
+      "id": "missing_instance",
+      "pattern": "No type class instance|Could not match.*instance",
+      "message": "Missing typeclass instance",
+      "cause": "Type lacks required typeclass instance",
+      "solutions": [
+        {
+          "approach": "Derive instance",
+          "code": "derive instance eqMyType :: Eq MyType\nderive instance ordMyType :: Ord MyType",
+          "when": "Standard class derivable"
+        },
+        {
+          "approach": "Add instance manually",
+          "code": "instance showMyType :: Show MyType where\n  show _ = \"MyType\"",
+          "when": "Custom instance needed"
+        },
+        {
+          "approach": "Add constraint",
+          "code": "f :: forall a. Show a => a -> String",
+          "when": "Function needs constraint"
+        }
+      ]
+    },
+    {
+      "id": "row_type_mismatch",
+      "pattern": "Could not match.*row|row lacks",
+      "message": "Row type mismatch",
+      "cause": "Record row doesn't have expected fields",
+      "solutions": [
+        {
+          "approach": "Add missing field",
+          "code": "{ name: \"test\", age: 30 }  -- Include required fields",
+          "when": "Record missing fields"
+        },
+        {
+          "approach": "Use open row",
+          "code": "f :: forall r. { name :: String | r } -> String",
+          "when": "Function should accept extra fields"
+        },
+        {
+          "approach": "Check field names",
+          "code": "-- PureScript is case-sensitive",
+          "when": "Typo in field name"
+        }
+      ]
+    },
+    {
+      "id": "effect_mismatch",
+      "pattern": "Cannot unify.*Effect|Aff.*Effect",
+      "message": "Effect type mismatch",
+      "cause": "Mixing different effect types",
+      "solutions": [
+        {
+          "approach": "Use liftEffect",
+          "code": "liftEffect :: Effect a -> Aff a",
+          "when": "Running Effect in Aff"
+        },
+        {
+          "approach": "Use launchAff_",
+          "code": "launchAff_ :: Aff Unit -> Effect Unit",
+          "when": "Running Aff from Effect"
+        },
+        {
+          "approach": "Unify effect types",
+          "code": "-- Keep consistent effect type in do-block",
+          "when": "Mixed effects in same block"
+        }
+      ]
+    },
+    {
+      "id": "overlapping_instances",
+      "pattern": "Overlapping.*instances|ambiguous",
+      "message": "Overlapping typeclass instances",
+      "cause": "Multiple instances could apply",
+      "solutions": [
+        {
+          "approach": "Use type annotation",
+          "code": "(show :: Int -> String) 42",
+          "when": "Disambiguate with type"
+        },
+        {
+          "approach": "Use newtype wrapper",
+          "code": "newtype MyInt = MyInt Int\ninstance showMyInt :: Show MyInt where ...",
+          "when": "Need distinct instance"
+        },
+        {
+          "approach": "Check instance heads",
+          "code": "-- Ensure instances don't overlap",
+          "when": "Defining custom instances"
+        }
+      ]
+    },
+    {
+      "id": "spago_error",
+      "pattern": "spago.*error|Could not find.*package set",
+      "message": "Spago build error",
+      "cause": "Package set or dependency issue",
+      "solutions": [
+        {
+          "approach": "Update package set",
+          "code": "spago upgrade-set",
+          "when": "Package set outdated"
+        },
+        {
+          "approach": "Install dependencies",
+          "code": "spago install",
+          "when": "Dependencies not fetched"
+        },
+        {
+          "approach": "Check spago.dhall",
+          "code": "-- Verify packages list in configuration",
+          "when": "Package misconfigured"
+        }
+      ]
+    }
+  ]
+}

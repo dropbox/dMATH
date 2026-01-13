@@ -1,0 +1,168 @@
+{
+  "tool": "frama_c_mthread",
+  "version": "29.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "data_race",
+      "pattern": "data race|concurrent access|unsynchronized access",
+      "message": "Potential data race detected",
+      "cause": "Multiple threads may access same memory without synchronization",
+      "solutions": [
+        {
+          "approach": "Add mutex protection",
+          "code": "pthread_mutex_lock(&mutex);\nshared_var = value;\npthread_mutex_unlock(&mutex);",
+          "when": "Need mutual exclusion"
+        },
+        {
+          "approach": "Use atomic operations",
+          "code": "__atomic_store_n(&var, val, __ATOMIC_SEQ_CST);",
+          "when": "Simple atomic update"
+        },
+        {
+          "approach": "Document thread safety",
+          "code": "//@ ensures \\separated(ptr1, ptr2);",
+          "when": "False positive"
+        }
+      ]
+    },
+    {
+      "id": "deadlock_potential",
+      "pattern": "deadlock|circular wait|lock order violation",
+      "message": "Potential deadlock detected",
+      "cause": "Lock acquisition order may cause circular wait",
+      "solutions": [
+        {
+          "approach": "Fix lock order",
+          "code": "// Always acquire locks in consistent order: A before B",
+          "when": "Inconsistent lock ordering"
+        },
+        {
+          "approach": "Use trylock",
+          "code": "if (pthread_mutex_trylock(&m2) != 0) {\n  pthread_mutex_unlock(&m1);\n  // retry\n}",
+          "when": "Can't enforce order"
+        },
+        {
+          "approach": "Restructure locking",
+          "code": "// Use single lock or hierarchical locking",
+          "when": "Complex lock dependencies"
+        }
+      ]
+    },
+    {
+      "id": "thread_annotation_error",
+      "pattern": "invalid thread annotation|ACSL threading",
+      "message": "Thread-related ACSL annotation error",
+      "cause": "Invalid or missing thread specification",
+      "solutions": [
+        {
+          "approach": "Specify thread-local",
+          "code": "//@ thread_local int per_thread_var;",
+          "when": "Variable is thread-local"
+        },
+        {
+          "approach": "Specify shared",
+          "code": "//@ shared int global_counter;",
+          "when": "Intentionally shared"
+        },
+        {
+          "approach": "Add lock annotation",
+          "code": "//@ guarded_by(mutex) int protected_var;",
+          "when": "Mutex-protected"
+        }
+      ]
+    },
+    {
+      "id": "atomicity_violation",
+      "pattern": "atomicity violation|non-atomic access",
+      "message": "Operation is not atomic",
+      "cause": "Multi-step operation can be interleaved",
+      "solutions": [
+        {
+          "approach": "Use atomic operation",
+          "code": "__atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);",
+          "when": "Need atomic increment"
+        },
+        {
+          "approach": "Protect with lock",
+          "code": "pthread_mutex_lock(&m);\nif (cond) { action(); }\npthread_mutex_unlock(&m);",
+          "when": "Check-then-act pattern"
+        },
+        {
+          "approach": "Use compare-and-swap",
+          "code": "__atomic_compare_exchange_n(&ptr, &expected, desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);",
+          "when": "Lock-free algorithm"
+        }
+      ]
+    },
+    {
+      "id": "thread_creation_error",
+      "pattern": "thread creation|pthread_create analysis",
+      "message": "Thread creation analysis issue",
+      "cause": "Mthread cannot analyze thread creation pattern",
+      "solutions": [
+        {
+          "approach": "Annotate thread function",
+          "code": "/*@ thread_entry void* worker(void* arg); @*/",
+          "when": "Mark thread entry point"
+        },
+        {
+          "approach": "Specify argument type",
+          "code": "//@ requires \\valid((struct worker_args*)arg);",
+          "when": "Thread argument"
+        },
+        {
+          "approach": "Limit thread count",
+          "code": "//@ assume num_threads <= MAX_THREADS;",
+          "when": "Bound analysis"
+        }
+      ]
+    },
+    {
+      "id": "barrier_error",
+      "pattern": "barrier synchronization|pthread_barrier",
+      "message": "Barrier synchronization issue",
+      "cause": "Threads may not reach barrier correctly",
+      "solutions": [
+        {
+          "approach": "Check barrier count",
+          "code": "pthread_barrier_init(&barrier, NULL, NUM_THREADS);",
+          "when": "Count must match threads"
+        },
+        {
+          "approach": "Ensure all threads reach",
+          "code": "// All participating threads must call pthread_barrier_wait",
+          "when": "Missing barrier call"
+        },
+        {
+          "approach": "Handle return value",
+          "code": "int rc = pthread_barrier_wait(&barrier);\nif (rc == PTHREAD_BARRIER_SERIAL_THREAD) { /* leader */ }",
+          "when": "Need serial thread"
+        }
+      ]
+    },
+    {
+      "id": "condvar_error",
+      "pattern": "condition variable|pthread_cond|spurious wakeup",
+      "message": "Condition variable usage issue",
+      "cause": "Incorrect condition variable pattern",
+      "solutions": [
+        {
+          "approach": "Use while loop",
+          "code": "while (!condition) {\n  pthread_cond_wait(&cond, &mutex);\n}",
+          "when": "Handle spurious wakeups"
+        },
+        {
+          "approach": "Signal after state change",
+          "code": "pthread_mutex_lock(&m);\ncondition = true;\npthread_cond_signal(&cond);\npthread_mutex_unlock(&m);",
+          "when": "Correct signaling pattern"
+        },
+        {
+          "approach": "Hold lock while waiting",
+          "code": "// Mutex must be locked before calling pthread_cond_wait",
+          "when": "Missing lock"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "tool": "perf",
+  "version": "6.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Error:\\s+You may not have permission to collect.*stats",
+      "message": "Permission denied for performance counters",
+      "cause": "perf_event_paranoid setting restricts access to performance counters",
+      "solutions": [
+        {
+          "approach": "Adjust paranoid level temporarily",
+          "code": "sudo sysctl kernel.perf_event_paranoid=-1",
+          "when": "Development/testing environment"
+        },
+        {
+          "approach": "Run as root",
+          "code": "sudo perf record -g ./my_program",
+          "when": "Need full access"
+        },
+        {
+          "approach": "Add user to perf group",
+          "code": "sudo usermod -a -G perf $USER",
+          "when": "Permanent solution for specific users"
+        }
+      ]
+    },
+    {
+      "id": "no_samples",
+      "pattern": "No samples were collected",
+      "message": "No samples collected during recording",
+      "cause": "Program ran too quickly or sampling rate issues",
+      "solutions": [
+        {
+          "approach": "Increase workload duration",
+          "code": "# Run program longer or with more data",
+          "when": "Program finishes too quickly"
+        },
+        {
+          "approach": "Lower sampling frequency",
+          "code": "perf record -F 99 ./my_program",
+          "when": "Default frequency too high"
+        },
+        {
+          "approach": "Use event counting instead",
+          "code": "perf stat ./my_program",
+          "when": "Only need aggregate stats"
+        }
+      ]
+    },
+    {
+      "id": "kernel_symbols_unavailable",
+      "pattern": "\\[kernel\\.kallsyms\\]",
+      "message": "Kernel symbols unavailable",
+      "cause": "Kernel symbol access restricted or kernel not compiled with debug symbols",
+      "solutions": [
+        {
+          "approach": "Enable kallsyms access",
+          "code": "sudo sysctl kernel.kptr_restrict=0",
+          "when": "Temporary access needed"
+        },
+        {
+          "approach": "Install kernel debug symbols",
+          "code": "# Debian/Ubuntu:\nsudo apt install linux-image-$(uname -r)-dbgsym\n# RHEL/CentOS:\nsudo debuginfo-install kernel",
+          "when": "Need kernel source lines"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_open_perf_data",
+      "pattern": "failed to open.*perf\\.data",
+      "message": "Failed to open perf.data file",
+      "cause": "File doesn't exist or wrong path",
+      "solutions": [
+        {
+          "approach": "Specify file path",
+          "code": "perf report -i /path/to/perf.data",
+          "when": "File in different location"
+        },
+        {
+          "approach": "Record data first",
+          "code": "perf record -g ./my_program && perf report",
+          "when": "Forgot to record"
+        }
+      ]
+    },
+    {
+      "id": "unknown_event",
+      "pattern": "event.*not supported",
+      "message": "Hardware event not supported",
+      "cause": "CPU doesn't support specified hardware counter",
+      "solutions": [
+        {
+          "approach": "List available events",
+          "code": "perf list",
+          "when": "Need to find supported events"
+        },
+        {
+          "approach": "Use software events",
+          "code": "perf stat -e cpu-clock,task-clock ./my_program",
+          "when": "Hardware events unavailable"
+        },
+        {
+          "approach": "Use generic events",
+          "code": "perf stat -e cycles,instructions ./my_program",
+          "when": "Want portable profiling"
+        }
+      ]
+    },
+    {
+      "id": "no_debug_symbols",
+      "pattern": "\\[unknown\\]|no symbols found",
+      "message": "Missing debug symbols",
+      "cause": "Binary compiled without debug info or symbols stripped",
+      "solutions": [
+        {
+          "approach": "Compile with debug symbols",
+          "code": "gcc -g -fno-omit-frame-pointer -o program program.c",
+          "when": "Building from source"
+        },
+        {
+          "approach": "Install debug package",
+          "code": "sudo apt install <package>-dbgsym",
+          "when": "System package"
+        },
+        {
+          "approach": "Build with frame pointers",
+          "code": "CFLAGS=\"-fno-omit-frame-pointer\" ./configure",
+          "when": "Need call stacks"
+        }
+      ]
+    },
+    {
+      "id": "multiplexing",
+      "pattern": "not counted|<not counted>",
+      "message": "Event multiplexing occurred",
+      "cause": "More events requested than hardware counters available",
+      "solutions": [
+        {
+          "approach": "Reduce events",
+          "code": "perf stat -e cycles,instructions ./prog  # Just 2 events",
+          "when": "Too many events"
+        },
+        {
+          "approach": "Run multiple times",
+          "code": "perf stat -e cycles ./prog\nperf stat -e cache-misses ./prog",
+          "when": "Need many events accurately"
+        },
+        {
+          "approach": "Use event groups",
+          "code": "perf stat -e '{cycles,instructions}' ./prog",
+          "when": "Events must be measured together"
+        }
+      ]
+    },
+    {
+      "id": "dwarf_stack_too_deep",
+      "pattern": "DWARF.*stack.*max depth",
+      "message": "DWARF call stack too deep",
+      "cause": "Deep recursion or large call stacks exceed limit",
+      "solutions": [
+        {
+          "approach": "Increase stack depth",
+          "code": "perf record --call-graph dwarf,32768 ./prog",
+          "when": "Need deeper stacks"
+        },
+        {
+          "approach": "Use frame pointers instead",
+          "code": "perf record --call-graph fp ./prog",
+          "when": "Binary has frame pointers"
+        },
+        {
+          "approach": "Use LBR (Intel)",
+          "code": "perf record --call-graph lbr ./prog",
+          "when": "On Intel CPU with LBR support"
+        }
+      ]
+    }
+  ]
+}

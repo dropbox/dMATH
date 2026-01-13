@@ -1,0 +1,145 @@
+{
+  "tool": "chown",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|changing ownership|not permitted",
+      "message": "Cannot change ownership",
+      "cause": "Only root can change owner",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo chown user:group file.txt",
+          "when": "Need root"
+        },
+        {
+          "approach": "Change group only",
+          "code": "chown :mygroup file.txt  # Non-root can change to their groups",
+          "when": "Group change"
+        },
+        {
+          "approach": "Check groups",
+          "code": "groups  # List your groups",
+          "when": "Verify membership"
+        }
+      ]
+    },
+    {
+      "id": "invalid_user",
+      "pattern": "invalid user|user.*not found|unknown user",
+      "message": "User does not exist",
+      "cause": "Invalid username specified",
+      "solutions": [
+        {
+          "approach": "Check user",
+          "code": "id username\ngetent passwd username",
+          "when": "Verify user exists"
+        },
+        {
+          "approach": "Use UID",
+          "code": "sudo chown 1000:1000 file.txt  # Use numeric IDs",
+          "when": "User deleted"
+        },
+        {
+          "approach": "List users",
+          "code": "cat /etc/passwd | cut -d: -f1",
+          "when": "Find valid user"
+        }
+      ]
+    },
+    {
+      "id": "invalid_group",
+      "pattern": "invalid group|group.*not found|unknown group",
+      "message": "Group does not exist",
+      "cause": "Invalid group name specified",
+      "solutions": [
+        {
+          "approach": "Check group",
+          "code": "getent group groupname",
+          "when": "Verify group exists"
+        },
+        {
+          "approach": "Use GID",
+          "code": "sudo chown :1000 file.txt  # Numeric group ID",
+          "when": "Group deleted"
+        },
+        {
+          "approach": "List groups",
+          "code": "cat /etc/group | cut -d: -f1",
+          "when": "Find valid group"
+        }
+      ]
+    },
+    {
+      "id": "recursive_issues",
+      "pattern": "recursive|directory|subdirectories|not changed",
+      "message": "Ownership not changed recursively",
+      "cause": "Need -R flag for directories",
+      "solutions": [
+        {
+          "approach": "Recursive",
+          "code": "sudo chown -R user:group directory/",
+          "when": "All contents"
+        },
+        {
+          "approach": "Follow symlinks",
+          "code": "sudo chown -RH user:group directory/  # Follow cmdline symlinks\nsudo chown -RL user:group directory/  # Follow all symlinks",
+          "when": "With symlinks"
+        },
+        {
+          "approach": "Skip symlinks",
+          "code": "sudo chown -Rh user:group directory/  # Don't follow symlinks",
+          "when": "No deference"
+        }
+      ]
+    },
+    {
+      "id": "symlink_ownership",
+      "pattern": "symlink|symbolic link|link.*ownership",
+      "message": "Cannot change symlink ownership",
+      "cause": "Changing symlink target instead of link",
+      "solutions": [
+        {
+          "approach": "Change link itself",
+          "code": "chown -h user:group symlink  # Change symlink, not target",
+          "when": "Modify link"
+        },
+        {
+          "approach": "Change target",
+          "code": "chown user:group symlink  # Without -h, changes target",
+          "when": "Modify target"
+        },
+        {
+          "approach": "Check current",
+          "code": "ls -la symlink  # Shows link ownership\nls -la $(readlink symlink)  # Shows target ownership",
+          "when": "Debug"
+        }
+      ]
+    },
+    {
+      "id": "filesystem_readonly",
+      "pattern": "Read-only file system|read only|cannot modify",
+      "message": "Filesystem is read-only",
+      "cause": "Mounted read-only or system partition",
+      "solutions": [
+        {
+          "approach": "Remount rw",
+          "code": "sudo mount -o remount,rw /",
+          "when": "Remount writable"
+        },
+        {
+          "approach": "Check mount",
+          "code": "mount | grep ' / '\ncat /proc/mounts",
+          "when": "Verify mount options"
+        },
+        {
+          "approach": "Check disk",
+          "code": "dmesg | tail  # Check for disk errors",
+          "when": "Hardware issue"
+        }
+      ]
+    }
+  ]
+}

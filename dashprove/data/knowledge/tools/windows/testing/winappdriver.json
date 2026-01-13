@@ -1,0 +1,174 @@
+{
+  "id": "winappdriver",
+  "name": "WinAppDriver",
+  "category": "windows_testing",
+  "subcategory": "ui_automation",
+
+  "description": "Windows Application Driver for UI automation testing",
+  "long_description": "Windows Application Driver (WinAppDriver) is a service to support Selenium-like UI Test Automation on Windows Applications. It implements the W3C WebDriver protocol and supports testing of Universal Windows Platform (UWP), Windows Forms (WinForms), Windows Presentation Foundation (WPF), and Classic Windows (Win32) applications.",
+
+  "capabilities": [
+    "uwp_testing",
+    "wpf_testing",
+    "winforms_testing",
+    "win32_testing",
+    "webdriver_protocol",
+    "element_inspection",
+    "keyboard_mouse_input",
+    "screenshot_capture"
+  ],
+  "property_types": ["element_locator", "action", "session"],
+  "input_languages": ["csharp", "java", "python", "javascript"],
+  "output_formats": ["webdriver_response", "screenshots"],
+
+  "installation": {
+    "methods": [
+      {"type": "msi", "command": "Download from https://github.com/Microsoft/WinAppDriver/releases"},
+      {"type": "chocolatey", "command": "choco install winappdriver"}
+    ],
+    "dependencies": ["windows_10_1607+", "developer_mode"],
+    "platforms": ["windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/microsoft/WinAppDriver",
+    "getting_started": "https://github.com/microsoft/WinAppDriver/blob/master/Docs/FAQ.md",
+    "api_reference": "https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md",
+    "examples": "https://github.com/microsoft/WinAppDriver/tree/master/Samples"
+  },
+
+  "tactics": [
+    {
+      "name": "start_session",
+      "description": "Create WinAppDriver session",
+      "syntax": "DesiredCapabilities + WindowsDriver",
+      "when_to_use": "Start of every test",
+      "examples": ["var options = new AppiumOptions();\noptions.AddAdditionalCapability(\"app\", \"Microsoft.WindowsCalculator_8wekyb3d8bbwe!App\");\nvar driver = new WindowsDriver<WindowsElement>(new Uri(\"http://127.0.0.1:4723\"), options);"]
+    },
+    {
+      "name": "find_element",
+      "description": "Find UI element",
+      "syntax": "driver.FindElement(By.strategy(value))",
+      "when_to_use": "Locating UI elements",
+      "examples": ["driver.FindElementByAccessibilityId(\"num7Button\")", "driver.FindElementByName(\"Seven\")", "driver.FindElementByXPath(\"//Button[@Name='Seven']\")"]
+    },
+    {
+      "name": "click_element",
+      "description": "Click UI element",
+      "syntax": "element.Click()",
+      "when_to_use": "Simulating button clicks",
+      "examples": ["driver.FindElementByAccessibilityId(\"num7Button\").Click();"]
+    },
+    {
+      "name": "send_keys",
+      "description": "Send keyboard input",
+      "syntax": "element.SendKeys(text)",
+      "when_to_use": "Typing text or keyboard shortcuts",
+      "examples": ["textBox.SendKeys(\"Hello World\");", "driver.Keyboard.SendKeys(Keys.Control + \"a\");"]
+    },
+    {
+      "name": "inspect_elements",
+      "description": "Use Inspect.exe to find element IDs",
+      "syntax": "Windows SDK Inspect.exe",
+      "when_to_use": "Finding element locators",
+      "examples": ["Run Inspect.exe from Windows SDK, hover over elements to see AutomationId"]
+    },
+    {
+      "name": "attach_to_app",
+      "description": "Attach to running application",
+      "syntax": "app capability with window handle",
+      "when_to_use": "Testing already running apps",
+      "examples": ["options.AddAdditionalCapability(\"appTopLevelWindow\", \"0x12345\");"]
+    }
+  ],
+
+  "locator_strategies": [
+    {
+      "name": "AccessibilityId",
+      "description": "Find by AutomationId (most reliable)",
+      "examples": ["By.AccessibilityId(\"submitButton\")"]
+    },
+    {
+      "name": "Name",
+      "description": "Find by Name property",
+      "examples": ["By.Name(\"Submit\")"]
+    },
+    {
+      "name": "ClassName",
+      "description": "Find by ClassName",
+      "examples": ["By.ClassName(\"Button\")"]
+    },
+    {
+      "name": "XPath",
+      "description": "Find by XPath expression",
+      "examples": ["By.XPath(\"//Button[@Name='Submit']\")"]
+    },
+    {
+      "name": "TagName",
+      "description": "Find by control type",
+      "examples": ["By.TagName(\"Button\")"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "NoSuchElement",
+      "meaning": "Element not found",
+      "common_causes": ["Wrong locator", "Element not visible", "App not ready"],
+      "fixes": ["Use Inspect.exe to verify locator", "Add wait", "Check app state"]
+    },
+    {
+      "pattern": "SessionNotCreated",
+      "meaning": "Could not create session",
+      "common_causes": ["WinAppDriver not running", "Wrong app capability", "App not installed"],
+      "fixes": ["Start WinAppDriver.exe", "Verify app path/AUMID", "Install app"]
+    },
+    {
+      "pattern": "Developer Mode is not enabled",
+      "meaning": "Windows Developer Mode required",
+      "common_causes": ["Developer mode off in Windows settings"],
+      "fixes": ["Enable Developer Mode in Windows Settings > For developers"]
+    },
+    {
+      "pattern": "Element is not clickable",
+      "meaning": "Element exists but cannot be clicked",
+      "common_causes": ["Element disabled", "Covered by another element"],
+      "fixes": ["Wait for element to be enabled", "Close overlapping dialogs"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["visual_studio", "rider"],
+    "ci_integration": ["azure_devops", "github_actions", "jenkins"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds per test",
+    "scalability": "One session per application",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["flaui", "white", "pywinauto", "teststack_white"],
+    "advantages": [
+      "Official Microsoft tool",
+      "WebDriver protocol - familiar API",
+      "Supports all Windows app types",
+      "Works with multiple languages"
+    ],
+    "disadvantages": [
+      "Windows only",
+      "Requires Developer Mode",
+      "Can be slow for complex UIs",
+      "Limited to visible elements"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.2.1",
+    "last_updated": "2025-12-22",
+    "maintainer": "Microsoft",
+    "license": "MIT"
+  }
+}

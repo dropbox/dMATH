@@ -1,0 +1,120 @@
+{
+  "tool": "mkfs",
+  "version": "util-linux",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|must be root|Operation not permitted",
+      "message": "Need root privileges",
+      "cause": "Filesystem creation requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo mkfs.ext4 /dev/sda1\nsudo mkfs -t ext4 /dev/sda1",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "device_busy",
+      "pattern": "Device .* is busy|in use by the system|contains a.*file system",
+      "message": "Device is busy",
+      "cause": "Partition is mounted",
+      "solutions": [
+        {
+          "approach": "Unmount first",
+          "code": "sudo umount /dev/sda1\nsudo mkfs.ext4 /dev/sda1",
+          "when": "Partition mounted"
+        },
+        {
+          "approach": "Force (dangerous)",
+          "code": "sudo mkfs.ext4 -F /dev/sda1",
+          "when": "Override warning"
+        }
+      ]
+    },
+    {
+      "id": "whole_disk_warning",
+      "pattern": "entire device|not a partition|apparently in use",
+      "message": "Formatting whole disk",
+      "cause": "Using /dev/sda instead of /dev/sda1",
+      "solutions": [
+        {
+          "approach": "Use partition",
+          "code": "# Format partition, not whole disk:\nsudo mkfs.ext4 /dev/sda1  # Correct\n# NOT: sudo mkfs.ext4 /dev/sda",
+          "when": "Common mistake"
+        },
+        {
+          "approach": "Create partition first",
+          "code": "sudo fdisk /dev/sda\n# n = new partition\n# w = write\nsudo mkfs.ext4 /dev/sda1",
+          "when": "New disk"
+        }
+      ]
+    },
+    {
+      "id": "filesystem_types",
+      "pattern": "unknown filesystem|bad option|invalid filesystem",
+      "message": "Invalid filesystem type",
+      "cause": "Filesystem type not available",
+      "solutions": [
+        {
+          "approach": "Common types",
+          "code": "mkfs.ext4 /dev/sda1    # Linux standard\nmkfs.xfs /dev/sda1     # High performance\nmkfs.btrfs /dev/sda1   # Copy-on-write\nmkfs.vfat /dev/sda1    # FAT32 (USB drives)\nmkfs.ntfs /dev/sda1    # Windows compatible\nmkfs.exfat /dev/sda1   # Large files, cross-platform",
+          "when": "Reference"
+        },
+        {
+          "approach": "Install tools",
+          "code": "sudo apt install xfsprogs btrfs-progs ntfs-3g exfat-utils",
+          "when": "Missing mkfs.*"
+        }
+      ]
+    },
+    {
+      "id": "bad_blocks",
+      "pattern": "bad blocks|I/O error|read error",
+      "message": "Disk errors",
+      "cause": "Hardware issues with disk",
+      "solutions": [
+        {
+          "approach": "Check for bad blocks",
+          "code": "sudo badblocks -sv /dev/sda1",
+          "when": "Test disk"
+        },
+        {
+          "approach": "Check disk health",
+          "code": "sudo smartctl -a /dev/sda\nsudo smartctl -t short /dev/sda",
+          "when": "SMART status"
+        },
+        {
+          "approach": "Skip bad blocks",
+          "code": "sudo mkfs.ext4 -c /dev/sda1  # Check while formatting",
+          "when": "Format with check"
+        }
+      ]
+    },
+    {
+      "id": "label_uuid",
+      "pattern": "label|UUID|LABEL",
+      "message": "Set filesystem label",
+      "cause": "Want to set label or UUID",
+      "solutions": [
+        {
+          "approach": "Set label at creation",
+          "code": "sudo mkfs.ext4 -L mylabel /dev/sda1\nsudo mkfs.xfs -L mylabel /dev/sda1",
+          "when": "During format"
+        },
+        {
+          "approach": "Set label after",
+          "code": "sudo e2label /dev/sda1 mylabel  # ext4\nsudo xfs_admin -L mylabel /dev/sda1  # xfs",
+          "when": "Existing filesystem"
+        },
+        {
+          "approach": "Generate new UUID",
+          "code": "sudo tune2fs -U random /dev/sda1  # ext4",
+          "when": "Change UUID"
+        }
+      ]
+    }
+  ]
+}

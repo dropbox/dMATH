@@ -1,0 +1,130 @@
+{
+  "tool": "got",
+  "version": "14.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "esm_require_error",
+      "pattern": "ERR_REQUIRE_ESM|require\\(\\) of ES Module|Cannot use import",
+      "message": "Module system mismatch",
+      "cause": "got v12+ is ESM-only, but code uses require()",
+      "solutions": [
+        {
+          "approach": "Use dynamic import",
+          "code": "const got = (await import('got')).default;",
+          "when": "CommonJS entry point"
+        },
+        {
+          "approach": "Convert to ESM",
+          "code": "// package.json: \"type\": \"module\"\nimport got from 'got';",
+          "when": "Can migrate to ESM"
+        },
+        {
+          "approach": "Use got v11",
+          "code": "npm install got@11",
+          "when": "Must stay on CommonJS"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "TimeoutError|Timeout awaiting|ETIMEDOUT",
+      "message": "Request timed out",
+      "cause": "Server response took too long",
+      "solutions": [
+        {
+          "approach": "Configure timeout",
+          "code": "got(url, {\n  timeout: { request: 30000, connect: 5000 }\n})",
+          "when": "Need longer timeout"
+        },
+        {
+          "approach": "Use retry",
+          "code": "got(url, {\n  retry: { limit: 3, methods: ['GET'] }\n})",
+          "when": "Transient failures"
+        }
+      ]
+    },
+    {
+      "id": "http_error",
+      "pattern": "HTTPError|Response code \\d+|status code \\d+",
+      "message": "Server returned error status",
+      "cause": "4xx or 5xx HTTP response",
+      "solutions": [
+        {
+          "approach": "Handle HTTP errors",
+          "code": "try {\n  await got(url);\n} catch (err) {\n  if (err instanceof got.HTTPError) {\n    console.log(err.response.statusCode);\n  }\n}",
+          "when": "Need error response"
+        },
+        {
+          "approach": "Don't throw on errors",
+          "code": "const response = await got(url, { throwHttpErrors: false });\nif (!response.ok) { ... }",
+          "when": "Handle manually"
+        }
+      ]
+    },
+    {
+      "id": "json_parse_error",
+      "pattern": "ParseError|Unexpected token|invalid JSON",
+      "message": "JSON parsing failed",
+      "cause": "Response is not valid JSON",
+      "solutions": [
+        {
+          "approach": "Check content type",
+          "code": "const response = await got(url);\nconsole.log(response.headers['content-type']);",
+          "when": "Debug response"
+        },
+        {
+          "approach": "Get raw response",
+          "code": "const response = await got(url);\nconsole.log(response.body);  // raw string",
+          "when": "Inspect actual response"
+        },
+        {
+          "approach": "Use responseType",
+          "code": "const { body } = await got(url, { responseType: 'json' });",
+          "when": "Explicitly request JSON"
+        }
+      ]
+    },
+    {
+      "id": "dns_error",
+      "pattern": "getaddrinfo ENOTFOUND|DNS lookup failed|ENOENT",
+      "message": "DNS resolution failed",
+      "cause": "Domain doesn't exist or DNS unavailable",
+      "solutions": [
+        {
+          "approach": "Check hostname",
+          "code": "nslookup api.example.com",
+          "when": "Verify DNS resolution"
+        },
+        {
+          "approach": "Use custom DNS",
+          "code": "got(url, {\n  dnsLookup: (hostname, options, callback) => { ... }\n})",
+          "when": "Custom DNS resolver"
+        },
+        {
+          "approach": "Check network",
+          "code": "// Verify network connectivity and DNS servers",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "cert_error",
+      "pattern": "CERT_|certificate|SSL|unable to verify",
+      "message": "TLS/SSL certificate error",
+      "cause": "Invalid, expired, or self-signed certificate",
+      "solutions": [
+        {
+          "approach": "Skip verification (dev only)",
+          "code": "got(url, {\n  https: { rejectUnauthorized: false }\n})",
+          "when": "Self-signed cert in dev"
+        },
+        {
+          "approach": "Use custom CA",
+          "code": "got(url, {\n  https: { certificateAuthority: fs.readFileSync('ca.crt') }\n})",
+          "when": "Private CA"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "id": "prusti",
+  "name": "Prusti",
+  "category": "rust_formal_verification",
+  "subcategory": "deductive_verifier",
+
+  "description": "Deductive verifier for Rust based on Viper",
+  "long_description": "Prusti is a verification tool for Rust that leverages the Viper intermediate verification language. It automatically verifies memory safety and functional correctness properties specified via Rust attributes. Prusti excels at verifying ownership-related properties.",
+
+  "capabilities": [
+    "memory_safety",
+    "functional_correctness",
+    "ownership_verification",
+    "borrow_checking",
+    "panic_freedom",
+    "integer_overflow",
+    "pledge_verification"
+  ],
+  "property_types": ["requires", "ensures", "invariant", "body_invariant", "pledge"],
+  "input_languages": ["rust"],
+  "output_formats": ["proof", "counterexample", "viper"],
+
+  "installation": {
+    "methods": [
+      {"type": "vscode", "command": "Install 'Prusti Assistant' extension"},
+      {"type": "source", "url": "https://github.com/viperproject/prusti-dev", "command": "git clone https://github.com/viperproject/prusti-dev && cd prusti-dev && ./x.py setup && ./x.py build --release"}
+    ],
+    "dependencies": ["java", "z3"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://viperproject.github.io/prusti-dev/",
+    "tutorial": "https://viperproject.github.io/prusti-dev/user-guide/",
+    "api_reference": "https://viperproject.github.io/prusti-dev/dev-guide/",
+    "examples": "https://github.com/viperproject/prusti-dev/tree/master/prusti-tests/tests/verify_overflow/pass"
+  },
+
+  "tactics": [
+    {
+      "name": "requires",
+      "description": "Function precondition",
+      "syntax": "#[requires(condition)]",
+      "when_to_use": "To constrain function inputs",
+      "examples": ["#[requires(x > 0)]", "#[requires(slice.len() > 0)]"]
+    },
+    {
+      "name": "ensures",
+      "description": "Function postcondition",
+      "syntax": "#[ensures(condition)]",
+      "when_to_use": "To specify what function guarantees",
+      "examples": ["#[ensures(result > old(x))]"]
+    },
+    {
+      "name": "pure",
+      "description": "Mark function as specification-only",
+      "syntax": "#[pure]",
+      "when_to_use": "For helper functions in specs",
+      "examples": ["#[pure]\nfn is_sorted(v: &Vec<i32>) -> bool { ... }"]
+    },
+    {
+      "name": "trusted",
+      "description": "Skip verification of function body",
+      "syntax": "#[trusted]",
+      "when_to_use": "For FFI or verified-elsewhere code",
+      "examples": ["#[trusted]\n#[ensures(result >= 0)]\nextern fn get_time() -> i64;"]
+    },
+    {
+      "name": "body_invariant",
+      "description": "Loop body invariant",
+      "syntax": "body_invariant!(condition)",
+      "when_to_use": "To specify loop invariants",
+      "examples": ["body_invariant!(i <= n);"]
+    },
+    {
+      "name": "pledge",
+      "description": "Delayed postcondition for borrows",
+      "syntax": "#[after_expiry(condition)]",
+      "when_to_use": "To specify what holds when borrow expires",
+      "examples": ["#[after_expiry(x.len() == old(x.len()))]"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "\\[Prusti: verification error\\]",
+      "meaning": "Property could not be verified",
+      "common_causes": ["Missing precondition", "Incorrect specification", "Prusti limitation"],
+      "fixes": ["Strengthen requires", "Add body_invariant", "Use trusted for external code"]
+    },
+    {
+      "pattern": "precondition .* might not hold",
+      "meaning": "Call site doesn't satisfy requires",
+      "common_causes": ["Missing bounds check", "Caller doesn't ensure precondition"],
+      "fixes": ["Add guard before call", "Propagate precondition to caller"]
+    },
+    {
+      "pattern": "postcondition .* might not hold",
+      "meaning": "Function body doesn't guarantee ensures",
+      "common_causes": ["Implementation bug", "Missing case", "Spec too strong"],
+      "fixes": ["Fix implementation", "Add missing branch", "Weaken ensures"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["contract", "invariant"],
+    "cli_command": "dashprove verify --backend prusti"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds per function",
+    "scalability": "Handles medium codebases well",
+    "memory_usage": "2-8GB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["verus", "creusot", "kani"],
+    "advantages": [
+      "Excellent IDE integration (VS Code)",
+      "Good at ownership/borrow verification",
+      "Mature Viper backend",
+      "Automatic framing"
+    ],
+    "disadvantages": [
+      "Java dependency",
+      "Can be slower than Kani for some cases",
+      "Limited support for newer Rust features"
+    ]
+  },
+
+  "metadata": {
+    "version": "2024.12",
+    "last_updated": "2025-12-20",
+    "maintainer": "ETH Zurich",
+    "license": "MPL-2.0"
+  }
+}

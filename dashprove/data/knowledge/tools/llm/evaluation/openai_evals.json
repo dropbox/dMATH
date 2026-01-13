@@ -1,0 +1,124 @@
+{
+  "id": "openai_evals",
+  "name": "OpenAI Evals",
+  "category": "llm_evaluation",
+  "subcategory": "testing",
+
+  "description": "Framework for evaluating LLMs and LLM systems",
+  "long_description": "OpenAI Evals is a framework for evaluating large language models (LLMs) or systems built with LLMs as components. It provides a registry of evals, a common interface for running evaluations, and utilities for building custom evals. Originally used internally at OpenAI for model development.",
+
+  "capabilities": [
+    "model_evaluation",
+    "system_testing",
+    "custom_evals",
+    "completion_functions",
+    "model_graded_evals",
+    "dataset_management",
+    "registry_system"
+  ],
+  "property_types": ["accuracy", "match", "model_graded"],
+  "input_languages": ["python", "yaml", "jsonl"],
+  "output_formats": ["json", "sqlite"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install evals"},
+      {"type": "source", "command": "git clone https://github.com/openai/evals && pip install -e evals"}
+    ],
+    "dependencies": ["openai", "pyyaml"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/openai/evals",
+    "tutorial": "https://github.com/openai/evals/blob/main/docs/run-evals.md",
+    "api_reference": "https://github.com/openai/evals/blob/main/docs/eval-templates.md",
+    "examples": "https://github.com/openai/evals/tree/main/evals/registry/evals"
+  },
+
+  "tactics": [
+    {
+      "name": "run_eval",
+      "description": "Run an evaluation",
+      "syntax": "oaieval <completion_fn> <eval_name>",
+      "when_to_use": "To evaluate a model on a specific eval",
+      "examples": ["oaieval gpt-4 test-match", "oaieval gpt-3.5-turbo coqa --max_samples 100"]
+    },
+    {
+      "name": "custom_eval",
+      "description": "Create custom evaluation",
+      "syntax": "class: evals.elsuite.basic.match:Match\nargs:\n  samples_jsonl: <path>",
+      "when_to_use": "To build evaluation for your use case",
+      "examples": ["my_eval:\n  id: my_eval.v0\n  metrics: [accuracy]\nmy_eval.v0:\n  class: evals.elsuite.basic.match:Match\n  args:\n    samples_jsonl: data/my_samples.jsonl"]
+    },
+    {
+      "name": "model_graded",
+      "description": "Use LLM as judge",
+      "syntax": "class: evals.elsuite.modelgraded.classify:ModelBasedClassify",
+      "when_to_use": "When human-like judgment is needed",
+      "examples": ["class: evals.elsuite.modelgraded.classify:ModelBasedClassify\nargs:\n  modelgraded_spec: closedqa"]
+    },
+    {
+      "name": "completion_fn",
+      "description": "Define completion function",
+      "syntax": "oaieval <model>/<chain> <eval>",
+      "when_to_use": "To test different model configurations",
+      "examples": ["oaieval gpt-4-turbo/cot math-problems"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Eval .* not found",
+      "meaning": "Eval not in registry",
+      "common_causes": ["Typo in eval name", "Custom eval not registered"],
+      "fixes": ["Check registry with oaieval --list", "Register custom eval in evals.yaml"]
+    },
+    {
+      "pattern": "RateLimitError",
+      "meaning": "OpenAI API rate limit exceeded",
+      "common_causes": ["Too many concurrent requests"],
+      "fixes": ["Add delays", "Reduce concurrency", "Use caching"]
+    },
+    {
+      "pattern": "samples_jsonl.*not found",
+      "meaning": "Dataset file missing",
+      "common_causes": ["Wrong path", "File not created"],
+      "fixes": ["Check file path", "Create JSONL dataset file"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["accuracy", "match"],
+    "cli_command": "dashprove verify --backend openai-evals"
+  },
+
+  "performance": {
+    "typical_runtime": "Minutes to hours depending on samples",
+    "scalability": "Limited by API rate limits",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["lm-evaluation-harness", "promptfoo", "bigbench"],
+    "advantages": [
+      "Official OpenAI framework",
+      "Model-graded evals",
+      "Flexible eval types",
+      "Good for system testing"
+    ],
+    "disadvantages": [
+      "OpenAI-centric",
+      "Requires API costs",
+      "Less community benchmarks than lm-eval"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "OpenAI",
+    "license": "MIT"
+  }
+}

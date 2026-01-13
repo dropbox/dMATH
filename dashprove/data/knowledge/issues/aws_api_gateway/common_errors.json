@@ -1,0 +1,76 @@
+{
+  "tool": "aws_api_gateway",
+  "category": "api_gateway",
+  "common_errors": [
+    {
+      "pattern": "Execution failed due to configuration error: Invalid permissions",
+      "meaning": "Lambda permission not granted to API Gateway",
+      "causes": ["Missing lambda:InvokeFunction permission", "Resource policy missing", "Wrong source ARN"],
+      "solutions": ["Add permission: aws lambda add-permission --function-name X --statement-id Y --action lambda:InvokeFunction --principal apigateway.amazonaws.com", "Check Lambda resource-based policy", "Verify source ARN matches API Gateway ARN"]
+    },
+    {
+      "pattern": "Internal server error|Execution failed.*configuration",
+      "meaning": "Integration configuration issue",
+      "causes": ["Lambda timeout", "Integration response mapping error", "VPC connectivity"],
+      "solutions": ["Check CloudWatch Logs for Lambda", "Verify integration response templates", "Ensure Lambda VPC has NAT/endpoint"]
+    },
+    {
+      "pattern": "Missing Authentication Token",
+      "meaning": "Request missing required auth",
+      "causes": ["No Authorization header", "API key not provided", "Wrong endpoint called"],
+      "solutions": ["Include Authorization header", "Add x-api-key header if required", "Check invoke URL is correct"]
+    },
+    {
+      "pattern": "The security token included in the request is invalid",
+      "meaning": "AWS credentials issue",
+      "causes": ["Expired credentials", "Wrong region", "Invalid IAM role"],
+      "solutions": ["Refresh credentials", "Verify AWS_REGION matches API region", "Check IAM role trust policy"]
+    },
+    {
+      "pattern": "Forbidden|Access Denied.*API Gateway",
+      "meaning": "Resource policy denying access",
+      "causes": ["IP not whitelisted", "VPC endpoint policy", "WAF blocking"],
+      "solutions": ["Check API Gateway resource policy", "Review VPC endpoint policy", "Check WAF rules/logs"]
+    },
+    {
+      "pattern": "Invalid request body|Could not parse request body",
+      "meaning": "Request body validation failed",
+      "causes": ["Invalid JSON", "Schema validation failure", "Content-Type mismatch"],
+      "solutions": ["Validate JSON syntax", "Check model schema in API Gateway", "Set Content-Type: application/json"]
+    },
+    {
+      "pattern": "Quota exceeded|Rate exceeded|Too Many Requests",
+      "meaning": "Throttling limit hit",
+      "causes": ["Usage plan quota exceeded", "Account-level throttle", "Method throttle limit"],
+      "solutions": ["Increase usage plan limits", "Request account limit increase", "Implement client-side backoff"]
+    },
+    {
+      "pattern": "CORS.*error|No 'Access-Control-Allow-Origin'",
+      "meaning": "CORS not configured properly",
+      "causes": ["CORS not enabled", "OPTIONS method missing", "Response headers not set"],
+      "solutions": ["Enable CORS in console/CLI", "Add OPTIONS method with mock integration", "Set Access-Control-Allow-* headers in integration response"]
+    },
+    {
+      "pattern": "Endpoint request timed out",
+      "meaning": "Backend didn't respond in time",
+      "causes": ["Integration timeout (29s max)", "Lambda cold start", "Backend slow"],
+      "solutions": ["Optimize backend response time", "Use provisioned concurrency for Lambda", "Consider async invocation pattern"]
+    },
+    {
+      "pattern": "Stage.*not found|Resource.*not found",
+      "meaning": "Invalid API path or stage",
+      "causes": ["Wrong stage name", "Resource not deployed", "Path mismatch"],
+      "solutions": ["Deploy API to stage", "Verify invoke URL path matches resource", "Check stage exists: aws apigateway get-stages"]
+    }
+  ],
+  "debugging_commands": [
+    "aws apigateway get-rest-apis",
+    "aws apigateway get-stages --rest-api-id X",
+    "aws logs filter-log-events --log-group-name API-Gateway-Execution-Logs_<api-id>/<stage>",
+    "aws apigateway test-invoke-method --rest-api-id X --resource-id Y --http-method GET"
+  ],
+  "documentation_urls": [
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/",
+    "https://docs.aws.amazon.com/cli/latest/reference/apigateway/"
+  ]
+}

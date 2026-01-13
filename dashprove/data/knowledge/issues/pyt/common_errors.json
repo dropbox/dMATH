@@ -1,0 +1,237 @@
+{
+  "tool": "pyt",
+  "version": "0.42",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "sql_injection",
+      "pattern": "SQL injection|SQLi|unsanitized.*SQL",
+      "message": "Potential SQL injection vulnerability",
+      "cause": "User input flows into SQL query without sanitization",
+      "solutions": [
+        {
+          "approach": "Use parameterized queries",
+          "code": "cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))",
+          "when": "Raw SQL with user input"
+        },
+        {
+          "approach": "Use ORM",
+          "code": "User.objects.filter(id=user_id)  # Django ORM\nUser.query.filter_by(id=user_id)  # SQLAlchemy",
+          "when": "Can use ORM"
+        },
+        {
+          "approach": "Sanitize input",
+          "code": "# Validate and escape user input\nfrom pymysql.converters import escape_string",
+          "when": "Must use raw SQL"
+        }
+      ]
+    },
+    {
+      "id": "xss_vulnerability",
+      "pattern": "XSS|cross-site scripting|unsanitized.*HTML",
+      "message": "Potential XSS vulnerability",
+      "cause": "User input rendered in HTML without escaping",
+      "solutions": [
+        {
+          "approach": "Use auto-escaping templates",
+          "code": "{{ user_input }}  # Jinja2 auto-escapes by default",
+          "when": "Template rendering"
+        },
+        {
+          "approach": "Explicitly escape",
+          "code": "from markupsafe import escape\nescaped = escape(user_input)",
+          "when": "Manual HTML construction"
+        },
+        {
+          "approach": "Use safe filter carefully",
+          "code": "{{ trusted_html|safe }}  # Only for trusted content",
+          "when": "Need raw HTML output"
+        }
+      ]
+    },
+    {
+      "id": "command_injection",
+      "pattern": "command injection|shell injection|os\\.system|subprocess.*shell",
+      "message": "Potential command injection vulnerability",
+      "cause": "User input passed to shell command",
+      "solutions": [
+        {
+          "approach": "Avoid shell=True",
+          "code": "subprocess.run(['ls', '-la', directory], shell=False)",
+          "when": "Can use argument list"
+        },
+        {
+          "approach": "Use shlex.quote",
+          "code": "import shlex\ncmd = f\"grep {shlex.quote(pattern)} file.txt\"",
+          "when": "Must use shell string"
+        },
+        {
+          "approach": "Validate input",
+          "code": "# Whitelist allowed characters/values\nif not re.match(r'^[a-zA-Z0-9_-]+$', user_input):\n    raise ValueError()",
+          "when": "Input validation"
+        }
+      ]
+    },
+    {
+      "id": "path_traversal",
+      "pattern": "path traversal|directory traversal|\\.\\./|LFI",
+      "message": "Potential path traversal vulnerability",
+      "cause": "User input used in file path without validation",
+      "solutions": [
+        {
+          "approach": "Use secure path joining",
+          "code": "import os\nbase_dir = '/safe/directory'\nfull_path = os.path.join(base_dir, filename)\nif not full_path.startswith(base_dir):\n    raise ValueError('Path traversal detected')",
+          "when": "Need path validation"
+        },
+        {
+          "approach": "Use realpath",
+          "code": "real_path = os.path.realpath(os.path.join(base, filename))\nassert real_path.startswith(os.path.realpath(base))",
+          "when": "Resolve symlinks"
+        },
+        {
+          "approach": "Whitelist filenames",
+          "code": "allowed_files = ['file1.txt', 'file2.txt']\nif filename not in allowed_files:\n    raise ValueError()",
+          "when": "Limited set of files"
+        }
+      ]
+    },
+    {
+      "id": "ssrf_vulnerability",
+      "pattern": "SSRF|server-side request forgery|untrusted URL",
+      "message": "Potential SSRF vulnerability",
+      "cause": "User-controlled URL passed to HTTP client",
+      "solutions": [
+        {
+          "approach": "Validate URL scheme and host",
+          "code": "from urllib.parse import urlparse\nparsed = urlparse(user_url)\nif parsed.scheme not in ('http', 'https'):\n    raise ValueError()\nif parsed.hostname in ('localhost', '127.0.0.1'):\n    raise ValueError()",
+          "when": "URL from user"
+        },
+        {
+          "approach": "Use allowlist",
+          "code": "allowed_domains = ['api.example.com']\nif parsed.hostname not in allowed_domains:\n    raise ValueError()",
+          "when": "Known safe domains"
+        },
+        {
+          "approach": "Disable redirects",
+          "code": "requests.get(url, allow_redirects=False)",
+          "when": "Prevent redirect attacks"
+        }
+      ]
+    },
+    {
+      "id": "deserialization",
+      "pattern": "insecure deserialization|pickle|yaml\\.load",
+      "message": "Insecure deserialization vulnerability",
+      "cause": "Untrusted data passed to unsafe deserializer",
+      "solutions": [
+        {
+          "approach": "Avoid pickle for untrusted data",
+          "code": "import json\ndata = json.loads(user_input)  # Not pickle.loads()",
+          "when": "Deserializing user input"
+        },
+        {
+          "approach": "Use safe YAML loader",
+          "code": "import yaml\ndata = yaml.safe_load(user_input)  # Not yaml.load()",
+          "when": "YAML parsing"
+        },
+        {
+          "approach": "Validate before deserialize",
+          "code": "# Sign serialized data, verify before loading\nimport hmac\nif not hmac.compare_digest(sig, expected_sig):\n    raise ValueError()",
+          "when": "Must use pickle"
+        }
+      ]
+    },
+    {
+      "id": "hardcoded_secret",
+      "pattern": "hardcoded.*secret|password.*=.*['\"]|API_KEY.*=",
+      "message": "Hardcoded secret or credential",
+      "cause": "Sensitive value hardcoded in source",
+      "solutions": [
+        {
+          "approach": "Use environment variables",
+          "code": "import os\napi_key = os.environ['API_KEY']",
+          "when": "Configuration secrets"
+        },
+        {
+          "approach": "Use secrets manager",
+          "code": "from aws_secretsmanager import get_secret\npassword = get_secret('db_password')",
+          "when": "Production systems"
+        },
+        {
+          "approach": "Use config file (excluded from VCS)",
+          "code": "# config.py in .gitignore\nfrom config import API_KEY",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "weak_crypto",
+      "pattern": "MD5|SHA1|weak.*hash|insecure.*random",
+      "message": "Weak cryptographic algorithm",
+      "cause": "Using deprecated or weak cryptography",
+      "solutions": [
+        {
+          "approach": "Use SHA-256+",
+          "code": "import hashlib\nhash = hashlib.sha256(data).hexdigest()",
+          "when": "Need secure hash"
+        },
+        {
+          "approach": "Use bcrypt for passwords",
+          "code": "import bcrypt\nhashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())",
+          "when": "Password hashing"
+        },
+        {
+          "approach": "Use secrets module",
+          "code": "import secrets\ntoken = secrets.token_urlsafe(32)",
+          "when": "Cryptographic random"
+        }
+      ]
+    },
+    {
+      "id": "false_positive",
+      "pattern": "false positive|not exploitable|benign",
+      "message": "Potential false positive detected",
+      "cause": "PyT analysis may flag safe code",
+      "solutions": [
+        {
+          "approach": "Add sanitization annotation",
+          "code": "# pyt: sanitizer\ndef sanitize(input):\n    return escape(input)",
+          "when": "Custom sanitizer"
+        },
+        {
+          "approach": "Use exclusion file",
+          "code": "# .pyt_exclusions\n/path/to/safe_file.py",
+          "when": "File known safe"
+        },
+        {
+          "approach": "Review and document",
+          "code": "# SECURITY: Reviewed - not exploitable because <reason>",
+          "when": "Accepted risk"
+        }
+      ]
+    },
+    {
+      "id": "taint_not_found",
+      "pattern": "no vulnerabilities|clean|no taint",
+      "message": "No vulnerabilities found (verify coverage)",
+      "cause": "PyT may miss some patterns",
+      "solutions": [
+        {
+          "approach": "Check trigger files",
+          "code": "# Ensure entry points are in trigger file\npyt -t triggers.json app.py",
+          "when": "Custom entry points"
+        },
+        {
+          "approach": "Verify framework support",
+          "code": "# PyT supports Flask, Django - check for your framework",
+          "when": "Using different framework"
+        },
+        {
+          "approach": "Combine with other tools",
+          "code": "# Use Bandit, Semgrep for additional coverage",
+          "when": "Defense in depth"
+        }
+      ]
+    }
+  ]
+}

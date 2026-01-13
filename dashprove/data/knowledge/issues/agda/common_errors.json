@@ -1,0 +1,97 @@
+{
+  "tool": "agda",
+  "version": "2.6.4",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "termination_check_failed",
+      "pattern": "Termination checking failed|Recursive call is not decreasing",
+      "message": "Recursive function rejected by termination checker",
+      "cause": "Structural decrease not evident or hidden in higher-order arguments",
+      "solutions": [
+        {
+          "approach": "Use sized types or explicit measure",
+          "code": "open import Agda.Builtin.Size\nfun : {i : Size} -> Vec A i -> ...\nfun {i} (x ∷ xs) = fun {j} xs",
+          "when": "Need to show decreasing size"
+        },
+        {
+          "approach": "Refactor into well-founded recursion",
+          "code": "open import Relation.Binary.PropositionalEquality as Eq\nopen import Induction.WellFounded\nfun : (n : ℕ) -> Acc _<_ n -> ...",
+          "when": "Structural recursion not obvious"
+        }
+      ]
+    },
+    {
+      "id": "positivity_error",
+      "pattern": "is not strictly positive|Occurs check failed",
+      "message": "Data or record fails positivity condition",
+      "cause": "Recursive occurrence of the type under function arrows",
+      "solutions": [
+        {
+          "approach": "Move recursive argument to parameter",
+          "code": "data Mu (F : Set -> Set) : Set where\n  roll : F (Mu F) -> Mu F",
+          "when": "Functor position needed"
+        },
+        {
+          "approach": "Use codata (coinductive) if appropriate",
+          "code": "codata Stream (A : Set) : Set where\n  head : A\n  tail : Stream A",
+          "when": "Truly coinductive structure"
+        }
+      ]
+    },
+    {
+      "id": "unsolved_meta",
+      "pattern": "Unsolved metas|Unsolved constraints",
+      "message": "Type holes remain unsolved",
+      "cause": "Implicit arguments or typeclass resolution cannot infer values",
+      "solutions": [
+        {
+          "approach": "Fill holes explicitly",
+          "code": "_ = {!!}  -- provide term or use refine",
+          "when": "Interactive development"
+        },
+        {
+          "approach": "Provide instance arguments",
+          "code": "instance eqNat : DecEq ℕ where ...",
+          "when": "Typeclass search stuck"
+        }
+      ]
+    },
+    {
+      "id": "coverage_failed",
+      "pattern": "Incomplete pattern matching|Missing cases for function",
+      "message": "Function definitions not covering all constructors",
+      "cause": "Patterns omit constructors or numeric literals",
+      "solutions": [
+        {
+          "approach": "Add catch-all pattern",
+          "code": "f _ _ = default",
+          "when": "Remaining cases irrelevant"
+        },
+        {
+          "approach": "Use with/inspect to split",
+          "code": "f n with n mod 2\n... | zero = ...\n... | suc _ = ...",
+          "when": "Dependent pattern on computed value"
+        }
+      ]
+    },
+    {
+      "id": "universe_level_error",
+      "pattern": "type of type is not of expected sort|Set != Set₁",
+      "message": "Universe levels inconsistent",
+      "cause": "Implicit Set levels default to 0, causing unintended cumulativity constraints",
+      "solutions": [
+        {
+          "approach": "Annotate levels explicitly",
+          "code": "data Vec (A : Set ℓ) : Nat -> Set ℓ where ...",
+          "when": "Generic over universe"
+        },
+        {
+          "approach": "Enable --setoid-equality or --safe as needed",
+          "code": "agda --safe --without-K file.agda",
+          "when": "Using cubical/strictness options"
+        }
+      ]
+    }
+  ]
+}

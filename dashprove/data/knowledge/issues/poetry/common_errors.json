@@ -1,0 +1,237 @@
+{
+  "tool": "poetry",
+  "version": "1.8+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "lock_outdated",
+      "pattern": "lock file.*not up to date|pyproject.toml.*changed|lock.*out of sync",
+      "message": "Lock file out of sync",
+      "cause": "pyproject.toml modified without updating lock",
+      "solutions": [
+        {
+          "approach": "Update lock file",
+          "code": "poetry lock",
+          "when": "Update lock only"
+        },
+        {
+          "approach": "Reinstall dependencies",
+          "code": "poetry lock && poetry install",
+          "when": "Update and install"
+        },
+        {
+          "approach": "Force update",
+          "code": "poetry lock --no-update",
+          "when": "Keep current versions"
+        }
+      ]
+    },
+    {
+      "id": "resolution_failed",
+      "pattern": "SolverProblemError|Unable to resolve|dependency.*conflict",
+      "message": "Dependency resolution failed",
+      "cause": "Incompatible dependency constraints",
+      "solutions": [
+        {
+          "approach": "Show conflict details",
+          "code": "poetry show --tree",
+          "when": "Identify conflict"
+        },
+        {
+          "approach": "Relax constraints",
+          "code": "package = \">=1.0,<3.0\"",
+          "when": "Too strict version"
+        },
+        {
+          "approach": "Remove conflicting",
+          "code": "poetry remove conflicting-package",
+          "when": "Remove problematic dep"
+        }
+      ]
+    },
+    {
+      "id": "python_not_found",
+      "pattern": "Python.*not found|could not find.*python|No compatible python",
+      "message": "Python version not found",
+      "cause": "Required Python version not installed",
+      "solutions": [
+        {
+          "approach": "Install Python",
+          "code": "pyenv install 3.12",
+          "when": "Python not installed"
+        },
+        {
+          "approach": "Specify Python",
+          "code": "poetry env use /path/to/python3.12",
+          "when": "Use specific Python"
+        },
+        {
+          "approach": "Update constraint",
+          "code": "# pyproject.toml\npython = \">=3.9,<4.0\"",
+          "when": "Relax Python version"
+        }
+      ]
+    },
+    {
+      "id": "venv_broken",
+      "pattern": "virtualenv.*error|env.*corrupted|No module named",
+      "message": "Virtual environment corrupted",
+      "cause": "Broken virtualenv",
+      "solutions": [
+        {
+          "approach": "Remove and recreate",
+          "code": "poetry env remove python && poetry install",
+          "when": "Recreate env"
+        },
+        {
+          "approach": "List and remove",
+          "code": "poetry env list && poetry env remove envname",
+          "when": "Multiple envs"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "poetry cache clear --all pypi",
+          "when": "Cache issue"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "Build.*failed|wheel.*error|compilation.*error",
+      "message": "Package build failed",
+      "cause": "Missing build dependencies",
+      "solutions": [
+        {
+          "approach": "Install build tools",
+          "code": "# macOS: xcode-select --install\n# Linux: sudo apt install build-essential",
+          "when": "No compiler"
+        },
+        {
+          "approach": "Install headers",
+          "code": "sudo apt install python3-dev libffi-dev",
+          "when": "Missing headers"
+        },
+        {
+          "approach": "Use binary",
+          "code": "# Poetry uses binary wheels when available",
+          "when": "Prebuilt available"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "401.*Unauthorized|authentication.*failed|Invalid credentials",
+      "message": "Private repository authentication failed",
+      "cause": "Invalid or missing credentials",
+      "solutions": [
+        {
+          "approach": "Configure credentials",
+          "code": "poetry config http-basic.private-pypi username password",
+          "when": "Add credentials"
+        },
+        {
+          "approach": "Use token",
+          "code": "poetry config pypi-token.pypi your-token",
+          "when": "Use PyPI token"
+        },
+        {
+          "approach": "Set in environment",
+          "code": "export POETRY_HTTP_BASIC_REPO_USERNAME=user",
+          "when": "CI/CD"
+        }
+      ]
+    },
+    {
+      "id": "publish_failed",
+      "pattern": "publish.*failed|upload.*error|already exists",
+      "message": "Package publish failed",
+      "cause": "Publish error",
+      "solutions": [
+        {
+          "approach": "Bump version",
+          "code": "poetry version patch",
+          "when": "Version exists"
+        },
+        {
+          "approach": "Build first",
+          "code": "poetry build && poetry publish",
+          "when": "Build not run"
+        },
+        {
+          "approach": "Use test PyPI",
+          "code": "poetry publish -r test-pypi",
+          "when": "Test first"
+        }
+      ]
+    },
+    {
+      "id": "group_not_found",
+      "pattern": "group.*not found|dependency group|invalid group",
+      "message": "Dependency group not found",
+      "cause": "Invalid group name in command",
+      "solutions": [
+        {
+          "approach": "Check group exists",
+          "code": "# Check pyproject.toml for [tool.poetry.group.X]",
+          "when": "Group not defined"
+        },
+        {
+          "approach": "Add to group",
+          "code": "poetry add package --group dev",
+          "when": "Add to specific group"
+        },
+        {
+          "approach": "Install with group",
+          "code": "poetry install --with dev,test",
+          "when": "Install specific groups"
+        }
+      ]
+    },
+    {
+      "id": "source_not_found",
+      "pattern": "source.*not found|repository.*not configured|URL not found",
+      "message": "Package source not configured",
+      "cause": "Private repository not configured",
+      "solutions": [
+        {
+          "approach": "Add source",
+          "code": "poetry source add private https://private.pypi.org/simple/",
+          "when": "Add repository"
+        },
+        {
+          "approach": "Set as secondary",
+          "code": "poetry source add --secondary private https://...",
+          "when": "Fallback source"
+        },
+        {
+          "approach": "Configure in pyproject.toml",
+          "code": "[[tool.poetry.source]]\nname = \"private\"\nurl = \"https://...\"",
+          "when": "Persistent config"
+        }
+      ]
+    },
+    {
+      "id": "export_error",
+      "pattern": "export.*error|requirements.txt.*failed",
+      "message": "Requirements export failed",
+      "cause": "Export format or options error",
+      "solutions": [
+        {
+          "approach": "Export with hashes",
+          "code": "poetry export -f requirements.txt --output requirements.txt",
+          "when": "Standard export"
+        },
+        {
+          "approach": "Without hashes",
+          "code": "poetry export --without-hashes -f requirements.txt",
+          "when": "Skip hash validation"
+        },
+        {
+          "approach": "With dev deps",
+          "code": "poetry export --with dev -f requirements.txt",
+          "when": "Include dev dependencies"
+        }
+      ]
+    }
+  ]
+}

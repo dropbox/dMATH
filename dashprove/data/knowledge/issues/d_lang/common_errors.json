@@ -1,0 +1,168 @@
+{
+  "tool": "d_lang",
+  "version": "2.107.1",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "cannot implicitly convert|incompatible types",
+      "message": "Type mismatch",
+      "cause": "Expression type doesn't match expected type",
+      "solutions": [
+        {
+          "approach": "Use explicit cast",
+          "code": "auto x = cast(int)myDouble;",
+          "when": "Numeric conversion needed"
+        },
+        {
+          "approach": "Use to! template",
+          "code": "import std.conv : to;\nauto s = myInt.to!string;",
+          "when": "Converting to string or parsing"
+        },
+        {
+          "approach": "Add type annotation",
+          "code": "int x = 42;",
+          "when": "Type inference insufficient"
+        }
+      ]
+    },
+    {
+      "id": "range_error",
+      "pattern": "range.*error|RangeError",
+      "message": "Range violation",
+      "cause": "Array index out of bounds or invalid range operation",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "if (idx < arr.length)\n    auto val = arr[idx];",
+          "when": "Index may be invalid"
+        },
+        {
+          "approach": "Use get with default",
+          "code": "auto val = arr.get(key, defaultValue);",
+          "when": "Using associative arrays"
+        },
+        {
+          "approach": "Use safe indexing",
+          "code": "auto val = (idx < arr.length) ? arr[idx] : null;",
+          "when": "Want null on invalid"
+        }
+      ]
+    },
+    {
+      "id": "memory_corruption",
+      "pattern": "@safe.*cannot|memory corruption",
+      "message": "Memory safety violation",
+      "cause": "Operation not allowed in @safe code",
+      "solutions": [
+        {
+          "approach": "Use @trusted wrapper",
+          "code": "auto safeWrapper(T* ptr) @trusted {\n    return *ptr;\n}",
+          "when": "Operation is actually safe"
+        },
+        {
+          "approach": "Avoid raw pointers",
+          "code": "use slices or std.container instead of raw pointers",
+          "when": "Can restructure code"
+        },
+        {
+          "approach": "Use @system",
+          "code": "void lowLevel() @system { ... }",
+          "when": "Function needs unsafe operations"
+        }
+      ]
+    },
+    {
+      "id": "gc_allocation",
+      "pattern": "@nogc.*allocates|GC.*allocation",
+      "message": "GC allocation in @nogc code",
+      "cause": "Operation allocates GC memory in @nogc function",
+      "solutions": [
+        {
+          "approach": "Use allocators",
+          "code": "import std.experimental.allocator;\nauto arr = makeArray!int(mallocator, 100);",
+          "when": "Need heap allocation"
+        },
+        {
+          "approach": "Use static arrays",
+          "code": "int[100] arr;  // Stack allocated",
+          "when": "Size known at compile time"
+        },
+        {
+          "approach": "Pre-allocate",
+          "code": "// Allocate outside @nogc, pass in",
+          "when": "Can pre-allocate memory"
+        }
+      ]
+    },
+    {
+      "id": "contract_violation",
+      "pattern": "in.*contract|out.*contract|assert.*failed",
+      "message": "Contract violation",
+      "cause": "Pre/post-condition or assertion failed",
+      "solutions": [
+        {
+          "approach": "Check preconditions",
+          "code": "int divide(int a, int b)\nin (b != 0)\n{ return a / b; }",
+          "when": "Function has preconditions"
+        },
+        {
+          "approach": "Add postconditions",
+          "code": "int abs(int x)\nout (result; result >= 0)\n{ ... }",
+          "when": "Function has postconditions"
+        },
+        {
+          "approach": "Use enforce",
+          "code": "import std.exception : enforce;\nenforce(cond, \"Error message\");",
+          "when": "Want exception instead"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "module.*not found|cannot find.*import",
+      "message": "Import not found",
+      "cause": "Module cannot be located",
+      "solutions": [
+        {
+          "approach": "Check import path",
+          "code": "dmd -I/path/to/modules file.d",
+          "when": "Module in non-standard location"
+        },
+        {
+          "approach": "Install with dub",
+          "code": "dub add package-name",
+          "when": "Third-party package"
+        },
+        {
+          "approach": "Check dub.json/dub.sdl",
+          "code": "// Verify dependency listed",
+          "when": "Using dub project"
+        }
+      ]
+    },
+    {
+      "id": "ctfe_error",
+      "pattern": "cannot.*CTFE|compile-time.*error",
+      "message": "Compile-time function execution error",
+      "cause": "Expression cannot be evaluated at compile time",
+      "solutions": [
+        {
+          "approach": "Avoid runtime operations",
+          "code": "// No I/O, syscalls, or inline asm in CTFE",
+          "when": "Using runtime-only features"
+        },
+        {
+          "approach": "Use enum for compile-time",
+          "code": "enum x = computeAtCompileTime();",
+          "when": "Want compile-time constant"
+        },
+        {
+          "approach": "Check for __ctfe",
+          "code": "if (__ctfe) { ... } else { ... }",
+          "when": "Different behavior needed"
+        }
+      ]
+    }
+  ]
+}

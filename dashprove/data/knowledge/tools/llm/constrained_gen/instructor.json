@@ -1,0 +1,133 @@
+{
+  "id": "instructor",
+  "name": "Instructor",
+  "category": "llm_constrained_generation",
+  "subcategory": "structured_output",
+
+  "description": "Structured outputs from LLMs using Pydantic",
+  "long_description": "Instructor is a library for getting structured outputs from LLMs using Pydantic models. It patches LLM clients (OpenAI, Anthropic, etc.) to return validated Pydantic objects instead of raw text, with automatic retry and validation.",
+
+  "capabilities": [
+    "pydantic_validation",
+    "automatic_retry",
+    "streaming_partial",
+    "multi_extraction",
+    "nested_models",
+    "function_calling",
+    "vision_extraction"
+  ],
+  "property_types": ["schema_conformance", "type_safety"],
+  "input_languages": ["python"],
+  "output_formats": ["pydantic"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install instructor"},
+      {"type": "pip_anthropic", "command": "pip install instructor[anthropic]"},
+      {"type": "pip_all", "command": "pip install instructor[all]"}
+    ],
+    "dependencies": ["pydantic", "openai"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://python.useinstructor.com/",
+    "tutorial": "https://python.useinstructor.com/tutorials/",
+    "api_reference": "https://python.useinstructor.com/concepts/",
+    "examples": "https://python.useinstructor.com/examples/"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_extraction",
+      "description": "Extract structured data",
+      "syntax": "client.chat.completions.create(response_model=Model)",
+      "when_to_use": "For basic structured extraction",
+      "examples": ["import instructor\nfrom openai import OpenAI\nfrom pydantic import BaseModel\n\nclass User(BaseModel):\n    name: str\n    age: int\n\nclient = instructor.from_openai(OpenAI())\nuser = client.chat.completions.create(\n    model='gpt-4',\n    messages=[{'role': 'user', 'content': 'John is 30'}],\n    response_model=User\n)"]
+    },
+    {
+      "name": "retry",
+      "description": "Automatic retry on validation failure",
+      "syntax": "max_retries=N",
+      "when_to_use": "When extraction may fail",
+      "examples": ["user = client.chat.completions.create(\n    model='gpt-4',\n    messages=[...],\n    response_model=User,\n    max_retries=3\n)"]
+    },
+    {
+      "name": "streaming",
+      "description": "Stream partial objects",
+      "syntax": "client.chat.completions.create_partial(response_model=Model)",
+      "when_to_use": "For real-time partial results",
+      "examples": ["for partial in client.chat.completions.create_partial(\n    model='gpt-4',\n    messages=[...],\n    response_model=User\n):\n    print(partial)"]
+    },
+    {
+      "name": "iterable",
+      "description": "Extract multiple items",
+      "syntax": "response_model=Iterable[Model]",
+      "when_to_use": "For lists of items",
+      "examples": ["from typing import Iterable\nusers = client.chat.completions.create(\n    model='gpt-4',\n    messages=[{'role': 'user', 'content': 'List: John 30, Jane 25'}],\n    response_model=Iterable[User]\n)"]
+    },
+    {
+      "name": "validator",
+      "description": "Custom validation",
+      "syntax": "@field_validator('field')\ndef validate(cls, v):",
+      "when_to_use": "For custom validation logic",
+      "examples": ["from pydantic import field_validator\n\nclass User(BaseModel):\n    age: int\n    \n    @field_validator('age')\n    @classmethod\n    def validate_age(cls, v):\n        if v < 0 or v > 150:\n            raise ValueError('Invalid age')\n        return v"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "ValidationError",
+      "meaning": "Pydantic validation failed",
+      "common_causes": ["Wrong types", "Missing fields", "Constraint violation"],
+      "fixes": ["Check model definition", "Improve prompt", "Increase max_retries"]
+    },
+    {
+      "pattern": "Max retries exceeded",
+      "meaning": "Could not extract valid data",
+      "common_causes": ["Ambiguous prompt", "Complex schema"],
+      "fixes": ["Simplify schema", "Improve prompt clarity", "Add examples"]
+    },
+    {
+      "pattern": "response_model.*required",
+      "meaning": "Missing response model",
+      "common_causes": ["Forgot to specify response_model"],
+      "fixes": ["Add response_model parameter"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["schema_conformance"],
+    "cli_command": "dashprove verify --backend instructor"
+  },
+
+  "performance": {
+    "typical_runtime": "Same as base API call + retries",
+    "scalability": "Excellent",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["outlines", "guidance", "lmql", "marvin"],
+    "advantages": [
+      "Simple API",
+      "Works with any LLM API",
+      "Pydantic ecosystem",
+      "Automatic retry",
+      "Streaming support"
+    ],
+    "disadvantages": [
+      "Relies on prompt engineering",
+      "No guaranteed generation (uses retries)",
+      "API call overhead for retries"
+    ]
+  },
+
+  "metadata": {
+    "version": "1.4.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Jason Liu",
+    "license": "MIT"
+  }
+}

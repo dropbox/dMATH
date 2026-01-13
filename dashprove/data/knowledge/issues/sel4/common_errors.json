@@ -1,0 +1,168 @@
+{
+  "tool": "sel4",
+  "version": "12.1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "capability_invalid",
+      "pattern": "seL4_InvalidCapability|seL4_FailedLookup",
+      "message": "Invalid capability or capability lookup failed",
+      "cause": "Attempted to use an invalid, revoked, or non-existent capability",
+      "solutions": [
+        {
+          "approach": "Check CNode slot",
+          "code": "seL4_CNode_Revoke(cnode, slot, depth);  // Clean up first",
+          "when": "Capability may have been revoked"
+        },
+        {
+          "approach": "Verify capability derivation",
+          "code": "error = seL4_CNode_Copy(dest_cnode, dest_slot, dest_depth, src_cnode, src_slot, src_depth, rights);",
+          "when": "Capability wasn't properly derived from parent"
+        },
+        {
+          "approach": "Check CSpace configuration",
+          "code": "// Verify guard and guard_size in CNode cap",
+          "when": "CSpace addressing is incorrect"
+        }
+      ]
+    },
+    {
+      "id": "untyped_insufficient",
+      "pattern": "seL4_NotEnoughMemory|seL4_RangeError",
+      "message": "Insufficient untyped memory for retype",
+      "cause": "Untyped object doesn't have enough space for requested objects",
+      "solutions": [
+        {
+          "approach": "Use larger untyped",
+          "code": "// Find untyped with size_bits >= log2(object_size * count)",
+          "when": "Current untyped is too small"
+        },
+        {
+          "approach": "Reset untyped",
+          "code": "seL4_Untyped_Retype(untyped, seL4_UntypedObject, 0, cnode, 0, 0, slot, 1);  // First revoke children",
+          "when": "Untyped was partially used"
+        },
+        {
+          "approach": "Check alignment",
+          "code": "// Object size must be power of 2 and naturally aligned",
+          "when": "Alignment requirements not met"
+        }
+      ]
+    },
+    {
+      "id": "ipc_error",
+      "pattern": "seL4_InvalidArgument.*IPC|message.*truncated",
+      "message": "IPC message error",
+      "cause": "IPC message too large, wrong badge, or endpoint misconfigured",
+      "solutions": [
+        {
+          "approach": "Check message length",
+          "code": "seL4_SetMR(0, value);  // Max seL4_MsgMaxLength words",
+          "when": "Message exceeds IPC buffer size"
+        },
+        {
+          "approach": "Verify endpoint capabilities",
+          "code": "seL4_CNode_Mint(cnode, dest, depth, cnode, src, depth, rights, badge);",
+          "when": "Badge mismatch or wrong endpoint type"
+        },
+        {
+          "approach": "Use shared memory for large data",
+          "code": "// Map shared frame, pass only offset/size via IPC",
+          "when": "Need to transfer more than IPC buffer allows"
+        }
+      ]
+    },
+    {
+      "id": "proof_invariant_violation",
+      "pattern": "invariant.*violated|precondition.*failed",
+      "message": "Proof invariant or precondition violated",
+      "cause": "C code violates invariants required by seL4 proofs",
+      "solutions": [
+        {
+          "approach": "Review specification",
+          "code": "// Check seL4 spec in l4v/spec/abstract/",
+          "when": "Misunderstanding of API semantics"
+        },
+        {
+          "approach": "Ensure proper initialization order",
+          "code": "// Boot sequence: untyped -> cnode -> tcb -> vspace",
+          "when": "Objects created in wrong order"
+        },
+        {
+          "approach": "Check capability rights",
+          "code": "seL4_CapRights_new(grant, grantrep, read, write)",
+          "when": "Operation requires specific rights"
+        }
+      ]
+    },
+    {
+      "id": "vspace_mapping_error",
+      "pattern": "seL4_.*Mapping.*Error|seL4_DeleteFirst",
+      "message": "Virtual memory mapping error",
+      "cause": "Page mapping failed due to existing mapping or invalid vspace",
+      "solutions": [
+        {
+          "approach": "Unmap first",
+          "code": "seL4_ARCH_Page_Unmap(page_cap);",
+          "when": "Page already mapped elsewhere"
+        },
+        {
+          "approach": "Install page tables",
+          "code": "seL4_ARCH_PageTable_Map(pt_cap, vspace, vaddr, attr);",
+          "when": "Intermediate page table missing"
+        },
+        {
+          "approach": "Check ASID",
+          "code": "seL4_ARCH_ASIDPool_Assign(asid_pool, vspace);",
+          "when": "VSpace not assigned to ASID pool"
+        }
+      ]
+    },
+    {
+      "id": "build_cmake_error",
+      "pattern": "CMake Error|Could not find.*seL4",
+      "message": "seL4 build configuration error",
+      "cause": "CMake cannot find seL4 kernel or dependencies",
+      "solutions": [
+        {
+          "approach": "Use init-build.sh",
+          "code": "mkdir build && cd build && ../init-build.sh -DPLATFORM=x86_64 -DSIMULATION=TRUE",
+          "when": "Setting up new build directory"
+        },
+        {
+          "approach": "Set SEL4_ROOT",
+          "code": "export SEL4_ROOT=/path/to/seL4",
+          "when": "seL4 kernel not in expected location"
+        },
+        {
+          "approach": "Use repo tool",
+          "code": "repo init -u https://github.com/seL4/sel4-tutorials-manifest && repo sync",
+          "when": "Missing dependencies"
+        }
+      ]
+    },
+    {
+      "id": "tcb_configure_error",
+      "pattern": "seL4_TCB_Configure.*failed|seL4_IllegalOperation.*TCB",
+      "message": "TCB configuration error",
+      "cause": "Thread control block configuration failed",
+      "solutions": [
+        {
+          "approach": "Set fault endpoint",
+          "code": "seL4_TCB_SetSpace(tcb, fault_ep, cspace_root, cspace_root_data, vspace_root, vspace_root_data);",
+          "when": "TCB needs fault endpoint for debugging"
+        },
+        {
+          "approach": "Configure IPC buffer",
+          "code": "seL4_TCB_SetIPCBuffer(tcb, ipc_buffer_vaddr, ipc_buffer_cap);",
+          "when": "IPC buffer not configured"
+        },
+        {
+          "approach": "Set scheduling parameters",
+          "code": "seL4_TCB_SetSchedParams(tcb, authority, max_prio, prio);",
+          "when": "Thread priority misconfigured"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "tool": "ruff",
+  "version": "0.8.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "E501",
+      "pattern": "E501|line too long",
+      "message": "Line too long (>88 chars by default)",
+      "cause": "Line exceeds maximum length",
+      "solutions": [
+        {
+          "approach": "Break line",
+          "code": "result = (\n    long_function_name(arg1, arg2)\n    + another_value\n)",
+          "when": "Can split expression"
+        },
+        {
+          "approach": "Configure line length",
+          "code": "[tool.ruff]\nline-length = 120",
+          "when": "Project uses longer lines"
+        },
+        {
+          "approach": "Use noqa",
+          "code": "url = 'https://...'  # noqa: E501",
+          "when": "Long string can't be split"
+        }
+      ]
+    },
+    {
+      "id": "F401",
+      "pattern": "F401|imported but unused",
+      "message": "Module imported but never used",
+      "cause": "Import statement with no usage",
+      "solutions": [
+        {
+          "approach": "Remove import",
+          "code": "# Delete: import unused_module",
+          "when": "Actually unused"
+        },
+        {
+          "approach": "Mark as re-export",
+          "code": "from module import Thing as Thing  # Re-export",
+          "when": "Intentional re-export"
+        },
+        {
+          "approach": "Add __all__",
+          "code": "__all__ = ['Thing']",
+          "when": "Module interface export"
+        },
+        {
+          "approach": "Use TYPE_CHECKING",
+          "code": "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    from module import Type",
+          "when": "Type-only import"
+        }
+      ]
+    },
+    {
+      "id": "F841",
+      "pattern": "F841|local variable .* is assigned .* never used",
+      "message": "Assigned variable never used",
+      "cause": "Variable created but never referenced",
+      "solutions": [
+        {
+          "approach": "Remove assignment",
+          "code": "# Delete unused variable",
+          "when": "Variable not needed"
+        },
+        {
+          "approach": "Use underscore",
+          "code": "_, important = get_tuple()",
+          "when": "Intentionally ignoring value"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "# Actually use the variable",
+          "when": "Forgot to use it"
+        }
+      ]
+    },
+    {
+      "id": "E711",
+      "pattern": "E711|comparison to None",
+      "message": "Use 'is' for None comparison",
+      "cause": "Using == instead of 'is' for None",
+      "solutions": [
+        {
+          "approach": "Use identity check",
+          "code": "if x is None:  # Not x == None",
+          "when": "Checking for None"
+        },
+        {
+          "approach": "Use is not",
+          "code": "if x is not None:",
+          "when": "Checking not None"
+        }
+      ]
+    },
+    {
+      "id": "W503_W504",
+      "pattern": "W503|W504|line break before/after binary operator",
+      "message": "Line break position with binary operator",
+      "cause": "Line break before/after operator inconsistent with style",
+      "solutions": [
+        {
+          "approach": "Break before operator (PEP 8)",
+          "code": "total = (first_value\n         + second_value)",
+          "when": "Following PEP 8"
+        },
+        {
+          "approach": "Configure preference",
+          "code": "[tool.ruff.lint]\nignore = [\"W503\"]",
+          "when": "Choose one style"
+        }
+      ]
+    },
+    {
+      "id": "I001",
+      "pattern": "I001|import block .* unsorted",
+      "message": "Imports not sorted correctly",
+      "cause": "Import order doesn't match isort rules",
+      "solutions": [
+        {
+          "approach": "Auto-fix with ruff",
+          "code": "ruff check --fix file.py",
+          "when": "Let ruff sort imports"
+        },
+        {
+          "approach": "Manual order",
+          "code": "# stdlib\nimport os\n\n# third-party\nimport requests\n\n# local\nfrom . import module",
+          "when": "Manual sorting"
+        }
+      ]
+    },
+    {
+      "id": "UP006",
+      "pattern": "UP006|Use .* instead of .*",
+      "message": "Use modern type syntax",
+      "cause": "Using deprecated typing syntax",
+      "solutions": [
+        {
+          "approach": "Use builtin types",
+          "code": "x: list[int]  # Not List[int]\ny: dict[str, int]  # Not Dict[str, int]",
+          "when": "Python 3.9+"
+        },
+        {
+          "approach": "Use | for Union",
+          "code": "x: int | None  # Not Optional[int]",
+          "when": "Python 3.10+"
+        },
+        {
+          "approach": "Use from __future__",
+          "code": "from __future__ import annotations",
+          "when": "Earlier Python versions"
+        }
+      ]
+    },
+    {
+      "id": "S101",
+      "pattern": "S101|assert",
+      "message": "Use of assert detected",
+      "cause": "assert can be disabled with -O flag",
+      "solutions": [
+        {
+          "approach": "Use if/raise",
+          "code": "if not condition:\n    raise ValueError(\"msg\")",
+          "when": "Production validation"
+        },
+        {
+          "approach": "Keep assert for tests",
+          "code": "# In test files, assert is fine",
+          "when": "Test code"
+        },
+        {
+          "approach": "Ignore in tests",
+          "code": "[tool.ruff.lint.per-file-ignores]\n\"tests/*\" = [\"S101\"]",
+          "when": "Allow in test files"
+        }
+      ]
+    },
+    {
+      "id": "ARG001",
+      "pattern": "ARG001|unused function argument",
+      "message": "Function argument not used",
+      "cause": "Parameter defined but never referenced",
+      "solutions": [
+        {
+          "approach": "Use underscore prefix",
+          "code": "def handler(_event, context):",
+          "when": "Arg required by interface"
+        },
+        {
+          "approach": "Remove if optional",
+          "code": "def func():  # Remove unused param",
+          "when": "Param not needed"
+        },
+        {
+          "approach": "Add noqa",
+          "code": "def callback(unused):  # noqa: ARG001",
+          "when": "Can't change signature"
+        }
+      ]
+    },
+    {
+      "id": "PLR0913",
+      "pattern": "PLR0913|too many arguments",
+      "message": "Too many function arguments",
+      "cause": "Function has more than 5 parameters (default)",
+      "solutions": [
+        {
+          "approach": "Use dataclass/pydantic",
+          "code": "@dataclass\nclass Config:\n    a: int\n    b: str\n\ndef func(config: Config):",
+          "when": "Can group params"
+        },
+        {
+          "approach": "Use **kwargs",
+          "code": "def func(**kwargs):",
+          "when": "Flexible interface"
+        },
+        {
+          "approach": "Configure limit",
+          "code": "[tool.ruff.lint.pylint]\nmax-args = 8",
+          "when": "Higher limit acceptable"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "id": "maelstrom",
+  "name": "Maelstrom",
+  "category": "distributed_systems_testing",
+  "subcategory": "learning",
+
+  "description": "Workbench for learning distributed systems",
+  "long_description": "Maelstrom is a workbench for learning distributed systems by writing your own implementations. Created by Kyle Kingsbury, it provides a simulated network environment where you can implement protocols like broadcast, CRDT, Raft consensus, and transactions while testing for correctness using Jepsen-style checkers.",
+
+  "capabilities": [
+    "protocol_simulation",
+    "consensus_testing",
+    "broadcast_testing",
+    "crdt_testing",
+    "transaction_testing",
+    "linearizability_checking"
+  ],
+  "property_types": ["linearizability", "total_order_broadcast", "consensus"],
+  "input_languages": ["any_language"],
+  "output_formats": ["json", "html", "svg"],
+
+  "installation": {
+    "methods": [
+      {"type": "binary", "command": "Download from https://github.com/jepsen-io/maelstrom/releases"},
+      {"type": "source", "command": "git clone https://github.com/jepsen-io/maelstrom && lein uberjar"}
+    ],
+    "dependencies": ["java", "graphviz"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/jepsen-io/maelstrom",
+    "tutorial": "https://fly.io/dist-sys/",
+    "api_reference": "https://github.com/jepsen-io/maelstrom/blob/main/doc/protocol.md",
+    "examples": "https://github.com/jepsen-io/maelstrom/tree/main/demo"
+  },
+
+  "tactics": [
+    {
+      "name": "test",
+      "description": "Run Maelstrom test",
+      "syntax": "./maelstrom test -w <workload> --bin <binary>",
+      "when_to_use": "To test your implementation",
+      "examples": ["./maelstrom test -w echo \\\n  --bin target/debug/my-node \\\n  --nodes n1,n2,n3 \\\n  --time-limit 10"]
+    },
+    {
+      "name": "broadcast",
+      "description": "Broadcast workload",
+      "syntax": "-w broadcast",
+      "when_to_use": "To test broadcast protocol",
+      "examples": ["./maelstrom test -w broadcast \\\n  --bin ./my-broadcast \\\n  --node-count 5 \\\n  --time-limit 20 \\\n  --rate 10"]
+    },
+    {
+      "name": "lin_kv",
+      "description": "Linearizable KV workload",
+      "syntax": "-w lin-kv",
+      "when_to_use": "To test linearizable storage",
+      "examples": ["./maelstrom test -w lin-kv \\\n  --bin ./my-kv \\\n  --node-count 3 \\\n  --concurrency 2n"]
+    },
+    {
+      "name": "txn_list_append",
+      "description": "Transaction workload",
+      "syntax": "-w txn-list-append",
+      "when_to_use": "To test transactions",
+      "examples": ["./maelstrom test -w txn-list-append \\\n  --bin ./my-txn \\\n  --node-count 3 \\\n  --time-limit 30 \\\n  --consistency-models serializable"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "inconsistent",
+      "meaning": "Consistency violation",
+      "common_causes": ["Protocol bug"],
+      "fixes": ["Review protocol implementation"]
+    },
+    {
+      "pattern": "timeout",
+      "meaning": "Message timeout",
+      "common_causes": ["Slow processing", "Message loss"],
+      "fixes": ["Add retry logic", "Increase timeout"]
+    },
+    {
+      "pattern": "unknown message type",
+      "meaning": "Protocol error",
+      "common_causes": ["Missing message handler"],
+      "fixes": ["Implement message handler"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["linearizability", "consistency"],
+    "cli_command": "dashprove verify --backend maelstrom"
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Simulated network",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["jepsen", "stateright", "shuttle"],
+    "advantages": [
+      "Language agnostic",
+      "Great for learning",
+      "Fly.io challenges",
+      "Quick feedback",
+      "No cluster needed"
+    ],
+    "disadvantages": [
+      "Simulated only",
+      "Not for production testing",
+      "Limited workloads"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.2.3",
+    "last_updated": "2025-12-22",
+    "maintainer": "Kyle Kingsbury",
+    "license": "EPL-1.0"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "tool": "helmfile",
+  "version": "0.162",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "repo_not_found",
+      "pattern": "repository .* not found|failed to download|no such chart",
+      "message": "Referenced chart repository missing",
+      "cause": "Chart repo not added or credentials missing",
+      "solutions": [
+        {
+          "approach": "Sync repositories",
+          "code": "helmfile repos",
+          "when": "Ensure repos added"
+        },
+        {
+          "approach": "Add repo manually",
+          "code": "helm repo add <name> <url> --username USER --password PASS",
+          "when": "Private repo"
+        },
+        {
+          "approach": "Update indexes",
+          "code": "helm repo update",
+          "when": "Cache stale"
+        }
+      ]
+    },
+    {
+      "id": "kubeconfig_missing",
+      "pattern": "context deadline exceeded|no configuration has been provided|could not get kubernetes client",
+      "message": "Cannot connect to Kubernetes",
+      "cause": "Kubeconfig missing, wrong context, or cluster unreachable",
+      "solutions": [
+        {
+          "approach": "Set kubeconfig",
+          "code": "export KUBECONFIG=~/.kube/config",
+          "when": "Not set in environment"
+        },
+        {
+          "approach": "Select context",
+          "code": "helmfile -e prod --kube-context prod-cluster apply",
+          "when": "Multiple clusters"
+        },
+        {
+          "approach": "Test cluster",
+          "code": "kubectl get ns",
+          "when": "Verify connectivity"
+        }
+      ]
+    },
+    {
+      "id": "render_error",
+      "pattern": "error during helmfile render|failed executing tpl|map has no entry",
+      "message": "State/values templating failed",
+      "cause": "Missing values, bad templating function, or env var not set",
+      "solutions": [
+        {
+          "approach": "Render debug",
+          "code": "helmfile --log-level=debug template",
+          "when": "Need failing template"
+        },
+        {
+          "approach": "Provide env/values",
+          "code": "helmfile -e staging -f helmfile.yaml --state-values-set image.tag=123",
+          "when": "Missing variable"
+        },
+        {
+          "approach": "Check functions",
+          "code": "Ensure tpl/fn names valid for Helm version",
+          "when": "Custom templating"
+        }
+      ]
+    },
+    {
+      "id": "diff_plugin_missing",
+      "pattern": "Error: unknown command \"diff\"|failed to find diff plugin",
+      "message": "helm-diff plugin not installed",
+      "cause": "helmfile diff requires helm-diff plugin",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "helm plugin install https://github.com/databus23/helm-diff",
+          "when": "Plugin absent"
+        },
+        {
+          "approach": "Run repo update",
+          "code": "helm repo update",
+          "when": "Plugin install behind proxy"
+        }
+      ]
+    },
+    {
+      "id": "values_file_missing",
+      "pattern": "open .*values.*: no such file|failed to read file",
+      "message": "Values file not found",
+      "cause": "Path incorrect or relative to wrong directory",
+      "solutions": [
+        {
+          "approach": "Use absolute paths",
+          "code": "values:\n  - ../charts/values.yaml",
+          "when": "Running from subdir"
+        },
+        {
+          "approach": "Check working dir",
+          "code": "pwd && ls",
+          "when": "CI runs from different root"
+        },
+        {
+          "approach": "Template once",
+          "code": "helmfile -f ./helmfile.yaml template",
+          "when": "Ensure state file path correct"
+        }
+      ]
+    }
+  ]
+}

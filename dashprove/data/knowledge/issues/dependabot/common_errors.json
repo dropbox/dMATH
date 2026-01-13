@@ -1,0 +1,179 @@
+{
+  "tool": "dependabot",
+  "version": "2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_not_found",
+      "pattern": "No dependabot.yml|Config.*not found|configuration file",
+      "message": "Dependabot configuration file not found",
+      "cause": "Missing .github/dependabot.yml file",
+      "solutions": [
+        {
+          "approach": "Create config file",
+          "code": "# .github/dependabot.yml\nversion: 2\nupdates:\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"",
+          "when": "New setup"
+        },
+        {
+          "approach": "Check file location",
+          "code": "# Must be in .github/dependabot.yml (not root)",
+          "when": "File in wrong location"
+        }
+      ]
+    },
+    {
+      "id": "invalid_ecosystem",
+      "pattern": "Invalid package-ecosystem|Unknown ecosystem|not supported",
+      "message": "Package ecosystem not recognized",
+      "cause": "Typo or unsupported ecosystem in config",
+      "solutions": [
+        {
+          "approach": "Use valid ecosystem",
+          "code": "# Valid ecosystems:\n# npm, pip, maven, gradle, cargo, gomod, composer, \n# nuget, bundler, docker, terraform, github-actions, gitsubmodule",
+          "when": "Check spelling"
+        },
+        {
+          "approach": "Multiple ecosystems",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n  - package-ecosystem: \"docker\"\n    directory: \"/\"",
+          "when": "Need multiple ecosystems"
+        }
+      ]
+    },
+    {
+      "id": "directory_not_found",
+      "pattern": "Directory.*not found|manifest.*missing|No package file",
+      "message": "Package manifest not found in directory",
+      "cause": "No package.json, requirements.txt, etc. in specified directory",
+      "solutions": [
+        {
+          "approach": "Fix directory path",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    directory: \"/frontend\"  # Where package.json lives",
+          "when": "Wrong directory path"
+        },
+        {
+          "approach": "Check for manifest",
+          "code": "# Ensure directory contains: package.json, requirements.txt, \n# Cargo.toml, go.mod, etc.",
+          "when": "Manifest missing"
+        }
+      ]
+    },
+    {
+      "id": "pr_limit_reached",
+      "pattern": "open pull request limit|Too many PRs|maximum.*reached",
+      "message": "Maximum open PRs limit reached",
+      "cause": "Dependabot has too many open PRs",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    open-pull-requests-limit: 20",
+          "when": "Need more concurrent PRs"
+        },
+        {
+          "approach": "Merge existing PRs",
+          "code": "# Review and merge or close open Dependabot PRs",
+          "when": "Clear PR backlog"
+        },
+        {
+          "approach": "Group updates",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    groups:\n      dependencies:\n        patterns: [\"*\"]",
+          "when": "Reduce number of PRs"
+        }
+      ]
+    },
+    {
+      "id": "version_conflict",
+      "pattern": "Conflicting|version conflict|incompatible",
+      "message": "Dependency version conflict",
+      "cause": "Updating creates conflicts with other dependencies",
+      "solutions": [
+        {
+          "approach": "Allow specific versions",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    allow:\n      - dependency-name: \"lodash\"\n        dependency-type: \"direct\"",
+          "when": "Whitelist dependencies"
+        },
+        {
+          "approach": "Ignore conflicts",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    ignore:\n      - dependency-name: \"problematic-dep\"",
+          "when": "Skip problematic dep"
+        }
+      ]
+    },
+    {
+      "id": "schedule_error",
+      "pattern": "Invalid schedule|schedule.*error|interval",
+      "message": "Schedule configuration error",
+      "cause": "Invalid interval or schedule specification",
+      "solutions": [
+        {
+          "approach": "Use valid interval",
+          "code": "schedule:\n  interval: \"daily\"  # or \"weekly\" or \"monthly\"",
+          "when": "Basic schedule"
+        },
+        {
+          "approach": "Specify day/time",
+          "code": "schedule:\n  interval: \"weekly\"\n  day: \"monday\"\n  time: \"09:00\"\n  timezone: \"America/New_York\"",
+          "when": "Specific timing"
+        }
+      ]
+    },
+    {
+      "id": "auth_failure",
+      "pattern": "Authentication failed|401|403|private registry",
+      "message": "Failed to authenticate with registry",
+      "cause": "Missing or invalid credentials for private registry",
+      "solutions": [
+        {
+          "approach": "Add registry config",
+          "code": "registries:\n  npm-registry:\n    type: npm-registry\n    url: https://npm.pkg.github.com\n    token: ${{ secrets.NPM_TOKEN }}",
+          "when": "Private npm registry"
+        },
+        {
+          "approach": "Use GitHub secrets",
+          "code": "# In repo Settings > Secrets, add DEPENDABOT_ prefixed secrets",
+          "when": "Need secrets access"
+        }
+      ]
+    },
+    {
+      "id": "rebase_conflict",
+      "pattern": "Rebase.*conflict|merge conflict|cannot update",
+      "message": "Dependabot PR has conflicts",
+      "cause": "Base branch changed, creating conflicts",
+      "solutions": [
+        {
+          "approach": "Request rebase",
+          "code": "# Comment on PR: @dependabot rebase",
+          "when": "PR can be rebased"
+        },
+        {
+          "approach": "Recreate PR",
+          "code": "# Comment on PR: @dependabot recreate",
+          "when": "Need fresh PR"
+        },
+        {
+          "approach": "Configure rebasing",
+          "code": "updates:\n  - package-ecosystem: \"npm\"\n    rebase-strategy: \"auto\"",
+          "when": "Enable auto-rebase"
+        }
+      ]
+    },
+    {
+      "id": "ignored_update",
+      "pattern": "Update ignored|version.*ignored|skipped",
+      "message": "Update was ignored",
+      "cause": "Version range or dependency explicitly ignored",
+      "solutions": [
+        {
+          "approach": "Check ignore rules",
+          "code": "# Review ignore list in dependabot.yml",
+          "when": "Accidental ignore"
+        },
+        {
+          "approach": "Unignore",
+          "code": "# Comment on PR: @dependabot unignore <package>",
+          "when": "Remove ignore rule"
+        }
+      ]
+    }
+  ]
+}

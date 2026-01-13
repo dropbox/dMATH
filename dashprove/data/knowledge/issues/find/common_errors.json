@@ -1,0 +1,145 @@
+{
+  "tool": "find",
+  "version": "4.9",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Operation not permitted|cannot access",
+      "message": "Permission denied on some directories",
+      "cause": "Insufficient permissions to read directories",
+      "solutions": [
+        {
+          "approach": "Suppress errors",
+          "code": "find / -name '*.log' 2>/dev/null",
+          "when": "Ignore unreadable"
+        },
+        {
+          "approach": "Run as root",
+          "code": "sudo find /var -name '*.conf'",
+          "when": "Need full access"
+        },
+        {
+          "approach": "Exclude dirs",
+          "code": "find / -path '/proc' -prune -o -name '*.log' -print",
+          "when": "Skip specific dirs"
+        }
+      ]
+    },
+    {
+      "id": "argument_too_long",
+      "pattern": "Argument list too long|cannot fork|xargs.*argument",
+      "message": "Too many results for command",
+      "cause": "Exec or -exec target overwhelmed",
+      "solutions": [
+        {
+          "approach": "Use xargs",
+          "code": "find . -name '*.txt' | xargs rm\nfind . -name '*.txt' -print0 | xargs -0 rm",
+          "when": "Many files"
+        },
+        {
+          "approach": "Use exec +",
+          "code": "find . -name '*.txt' -exec rm {} +",
+          "when": "Batch exec"
+        },
+        {
+          "approach": "Process one by one",
+          "code": "find . -name '*.txt' -exec rm {} \\;",
+          "when": "Individual exec"
+        }
+      ]
+    },
+    {
+      "id": "missing_argument",
+      "pattern": "missing argument|missing expression|expected expression|requires additional argument",
+      "message": "Incomplete expression",
+      "cause": "Missing predicate or argument",
+      "solutions": [
+        {
+          "approach": "Add predicate",
+          "code": "find . -name '*.txt'  # Needs -name, -type, etc.",
+          "when": "Missing test"
+        },
+        {
+          "approach": "Quote patterns",
+          "code": "find . -name '*.txt'  # Shell may expand unquoted *",
+          "when": "Glob expansion"
+        },
+        {
+          "approach": "Check syntax",
+          "code": "find . -type f -name '*.log' -mtime +7",
+          "when": "Full example"
+        }
+      ]
+    },
+    {
+      "id": "unknown_predicate",
+      "pattern": "unknown predicate|unknown option|invalid predicate",
+      "message": "Invalid find option",
+      "cause": "Using non-standard or typo in option",
+      "solutions": [
+        {
+          "approach": "Check version",
+          "code": "find --version\nman find",
+          "when": "Version difference"
+        },
+        {
+          "approach": "BSD vs GNU",
+          "code": "# macOS uses BSD find, Linux uses GNU\n# GNU: find . -regex '.*\\.txt'\n# BSD: find -E . -regex '.*\\.txt'",
+          "when": "Cross-platform"
+        },
+        {
+          "approach": "Common predicates",
+          "code": "-name, -iname, -type, -size, -mtime, -user, -group, -perm",
+          "when": "Reference"
+        }
+      ]
+    },
+    {
+      "id": "exec_missing_semicolon",
+      "pattern": "missing argument.*-exec|exec.*terminated|find:.*-exec",
+      "message": "Missing -exec terminator",
+      "cause": "Missing \\; or + at end of -exec",
+      "solutions": [
+        {
+          "approach": "Use escaped semicolon",
+          "code": "find . -name '*.bak' -exec rm {} \\;",
+          "when": "One at a time"
+        },
+        {
+          "approach": "Use plus",
+          "code": "find . -name '*.bak' -exec rm {} +",
+          "when": "Batch mode"
+        },
+        {
+          "approach": "Quote semicolon",
+          "code": "find . -name '*.bak' -exec rm {} ';'",
+          "when": "Alternative syntax"
+        }
+      ]
+    },
+    {
+      "id": "no_files_found",
+      "pattern": "No such file|paths must precede expression|$",
+      "message": "No matching files or path error",
+      "cause": "Wrong path or pattern",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "find /correct/path -name '*.txt'\nfind . -name '*.txt'  # Current dir",
+          "when": "Wrong starting point"
+        },
+        {
+          "approach": "Case insensitive",
+          "code": "find . -iname '*.TXT'  # Case insensitive",
+          "when": "Case mismatch"
+        },
+        {
+          "approach": "Broader search",
+          "code": "find . -name '*txt*'  # Partial match",
+          "when": "Exact match too strict"
+        }
+      ]
+    }
+  ]
+}

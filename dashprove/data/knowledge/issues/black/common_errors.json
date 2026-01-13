@@ -1,0 +1,232 @@
+{
+  "tool": "black",
+  "version": "24.0+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cannot_parse",
+      "pattern": "Cannot parse|syntax error|invalid syntax",
+      "message": "Cannot parse Python file",
+      "cause": "File has Python syntax errors",
+      "solutions": [
+        {
+          "approach": "Fix syntax first",
+          "code": "python -m py_compile file.py",
+          "when": "Check for syntax errors"
+        },
+        {
+          "approach": "Specify target version",
+          "code": "black --target-version py312 file.py",
+          "when": "Using newer syntax"
+        },
+        {
+          "approach": "Check Python version",
+          "code": "black --target-version py38 file.py",
+          "when": "Need older version compat"
+        }
+      ]
+    },
+    {
+      "id": "line_length_issue",
+      "pattern": "line too long|would reformat|cannot fit",
+      "message": "Line length formatting issue",
+      "cause": "Code structure prevents line fitting",
+      "solutions": [
+        {
+          "approach": "Increase line length",
+          "code": "black --line-length 120 file.py",
+          "when": "Longer lines acceptable"
+        },
+        {
+          "approach": "Use fmt:off",
+          "code": "# fmt: off\nlong_line_here\n# fmt: on",
+          "when": "Specific line needs exclusion"
+        },
+        {
+          "approach": "Refactor code",
+          "code": "# Break into smaller expressions",
+          "when": "Code too complex"
+        }
+      ]
+    },
+    {
+      "id": "magic_trailing_comma",
+      "pattern": "trailing comma|collection.*split",
+      "message": "Trailing comma formatting issue",
+      "cause": "Magic trailing comma behavior unexpected",
+      "solutions": [
+        {
+          "approach": "Use trailing comma",
+          "code": "[\n    item1,\n    item2,  # trailing comma forces split\n]",
+          "when": "Want to force multi-line"
+        },
+        {
+          "approach": "Remove trailing comma",
+          "code": "[item1, item2]  # no trailing comma for single line",
+          "when": "Want single line"
+        },
+        {
+          "approach": "Disable magic comma",
+          "code": "black --skip-magic-trailing-comma file.py",
+          "when": "Don't want this behavior"
+        }
+      ]
+    },
+    {
+      "id": "string_normalization",
+      "pattern": "string quotes|quote normalization",
+      "message": "String quote style changed",
+      "cause": "Black normalizes to double quotes by default",
+      "solutions": [
+        {
+          "approach": "Keep single quotes",
+          "code": "black --skip-string-normalization file.py",
+          "when": "Prefer single quotes"
+        },
+        {
+          "approach": "Accept double quotes",
+          "code": "# Black default is double quotes",
+          "when": "Can change convention"
+        },
+        {
+          "approach": "Configure in pyproject.toml",
+          "code": "[tool.black]\nskip-string-normalization = true",
+          "when": "Project-wide setting"
+        }
+      ]
+    },
+    {
+      "id": "check_failed",
+      "pattern": "would reformat|Oh no!|check failed",
+      "message": "Black check failed - files would change",
+      "cause": "Files not formatted to Black's standards",
+      "solutions": [
+        {
+          "approach": "Format files",
+          "code": "black .",
+          "when": "Apply formatting"
+        },
+        {
+          "approach": "Show diff",
+          "code": "black --diff file.py",
+          "when": "Review changes first"
+        },
+        {
+          "approach": "Add pre-commit hook",
+          "code": "# .pre-commit-config.yaml\n- repo: https://github.com/psf/black\n  rev: 24.4.2\n  hooks:\n  - id: black",
+          "when": "Automate formatting"
+        }
+      ]
+    },
+    {
+      "id": "exclude_not_working",
+      "pattern": "exclude.*not working|file.*not excluded",
+      "message": "File exclusion not working",
+      "cause": "Exclude patterns not matching",
+      "solutions": [
+        {
+          "approach": "Use extend-exclude",
+          "code": "[tool.black]\nextend-exclude = '''migrations/'''",
+          "when": "Keep defaults + add exclusions"
+        },
+        {
+          "approach": "Use force-exclude",
+          "code": "[tool.black]\nforce-exclude = '''generated/'''",
+          "when": "Force exclude even if passed explicitly"
+        },
+        {
+          "approach": "Check regex syntax",
+          "code": "# Exclude uses Python regex, not glob",
+          "when": "Pattern syntax wrong"
+        }
+      ]
+    },
+    {
+      "id": "jupyter_support",
+      "pattern": "jupyter.*error|notebook.*not supported|ipynb",
+      "message": "Jupyter notebook formatting issue",
+      "cause": "Jupyter support requires extra dependency",
+      "solutions": [
+        {
+          "approach": "Install Jupyter support",
+          "code": "pip install 'black[jupyter]'",
+          "when": "Need notebook formatting"
+        },
+        {
+          "approach": "Format notebooks",
+          "code": "black --include '.*\\.ipynb$' .",
+          "when": "Include .ipynb files"
+        },
+        {
+          "approach": "Exclude notebooks",
+          "code": "black --exclude '.*\\.ipynb$' .",
+          "when": "Skip notebooks"
+        }
+      ]
+    },
+    {
+      "id": "encoding_issue",
+      "pattern": "UnicodeDecodeError|encoding.*error|codec can't decode",
+      "message": "File encoding error",
+      "cause": "File not UTF-8 encoded",
+      "solutions": [
+        {
+          "approach": "Add encoding declaration",
+          "code": "# -*- coding: utf-8 -*-",
+          "when": "File has non-ASCII chars"
+        },
+        {
+          "approach": "Convert to UTF-8",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file.py > file_utf8.py",
+          "when": "Legacy encoding"
+        }
+      ]
+    },
+    {
+      "id": "preview_changes",
+      "pattern": "preview.*option|unstable.*changes",
+      "message": "Preview formatting differs from stable",
+      "cause": "Using --preview flag enables unstable formatting",
+      "solutions": [
+        {
+          "approach": "Use stable formatting",
+          "code": "black file.py  # Without --preview",
+          "when": "Want stable output"
+        },
+        {
+          "approach": "Enable preview project-wide",
+          "code": "[tool.black]\npreview = true",
+          "when": "Want latest style"
+        },
+        {
+          "approach": "Enable specific feature",
+          "code": "[tool.black]\nenable-unstable-feature = [\"string_processing\"]",
+          "when": "Want specific feature only"
+        }
+      ]
+    },
+    {
+      "id": "incompatible_version",
+      "pattern": "python version.*incompatible|target-version.*error",
+      "message": "Target Python version incompatible",
+      "cause": "Code uses syntax not available in target version",
+      "solutions": [
+        {
+          "approach": "Update target version",
+          "code": "black --target-version py310 file.py",
+          "when": "Can target newer Python"
+        },
+        {
+          "approach": "Update code",
+          "code": "# Use older syntax for compatibility",
+          "when": "Need older Python support"
+        },
+        {
+          "approach": "Specify multiple targets",
+          "code": "[tool.black]\ntarget-version = [\"py39\", \"py310\", \"py311\"]",
+          "when": "Support multiple versions"
+        }
+      ]
+    }
+  ]
+}

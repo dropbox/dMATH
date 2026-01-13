@@ -1,0 +1,115 @@
+{
+  "id": "turmoil",
+  "name": "Turmoil",
+  "category": "simulation_testing",
+  "subcategory": "network_simulation",
+
+  "description": "Deterministic simulation framework for testing distributed systems in Rust",
+  "long_description": "Turmoil is a Rust framework for testing distributed systems using deterministic simulation. Developed by Tokio, it provides a simulated network and runtime that allows controlled testing of async Rust code. Turmoil enables injecting network partitions, delays, and failures while maintaining reproducibility. Designed for testing systems built with Tokio.",
+
+  "capabilities": [
+    "network_simulation",
+    "deterministic_testing",
+    "partition_injection",
+    "latency_injection",
+    "tokio_integration",
+    "reproducible_tests"
+  ],
+  "property_types": ["safety", "liveness", "partition_tolerance"],
+  "input_languages": ["rust"],
+  "output_formats": ["test_results", "traces"],
+
+  "installation": {
+    "methods": [
+      {"type": "cargo", "command": "cargo add turmoil --dev"}
+    ],
+    "dependencies": ["tokio", "rust"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/tokio-rs/turmoil",
+    "api": "https://docs.rs/turmoil",
+    "examples": "https://github.com/tokio-rs/turmoil/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "create_sim",
+      "description": "Create simulation environment",
+      "syntax": "let mut sim = turmoil::Builder::new().build();",
+      "when_to_use": "To set up deterministic test",
+      "examples": ["let mut sim = turmoil::Builder::new()\n    .simulation_duration(Duration::from_secs(10))\n    .build();"]
+    },
+    {
+      "name": "register_host",
+      "description": "Register a simulated host",
+      "syntax": "sim.host(\"node1\", || async { ... });",
+      "when_to_use": "To add nodes to simulation",
+      "examples": ["sim.host(\"server\", || async {\n    let listener = TcpListener::bind(\"0.0.0.0:9000\").await?;\n    // ...\n});"]
+    },
+    {
+      "name": "partition",
+      "description": "Inject network partition",
+      "syntax": "sim.partition(\"node1\", \"node2\");",
+      "when_to_use": "To test partition tolerance",
+      "examples": ["sim.partition(\"server\", \"client\");\nsim.run().unwrap();\nsim.repair(\"server\", \"client\");"]
+    },
+    {
+      "name": "hold",
+      "description": "Hold messages between hosts",
+      "syntax": "sim.hold(\"node1\", \"node2\");",
+      "when_to_use": "To delay messages",
+      "examples": ["sim.hold(\"server\", \"client\");\n// Messages queued\nsim.release(\"server\", \"client\");"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Connection refused",
+      "meaning": "Simulated connection failure",
+      "common_causes": ["Partition active", "Host not running"],
+      "fixes": ["Check partition state", "Verify host registration"]
+    },
+    {
+      "pattern": "elapsed",
+      "meaning": "Simulation time limit reached",
+      "common_causes": ["Deadlock", "Infinite loop"],
+      "fixes": ["Check for deadlock", "Increase simulation duration"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "usl_property_types": ["safety", "partition_tolerance"],
+    "cli_command": null
+  },
+
+  "performance": {
+    "typical_runtime": "Milliseconds to seconds",
+    "scalability": "Good for small clusters",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["shuttle", "loom", "antithesis"],
+    "advantages": [
+      "Tokio integration",
+      "Easy to use",
+      "Deterministic",
+      "Pure Rust"
+    ],
+    "disadvantages": [
+      "Tokio-specific",
+      "Rust only",
+      "Smaller ecosystem than Jepsen"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.6",
+    "last_updated": "2025-12-22",
+    "maintainer": "Tokio",
+    "license": "MIT"
+  }
+}

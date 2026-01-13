@@ -1,0 +1,191 @@
+{
+  "tool": "influxdb",
+  "version": "2.7.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "unauthorized|token.*invalid|401|INFLUX_TOKEN",
+      "message": "Authentication error",
+      "cause": "Invalid or missing API token",
+      "solutions": [
+        {
+          "approach": "Set token",
+          "code": "export INFLUX_TOKEN=your-token\ninflux query 'from(bucket:\"test\") |> range(start: -1h)'",
+          "when": "Token missing"
+        },
+        {
+          "approach": "Create token",
+          "code": "influx auth create --org your-org --all-access",
+          "when": "Need new token"
+        },
+        {
+          "approach": "Config file",
+          "code": "# ~/.influxdbv2/configs\n[default]\n  url = \"http://localhost:8086\"\n  token = \"your-token\"\n  org = \"your-org\"",
+          "when": "Persistent config"
+        }
+      ]
+    },
+    {
+      "id": "bucket_error",
+      "pattern": "bucket.*not found|bucket.*does not exist|404.*bucket",
+      "message": "Bucket not found",
+      "cause": "Bucket doesn't exist or wrong name",
+      "solutions": [
+        {
+          "approach": "List buckets",
+          "code": "influx bucket list",
+          "when": "Find buckets"
+        },
+        {
+          "approach": "Create bucket",
+          "code": "influx bucket create --name my-bucket --org your-org --retention 30d",
+          "when": "Create bucket"
+        },
+        {
+          "approach": "Check name",
+          "code": "# Bucket names are case-sensitive\n# Check exact name in list",
+          "when": "Name mismatch"
+        }
+      ]
+    },
+    {
+      "id": "write_error",
+      "pattern": "write.*failed|line protocol.*error|partial write|field type conflict",
+      "message": "Write error",
+      "cause": "Line protocol syntax or schema conflict",
+      "solutions": [
+        {
+          "approach": "Check line protocol",
+          "code": "# Format: measurement,tag=value field=value timestamp\ncpu,host=server01 usage=0.64 1609459200000000000",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Type conflict",
+          "code": "# Field types are set on first write\n# Cannot change type - use new field name\ncpu,host=server01 usage_new=0.64",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Batch write",
+          "code": "influx write --bucket my-bucket --file data.lp\n# Or via API with batching",
+          "when": "Write from file"
+        }
+      ]
+    },
+    {
+      "id": "flux_query_error",
+      "pattern": "Flux.*error|compilation failed|type error|runtime error",
+      "message": "Flux query error",
+      "cause": "Invalid Flux syntax or logic",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "from(bucket: \"my-bucket\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n  |> mean()",
+          "when": "Syntax example"
+        },
+        {
+          "approach": "Debug query",
+          "code": "// Add yield to see intermediate results:\nfrom(bucket: \"my-bucket\")\n  |> range(start: -1h)\n  |> yield(name: \"debug\")",
+          "when": "Debug"
+        },
+        {
+          "approach": "Type checking",
+          "code": "// Ensure correct types:\n|> filter(fn: (r) => r._field == \"usage\")\n|> toFloat()  // Convert if needed",
+          "when": "Type error"
+        }
+      ]
+    },
+    {
+      "id": "retention_error",
+      "pattern": "retention.*exceeded|data.*expired|shard.*not found",
+      "message": "Data retention error",
+      "cause": "Data expired due to retention policy",
+      "solutions": [
+        {
+          "approach": "Check retention",
+          "code": "influx bucket list\n# Shows retention period for each bucket",
+          "when": "View retention"
+        },
+        {
+          "approach": "Update retention",
+          "code": "influx bucket update --id bucket-id --retention 90d",
+          "when": "Change retention"
+        },
+        {
+          "approach": "Infinite retention",
+          "code": "influx bucket update --id bucket-id --retention 0",
+          "when": "Keep forever"
+        }
+      ]
+    },
+    {
+      "id": "performance_error",
+      "pattern": "timeout|memory.*exceeded|cardinality.*high|series.*limit",
+      "message": "Performance/cardinality error",
+      "cause": "High cardinality or inefficient query",
+      "solutions": [
+        {
+          "approach": "Reduce cardinality",
+          "code": "# Avoid high-cardinality tags (like UUIDs)\n# Use fields for high-cardinality values instead",
+          "when": "High cardinality"
+        },
+        {
+          "approach": "Optimize query",
+          "code": "from(bucket: \"my-bucket\")\n  |> range(start: -1h)  // Limit time range\n  |> filter(fn: (r) => r._measurement == \"cpu\")  // Filter early\n  |> aggregateWindow(every: 1m, fn: mean)  // Downsample",
+          "when": "Slow query"
+        },
+        {
+          "approach": "Check cardinality",
+          "code": "influx query 'import \"influxdata/influxdb\"\ninfluxdb.cardinality(bucket: \"my-bucket\", start: -30d)'",
+          "when": "Measure cardinality"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection refused|ECONNREFUSED|timeout|no route to host",
+      "message": "Connection error",
+      "cause": "InfluxDB not running or unreachable",
+      "solutions": [
+        {
+          "approach": "Check service",
+          "code": "systemctl status influxdb\ninflux ping",
+          "when": "Service status"
+        },
+        {
+          "approach": "Check port",
+          "code": "curl -I http://localhost:8086/health",
+          "when": "Port check"
+        },
+        {
+          "approach": "Config URL",
+          "code": "export INFLUX_HOST=http://localhost:8086\n# Or in config file",
+          "when": "Wrong URL"
+        }
+      ]
+    },
+    {
+      "id": "setup_error",
+      "pattern": "not.*initialized|setup.*required|onboarding",
+      "message": "Setup not complete",
+      "cause": "InfluxDB not initialized",
+      "solutions": [
+        {
+          "approach": "Initial setup",
+          "code": "influx setup \\\n  --username admin \\\n  --password your-password \\\n  --org your-org \\\n  --bucket default \\\n  --force",
+          "when": "First setup"
+        },
+        {
+          "approach": "UI setup",
+          "code": "# Open http://localhost:8086\n# Complete setup wizard",
+          "when": "Use UI"
+        },
+        {
+          "approach": "Check status",
+          "code": "influx ping\ncurl http://localhost:8086/api/v2/setup",
+          "when": "Verify setup"
+        }
+      ]
+    }
+  ]
+}

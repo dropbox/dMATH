@@ -1,0 +1,118 @@
+{
+  "tool": "msgpack",
+  "category": "serialization",
+  "common_errors": [
+    {
+      "pattern": "Extra \\d+ bytes|unpack.*incomplete|premature end",
+      "meaning": "MessagePack stream has extra or missing data",
+      "causes": [
+        "Multiple MessagePack objects concatenated",
+        "Data truncated",
+        "Using wrong unpack method for stream"
+      ],
+      "solutions": [
+        "Use Unpacker for streaming: unpacker.feed(data)",
+        "For single object: msgpack.unpackb(data)",
+        "For multiple objects: iterate with Unpacker"
+      ]
+    },
+    {
+      "pattern": "FormatError|invalid format|unknown type",
+      "meaning": "Invalid MessagePack format byte",
+      "causes": [
+        "Data corrupted",
+        "Data is not MessagePack format",
+        "Extension type not registered"
+      ],
+      "solutions": [
+        "Verify data is MessagePack-encoded",
+        "Register custom types with ExtType",
+        "Check for data corruption"
+      ]
+    },
+    {
+      "pattern": "ExtraData|unread data|strict_map_key",
+      "meaning": "Strict mode violations",
+      "causes": [
+        "Duplicate map keys",
+        "Non-string map keys with strict mode",
+        "Raw bytes in string field"
+      ],
+      "solutions": [
+        "Set strict_map_key=False for non-string keys",
+        "Use raw=False for string decoding",
+        "Check encoder/decoder strict settings match"
+      ]
+    },
+    {
+      "pattern": "StackError|recursion.*exceeded|too deeply nested",
+      "meaning": "Object nesting too deep",
+      "causes": [
+        "Circular reference in data",
+        "Very deeply nested structure",
+        "Malicious payload"
+      ],
+      "solutions": [
+        "Increase max_depth if legitimate: Unpacker(max_depth=1000)",
+        "Remove circular references before packing",
+        "Validate input depth for untrusted data"
+      ]
+    },
+    {
+      "pattern": "UnpackValueError|cannot convert|type error",
+      "meaning": "Type conversion error during unpack",
+      "causes": [
+        "Python 2/3 bytes/str mismatch",
+        "Integer overflow",
+        "Custom type not handled"
+      ],
+      "solutions": [
+        "Python 3: use raw=False for str, raw=True for bytes",
+        "Handle integer sizes explicitly",
+        "Use strict_types=False for lenient conversion"
+      ]
+    },
+    {
+      "pattern": "BufferFull|OutOfMemory|object too large",
+      "meaning": "Buffer or memory limit exceeded",
+      "causes": [
+        "Very large string/binary",
+        "Max buffer size too small",
+        "Memory exhaustion"
+      ],
+      "solutions": [
+        "Set max_buffer_size: Unpacker(max_buffer_size=100*1024*1024)",
+        "Stream large objects instead of loading",
+        "Use max_str_len, max_bin_len for limits"
+      ]
+    },
+    {
+      "pattern": "cannot serialize.*datetime|object has no attribute.*__msgpack__",
+      "meaning": "Object not serializable by default",
+      "causes": [
+        "datetime, custom classes not auto-serialized",
+        "Missing default function",
+        "No __msgpack__ method"
+      ],
+      "solutions": [
+        "Use default parameter: packb(data, default=encode_datetime)",
+        "Implement __msgpack__() method on class",
+        "Register extension type for custom types"
+      ]
+    },
+    {
+      "pattern": "msgpack.*not found|module.*msgpack",
+      "meaning": "MessagePack module not installed",
+      "causes": [
+        "Package not installed",
+        "Wrong package name",
+        "Pure Python vs C extension issue"
+      ],
+      "solutions": [
+        "Python: pip install msgpack (not msgpack-python)",
+        "Node.js: npm install @msgpack/msgpack",
+        "For faster: pip install msgpack with C compiler"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "tool": "mobx",
+  "category": "state_management",
+  "common_errors": [
+    {
+      "error": "NOT_OBSERVABLE",
+      "pattern": "not observable|Cannot read.*undefined|property.*not reactive",
+      "severity": "high",
+      "causes": [
+        "Property not decorated with @observable",
+        "Using makeAutoObservable incorrectly",
+        "Class not configured properly",
+        "Missing decorator support"
+      ],
+      "solutions": [
+        "Add @observable to properties",
+        "Use makeAutoObservable(this) in constructor",
+        "Configure babel for decorators",
+        "Use makeObservable with explicit annotations"
+      ]
+    },
+    {
+      "error": "REACTION_NOT_TRACKING",
+      "pattern": "reaction.*not.*tracking|autorun.*not running|computed.*not updating",
+      "severity": "high",
+      "causes": [
+        "Accessing observable outside reaction",
+        "Async operation breaking tracking",
+        "Destructuring breaking reactivity",
+        "Reading from closure instead of store"
+      ],
+      "solutions": [
+        "Access observables inside observer/reaction",
+        "Use runInAction for async state updates",
+        "Don't destructure observables: store.value not { value }",
+        "Pass store reference, not individual values"
+      ]
+    },
+    {
+      "error": "COMPUTED_MODIFICATION",
+      "pattern": "Computed.*cannot.*modified|Cannot.*computed|computed.*read-only",
+      "severity": "medium",
+      "causes": [
+        "Trying to set computed value",
+        "Missing setter for computed",
+        "Confusing computed with observable"
+      ],
+      "solutions": [
+        "Add setter: @computed get value() {} set value(v) {}",
+        "Use action to modify underlying observables",
+        "Change to observable if needs direct modification",
+        "Derived values should be computed, not set"
+      ]
+    },
+    {
+      "error": "STRICT_MODE_VIOLATION",
+      "pattern": "strict.*mode|modification.*outside.*action|state.*outside action",
+      "severity": "high",
+      "causes": [
+        "Modifying state outside action",
+        "Async code modifying state",
+        "Event handler directly modifying",
+        "Missing @action decorator"
+      ],
+      "solutions": [
+        "Wrap in action: action(() => { store.value = x })()",
+        "Use runInAction for async: runInAction(() => { store.value = x })",
+        "Add @action decorator to methods",
+        "Configure: configure({ enforceActions: 'observed' })"
+      ]
+    },
+    {
+      "error": "OBSERVER_NOT_RERENDERING",
+      "pattern": "observer.*not.*rerender|component.*not.*updating|stale state",
+      "severity": "high",
+      "causes": [
+        "Component not wrapped in observer",
+        "Observable accessed outside render",
+        "Using React.memo incorrectly",
+        "Conditional observable access"
+      ],
+      "solutions": [
+        "Wrap component: observer(Component) or @observer",
+        "Access observables in render method",
+        "Don't wrap observer components in memo",
+        "Ensure all accessed observables are read in render"
+      ]
+    },
+    {
+      "error": "INFINITE_LOOP",
+      "pattern": "Maximum.*exceeded|infinite loop|Maximum call stack|autorun.*loop",
+      "severity": "critical",
+      "causes": [
+        "Reaction modifying its own dependencies",
+        "Computed depending on itself",
+        "Action triggered in reaction triggering same reaction",
+        "Cycle in observable updates"
+      ],
+      "solutions": [
+        "Don't modify observables that trigger same reaction",
+        "Use flow for async that modifies state",
+        "Break cycle with timeout or separate action",
+        "Review dependency chain"
+      ]
+    },
+    {
+      "error": "MEMORY_LEAK",
+      "pattern": "memory leak|disposed.*reaction|unmounted.*update",
+      "severity": "high",
+      "causes": [
+        "Reaction not disposed on unmount",
+        "autorun without cleanup",
+        "observer component leaking",
+        "Holding references to unmounted components"
+      ],
+      "solutions": [
+        "Return disposer from useEffect: useEffect(() => autorun(), [])",
+        "Call disposer on unmount",
+        "Use useLocalObservable for component-scoped state",
+        "Use reaction() and dispose in cleanup"
+      ]
+    },
+    {
+      "error": "PROXY_ERROR",
+      "pattern": "Proxy.*error|cannot.*proxy|Reflect.*failed",
+      "severity": "medium",
+      "causes": [
+        "Browser doesn't support Proxy",
+        "Class with non-configurable properties",
+        "Frozen object made observable",
+        "Symbol properties"
+      ],
+      "solutions": [
+        "Use configure({ useProxies: 'never' }) for legacy",
+        "Make properties configurable",
+        "Don't freeze objects before making observable",
+        "Avoid Symbol keys on observables"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use makeAutoObservable for simple stores",
+    "Always wrap async code in runInAction",
+    "Use observer() on all components that read observables",
+    "Dispose reactions on unmount",
+    "Keep stores small and focused",
+    "Use computed for derived values",
+    "Enable strict mode in development"
+  ],
+  "related_tools": ["redux", "zustand", "valtio", "jotai"]
+}

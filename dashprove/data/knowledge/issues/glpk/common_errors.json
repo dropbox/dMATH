@@ -1,0 +1,122 @@
+{
+  "version": "5.0",
+  "errors": [
+    {
+      "id": "no_primal_feasible",
+      "pattern": "PROBLEM HAS NO PRIMAL FEASIBLE SOLUTION",
+      "message": "Primal constraints are inconsistent",
+      "cause": "Bounds or constraints conflict so no feasible point exists",
+      "solutions": [
+        {
+          "approach": "Inspect infeasibility report",
+          "code": "glpsol --iniout --wlp model.lp",
+          "when": "Need to see which rows/columns are violated"
+        },
+        {
+          "approach": "Relax bounds slightly",
+          "code": "% widen capacity by small epsilon",
+          "when": "Rounding errors create artificial conflicts"
+        },
+        {
+          "approach": "Use presolver to simplify",
+          "code": "glpsol --pcost --presol",
+          "when": "Presolve can remove redundant contradictions"
+        }
+      ]
+    },
+    {
+      "id": "no_dual_feasible",
+      "pattern": "LP HAS NO DUAL FEASIBLE SOLUTION",
+      "message": "Dual infeasibility detected (likely unbounded primal)",
+      "cause": "Objective can improve without limit or missing bounds on variables",
+      "solutions": [
+        {
+          "approach": "Add explicit upper/lower bounds",
+          "code": "0 <= x <= 1000;",
+          "when": "Variables currently free in objective direction"
+        },
+        {
+          "approach": "Change objective to satisfy mode",
+          "code": "% remove objective to test feasibility",
+          "when": "Need to decouple feasibility from optimization"
+        },
+        {
+          "approach": "Check sign of coefficients",
+          "code": "% ensure max problems not modeled as min with negative costs",
+          "when": "Wrong sense can appear unbounded"
+        }
+      ]
+    },
+    {
+      "id": "numerical_instability",
+      "pattern": "numerical instability|ill-conditioned",
+      "message": "Simplex iterations suffer from poor scaling",
+      "cause": "Large coefficient ranges or nearly dependent constraints",
+      "solutions": [
+        {
+          "approach": "Enable automatic scaling",
+          "code": "glpsol --scale",
+          "when": "Coefficients vary across orders of magnitude"
+        },
+        {
+          "approach": "Tighten feasibility tolerances",
+          "code": "glpsol --tmlim 300 --tolbnd 1e-8 --tolobj 1e-8",
+          "when": "Numerical noise affects optimality"
+        },
+        {
+          "approach": "Reformulate constraints",
+          "code": "% divide rows by gcd to reduce magnitude",
+          "when": "Constraints share large common factors"
+        }
+      ]
+    },
+    {
+      "id": "bad_data",
+      "pattern": "Column \\d+ out of range|row \\d+ invalid",
+      "message": "Model file contains invalid indices or malformed rows",
+      "cause": "Incorrectly generated LP/MPS/MathProg file",
+      "solutions": [
+        {
+          "approach": "Regenerate the model",
+          "code": "% rebuild LP/MPS from source with validated indices",
+          "when": "Exporter may have written wrong indices"
+        },
+        {
+          "approach": "Validate dimensions before export",
+          "code": "assert len(costs) == len(vars)",
+          "when": "Mismatched vector sizes in code"
+        },
+        {
+          "approach": "Load with --check option",
+          "code": "glpsol --check model.mod",
+          "when": "Need GLPK to report first invalid item"
+        }
+      ]
+    },
+    {
+      "id": "time_limit",
+      "pattern": "time limit exceeded",
+      "message": "Solver stopped before reaching optimality due to time limit",
+      "cause": "Problem is large and simplex/branch-and-bound needs more time",
+      "solutions": [
+        {
+          "approach": "Increase time or adjust mip gap",
+          "code": "glpsol --mipgap 0.01 --tmlim 600",
+          "when": "Accept approximate solutions"
+        },
+        {
+          "approach": "Provide warm start",
+          "code": "glpsol --ini mipstart.bas",
+          "when": "Have incumbent solution available"
+        },
+        {
+          "approach": "Reduce problem size",
+          "code": "% aggregate variables or tighten presolve",
+          "when": "Model is too big for hardware"
+        }
+      ]
+    }
+  ],
+  "tool": "glpk",
+  "last_updated": "2025-12-23"
+}

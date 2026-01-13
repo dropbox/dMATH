@@ -1,0 +1,201 @@
+{
+  "tool": "elastic_apm",
+  "version": "8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|ECONNREFUSED|Unable to reach APM Server|connection error",
+      "message": "Cannot connect to APM Server",
+      "cause": "APM Server not running or network issue",
+      "solutions": [
+        {
+          "approach": "Check APM Server status",
+          "code": "# Check if running\nsystemctl status apm-server\n\n# Or Docker\ndocker ps | grep apm-server\n\n# Test endpoint\ncurl http://localhost:8200/",
+          "when": "Server may not be running"
+        },
+        {
+          "approach": "Start APM Server",
+          "code": "# Systemd\nsudo systemctl start apm-server\n\n# Docker\ndocker run -d --name apm-server \\\n  -p 8200:8200 \\\n  docker.elastic.co/apm/apm-server:8.11.0",
+          "when": "Need to start server"
+        },
+        {
+          "approach": "Check agent config",
+          "code": "// Node.js\nconst apm = require('elastic-apm-node').start({\n  serverUrl: 'http://localhost:8200',  // Verify URL\n  serviceName: 'my-service',\n  secretToken: 'xxxx'  // If auth enabled\n});\n\n// Python\nimport elasticapm\nclient = elasticapm.Client({\n    'SERVER_URL': 'http://localhost:8200'\n})",
+          "when": "Agent misconfigured"
+        }
+      ]
+    },
+    {
+      "id": "elasticsearch_connection",
+      "pattern": "Elasticsearch.*unavailable|failed to connect to Elasticsearch|ES connection|output.*elasticsearch",
+      "message": "APM Server cannot connect to Elasticsearch",
+      "cause": "Elasticsearch not running or misconfigured",
+      "solutions": [
+        {
+          "approach": "Check Elasticsearch",
+          "code": "curl -u elastic:password https://localhost:9200/_cluster/health\n\n# Verify ES is healthy and reachable",
+          "when": "ES may be down"
+        },
+        {
+          "approach": "Configure APM Server output",
+          "code": "# apm-server.yml\noutput.elasticsearch:\n  hosts: [\"https://localhost:9200\"]\n  username: \"elastic\"\n  password: \"changeme\"\n  ssl.certificate_authorities: [\"/path/to/ca.crt\"]",
+          "when": "Output misconfigured"
+        },
+        {
+          "approach": "Check SSL/TLS",
+          "code": "# apm-server.yml\noutput.elasticsearch:\n  hosts: [\"https://localhost:9200\"]\n  ssl.verification_mode: none  # For testing only\n\n# Or provide proper certs",
+          "when": "SSL certificate issues"
+        }
+      ]
+    },
+    {
+      "id": "no_data",
+      "pattern": "no data|no transactions|no traces|no spans|data not appearing",
+      "message": "APM data not appearing in Kibana",
+      "cause": "Agent not sending data, sampling, or index issues",
+      "solutions": [
+        {
+          "approach": "Verify agent active",
+          "code": "// Node.js - check agent status\nconst apm = require('elastic-apm-node');\nconsole.log('APM active:', apm.isStarted());\n\n// Python\nimport elasticapm\nprint('APM active:', elasticapm.get_client() is not None)",
+          "when": "Agent may not be started"
+        },
+        {
+          "approach": "Check sampling rate",
+          "code": "// Set to 100% for debugging\napm.start({\n  transactionSampleRate: 1.0  // 0.0-1.0\n});\n\n# Python\nELASTIC_APM_TRANSACTION_SAMPLE_RATE=1.0",
+          "when": "Sampling dropping data"
+        },
+        {
+          "approach": "Check data stream/index",
+          "code": "# In Kibana Dev Tools\nGET _data_stream/traces-apm*\nGET _data_stream/metrics-apm*\n\n# Check for data\nGET traces-apm-default/_search?size=1",
+          "when": "Data stream issues"
+        },
+        {
+          "approach": "Check APM Server logs",
+          "code": "# View logs\njournalctl -u apm-server -f\n\n# Or Docker\ndocker logs apm-server --tail 100",
+          "when": "Need to diagnose server"
+        }
+      ]
+    },
+    {
+      "id": "authentication_error",
+      "pattern": "401|403|Unauthorized|authentication failed|secret token|API key",
+      "message": "APM authentication failed",
+      "cause": "Invalid or missing secret token or API key",
+      "solutions": [
+        {
+          "approach": "Configure secret token",
+          "code": "# apm-server.yml\napm-server.auth.secret_token: \"your-secret-token\"\n\n// Agent\napm.start({\n  secretToken: 'your-secret-token'\n});",
+          "when": "Token mismatch"
+        },
+        {
+          "approach": "Use API key",
+          "code": "# Create API key in Kibana\n# Stack Management > API Keys\n\n// Agent\napm.start({\n  apiKey: 'base64-encoded-key'\n});\n\n# apm-server.yml\napm-server.auth.api_key.enabled: true",
+          "when": "Prefer API key auth"
+        },
+        {
+          "approach": "Disable auth for testing",
+          "code": "# apm-server.yml (NOT for production)\napm-server.auth.secret_token: \"\"\napm-server.auth.anonymous.enabled: true",
+          "when": "Local testing"
+        }
+      ]
+    },
+    {
+      "id": "high_memory",
+      "pattern": "OutOfMemory|memory limit|heap|agent overhead",
+      "message": "APM agent using too much memory",
+      "cause": "Too many spans captured or queue backing up",
+      "solutions": [
+        {
+          "approach": "Reduce sampling",
+          "code": "apm.start({\n  transactionSampleRate: 0.1,  // 10%\n  spanStackTraceMinDuration: '10ms'  // Skip small spans\n});",
+          "when": "Capturing too much"
+        },
+        {
+          "approach": "Tune queue size",
+          "code": "apm.start({\n  apiRequestSize: '768kb',  // Max request size\n  metricsInterval: '30s'  // Reduce frequency\n});",
+          "when": "Queue backing up"
+        },
+        {
+          "approach": "Disable stack traces",
+          "code": "apm.start({\n  captureSpanStackTraces: false,\n  spanStackTraceMinDuration: '-1'  // Disable\n});",
+          "when": "Stack traces too expensive"
+        },
+        {
+          "approach": "Exclude endpoints",
+          "code": "apm.start({\n  transactionIgnoreUrls: ['/health', '/metrics', '/favicon.ico']\n});",
+          "when": "Health checks generating noise"
+        }
+      ]
+    },
+    {
+      "id": "distributed_tracing",
+      "pattern": "trace.*not.*propagat|missing parent|orphan|distributed tracing",
+      "message": "Distributed traces not correlating",
+      "cause": "Trace context not propagating between services",
+      "solutions": [
+        {
+          "approach": "Check W3C headers",
+          "code": "// APM uses W3C Trace Context by default\n// Ensure these headers are forwarded:\n// - traceparent\n// - tracestate\n// - elastic-apm-traceparent (legacy)",
+          "when": "Headers not forwarded"
+        },
+        {
+          "approach": "Configure propagation",
+          "code": "// Node.js\napm.start({\n  useElasticTraceparentHeader: true,  // Legacy\n  // W3C enabled by default\n});\n\n// Manual propagation\nconst traceparent = apm.currentTraceparent;",
+          "when": "Manual propagation needed"
+        },
+        {
+          "approach": "Instrument HTTP clients",
+          "code": "// Ensure HTTP client is instrumented\n// Node.js auto-instruments: http, https, axios, fetch\n\n// For custom clients, manually propagate:\nrequest.setHeader('traceparent', apm.currentTraceparent);",
+          "when": "Custom HTTP client"
+        }
+      ]
+    },
+    {
+      "id": "high_cardinality",
+      "pattern": "high cardinality|too many.*transactions|field data|memory pressure",
+      "message": "Too many unique transaction names causing issues",
+      "cause": "Dynamic values in transaction names creating cardinality explosion",
+      "solutions": [
+        {
+          "approach": "Normalize transaction names",
+          "code": "// Bad: /users/123, /users/456 (unique per user)\n// Good: /users/:id\n\n// Manual override\napm.setTransactionName('GET /users/:id');",
+          "when": "IDs in URLs"
+        },
+        {
+          "approach": "Use URL groups",
+          "code": "// Node.js\napm.start({\n  urlGroups: [\n    '*/users/*',\n    '*/api/v?/*'\n  ]\n});",
+          "when": "Pattern-based grouping"
+        },
+        {
+          "approach": "Filter with pipeline",
+          "code": "# Elasticsearch ingest pipeline\n{\n  \"processors\": [\n    {\n      \"gsub\": {\n        \"field\": \"transaction.name\",\n        \"pattern\": \"/users/[0-9]+\",\n        \"replacement\": \"/users/:id\"\n      }\n    }\n  ]\n}",
+          "when": "Fix at ingest time"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|TLS|certificate|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self.signed",
+      "message": "SSL/TLS connection error to APM Server",
+      "cause": "Certificate verification failing",
+      "solutions": [
+        {
+          "approach": "Provide CA certificate",
+          "code": "apm.start({\n  serverCaCertFile: '/path/to/ca.crt'\n});\n\n# Or environment variable\nELASTIC_APM_SERVER_CA_CERT_FILE=/path/to/ca.crt",
+          "when": "Self-signed or private CA"
+        },
+        {
+          "approach": "Disable verification (testing only)",
+          "code": "apm.start({\n  verifyServerCert: false  // NOT for production!\n});\n\n# Or\nELASTIC_APM_VERIFY_SERVER_CERT=false",
+          "when": "Local development"
+        },
+        {
+          "approach": "Use HTTP for local",
+          "code": "apm.start({\n  serverUrl: 'http://localhost:8200'  // No TLS\n});",
+          "when": "Local testing without TLS"
+        }
+      ]
+    }
+  ]
+}

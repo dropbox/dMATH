@@ -1,0 +1,73 @@
+{
+  "tool": "robot3",
+  "category": "state_machines",
+  "common_errors": [
+    {
+      "pattern": "Machine has no initial state|initial state not provided",
+      "meaning": "createMachine called without initial state key",
+      "causes": [
+        "Missing start state argument",
+        "Typo in state key passed as initial"
+      ],
+      "solutions": [
+        "Pass initial state name: createMachine({ idle, loading }, 'idle')",
+        "Ensure initial string matches state map key"
+      ]
+    },
+    {
+      "pattern": "Cannot read properties of undefined.*context|ctx is undefined",
+      "meaning": "Context initializer missing",
+      "causes": [
+        "interpret called without context factory",
+        "createMachine third argument omitted when states expect context",
+        "Mutating ctx before it's created"
+      ],
+      "solutions": [
+        "Provide context initializer: createMachine(states, 'idle', () => ({ count: 0 }))",
+        "Avoid referencing ctx fields before initialization",
+        "Pass interpreter initial context: interpret(machine, () => ({ ... }))"
+      ]
+    },
+    {
+      "pattern": "Unhandled event|Cannot transition from state",
+      "meaning": "Event has no transition from current state",
+      "causes": [
+        "Transition map missing event handler",
+        "Guard prevents transition",
+        "Using wrong event name casing"
+      ],
+      "solutions": [
+        "Add transition: idle: state(transition('SUBMIT', 'loading'))",
+        "Verify guard returns boolean",
+        "Align event strings exactly as sent"
+      ]
+    },
+    {
+      "pattern": "Guards must return boolean|guard result not boolean",
+      "meaning": "Guard function returns non-boolean or undefined",
+      "causes": [
+        "Guard missing return statement",
+        "Async guard not awaited but returns Promise",
+        "Returning truthy object instead of boolean"
+      ],
+      "solutions": [
+        "Return explicit boolean from guard",
+        "Keep guards synchronous; move async work to services/actions",
+        "Use !! to coerce if necessary"
+      ]
+    },
+    {
+      "pattern": "Service promise rejected|Unhandled rejection in transition",
+      "meaning": "invoke or task failed without catch",
+      "causes": [
+        "Task promise rejected without transition",
+        "Error action throws inside reducer"
+      ],
+      "solutions": [
+        "Handle failures with transition('ERROR', 'failed') in task",
+        "Wrap async actions with try/catch and emit error events",
+        "Log and return new context instead of throwing"
+      ]
+    }
+  ]
+}

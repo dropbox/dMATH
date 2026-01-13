@@ -1,0 +1,145 @@
+{
+  "tool": "reqwest",
+  "version": "0.12.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "tls_error",
+      "pattern": "TLS error|certificate verify failed|invalid certificate|rustls",
+      "message": "TLS/SSL connection failed",
+      "cause": "Certificate validation failed or TLS backend issue",
+      "solutions": [
+        {
+          "approach": "Add root certificates",
+          "code": "// Cargo.toml\nreqwest = { version = \"0.12\", features = [\"rustls-tls-native-roots\"] }",
+          "when": "Missing system certs"
+        },
+        {
+          "approach": "Use native TLS",
+          "code": "reqwest = { version = \"0.12\", features = [\"native-tls\"] }",
+          "when": "Prefer OpenSSL"
+        },
+        {
+          "approach": "Skip verification (dev)",
+          "code": "Client::builder()\n    .danger_accept_invalid_certs(true)\n    .build()?",
+          "when": "Self-signed certs in dev"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timed out|Timeout|operation timed out|elapsed",
+      "message": "Request timed out",
+      "cause": "Server too slow or timeout too short",
+      "solutions": [
+        {
+          "approach": "Set timeout",
+          "code": "Client::builder()\n    .timeout(Duration::from_secs(30))\n    .build()?",
+          "when": "Need longer timeout"
+        },
+        {
+          "approach": "Per-request timeout",
+          "code": "client.get(url)\n    .timeout(Duration::from_secs(60))\n    .send().await?",
+          "when": "Specific request needs more time"
+        },
+        {
+          "approach": "Connect timeout",
+          "code": "Client::builder()\n    .connect_timeout(Duration::from_secs(5))\n    .build()?",
+          "when": "Connection phase slow"
+        }
+      ]
+    },
+    {
+      "id": "blocking_in_async",
+      "pattern": "Cannot block.*async|not permitted.*block_on|tokio.*blocking",
+      "message": "Using blocking client in async context",
+      "cause": "reqwest::blocking used inside async runtime",
+      "solutions": [
+        {
+          "approach": "Use async client",
+          "code": "let client = reqwest::Client::new();\nlet resp = client.get(url).send().await?;",
+          "when": "In async context"
+        },
+        {
+          "approach": "Use spawn_blocking",
+          "code": "tokio::task::spawn_blocking(move || {\n    reqwest::blocking::get(url)\n}).await?",
+          "when": "Must use blocking API"
+        },
+        {
+          "approach": "Check features",
+          "code": "// Cargo.toml - use blocking feature only if needed\nreqwest = { version = \"0.12\", features = [\"json\"] }  // not \"blocking\"",
+          "when": "Remove blocking feature"
+        }
+      ]
+    },
+    {
+      "id": "json_deserialize",
+      "pattern": "error decoding response|JSON error|invalid type|missing field",
+      "message": "JSON deserialization failed",
+      "cause": "Response doesn't match expected struct",
+      "solutions": [
+        {
+          "approach": "Debug raw response",
+          "code": "let text = resp.text().await?;\nprintln!(\"Response: {}\", text);",
+          "when": "See actual response"
+        },
+        {
+          "approach": "Use serde attributes",
+          "code": "#[derive(Deserialize)]\nstruct Response {\n    #[serde(default)]\n    optional_field: Option<String>,\n}",
+          "when": "Handle missing fields"
+        },
+        {
+          "approach": "Deserialize to Value",
+          "code": "let json: serde_json::Value = resp.json().await?;",
+          "when": "Unknown structure"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection refused|ECONNREFUSED|no route to host|dns error",
+      "message": "Cannot connect to server",
+      "cause": "Server down, wrong port, or network issue",
+      "solutions": [
+        {
+          "approach": "Check server",
+          "code": "curl -v https://api.example.com",
+          "when": "Verify server is up"
+        },
+        {
+          "approach": "Configure proxy",
+          "code": "Client::builder()\n    .proxy(Proxy::all(\"http://proxy:8080\")?)\n    .build()?",
+          "when": "Behind proxy"
+        },
+        {
+          "approach": "Use retry",
+          "code": "// Add reqwest-retry crate for automatic retries",
+          "when": "Transient failures"
+        }
+      ]
+    },
+    {
+      "id": "missing_feature",
+      "pattern": "method.*not found|json.*not available|no method named",
+      "message": "Feature not enabled",
+      "cause": "Required Cargo feature not enabled",
+      "solutions": [
+        {
+          "approach": "Enable json feature",
+          "code": "reqwest = { version = \"0.12\", features = [\"json\"] }",
+          "when": "Using .json() method"
+        },
+        {
+          "approach": "Enable cookies",
+          "code": "reqwest = { version = \"0.12\", features = [\"cookies\"] }",
+          "when": "Cookie jar needed"
+        },
+        {
+          "approach": "Enable stream",
+          "code": "reqwest = { version = \"0.12\", features = [\"stream\"] }",
+          "when": "Using bytes_stream()"
+        }
+      ]
+    }
+  ]
+}

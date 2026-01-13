@@ -1,0 +1,118 @@
+{
+  "tool": "cbor",
+  "category": "serialization",
+  "common_errors": [
+    {
+      "pattern": "CBORDecodeError|unexpected.*byte|invalid initial byte",
+      "meaning": "Invalid CBOR format",
+      "causes": [
+        "Data is not CBOR encoded",
+        "Data corrupted",
+        "Using wrong decoder"
+      ],
+      "solutions": [
+        "Verify data is CBOR format",
+        "Check for JSON vs CBOR confusion",
+        "CBOR is binary, not text-based"
+      ]
+    },
+    {
+      "pattern": "premature end of stream|truncated",
+      "meaning": "Incomplete CBOR data",
+      "causes": [
+        "Data stream interrupted",
+        "Buffer too small",
+        "Definite-length item incomplete"
+      ],
+      "solutions": [
+        "Ensure complete data received",
+        "Check for network/IO errors",
+        "Verify Content-Length matches data"
+      ]
+    },
+    {
+      "pattern": "tag .* not recognized|unknown tag|unhandled tag",
+      "meaning": "CBOR tag not supported",
+      "causes": [
+        "Using semantic tag without handler",
+        "Custom tag not registered",
+        "Tag value unexpected"
+      ],
+      "solutions": [
+        "Register tag decoder: cbor.tag_hook",
+        "Use standard tags (0=datetime, 2=bignum, etc.)",
+        "Check tag is in IANA registry or custom range"
+      ]
+    },
+    {
+      "pattern": "cannot encode.*type|unsupported type",
+      "meaning": "Object type not CBOR-encodable",
+      "causes": [
+        "Custom class without encoder",
+        "Function or complex object",
+        "Circular reference"
+      ],
+      "solutions": [
+        "Implement default encoder: cbor.dumps(obj, default=encoder)",
+        "Convert to dict/list before encoding",
+        "Use CBOREncoder subclass for custom types"
+      ]
+    },
+    {
+      "pattern": "recursion.*limit|maximum nesting|depth exceeded",
+      "meaning": "Object nesting too deep",
+      "causes": [
+        "Very deeply nested structure",
+        "Circular reference loop",
+        "Attack payload"
+      ],
+      "solutions": [
+        "Set max_depth limit for untrusted data",
+        "Remove circular references",
+        "Flatten structure if possible"
+      ]
+    },
+    {
+      "pattern": "indefinite.*not allowed|streaming not supported",
+      "meaning": "Indefinite-length encoding issue",
+      "causes": [
+        "Decoder doesn't support indefinite length",
+        "Using break code incorrectly",
+        "Strict mode rejects indefinite"
+      ],
+      "solutions": [
+        "Use definite-length encoding for compatibility",
+        "Enable indefinite support in decoder options",
+        "Check library supports CBOR streaming"
+      ]
+    },
+    {
+      "pattern": "integer too large|overflow|big integer",
+      "meaning": "Integer exceeds native type",
+      "causes": [
+        "CBOR can encode arbitrary integers",
+        "JavaScript Number limit exceeded",
+        "Need BigInt support"
+      ],
+      "solutions": [
+        "Use BigInt-aware decoder",
+        "Python handles arbitrarily large integers",
+        "JavaScript: use BigInt or cbor library with bigint support"
+      ]
+    },
+    {
+      "pattern": "duplicate key|map key conflict",
+      "meaning": "Duplicate map key encountered",
+      "causes": [
+        "Encoder produced duplicate keys",
+        "Malformed CBOR map",
+        "Deterministic encoding violated"
+      ],
+      "solutions": [
+        "Enable duplicate key checking: strict=True",
+        "Use deterministic encoding (CTAP2 canonical)",
+        "Check source data for duplicates"
+      ]
+    }
+  ]
+}

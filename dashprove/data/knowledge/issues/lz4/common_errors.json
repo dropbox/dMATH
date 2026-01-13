@@ -1,0 +1,118 @@
+{
+  "tool": "lz4",
+  "category": "compression",
+  "common_errors": [
+    {
+      "pattern": "ERROR.*malformed|Invalid LZ4 stream",
+      "meaning": "Data is not valid LZ4 format",
+      "causes": [
+        "Wrong LZ4 variant (block vs frame)",
+        "Data is different compression format",
+        "Magic number mismatch"
+      ],
+      "solutions": [
+        "LZ4 frame format starts with 0x04 0x22 0x4D 0x18",
+        "Check if using block API vs frame API",
+        "Verify source compression method"
+      ]
+    },
+    {
+      "pattern": "LZ4F_decompress.*buffer too small",
+      "meaning": "Output buffer insufficient",
+      "causes": [
+        "Decompressed size larger than expected",
+        "Using fixed-size buffer for unknown size",
+        "Block size setting mismatch"
+      ],
+      "solutions": [
+        "Use LZ4F_getFrameInfo() to get content size hint",
+        "Allocate larger buffer or use streaming",
+        "Process in chunks with streaming API"
+      ]
+    },
+    {
+      "pattern": "LZ4HC.*dictionary.*mismatch",
+      "meaning": "Dictionary compression/decompression mismatch",
+      "causes": [
+        "Decompressing without required dictionary",
+        "Wrong dictionary provided",
+        "Dictionary built for different data"
+      ],
+      "solutions": [
+        "Provide same dictionary used for compression",
+        "Train dictionary on representative data",
+        "Store dictionary reference with compressed data"
+      ]
+    },
+    {
+      "pattern": "ERROR.*block too large|maxBlockSize exceeded",
+      "meaning": "Block size exceeds configured maximum",
+      "causes": [
+        "Block compressed with larger max size",
+        "maxBlockSize parameter mismatch",
+        "Corrupted length field"
+      ],
+      "solutions": [
+        "Match maxBlockSize between compress and decompress",
+        "Standard sizes: 64KB, 256KB, 1MB, 4MB",
+        "Use frame format which includes block size info"
+      ]
+    },
+    {
+      "pattern": "LZ4.*cannot allocate|out of memory",
+      "meaning": "Memory allocation failed",
+      "causes": [
+        "System memory exhausted",
+        "HC compression uses more memory",
+        "Large dictionary"
+      ],
+      "solutions": [
+        "Use LZ4 fast mode instead of HC for lower memory",
+        "Reduce dictionary size",
+        "Process smaller chunks"
+      ]
+    },
+    {
+      "pattern": "Checksum.*invalid|content checksum error",
+      "meaning": "Frame content checksum verification failed",
+      "causes": [
+        "Data corrupted",
+        "Truncated frame",
+        "Transfer error"
+      ],
+      "solutions": [
+        "Verify complete data received",
+        "Re-read or re-download source",
+        "Check storage/network for errors"
+      ]
+    },
+    {
+      "pattern": "cannot load.*lz4|native module",
+      "meaning": "LZ4 native binding not available",
+      "causes": [
+        "Native addon compilation failed",
+        "Missing build dependencies",
+        "Platform not supported"
+      ],
+      "solutions": [
+        "npm install lz4 (requires compiler)",
+        "Install build-essential/Xcode tools",
+        "Use lz4js (pure JS, slower) as fallback"
+      ]
+    },
+    {
+      "pattern": "LZ4_compress_fast.*negative size",
+      "meaning": "Compression failed due to size issue",
+      "causes": [
+        "Input too large for single block",
+        "Integer overflow",
+        "Invalid input size parameter"
+      ],
+      "solutions": [
+        "Use frame format for large data",
+        "Check input size within int32 range",
+        "Use LZ4_compressBound() for output size"
+      ]
+    }
+  ]
+}

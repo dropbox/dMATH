@@ -1,0 +1,237 @@
+{
+  "tool": "checker_framework",
+  "version": "3.42.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "nullness_error",
+      "pattern": "dereference of possibly-null|incompatible types in assignment|@NonNull.*@Nullable",
+      "message": "Nullness type error",
+      "cause": "Nullable value assigned where non-null expected",
+      "solutions": [
+        {
+          "approach": "Add null check",
+          "code": "if (value != null) {\n    return value.length();\n}\nreturn 0;",
+          "when": "Handle null case"
+        },
+        {
+          "approach": "Use @Nullable",
+          "code": "@Nullable String maybeNull = getNullable();",
+          "when": "Accept nullable"
+        },
+        {
+          "approach": "Use assert",
+          "code": "assert value != null : \"@AssumeAssertion(nullness)\";\nreturn value.length();",
+          "when": "Know it's non-null"
+        }
+      ]
+    },
+    {
+      "id": "initialization_error",
+      "pattern": "initialization\\.field\\.uninitialized|@UnknownInitialization",
+      "message": "Uninitialized field access",
+      "cause": "Field accessed before fully initialized",
+      "solutions": [
+        {
+          "approach": "Initialize in constructor",
+          "code": "public MyClass() {\n    this.field = new Object(); // Initialize all fields\n}",
+          "when": "Field not initialized"
+        },
+        {
+          "approach": "Use @MonotonicNonNull",
+          "code": "@MonotonicNonNull private Object lazyField;",
+          "when": "Lazy initialization"
+        },
+        {
+          "approach": "Mark receiver type",
+          "code": "void helper(@UnknownInitialization MyClass this) { }",
+          "when": "Called during construction"
+        }
+      ]
+    },
+    {
+      "id": "tainting_error",
+      "pattern": "@Tainted.*@Untainted|tainted data",
+      "message": "Tainted data in untainted context",
+      "cause": "Untrusted data used without sanitization",
+      "solutions": [
+        {
+          "approach": "Sanitize input",
+          "code": "@Untainted String safe = sanitize(userInput);",
+          "when": "Need to clean data"
+        },
+        {
+          "approach": "Validate input",
+          "code": "if (isValid(input)) {\n    @SuppressWarnings(\"tainting\")\n    @Untainted String trusted = input;\n}",
+          "when": "Validation makes safe"
+        },
+        {
+          "approach": "Annotate trusted source",
+          "code": "@Untainted String getConfigValue() { return config.get(key); }",
+          "when": "Source is trusted"
+        }
+      ]
+    },
+    {
+      "id": "lock_error",
+      "pattern": "@GuardedBy|lock\\.not\\.held|@Holding",
+      "message": "Lock not held for guarded access",
+      "cause": "Accessing guarded field without required lock",
+      "solutions": [
+        {
+          "approach": "Acquire lock",
+          "code": "synchronized (lock) {\n    guardedField = value;\n}",
+          "when": "Need to hold lock"
+        },
+        {
+          "approach": "Add @Holding annotation",
+          "code": "@Holding(\"lock\")\nvoid modifyField() {\n    guardedField = newValue;\n}",
+          "when": "Method requires lock"
+        },
+        {
+          "approach": "Use ReentrantLock",
+          "code": "lock.lock();\ntry {\n    guardedField = value;\n} finally {\n    lock.unlock();\n}",
+          "when": "Using explicit locks"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "@IndexFor|@LessThan|array\\.access\\.unsafe",
+      "message": "Array index may be out of bounds",
+      "cause": "Index not proven within array bounds",
+      "solutions": [
+        {
+          "approach": "Use @IndexFor",
+          "code": "void access(@IndexFor(\"arr\") int i, String[] arr) {\n    return arr[i];\n}",
+          "when": "Parameter is valid index"
+        },
+        {
+          "approach": "Check bounds",
+          "code": "if (i >= 0 && i < arr.length) {\n    return arr[i];\n}",
+          "when": "Dynamic index"
+        },
+        {
+          "approach": "Use @LessThan",
+          "code": "for (@LessThan(\"arr.length\") int i = 0; i < arr.length; i++) { }",
+          "when": "Loop index"
+        }
+      ]
+    },
+    {
+      "id": "regex_error",
+      "pattern": "@Regex|invalid\\.regex|regex\\.syntax",
+      "message": "Invalid regex pattern",
+      "cause": "String used as regex is not valid pattern",
+      "solutions": [
+        {
+          "approach": "Annotate valid regex",
+          "code": "@Regex String pattern = \"[a-z]+\";",
+          "when": "Known valid pattern"
+        },
+        {
+          "approach": "Validate at runtime",
+          "code": "try {\n    Pattern.compile(userPattern);\n} catch (PatternSyntaxException e) { }",
+          "when": "User-provided pattern"
+        },
+        {
+          "approach": "Use Pattern constant",
+          "code": "private static final Pattern VALID = Pattern.compile(\"[a-z]+\");",
+          "when": "Compile-time constant"
+        }
+      ]
+    },
+    {
+      "id": "format_string_error",
+      "pattern": "@FormatMethod|format\\.string\\.invalid|ConversionCategory",
+      "message": "Format string type error",
+      "cause": "Format specifiers don't match argument types",
+      "solutions": [
+        {
+          "approach": "Fix format specifiers",
+          "code": "String.format(\"%s: %d\", name, count); // String, int",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Annotate format method",
+          "code": "@FormatMethod\nvoid log(String format, Object... args) {\n    System.out.printf(format, args);\n}",
+          "when": "Custom format method"
+        },
+        {
+          "approach": "Use correct types",
+          "code": "logger.info(\"{} processed {} items\", name, count);",
+          "when": "SLF4J formatting"
+        }
+      ]
+    },
+    {
+      "id": "interning_error",
+      "pattern": "@Interned|interned\\.object\\.creation|reference\\.equality",
+      "message": "Interned object comparison issue",
+      "cause": "Interned object not compared with ==",
+      "solutions": [
+        {
+          "approach": "Use == for interned",
+          "code": "@Interned String a, b;\nif (a == b) { } // Correct for interned",
+          "when": "Comparing interned strings"
+        },
+        {
+          "approach": "Intern the value",
+          "code": "@Interned String interned = str.intern();",
+          "when": "Need interned instance"
+        },
+        {
+          "approach": "Use equals for non-interned",
+          "code": "if (str1.equals(str2)) { }",
+          "when": "Not interned"
+        }
+      ]
+    },
+    {
+      "id": "signature_error",
+      "pattern": "@MethodDescriptor|@ClassGetName|signature\\.invalid",
+      "message": "Invalid type signature",
+      "cause": "String is not valid Java type signature",
+      "solutions": [
+        {
+          "approach": "Use correct format",
+          "code": "@ClassGetName String name = \"java.lang.String\"; // Dots, not slashes",
+          "when": "Class.getName() format"
+        },
+        {
+          "approach": "Use binary name",
+          "code": "@BinaryName String binary = \"java/lang/String\";",
+          "when": "JVM internal name"
+        },
+        {
+          "approach": "Use FieldDescriptor",
+          "code": "@FieldDescriptor String desc = \"Ljava/lang/String;\";",
+          "when": "Field descriptor format"
+        }
+      ]
+    },
+    {
+      "id": "fenum_error",
+      "pattern": "@Fenum|incompatible\\.fenum|fake\\.enum",
+      "message": "Fake enum type mismatch",
+      "cause": "Fake enum constant used in wrong context",
+      "solutions": [
+        {
+          "approach": "Use correct fenum",
+          "code": "@Fenum(\"FileMode\") int READ = 0;\n@Fenum(\"FileMode\") int WRITE = 1;",
+          "when": "Define fake enum"
+        },
+        {
+          "approach": "Match fenum types",
+          "code": "void setMode(@Fenum(\"FileMode\") int mode) { }",
+          "when": "Parameter type"
+        },
+        {
+          "approach": "Convert to real enum",
+          "code": "enum FileMode { READ, WRITE }",
+          "when": "Can use proper enum"
+        }
+      ]
+    }
+  ]
+}

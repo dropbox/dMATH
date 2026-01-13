@@ -1,0 +1,232 @@
+{
+  "tool": "clang-format",
+  "version": "18+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_not_found",
+      "pattern": "Configuration file.*not found|using .* style|no .clang-format",
+      "message": "Configuration file not found",
+      "cause": "No .clang-format file in project hierarchy",
+      "solutions": [
+        {
+          "approach": "Create config file",
+          "code": "clang-format -style=llvm -dump-config > .clang-format",
+          "when": "Start with a base style"
+        },
+        {
+          "approach": "Use built-in style",
+          "code": "clang-format -style=google file.cpp",
+          "when": "Use predefined style"
+        },
+        {
+          "approach": "Specify config path",
+          "code": "clang-format --style=file:/path/to/.clang-format file.cpp",
+          "when": "Non-standard location"
+        }
+      ]
+    },
+    {
+      "id": "unknown_option",
+      "pattern": "unknown key|invalid value|unknown option",
+      "message": "Unknown configuration option",
+      "cause": "Option doesn't exist in this clang-format version",
+      "solutions": [
+        {
+          "approach": "Check clang-format version",
+          "code": "clang-format --version",
+          "when": "Option may be newer"
+        },
+        {
+          "approach": "Update clang-format",
+          "code": "# Install latest: brew install llvm",
+          "when": "Need newer options"
+        },
+        {
+          "approach": "Remove unknown option",
+          "code": "# Remove unsupported options from .clang-format",
+          "when": "Option not needed"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "error parsing|token.*unexpected|syntax error",
+      "message": "Cannot parse source file",
+      "cause": "File has syntax errors or unsupported constructs",
+      "solutions": [
+        {
+          "approach": "Fix syntax first",
+          "code": "clang++ -fsyntax-only file.cpp",
+          "when": "Syntax errors exist"
+        },
+        {
+          "approach": "Specify language",
+          "code": "clang-format --assume-filename=file.cpp",
+          "when": "Wrong language detected"
+        },
+        {
+          "approach": "Skip problematic section",
+          "code": "// clang-format off\n...\n// clang-format on",
+          "when": "Can't format section"
+        }
+      ]
+    },
+    {
+      "id": "macro_formatting",
+      "pattern": "macro.*formatted|preprocessor.*changed|#define",
+      "message": "Macro formatting unexpected",
+      "cause": "Complex macros hard to format correctly",
+      "solutions": [
+        {
+          "approach": "Disable for macros",
+          "code": "// clang-format off\n#define COMPLEX_MACRO(...) \\\n...\n// clang-format on",
+          "when": "Preserve macro formatting"
+        },
+        {
+          "approach": "Set IndentPPDirectives",
+          "code": "IndentPPDirectives: BeforeHash",
+          "when": "Preprocessor indentation"
+        },
+        {
+          "approach": "Configure AlignConsecutiveMacros",
+          "code": "AlignConsecutiveMacros: Consecutive",
+          "when": "Align macro definitions"
+        }
+      ]
+    },
+    {
+      "id": "include_ordering",
+      "pattern": "#include.*order|IncludeCategories|header.*sorted",
+      "message": "Include ordering changed",
+      "cause": "SortIncludes changes header order",
+      "solutions": [
+        {
+          "approach": "Disable include sorting",
+          "code": "SortIncludes: Never",
+          "when": "Preserve include order"
+        },
+        {
+          "approach": "Configure include categories",
+          "code": "IncludeCategories:\n  - Regex: '^<.*\\.h>'\n    Priority: 1\n  - Regex: '^<.*>'\n    Priority: 2\n  - Regex: '.*'\n    Priority: 3",
+          "when": "Custom ordering"
+        },
+        {
+          "approach": "Set include blocks",
+          "code": "IncludeBlocks: Preserve",
+          "when": "Keep existing grouping"
+        }
+      ]
+    },
+    {
+      "id": "brace_style",
+      "pattern": "brace.*style|BreakBeforeBraces|Allman|K&R",
+      "message": "Brace style not matching preference",
+      "cause": "BreakBeforeBraces setting differs",
+      "solutions": [
+        {
+          "approach": "Use Allman style",
+          "code": "BreakBeforeBraces: Allman",
+          "when": "Braces on new line"
+        },
+        {
+          "approach": "Use Attach style",
+          "code": "BreakBeforeBraces: Attach",
+          "when": "K&R style"
+        },
+        {
+          "approach": "Use Custom",
+          "code": "BreakBeforeBraces: Custom\nBraceWrapping:\n  AfterFunction: true\n  AfterClass: true",
+          "when": "Mix of styles"
+        }
+      ]
+    },
+    {
+      "id": "column_limit",
+      "pattern": "ColumnLimit|line.*long|cannot break",
+      "message": "Line exceeds column limit",
+      "cause": "Line cannot be split to fit limit",
+      "solutions": [
+        {
+          "approach": "Increase column limit",
+          "code": "ColumnLimit: 120",
+          "when": "Wider lines OK"
+        },
+        {
+          "approach": "Disable limit",
+          "code": "ColumnLimit: 0",
+          "when": "No line limit"
+        },
+        {
+          "approach": "Refactor code",
+          "code": "// Break into smaller expressions",
+          "when": "Code too complex"
+        }
+      ]
+    },
+    {
+      "id": "pointer_alignment",
+      "pattern": "PointerAlignment|pointer.*style|int\\* vs int \\*",
+      "message": "Pointer alignment style issue",
+      "cause": "Pointer/reference alignment preference differs",
+      "solutions": [
+        {
+          "approach": "Left align (type style)",
+          "code": "PointerAlignment: Left  # int* p",
+          "when": "Pointer with type"
+        },
+        {
+          "approach": "Right align (name style)",
+          "code": "PointerAlignment: Right  # int *p",
+          "when": "Pointer with name"
+        },
+        {
+          "approach": "Middle align",
+          "code": "PointerAlignment: Middle  # int * p",
+          "when": "Centered style"
+        }
+      ]
+    },
+    {
+      "id": "encoding_error",
+      "pattern": "UTF-8|encoding|invalid byte",
+      "message": "File encoding error",
+      "cause": "File not UTF-8 or has invalid characters",
+      "solutions": [
+        {
+          "approach": "Convert to UTF-8",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file.cpp > file_utf8.cpp",
+          "when": "Wrong encoding"
+        },
+        {
+          "approach": "Remove BOM",
+          "code": "sed -i '1s/^\\xEF\\xBB\\xBF//' file.cpp",
+          "when": "UTF-8 with BOM"
+        }
+      ]
+    },
+    {
+      "id": "ci_check_failed",
+      "pattern": "would reformat|check failed|Formatting differences",
+      "message": "Format check failed in CI",
+      "cause": "Files not formatted according to style",
+      "solutions": [
+        {
+          "approach": "Format all files",
+          "code": "find . -name '*.cpp' -o -name '*.h' | xargs clang-format -i",
+          "when": "Apply formatting"
+        },
+        {
+          "approach": "Show diff",
+          "code": "clang-format --dry-run -Werror file.cpp",
+          "when": "See what would change"
+        },
+        {
+          "approach": "Add pre-commit hook",
+          "code": "#!/bin/sh\nclang-format --dry-run -Werror $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(cpp|h)$')",
+          "when": "Prevent unformatted commits"
+        }
+      ]
+    }
+  ]
+}

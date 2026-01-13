@@ -1,0 +1,186 @@
+{
+  "tool": "step_functions",
+  "category": "workflow_engine",
+  "common_errors": [
+    {
+      "error": "STATES_RUNTIME_ERROR",
+      "pattern": "States\\.Runtime|execution failed|Lambda.*error",
+      "severity": "high",
+      "causes": [
+        "Lambda function threw exception",
+        "Activity task failed",
+        "Service integration returned error",
+        "Invalid state machine definition"
+      ],
+      "solutions": [
+        "Check Lambda function logs in CloudWatch",
+        "Add Catch block for error handling",
+        "Verify IAM permissions for service calls",
+        "Use ResultPath to preserve input on error"
+      ]
+    },
+    {
+      "error": "TIMEOUT_ERROR",
+      "pattern": "States\\.Timeout|TimeoutSeconds exceeded|task timed out",
+      "severity": "high",
+      "causes": [
+        "Task exceeded TimeoutSeconds",
+        "Lambda execution too long",
+        "Activity task not completed",
+        "External service slow"
+      ],
+      "solutions": [
+        "Increase TimeoutSeconds in state definition",
+        "Increase Lambda timeout (max 15 min)",
+        "Use HeartbeatSeconds for long activities",
+        "Break into smaller tasks with Wait states"
+      ]
+    },
+    {
+      "error": "INVALID_JSON_PATH",
+      "pattern": "InvalidPath|JSONPath.*invalid|\\$\\..*not found",
+      "severity": "high",
+      "causes": [
+        "JSONPath syntax error",
+        "Path doesn't exist in input",
+        "Wrong path reference",
+        "Missing $ prefix"
+      ],
+      "solutions": [
+        "Validate JSONPath: $.path.to.field",
+        "Use null check with $.path[?(@.field)]",
+        "Check input structure in execution history",
+        "Use $$ for context object access"
+      ]
+    },
+    {
+      "error": "EXECUTION_ALREADY_EXISTS",
+      "pattern": "ExecutionAlreadyExists|execution.*same name|duplicate execution",
+      "severity": "medium",
+      "causes": [
+        "Same execution name used twice",
+        "Idempotency issue",
+        "Retry creating same execution",
+        "Name collision"
+      ],
+      "solutions": [
+        "Use unique execution names (UUID)",
+        "Append timestamp to execution name",
+        "Handle AlreadyExists error",
+        "Check if execution exists before creating"
+      ]
+    },
+    {
+      "error": "ACCESS_DENIED",
+      "pattern": "AccessDeniedException|not authorized|IAM.*denied",
+      "severity": "high",
+      "causes": [
+        "State machine role lacks permissions",
+        "Resource policy denying access",
+        "Cross-account access not configured",
+        "Service-linked role missing"
+      ],
+      "solutions": [
+        "Add required permissions to state machine IAM role",
+        "Check resource-based policies",
+        "For Lambda: add invoke permission",
+        "For S3: add GetObject/PutObject permissions"
+      ]
+    },
+    {
+      "error": "INVALID_DEFINITION",
+      "pattern": "InvalidDefinition|schema validation failed|state machine.*invalid",
+      "severity": "high",
+      "causes": [
+        "ASL syntax error",
+        "Missing required field",
+        "Invalid state type",
+        "Unreachable states"
+      ],
+      "solutions": [
+        "Validate ASL in AWS console",
+        "Check all states have Type and End/Next",
+        "Use AWS Toolkit VS Code extension",
+        "Verify JSON syntax is valid"
+      ]
+    },
+    {
+      "error": "RESULT_PATH_MATCH_FAILURE",
+      "pattern": "ResultPath.*match failure|cannot apply ResultPath",
+      "severity": "medium",
+      "causes": [
+        "ResultPath overwrites needed input",
+        "Path doesn't exist for merge",
+        "Conflicting paths",
+        "Null result with non-null path"
+      ],
+      "solutions": [
+        "Use ResultPath: $.taskResult to preserve input",
+        "Set ResultPath: null to discard output",
+        "Check OutputPath after ResultPath applied",
+        "Use InputPath to filter input before task"
+      ]
+    },
+    {
+      "error": "MAP_STATE_FAILED",
+      "pattern": "Map.*failed|ItemReader.*error|Items.*not array",
+      "severity": "high",
+      "causes": [
+        "Input not an array",
+        "Child execution failed",
+        "ItemReader configuration wrong",
+        "Max concurrency exceeded"
+      ],
+      "solutions": [
+        "Ensure ItemsPath points to array",
+        "Add error handling in Map iterator",
+        "Check MaxConcurrency setting",
+        "Use distributed map for large datasets"
+      ]
+    },
+    {
+      "error": "QUOTA_EXCEEDED",
+      "pattern": "ThrottlingException|rate exceeded|execution quota",
+      "severity": "high",
+      "causes": [
+        "Too many concurrent executions",
+        "API call rate limit",
+        "State transitions too fast",
+        "Account quota reached"
+      ],
+      "solutions": [
+        "Request quota increase via AWS Support",
+        "Implement backoff and retry",
+        "Use Express workflows for high-volume",
+        "Batch operations where possible"
+      ]
+    },
+    {
+      "error": "CHOICE_NO_MATCH",
+      "pattern": "States\\.NoChoiceMatched|no choice matched|Choice.*failed",
+      "severity": "medium",
+      "causes": [
+        "No choice rule matched input",
+        "Missing Default state",
+        "Condition logic error",
+        "Input value unexpected"
+      ],
+      "solutions": [
+        "Add Default state to Choice",
+        "Check choice conditions against actual input",
+        "Use StringEquals, NumericEquals, BooleanEquals appropriately",
+        "Log input before Choice for debugging"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use Catch blocks for error handling",
+    "Set appropriate TimeoutSeconds",
+    "Use ResultPath to manage data flow",
+    "Implement retry with exponential backoff",
+    "Use Express workflows for high-volume, short-duration",
+    "Store large payloads in S3, pass references",
+    "Use Map state for parallel processing"
+  ],
+  "related_tools": ["temporal", "airflow", "aws_lambda", "eventbridge"]
+}

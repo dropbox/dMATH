@@ -1,0 +1,221 @@
+{
+  "tool": "mockito",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_a_mock",
+      "pattern": "NotAMockException|is not a mock|Argument passed to.*is not a mock",
+      "message": "Object is not a mock",
+      "cause": "Trying to use Mockito methods on non-mock object",
+      "solutions": [
+        {
+          "approach": "Create mock properly",
+          "code": "import static org.mockito.Mockito.*;\n\n// Using mock()\nMyService service = mock(MyService.class);\n\n// Using @Mock annotation\n@ExtendWith(MockitoExtension.class)\nclass MyTest {\n    @Mock\n    private MyService service;\n}",
+          "when": "Mock not created"
+        },
+        {
+          "approach": "Initialize mocks",
+          "code": "// JUnit 5 - use extension\n@ExtendWith(MockitoExtension.class)\nclass MyTest {\n    @Mock MyService service;\n}\n\n// JUnit 4\n@RunWith(MockitoJUnitRunner.class)\npublic class MyTest {\n    @Mock MyService service;\n}\n\n// Manual initialization\n@BeforeEach\nvoid setup() {\n    MockitoAnnotations.openMocks(this);\n}",
+          "when": "Mocks not initialized"
+        },
+        {
+          "approach": "Check argument",
+          "code": "// Wrong: verifying on real object\nMyService real = new MyService();\nverify(real).doSomething();  // Error!\n\n// Right: verify on mock\nMyService mock = mock(MyService.class);\nverify(mock).doSomething();",
+          "when": "Wrong object used"
+        }
+      ]
+    },
+    {
+      "id": "stubbing_error",
+      "pattern": "when\\(\\)|thenReturn|thenThrow|Unfinished stubbing|stubbing argument mismatch",
+      "message": "Stubbing error",
+      "cause": "Incomplete stubbing or argument mismatch",
+      "solutions": [
+        {
+          "approach": "Complete stubbing",
+          "code": "// Correct stubbing\nwhen(service.getData()).thenReturn(\"result\");\nwhen(service.process(any())).thenReturn(true);\n\n// Multiple returns\nwhen(service.next())\n    .thenReturn(\"first\")\n    .thenReturn(\"second\")\n    .thenThrow(new RuntimeException());",
+          "when": "Basic stubbing"
+        },
+        {
+          "approach": "Use argument matchers",
+          "code": "// Any argument\nwhen(service.get(anyInt())).thenReturn(\"result\");\nwhen(service.find(anyString(), anyLong())).thenReturn(item);\n\n// Specific + any (must use matchers for all)\nwhen(service.search(eq(\"term\"), anyInt())).thenReturn(results);\n\n// Custom matcher\nwhen(service.process(argThat(s -> s.startsWith(\"test\"))))\n    .thenReturn(true);",
+          "when": "Argument matching"
+        },
+        {
+          "approach": "Stub void methods",
+          "code": "// void methods use doNothing/doThrow\ndoNothing().when(service).delete(any());\ndoThrow(new RuntimeException()).when(service).close();\n\n// doAnswer for custom behavior\ndoAnswer(invocation -> {\n    String arg = invocation.getArgument(0);\n    System.out.println(\"Called with: \" + arg);\n    return null;\n}).when(service).log(anyString());",
+          "when": "Void method stubbing"
+        },
+        {
+          "approach": "Handle checked exceptions",
+          "code": "// Must declare or handle\nwhen(service.readFile(any()))\n    .thenThrow(new IOException(\"test\"));",
+          "when": "Checked exception"
+        }
+      ]
+    },
+    {
+      "id": "verification_error",
+      "pattern": "verify|Wanted but not invoked|Never wanted here|too many|too few",
+      "message": "Verification failed",
+      "cause": "Mock not called as expected",
+      "solutions": [
+        {
+          "approach": "Basic verification",
+          "code": "// Verify called once (default)\nverify(service).save(any());\n\n// Verify never called\nverify(service, never()).delete(any());\n\n// Verify call count\nverify(service, times(3)).process(any());\nverify(service, atLeastOnce()).log(any());\nverify(service, atMost(5)).retry();",
+          "when": "Call count verification"
+        },
+        {
+          "approach": "Verify with arguments",
+          "code": "// Exact argument\nverify(service).save(\"test\");\n\n// Argument matcher\nverify(service).process(any(Request.class));\n\n// Capture argument\nArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);\nverify(service).save(captor.capture());\nUser saved = captor.getValue();\nassertEquals(\"John\", saved.getName());",
+          "when": "Argument verification"
+        },
+        {
+          "approach": "Verify order",
+          "code": "InOrder inOrder = inOrder(service1, service2);\ninOrder.verify(service1).step1();\ninOrder.verify(service2).step2();\ninOrder.verify(service1).step3();",
+          "when": "Call order matters"
+        },
+        {
+          "approach": "Verify no more interactions",
+          "code": "verify(service).expected();\nverifyNoMoreInteractions(service);\n\n// Or verify nothing at all\nverifyNoInteractions(service);",
+          "when": "No extra calls"
+        }
+      ]
+    },
+    {
+      "id": "spy_error",
+      "pattern": "@Spy|spy\\(\\)|Mockito cannot mock|real method|spy.*null",
+      "message": "Spy error",
+      "cause": "Cannot spy on object or real method issues",
+      "solutions": [
+        {
+          "approach": "Create spy correctly",
+          "code": "// Spy on real object\nList<String> list = new ArrayList<>();\nList<String> spy = spy(list);\n\n// Using annotation\n@Spy\nList<String> spyList = new ArrayList<>();",
+          "when": "Create spy"
+        },
+        {
+          "approach": "Stub spy method",
+          "code": "// Use doReturn for spy (avoids calling real method)\ndoReturn(\"mocked\").when(spy).get(0);\n\n// NOT: when(spy.get(0)).thenReturn(\"mocked\");\n// (This calls real get(0) which may fail)",
+          "when": "Stub spy method"
+        },
+        {
+          "approach": "Partial mock",
+          "code": "// Spy calls real methods by default\nMyService spy = spy(new MyService());\n\n// Stub specific method\ndoReturn(\"test\").when(spy).expensiveMethod();\n\n// Real method still called\nspy.normalMethod();  // Calls real implementation",
+          "when": "Partial stubbing"
+        },
+        {
+          "approach": "Handle final/static",
+          "code": "// For final classes/methods, use mock-maker-inline\n// mockito-extensions/org.mockito.plugins.MockMaker:\nmock-maker-inline\n\n// For static methods\ntry (MockedStatic<Utils> mocked = mockStatic(Utils.class)) {\n    mocked.when(Utils::getValue).thenReturn(\"mocked\");\n    // ...\n}",
+          "when": "Final or static"
+        }
+      ]
+    },
+    {
+      "id": "injection_error",
+      "pattern": "@InjectMocks|injection|null.*field|NullPointerException.*mock",
+      "message": "Mock injection failed",
+      "cause": "Mocks not injected into test subject",
+      "solutions": [
+        {
+          "approach": "Use @InjectMocks",
+          "code": "@ExtendWith(MockitoExtension.class)\nclass MyTest {\n    @Mock\n    private Repository repository;\n    \n    @Mock\n    private EmailService emailService;\n    \n    @InjectMocks\n    private UserService userService;  // Mocks injected here\n    \n    @Test\n    void test() {\n        when(repository.find(any())).thenReturn(user);\n        userService.process();  // Uses mocked repository\n    }\n}",
+          "when": "Auto-inject mocks"
+        },
+        {
+          "approach": "Manual injection",
+          "code": "@Mock\nprivate Repository repository;\n\nprivate UserService userService;\n\n@BeforeEach\nvoid setup() {\n    MockitoAnnotations.openMocks(this);\n    userService = new UserService(repository);\n}",
+          "when": "Manual control"
+        },
+        {
+          "approach": "Check injection order",
+          "code": "// @InjectMocks processed after @Mock/@Spy\n// Fields must be declared before @InjectMocks field\n\n@Mock Repository repo;      // First\n@InjectMocks UserService svc;  // After",
+          "when": "Order matters"
+        },
+        {
+          "approach": "Handle constructor injection",
+          "code": "// Mockito tries:\n// 1. Constructor injection (largest constructor)\n// 2. Setter injection\n// 3. Field injection\n\n// For constructor:\npublic class UserService {\n    public UserService(Repository repo, EmailService email) {\n        // Mockito will use this constructor\n    }\n}",
+          "when": "Constructor injection"
+        }
+      ]
+    },
+    {
+      "id": "strict_stubbing_error",
+      "pattern": "UnnecessaryStubbingException|Strict stubbing|unused stubbing|PotentialStubbingProblem",
+      "message": "Unnecessary or incorrect stubbing",
+      "cause": "Stubbing not used or doesn't match calls",
+      "solutions": [
+        {
+          "approach": "Use lenient stubbing",
+          "code": "// Make specific stub lenient\nlenient().when(service.getData()).thenReturn(\"data\");\n\n// Or configure mock\nMockitoSettings settings = Mockito.withSettings()\n    .strictness(Strictness.LENIENT);\nMyService mock = mock(MyService.class, settings);",
+          "when": "Allow unused stubs"
+        },
+        {
+          "approach": "Configure strictness",
+          "code": "// JUnit 5\n@ExtendWith(MockitoExtension.class)\n@MockitoSettings(strictness = Strictness.WARN)\nclass MyTest { }\n\n// Or LENIENT for no warnings",
+          "when": "Change strictness"
+        },
+        {
+          "approach": "Remove unused stubbing",
+          "code": "// Best practice: only stub what's needed\n@Test\nvoid shouldSave() {\n    // Don't stub methods not used in this test\n    when(service.save(any())).thenReturn(true);\n    \n    boolean result = controller.handleSave();\n    assertTrue(result);\n}",
+          "when": "Clean up stubs"
+        },
+        {
+          "approach": "Fix argument mismatch",
+          "code": "// Stubbed with specific arg\nwhen(service.get(\"expected\")).thenReturn(\"result\");\n\n// But called with different arg\nservice.get(\"actual\");  // Returns null, not \"result\"!\n\n// Use any() or correct argument\nwhen(service.get(anyString())).thenReturn(\"result\");",
+          "when": "Argument mismatch"
+        }
+      ]
+    },
+    {
+      "id": "answer_error",
+      "pattern": "Answer|thenAnswer|InvocationOnMock|doAnswer|callback",
+      "message": "Custom answer error",
+      "cause": "Answer implementation issue",
+      "solutions": [
+        {
+          "approach": "Basic answer",
+          "code": "when(service.process(any())).thenAnswer(invocation -> {\n    String arg = invocation.getArgument(0);\n    return arg.toUpperCase();\n});",
+          "when": "Dynamic return value"
+        },
+        {
+          "approach": "Access invocation details",
+          "code": "when(service.compute(any(), any())).thenAnswer(invocation -> {\n    Object[] args = invocation.getArguments();\n    Method method = invocation.getMethod();\n    Object mock = invocation.getMock();\n    return (int)args[0] + (int)args[1];\n});",
+          "when": "Need invocation details"
+        },
+        {
+          "approach": "Void method answer",
+          "code": "doAnswer(invocation -> {\n    Callback callback = invocation.getArgument(1);\n    callback.onSuccess(\"result\");\n    return null;  // void returns null\n}).when(service).fetchAsync(any(), any());",
+          "when": "Void with callback"
+        },
+        {
+          "approach": "Built-in answers",
+          "code": "// Return first argument\nwhen(service.save(any())).then(RETURNS_FIRST_ARG);\n\n// Call real method\nwhen(spy.method()).thenCallRealMethod();\n\n// Return deep stubs\nMyService mock = mock(MyService.class, RETURNS_DEEP_STUBS);\nmock.getChild().getName();  // Returns mock string",
+          "when": "Common patterns"
+        }
+      ]
+    },
+    {
+      "id": "reset_error",
+      "pattern": "reset|clearInvocations|between tests|state",
+      "message": "Mock state not reset between tests",
+      "cause": "Previous test state affecting current test",
+      "solutions": [
+        {
+          "approach": "Use fresh mocks per test",
+          "code": "// With @ExtendWith, mocks are fresh per test\n@ExtendWith(MockitoExtension.class)\nclass MyTest {\n    @Mock\n    private Service service;  // New mock each test\n}",
+          "when": "Extension handles reset"
+        },
+        {
+          "approach": "Manual reset",
+          "code": "@AfterEach\nvoid cleanup() {\n    reset(service);  // Clear stubbings and invocations\n}\n\n// Or just clear invocations\nclearInvocations(service);",
+          "when": "Reusing mock"
+        },
+        {
+          "approach": "Avoid static mocks",
+          "code": "// Static mocks must be closed\ntry (MockedStatic<Utils> mocked = mockStatic(Utils.class)) {\n    mocked.when(Utils::getValue).thenReturn(\"test\");\n    // ...\n}  // Auto-closed here",
+          "when": "Static mock leaking"
+        }
+      ]
+    }
+  ]
+}

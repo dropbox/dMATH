@@ -1,0 +1,227 @@
+{
+  "tool": "composer",
+  "version": "2.6+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "memory_limit",
+      "pattern": "Allowed memory size.*exhausted|memory_limit|COMPOSER_MEMORY_LIMIT",
+      "message": "PHP memory limit exceeded",
+      "cause": "Composer needs more memory",
+      "solutions": [
+        {
+          "approach": "Increase memory",
+          "code": "COMPOSER_MEMORY_LIMIT=-1 composer install",
+          "when": "Temporary increase"
+        },
+        {
+          "approach": "Update php.ini",
+          "code": "memory_limit = 2G",
+          "when": "Permanent increase"
+        },
+        {
+          "approach": "Use CLI php.ini",
+          "code": "php -d memory_limit=-1 composer.phar install",
+          "when": "Per-command"
+        }
+      ]
+    },
+    {
+      "id": "package_not_found",
+      "pattern": "Package.*not found|could not find package|No matching package",
+      "message": "Package not found",
+      "cause": "Package doesn't exist on Packagist",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "composer search packagename",
+          "when": "Typo in name"
+        },
+        {
+          "approach": "Add repository",
+          "code": "composer config repositories.custom vcs https://github.com/user/repo",
+          "when": "Private package"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "composer clear-cache",
+          "when": "Stale cache"
+        }
+      ]
+    },
+    {
+      "id": "version_conflict",
+      "pattern": "Problem.*conflict|cannot be installed|Your requirements could not be resolved",
+      "message": "Dependency conflict",
+      "cause": "Incompatible package versions",
+      "solutions": [
+        {
+          "approach": "Check why",
+          "code": "composer why-not package/name version",
+          "when": "Debug conflict"
+        },
+        {
+          "approach": "Update constraints",
+          "code": "composer require package/name:^2.0 --update-with-dependencies",
+          "when": "Relax version"
+        },
+        {
+          "approach": "Update all",
+          "code": "composer update",
+          "when": "Update everything"
+        }
+      ]
+    },
+    {
+      "id": "php_version",
+      "pattern": "requires php|php version.*not satisfy|php.*incompatible",
+      "message": "PHP version incompatible",
+      "cause": "Package requires different PHP version",
+      "solutions": [
+        {
+          "approach": "Upgrade PHP",
+          "code": "# Install required PHP version",
+          "when": "Need newer PHP"
+        },
+        {
+          "approach": "Ignore platform",
+          "code": "composer install --ignore-platform-req=php",
+          "when": "Force install"
+        },
+        {
+          "approach": "Use older version",
+          "code": "composer require package/name:\"^1.0\"",
+          "when": "Older supports your PHP"
+        }
+      ]
+    },
+    {
+      "id": "extension_missing",
+      "pattern": "requires ext-|extension.*not installed|could not find extension",
+      "message": "PHP extension missing",
+      "cause": "Required PHP extension not installed",
+      "solutions": [
+        {
+          "approach": "Install extension",
+          "code": "sudo apt install php-mbstring php-xml",
+          "when": "Install missing"
+        },
+        {
+          "approach": "Ignore platform",
+          "code": "composer install --ignore-platform-req=ext-xyz",
+          "when": "Skip check"
+        },
+        {
+          "approach": "Enable extension",
+          "code": "# Uncomment extension in php.ini",
+          "when": "Extension installed but disabled"
+        }
+      ]
+    },
+    {
+      "id": "autoload_error",
+      "pattern": "autoload.*error|Class.*not found|PSR-4",
+      "message": "Autoloader error",
+      "cause": "Autoloader needs regeneration",
+      "solutions": [
+        {
+          "approach": "Dump autoloader",
+          "code": "composer dump-autoload",
+          "when": "Regenerate autoloader"
+        },
+        {
+          "approach": "Optimize autoloader",
+          "code": "composer dump-autoload -o",
+          "when": "Production optimization"
+        },
+        {
+          "approach": "Check namespace",
+          "code": "# Verify PSR-4 namespace in composer.json",
+          "when": "Namespace mismatch"
+        }
+      ]
+    },
+    {
+      "id": "lockfile_outdated",
+      "pattern": "lock file.*not up to date|composer.json.*changed",
+      "message": "Lockfile out of sync",
+      "cause": "composer.json changed without updating lock",
+      "solutions": [
+        {
+          "approach": "Update lockfile",
+          "code": "composer update --lock",
+          "when": "Update lock only"
+        },
+        {
+          "approach": "Full update",
+          "code": "composer update",
+          "when": "Update dependencies"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit",
+      "pattern": "rate limit|GitHub API rate limit|access token",
+      "message": "GitHub rate limit exceeded",
+      "cause": "Too many unauthenticated API calls",
+      "solutions": [
+        {
+          "approach": "Configure GitHub token",
+          "code": "composer config -g github-oauth.github.com YOUR_TOKEN",
+          "when": "Authenticate to GitHub"
+        },
+        {
+          "approach": "Use SSH",
+          "code": "composer config --global github-protocols https ssh",
+          "when": "Prefer SSH"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL certificate|cURL error|certificate verify failed",
+      "message": "SSL certificate error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Update CA bundle",
+          "code": "# Update system CA certificates",
+          "when": "Outdated certs"
+        },
+        {
+          "approach": "Disable TLS (insecure)",
+          "code": "composer config -g disable-tls true",
+          "when": "Development only"
+        },
+        {
+          "approach": "Specify CA bundle",
+          "code": "composer config -g cafile /path/to/cacert.pem",
+          "when": "Custom CA"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timed out|process.*timeout|COMPOSER_PROCESS_TIMEOUT",
+      "message": "Process timeout",
+      "cause": "Operation took too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "COMPOSER_PROCESS_TIMEOUT=600 composer install",
+          "when": "Slow operation"
+        },
+        {
+          "approach": "Prefer dist",
+          "code": "composer install --prefer-dist",
+          "when": "Avoid git clones"
+        },
+        {
+          "approach": "Use parallel downloads",
+          "code": "# Composer 2 uses parallel by default",
+          "when": "Many packages"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "tool": "nice",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "nice:.*Permission denied|cannot set|Operation not permitted",
+      "message": "Cannot set negative niceness",
+      "cause": "Raising priority (negative nice) requires root",
+      "solutions": [
+        {
+          "approach": "Use sudo for priority",
+          "code": "sudo nice -n -10 command  # High priority",
+          "when": "Need elevated priority"
+        },
+        {
+          "approach": "Lower priority works",
+          "code": "nice -n 10 command  # Positive values don't need root",
+          "when": "Background tasks"
+        },
+        {
+          "approach": "Set limits in /etc/security",
+          "code": "# /etc/security/limits.conf\nusername hard nice -10",
+          "when": "Allow user to nice"
+        }
+      ]
+    },
+    {
+      "id": "invalid_adjustment",
+      "pattern": "nice:.*invalid|nice:.*adjustment|out of range",
+      "message": "Invalid niceness value",
+      "cause": "Nice value must be -20 to 19",
+      "solutions": [
+        {
+          "approach": "Valid range",
+          "code": "nice -n -20 cmd  # Highest priority (root only)\nnice -n 19 cmd   # Lowest priority\nnice -n 10 cmd   # Moderately low",
+          "when": "Set valid value"
+        },
+        {
+          "approach": "Default increment",
+          "code": "nice command  # Adds 10 to niceness by default",
+          "when": "Simple background"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "nice:.*cannot run|nice:.*No such file",
+      "message": "Command to run not found",
+      "cause": "Specified command doesn't exist in PATH",
+      "solutions": [
+        {
+          "approach": "Use full path",
+          "code": "nice /usr/local/bin/mytool",
+          "when": "Command not in PATH"
+        },
+        {
+          "approach": "Run shell",
+          "code": "nice bash -c 'cd /dir && ./script.sh'",
+          "when": "Complex command"
+        }
+      ]
+    },
+    {
+      "id": "already_running",
+      "pattern": "already running|change priority",
+      "message": "Want to change running process priority",
+      "cause": "nice only works at process start",
+      "solutions": [
+        {
+          "approach": "Use renice",
+          "code": "renice -n 10 -p PID  # Change running process",
+          "when": "Process already running"
+        },
+        {
+          "approach": "Find PID first",
+          "code": "pgrep -f myprocess | xargs renice -n 10",
+          "when": "By process name"
+        }
+      ]
+    }
+  ]
+}

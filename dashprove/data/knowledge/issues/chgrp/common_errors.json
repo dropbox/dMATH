@@ -1,0 +1,74 @@
+{
+  "tool": "chgrp",
+  "version": "coreutils",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_group",
+      "pattern": "invalid group|chgrp: invalid group",
+      "message": "Group doesn't exist",
+      "cause": "Group name not in system",
+      "solutions": [
+        {
+          "approach": "List groups",
+          "code": "getent group | cut -d: -f1 | sort",
+          "when": "Find available groups"
+        },
+        {
+          "approach": "Create group",
+          "code": "sudo groupadd newgroup && sudo chgrp newgroup file",
+          "when": "Need new group"
+        }
+      ]
+    },
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|changing group|not permitted",
+      "message": "Cannot change group",
+      "cause": "Not owner or root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo chgrp groupname file",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Must be in group",
+          "code": "# Non-root users can only chgrp to groups they belong to\ngroups  # Check your groups",
+          "when": "User restriction"
+        }
+      ]
+    },
+    {
+      "id": "recursive_issues",
+      "pattern": "recursive|directory",
+      "message": "Need recursive change",
+      "cause": "Directory contents unchanged",
+      "solutions": [
+        {
+          "approach": "Recursive",
+          "code": "chgrp -R groupname directory/",
+          "when": "All contents"
+        },
+        {
+          "approach": "Files only",
+          "code": "find directory/ -type f -exec chgrp groupname {} +",
+          "when": "Only files"
+        }
+      ]
+    },
+    {
+      "id": "no_such_file",
+      "pattern": "No such file or directory|cannot access",
+      "message": "File not found",
+      "cause": "File doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "ls -la parentdir/\nfind . -name 'filename*'",
+          "when": "Verify path"
+        }
+      ]
+    }
+  ]
+}

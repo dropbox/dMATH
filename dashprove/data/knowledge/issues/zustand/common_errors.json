@@ -1,0 +1,151 @@
+{
+  "tool": "zustand",
+  "category": "state_management",
+  "common_errors": [
+    {
+      "error": "STALE_CLOSURE",
+      "pattern": "stale.*closure|state.*not updating|old state value",
+      "severity": "high",
+      "causes": [
+        "Accessing state from closure instead of getter",
+        "Not using get() in actions",
+        "Callback capturing old state",
+        "useEffect dependency missing"
+      ],
+      "solutions": [
+        "Use get() to access current state: (set, get) => ({ action: () => get().value })",
+        "Pass state as callback: set(state => ({ count: state.count + 1 }))",
+        "Add store values to useEffect deps",
+        "Use getState() for outside-React access"
+      ]
+    },
+    {
+      "error": "INFINITE_RERENDER",
+      "pattern": "Maximum update depth|infinite loop|too many re-renders",
+      "severity": "critical",
+      "causes": [
+        "Selecting entire store without shallow",
+        "Creating new object in selector",
+        "Subscribing without selector",
+        "Action called during render"
+      ],
+      "solutions": [
+        "Use shallow equality: useStore(state => state.value, shallow)",
+        "Select only needed values: useStore(state => state.count)",
+        "Use useShallow hook from zustand/react/shallow",
+        "Move action calls to event handlers or useEffect"
+      ]
+    },
+    {
+      "error": "STATE_NOT_PERSISTING",
+      "pattern": "state.*lost.*refresh|persist.*not working|localStorage.*empty",
+      "severity": "medium",
+      "causes": [
+        "Persist middleware not configured",
+        "Storage API not available (SSR)",
+        "Serialization error",
+        "Wrong storage key"
+      ],
+      "solutions": [
+        "Add persist middleware: persist(store, { name: 'storage-key' })",
+        "Use createJSONStorage for custom storage",
+        "Handle SSR: check typeof window !== 'undefined'",
+        "Check for serialization issues in state"
+      ]
+    },
+    {
+      "error": "DEVTOOLS_NOT_SHOWING",
+      "pattern": "DevTools.*empty|zustand.*not.*showing|state.*not visible",
+      "severity": "low",
+      "causes": [
+        "Devtools middleware not added",
+        "Store not named",
+        "Multiple stores unnamed",
+        "DevTools extension not installed"
+      ],
+      "solutions": [
+        "Add devtools middleware: devtools(store, { name: 'MyStore' })",
+        "Install Redux DevTools extension",
+        "Give each store unique name",
+        "Enable in development only: devtools(store, { enabled: process.env.NODE_ENV === 'development' })"
+      ]
+    },
+    {
+      "error": "SELECTOR_RETURNS_UNDEFINED",
+      "pattern": "undefined.*selector|Cannot read.*undefined|selector.*returning undefined",
+      "severity": "medium",
+      "causes": [
+        "Accessing non-existent property",
+        "State not initialized",
+        "Typo in property name",
+        "Hydration not complete"
+      ],
+      "solutions": [
+        "Initialize all state properties",
+        "Use optional chaining: state?.nested?.value",
+        "Check persist hydration: useStore.persist.onFinishHydration()",
+        "Verify property names match store"
+      ]
+    },
+    {
+      "error": "ASYNC_STATE_RACE",
+      "pattern": "race condition|outdated.*response|async state mismatch",
+      "severity": "medium",
+      "causes": [
+        "Multiple async operations racing",
+        "No loading state management",
+        "Stale response updating state",
+        "Request ID not tracked"
+      ],
+      "solutions": [
+        "Track request IDs and ignore stale responses",
+        "Use AbortController for cancellation",
+        "Add loading/error states",
+        "Consider react-query for server state"
+      ]
+    },
+    {
+      "error": "MIDDLEWARE_ORDER",
+      "pattern": "middleware.*not working|persist.*devtools conflict|wrong order",
+      "severity": "medium",
+      "causes": [
+        "Middleware applied in wrong order",
+        "Devtools wrapping persist incorrectly",
+        "Immer not wrapping correctly"
+      ],
+      "solutions": [
+        "Correct order: devtools(persist(immer(store)))",
+        "Persist innermost, devtools outermost",
+        "Immer between persist and store",
+        "Use combine for type safety"
+      ]
+    },
+    {
+      "error": "SSR_HYDRATION_MISMATCH",
+      "pattern": "hydration.*mismatch|server.*client.*different|Text content does not match",
+      "severity": "medium",
+      "causes": [
+        "Initial state differs server/client",
+        "Persist loading on client only",
+        "Date/random values in state",
+        "Browser APIs in initial state"
+      ],
+      "solutions": [
+        "Use skipHydration option",
+        "Handle hydration explicitly: useStore.persist.rehydrate()",
+        "Avoid browser APIs in initial state",
+        "Use dynamic import for client-only components"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use selectors to pick specific state slices",
+    "Add shallow comparison for object selections",
+    "Use persist middleware for local storage",
+    "Add devtools in development",
+    "Split into multiple small stores if needed",
+    "Use immer middleware for complex updates",
+    "Handle loading/error states for async actions"
+  ],
+  "related_tools": ["redux", "mobx", "jotai", "recoil"]
+}

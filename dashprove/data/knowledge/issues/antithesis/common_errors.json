@@ -1,0 +1,227 @@
+{
+  "tool": "antithesis",
+  "version": "2024.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "non_deterministic_code",
+      "pattern": "non-deterministic|different.*execution|random.*without.*seed",
+      "message": "Code contains non-deterministic behavior that breaks deterministic simulation",
+      "cause": "Using random numbers, timestamps, or thread IDs without Antithesis instrumentation",
+      "solutions": [
+        {
+          "approach": "Use Antithesis random API",
+          "code": "#include <antithesis.h>\nint value = antithesis::random_int(0, 100);",
+          "when": "Need random values in tests"
+        },
+        {
+          "approach": "Use instrumented time",
+          "code": "#include <antithesis.h>\nauto now = antithesis::get_time();",
+          "when": "Need current time"
+        },
+        {
+          "approach": "Avoid thread-local state",
+          "code": "// Don't use thread IDs for determinism\n// Use Antithesis-provided identifiers instead",
+          "when": "Using thread-local storage"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "ANTITHESIS_ASSERT.*failed|invariant.*violated|property.*falsified",
+      "message": "Antithesis found an assertion violation",
+      "cause": "The simulation found an execution path that violates a property",
+      "solutions": [
+        {
+          "approach": "Examine counterexample trace",
+          "code": "// Check the trace in Antithesis UI\n// Look for the sequence of events leading to failure",
+          "when": "Need to understand bug"
+        },
+        {
+          "approach": "Add more specific assertions",
+          "code": "ANTITHESIS_ASSERT(condition, \"descriptive message\");",
+          "when": "Assertion too general"
+        },
+        {
+          "approach": "Use sometimes assertions",
+          "code": "ANTITHESIS_SOMETIMES(rare_condition, \"should happen sometimes\");",
+          "when": "Property should hold at least once"
+        }
+      ]
+    },
+    {
+      "id": "container_setup_failed",
+      "pattern": "container.*failed|docker.*error|image.*not.*found",
+      "message": "Antithesis container setup failed",
+      "cause": "Docker image or container configuration issue",
+      "solutions": [
+        {
+          "approach": "Check Docker image",
+          "code": "docker build -t myapp-antithesis .\ndocker run --rm myapp-antithesis /bin/true",
+          "when": "Image not building"
+        },
+        {
+          "approach": "Verify compose file",
+          "code": "# antithesis-compose.yml\nservices:\n  app:\n    image: myapp-antithesis\n    environment:\n      ANTITHESIS_ENABLED: true",
+          "when": "Compose configuration wrong"
+        },
+        {
+          "approach": "Check resource limits",
+          "code": "# Ensure enough memory/CPU for Antithesis\n# Typical: 8GB+ RAM, 4+ CPUs",
+          "when": "Container OOM or slow"
+        }
+      ]
+    },
+    {
+      "id": "network_fault_crash",
+      "pattern": "network.*partition|connection.*refused|timeout.*during.*fault",
+      "message": "Application crashed during network fault injection",
+      "cause": "Application doesn't handle network partitions correctly",
+      "solutions": [
+        {
+          "approach": "Add retry logic",
+          "code": "for retry in range(max_retries):\n    try:\n        response = make_request()\n        break\n    except ConnectionError:\n        time.sleep(backoff * retry)",
+          "when": "Transient failures"
+        },
+        {
+          "approach": "Implement circuit breaker",
+          "code": "// Use circuit breaker pattern\n// Open circuit after N failures\n// Half-open after timeout to test recovery",
+          "when": "Cascading failures"
+        },
+        {
+          "approach": "Handle split-brain",
+          "code": "// Check for quorum before proceeding\n// Use fencing tokens for mutual exclusion\n// Implement leader election properly",
+          "when": "Distributed consensus issues"
+        }
+      ]
+    },
+    {
+      "id": "clock_skew_bug",
+      "pattern": "clock.*skew|timestamp.*inconsistent|time.*went.*backward",
+      "message": "Bug triggered by simulated clock skew",
+      "cause": "Application assumes monotonic or synchronized clocks",
+      "solutions": [
+        {
+          "approach": "Use logical clocks",
+          "code": "// Use Lamport timestamps or vector clocks\nstruct LamportClock {\n    counter: AtomicU64,\n}\nimpl LamportClock {\n    fn tick(&self) -> u64 { self.counter.fetch_add(1, Ordering::SeqCst) }\n    fn update(&self, received: u64) {\n        loop {\n            let current = self.counter.load(Ordering::SeqCst);\n            if received <= current { break; }\n            if self.counter.compare_exchange(current, received + 1, ...).is_ok() { break; }\n        }\n    }\n}",
+          "when": "Need ordering without wall clock"
+        },
+        {
+          "approach": "Tolerate clock skew",
+          "code": "// Add buffer for clock skew\nconst CLOCK_SKEW_TOLERANCE: Duration = Duration::from_secs(60);\nif timestamp > now + CLOCK_SKEW_TOLERANCE {\n    // Handle future timestamp\n}",
+          "when": "Comparing timestamps across nodes"
+        },
+        {
+          "approach": "Use hybrid logical clocks",
+          "code": "// HLC: combines physical + logical time\n// Provides causality while staying close to wall clock",
+          "when": "Need wall-clock correlation"
+        }
+      ]
+    },
+    {
+      "id": "process_crash_recovery",
+      "pattern": "crash.*recovery.*failed|state.*corrupted|restart.*loop",
+      "message": "Application fails to recover after simulated crash",
+      "cause": "Recovery logic doesn't handle all crash scenarios",
+      "solutions": [
+        {
+          "approach": "Implement write-ahead log",
+          "code": "// Write to WAL before applying\nasync fn apply_change(change: Change) {\n    wal.append(&change).await?;  // Durable first\n    state.apply(change);          // Then apply\n}",
+          "when": "Need crash consistency"
+        },
+        {
+          "approach": "Use checksums",
+          "code": "// Checksum state files\nfn write_snapshot(state: &State) {\n    let data = serialize(state);\n    let checksum = crc32(&data);\n    file.write_all(&data)?;\n    file.write_all(&checksum.to_le_bytes())?;\n}",
+          "when": "Detecting corruption"
+        },
+        {
+          "approach": "Implement recovery replay",
+          "code": "fn recover() -> State {\n    let snapshot = load_latest_valid_snapshot();\n    let wal_entries = wal.read_from(snapshot.last_applied);\n    for entry in wal_entries {\n        snapshot.apply(entry);\n    }\n    snapshot\n}",
+          "when": "Need to replay operations"
+        }
+      ]
+    },
+    {
+      "id": "memory_corruption_simulated",
+      "pattern": "bit.*flip|memory.*corruption|ecc.*error",
+      "message": "Bug triggered by simulated memory corruption",
+      "cause": "Application doesn't handle bit flips or memory errors",
+      "solutions": [
+        {
+          "approach": "Add checksums to critical data",
+          "code": "struct ChecksummedData<T> {\n    data: T,\n    checksum: u32,\n}\nimpl<T: Hash> ChecksummedData<T> {\n    fn verify(&self) -> bool {\n        compute_checksum(&self.data) == self.checksum\n    }\n}",
+          "when": "Critical data integrity"
+        },
+        {
+          "approach": "Use redundancy",
+          "code": "// Store multiple copies, vote on read\nfn read_with_redundancy() -> Option<T> {\n    let copies = [copy1, copy2, copy3];\n    // Majority vote\n}",
+          "when": "High reliability needed"
+        }
+      ]
+    },
+    {
+      "id": "slow_path_bug",
+      "pattern": "timeout.*exceeded|slow.*path|performance.*regression",
+      "message": "Bug found in slow code path",
+      "cause": "Rare code paths triggered by fault injection have bugs",
+      "solutions": [
+        {
+          "approach": "Test error paths explicitly",
+          "code": "ANTITHESIS_SOMETIMES(error_path_taken, \"error path should be exercised\");",
+          "when": "Error paths untested"
+        },
+        {
+          "approach": "Add coverage assertions",
+          "code": "ANTITHESIS_ALWAYS(timeout_handled_correctly, \"timeouts must be handled\");",
+          "when": "Timeout handling buggy"
+        }
+      ]
+    },
+    {
+      "id": "sdk_initialization",
+      "pattern": "SDK.*not.*initialized|antithesis.*symbol.*not.*found|linkage.*error",
+      "message": "Antithesis SDK not properly initialized",
+      "cause": "SDK libraries not linked or initialized",
+      "solutions": [
+        {
+          "approach": "Initialize SDK",
+          "code": "#include <antithesis.h>\nint main() {\n    antithesis::init();\n    // ... rest of application\n}",
+          "when": "Forgot initialization"
+        },
+        {
+          "approach": "Check linkage",
+          "code": "# CMakeLists.txt\ntarget_link_libraries(myapp antithesis)",
+          "when": "Linker errors"
+        },
+        {
+          "approach": "Use stub for local testing",
+          "code": "#ifdef ANTITHESIS_LOCAL\n    // Use no-op stubs\n#else\n    #include <antithesis.h>\n#endif",
+          "when": "Testing locally"
+        }
+      ]
+    },
+    {
+      "id": "flaky_test_not_flaky",
+      "pattern": "test.*passed|no.*bugs.*found|coverage.*incomplete",
+      "message": "Antithesis ran but didn't find expected bugs",
+      "cause": "Test configuration or coverage issues",
+      "solutions": [
+        {
+          "approach": "Add more assertions",
+          "code": "// Add invariant checks throughout code\nANTITHESIS_ALWAYS(invariant_holds(), \"invariant must always hold\");",
+          "when": "Missing properties to check"
+        },
+        {
+          "approach": "Increase fault injection",
+          "code": "# In Antithesis config\nfault_injection:\n  network_partitions: true\n  clock_skew: true\n  process_crashes: true\n  disk_failures: true",
+          "when": "Not enough chaos"
+        },
+        {
+          "approach": "Add workload variety",
+          "code": "// Vary request patterns\n// Mix reads and writes\n// Include edge cases in test data",
+          "when": "Workload too simple"
+        }
+      ]
+    }
+  ]
+}

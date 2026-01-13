@@ -1,0 +1,150 @@
+{
+  "tool": "kill",
+  "version": "builtin",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_such_process",
+      "pattern": "No such process|process.*not found|not running",
+      "message": "Process doesn't exist",
+      "cause": "PID invalid or process already ended",
+      "solutions": [
+        {
+          "approach": "Verify PID",
+          "code": "ps -p PID\nps aux | grep PID",
+          "when": "Check exists"
+        },
+        {
+          "approach": "Find by name",
+          "code": "pgrep processname\npidof processname",
+          "when": "Get correct PID"
+        },
+        {
+          "approach": "Use pkill",
+          "code": "pkill processname  # By name instead",
+          "when": "Kill by name"
+        }
+      ]
+    },
+    {
+      "id": "operation_not_permitted",
+      "pattern": "Operation not permitted|Permission denied|not allowed",
+      "message": "Cannot kill process",
+      "cause": "Process owned by another user",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo kill PID\nsudo kill -9 PID",
+          "when": "Need elevated"
+        },
+        {
+          "approach": "Check owner",
+          "code": "ps -o user= -p PID",
+          "when": "Verify owner"
+        },
+        {
+          "approach": "Kill own processes",
+          "code": "pkill -u $USER processname",
+          "when": "Only yours"
+        }
+      ]
+    },
+    {
+      "id": "process_wont_die",
+      "pattern": "won't die|still running|not terminating|zombie",
+      "message": "Process not responding to kill",
+      "cause": "Process ignoring SIGTERM",
+      "solutions": [
+        {
+          "approach": "Force kill",
+          "code": "kill -9 PID  # SIGKILL, cannot be caught\nkill -KILL PID",
+          "when": "Force terminate"
+        },
+        {
+          "approach": "Escalate signals",
+          "code": "kill PID        # SIGTERM (15) - polite\nkill -1 PID     # SIGHUP - reload config\nkill -9 PID     # SIGKILL - force",
+          "when": "Gradual"
+        },
+        {
+          "approach": "Zombie process",
+          "code": "# Zombies are already dead, kill parent instead:\nps -eo pid,ppid,stat,comm | grep Z\nkill PARENT_PID",
+          "when": "Zombie"
+        }
+      ]
+    },
+    {
+      "id": "wrong_signal",
+      "pattern": "signal|SIGTERM|SIGHUP|which signal",
+      "message": "Need different signal",
+      "cause": "Default SIGTERM not appropriate",
+      "solutions": [
+        {
+          "approach": "List signals",
+          "code": "kill -l  # List all signals",
+          "when": "Reference"
+        },
+        {
+          "approach": "Common signals",
+          "code": "kill -1 PID   # SIGHUP - reload\nkill -2 PID   # SIGINT - interrupt (Ctrl+C)\nkill -15 PID  # SIGTERM - terminate\nkill -9 PID   # SIGKILL - force kill\nkill -19 PID  # SIGSTOP - pause\nkill -18 PID  # SIGCONT - continue",
+          "when": "Signal reference"
+        },
+        {
+          "approach": "By name",
+          "code": "kill -SIGHUP PID\nkill -HUP PID",
+          "when": "Named signal"
+        }
+      ]
+    },
+    {
+      "id": "kill_multiple",
+      "pattern": "multiple|all|many|group",
+      "message": "Kill multiple processes",
+      "cause": "Need to kill several processes",
+      "solutions": [
+        {
+          "approach": "Multiple PIDs",
+          "code": "kill PID1 PID2 PID3",
+          "when": "Known PIDs"
+        },
+        {
+          "approach": "By name",
+          "code": "pkill processname\nkillall processname",
+          "when": "By name"
+        },
+        {
+          "approach": "Process group",
+          "code": "kill -TERM -PID  # Kill process group (negative PID)",
+          "when": "Entire group"
+        },
+        {
+          "approach": "With xargs",
+          "code": "pgrep pattern | xargs kill",
+          "when": "From pgrep"
+        }
+      ]
+    },
+    {
+      "id": "background_job",
+      "pattern": "background|job|bg|fg|%",
+      "message": "Kill background job",
+      "cause": "Need to kill shell job, not by PID",
+      "solutions": [
+        {
+          "approach": "Job number",
+          "code": "kill %1  # Kill job 1\nkill %+  # Kill current job\nkill %%  # Same as above",
+          "when": "By job number"
+        },
+        {
+          "approach": "List jobs",
+          "code": "jobs -l  # Show jobs with PIDs",
+          "when": "Find job"
+        },
+        {
+          "approach": "By command",
+          "code": "kill %?pattern  # Kill job matching pattern",
+          "when": "By name"
+        }
+      ]
+    }
+  ]
+}

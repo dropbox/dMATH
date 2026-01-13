@@ -1,0 +1,126 @@
+{
+  "id": "litmus",
+  "name": "LitmusChaos",
+  "category": "chaos_engineering",
+  "subcategory": "kubernetes",
+
+  "description": "Cloud-native chaos engineering framework",
+  "long_description": "LitmusChaos is a cloud-native chaos engineering framework for Kubernetes that helps SREs and developers practice chaos engineering. It provides a ChaosHub with ready-to-use experiments, chaos workflows, and observability integration through ChaosCenter web portal.",
+
+  "capabilities": [
+    "pod_chaos",
+    "node_chaos",
+    "network_chaos",
+    "io_chaos",
+    "aws_chaos",
+    "gcp_chaos",
+    "azure_chaos",
+    "vmware_chaos"
+  ],
+  "property_types": ["resilience", "availability", "recovery_time"],
+  "input_languages": ["yaml", "kubernetes"],
+  "output_formats": ["events", "metrics", "prometheus"],
+
+  "installation": {
+    "methods": [
+      {"type": "helm", "command": "helm install litmus --namespace litmus litmuschaos/litmus"},
+      {"type": "kubectl", "command": "kubectl apply -f https://litmuschaos.github.io/litmus/litmus-operator-v3.0.0.yaml"}
+    ],
+    "dependencies": ["kubernetes"],
+    "platforms": ["kubernetes", "aws", "gcp", "azure"]
+  },
+
+  "documentation": {
+    "official": "https://docs.litmuschaos.io/",
+    "tutorial": "https://docs.litmuschaos.io/docs/getting-started/installation",
+    "api_reference": "https://docs.litmuschaos.io/docs/concepts/chaos-workflow",
+    "examples": "https://github.com/litmuschaos/chaos-charts"
+  },
+
+  "tactics": [
+    {
+      "name": "experiment",
+      "description": "Run chaos experiment",
+      "syntax": "kind: ChaosExperiment",
+      "when_to_use": "To inject specific fault",
+      "examples": ["apiVersion: litmuschaos.io/v1alpha1\nkind: ChaosEngine\nmetadata:\n  name: nginx-chaos\nspec:\n  appinfo:\n    appns: default\n    applabel: app=nginx\n  experiments:\n    - name: pod-delete\n      spec:\n        components:\n          env:\n            - name: TOTAL_CHAOS_DURATION\n              value: '60'"]
+    },
+    {
+      "name": "workflow",
+      "description": "Create chaos workflow",
+      "syntax": "kind: Workflow",
+      "when_to_use": "For complex scenarios",
+      "examples": ["apiVersion: argoproj.io/v1alpha1\nkind: Workflow\nmetadata:\n  name: chaos-workflow\nspec:\n  templates:\n    - name: pod-delete\n      inputs:\n        artifacts:\n          - name: pod-delete\n            path: /tmp/chaoslib/pod-delete.yaml"]
+    },
+    {
+      "name": "probe",
+      "description": "Add resilience probes",
+      "syntax": "probe: [{type: httpProbe}]",
+      "when_to_use": "To verify system health",
+      "examples": ["experiments:\n  - name: pod-delete\n    spec:\n      probe:\n        - name: check-frontend\n          type: httpProbe\n          httpProbe/inputs:\n            url: http://frontend:80/health\n          mode: Continuous"]
+    },
+    {
+      "name": "chaos_hub",
+      "description": "Use ChaosHub experiments",
+      "syntax": "ChaosCenter UI",
+      "when_to_use": "For pre-built experiments",
+      "examples": ["# Access ChaosCenter at http://localhost:9091\n# Browse ChaosHub for experiments\n# Click 'Schedule a workflow' to run"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "ChaosResult.*Fail",
+      "meaning": "Experiment failed",
+      "common_causes": ["App didn't recover", "Probe failed"],
+      "fixes": ["Check probe conditions", "Increase recovery time"]
+    },
+    {
+      "pattern": "runner.*not found",
+      "meaning": "Chaos runner missing",
+      "common_causes": ["Litmus not installed"],
+      "fixes": ["Install Litmus operator"]
+    },
+    {
+      "pattern": "RBAC.*denied",
+      "meaning": "Permission error",
+      "common_causes": ["Missing ServiceAccount"],
+      "fixes": ["Apply Litmus RBAC manifests"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["resilience", "availability"],
+    "cli_command": "dashprove verify --backend litmus"
+  },
+
+  "performance": {
+    "typical_runtime": "Minutes to hours",
+    "scalability": "Multi-cluster",
+    "memory_usage": "Controller-based"
+  },
+
+  "comparisons": {
+    "similar_tools": ["chaos-mesh", "gremlin", "pumba"],
+    "advantages": [
+      "ChaosHub library",
+      "Multi-cloud support",
+      "ChaosCenter UI",
+      "GitOps native",
+      "Prometheus integration"
+    ],
+    "disadvantages": [
+      "Complex architecture",
+      "Kubernetes focused",
+      "Learning curve"
+    ]
+  },
+
+  "metadata": {
+    "version": "3.5.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "LitmusChaos",
+    "license": "Apache-2.0"
+  }
+}

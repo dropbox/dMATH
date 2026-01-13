@@ -1,0 +1,152 @@
+{
+  "tool": "drizzle",
+  "category": "orm",
+  "common_errors": [
+    {
+      "error": "CONNECTION_FAILED",
+      "pattern": "connection.*failed|ECONNREFUSED|unable to connect|database.*not found",
+      "severity": "critical",
+      "causes": [
+        "Database not running",
+        "Wrong connection string",
+        "SSL configuration mismatch",
+        "Connection pool exhausted"
+      ],
+      "solutions": [
+        "Verify database is running",
+        "Check connection URL format: postgres://user:pass@host:5432/db",
+        "For SSL: { ssl: { rejectUnauthorized: false } }",
+        "Configure connection pool: { max: 10, idleTimeoutMillis: 30000 }"
+      ]
+    },
+    {
+      "error": "SCHEMA_MISMATCH",
+      "pattern": "column.*does not exist|relation.*does not exist|schema.*mismatch",
+      "severity": "high",
+      "causes": [
+        "Migrations not run",
+        "Schema definition doesn't match database",
+        "Table not created",
+        "Column renamed but migration not run"
+      ],
+      "solutions": [
+        "Generate migration: drizzle-kit generate:pg",
+        "Apply migration: drizzle-kit push:pg",
+        "Check schema file matches database",
+        "Use drizzle-kit introspect to sync from DB"
+      ]
+    },
+    {
+      "error": "TYPE_ERROR",
+      "pattern": "Type.*not assignable|Expected.*got|argument of type",
+      "severity": "medium",
+      "causes": [
+        "TypeScript type mismatch",
+        "Wrong column type in schema",
+        "Nullable field not handled",
+        "Inferred type incorrect"
+      ],
+      "solutions": [
+        "Match TypeScript types to column definitions",
+        "Use .notNull() for required fields",
+        "Handle null with ?? or explicit check",
+        "Use InferModel<typeof table> for types"
+      ]
+    },
+    {
+      "error": "MIGRATION_FAILED",
+      "pattern": "migration.*failed|already exists|duplicate key|syntax error",
+      "severity": "high",
+      "causes": [
+        "SQL syntax error in migration",
+        "Duplicate constraint or index",
+        "Data conflicts with new constraint",
+        "Migration already applied"
+      ],
+      "solutions": [
+        "Review generated SQL in migration file",
+        "Check if constraint already exists",
+        "Use IF NOT EXISTS where appropriate",
+        "Reset migrations if in development: drizzle-kit drop"
+      ]
+    },
+    {
+      "error": "QUERY_ERROR",
+      "pattern": "query.*error|invalid.*query|syntax error at or near",
+      "severity": "high",
+      "causes": [
+        "Invalid SQL generated",
+        "Wrong table/column reference",
+        "Mismatched where clause types",
+        "Invalid join condition"
+      ],
+      "solutions": [
+        "Log generated SQL: db.select().from(table).toSQL()",
+        "Verify column names match schema",
+        "Check type compatibility in where clauses",
+        "Use correct eq/ne/gt/lt operators"
+      ]
+    },
+    {
+      "error": "RELATION_NOT_FOUND",
+      "pattern": "relation.*undefined|Cannot read.*relations|foreign key.*not found",
+      "severity": "medium",
+      "causes": [
+        "Relation not defined in schema",
+        "Missing references() call",
+        "Wrong table reference",
+        "Circular relation issue"
+      ],
+      "solutions": [
+        "Define relations: relations(users, ({ many }) => ({ posts: many(posts) }))",
+        "Add foreign key: references(() => users.id)",
+        "Use relational queries: db.query.users.findMany({ with: { posts: true } })",
+        "Check table import order for circular refs"
+      ]
+    },
+    {
+      "error": "PREPARED_STATEMENT_ERROR",
+      "pattern": "prepared statement.*already exists|statement.*error",
+      "severity": "medium",
+      "causes": [
+        "Connection pooling with prepared statements",
+        "Statement name collision",
+        "Serverless function reusing connections",
+        "PgBouncer transaction mode"
+      ],
+      "solutions": [
+        "Use prepare: false in connection config",
+        "For PgBouncer: { connection: { application_name: 'app' } }",
+        "Implement connection cleanup",
+        "Use fresh connections in serverless"
+      ]
+    },
+    {
+      "error": "TRANSACTION_ERROR",
+      "pattern": "transaction.*error|deadlock detected|serialization failure",
+      "severity": "high",
+      "causes": [
+        "Deadlock between transactions",
+        "Transaction timeout",
+        "Concurrent modification",
+        "Long-running transaction"
+      ],
+      "solutions": [
+        "Keep transactions short",
+        "Implement retry for deadlocks",
+        "Use optimistic locking where appropriate",
+        "Order operations consistently to prevent deadlock"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use drizzle-kit for migrations",
+    "Define relations for query convenience",
+    "Use prepared statements for performance",
+    "Implement proper error handling for queries",
+    "Use transactions for multi-step operations",
+    "Type your schema for full TypeScript support",
+    "Use connection pooling in production"
+  ],
+  "related_tools": ["prisma", "typeorm", "sequelize", "knex"]
+}

@@ -1,0 +1,144 @@
+{
+  "id": "triton",
+  "name": "OpenAI Triton",
+  "category": "ai_ml",
+  "subcategory": "inference_optimization",
+  "description": "Language and compiler for writing highly efficient GPU kernels",
+  "long_description": "Triton is a language and compiler for writing highly efficient custom deep-learning primitives. It allows researchers to write GPU kernels in Python without needing CUDA expertise. Triton handles memory coalescing, shared memory management, and scheduling automatically.",
+  "capabilities": [
+    "gpu_kernel_writing",
+    "auto_memory_management",
+    "auto_parallelization",
+    "python_syntax",
+    "custom_operators",
+    "kernel_fusion",
+    "mixed_precision"
+  ],
+  "property_types": [
+    "performance",
+    "correctness"
+  ],
+  "input_languages": [
+    "python"
+  ],
+  "output_formats": [
+    "compiled_kernel",
+    "benchmark"
+  ],
+  "installation": {
+    "methods": [
+      {
+        "type": "pip",
+        "command": "pip install triton"
+      },
+      {
+        "type": "source",
+        "url": "https://github.com/openai/triton"
+      }
+    ],
+    "dependencies": [
+      "pytorch",
+      "cuda"
+    ],
+    "platforms": [
+      "linux"
+    ]
+  },
+  "documentation": {
+    "official": "https://triton-lang.org/main/index.html",
+    "tutorial": "https://triton-lang.org/main/getting-started/tutorials/",
+    "api_reference": "https://triton-lang.org/main/python-api/triton.language.html",
+    "examples": "https://github.com/openai/triton/tree/main/python/tutorials"
+  },
+  "tactics": [
+    {
+      "name": "jit",
+      "description": "JIT compile kernel",
+      "syntax": "@triton.jit",
+      "when_to_use": "Defining GPU kernel",
+      "examples": [
+        "@triton.jit\\ndef add_kernel(x_ptr, y_ptr, out_ptr, n_elements, BLOCK_SIZE: tl.constexpr): ..."
+      ]
+    },
+    {
+      "name": "autotune",
+      "description": "Auto-tune kernel parameters",
+      "syntax": "@triton.autotune(configs=[...], key=[...])",
+      "when_to_use": "Optimizing kernel performance",
+      "examples": [
+        "@triton.autotune(configs=[Config({'BLOCK_SIZE': 64}), Config({'BLOCK_SIZE': 128})], key=['n'])"
+      ]
+    },
+    {
+      "name": "benchmark",
+      "description": "Benchmark kernel",
+      "syntax": "triton.testing.do_bench(fn)",
+      "when_to_use": "Measuring kernel performance",
+      "examples": [
+        "ms = triton.testing.do_bench(lambda: kernel[grid](x, y, out, n))"
+      ]
+    }
+  ],
+  "error_patterns": [
+    {
+      "pattern": "Out of shared memory",
+      "meaning": "Kernel needs too much shared memory",
+      "common_causes": [
+        "Large BLOCK_SIZE",
+        "Too many variables"
+      ],
+      "fixes": [
+        "Reduce block size",
+        "Optimize memory usage"
+      ]
+    },
+    {
+      "pattern": "Invalid memory access",
+      "meaning": "Kernel accessing invalid address",
+      "common_causes": [
+        "Bounds error",
+        "Alignment issue"
+      ],
+      "fixes": [
+        "Add bounds checking",
+        "Check pointer alignment"
+      ]
+    }
+  ],
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": [
+      "model_optimization"
+    ],
+    "cli_command": "dashprove verify --backend triton"
+  },
+  "performance": {
+    "typical_runtime": "Milliseconds for compilation, microseconds for kernels",
+    "scalability": "Excellent for custom ops",
+    "memory_usage": "Efficient"
+  },
+  "comparisons": {
+    "similar_tools": [
+      "cuda",
+      "hip",
+      "numba"
+    ],
+    "advantages": [
+      "Python-based kernel writing",
+      "Automatic optimization",
+      "No CUDA expertise needed",
+      "Good integration with PyTorch"
+    ],
+    "disadvantages": [
+      "NVIDIA GPUs mainly",
+      "Less control than raw CUDA",
+      "Learning curve for concepts"
+    ]
+  },
+  "metadata": {
+    "version": "2.2.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "OpenAI",
+    "license": "MIT"
+  }
+}

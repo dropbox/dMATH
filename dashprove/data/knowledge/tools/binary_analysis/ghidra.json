@@ -1,0 +1,111 @@
+{
+  "id": "ghidra",
+  "name": "Ghidra",
+  "category": "binary_analysis",
+  "subcategory": "decompiler",
+
+  "description": "NSA's open-source reverse engineering suite with decompiler, p-code IR, and headless automation.",
+  "long_description": "Ghidra is a modular reverse engineering framework supporting x86/x64, ARM, MIPS, RISC-V, and more. It provides disassembly, decompilation to a p-code IR, data-flow analysis, scripting in Java/Python, and headless batch pipelines for large-scale binary analysis.",
+
+  "capabilities": [
+    "decompilation",
+    "reverse_engineering",
+    "binary_lifting",
+    "scripting",
+    "static_analysis"
+  ],
+  "property_types": ["binary_safety", "control_flow_integrity", "vulnerability_scan"],
+  "input_languages": ["binary", "elf", "pe", "mach-o", "firmware_image"],
+  "output_formats": ["pcode", "decompiler_ir", "callgraph", "diff_report"],
+
+  "installation": {
+    "methods": [
+      {
+        "type": "archive",
+        "command": "wget https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.0_build/ghidra_12.0_PUBLIC_20251205.zip"
+      },
+      {"type": "brew", "command": "brew install --cask ghidra"},
+      {"type": "source", "url": "https://github.com/NationalSecurityAgency/ghidra"}
+    ],
+    "dependencies": ["java11", "python3"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://ghidra-sre.org/",
+    "tutorial": "https://github.com/NationalSecurityAgency/ghidra/tree/master/GhidraDocs",
+    "api_reference": "https://ghidra.re/ghidra_docs/api/",
+    "examples": "https://github.com/NationalSecurityAgency/ghidra/tree/master/Ghidra/Features/Base/ghidra_scripts"
+  },
+
+  "tactics": [
+    {
+      "name": "headless_analysis",
+      "description": "Run scripts and analyzers without the GUI.",
+      "syntax": "analyzeHeadless <project_dir> <project_name> -import <binary> -scriptPath <scripts>",
+      "when_to_use": "Batch processing, CI pipelines, or large firmware sweeps.",
+      "examples": ["analyzeHeadless ./proj fw -import router.bin -postScript FindCrypto.java"]
+    },
+    {
+      "name": "decompiler_pcode",
+      "description": "Inspect p-code to reason about compiler optimizations and control flow.",
+      "syntax": "Use Decompiler → P-code window or getPcode() in scripts",
+      "when_to_use": "When verifying low-level semantics or validating calling conventions.",
+      "examples": ["Python: high = getDecompileResults(function); pcode = high.getHighFunction().getPcodeOps()"]
+    },
+    {
+      "name": "sleigh_override",
+      "description": "Patch or extend instruction semantics with Sleigh.",
+      "syntax": "Edit *.sla and re-run processor module build",
+      "when_to_use": "To model custom opcodes or fix lifter semantics for verification.",
+      "examples": ["Modify ARM.sinc to add missing decode rule, rebuild, and re-run analysis"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Unsupported processor",
+      "meaning": "Selected binary architecture is not recognized.",
+      "common_causes": ["Custom ISA", "Corrupted headers", "Stripped firmware"],
+      "fixes": ["Specify processor manually", "Install or write a Sleigh processor module"]
+    },
+    {
+      "pattern": "java.lang.OutOfMemoryError",
+      "meaning": "Analysis exceeded JVM heap.",
+      "common_causes": ["Large binaries", "Aggressive analyzers enabled"],
+      "fixes": ["Increase -Xmx", "Disable heavy analyzers (decompiler data-flow, pointers)"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["binary_property", "semantic_equivalence"],
+    "cli_command": "dashprove reverse --backend ghidra --binary <path> --headless"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes depending on analyzers",
+    "scalability": "Headless mode supports large firmware; analysis time grows with decompiler settings",
+    "memory_usage": "Medium to high; configure JVM heap for >1GB binaries"
+  },
+
+  "comparisons": {
+    "similar_tools": ["ida_pro", "radare2", "bap"],
+    "advantages": [
+      "Open-source with active plugin ecosystem",
+      "High-quality decompiler and p-code IR",
+      "Robust headless automation"
+    ],
+    "disadvantages": [
+      "Requires Java runtime",
+      "Decompiler accuracy varies by compiler/optimization level"
+    ]
+  },
+
+  "metadata": {
+    "version": "12.0",
+    "last_updated": "2025-12-29",
+    "maintainer": "NSA Research",
+    "license": "Apache-2.0"
+  }
+}

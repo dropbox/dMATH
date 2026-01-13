@@ -1,0 +1,173 @@
+{
+  "tool": "smack",
+  "version": "3.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failure",
+      "pattern": "SMACK found an error",
+      "message": "Verification failed: property violation found",
+      "cause": "SMACK discovered a path that violates an assertion or property",
+      "solutions": [
+        {
+          "approach": "Examine counterexample",
+          "code": "smack -x program.c  # Print execution trace",
+          "when": "Need to understand failing path"
+        },
+        {
+          "approach": "Add preconditions",
+          "code": "__VERIFIER_assume(condition);",
+          "when": "Function has implicit requirements"
+        },
+        {
+          "approach": "Fix the violation",
+          "code": "// Counterexample shows real bug - fix logic",
+          "when": "Assertion caught genuine error"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "SMACK timed out",
+      "message": "Verification did not complete within time limit",
+      "cause": "Boogie/Corral backend took too long on complex program",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "smack --time-limit 600 program.c",
+          "when": "Program is large but verifiable"
+        },
+        {
+          "approach": "Use bounded verification",
+          "code": "smack --unroll 5 program.c",
+          "when": "Loops can be bounded"
+        },
+        {
+          "approach": "Add loop invariants",
+          "code": "__VERIFIER_loop_invariant(condition);",
+          "when": "Loop analysis is bottleneck"
+        },
+        {
+          "approach": "Split verification",
+          "code": "smack --entry-point specific_function program.c",
+          "when": "Can verify functions separately"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "SMACK does not support",
+      "message": "Unsupported C/LLVM feature encountered",
+      "cause": "Code uses feature SMACK cannot translate to Boogie",
+      "solutions": [
+        {
+          "approach": "Use SMACK model",
+          "code": "#include \"smack.h\"  // For SMACK-specific functions",
+          "when": "Need SMACK modeling support"
+        },
+        {
+          "approach": "Stub unsupported code",
+          "code": "__VERIFIER_nondet_int()  // Replace with nondet",
+          "when": "Unsupported code isn't critical"
+        },
+        {
+          "approach": "Check SMACK version",
+          "code": "smack --version  # Feature may be in newer release",
+          "when": "Using older SMACK version"
+        }
+      ]
+    },
+    {
+      "id": "memory_safety",
+      "pattern": "memory safety error",
+      "message": "Memory safety violation detected",
+      "cause": "Buffer overflow, null dereference, or invalid memory access",
+      "solutions": [
+        {
+          "approach": "Enable memory checking",
+          "code": "smack --check=memory-safety program.c",
+          "when": "Want comprehensive memory checking"
+        },
+        {
+          "approach": "Review pointer operations",
+          "code": "// Check all array accesses and pointer arithmetic",
+          "when": "Counterexample shows memory error"
+        },
+        {
+          "approach": "Add bounds checks",
+          "code": "if (index < size) { array[index]; }",
+          "when": "Array bounds not validated"
+        }
+      ]
+    },
+    {
+      "id": "boogie_error",
+      "pattern": "Boogie .* error",
+      "message": "Boogie verification backend error",
+      "cause": "Issue in translation to or execution of Boogie IVL",
+      "solutions": [
+        {
+          "approach": "View Boogie output",
+          "code": "smack --bpl-file program.bpl program.c",
+          "when": "Need to debug translation"
+        },
+        {
+          "approach": "Simplify program",
+          "code": "// Reduce to minimal failing example",
+          "when": "Isolating problematic construct"
+        },
+        {
+          "approach": "Report bug",
+          "code": "// File issue at github.com/smackers/smack",
+          "when": "Appears to be SMACK bug"
+        }
+      ]
+    },
+    {
+      "id": "llvm_error",
+      "pattern": "LLVM .* error|clang .* error",
+      "message": "LLVM frontend compilation error",
+      "cause": "Code doesn't compile or produce valid LLVM IR",
+      "solutions": [
+        {
+          "approach": "Fix compilation errors",
+          "code": "clang -c program.c  # Test compilation first",
+          "when": "Code has syntax/type errors"
+        },
+        {
+          "approach": "Add includes",
+          "code": "smack -I/path/to/headers program.c",
+          "when": "Missing header files"
+        },
+        {
+          "approach": "Specify target",
+          "code": "smack --clang-options=\"-target x86_64\" program.c",
+          "when": "Need specific compilation target"
+        }
+      ]
+    },
+    {
+      "id": "integer_overflow",
+      "pattern": "integer overflow",
+      "message": "Integer overflow detected",
+      "cause": "Arithmetic operation exceeds integer bounds",
+      "solutions": [
+        {
+          "approach": "Enable overflow checking",
+          "code": "smack --integer-encoding=bit-vector program.c",
+          "when": "Want precise overflow semantics"
+        },
+        {
+          "approach": "Add overflow guards",
+          "code": "if (a <= INT_MAX - b) { a + b; }",
+          "when": "Overflow is undefined behavior"
+        },
+        {
+          "approach": "Use safe arithmetic",
+          "code": "__builtin_add_overflow(a, b, &result)",
+          "when": "Need checked arithmetic"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "jpf",
+  "version": "8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError",
+      "message": "Java assertion failed",
+      "cause": "assert statement evaluated to false",
+      "solutions": [
+        {
+          "approach": "Examine trace",
+          "code": "jpf -show program.jpf",
+          "when": "Need execution trace"
+        },
+        {
+          "approach": "Check condition",
+          "code": "assert x > 0 : \"x must be positive\";",
+          "when": "Understanding what failed"
+        },
+        {
+          "approach": "Fix logic",
+          "code": "// Fix the condition that led to assertion failure",
+          "when": "Program bug"
+        }
+      ]
+    },
+    {
+      "id": "deadlock",
+      "pattern": "deadlock",
+      "message": "Deadlock detected",
+      "cause": "Threads waiting for each other",
+      "solutions": [
+        {
+          "approach": "Check lock ordering",
+          "code": "// Always acquire locks in consistent order",
+          "when": "Lock order inversion"
+        },
+        {
+          "approach": "Use tryLock",
+          "code": "if (lock.tryLock(timeout, TimeUnit.SECONDS)) { ... }",
+          "when": "Can timeout"
+        },
+        {
+          "approach": "Review synchronization",
+          "code": "// Simplify lock structure",
+          "when": "Complex locking"
+        }
+      ]
+    },
+    {
+      "id": "data_race",
+      "pattern": "race",
+      "message": "Data race detected",
+      "cause": "Unsynchronized access to shared data",
+      "solutions": [
+        {
+          "approach": "Add synchronization",
+          "code": "synchronized (lock) { sharedVar = value; }",
+          "when": "Need mutual exclusion"
+        },
+        {
+          "approach": "Use volatile",
+          "code": "private volatile int sharedVar;",
+          "when": "Simple visibility need"
+        },
+        {
+          "approach": "Use Atomic classes",
+          "code": "private AtomicInteger counter = new AtomicInteger();",
+          "when": "Atomic operations needed"
+        }
+      ]
+    },
+    {
+      "id": "state_explosion",
+      "pattern": "out of memory",
+      "message": "State space explosion",
+      "cause": "Too many states to explore",
+      "solutions": [
+        {
+          "approach": "Use state matching",
+          "code": "search.class = gov.nasa.jpf.search.DFSearch\nvm.storage.class = gov.nasa.jpf.vm.JVMHashedStates",
+          "when": "Many repeated states"
+        },
+        {
+          "approach": "Bound search",
+          "code": "search.depth_limit = 100\nchoice.max_transitions = 10000",
+          "when": "Deep exploration"
+        },
+        {
+          "approach": "Use POR",
+          "code": "cg.threads.break_yield = true",
+          "when": "Many interleavings"
+        }
+      ]
+    },
+    {
+      "id": "unhandled_exception",
+      "pattern": "UncaughtException",
+      "message": "Uncaught exception",
+      "cause": "Exception not caught",
+      "solutions": [
+        {
+          "approach": "Add exception handling",
+          "code": "try { ... } catch (Exception e) { ... }",
+          "when": "Missing handler"
+        },
+        {
+          "approach": "Configure JPF",
+          "code": "vm.unhandled_exception.throw = true",
+          "when": "Want to catch all"
+        }
+      ]
+    },
+    {
+      "id": "native_method",
+      "pattern": "UnsatisfiedLinkError",
+      "message": "Native method not available",
+      "cause": "JNI method cannot be executed",
+      "solutions": [
+        {
+          "approach": "Use MJI peer",
+          "code": "// Create JPF_<classname> peer class",
+          "when": "Need native method model"
+        },
+        {
+          "approach": "Use jpf-nhandler",
+          "code": "# Use nhandler extension",
+          "when": "Many native methods"
+        },
+        {
+          "approach": "Avoid native calls",
+          "code": "// Refactor to avoid JNI",
+          "when": "Can rewrite"
+        }
+      ]
+    },
+    {
+      "id": "classpath_error",
+      "pattern": "ClassNotFoundException",
+      "message": "Class not found",
+      "cause": "Class not on JPF classpath",
+      "solutions": [
+        {
+          "approach": "Set classpath",
+          "code": "classpath = build/classes;lib/mylib.jar",
+          "when": "Missing classpath entry"
+        },
+        {
+          "approach": "Set sourcepath",
+          "code": "sourcepath = src/main/java",
+          "when": "Need source for symbolic execution"
+        },
+        {
+          "approach": "Check native_classpath",
+          "code": "native_classpath = lib/jpf-specific.jar",
+          "when": "JPF-side classes missing"
+        }
+      ]
+    },
+    {
+      "id": "configuration_error",
+      "pattern": "JPFConfigException",
+      "message": "Configuration error",
+      "cause": "Invalid .jpf file",
+      "solutions": [
+        {
+          "approach": "Check target",
+          "code": "target = com.example.Main",
+          "when": "Missing main class"
+        },
+        {
+          "approach": "Check listeners",
+          "code": "listener = gov.nasa.jpf.listener.PreciseRaceDetector",
+          "when": "Invalid listener"
+        },
+        {
+          "approach": "Validate properties",
+          "code": "jpf -help  # List valid properties",
+          "when": "Unknown property"
+        }
+      ]
+    }
+  ]
+}

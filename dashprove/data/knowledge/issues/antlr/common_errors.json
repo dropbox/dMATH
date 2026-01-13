@@ -1,0 +1,145 @@
+{
+  "tool": "antlr",
+  "version": "4.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "left_recursion",
+      "pattern": "left-recursive|mutual left recursion|rule.*is left-recursive",
+      "message": "Grammar has left recursion",
+      "cause": "Rule directly or indirectly references itself on the left",
+      "solutions": [
+        {
+          "approach": "Use direct left recursion",
+          "code": "// ANTLR4 supports direct left recursion:\nexpr: expr '*' expr | expr '+' expr | INT;",
+          "when": "Simple expression grammar"
+        },
+        {
+          "approach": "Eliminate indirect recursion",
+          "code": "// Convert A: B; B: A X; to A: A X | other;",
+          "when": "Mutual recursion"
+        },
+        {
+          "approach": "Use precedence climbing",
+          "code": "expr: expr (('*'|'/') expr)*\n   | expr (('+'|'-') expr)*\n   | primary;",
+          "when": "Expression precedence"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_grammar",
+      "pattern": "ambiguous|multiple alternatives match|decision can match",
+      "message": "Grammar is ambiguous",
+      "cause": "Multiple rules can match the same input",
+      "solutions": [
+        {
+          "approach": "Add predicates",
+          "code": "stat: {isType()}? ID ID ';'  // declaration\n   | ID '=' expr ';'  // assignment\n   ;",
+          "when": "Semantic disambiguation"
+        },
+        {
+          "approach": "Reorder alternatives",
+          "code": "// More specific rules first:\nkeyword: 'if' | 'else' | 'while';\nID: [a-z]+;  // keywords won't match ID",
+          "when": "Lexer priority"
+        },
+        {
+          "approach": "Use syntactic predicates",
+          "code": "stat: (ID ID)=> declaration | assignment;",
+          "when": "Lookahead needed"
+        }
+      ]
+    },
+    {
+      "id": "token_recognition_error",
+      "pattern": "token recognition error|no viable alternative|extraneous input",
+      "message": "Input doesn't match any lexer rule",
+      "cause": "Unexpected character or missing lexer rule",
+      "solutions": [
+        {
+          "approach": "Add catch-all rule",
+          "code": "// At end of lexer:\nERROR: . ;  // catch unrecognized characters",
+          "when": "Handle unknown input"
+        },
+        {
+          "approach": "Check lexer rules",
+          "code": "// Ensure all valid input characters covered\nWS: [ \\t\\r\\n]+ -> skip;  // whitespace\nID: [a-zA-Z_][a-zA-Z0-9_]*;",
+          "when": "Missing rules"
+        },
+        {
+          "approach": "Debug token stream",
+          "code": "CommonTokenStream tokens = new CommonTokenStream(lexer);\ntokens.fill();\nfor (Token t : tokens.getTokens()) System.out.println(t);",
+          "when": "Debug tokenization"
+        }
+      ]
+    },
+    {
+      "id": "rule_not_found",
+      "pattern": "rule.*not found|reference to undefined rule|cannot find rule",
+      "message": "Referenced rule doesn't exist",
+      "cause": "Rule name typo or rule not defined",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "// Parser rules start lowercase, lexer rules UPPERCASE\nstat: 'if' expr THEN stat;  // THEN must be defined",
+          "when": "Typo in rule name"
+        },
+        {
+          "approach": "Import grammar",
+          "code": "import CommonLexerRules;  // imports from CommonLexerRules.g4",
+          "when": "Rule in another file"
+        },
+        {
+          "approach": "Define missing rule",
+          "code": "THEN: 'then';  // add lexer rule",
+          "when": "Rule not defined"
+        }
+      ]
+    },
+    {
+      "id": "code_generation_error",
+      "pattern": "cannot generate|target.*not found|language.*not supported",
+      "message": "Code generation failed",
+      "cause": "Invalid target language or missing templates",
+      "solutions": [
+        {
+          "approach": "Specify valid target",
+          "code": "antlr4 -Dlanguage=Python3 MyGrammar.g4\n# or Java, CSharp, JavaScript, TypeScript, Go, etc.",
+          "when": "Wrong language target"
+        },
+        {
+          "approach": "Install runtime",
+          "code": "pip install antlr4-python3-runtime\n# or npm install antlr4\n# or NuGet: Antlr4.Runtime.Standard",
+          "when": "Runtime missing"
+        },
+        {
+          "approach": "Match versions",
+          "code": "# ANTLR tool and runtime versions must match\njava -jar antlr-4.13.1-complete.jar  # match with runtime 4.13.1",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "visitor_listener_error",
+      "pattern": "Visitor.*not found|Listener.*method|visit.*not implemented",
+      "message": "Visitor/Listener implementation issue",
+      "cause": "Generated visitor/listener not matching grammar",
+      "solutions": [
+        {
+          "approach": "Regenerate visitors",
+          "code": "antlr4 -visitor -listener MyGrammar.g4",
+          "when": "Grammar changed"
+        },
+        {
+          "approach": "Override correct method",
+          "code": "// Method names match rule names:\n// rule 'expr' -> visitExpr() / enterExpr() / exitExpr()",
+          "when": "Wrong method name"
+        },
+        {
+          "approach": "Call accept",
+          "code": "// Use visitor:\nresult = ctx.expr().accept(myVisitor);\n// Not: myVisitor.visit(ctx.expr())",
+          "when": "Visitor invocation"
+        }
+      ]
+    }
+  ]
+}

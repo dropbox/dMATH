@@ -1,0 +1,146 @@
+{
+  "tool": "cosmos_db_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specifications for Azure Cosmos DB consistency models",
+  "errors": [
+    {
+      "id": "bounded_staleness_exceeded",
+      "pattern": "bounded.*staleness.*exceeded|staleness.*bound.*violated",
+      "message": "Bounded staleness guarantee violated",
+      "cause": "Read returned data older than configured staleness bound",
+      "solutions": [
+        {
+          "approach": "Check staleness parameters",
+          "code": "\\* K versions or T time bound\nBoundedStaleness(read, write) ==\n    \\/ read.version >= write.version - K\n    \\/ read.timestamp >= write.timestamp - T",
+          "when": "Parameters too tight for workload"
+        },
+        {
+          "approach": "Verify replication lag",
+          "code": "\\* Replication must complete within bound\nReplicationLag(region) ==\n    primaryVersion - region.version <= K",
+          "when": "Slow replication exceeding bound"
+        },
+        {
+          "approach": "Model region failover",
+          "code": "\\* During failover, staleness may temporarily exceed\nFailoverStaleness ==\n    /\\ inFailover => staleness <= K + failoverBuffer\n    /\\ ~inFailover => staleness <= K",
+          "when": "Not accounting for failover"
+        }
+      ]
+    },
+    {
+      "id": "session_consistency_break",
+      "pattern": "session.*consistency.*violated|read.*own.*write.*failed",
+      "message": "Session consistency violation - didn't read own write",
+      "cause": "Client read from replica without its own write",
+      "solutions": [
+        {
+          "approach": "Check session token propagation",
+          "code": "\\* Session token must be passed on each request\nRequest(client, op) ==\n    /\\ op.sessionToken = client.lastSessionToken\n    /\\ client.lastSessionToken' = response.sessionToken",
+          "when": "Session token not forwarded"
+        },
+        {
+          "approach": "Verify read replica selection",
+          "code": "\\* Read from replica with session's writes\nSelectReplica(sessionToken) ==\n    CHOOSE r \\in Replicas : r.version >= sessionToken.version",
+          "when": "Reading from stale replica"
+        },
+        {
+          "approach": "Handle cross-region sessions",
+          "code": "\\* Session token valid across regions after sync\nCrossRegionRead(session, region) ==\n    /\\ region.syncedVersion >= session.version\n    /\\ Read(region, key)",
+          "when": "Cross-region without sync"
+        }
+      ]
+    },
+    {
+      "id": "consistent_prefix_gap",
+      "pattern": "consistent.*prefix.*violated|out.?of.?order",
+      "message": "Consistent prefix violation - updates seen out of order",
+      "cause": "Client saw update B without seeing update A that preceded it",
+      "solutions": [
+        {
+          "approach": "Check logical timestamp ordering",
+          "code": "\\* All replicas apply in LSN order\nApplyUpdate(replica, update) ==\n    /\\ update.lsn = replica.lastAppliedLsn + 1\n    /\\ replica.lastAppliedLsn' = update.lsn",
+          "when": "Updates applied out of order"
+        },
+        {
+          "approach": "Verify global ordering",
+          "code": "\\* Primary assigns global order\nAssignLSN(primary, write) ==\n    /\\ write.lsn' = primary.nextLsn\n    /\\ primary.nextLsn' = primary.nextLsn + 1",
+          "when": "LSN assignment not serialized"
+        },
+        {
+          "approach": "Check read snapshot",
+          "code": "\\* Read sees consistent snapshot\nReadConsistent(replica) ==\n    LET snapshot == replica.committedState\n    IN \\A lsn1, lsn2 : lsn1 < lsn2 /\\ lsn2 \\in snapshot.lsns \n       => lsn1 \\in snapshot.lsns",
+          "when": "Snapshot has gaps"
+        }
+      ]
+    },
+    {
+      "id": "strong_consistency_unavailable",
+      "pattern": "strong.*unavailable|quorum.*unreachable",
+      "message": "Strong consistency unavailable during partition",
+      "cause": "Cannot achieve quorum for strongly consistent operation",
+      "solutions": [
+        {
+          "approach": "Model CAP tradeoff",
+          "code": "\\* Strong consistency sacrifices availability\nStrongWrite(value) ==\n    IF QuorumReachable\n    THEN Write(value)\n    ELSE Reject(\"unavailable\")",
+          "when": "Expecting availability with strong"
+        },
+        {
+          "approach": "Fallback to weaker consistency",
+          "code": "\\* Application can fallback\nWriteWithFallback(value, preferStrong) ==\n    IF preferStrong /\\ QuorumReachable\n    THEN StrongWrite(value)\n    ELSE EventualWrite(value)",
+          "when": "Need availability guarantee"
+        },
+        {
+          "approach": "Configure write regions",
+          "code": "\\* Multi-write regions for availability\nWriteRegions == {r \\in Regions : r.acceptsWrites}\nAvailability == Cardinality(WriteRegions) >= 1",
+          "when": "Single write region"
+        }
+      ]
+    },
+    {
+      "id": "conflict_resolution_anomaly",
+      "pattern": "conflict.*resolution.*anomaly|lww.*unexpected",
+      "message": "Last-writer-wins produced unexpected result",
+      "cause": "LWW conflict resolution selected wrong value due to clock skew",
+      "solutions": [
+        {
+          "approach": "Use logical timestamps",
+          "code": "\\* Hybrid logical clock instead of wall clock\nHLC(region) == Max(region.physicalClock, region.lastSeen + 1)\nLWW(v1, v2) == IF v1.hlc > v2.hlc THEN v1 ELSE v2",
+          "when": "Using wall clock for LWW"
+        },
+        {
+          "approach": "Model clock skew",
+          "code": "\\* Account for bounded clock skew\nClockSkew == \\A r1, r2 \\in Regions : \n    Abs(r1.clock - r2.clock) <= MaxSkew",
+          "when": "Not modeling clock bounds"
+        },
+        {
+          "approach": "Use custom resolution",
+          "code": "\\* Application-defined merge function\nCustomResolve(v1, v2) ==\n    IF v1.appTimestamp > v2.appTimestamp\n    THEN v1 ELSE v2",
+          "when": "LWW semantics wrong for app"
+        }
+      ]
+    },
+    {
+      "id": "partition_key_hot_spot",
+      "pattern": "partition.*throttled|hot.*partition",
+      "message": "Partition key causing hot spot throttling",
+      "cause": "Single partition receiving disproportionate load",
+      "solutions": [
+        {
+          "approach": "Model partition distribution",
+          "code": "\\* Even distribution across partitions\nPartitionLoad(pk) == Cardinality({op \\in Ops : op.partitionKey = pk})\nNoHotSpot == \\A pk \\in PartitionKeys : \n    PartitionLoad(pk) <= avgLoad * 1.2",
+          "when": "Skewed partition access"
+        },
+        {
+          "approach": "Add synthetic partition key",
+          "code": "\\* Spread hot key across partitions\nSyntheticPK(key) == <<key, Hash(key) % numBuckets>>",
+          "when": "Single hot key"
+        },
+        {
+          "approach": "Model RU consumption",
+          "code": "\\* Track RUs per partition\nConsumeRUs(partition, rus) ==\n    /\\ partition.usedRUs + rus <= partition.maxRUs\n    /\\ partition.usedRUs' = partition.usedRUs + rus",
+          "when": "Exceeding partition RU limit"
+        }
+      ]
+    }
+  ]
+}

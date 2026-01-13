@@ -1,0 +1,191 @@
+{
+  "tool": "dgraph",
+  "version": "23.1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "unauthenticated|token.*invalid|unauthorized|access denied",
+      "message": "Authentication error",
+      "cause": "Invalid or missing authentication",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "curl -X POST http://localhost:8080/admin \\\n  -H 'Content-Type: application/graphql' \\\n  -d '{\"query\": \"mutation { login(userId: \\\"groot\\\", password: \\\"password\\\") { response { accessJWT } } }\"}'",
+          "when": "Get token"
+        },
+        {
+          "approach": "Use token",
+          "code": "curl http://localhost:8080/query \\\n  -H 'X-Dgraph-AccessToken: <jwt-token>' \\\n  -d '{\"query\": \"{ ... }\"}'",
+          "when": "Authenticated request"
+        },
+        {
+          "approach": "ACL config",
+          "code": "dgraph alpha --security whitelist=0.0.0.0/0",
+          "when": "Disable ACL"
+        }
+      ]
+    },
+    {
+      "id": "schema_error",
+      "pattern": "schema.*error|predicate.*not defined|type.*not found|invalid schema",
+      "message": "Schema error",
+      "cause": "Schema not defined or invalid",
+      "solutions": [
+        {
+          "approach": "Alter schema",
+          "code": "curl http://localhost:8080/alter -d '\nname: string @index(term) .\nage: int .\nfriend: [uid] @reverse .\n\ntype Person {\n  name\n  age\n  friend\n}\n'",
+          "when": "Define schema"
+        },
+        {
+          "approach": "Get schema",
+          "code": "curl http://localhost:8080/query -d '{\n  schema {}\n}'",
+          "when": "View schema"
+        },
+        {
+          "approach": "GraphQL schema",
+          "code": "type Person {\n  name: String! @search(by: [term])\n  age: Int\n  friends: [Person]\n}",
+          "when": "GraphQL mode"
+        }
+      ]
+    },
+    {
+      "id": "query_error",
+      "pattern": "query.*error|GraphQL.*error|DQL.*error|syntax error",
+      "message": "Query error",
+      "cause": "Invalid query syntax",
+      "solutions": [
+        {
+          "approach": "DQL query",
+          "code": "{\n  q(func: eq(name, \"Alice\")) {\n    uid\n    name\n    friend {\n      name\n    }\n  }\n}",
+          "when": "DQL syntax"
+        },
+        {
+          "approach": "GraphQL query",
+          "code": "query {\n  queryPerson(filter: { name: { eq: \"Alice\" } }) {\n    name\n    friends {\n      name\n    }\n  }\n}",
+          "when": "GraphQL syntax"
+        },
+        {
+          "approach": "Variables",
+          "code": "query all($name: string) {\n  q(func: eq(name, $name)) {\n    name\n  }\n}",
+          "when": "Use variables"
+        }
+      ]
+    },
+    {
+      "id": "mutation_error",
+      "pattern": "mutation.*error|could not apply|commit.*failed|invalid RDF",
+      "message": "Mutation error",
+      "cause": "Invalid mutation format",
+      "solutions": [
+        {
+          "approach": "Set mutation",
+          "code": "{\n  set {\n    _:alice <name> \"Alice\" .\n    _:alice <age> \"30\"^^<xs:int> .\n    _:alice <dgraph.type> \"Person\" .\n  }\n}",
+          "when": "RDF format"
+        },
+        {
+          "approach": "JSON mutation",
+          "code": "{\n  \"set\": [\n    {\n      \"name\": \"Alice\",\n      \"age\": 30,\n      \"dgraph.type\": \"Person\"\n    }\n  ]\n}",
+          "when": "JSON format"
+        },
+        {
+          "approach": "Upsert",
+          "code": "{\n  query {\n    v as var(func: eq(email, \"alice@example.com\"))\n  }\n  mutation {\n    set {\n      uid(v) <name> \"Alice\" .\n    }\n  }\n}",
+          "when": "Upsert pattern"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection refused|ECONNREFUSED|timeout|grpc.*error",
+      "message": "Connection error",
+      "cause": "Dgraph not running or unreachable",
+      "solutions": [
+        {
+          "approach": "Check services",
+          "code": "# Check all services running:\n# Zero: port 5080/6080\n# Alpha: port 7080/8080/9080\n# Ratel: port 8000\ncurl http://localhost:8080/health",
+          "when": "Health check"
+        },
+        {
+          "approach": "Start cluster",
+          "code": "dgraph zero &\ndgraph alpha &",
+          "when": "Start services"
+        },
+        {
+          "approach": "Docker",
+          "code": "docker run -d --name dgraph -p 8080:8080 -p 9080:9080 dgraph/standalone",
+          "when": "Docker start"
+        }
+      ]
+    },
+    {
+      "id": "index_error",
+      "pattern": "index.*required|cannot filter|tokenizer.*not set|fulltext",
+      "message": "Index error",
+      "cause": "Missing index for query operation",
+      "solutions": [
+        {
+          "approach": "Add index",
+          "code": "curl http://localhost:8080/alter -d '\nname: string @index(exact, term, fulltext) .\nemail: string @index(hash) .\nage: int @index(int) .\ncreated: datetime @index(day) .\n'",
+          "when": "Create indexes"
+        },
+        {
+          "approach": "Index types",
+          "code": "# String: hash, exact, term, fulltext, trigram\n# Int/Float: int, float\n# DateTime: year, month, day, hour\n# Bool: bool\n# Geo: geo",
+          "when": "Index reference"
+        },
+        {
+          "approach": "Check indexes",
+          "code": "{\n  schema(pred: [name]) {\n    predicate\n    type\n    index\n    tokenizer\n  }\n}",
+          "when": "View indexes"
+        }
+      ]
+    },
+    {
+      "id": "backup_error",
+      "pattern": "backup.*failed|export.*error|restore.*failed",
+      "message": "Backup/restore error",
+      "cause": "Backup operation failed",
+      "solutions": [
+        {
+          "approach": "Export",
+          "code": "curl http://localhost:8080/admin -d '{\n  \"query\": \"mutation { export(input: {format: \\\"rdf\\\"}) { response { message } } }\"\n}'",
+          "when": "Export data"
+        },
+        {
+          "approach": "Backup",
+          "code": "curl http://localhost:8080/admin -d '{\n  \"query\": \"mutation { backup(input: {destination: \\\"/path/to/backup\\\"}) { response { message } } }\"\n}'",
+          "when": "Create backup"
+        },
+        {
+          "approach": "Restore",
+          "code": "dgraph alpha --postings /path/to/data -p /path/to/backup/p",
+          "when": "Restore backup"
+        }
+      ]
+    },
+    {
+      "id": "cluster_error",
+      "pattern": "zero.*not found|leader.*unavailable|raft|cluster.*error",
+      "message": "Cluster error",
+      "cause": "Cluster configuration issue",
+      "solutions": [
+        {
+          "approach": "Check state",
+          "code": "curl http://localhost:6080/state",
+          "when": "Cluster state"
+        },
+        {
+          "approach": "Zero config",
+          "code": "dgraph zero --my=localhost:5080 --replicas=3",
+          "when": "Start zero"
+        },
+        {
+          "approach": "Alpha config",
+          "code": "dgraph alpha --my=localhost:7080 --zero=localhost:5080",
+          "when": "Start alpha"
+        }
+      ]
+    }
+  ]
+}

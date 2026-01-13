@@ -1,0 +1,145 @@
+{
+  "tool": "litecli",
+  "version": "1.10",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "database_not_found",
+      "pattern": "unable to open database|no such file|database.*not found|Cannot open",
+      "message": "SQLite database file not found",
+      "cause": "File path wrong or file doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create new",
+          "code": "litecli new_database.db  # Creates if not exists",
+          "when": "Start new database"
+        },
+        {
+          "approach": "Check path",
+          "code": "ls -la /path/to/database.db\nlitecli $(realpath database.db)",
+          "when": "Verify file exists"
+        },
+        {
+          "approach": "In-memory",
+          "code": "litecli :memory:",
+          "when": "Temporary database"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "permission denied|readonly|unable to write|locked",
+      "message": "Permission or lock error",
+      "cause": "File permissions, read-only, or another process has lock",
+      "solutions": [
+        {
+          "approach": "Check permissions",
+          "code": "ls -la database.db\nchmod 644 database.db",
+          "when": "File permission"
+        },
+        {
+          "approach": "Read-only mode",
+          "code": "litecli 'file:database.db?mode=ro'",
+          "when": "Read-only access"
+        },
+        {
+          "approach": "Check locks",
+          "code": "fuser database.db\nlsof database.db",
+          "when": "Find locking process"
+        }
+      ]
+    },
+    {
+      "id": "corrupt_database",
+      "pattern": "malformed|corrupt|not a database|file is encrypted",
+      "message": "Database file corrupt or encrypted",
+      "cause": "File corrupted, not SQLite format, or encrypted",
+      "solutions": [
+        {
+          "approach": "Check integrity",
+          "code": "sqlite3 database.db 'PRAGMA integrity_check;'",
+          "when": "Verify integrity"
+        },
+        {
+          "approach": "Recover data",
+          "code": "sqlite3 database.db '.recover' | sqlite3 recovered.db",
+          "when": "Attempt recovery"
+        },
+        {
+          "approach": "SQLCipher encrypted",
+          "code": "# If encrypted, need sqlcipher\nsqlcipher database.db\nPRAGMA key = 'your-password';",
+          "when": "Encrypted database"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "config.*error|ConfigError|liteclirc|~/.config/litecli",
+      "message": "Configuration error",
+      "cause": "Invalid config file syntax",
+      "solutions": [
+        {
+          "approach": "Reset config",
+          "code": "mv ~/.config/litecli/config ~/.config/litecli/config.bak",
+          "when": "Corrupt config"
+        },
+        {
+          "approach": "Use default",
+          "code": "litecli --liteclirc /dev/null database.db",
+          "when": "Bypass config"
+        },
+        {
+          "approach": "Edit config",
+          "code": "# ~/.config/litecli/config\n[main]\nkey_bindings = emacs\nsmart_completion = True",
+          "when": "Fix configuration"
+        }
+      ]
+    },
+    {
+      "id": "extension_error",
+      "pattern": "extension.*error|load_extension|not authorized|dlopen",
+      "message": "SQLite extension loading failed",
+      "cause": "Extensions disabled or library not found",
+      "solutions": [
+        {
+          "approach": "Enable extensions",
+          "code": "# In litecli:\n.load /path/to/extension.so",
+          "when": "Load extension"
+        },
+        {
+          "approach": "Compile with loadable",
+          "code": "# SQLite must be compiled with:\n# -DSQLITE_ENABLE_LOAD_EXTENSION",
+          "when": "Extension support"
+        },
+        {
+          "approach": "Use built-in",
+          "code": "# Use SQLite's JSON1, FTS5 built-in\nSELECT json_extract(col, '$.key');",
+          "when": "Built-in functions"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error|near.*syntax|unexpected|incomplete input",
+      "message": "SQL syntax error",
+      "cause": "Invalid SQL syntax or SQLite-specific requirements",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "# SQLite specific:\n# No RIGHT JOIN, no FULL OUTER JOIN\n# Use || for string concat, not +",
+          "when": "SQLite quirks"
+        },
+        {
+          "approach": "Quote identifiers",
+          "code": "SELECT * FROM \"table-with-dash\"\nSELECT [column with space] FROM t",
+          "when": "Special characters"
+        },
+        {
+          "approach": "Use multiline",
+          "code": "# End statement with semicolon\n# or use \\e to edit in $EDITOR",
+          "when": "Complex queries"
+        }
+      ]
+    }
+  ]
+}

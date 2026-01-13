@@ -1,0 +1,102 @@
+{
+  "tool": "nconf",
+  "category": "config_management",
+  "common_errors": [
+    {
+      "id": "nconf_store_order_wrong",
+      "pattern": "config value wrong|env not overriding|file taking precedence",
+      "severity": "warning",
+      "causes": [
+        "Store registration order determines precedence",
+        "First registered store has highest priority",
+        "Common mistake: file before env"
+      ],
+      "solutions": [
+        "Register stores in precedence order: argv → env → file → defaults",
+        "nconf.argv().env().file() is typical order",
+        "Later stores are fallbacks, not overrides",
+        "Check nconf.stores to see registration order"
+      ]
+    },
+    {
+      "id": "nconf_file_not_loading",
+      "pattern": "file config not loaded|ENOENT|file store empty",
+      "severity": "error",
+      "causes": [
+        "File doesn't exist at specified path",
+        "Wrong file format (not JSON by default)",
+        "File permissions issue"
+      ],
+      "solutions": [
+        "Check file exists: nconf.file({ file: 'config.json' })",
+        "Use format option for non-JSON: format: nconf.formats.ini",
+        "Provide absolute path or ensure correct cwd",
+        "Make file optional by catching errors"
+      ]
+    },
+    {
+      "id": "nconf_env_separator_issue",
+      "pattern": "nested env.*not working|separator.*underscore|ENV_VAR_NAME",
+      "severity": "warning",
+      "causes": [
+        "Env vars need separator config for nesting",
+        "Default separator may not match your naming",
+        "Case sensitivity with env vars"
+      ],
+      "solutions": [
+        "Set separator: nconf.env({ separator: '__' })",
+        "MY_APP__DB__HOST becomes { db: { host } }",
+        "Use lowerCase option to normalize keys",
+        "Use parseValues: true to convert 'true' to boolean"
+      ]
+    },
+    {
+      "id": "nconf_save_not_working",
+      "pattern": "save.*not working|file not updated|changes not persisted",
+      "severity": "error",
+      "causes": [
+        "Not all stores support save()",
+        "Wrong store name in save callback",
+        "Memory store changes not persisted"
+      ],
+      "solutions": [
+        "Only file store supports save by default",
+        "Use nconf.save('file', callback)",
+        "Set values in file store: nconf.stores.file.set()",
+        "Check file permissions for write access"
+      ]
+    },
+    {
+      "id": "nconf_type_coercion",
+      "pattern": "boolean.*string|number.*string|type not converted",
+      "severity": "warning",
+      "causes": [
+        "Env vars and argv are always strings",
+        "parseValues option not enabled",
+        "Type information lost from env"
+      ],
+      "solutions": [
+        "Use parseValues: true in env() and argv()",
+        "nconf.env({ parseValues: true })",
+        "Manually convert types where needed",
+        "Use schema validation after nconf load"
+      ]
+    },
+    {
+      "id": "nconf_get_undefined",
+      "pattern": "nconf\\.get.*undefined|key not found|config missing",
+      "severity": "warning",
+      "causes": [
+        "Key doesn't exist in any store",
+        "Store not yet loaded (async file)",
+        "Wrong key path syntax"
+      ],
+      "solutions": [
+        "Use colon for nested keys: nconf.get('db:host')",
+        "Ensure stores loaded before get()",
+        "Provide defaults: nconf.defaults({ key: value })",
+        "Check with nconf.get() (no args) to see all config"
+      ]
+    }
+  ]
+}

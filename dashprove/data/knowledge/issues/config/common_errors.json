@@ -1,0 +1,102 @@
+{
+  "tool": "config",
+  "category": "config_management",
+  "common_errors": [
+    {
+      "id": "config_no_config_dir",
+      "pattern": "Cannot find config directory|No config directory found|ENOENT.*config",
+      "severity": "error",
+      "causes": [
+        "config/ directory doesn't exist in project root",
+        "NODE_CONFIG_DIR not set correctly",
+        "Running from wrong directory"
+      ],
+      "solutions": [
+        "Create config/ directory in project root",
+        "Add default.json in config/ directory",
+        "Set NODE_CONFIG_DIR environment variable",
+        "Ensure process starts from project root"
+      ]
+    },
+    {
+      "id": "config_wrong_environment",
+      "pattern": "using wrong config|production config in dev|NODE_ENV mismatch",
+      "severity": "warning",
+      "causes": [
+        "NODE_ENV not set or set incorrectly",
+        "Environment-specific file missing",
+        "Typo in environment file name"
+      ],
+      "solutions": [
+        "Set NODE_ENV=development|production|test",
+        "Create {NODE_ENV}.json in config/",
+        "File naming: production.json, development.json",
+        "Check NODE_ENV value: console.log(process.env.NODE_ENV)"
+      ]
+    },
+    {
+      "id": "config_immutable_error",
+      "pattern": "Configuration is immutable|Cannot modify|make.*immutable",
+      "severity": "error",
+      "causes": [
+        "Attempting to modify config object",
+        "Config is frozen after first access",
+        "Trying to set value at runtime"
+      ],
+      "solutions": [
+        "Config is read-only by design",
+        "Use NODE_CONFIG env var for overrides",
+        "Use config.util.makeHidden() for mutable subconfigs",
+        "Restructure to set config before require('config')"
+      ]
+    },
+    {
+      "id": "config_custom_env_vars_not_loaded",
+      "pattern": "custom-environment-variables.*not working|env var not mapped",
+      "severity": "warning",
+      "causes": [
+        "custom-environment-variables.json not found",
+        "Env var mapping syntax wrong",
+        "Env var not set in environment"
+      ],
+      "solutions": [
+        "Create config/custom-environment-variables.json",
+        "Map: { \"db\": { \"host\": \"DATABASE_HOST\" } }",
+        "Verify env var is set: echo $DATABASE_HOST",
+        "Use __format: 'json' for JSON values in env vars"
+      ]
+    },
+    {
+      "id": "config_merge_not_working",
+      "pattern": "config not merging|override not applied|local config ignored",
+      "severity": "warning",
+      "causes": [
+        "Local file not in proper location",
+        "local-{env}.json naming wrong",
+        "Git ignored local file missing"
+      ],
+      "solutions": [
+        "Use local.json for machine-specific overrides",
+        "local.json should be in .gitignore",
+        "Merge order: default → {env} → local → custom-env-vars",
+        "Use local-{deployment}.json for deployment-specific"
+      ]
+    },
+    {
+      "id": "config_get_missing_key",
+      "pattern": "config\\.get.*undefined|Configuration property.*missing|key not found",
+      "severity": "error",
+      "causes": [
+        "Requested key doesn't exist in any config file",
+        "Typo in key name",
+        "Nested path syntax wrong"
+      ],
+      "solutions": [
+        "Add key to default.json",
+        "Use config.has('key') to check existence",
+        "Nested: config.get('db.host') not config.get('db').host",
+        "Check key exists: config.util.getConfigSources()"
+      ]
+    }
+  ]
+}

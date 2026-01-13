@@ -1,0 +1,123 @@
+{
+  "id": "torch_testing",
+  "name": "torch.testing",
+  "category": "ml_testing",
+  "subcategory": "pytorch",
+
+  "description": "PyTorch built-in testing utilities",
+  "long_description": "torch.testing provides utilities for testing PyTorch code, including tensor comparison functions with tolerance handling, assertion helpers, and utilities for testing across different devices and dtypes. Essential for verifying model correctness and numerical stability.",
+
+  "capabilities": [
+    "tensor_comparison",
+    "tolerance_handling",
+    "dtype_testing",
+    "device_testing",
+    "gradient_checking",
+    "numerical_testing"
+  ],
+  "property_types": ["equality", "closeness", "gradient_correctness"],
+  "input_languages": ["python"],
+  "output_formats": ["assertion"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install torch"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://pytorch.org/docs/stable/testing.html",
+    "tutorial": "https://pytorch.org/tutorials/intermediate/testing_tutorial.html",
+    "api_reference": "https://pytorch.org/docs/stable/testing.html",
+    "examples": "https://github.com/pytorch/pytorch/tree/main/test"
+  },
+
+  "tactics": [
+    {
+      "name": "assert_close",
+      "description": "Check tensor closeness",
+      "syntax": "torch.testing.assert_close(actual, expected)",
+      "when_to_use": "For numerical comparison with tolerance",
+      "examples": ["import torch\nimport torch.testing as testing\n\nactual = model(input)\nexpected = torch.tensor([1.0, 2.0, 3.0])\ntesting.assert_close(actual, expected, rtol=1e-5, atol=1e-8)"]
+    },
+    {
+      "name": "assert_allclose",
+      "description": "Legacy closeness check",
+      "syntax": "torch.testing.assert_allclose(actual, expected)",
+      "when_to_use": "For backward compatibility",
+      "examples": ["torch.testing.assert_allclose(\n    output,\n    reference,\n    rtol=1e-4,\n    atol=1e-4\n)"]
+    },
+    {
+      "name": "gradcheck",
+      "description": "Check gradient correctness",
+      "syntax": "torch.autograd.gradcheck(func, inputs)",
+      "when_to_use": "To verify custom autograd functions",
+      "examples": ["from torch.autograd import gradcheck\n\ndef custom_fn(x):\n    return x ** 2\n\nx = torch.randn(3, requires_grad=True, dtype=torch.double)\nassert gradcheck(custom_fn, x, eps=1e-6)"]
+    },
+    {
+      "name": "make_tensor",
+      "description": "Create test tensors",
+      "syntax": "torch.testing.make_tensor(shape, dtype, device)",
+      "when_to_use": "For generating test data",
+      "examples": ["from torch.testing import make_tensor\n\nt = make_tensor((3, 4), dtype=torch.float32, device='cuda')"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "AssertionError.*not close",
+      "meaning": "Tensors differ beyond tolerance",
+      "common_causes": ["Numerical precision", "Bug in implementation"],
+      "fixes": ["Increase tolerance", "Check implementation"]
+    },
+    {
+      "pattern": "Shape mismatch",
+      "meaning": "Tensor shapes differ",
+      "common_causes": ["Wrong output shape"],
+      "fixes": ["Check model output shape"]
+    },
+    {
+      "pattern": "gradcheck.*failed",
+      "meaning": "Gradient incorrect",
+      "common_causes": ["Custom autograd bug"],
+      "fixes": ["Fix backward pass implementation"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["equality", "closeness"],
+    "cli_command": "dashprove verify --backend torch-testing"
+  },
+
+  "performance": {
+    "typical_runtime": "Milliseconds",
+    "scalability": "Excellent",
+    "memory_usage": "Same as tensors"
+  },
+
+  "comparisons": {
+    "similar_tools": ["numpy.testing", "tensorflow.test"],
+    "advantages": [
+      "PyTorch native",
+      "Tolerance handling",
+      "Device-aware",
+      "Dtype-aware",
+      "Gradient checking"
+    ],
+    "disadvantages": [
+      "PyTorch only",
+      "Limited to tensors",
+      "No high-level assertions"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.2.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "PyTorch",
+    "license": "BSD-3-Clause"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "tool": "foundry",
+  "version": "0.2.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "test_failed",
+      "pattern": "FAILED|Test failed",
+      "message": "Foundry test assertion failed",
+      "cause": "Test assertion or expectation not met",
+      "solutions": [
+        {
+          "approach": "Add verbosity",
+          "code": "forge test -vvvv --match-test testName",
+          "when": "Need detailed trace"
+        },
+        {
+          "approach": "Check assertion",
+          "code": "assertEq(actual, expected, \"message\");",
+          "when": "Assertion values differ"
+        },
+        {
+          "approach": "Debug interactively",
+          "code": "forge test --debug testName",
+          "when": "Need step-by-step debugging"
+        }
+      ]
+    },
+    {
+      "id": "fuzz_fail",
+      "pattern": "Counterexample:|fuzz test failed",
+      "message": "Fuzz test found counterexample",
+      "cause": "Fuzzer found inputs that break invariant",
+      "solutions": [
+        {
+          "approach": "Analyze counterexample",
+          "code": "// Check the minimized inputs in output",
+          "when": "Need to understand failure"
+        },
+        {
+          "approach": "Add bound assumptions",
+          "code": "function testFuzz(uint256 x) public {\n    vm.assume(x > 0 && x < 1000);\n    ...\n}",
+          "when": "Inputs need constraining"
+        },
+        {
+          "approach": "Increase runs",
+          "code": "forge test --fuzz-runs 10000",
+          "when": "Want more thorough fuzzing"
+        }
+      ]
+    },
+    {
+      "id": "invariant_fail",
+      "pattern": "Invariant test failed|invariant_",
+      "message": "Invariant test violated",
+      "cause": "Sequence of calls broke contract invariant",
+      "solutions": [
+        {
+          "approach": "Check call sequence",
+          "code": "// Examine the failing call sequence in output",
+          "when": "Need to understand attack path"
+        },
+        {
+          "approach": "Add target selector",
+          "code": "function targetSelectors() public returns (bytes4[] memory) { ... }",
+          "when": "Limit which functions are called"
+        },
+        {
+          "approach": "Exclude contracts",
+          "code": "function excludeContracts() public returns (address[] memory) { ... }",
+          "when": "Some contracts shouldn't be fuzzed"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "Compiler error|ParserError|TypeError",
+      "message": "Contract compilation failed",
+      "cause": "Solidity code has syntax or type errors",
+      "solutions": [
+        {
+          "approach": "Install dependencies",
+          "code": "forge install OpenZeppelin/openzeppelin-contracts",
+          "when": "Missing imports"
+        },
+        {
+          "approach": "Update remappings",
+          "code": "forge remappings > remappings.txt",
+          "when": "Import paths incorrect"
+        },
+        {
+          "approach": "Set Solidity version",
+          "code": "// In foundry.toml: solc = \"0.8.19\"",
+          "when": "Need specific compiler"
+        }
+      ]
+    },
+    {
+      "id": "out_of_gas",
+      "pattern": "OutOfGas|gas exhausted",
+      "message": "Transaction ran out of gas",
+      "cause": "Function exceeds gas limit",
+      "solutions": [
+        {
+          "approach": "Increase gas limit",
+          "code": "// In foundry.toml: gas_limit = \"18446744073709551615\"",
+          "when": "Need more gas for test"
+        },
+        {
+          "approach": "Profile gas usage",
+          "code": "forge test --gas-report",
+          "when": "Need to identify expensive operations"
+        },
+        {
+          "approach": "Check for infinite loops",
+          "code": "// Review unbounded iterations",
+          "when": "Contract may loop forever"
+        }
+      ]
+    },
+    {
+      "id": "revert_no_reason",
+      "pattern": "revert: |call reverted",
+      "message": "Call reverted without reason",
+      "cause": "External call failed but no revert message",
+      "solutions": [
+        {
+          "approach": "Add verbosity",
+          "code": "forge test -vvvv",
+          "when": "Need to see revert location"
+        },
+        {
+          "approach": "Expect revert",
+          "code": "vm.expectRevert();\ncontract.riskyCall();",
+          "when": "Revert is expected behavior"
+        },
+        {
+          "approach": "Check call parameters",
+          "code": "// Verify target address is correct contract",
+          "when": "Calling wrong address"
+        }
+      ]
+    },
+    {
+      "id": "fork_error",
+      "pattern": "fork failed|RPC error",
+      "message": "Forked environment error",
+      "cause": "RPC endpoint issue or rate limiting",
+      "solutions": [
+        {
+          "approach": "Set RPC URL",
+          "code": "forge test --fork-url $ETH_RPC_URL",
+          "when": "RPC URL not configured"
+        },
+        {
+          "approach": "Use caching",
+          "code": "// In foundry.toml: [profile.default] rpc_storage_caching = { chains = \"all\", endpoints = \"all\" }",
+          "when": "Hitting rate limits"
+        },
+        {
+          "approach": "Pin block number",
+          "code": "forge test --fork-url $URL --fork-block-number 18000000",
+          "when": "Need consistent state"
+        }
+      ]
+    },
+    {
+      "id": "cheatcode_error",
+      "pattern": "vm\\.|cheatcode|Vm error",
+      "message": "Cheatcode usage error",
+      "cause": "Invalid or improper use of forge cheatcodes",
+      "solutions": [
+        {
+          "approach": "Check vm import",
+          "code": "import \"forge-std/Test.sol\";\ncontract MyTest is Test { ... }",
+          "when": "vm not available"
+        },
+        {
+          "approach": "Verify cheatcode syntax",
+          "code": "// Refer to forge-std documentation",
+          "when": "Cheatcode arguments wrong"
+        },
+        {
+          "approach": "Use correct prank pattern",
+          "code": "vm.startPrank(user);\n// multiple calls\nvm.stopPrank();",
+          "when": "Need multiple calls as user"
+        }
+      ]
+    }
+  ]
+}

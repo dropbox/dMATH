@@ -1,0 +1,227 @@
+{
+  "tool": "rustfmt",
+  "version": "1.7+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cannot_parse",
+      "pattern": "error\\[internal\\]|left behind trailing whitespace|failed to parse",
+      "message": "Cannot parse Rust file",
+      "cause": "File has syntax errors or unsupported syntax",
+      "solutions": [
+        {
+          "approach": "Fix syntax first",
+          "code": "cargo check",
+          "when": "Syntax errors exist"
+        },
+        {
+          "approach": "Use latest rustfmt",
+          "code": "rustup component add rustfmt --toolchain nightly",
+          "when": "New syntax not supported"
+        },
+        {
+          "approach": "Skip problematic file",
+          "code": "#![rustfmt::skip]\n// or\n// rustfmt: skip",
+          "when": "Can't format file"
+        }
+      ]
+    },
+    {
+      "id": "config_not_found",
+      "pattern": "config file not found|using default config|no rustfmt.toml",
+      "message": "Configuration file not found",
+      "cause": "No rustfmt.toml in project",
+      "solutions": [
+        {
+          "approach": "Create rustfmt.toml",
+          "code": "echo 'edition = \"2021\"' > rustfmt.toml",
+          "when": "Need custom config"
+        },
+        {
+          "approach": "Use workspace root",
+          "code": "// Place rustfmt.toml in workspace root",
+          "when": "Multi-crate workspace"
+        },
+        {
+          "approach": "Use defaults",
+          "code": "cargo fmt",
+          "when": "Defaults are fine"
+        }
+      ]
+    },
+    {
+      "id": "unstable_features",
+      "pattern": "unstable feature|nightly.*required|wrap_comments",
+      "message": "Unstable formatting features require nightly",
+      "cause": "Using unstable options on stable rustfmt",
+      "solutions": [
+        {
+          "approach": "Use nightly",
+          "code": "cargo +nightly fmt",
+          "when": "Need unstable features"
+        },
+        {
+          "approach": "Remove unstable options",
+          "code": "# Remove options like wrap_comments from rustfmt.toml",
+          "when": "Use stable only"
+        },
+        {
+          "approach": "Conditionally enable",
+          "code": "# CI: use nightly, local: use stable defaults",
+          "when": "Different CI/local behavior"
+        }
+      ]
+    },
+    {
+      "id": "macro_formatting",
+      "pattern": "macro.*not formatted|error formatting macro",
+      "message": "Macro formatting failed",
+      "cause": "Complex macros can't be formatted",
+      "solutions": [
+        {
+          "approach": "Skip macro",
+          "code": "#[rustfmt::skip]\nmacro_rules! my_macro { ... }",
+          "when": "Skip specific macro"
+        },
+        {
+          "approach": "Format macro arms manually",
+          "code": "// Use #[rustfmt::skip] inside macro",
+          "when": "Partial formatting"
+        },
+        {
+          "approach": "Enable format_macro_matchers",
+          "code": "format_macro_matchers = true  # nightly only",
+          "when": "Format macro patterns"
+        }
+      ]
+    },
+    {
+      "id": "edition_mismatch",
+      "pattern": "edition.*mismatch|edition not set|2018 vs 2021",
+      "message": "Rust edition not matching",
+      "cause": "rustfmt edition differs from Cargo.toml",
+      "solutions": [
+        {
+          "approach": "Set edition in rustfmt.toml",
+          "code": "edition = \"2021\"",
+          "when": "Explicit edition needed"
+        },
+        {
+          "approach": "Let rustfmt detect from Cargo.toml",
+          "code": "// Remove edition from rustfmt.toml",
+          "when": "Auto-detection should work"
+        }
+      ]
+    },
+    {
+      "id": "check_failed",
+      "pattern": "Diff in|would be reformatted|check failed",
+      "message": "Format check failed - files differ",
+      "cause": "Files not formatted according to rustfmt",
+      "solutions": [
+        {
+          "approach": "Format all files",
+          "code": "cargo fmt",
+          "when": "Apply formatting"
+        },
+        {
+          "approach": "Show diff",
+          "code": "cargo fmt -- --check 2>&1 | head -100",
+          "when": "See what would change"
+        },
+        {
+          "approach": "Add pre-commit hook",
+          "code": "#!/bin/sh\ncargo fmt -- --check",
+          "when": "Prevent unformatted commits"
+        }
+      ]
+    },
+    {
+      "id": "line_width_issue",
+      "pattern": "line too long|max_width|cannot fit",
+      "message": "Line width formatting issue",
+      "cause": "Line can't be split to fit max_width",
+      "solutions": [
+        {
+          "approach": "Increase max_width",
+          "code": "max_width = 120",
+          "when": "Wider lines acceptable"
+        },
+        {
+          "approach": "Refactor code",
+          "code": "// Break into smaller expressions",
+          "when": "Code too complex"
+        },
+        {
+          "approach": "Skip specific line",
+          "code": "#[rustfmt::skip]\nlet very_long_line = ...;",
+          "when": "One-off exception"
+        }
+      ]
+    },
+    {
+      "id": "import_granularity",
+      "pattern": "use.*formatting|imports.*merged|import_granularity",
+      "message": "Import grouping unexpected",
+      "cause": "Import granularity setting differs from preference",
+      "solutions": [
+        {
+          "approach": "Use Crate granularity",
+          "code": "imports_granularity = \"Crate\"  # nightly",
+          "when": "Merge imports"
+        },
+        {
+          "approach": "Use Item granularity",
+          "code": "imports_granularity = \"Item\"  # nightly",
+          "when": "One item per use"
+        },
+        {
+          "approach": "Use Module granularity",
+          "code": "imports_granularity = \"Module\"  # nightly",
+          "when": "Group by module"
+        }
+      ]
+    },
+    {
+      "id": "generated_code",
+      "pattern": "generated.*file|build.rs.*output|proc.macro",
+      "message": "Generated code formatting issues",
+      "cause": "Auto-generated code not ignored",
+      "solutions": [
+        {
+          "approach": "Add to ignore",
+          "code": "ignore = [\"src/generated\"]",
+          "when": "Directory to ignore"
+        },
+        {
+          "approach": "Skip file",
+          "code": "// @generated\n// rustfmt ignores files with @generated",
+          "when": "Mark file as generated"
+        },
+        {
+          "approach": "Use .rustfmt-ignore",
+          "code": "echo 'src/generated.rs' >> .rustfmt-ignore",
+          "when": "Ignore list file"
+        }
+      ]
+    },
+    {
+      "id": "attribute_formatting",
+      "pattern": "attribute.*formatted|#\\[.*\\].*changed",
+      "message": "Attribute formatting changed",
+      "cause": "Attributes reformatted unexpectedly",
+      "solutions": [
+        {
+          "approach": "Skip attribute",
+          "code": "#[rustfmt::skip]\n#[my_complex_attribute(...)]",
+          "when": "Preserve specific attribute"
+        },
+        {
+          "approach": "Format attributes consistently",
+          "code": "// Let rustfmt handle attributes",
+          "when": "Accept rustfmt style"
+        }
+      ]
+    }
+  ]
+}

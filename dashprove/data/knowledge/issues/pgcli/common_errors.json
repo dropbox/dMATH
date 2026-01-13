@@ -1,0 +1,145 @@
+{
+  "tool": "pgcli",
+  "version": "4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_refused",
+      "pattern": "connection refused|could not connect|Connection to.*failed|FATAL.*connection",
+      "message": "Cannot connect to PostgreSQL server",
+      "cause": "Server not running, wrong credentials, or network issue",
+      "solutions": [
+        {
+          "approach": "Check connection string",
+          "code": "pgcli postgres://user:pass@localhost:5432/dbname",
+          "when": "Use URI format"
+        },
+        {
+          "approach": "Check service",
+          "code": "pg_isready -h localhost -p 5432\npsql -h localhost -U postgres -c '\\conninfo'",
+          "when": "Verify server is up"
+        },
+        {
+          "approach": "Use socket",
+          "code": "pgcli -h /var/run/postgresql -d dbname",
+          "when": "Local socket connection"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "password authentication failed|no password supplied|FATAL.*authentication",
+      "message": "Authentication failure",
+      "cause": "Wrong password, missing password, or pg_hba.conf",
+      "solutions": [
+        {
+          "approach": "Use pgpass",
+          "code": "# ~/.pgpass format:\n# hostname:port:database:username:password\nchmod 600 ~/.pgpass",
+          "when": "Store credentials"
+        },
+        {
+          "approach": "Prompt password",
+          "code": "pgcli -h localhost -U myuser -W dbname",
+          "when": "Force password prompt"
+        },
+        {
+          "approach": "Environment variable",
+          "code": "export PGPASSWORD='mypassword'\npgcli -h localhost -U myuser dbname",
+          "when": "Use env var"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL.*error|SSL connection.*required|certificate.*verify|sslmode",
+      "message": "SSL connection error",
+      "cause": "SSL required by server or certificate issues",
+      "solutions": [
+        {
+          "approach": "Disable SSL",
+          "code": "pgcli postgres://user:pass@host/db?sslmode=disable",
+          "when": "Development only"
+        },
+        {
+          "approach": "Require SSL",
+          "code": "pgcli postgres://user:pass@host/db?sslmode=require",
+          "when": "SSL without cert verify"
+        },
+        {
+          "approach": "Full verification",
+          "code": "pgcli 'postgres://user:pass@host/db?sslmode=verify-full&sslrootcert=/path/to/ca.crt'",
+          "when": "Production SSL"
+        }
+      ]
+    },
+    {
+      "id": "database_not_found",
+      "pattern": "database.*does not exist|FATAL.*database",
+      "message": "Database does not exist",
+      "cause": "Wrong database name or database not created",
+      "solutions": [
+        {
+          "approach": "List databases",
+          "code": "pgcli -h localhost -U postgres -c '\\l'",
+          "when": "Find databases"
+        },
+        {
+          "approach": "Connect to postgres",
+          "code": "pgcli -h localhost -U postgres postgres",
+          "when": "Default database"
+        },
+        {
+          "approach": "Create database",
+          "code": "pgcli -U postgres -c 'CREATE DATABASE mydb;'",
+          "when": "Create new database"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "config.*error|ConfigError|~/.config/pgcli|pgclirc",
+      "message": "Configuration file error",
+      "cause": "Invalid pgclirc or config directory",
+      "solutions": [
+        {
+          "approach": "Reset config",
+          "code": "mv ~/.config/pgcli/config ~/.config/pgcli/config.bak\npgcli  # Regenerates config",
+          "when": "Corrupt config"
+        },
+        {
+          "approach": "Specify config",
+          "code": "pgcli --pgclirc /path/to/config",
+          "when": "Custom config"
+        },
+        {
+          "approach": "Check permissions",
+          "code": "ls -la ~/.config/pgcli/\nchmod 644 ~/.config/pgcli/config",
+          "when": "Permission issue"
+        }
+      ]
+    },
+    {
+      "id": "autocompletion_error",
+      "pattern": "completion.*error|autocomplete.*failed|metadata.*error",
+      "message": "Autocompletion not working",
+      "cause": "Schema introspection failed or cache issue",
+      "solutions": [
+        {
+          "approach": "Refresh completions",
+          "code": "\\refresh  # Inside pgcli",
+          "when": "Stale cache"
+        },
+        {
+          "approach": "Disable autocomplete",
+          "code": "pgcli --no-auto-completion",
+          "when": "Large database"
+        },
+        {
+          "approach": "Set search_path",
+          "code": "\\x auto\nSET search_path TO myschema, public;",
+          "when": "Schema-specific"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "id": "tlaplus_elasticsearch",
+  "name": "Elasticsearch TLA+ Specifications",
+  "category": "tlaplus_specifications",
+  "subcategory": "distributed_search",
+
+  "description": "TLA+ specifications for Elasticsearch cluster coordination and data replication",
+  "long_description": "Elasticsearch uses TLA+ to specify and verify its distributed coordination mechanisms. The specifications cover cluster state management, primary-backup replication, sequence numbers, and shard allocation. These specs have helped Elasticsearch engineers understand edge cases and prevent consistency bugs in their distributed search engine.",
+
+  "capabilities": [
+    "cluster_coordination",
+    "primary_backup_replication",
+    "sequence_numbers",
+    "shard_allocation",
+    "master_election"
+  ],
+  "property_types": ["safety", "consistency", "liveness"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/elastic/elasticsearch-formal-models",
+    "blog": "https://www.elastic.co/blog/elasticsearch-sequence-ids-6-0"
+  },
+
+  "documentation": {
+    "official": "https://www.elastic.co/guide/en/elasticsearch/reference/current/",
+    "replication": "https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-replication.html",
+    "cluster_state": "https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-state.html"
+  },
+
+  "specifications": [
+    {
+      "name": "SequenceNumbers",
+      "description": "Document sequence number allocation",
+      "properties": ["monotonicity", "uniqueness", "total_ordering"]
+    },
+    {
+      "name": "PrimaryBackup",
+      "description": "Primary-backup replication protocol",
+      "properties": ["consistency", "durability", "failover_safety"]
+    },
+    {
+      "name": "ClusterState",
+      "description": "Cluster state publication",
+      "properties": ["consistency", "master_election", "state_versioning"]
+    },
+    {
+      "name": "ShardAllocation",
+      "description": "Shard allocation decisions",
+      "properties": ["balance", "availability", "recovery"]
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "SequenceMonotonicity",
+      "description": "Sequence numbers always increase",
+      "tla_formula": "\\A doc \\in Docs : seq(doc, t+1) > seq(doc, t)"
+    },
+    {
+      "name": "PrimaryUniqueness",
+      "description": "At most one primary per shard",
+      "tla_formula": "\\A shard \\in Shards : Cardinality({n \\in Nodes : isPrimary(n, shard)}) <= 1"
+    },
+    {
+      "name": "ReplicationConsistency",
+      "description": "Replicas eventually converge with primary",
+      "tla_formula": "<>(\\A replica \\in Replicas(shard) : data(replica) = data(primary(shard)))"
+    },
+    {
+      "name": "ClusterStateConsistency",
+      "description": "All nodes see consistent cluster state versions",
+      "tla_formula": "Applied cluster state versions are monotonically increasing"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "clusterState", "type": "ClusterState", "description": "Current cluster state"},
+    {"name": "shards", "type": "ShardId -> ShardState", "description": "Shard states"},
+    {"name": "seqNo", "type": "Doc -> Nat", "description": "Document sequence numbers"},
+    {"name": "primaryTerm", "type": "ShardId -> Nat", "description": "Primary term per shard"},
+    {"name": "globalCheckpoint", "type": "ShardId -> Nat", "description": "Global checkpoint per shard"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Node": "{n1, n2, n3}",
+      "Shard": "{s1}",
+      "Doc": "{d1, d2}",
+      "MaxSeq": "5"
+    },
+    "invariants": ["TypeOK", "PrimaryUniqueness", "SequenceMonotonicity"],
+    "expected_states": "Hundreds of thousands"
+  },
+
+  "key_concepts": [
+    {"name": "Primary Term", "description": "Epoch number that increases on primary failover"},
+    {"name": "Sequence Number", "description": "Per-document monotonically increasing counter"},
+    {"name": "Global Checkpoint", "description": "All ops below this are on all replicas"},
+    {"name": "Local Checkpoint", "description": "Per-shard highest contiguous seq processed"}
+  ],
+
+  "related_specs": ["kafka", "raft", "primary_backup"],
+
+  "metadata": {
+    "version": "8.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Elastic",
+    "license": "Apache-2.0"
+  }
+}

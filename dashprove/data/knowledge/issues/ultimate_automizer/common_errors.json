@@ -1,0 +1,196 @@
+{
+  "tool": "ultimate_automizer",
+  "version": "0.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unsafe_result",
+      "pattern": "Result: UNSAFE",
+      "message": "Property violation found",
+      "cause": "Ultimate found path to error location",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "# Check Ultimate.log for error trace",
+          "when": "Need to see violating path"
+        },
+        {
+          "approach": "Add assumptions",
+          "code": "__VERIFIER_assume(condition);",
+          "when": "Missing preconditions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Error trace shows real bug",
+          "when": "Found genuine issue"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "Result: UNKNOWN",
+      "message": "Verification inconclusive",
+      "cause": "Ultimate could not prove or disprove property",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "Ultimate --time 1800 program.c",
+          "when": "Analysis needs more time"
+        },
+        {
+          "approach": "Try different toolchain",
+          "code": "Ultimate --settings Kojak.epf program.c",
+          "when": "Default analysis insufficient"
+        },
+        {
+          "approach": "Add invariants",
+          "code": "__VERIFIER_loop_invariant(condition);",
+          "when": "Loop analysis imprecise"
+        },
+        {
+          "approach": "Simplify program",
+          "code": "// Reduce complexity if possible",
+          "when": "Program too complex"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "ParseException|syntax error",
+      "message": "C parsing failed",
+      "cause": "Invalid C syntax or preprocessing issue",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "gcc -fsyntax-only program.c",
+          "when": "Code has errors"
+        },
+        {
+          "approach": "Preprocess",
+          "code": "gcc -E program.c > program.i && Ultimate program.i",
+          "when": "Complex includes"
+        },
+        {
+          "approach": "Use correct dialect",
+          "code": "# Ultimate expects standard C",
+          "when": "Using compiler extensions"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemoryError|Java heap space",
+      "message": "Ultimate ran out of memory",
+      "cause": "Analysis state space too large",
+      "solutions": [
+        {
+          "approach": "Increase heap",
+          "code": "Ultimate --mem 32768 program.c",
+          "when": "System has more memory"
+        },
+        {
+          "approach": "Use simpler analysis",
+          "code": "Ultimate --settings BuchiAutomizer.epf program.c",
+          "when": "Need lightweight approach"
+        },
+        {
+          "approach": "Bound analysis",
+          "code": "# Limit loop unrolling depth",
+          "when": "Unbounded analysis explodes"
+        }
+      ]
+    },
+    {
+      "id": "termination_unknown",
+      "pattern": "Termination: UNKNOWN|NonTerminationUnknown",
+      "message": "Termination analysis inconclusive",
+      "cause": "Could not prove or disprove termination",
+      "solutions": [
+        {
+          "approach": "Use ranking functions",
+          "code": "// Add decreasing measure annotations",
+          "when": "Know termination argument"
+        },
+        {
+          "approach": "Try different settings",
+          "code": "Ultimate --settings BuchiAutomizer.epf program.c",
+          "when": "Default termination analysis insufficient"
+        },
+        {
+          "approach": "Simplify loops",
+          "code": "// Make loop structure more explicit",
+          "when": "Complex loop patterns"
+        }
+      ]
+    },
+    {
+      "id": "nontermination",
+      "pattern": "Termination: FALSE|NonTerminationProof",
+      "message": "Non-termination proven",
+      "cause": "Ultimate found input causing infinite loop",
+      "solutions": [
+        {
+          "approach": "View lasso",
+          "code": "# Check Ultimate.log for lasso-shaped execution",
+          "when": "Need to understand non-termination"
+        },
+        {
+          "approach": "Add termination condition",
+          "code": "// Ensure loop has valid exit condition",
+          "when": "Loop genuinely doesn't terminate"
+        },
+        {
+          "approach": "Add bound",
+          "code": "int iterations = 0; while(...) { if(++iterations > MAX) break; }",
+          "when": "Need bounded execution"
+        }
+      ]
+    },
+    {
+      "id": "interpolation_failed",
+      "pattern": "Interpolation failed|Craig interpolation",
+      "message": "Interpolant computation failed",
+      "cause": "SMT solver couldn't produce interpolants",
+      "solutions": [
+        {
+          "approach": "Try different solver",
+          "code": "Ultimate --solver smtinterpol program.c",
+          "when": "Default solver struggling"
+        },
+        {
+          "approach": "Simplify formula",
+          "code": "// Reduce program complexity",
+          "when": "Formula too complex"
+        },
+        {
+          "approach": "Use predicate analysis",
+          "code": "Ultimate --settings Automizer.epf program.c",
+          "when": "Interpolation-based analysis failing"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|TimeoutResult",
+      "message": "Analysis timed out",
+      "cause": "Verification did not complete in time",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "Ultimate --time 7200 program.c",
+          "when": "More time may help"
+        },
+        {
+          "approach": "Focus analysis",
+          "code": "Ultimate --entry main program.c",
+          "when": "Can restrict scope"
+        },
+        {
+          "approach": "Use BMC",
+          "code": "Ultimate --settings BMC.epf program.c",
+          "when": "Bounded checking sufficient"
+        }
+      ]
+    }
+  ]
+}

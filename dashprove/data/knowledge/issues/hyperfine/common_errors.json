@@ -1,0 +1,209 @@
+{
+  "tool": "hyperfine",
+  "version": "1.18",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_failed",
+      "pattern": "Command.*failed|non-zero exit",
+      "message": "Benchmarked command failed",
+      "cause": "Command returned non-zero exit code",
+      "solutions": [
+        {
+          "approach": "Ignore failures",
+          "code": "hyperfine --ignore-failure 'command || true'",
+          "when": "Failure is expected"
+        },
+        {
+          "approach": "Fix command first",
+          "code": "# Test command manually before benchmarking",
+          "when": "Command has bug"
+        },
+        {
+          "approach": "Use shell wrapper",
+          "code": "hyperfine 'bash -c \"command; exit 0\"'",
+          "when": "Need to suppress exit code"
+        }
+      ]
+    },
+    {
+      "id": "variance_high",
+      "pattern": "significant.*variance|outliers detected",
+      "message": "High variance in measurements",
+      "cause": "System noise, background processes, or I/O variability",
+      "solutions": [
+        {
+          "approach": "Warmup runs",
+          "code": "hyperfine --warmup 5 'command'",
+          "when": "Caching effects"
+        },
+        {
+          "approach": "More runs",
+          "code": "hyperfine --runs 20 'command'",
+          "when": "Need more samples"
+        },
+        {
+          "approach": "Prepare command",
+          "code": "hyperfine --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' 'command'",
+          "when": "Want cold cache"
+        },
+        {
+          "approach": "Reduce system load",
+          "code": "# Close other applications, disable swap, set CPU governor to performance",
+          "when": "System busy"
+        }
+      ]
+    },
+    {
+      "id": "command_too_fast",
+      "pattern": "too fast|less than.*ms",
+      "message": "Command completes too quickly",
+      "cause": "Measurement overhead affects results for fast commands",
+      "solutions": [
+        {
+          "approach": "Run multiple times",
+          "code": "hyperfine 'for i in {1..1000}; do command; done'",
+          "when": "Batch execution"
+        },
+        {
+          "approach": "Larger input",
+          "code": "# Use larger input data to increase runtime",
+          "when": "Can scale input"
+        },
+        {
+          "approach": "Use shell time",
+          "code": "hyperfine 'command' --shell=none --min-runs=100",
+          "when": "Want minimal overhead"
+        }
+      ]
+    },
+    {
+      "id": "shell_overhead",
+      "pattern": "shell startup|sh -c overhead",
+      "message": "Shell overhead affecting benchmark",
+      "cause": "Shell startup time included in measurement",
+      "solutions": [
+        {
+          "approach": "Disable shell",
+          "code": "hyperfine --shell=none './my_binary'",
+          "when": "Benchmarking binary directly"
+        },
+        {
+          "approach": "Specify shell",
+          "code": "hyperfine --shell=/bin/dash 'command'",
+          "when": "Need shell but want fast one"
+        },
+        {
+          "approach": "Measure relative",
+          "code": "hyperfine 'command1' 'command2'  # Compare with same shell overhead",
+          "when": "Comparing commands"
+        }
+      ]
+    },
+    {
+      "id": "export_failed",
+      "pattern": "export.*failed|cannot write",
+      "message": "Failed to export results",
+      "cause": "Invalid path or format",
+      "solutions": [
+        {
+          "approach": "Check path exists",
+          "code": "mkdir -p results && hyperfine --export-json results/bench.json 'command'",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Use different format",
+          "code": "hyperfine --export-markdown results.md 'command'\nhyperfine --export-csv results.csv 'command'",
+          "when": "Try different export format"
+        }
+      ]
+    },
+    {
+      "id": "parameter_scan_error",
+      "pattern": "parameter.*range|invalid.*scan",
+      "message": "Parameter scan configuration error",
+      "cause": "Invalid parameter range or scan syntax",
+      "solutions": [
+        {
+          "approach": "Numeric range",
+          "code": "hyperfine --parameter-scan threads 1 8 'command --threads {threads}'",
+          "when": "Numeric parameter"
+        },
+        {
+          "approach": "Step size",
+          "code": "hyperfine --parameter-scan size 100 1000 --parameter-step-size 100 'command -n {size}'",
+          "when": "Need custom step"
+        },
+        {
+          "approach": "List of values",
+          "code": "hyperfine --parameter-list impl 'naive,optimized,simd' './bench_{impl}'",
+          "when": "Discrete values"
+        }
+      ]
+    },
+    {
+      "id": "setup_cleanup_failed",
+      "pattern": "setup.*failed|cleanup.*error",
+      "message": "Setup or cleanup command failed",
+      "cause": "Prepare/cleanup command returned error",
+      "solutions": [
+        {
+          "approach": "Test commands separately",
+          "code": "# Run prepare/cleanup manually first",
+          "when": "Debug setup"
+        },
+        {
+          "approach": "Handle errors in script",
+          "code": "hyperfine --prepare 'setup.sh || true' 'command'",
+          "when": "Setup may fail safely"
+        },
+        {
+          "approach": "Use cleanup",
+          "code": "hyperfine --prepare 'setup' --cleanup 'teardown' 'command'",
+          "when": "Need both prepare and cleanup"
+        }
+      ]
+    },
+    {
+      "id": "statistical_warning",
+      "pattern": "statistical outlier|regression detected",
+      "message": "Statistical anomaly detected",
+      "cause": "Results show unexpected patterns",
+      "solutions": [
+        {
+          "approach": "Check for thermal throttling",
+          "code": "# Monitor CPU temperature during benchmark",
+          "when": "Performance degradation over time"
+        },
+        {
+          "approach": "Increase sample size",
+          "code": "hyperfine --runs 50 'command'",
+          "when": "Need more data"
+        },
+        {
+          "approach": "Time limit",
+          "code": "hyperfine --max-runs 100 --min-benchmarking-time 60 'command'",
+          "when": "Want time-based benchmarking"
+        }
+      ]
+    },
+    {
+      "id": "reference_command_slower",
+      "pattern": "reference.*slower|baseline.*unexpected",
+      "message": "Reference command unexpectedly slow",
+      "cause": "Baseline comparison shows unexpected results",
+      "solutions": [
+        {
+          "approach": "Verify reference",
+          "code": "hyperfine --reference 'known_good_impl' 'new_impl'",
+          "when": "Setting explicit reference"
+        },
+        {
+          "approach": "Check both commands",
+          "code": "# Run both commands manually to verify behavior",
+          "when": "Results suspicious"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "tool": "bundler",
+  "version": "2.5+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "gemfile_not_found",
+      "pattern": "Gemfile.*not found|Could not locate Gemfile",
+      "message": "Gemfile not found",
+      "cause": "No Gemfile in current directory",
+      "solutions": [
+        {
+          "approach": "Create Gemfile",
+          "code": "bundle init",
+          "when": "New project"
+        },
+        {
+          "approach": "Change directory",
+          "code": "cd /path/to/project",
+          "when": "Wrong directory"
+        }
+      ]
+    },
+    {
+      "id": "version_conflict",
+      "pattern": "Bundler could not find compatible versions|version conflict|Resolving dependencies",
+      "message": "Gem version conflict",
+      "cause": "Incompatible gem version requirements",
+      "solutions": [
+        {
+          "approach": "Update bundle",
+          "code": "bundle update",
+          "when": "Update all gems"
+        },
+        {
+          "approach": "Update specific gem",
+          "code": "bundle update gem_name",
+          "when": "Update one gem"
+        },
+        {
+          "approach": "Relax constraints",
+          "code": "gem 'rails', '>= 7.0'  # instead of '~> 7.0.0'",
+          "when": "Too strict version"
+        }
+      ]
+    },
+    {
+      "id": "native_extension_failed",
+      "pattern": "Failed to build.*native extension|extconf.rb failed|make failed",
+      "message": "Native extension build failed",
+      "cause": "Missing build dependencies",
+      "solutions": [
+        {
+          "approach": "Install build tools",
+          "code": "# macOS: xcode-select --install\n# Linux: sudo apt install build-essential",
+          "when": "No compiler"
+        },
+        {
+          "approach": "Install headers",
+          "code": "sudo apt install ruby-dev libpq-dev libmysqlclient-dev",
+          "when": "Missing dev headers"
+        },
+        {
+          "approach": "Use config build options",
+          "code": "bundle config build.pg --with-pg-config=/path/to/pg_config",
+          "when": "Non-standard paths"
+        }
+      ]
+    },
+    {
+      "id": "permission_error",
+      "pattern": "Permission denied|EACCES|Read-only file system",
+      "message": "Permission denied",
+      "cause": "No write permission to gem directory",
+      "solutions": [
+        {
+          "approach": "Install to vendor",
+          "code": "bundle config set --local path vendor/bundle",
+          "when": "Local gems"
+        },
+        {
+          "approach": "Use rbenv/rvm",
+          "code": "rbenv install 3.3.0",
+          "when": "Manage Ruby"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "sudo chown -R $(whoami) ~/.bundle",
+          "when": "Fix ownership"
+        }
+      ]
+    },
+    {
+      "id": "lockfile_outdated",
+      "pattern": "Gemfile.lock.*outdated|lockfile.*out of sync",
+      "message": "Lockfile out of sync",
+      "cause": "Gemfile changed without updating lock",
+      "solutions": [
+        {
+          "approach": "Update lockfile",
+          "code": "bundle lock",
+          "when": "Update lock only"
+        },
+        {
+          "approach": "Full install",
+          "code": "bundle install",
+          "when": "Update and install"
+        }
+      ]
+    },
+    {
+      "id": "git_gem_error",
+      "pattern": "git.*error|Could not fetch|Revision.*not found",
+      "message": "Git gem fetch failed",
+      "cause": "Cannot clone git repository",
+      "solutions": [
+        {
+          "approach": "Use HTTPS",
+          "code": "gem 'gem_name', git: 'https://github.com/user/repo.git'",
+          "when": "SSH not configured"
+        },
+        {
+          "approach": "Specify branch/tag",
+          "code": "gem 'gem_name', git: '...', branch: 'main'",
+          "when": "Default branch changed"
+        },
+        {
+          "approach": "Check credentials",
+          "code": "ssh -T git@github.com",
+          "when": "SSH access needed"
+        }
+      ]
+    },
+    {
+      "id": "group_not_installed",
+      "pattern": "gem.*not installed|installed without group|Gem.*not present",
+      "message": "Gem group not installed",
+      "cause": "Gem excluded by group configuration",
+      "solutions": [
+        {
+          "approach": "Install all groups",
+          "code": "bundle install",
+          "when": "Include all groups"
+        },
+        {
+          "approach": "Include specific group",
+          "code": "bundle config unset without",
+          "when": "Remove exclusion"
+        },
+        {
+          "approach": "Check config",
+          "code": "bundle config list",
+          "when": "See current config"
+        }
+      ]
+    },
+    {
+      "id": "platform_error",
+      "pattern": "Your bundle is locked.*different platform|platform.*not supported",
+      "message": "Platform mismatch",
+      "cause": "Lockfile generated on different platform",
+      "solutions": [
+        {
+          "approach": "Add platform",
+          "code": "bundle lock --add-platform x86_64-linux",
+          "when": "Add platform to lock"
+        },
+        {
+          "approach": "Update lockfile",
+          "code": "bundle update",
+          "when": "Regenerate for platform"
+        },
+        {
+          "approach": "Force platform",
+          "code": "bundle config set force_ruby_platform true",
+          "when": "Use ruby platform"
+        }
+      ]
+    },
+    {
+      "id": "deployment_error",
+      "pattern": "deployment mode|--frozen|lockfile.*not consistent",
+      "message": "Deployment mode error",
+      "cause": "Gemfile/lockfile mismatch in deployment",
+      "solutions": [
+        {
+          "approach": "Update lockfile locally",
+          "code": "bundle lock --update",
+          "when": "Update and commit"
+        },
+        {
+          "approach": "Disable frozen",
+          "code": "BUNDLE_FROZEN=false bundle install",
+          "when": "Override deployment"
+        },
+        {
+          "approach": "Check Gemfile changes",
+          "code": "git diff Gemfile Gemfile.lock",
+          "when": "See differences"
+        }
+      ]
+    },
+    {
+      "id": "exec_error",
+      "pattern": "Could not find.*in any.*sources|bundle exec.*not found",
+      "message": "Gem executable not found",
+      "cause": "Gem not installed or not in bundle",
+      "solutions": [
+        {
+          "approach": "Install bundle",
+          "code": "bundle install",
+          "when": "Gems not installed"
+        },
+        {
+          "approach": "Use bundle exec",
+          "code": "bundle exec command",
+          "when": "Need bundle context"
+        },
+        {
+          "approach": "Check Gemfile",
+          "code": "# Ensure gem is in Gemfile",
+          "when": "Gem missing from bundle"
+        }
+      ]
+    }
+  ]
+}

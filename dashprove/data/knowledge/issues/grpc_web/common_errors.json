@@ -1,0 +1,153 @@
+{
+  "tool": "grpc_web",
+  "category": "rpc_framework",
+  "common_errors": [
+    {
+      "error_pattern": "Http response at 400 or 500 level",
+      "description": "Server returned HTTP error instead of gRPC response",
+      "causes": [
+        "Server doesn't support gRPC-Web protocol",
+        "Missing Envoy/proxy for protocol translation",
+        "CORS preflight rejection",
+        "Wrong content-type header"
+      ],
+      "solutions": [
+        "Add Envoy proxy with grpc_web filter",
+        "Configure server for gRPC-Web: EnableGrpcWeb()",
+        "Check CORS configuration",
+        "Verify content-type: application/grpc-web+proto"
+      ]
+    },
+    {
+      "error_pattern": "CORS.*blocked.*origin",
+      "description": "Cross-origin request blocked by browser",
+      "causes": [
+        "Server missing CORS headers",
+        "Origin not in allowed list",
+        "Preflight request failing"
+      ],
+      "solutions": [
+        "Add CORS middleware to proxy/server",
+        "Configure Access-Control-Allow-Origin header",
+        "Allow grpc-web content types",
+        "Handle OPTIONS preflight requests"
+      ]
+    },
+    {
+      "error_pattern": "grpc-status.*non-zero",
+      "description": "gRPC-Web call returned error status",
+      "causes": [
+        "Server-side error",
+        "Authentication failure",
+        "Resource not found"
+      ],
+      "solutions": [
+        "Check grpc-status header for code",
+        "Read grpc-message header for details",
+        "Add error handling in callback",
+        "Inspect server logs"
+      ]
+    },
+    {
+      "error_pattern": "Unable to parse.*binary",
+      "description": "Failed to deserialize gRPC-Web response",
+      "causes": [
+        "Response format mismatch",
+        "Server sent text instead of binary",
+        "Proto message type mismatch"
+      ],
+      "solutions": [
+        "Use grpc-web-text format: application/grpc-web-text",
+        "Verify client and server use same proto",
+        "Check for HTML error pages in response"
+      ]
+    },
+    {
+      "error_pattern": "Streaming.*not supported",
+      "description": "Server streaming not working in browser",
+      "causes": [
+        "Browser doesn't support streaming",
+        "Missing server streaming support",
+        "Proxy not configured for streaming"
+      ],
+      "solutions": [
+        "Use grpc-web-text for streaming support",
+        "Configure Envoy for streaming",
+        "Only server streaming is supported (not client or bidi)",
+        "Consider WebSocket fallback for bidi"
+      ]
+    },
+    {
+      "error_pattern": "Cannot read properties of undefined",
+      "description": "JavaScript error accessing response field",
+      "causes": [
+        "Response message is null",
+        "Wrong getter method name",
+        "Proto JS code not generated"
+      ],
+      "solutions": [
+        "Check response before accessing fields",
+        "Verify getter names match proto field names",
+        "Regenerate JS code from proto"
+      ]
+    },
+    {
+      "error_pattern": "Method.*is not a function",
+      "description": "Calling non-existent method on client",
+      "causes": [
+        "Client not generated from proto",
+        "Proto file out of sync",
+        "Wrong client class imported"
+      ],
+      "solutions": [
+        "Regenerate client: protoc-gen-grpc-web",
+        "Import correct client class",
+        "Verify proto service definition"
+      ]
+    },
+    {
+      "error_pattern": "XHR.*network error",
+      "description": "Network-level failure in browser",
+      "causes": [
+        "Server unreachable",
+        "SSL/TLS error",
+        "Network connectivity issue",
+        "CORS blocking at network level"
+      ],
+      "solutions": [
+        "Verify server URL is correct",
+        "Check network tab in browser devtools",
+        "Ensure HTTPS for production",
+        "Test with curl first"
+      ]
+    },
+    {
+      "error_pattern": "Envoy.*filter.*not found",
+      "description": "Envoy proxy missing gRPC-Web filter",
+      "causes": [
+        "grpc_web filter not configured",
+        "Wrong filter chain order",
+        "Envoy version incompatibility"
+      ],
+      "solutions": [
+        "Add grpc_web filter to Envoy config",
+        "Place grpc_web before router filter",
+        "Use Envoy 1.16+ for full support"
+      ]
+    },
+    {
+      "error_pattern": "Content-Type.*not.*grpc",
+      "description": "Wrong content-type in request/response",
+      "causes": [
+        "Proxy stripping headers",
+        "Server not recognizing gRPC-Web",
+        "Client using wrong mode"
+      ],
+      "solutions": [
+        "Use grpcWebText mode: new GrpcWebClientBase()",
+        "Configure proxy to pass content-type",
+        "Verify server accepts grpc-web content types"
+      ]
+    }
+  ]
+}

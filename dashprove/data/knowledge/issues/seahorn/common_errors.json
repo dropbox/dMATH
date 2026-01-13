@@ -1,0 +1,178 @@
+{
+  "tool": "seahorn",
+  "version": "14.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "verification_failed",
+      "pattern": "sat|BRUNCH_STAT Result FALSE",
+      "message": "Property violation: unsafe state reachable",
+      "cause": "SeaHorn found a counterexample reaching an error state",
+      "solutions": [
+        {
+          "approach": "Get counterexample",
+          "code": "sea exe -m64 --horn-bmc-cex=cex.ll program.c",
+          "when": "Need to examine violating path"
+        },
+        {
+          "approach": "Add assumptions",
+          "code": "__VERIFIER_assume(condition);",
+          "when": "Missing preconditions"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Counterexample reveals real issue",
+          "when": "Verification found genuine bug"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "BRUNCH_STAT Result UNKNOWN|unknown",
+      "message": "Verification inconclusive",
+      "cause": "SeaHorn could not prove or disprove the property",
+      "solutions": [
+        {
+          "approach": "Increase unrolling",
+          "code": "sea pf --horn-bmc-max-depth=50 program.c",
+          "when": "Deeper exploration needed"
+        },
+        {
+          "approach": "Add invariants",
+          "code": "__VERIFIER_loop_bound(N);",
+          "when": "Loop analysis imprecise"
+        },
+        {
+          "approach": "Try different engine",
+          "code": "sea pf --horn-bv2-widening=aggressive program.c",
+          "when": "Abstract domain insufficient"
+        },
+        {
+          "approach": "Simplify program",
+          "code": "// Reduce complexity, add more annotations",
+          "when": "Program too complex for analysis"
+        }
+      ]
+    },
+    {
+      "id": "compile_error",
+      "pattern": "error: |clang: error:",
+      "message": "Compilation failed",
+      "cause": "C/C++ code doesn't compile to LLVM bitcode",
+      "solutions": [
+        {
+          "approach": "Fix syntax errors",
+          "code": "sea fe program.c  # Check frontend separately",
+          "when": "Code has compilation errors"
+        },
+        {
+          "approach": "Add include paths",
+          "code": "sea pf -I/path/to/includes program.c",
+          "when": "Missing header files"
+        },
+        {
+          "approach": "Include sea headers",
+          "code": "#include \"seahorn/seahorn.h\"",
+          "when": "Using SeaHorn intrinsics"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|BRUNCH_STAT Status TIMEOUT",
+      "message": "Verification timed out",
+      "cause": "Analysis didn't complete within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "sea pf --cpu=600 program.c",
+          "when": "Program needs more time"
+        },
+        {
+          "approach": "Use BMC instead of spacer",
+          "code": "sea bpf --horn-bmc program.c",
+          "when": "Bounded checking sufficient"
+        },
+        {
+          "approach": "Simplify verification target",
+          "code": "sea pf --entry=specific_function program.c",
+          "when": "Focus on specific function"
+        },
+        {
+          "approach": "Add loop bounds",
+          "code": "__VERIFIER_loop_bound(100);",
+          "when": "Unbounded loops causing divergence"
+        }
+      ]
+    },
+    {
+      "id": "spacer_failure",
+      "pattern": "spacer.*failed|Spacer engine error",
+      "message": "Spacer CHC solver encountered error",
+      "cause": "Constrained Horn Clause solving hit an issue",
+      "solutions": [
+        {
+          "approach": "Use BMC backend",
+          "code": "sea pf --horn-bmc program.c",
+          "when": "Spacer struggles with program"
+        },
+        {
+          "approach": "Simplify invariants",
+          "code": "sea pf --horn-global-constraints program.c",
+          "when": "Complex inter-procedural analysis"
+        },
+        {
+          "approach": "Adjust solver options",
+          "code": "sea pf --horn-solver=smt program.c",
+          "when": "Default solver configuration problematic"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "memory access error|buffer overflow",
+      "message": "Memory safety violation detected",
+      "cause": "Out-of-bounds access or invalid pointer operation",
+      "solutions": [
+        {
+          "approach": "Enable memory checks",
+          "code": "sea pf --horn-bv2-extra-widemem program.c",
+          "when": "Need memory safety verification"
+        },
+        {
+          "approach": "Review array operations",
+          "code": "// Add bounds checking for all array accesses",
+          "when": "Buffer overflow detected"
+        },
+        {
+          "approach": "Check allocations",
+          "code": "// Verify malloc/free pairs and lifetimes",
+          "when": "Heap memory issues"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported|not implemented",
+      "message": "Feature not supported by SeaHorn",
+      "cause": "Code uses construct SeaHorn cannot analyze",
+      "solutions": [
+        {
+          "approach": "Abstract unsupported code",
+          "code": "extern int nd();  // Nondeterministic stub",
+          "when": "Feature can be abstracted"
+        },
+        {
+          "approach": "Use concrete values",
+          "code": "// Replace dynamic feature with static version",
+          "when": "Concrete version sufficient"
+        },
+        {
+          "approach": "Check documentation",
+          "code": "// See https://github.com/seahorn/seahorn/wiki",
+          "when": "May be workaround available"
+        }
+      ]
+    }
+  ]
+}

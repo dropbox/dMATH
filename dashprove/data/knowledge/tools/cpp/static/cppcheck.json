@@ -1,0 +1,143 @@
+{
+  "id": "cppcheck",
+  "name": "Cppcheck",
+  "category": "static_analysis",
+  "subcategory": "cpp_analyzer",
+
+  "description": "Cross-platform static analysis tool for C/C++ with zero false positives goal",
+  "long_description": "Cppcheck is a static analysis tool for C/C++ code that detects bugs and undefined behavior that compilers don't catch. It aims for zero false positives and focuses on detecting real bugs. It supports MISRA C/C++, checks for memory leaks, null pointer dereferences, buffer overflows, and many other issues. It's cross-platform and doesn't require compilation.",
+
+  "capabilities": [
+    "undefined_behavior_detection",
+    "memory_leak_detection",
+    "buffer_overflow_detection",
+    "misra_compliance",
+    "dead_code_detection",
+    "unused_function_detection",
+    "style_checking",
+    "incremental_analysis"
+  ],
+  "property_types": ["memory_safety", "correctness", "undefined_behavior"],
+  "input_languages": ["c", "cpp"],
+  "output_formats": ["text", "xml", "sarif", "html"],
+
+  "installation": {
+    "methods": [
+      {"type": "package", "command": "apt install cppcheck", "platform": "linux"},
+      {"type": "package", "command": "brew install cppcheck", "platform": "macos"},
+      {"type": "package", "command": "choco install cppcheck", "platform": "windows"},
+      {"type": "source", "url": "https://github.com/danmar/cppcheck"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://cppcheck.sourceforge.io/",
+    "tutorial": "https://cppcheck.sourceforge.io/manual.html",
+    "api_reference": "https://cppcheck.sourceforge.io/manual.html#idm236",
+    "examples": "https://github.com/danmar/cppcheck/tree/main/samples"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_check",
+      "description": "Run default checks on source",
+      "syntax": "cppcheck src/",
+      "when_to_use": "Quick analysis",
+      "examples": ["cppcheck --enable=all src/"]
+    },
+    {
+      "name": "enable_all",
+      "description": "Enable all check categories",
+      "syntax": "cppcheck --enable=all --inconclusive src/",
+      "when_to_use": "Thorough analysis",
+      "examples": ["cppcheck --enable=all --inconclusive --suppress=missingIncludeSystem src/"]
+    },
+    {
+      "name": "misra_check",
+      "description": "Check MISRA C/C++ compliance",
+      "syntax": "cppcheck --addon=misra src/",
+      "when_to_use": "Safety-critical embedded code",
+      "examples": ["cppcheck --addon=misra.json --suppress=missingInclude src/"]
+    },
+    {
+      "name": "incremental",
+      "description": "Use build database for incremental checking",
+      "syntax": "cppcheck --cppcheck-build-dir=.cppcheck src/",
+      "when_to_use": "Large projects, CI integration",
+      "examples": ["mkdir -p .cppcheck && cppcheck --cppcheck-build-dir=.cppcheck -j4 src/"]
+    },
+    {
+      "name": "xml_output",
+      "description": "Generate XML report for CI/tooling",
+      "syntax": "cppcheck --xml src/ 2> report.xml",
+      "when_to_use": "CI integration, report generation",
+      "examples": ["cppcheck --xml --xml-version=2 src/ 2> cppcheck-report.xml"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "nullPointer",
+      "meaning": "Null pointer dereference",
+      "common_causes": ["Missing null check", "Logic error"],
+      "fixes": ["Add null check", "Use smart pointers"]
+    },
+    {
+      "pattern": "memleak",
+      "meaning": "Memory leak detected",
+      "common_causes": ["Missing free", "Exception path leak"],
+      "fixes": ["Use RAII", "Add deallocation on all paths"]
+    },
+    {
+      "pattern": "arrayIndexOutOfBounds",
+      "meaning": "Array access out of bounds",
+      "common_causes": ["Off-by-one error", "Wrong loop bounds"],
+      "fixes": ["Fix bounds check", "Use std::array with at()"]
+    },
+    {
+      "pattern": "uninitvar",
+      "meaning": "Uninitialized variable used",
+      "common_causes": ["Missing initialization"],
+      "fixes": ["Initialize at declaration"]
+    },
+    {
+      "pattern": "resourceLeak",
+      "meaning": "Resource not properly released",
+      "common_causes": ["Missing close/release call"],
+      "fixes": ["Use RAII wrappers", "Add cleanup"]
+    },
+    {
+      "pattern": "misra-*",
+      "meaning": "MISRA rule violation",
+      "common_causes": ["Non-compliant coding patterns"],
+      "fixes": ["Follow MISRA guidelines", "Document deviations"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["memory_safety", "undefined_behavior"],
+    "cli_command": "dashprove verify --backend cppcheck"
+  },
+
+  "performance": {
+    "typical_runtime": "Fast; no compilation needed",
+    "scalability": "Good; supports parallel checking with -j",
+    "memory_usage": "Low to moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["clang-tidy", "clang-analyzer", "pvs-studio", "coverity"],
+    "advantages": ["Zero false positives goal", "No build required", "MISRA support", "Cross-platform"],
+    "disadvantages": ["May miss issues that require type info", "Less thorough than path-sensitive analyzers"]
+  },
+
+  "metadata": {
+    "version": "2.13",
+    "last_updated": "2025-12-22",
+    "maintainer": "Daniel Marjamaki",
+    "license": "GPL-3.0"
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "tool": "wrangler",
+  "version": "3.25.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_authenticated",
+      "pattern": "Not authenticated|CLOUDFLARE_API_TOKEN|wrangler login",
+      "message": "Wrangler not authenticated",
+      "cause": "Missing Cloudflare authentication",
+      "solutions": [
+        {
+          "approach": "Interactive login",
+          "code": "wrangler login",
+          "when": "Browser available"
+        },
+        {
+          "approach": "Use API token",
+          "code": "export CLOUDFLARE_API_TOKEN=your_token\nwrangler deploy",
+          "when": "CI environment"
+        },
+        {
+          "approach": "Check token",
+          "code": "wrangler whoami",
+          "when": "Verify authentication"
+        }
+      ]
+    },
+    {
+      "id": "config_not_found",
+      "pattern": "wrangler.toml.*not found|configuration.*missing|No configuration",
+      "message": "wrangler.toml configuration not found",
+      "cause": "Missing wrangler.toml in project root",
+      "solutions": [
+        {
+          "approach": "Create config",
+          "code": "# wrangler.toml\nname = \"my-worker\"\nmain = \"src/index.ts\"\ncompatibility_date = \"2024-01-01\"",
+          "when": "New project"
+        },
+        {
+          "approach": "Initialize project",
+          "code": "wrangler init my-worker",
+          "when": "Create from template"
+        }
+      ]
+    },
+    {
+      "id": "deploy_error",
+      "pattern": "Deploy failed|deployment.*error|upload.*failed",
+      "message": "Worker deployment failed",
+      "cause": "Error during worker upload or deployment",
+      "solutions": [
+        {
+          "approach": "Check bundle size",
+          "code": "wrangler deploy --dry-run",
+          "when": "Size limits"
+        },
+        {
+          "approach": "Check compatibility",
+          "code": "# Update compatibility_date in wrangler.toml",
+          "when": "API compatibility"
+        },
+        {
+          "approach": "Review errors",
+          "code": "wrangler deploy --verbose",
+          "when": "Debug deployment"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "Build failed|bundling.*error|esbuild|could not resolve",
+      "message": "Worker build/bundling failed",
+      "cause": "JavaScript/TypeScript bundling error",
+      "solutions": [
+        {
+          "approach": "Check imports",
+          "code": "# Ensure all imports are compatible with Workers runtime",
+          "when": "Import resolution"
+        },
+        {
+          "approach": "Use polyfills",
+          "code": "# wrangler.toml\nnode_compat = true",
+          "when": "Node.js APIs needed"
+        },
+        {
+          "approach": "Custom build",
+          "code": "[build]\ncommand = \"npm run build\"",
+          "when": "Custom bundling"
+        }
+      ]
+    },
+    {
+      "id": "kv_error",
+      "pattern": "KV.*error|namespace.*not found|binding.*missing",
+      "message": "KV namespace error",
+      "cause": "KV binding not configured or doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create namespace",
+          "code": "wrangler kv:namespace create \"MY_KV\"",
+          "when": "New namespace"
+        },
+        {
+          "approach": "Add binding",
+          "code": "# wrangler.toml\n[[kv_namespaces]]\nbinding = \"MY_KV\"\nid = \"your-namespace-id\"",
+          "when": "Configure binding"
+        },
+        {
+          "approach": "Preview namespace",
+          "code": "[[kv_namespaces]]\nbinding = \"MY_KV\"\nid = \"prod-id\"\npreview_id = \"preview-id\"",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "d1_error",
+      "pattern": "D1.*error|database.*not found|SQL.*error",
+      "message": "D1 database error",
+      "cause": "D1 binding or query error",
+      "solutions": [
+        {
+          "approach": "Create database",
+          "code": "wrangler d1 create my-database",
+          "when": "New database"
+        },
+        {
+          "approach": "Add binding",
+          "code": "# wrangler.toml\n[[d1_databases]]\nbinding = \"DB\"\ndatabase_name = \"my-database\"\ndatabase_id = \"your-id\"",
+          "when": "Configure binding"
+        },
+        {
+          "approach": "Run migrations",
+          "code": "wrangler d1 migrations apply my-database",
+          "when": "Apply schema"
+        }
+      ]
+    },
+    {
+      "id": "r2_error",
+      "pattern": "R2.*error|bucket.*not found|storage.*error",
+      "message": "R2 storage error",
+      "cause": "R2 bucket binding or access error",
+      "solutions": [
+        {
+          "approach": "Create bucket",
+          "code": "wrangler r2 bucket create my-bucket",
+          "when": "New bucket"
+        },
+        {
+          "approach": "Add binding",
+          "code": "# wrangler.toml\n[[r2_buckets]]\nbinding = \"BUCKET\"\nbucket_name = \"my-bucket\"",
+          "when": "Configure binding"
+        }
+      ]
+    },
+    {
+      "id": "dev_error",
+      "pattern": "dev.*failed|localhost.*error|port.*in use",
+      "message": "Local development server error",
+      "cause": "Unable to start local dev server",
+      "solutions": [
+        {
+          "approach": "Change port",
+          "code": "wrangler dev --port 8788",
+          "when": "Port conflict"
+        },
+        {
+          "approach": "Local mode",
+          "code": "wrangler dev --local",
+          "when": "Fully local dev"
+        },
+        {
+          "approach": "Remote mode",
+          "code": "wrangler dev --remote",
+          "when": "Use remote bindings"
+        }
+      ]
+    }
+  ]
+}

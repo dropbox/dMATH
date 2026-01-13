@@ -1,0 +1,140 @@
+{
+  "tool": "cut",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "wrong_delimiter",
+      "pattern": "wrong.*field|wrong.*column|delimiter",
+      "message": "Fields not splitting correctly",
+      "cause": "Wrong delimiter specified",
+      "solutions": [
+        {
+          "approach": "Specify delimiter",
+          "code": "cut -d',' -f2 file.csv  # Comma\ncut -d':' -f1 /etc/passwd  # Colon\ncut -d$'\\t' -f1 file.tsv  # Tab",
+          "when": "Non-space delimiter"
+        },
+        {
+          "approach": "Multiple spaces",
+          "code": "# cut can't handle multiple spaces as one\ntr -s ' ' < file.txt | cut -d' ' -f2\n# Or use awk:\nawk '{print $2}' file.txt",
+          "when": "Whitespace delimited"
+        },
+        {
+          "approach": "Check delimiter",
+          "code": "head -1 file.txt | cat -A  # Show actual delimiters",
+          "when": "Debug fields"
+        }
+      ]
+    },
+    {
+      "id": "field_not_found",
+      "pattern": "field.*not found|empty.*output|missing.*field",
+      "message": "Field doesn't exist",
+      "cause": "Requested field beyond available fields",
+      "solutions": [
+        {
+          "approach": "Check fields",
+          "code": "head -1 file.csv | tr ',' '\\n' | nl  # Number fields",
+          "when": "Count fields"
+        },
+        {
+          "approach": "Multiple fields",
+          "code": "cut -d',' -f1,3,5 file.csv  # Specific fields\ncut -d',' -f2-5 file.csv  # Range",
+          "when": "Select multiple"
+        },
+        {
+          "approach": "Only delimited",
+          "code": "cut -s -d',' -f2 file.csv  # Skip lines without delimiter",
+          "when": "Filter missing"
+        }
+      ]
+    },
+    {
+      "id": "character_vs_byte",
+      "pattern": "unicode|multibyte|UTF-8|character",
+      "message": "Multibyte characters cut incorrectly",
+      "cause": "Using byte mode with UTF-8",
+      "solutions": [
+        {
+          "approach": "Use characters",
+          "code": "cut -c1-10 file.txt  # Characters (multibyte aware)",
+          "when": "UTF-8 text"
+        },
+        {
+          "approach": "Use bytes",
+          "code": "cut -b1-10 file.txt  # Raw bytes",
+          "when": "Binary/ASCII"
+        },
+        {
+          "approach": "Set locale",
+          "code": "LC_ALL=en_US.UTF-8 cut -c1-10 file.txt",
+          "when": "Locale issues"
+        }
+      ]
+    },
+    {
+      "id": "complement_fields",
+      "pattern": "exclude|remove|all except|complement",
+      "message": "Want to exclude specific fields",
+      "cause": "Need all fields except some",
+      "solutions": [
+        {
+          "approach": "Complement",
+          "code": "cut -d',' --complement -f2 file.csv  # All except field 2",
+          "when": "GNU cut"
+        },
+        {
+          "approach": "Manual exclude",
+          "code": "cut -d',' -f1,3,4,5 file.csv  # List all to keep",
+          "when": "Portable"
+        },
+        {
+          "approach": "Use awk",
+          "code": "awk -F',' '{$2=\"\"; print}' OFS=',' file.csv",
+          "when": "More flexible"
+        }
+      ]
+    },
+    {
+      "id": "preserve_order",
+      "pattern": "order|reorder|rearrange",
+      "message": "Want to reorder fields",
+      "cause": "Cut outputs fields in original order",
+      "solutions": [
+        {
+          "approach": "Use awk",
+          "code": "awk -F',' '{print $3,$1,$2}' OFS=',' file.csv",
+          "when": "Reorder fields"
+        },
+        {
+          "approach": "Multiple cut",
+          "code": "paste <(cut -d',' -f3 file.csv) <(cut -d',' -f1 file.csv)",
+          "when": "Two columns"
+        }
+      ]
+    },
+    {
+      "id": "output_delimiter",
+      "pattern": "output.*delimiter|change.*separator",
+      "message": "Want different output delimiter",
+      "cause": "Need to change field separator in output",
+      "solutions": [
+        {
+          "approach": "Output delimiter",
+          "code": "cut -d',' -f1,2 --output-delimiter=$'\\t' file.csv",
+          "when": "GNU cut"
+        },
+        {
+          "approach": "Use tr",
+          "code": "cut -d',' -f1,2 file.csv | tr ',' '\\t'",
+          "when": "Portable"
+        },
+        {
+          "approach": "Use awk",
+          "code": "awk -F',' '{print $1\"\\t\"$2}' file.csv",
+          "when": "More control"
+        }
+      ]
+    }
+  ]
+}

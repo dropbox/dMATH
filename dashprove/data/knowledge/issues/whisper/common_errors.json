@@ -1,0 +1,187 @@
+{
+  "tool": "whisper",
+  "version": "20231117",
+  "last_updated": "2025-12-22",
+  "description": "OpenAI's automatic speech recognition (ASR) model for transcription and translation",
+  "errors": [
+    {
+      "id": "cuda_out_of_memory",
+      "pattern": "CUDA out of memory|RuntimeError: CUDA error: out of memory",
+      "message": "CUDA out of memory. Tried to allocate X MiB",
+      "cause": "Model size exceeds available GPU memory",
+      "solutions": [
+        {
+          "approach": "Use smaller model",
+          "code": "model = whisper.load_model('small')  # Instead of 'large'",
+          "when": "GPU has limited VRAM (< 10GB)"
+        },
+        {
+          "approach": "Use CPU instead",
+          "code": "model = whisper.load_model('large', device='cpu')",
+          "when": "No GPU available or GPU too small"
+        },
+        {
+          "approach": "Use FP16",
+          "code": "result = model.transcribe(audio, fp16=True)",
+          "when": "GPU supports FP16 (most modern GPUs)"
+        },
+        {
+          "approach": "Process shorter segments",
+          "code": "# Split audio into chunks before transcription",
+          "when": "Audio file is very long"
+        }
+      ]
+    },
+    {
+      "id": "audio_load_error",
+      "pattern": "RuntimeError: Error opening|ffmpeg not found",
+      "message": "Could not load audio file",
+      "cause": "Audio file format not supported or ffmpeg not installed",
+      "solutions": [
+        {
+          "approach": "Install ffmpeg",
+          "code": "# macOS: brew install ffmpeg\n# Ubuntu: apt install ffmpeg\n# Windows: choco install ffmpeg",
+          "when": "ffmpeg not in PATH"
+        },
+        {
+          "approach": "Convert audio format",
+          "code": "ffmpeg -i input.mp3 -ar 16000 -ac 1 output.wav",
+          "when": "Audio format not supported"
+        },
+        {
+          "approach": "Check file path",
+          "code": "import os; assert os.path.exists(audio_path)",
+          "when": "File path may be incorrect"
+        }
+      ]
+    },
+    {
+      "id": "hallucination_repetition",
+      "pattern": "repeated text|looping transcription",
+      "message": "Model produces repetitive or hallucinated text",
+      "cause": "Model hallucinates on silence or low-quality audio",
+      "solutions": [
+        {
+          "approach": "Adjust temperature",
+          "code": "result = model.transcribe(audio, temperature=0.0)",
+          "when": "Transcription has random hallucinations"
+        },
+        {
+          "approach": "Use condition_on_previous_text=False",
+          "code": "result = model.transcribe(audio, condition_on_previous_text=False)",
+          "when": "Model is looping/repeating"
+        },
+        {
+          "approach": "Set no_speech_threshold",
+          "code": "result = model.transcribe(audio, no_speech_threshold=0.6)",
+          "when": "Hallucinating during silence"
+        },
+        {
+          "approach": "Use VAD preprocessing",
+          "code": "# Use silero-vad to remove silence before transcription",
+          "when": "Audio has long silent sections"
+        }
+      ]
+    },
+    {
+      "id": "wrong_language_detection",
+      "pattern": "Detected language:.*incorrect|wrong language",
+      "message": "Whisper detected wrong language",
+      "cause": "Automatic language detection failed",
+      "solutions": [
+        {
+          "approach": "Specify language explicitly",
+          "code": "result = model.transcribe(audio, language='en')",
+          "when": "You know the spoken language"
+        },
+        {
+          "approach": "Use first 30 seconds for detection",
+          "code": "# Ensure first 30s contains clear speech in target language",
+          "when": "Audio starts with music or noise"
+        }
+      ]
+    },
+    {
+      "id": "timestamp_issues",
+      "pattern": "timestamps are wrong|misaligned",
+      "message": "Word-level timestamps are inaccurate",
+      "cause": "Word timestamps require additional alignment",
+      "solutions": [
+        {
+          "approach": "Use word_timestamps option",
+          "code": "result = model.transcribe(audio, word_timestamps=True)",
+          "when": "Need word-level timing"
+        },
+        {
+          "approach": "Use whisperx for better alignment",
+          "code": "# pip install whisperx\nimport whisperx\nresult = whisperx.align(result['segments'], model, audio)",
+          "when": "Need precise word timestamps"
+        }
+      ]
+    },
+    {
+      "id": "slow_transcription",
+      "pattern": "transcription.*slow|taking too long",
+      "message": "Transcription is very slow",
+      "cause": "Running on CPU or using large model",
+      "solutions": [
+        {
+          "approach": "Use GPU",
+          "code": "model = whisper.load_model('large', device='cuda')",
+          "when": "GPU available but not being used"
+        },
+        {
+          "approach": "Use faster-whisper",
+          "code": "# pip install faster-whisper\nfrom faster_whisper import WhisperModel\nmodel = WhisperModel('large-v2', device='cuda', compute_type='float16')",
+          "when": "Need faster inference (4x speedup)"
+        },
+        {
+          "approach": "Use smaller model",
+          "code": "model = whisper.load_model('base')  # Fastest",
+          "when": "Speed more important than accuracy"
+        }
+      ]
+    },
+    {
+      "id": "high_wer",
+      "pattern": "high word error rate|WER.*high",
+      "message": "Word Error Rate is higher than expected",
+      "cause": "Poor audio quality, wrong model size, or domain mismatch",
+      "solutions": [
+        {
+          "approach": "Use larger model",
+          "code": "model = whisper.load_model('large-v3')",
+          "when": "Accuracy is critical"
+        },
+        {
+          "approach": "Preprocess audio",
+          "code": "# Normalize volume, reduce noise with noisereduce\nimport noisereduce as nr\naudio = nr.reduce_noise(y=audio, sr=sr)",
+          "when": "Audio has background noise"
+        },
+        {
+          "approach": "Use prompt for domain vocabulary",
+          "code": "result = model.transcribe(audio, initial_prompt='Technical terms: API, GPU, CUDA')",
+          "when": "Domain-specific vocabulary"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "ModuleNotFoundError: No module named 'whisper'",
+      "message": "Whisper module not found",
+      "cause": "Package not installed or wrong package name",
+      "solutions": [
+        {
+          "approach": "Install openai-whisper",
+          "code": "pip install openai-whisper  # NOT 'pip install whisper'",
+          "when": "First time installation"
+        },
+        {
+          "approach": "Check for package conflict",
+          "code": "pip uninstall whisper  # Remove wrong package\npip install openai-whisper",
+          "when": "Installed wrong 'whisper' package"
+        }
+      ]
+    }
+  ]
+}

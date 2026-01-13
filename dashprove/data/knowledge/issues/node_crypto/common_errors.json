@@ -1,0 +1,117 @@
+{
+  "tool": "node_crypto",
+  "category": "crypto",
+  "common_errors": [
+    {
+      "pattern": "ERR_OSSL_EVP_UNSUPPORTED|digital envelope routines",
+      "meaning": "OpenSSL 3.0 legacy algorithm not supported",
+      "causes": [
+        "Node 17+ uses OpenSSL 3.0 which disables legacy algos",
+        "MD5, legacy ciphers deprecated",
+        "Legacy provider not enabled"
+      ],
+      "solutions": [
+        "Use --openssl-legacy-provider flag: NODE_OPTIONS=--openssl-legacy-provider node app.js",
+        "Upgrade to modern algorithms (SHA-256, AES-256-GCM)",
+        "Set OPENSSL_CONF with legacy provider enabled"
+      ]
+    },
+    {
+      "pattern": "ERR_CRYPTO_INVALID_KEYLEN|Invalid key length",
+      "meaning": "Key size wrong for algorithm",
+      "causes": [
+        "AES-256 needs 32 bytes, AES-128 needs 16",
+        "Passing raw password instead of derived key",
+        "Key material wrong size"
+      ],
+      "solutions": [
+        "Use scrypt/pbkdf2 to derive key: crypto.scryptSync(password, salt, 32)",
+        "Check algorithm key size requirements",
+        "AES-256-GCM: 32 bytes key, 12 bytes IV"
+      ]
+    },
+    {
+      "pattern": "ERR_CRYPTO_INVALID_IV_LENGTH|Invalid IV length",
+      "meaning": "Initialization vector wrong size",
+      "causes": [
+        "GCM uses 12 bytes, CBC uses 16 bytes",
+        "Using nonce as IV incorrectly",
+        "Wrong block size for algorithm"
+      ],
+      "solutions": [
+        "AES-GCM: crypto.randomBytes(12) for IV",
+        "AES-CBC: crypto.randomBytes(16) for IV",
+        "Never reuse IV with same key"
+      ]
+    },
+    {
+      "pattern": "Unsupported state or unable to authenticate data",
+      "meaning": "AEAD authentication failed",
+      "causes": [
+        "Wrong key or data corrupted",
+        "Auth tag not set/retrieved correctly",
+        "Decryption before setAuthTag"
+      ],
+      "solutions": [
+        "Set auth tag before final(): decipher.setAuthTag(tag)",
+        "Store auth tag with ciphertext",
+        "Verify AAD matches between encrypt/decrypt"
+      ]
+    },
+    {
+      "pattern": "ERR_CRYPTO_HASH_UPDATE_FAILED|Hash update failed",
+      "meaning": "Error updating hash state",
+      "causes": [
+        "Hash already finalized (digest called)",
+        "Invalid data type for update",
+        "Stream error"
+      ],
+      "solutions": [
+        "Don't call update() after digest()",
+        "Create new hash for new data",
+        "Convert data to Buffer: Buffer.from(str, 'utf8')"
+      ]
+    },
+    {
+      "pattern": "ERR_CRYPTO_SIGN_KEY_REQUIRED|sign/verify.*key",
+      "meaning": "Missing or invalid key for signing",
+      "causes": [
+        "Passing public key to sign (needs private)",
+        "Key format not recognized",
+        "PEM headers missing"
+      ],
+      "solutions": [
+        "Sign with private key: crypto.sign(algo, data, privateKey)",
+        "Verify with public key: crypto.verify(algo, data, publicKey, sig)",
+        "Ensure PEM format: -----BEGIN PRIVATE KEY-----"
+      ]
+    },
+    {
+      "pattern": "Unknown cipher|Unknown message digest",
+      "meaning": "Algorithm not available",
+      "causes": [
+        "Algorithm name misspelled",
+        "Not compiled into Node's OpenSSL",
+        "Deprecated algorithm removed"
+      ],
+      "solutions": [
+        "List available: crypto.getCiphers(), crypto.getHashes()",
+        "Use standard names: 'aes-256-gcm' not 'AES256GCM'",
+        "Check Node.js version compatibility"
+      ]
+    },
+    {
+      "pattern": "ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH",
+      "meaning": "Timing-safe comparison buffers differ in length",
+      "causes": [
+        "Buffers must be same length",
+        "Using timingSafeEqual for variable-length comparison"
+      ],
+      "solutions": [
+        "Pad or hash inputs to same length first",
+        "Check lengths before: if (a.length !== b.length) return false",
+        "Use HMAC comparison for string passwords"
+      ]
+    }
+  ]
+}

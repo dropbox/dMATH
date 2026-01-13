@@ -1,0 +1,61 @@
+{
+  "tool": "pump",
+  "category": "stream_utilities",
+  "common_errors": [
+    {
+      "pattern": "ERR_STREAM_PREMATURE_CLOSE|premature close",
+      "meaning": "One of the streams closed before completion",
+      "causes": [
+        "Destination closed early (client disconnect)",
+        "Upstream error not handled",
+        "Stream destroyed without finishing"
+      ],
+      "solutions": [
+        "Handle errors on all streams and decide whether to retry",
+        "Only destroy streams when sure pipeline should abort",
+        "Ensure readable ends with push(null) when done"
+      ]
+    },
+    {
+      "pattern": "streams.*contains invalid value|Cannot read properties of undefined",
+      "meaning": "pump received undefined/non-stream entry",
+      "causes": [
+        "Passing null/undefined when conditionally adding streams",
+        "Forgot to return stream instance from factory",
+        "Using promise or non-stream object"
+      ],
+      "solutions": [
+        "Guard optional streams before calling pump",
+        "Verify each argument implements .pipe",
+        "Build streams array explicitly and filter falsy values"
+      ]
+    },
+    {
+      "pattern": "callback called multiple times",
+      "meaning": "Pump completion handler invoked more than once",
+      "causes": [
+        "Supplying callback that calls itself and pump callback",
+        "Pump invoked again after error",
+        "Mixing pump and pipeline with same callback"
+      ],
+      "solutions": [
+        "Provide single callback to pump and avoid extra invocations",
+        "Return early after handling error",
+        "Do not wrap pump inside pipeline or vice versa with same cb"
+      ]
+    },
+    {
+      "pattern": "EPIPE|write after end",
+      "meaning": "Writes attempted after destination closed",
+      "causes": [
+        "Downstream stream ended because of error",
+        "Backpressure ignored and upstream continues writing"
+      ],
+      "solutions": [
+        "Rely on pump to forward errors and stop upstream",
+        "Check callback error parameter and halt writes",
+        "Use once('finish'/'close') listeners to clean up"
+      ]
+    }
+  ]
+}

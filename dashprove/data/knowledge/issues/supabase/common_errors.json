@@ -1,0 +1,191 @@
+{
+  "tool": "supabase",
+  "version": "1.123.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "Invalid API key|JWT.*expired|not authenticated|PGRST301",
+      "message": "Authentication/API key error",
+      "cause": "Invalid or expired credentials",
+      "solutions": [
+        {
+          "approach": "Check keys",
+          "code": "// Use correct key type:\n// anon key for client-side\n// service_role key for server-side (NEVER expose)\nconst supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);",
+          "when": "Wrong key"
+        },
+        {
+          "approach": "Refresh token",
+          "code": "const { data, error } = await supabase.auth.refreshSession();",
+          "when": "Token expired"
+        },
+        {
+          "approach": "Check URL",
+          "code": "// Project URL format:\n// https://your-project.supabase.co",
+          "when": "Wrong URL"
+        }
+      ]
+    },
+    {
+      "id": "rls_error",
+      "pattern": "new row violates row-level security|PGRST301|permission denied|RLS",
+      "message": "Row Level Security error",
+      "cause": "RLS policy blocking operation",
+      "solutions": [
+        {
+          "approach": "Check policies",
+          "code": "-- View policies:\nSELECT * FROM pg_policies WHERE tablename = 'your_table';",
+          "when": "See policies"
+        },
+        {
+          "approach": "Add policy",
+          "code": "-- Allow authenticated users to read:\nCREATE POLICY \"Users can view own data\"\n  ON your_table FOR SELECT\n  USING (auth.uid() = user_id);",
+          "when": "Missing policy"
+        },
+        {
+          "approach": "Service role",
+          "code": "// Use service_role key to bypass RLS (server-side only)\nconst supabase = createClient(url, SERVICE_ROLE_KEY);",
+          "when": "Admin operation"
+        }
+      ]
+    },
+    {
+      "id": "database_error",
+      "pattern": "relation.*does not exist|column.*does not exist|syntax error|PGRST",
+      "message": "Database query error",
+      "cause": "Invalid table, column, or SQL syntax",
+      "solutions": [
+        {
+          "approach": "Check table name",
+          "code": "// Table names are case-sensitive\nconst { data } = await supabase\n  .from('users')  // lowercase\n  .select('*');",
+          "when": "Table not found"
+        },
+        {
+          "approach": "Run migration",
+          "code": "supabase db push\n# Or: supabase migration up",
+          "when": "Schema not applied"
+        },
+        {
+          "approach": "Check schema",
+          "code": "-- View table structure:\n\\d your_table\n-- Or in SQL Editor",
+          "when": "Column not found"
+        }
+      ]
+    },
+    {
+      "id": "storage_error",
+      "pattern": "Bucket not found|storage.*error|Object not found|policy.*storage",
+      "message": "Storage error",
+      "cause": "Bucket or object not found, or permission denied",
+      "solutions": [
+        {
+          "approach": "Create bucket",
+          "code": "// Via dashboard or SQL:\nINSERT INTO storage.buckets (id, name, public)\nVALUES ('avatars', 'avatars', true);",
+          "when": "Bucket missing"
+        },
+        {
+          "approach": "Add policy",
+          "code": "-- Allow uploads:\nCREATE POLICY \"Users can upload\"\n  ON storage.objects FOR INSERT\n  WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);",
+          "when": "Permission denied"
+        },
+        {
+          "approach": "Upload file",
+          "code": "const { data, error } = await supabase.storage\n  .from('avatars')\n  .upload(`${userId}/avatar.png`, file);",
+          "when": "Upload example"
+        }
+      ]
+    },
+    {
+      "id": "edge_function_error",
+      "pattern": "Edge Function.*error|Deno.*error|function.*failed|RelayError",
+      "message": "Edge Function error",
+      "cause": "Function code or deployment error",
+      "solutions": [
+        {
+          "approach": "Check logs",
+          "code": "supabase functions logs function-name",
+          "when": "See error"
+        },
+        {
+          "approach": "Local test",
+          "code": "supabase functions serve function-name\ncurl http://localhost:54321/functions/v1/function-name",
+          "when": "Test locally"
+        },
+        {
+          "approach": "Deploy",
+          "code": "supabase functions deploy function-name",
+          "when": "Deploy function"
+        }
+      ]
+    },
+    {
+      "id": "realtime_error",
+      "pattern": "Realtime.*error|subscription.*failed|WebSocket.*error|channel.*closed",
+      "message": "Realtime subscription error",
+      "cause": "Connection or permission issue",
+      "solutions": [
+        {
+          "approach": "Enable realtime",
+          "code": "-- Enable realtime for table:\nALTER PUBLICATION supabase_realtime ADD TABLE your_table;",
+          "when": "Not enabled"
+        },
+        {
+          "approach": "Check RLS",
+          "code": "-- Realtime respects RLS policies\n-- Ensure SELECT policy exists",
+          "when": "Permission denied"
+        },
+        {
+          "approach": "Subscribe",
+          "code": "const channel = supabase\n  .channel('table-changes')\n  .on('postgres_changes', {\n    event: '*',\n    schema: 'public',\n    table: 'your_table'\n  }, (payload) => console.log(payload))\n  .subscribe();",
+          "when": "Subscription example"
+        }
+      ]
+    },
+    {
+      "id": "cli_error",
+      "pattern": "supabase.*not found|project.*not linked|config.*error",
+      "message": "CLI configuration error",
+      "cause": "CLI not configured or project not linked",
+      "solutions": [
+        {
+          "approach": "Install CLI",
+          "code": "npm install -g supabase\n# Or: brew install supabase/tap/supabase",
+          "when": "CLI not installed"
+        },
+        {
+          "approach": "Login",
+          "code": "supabase login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Link project",
+          "code": "supabase link --project-ref your-project-ref",
+          "when": "Project not linked"
+        }
+      ]
+    },
+    {
+      "id": "migration_error",
+      "pattern": "migration.*failed|already exists|duplicate|cannot drop",
+      "message": "Migration error",
+      "cause": "Schema conflict or migration issue",
+      "solutions": [
+        {
+          "approach": "Check status",
+          "code": "supabase migration list\nsupabase db diff",
+          "when": "View migrations"
+        },
+        {
+          "approach": "Reset local",
+          "code": "supabase db reset\n# Warning: destroys local data",
+          "when": "Start fresh locally"
+        },
+        {
+          "approach": "Manual fix",
+          "code": "-- Fix schema manually in SQL Editor\n-- Then repair migration table",
+          "when": "Production fix"
+        }
+      ]
+    }
+  ]
+}

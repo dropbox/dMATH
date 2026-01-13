@@ -1,0 +1,168 @@
+{
+  "tool": "tar",
+  "version": "1.35",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "cannot_open",
+      "pattern": "Cannot open|No such file or directory",
+      "message": "Cannot open archive or file",
+      "cause": "File doesn't exist or no permission",
+      "solutions": [
+        {
+          "approach": "Check file exists",
+          "code": "ls -la archive.tar.gz",
+          "when": "Verify file path"
+        },
+        {
+          "approach": "Use sudo",
+          "code": "sudo tar -xvf archive.tar.gz",
+          "when": "Permission issue"
+        },
+        {
+          "approach": "Check working directory",
+          "code": "pwd && ls",
+          "when": "In wrong directory"
+        }
+      ]
+    },
+    {
+      "id": "not_in_gzip_format",
+      "pattern": "not in gzip format|gzip.*unexpected end",
+      "message": "File not in gzip format",
+      "cause": "Wrong compression flag or corrupted file",
+      "solutions": [
+        {
+          "approach": "Detect format",
+          "code": "file archive.tar.gz",
+          "when": "Check actual format"
+        },
+        {
+          "approach": "Use auto-detect",
+          "code": "tar -xaf archive.tar.gz  # 'a' auto-detects",
+          "when": "Let tar detect compression"
+        },
+        {
+          "approach": "Try different compression",
+          "code": "tar -xjf (bzip2) or tar -xJf (xz)",
+          "when": "Different compression"
+        }
+      ]
+    },
+    {
+      "id": "file_changed",
+      "pattern": "file changed as we read it|tar.*file changed",
+      "message": "File changed while reading",
+      "cause": "File modified during archive creation",
+      "solutions": [
+        {
+          "approach": "Ignore warning",
+          "code": "tar -cvf archive.tar dir/ 2>&1 | grep -v 'changed'",
+          "when": "Warning acceptable"
+        },
+        {
+          "approach": "Use --warning",
+          "code": "tar --warning=no-file-changed -cvf archive.tar dir/",
+          "when": "Suppress warning"
+        },
+        {
+          "approach": "Snapshot first",
+          "code": "Stop services writing to files first",
+          "when": "Need consistent backup"
+        }
+      ]
+    },
+    {
+      "id": "cannot_create",
+      "pattern": "Cannot create|mkdir.*failed|Exiting with failure",
+      "message": "Cannot create directory/file",
+      "cause": "No write permission or disk full",
+      "solutions": [
+        {
+          "approach": "Extract to different dir",
+          "code": "tar -xvf archive.tar.gz -C /tmp/",
+          "when": "Current dir not writable"
+        },
+        {
+          "approach": "Check disk space",
+          "code": "df -h .",
+          "when": "May be full"
+        },
+        {
+          "approach": "Use sudo",
+          "code": "sudo tar -xvf archive.tar.gz",
+          "when": "Need root"
+        }
+      ]
+    },
+    {
+      "id": "absolute_path_warning",
+      "pattern": "Removing leading|absolute.*path|member names",
+      "message": "Removing leading '/' from path",
+      "cause": "Archive contains absolute paths",
+      "solutions": [
+        {
+          "approach": "Use --absolute-names",
+          "code": "tar -xvf archive.tar.gz --absolute-names",
+          "when": "Want absolute paths (dangerous!)"
+        },
+        {
+          "approach": "Let tar strip",
+          "code": "Default behavior is safe, strips leading /",
+          "when": "Relative extraction fine"
+        },
+        {
+          "approach": "Create without absolute",
+          "code": "tar -cvf archive.tar -C /path/to/dir .",
+          "when": "Creating archive"
+        }
+      ]
+    },
+    {
+      "id": "unexpected_eof",
+      "pattern": "Unexpected EOF|end of file|truncated",
+      "message": "Unexpected end of file",
+      "cause": "Archive is corrupted or incomplete download",
+      "solutions": [
+        {
+          "approach": "Re-download",
+          "code": "wget -c URL  # Resume download",
+          "when": "Incomplete download"
+        },
+        {
+          "approach": "Check integrity",
+          "code": "md5sum archive.tar.gz (compare with expected)",
+          "when": "Verify checksum"
+        },
+        {
+          "approach": "Try recovery",
+          "code": "tar -xvf archive.tar.gz --ignore-zeros",
+          "when": "Extract what's possible"
+        }
+      ]
+    },
+    {
+      "id": "permission_preservation",
+      "pattern": "Cannot change ownership|Operation not permitted.*chown",
+      "message": "Cannot preserve ownership",
+      "cause": "Not running as root, can't change file owner",
+      "solutions": [
+        {
+          "approach": "Ignore ownership",
+          "code": "tar -xvf archive.tar.gz --no-same-owner",
+          "when": "Own files as current user"
+        },
+        {
+          "approach": "Use sudo",
+          "code": "sudo tar -xvf archive.tar.gz",
+          "when": "Need to preserve ownership"
+        },
+        {
+          "approach": "Skip permissions",
+          "code": "tar -xvf archive.tar.gz --no-same-permissions",
+          "when": "Don't preserve permissions"
+        }
+      ]
+    }
+  ]
+}

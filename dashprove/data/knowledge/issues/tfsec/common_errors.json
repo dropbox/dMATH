@@ -1,0 +1,156 @@
+{
+  "tool": "tfsec",
+  "version": "1.28.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "aws_unencrypted_s3",
+      "pattern": "aws-s3-encryption|S3 bucket.*without encryption",
+      "message": "S3 bucket without encryption",
+      "cause": "S3 bucket missing server-side encryption configuration",
+      "solutions": [
+        {
+          "approach": "Add encryption",
+          "code": "resource \"aws_s3_bucket_server_side_encryption_configuration\" \"example\" {\n  bucket = aws_s3_bucket.example.id\n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm = \"AES256\"\n    }\n  }\n}",
+          "when": "Need encryption at rest"
+        },
+        {
+          "approach": "Ignore finding",
+          "code": "#tfsec:ignore:aws-s3-encryption-customer-key",
+          "when": "AES256 is sufficient"
+        }
+      ]
+    },
+    {
+      "id": "aws_open_ingress",
+      "pattern": "aws-vpc-no-public-ingress|0\\.0\\.0\\.0/0",
+      "message": "Security group allows ingress from anywhere",
+      "cause": "Ingress rule permits traffic from all IPs",
+      "solutions": [
+        {
+          "approach": "Restrict source",
+          "code": "cidr_blocks = [\"10.0.0.0/8\"]",
+          "when": "Internal access only"
+        },
+        {
+          "approach": "Use prefix list",
+          "code": "prefix_list_ids = [aws_ec2_managed_prefix_list.vpn.id]",
+          "when": "VPN/office IPs"
+        },
+        {
+          "approach": "Document exception",
+          "code": "#tfsec:ignore:aws-vpc-no-public-ingress-sgr:Public load balancer",
+          "when": "Public access required"
+        }
+      ]
+    },
+    {
+      "id": "aws_unencrypted_ebs",
+      "pattern": "aws-ebs-encryption|EBS volume.*not encrypted",
+      "message": "EBS volume without encryption",
+      "cause": "EC2 instance EBS volumes not encrypted",
+      "solutions": [
+        {
+          "approach": "Enable encryption",
+          "code": "resource \"aws_ebs_encryption_by_default\" \"example\" {\n  enabled = true\n}",
+          "when": "Account-wide default"
+        },
+        {
+          "approach": "Encrypt specific volume",
+          "code": "ebs_block_device {\n  device_name = \"/dev/sda1\"\n  encrypted = true\n  kms_key_id = aws_kms_key.ebs.arn\n}",
+          "when": "Instance-specific"
+        }
+      ]
+    },
+    {
+      "id": "aws_public_rds",
+      "pattern": "aws-rds-no-public-access|publicly_accessible",
+      "message": "RDS instance publicly accessible",
+      "cause": "Database can be accessed from internet",
+      "solutions": [
+        {
+          "approach": "Disable public access",
+          "code": "publicly_accessible = false",
+          "when": "Database should be private"
+        },
+        {
+          "approach": "Use VPC subnets",
+          "code": "db_subnet_group_name = aws_db_subnet_group.private.name",
+          "when": "Use private subnets"
+        }
+      ]
+    },
+    {
+      "id": "sensitive_data_exposed",
+      "pattern": "sensitive|secret|password|api.key",
+      "message": "Sensitive data in plain text",
+      "cause": "Secrets or credentials in Terraform files",
+      "solutions": [
+        {
+          "approach": "Use sensitive variable",
+          "code": "variable \"password\" {\n  type = string\n  sensitive = true\n}",
+          "when": "Need to pass secret"
+        },
+        {
+          "approach": "Use secrets manager",
+          "code": "data \"aws_secretsmanager_secret_version\" \"creds\" {\n  secret_id = \"my-secret\"\n}",
+          "when": "Production secrets"
+        }
+      ]
+    },
+    {
+      "id": "missing_description",
+      "pattern": "missing description|no description",
+      "message": "Resource missing description",
+      "cause": "Security group or IAM resource lacks description",
+      "solutions": [
+        {
+          "approach": "Add description",
+          "code": "resource \"aws_security_group\" \"example\" {\n  name = \"allow_https\"\n  description = \"Allow HTTPS inbound traffic from VPC\"\n  ...\n}",
+          "when": "Security group"
+        },
+        {
+          "approach": "Add IAM description",
+          "code": "resource \"aws_iam_policy\" \"example\" {\n  name = \"s3_access\"\n  description = \"Allows read access to S3 bucket\"\n  ...\n}",
+          "when": "IAM policy"
+        }
+      ]
+    },
+    {
+      "id": "azure_https_only",
+      "pattern": "azure-storage-enforce-https|azure-appservice-require-client-cert",
+      "message": "Azure resource not enforcing HTTPS",
+      "cause": "HTTP traffic allowed on Azure resource",
+      "solutions": [
+        {
+          "approach": "Enable HTTPS only",
+          "code": "resource \"azurerm_storage_account\" \"example\" {\n  enable_https_traffic_only = true\n  min_tls_version = \"TLS1_2\"\n}",
+          "when": "Storage account"
+        },
+        {
+          "approach": "Require client cert",
+          "code": "client_certificate_enabled = true",
+          "when": "App Service"
+        }
+      ]
+    },
+    {
+      "id": "gcp_public_bucket",
+      "pattern": "google-storage-bucket-encryption|gcp.*public",
+      "message": "GCP resource security issue",
+      "cause": "GCS bucket or other resource misconfigured",
+      "solutions": [
+        {
+          "approach": "Enable encryption",
+          "code": "resource \"google_storage_bucket\" \"example\" {\n  encryption {\n    default_kms_key_name = google_kms_crypto_key.example.id\n  }\n}",
+          "when": "Need CMEK"
+        },
+        {
+          "approach": "Set IAM",
+          "code": "// Use uniform bucket-level access\nuniform_bucket_level_access = true",
+          "when": "Prevent public access"
+        }
+      ]
+    }
+  ]
+}

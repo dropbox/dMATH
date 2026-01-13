@@ -1,0 +1,253 @@
+{
+  "tool": "gosec",
+  "version": "2.21.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "g101_hardcoded_credentials",
+      "pattern": "G101.*Potential hardcoded credentials",
+      "message": "Potential hardcoded credentials detected",
+      "cause": "Variable name suggests password/secret with string literal value",
+      "solutions": [
+        {
+          "approach": "Use environment variables",
+          "code": "password := os.Getenv(\"DB_PASSWORD\")",
+          "when": "Credentials should come from environment"
+        },
+        {
+          "approach": "Use secrets manager",
+          "code": "secret, _ := secretsManager.GetSecret(ctx, \"db-password\")",
+          "when": "Production deployment"
+        },
+        {
+          "approach": "Exclude false positive",
+          "code": "// #nosec G101 -- This is a test fixture, not a real password\nconst testPassword = \"test123\"",
+          "when": "Test data, not real credentials"
+        }
+      ]
+    },
+    {
+      "id": "g102_bind_all_interfaces",
+      "pattern": "G102.*Binds to all network interfaces",
+      "message": "Binding to all network interfaces (0.0.0.0)",
+      "cause": "Server listens on all interfaces, potentially exposing to external network",
+      "solutions": [
+        {
+          "approach": "Bind to localhost",
+          "code": "http.ListenAndServe(\"127.0.0.1:8080\", handler)",
+          "when": "Service should only be local"
+        },
+        {
+          "approach": "Use configuration",
+          "code": "addr := os.Getenv(\"LISTEN_ADDR\")\nif addr == \"\" { addr = \"127.0.0.1:8080\" }",
+          "when": "Binding should be configurable"
+        },
+        {
+          "approach": "Document intent",
+          "code": "// #nosec G102 -- Intentionally exposed for container networking\nhttp.ListenAndServe(\":8080\", handler)",
+          "when": "Public binding is intentional"
+        }
+      ]
+    },
+    {
+      "id": "g103_unsafe_audit",
+      "pattern": "G103.*Use of unsafe calls should be audited",
+      "message": "Use of unsafe package detected",
+      "cause": "Code uses unsafe package which bypasses Go's type safety",
+      "solutions": [
+        {
+          "approach": "Use safe alternatives",
+          "code": "// Use encoding/binary instead of unsafe pointer casts\nbinary.LittleEndian.Uint64(bytes)",
+          "when": "Safe alternative exists"
+        },
+        {
+          "approach": "Document unsafe usage",
+          "code": "// #nosec G103 -- Required for zero-copy buffer conversion\n// Safe because: [explain why]\nunsafePtr := unsafe.Pointer(&data[0])",
+          "when": "Unsafe is necessary and audited"
+        }
+      ]
+    },
+    {
+      "id": "g104_unhandled_errors",
+      "pattern": "G104.*Errors unhandled",
+      "message": "Errors unhandled",
+      "cause": "Function returns error that is not checked",
+      "solutions": [
+        {
+          "approach": "Handle the error",
+          "code": "if err := file.Close(); err != nil {\n    log.Printf(\"close error: %v\", err)\n}",
+          "when": "Error needs handling"
+        },
+        {
+          "approach": "Assign to blank with comment",
+          "code": "_ = file.Close()  // Best effort cleanup, error logged elsewhere",
+          "when": "Error intentionally ignored"
+        }
+      ]
+    },
+    {
+      "id": "g107_url_provided_to_http_request",
+      "pattern": "G107.*Potential HTTP request made with variable url",
+      "message": "HTTP request with user-controlled URL",
+      "cause": "URL from variable could be manipulated (SSRF vulnerability)",
+      "solutions": [
+        {
+          "approach": "Validate URL scheme/host",
+          "code": "u, _ := url.Parse(userURL)\nif u.Host != \"allowed.com\" {\n    return errors.New(\"invalid host\")\n}",
+          "when": "URL comes from user input"
+        },
+        {
+          "approach": "Use allowlist",
+          "code": "allowedHosts := map[string]bool{\"api.example.com\": true}\nif !allowedHosts[u.Host] { return err }",
+          "when": "Limited set of valid hosts"
+        },
+        {
+          "approach": "Exclude internal URLs",
+          "code": "// #nosec G107 -- URL from internal config, not user input\nresp, _ := http.Get(configURL)",
+          "when": "URL is from trusted source"
+        }
+      ]
+    },
+    {
+      "id": "g108_profiler_enabled",
+      "pattern": "G108.*Profiling endpoint is automatically exposed",
+      "message": "pprof profiling endpoint exposed",
+      "cause": "net/http/pprof imported, exposing /debug/pprof endpoints",
+      "solutions": [
+        {
+          "approach": "Use separate server",
+          "code": "// Start pprof on internal-only port\ngo func() {\n    http.ListenAndServe(\"localhost:6060\", nil)\n}()",
+          "when": "Need profiling but not on public port"
+        },
+        {
+          "approach": "Remove import",
+          "code": "// Remove: import _ \"net/http/pprof\"",
+          "when": "Profiling not needed in production"
+        },
+        {
+          "approach": "Use build tags",
+          "code": "//go:build debug\npackage main\nimport _ \"net/http/pprof\"",
+          "when": "Only enable in debug builds"
+        }
+      ]
+    },
+    {
+      "id": "g201_sql_string_formatting",
+      "pattern": "G201.*SQL string formatting",
+      "message": "SQL query constructed from string formatting",
+      "cause": "SQL injection vulnerability from string concatenation/formatting",
+      "solutions": [
+        {
+          "approach": "Use parameterized queries",
+          "code": "db.Query(\"SELECT * FROM users WHERE id = $1\", userID)",
+          "when": "Standard query with user input"
+        },
+        {
+          "approach": "Use prepared statements",
+          "code": "stmt, _ := db.Prepare(\"SELECT * FROM users WHERE id = ?\")\nstmt.Query(userID)",
+          "when": "Query executed multiple times"
+        },
+        {
+          "approach": "Use query builder",
+          "code": "sq.Select(\"*\").From(\"users\").Where(sq.Eq{\"id\": userID})",
+          "when": "Complex dynamic queries"
+        }
+      ]
+    },
+    {
+      "id": "g202_sql_string_concat",
+      "pattern": "G202.*SQL string concatenation",
+      "message": "SQL query with string concatenation",
+      "cause": "SQL built with + operator, vulnerable to injection",
+      "solutions": [
+        {
+          "approach": "Use parameterized queries",
+          "code": "query := \"SELECT * FROM users WHERE name = ?\"\ndb.Query(query, userName)",
+          "when": "Simple parameterization possible"
+        },
+        {
+          "approach": "Whitelist column names",
+          "code": "validColumns := map[string]bool{\"name\": true, \"email\": true}\nif !validColumns[col] { return err }",
+          "when": "Dynamic column names needed"
+        }
+      ]
+    },
+    {
+      "id": "g301_file_creation_permissions",
+      "pattern": "G301.*Expect file permissions to be",
+      "message": "File created with too permissive mode",
+      "cause": "File created with world-readable/writable permissions",
+      "solutions": [
+        {
+          "approach": "Use restrictive permissions",
+          "code": "os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)",
+          "when": "File contains sensitive data"
+        },
+        {
+          "approach": "Use 0644 for public files",
+          "code": "os.WriteFile(path, data, 0644)  // Owner write, others read",
+          "when": "File should be readable by others"
+        }
+      ]
+    },
+    {
+      "id": "g304_file_inclusion",
+      "pattern": "G304.*Potential file inclusion via variable",
+      "message": "File path from variable (potential path traversal)",
+      "cause": "User-controlled path could access arbitrary files",
+      "solutions": [
+        {
+          "approach": "Use filepath.Clean",
+          "code": "cleanPath := filepath.Clean(userPath)\nif !strings.HasPrefix(cleanPath, allowedDir) {\n    return errors.New(\"path traversal\")\n}",
+          "when": "Need to validate path stays in directory"
+        },
+        {
+          "approach": "Use allowlist",
+          "code": "allowedFiles := map[string]bool{\"config.json\": true}\nif !allowedFiles[filename] { return err }",
+          "when": "Limited set of valid files"
+        },
+        {
+          "approach": "Use embed for static files",
+          "code": "//go:embed templates/*\nvar templates embed.FS",
+          "when": "Files known at compile time"
+        }
+      ]
+    },
+    {
+      "id": "g401_weak_crypto_md5",
+      "pattern": "G401.*Use of weak cryptographic primitive",
+      "message": "Use of weak cryptographic algorithm (MD5/SHA1)",
+      "cause": "MD5 or SHA1 used, which are cryptographically broken",
+      "solutions": [
+        {
+          "approach": "Use SHA-256",
+          "code": "hash := sha256.Sum256(data)",
+          "when": "Need cryptographic hash"
+        },
+        {
+          "approach": "Document non-crypto use",
+          "code": "// #nosec G401 -- MD5 used only for non-crypto checksum\nchecksum := md5.Sum(data)",
+          "when": "Not used for security"
+        }
+      ]
+    },
+    {
+      "id": "g501_blacklisted_import",
+      "pattern": "G501.*Blacklisted import.*crypto/md5",
+      "message": "Blacklisted import: crypto/md5",
+      "cause": "Importing weak crypto package",
+      "solutions": [
+        {
+          "approach": "Use crypto/sha256",
+          "code": "import \"crypto/sha256\"",
+          "when": "Need secure hash"
+        },
+        {
+          "approach": "Use golang.org/x/crypto",
+          "code": "import \"golang.org/x/crypto/sha3\"",
+          "when": "Need modern algorithms"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "tool": "insta",
+  "version": "1.36.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "snapshot_mismatch",
+      "pattern": "snapshot.*mismatch|does.*not.*match|assertion.*failed.*snapshot",
+      "message": "Snapshot doesn't match current output",
+      "cause": "Output changed from stored snapshot",
+      "solutions": [
+        {
+          "approach": "Review and accept",
+          "code": "# Review changes:\ncargo insta review\n\n# Or accept all:\ncargo insta accept",
+          "when": "Change is intentional"
+        },
+        {
+          "approach": "Reject and fix",
+          "code": "# Reject changes:\ncargo insta reject\n\n# Then fix the code to match expected output",
+          "when": "Change is a bug"
+        },
+        {
+          "approach": "Update in CI",
+          "code": "# In CI, fail on mismatch:\nCI=true cargo test\n\n# Locally, allow pending:\ncargo insta test --review",
+          "when": "Different CI vs local behavior"
+        }
+      ]
+    },
+    {
+      "id": "new_snapshot",
+      "pattern": "new.*snapshot|snapshot.*created|pending.*snapshot",
+      "message": "New snapshot created, needs review",
+      "cause": "First run of snapshot test or snapshot file deleted",
+      "solutions": [
+        {
+          "approach": "Review new snapshot",
+          "code": "# Review and accept:\ncargo insta review\n\n# Check that output is correct before accepting",
+          "when": "New test"
+        },
+        {
+          "approach": "Generate inline",
+          "code": "// Use inline snapshot (value stored in source):\nassert_snapshot!(my_function(), @\"\");\n\n// After review, becomes:\nassert_snapshot!(my_function(), @\"expected output\");",
+          "when": "Prefer inline"
+        },
+        {
+          "approach": "Name snapshot",
+          "code": "// Named snapshots:\nassert_snapshot!(\"my_test_case\", output);\n\n// Creates: snapshots/module__my_test_case.snap",
+          "when": "Multiple snapshots in one test"
+        }
+      ]
+    },
+    {
+      "id": "serialization_error",
+      "pattern": "serialization.*error|cannot.*serialize|serde.*error",
+      "message": "Cannot serialize value for snapshot",
+      "cause": "Value doesn't implement required traits",
+      "solutions": [
+        {
+          "approach": "Implement Debug",
+          "code": "#[derive(Debug)]\nstruct MyStruct { ... }\n\n// Then use:\nassert_debug_snapshot!(my_value);",
+          "when": "Use Debug output"
+        },
+        {
+          "approach": "Implement Serialize",
+          "code": "use serde::Serialize;\n\n#[derive(Serialize)]\nstruct MyStruct { ... }\n\n// Then use:\nassert_json_snapshot!(my_value);\nassert_yaml_snapshot!(my_value);",
+          "when": "Use structured format"
+        },
+        {
+          "approach": "Use custom serializer",
+          "code": "// Convert to serializable form:\nlet snapshot_value = format!(\"{:#?}\", my_value);\nassert_snapshot!(snapshot_value);",
+          "when": "Can't modify type"
+        }
+      ]
+    },
+    {
+      "id": "unstable_output",
+      "pattern": "unstable|flaky|non-deterministic|changes.*each.*run",
+      "message": "Snapshot output changes between runs",
+      "cause": "Output contains non-deterministic elements",
+      "solutions": [
+        {
+          "approach": "Redact dynamic values",
+          "code": "use insta::Settings;\n\nlet mut settings = Settings::clone_current();\nsettings.add_filter(r\"\\d{4}-\\d{2}-\\d{2}\", \"[DATE]\");\nsettings.add_filter(r\"0x[0-9a-f]+\", \"[ADDR]\");\nsettings.bind(|| {\n    assert_snapshot!(my_output);\n});",
+          "when": "Dates, addresses, IDs in output"
+        },
+        {
+          "approach": "Use redaction",
+          "code": "assert_json_snapshot!(my_value, {\n    \".timestamp\" => \"[timestamp]\",\n    \".id\" => \"[id]\",\n    \".**.random_field\" => \"[random]\"\n});",
+          "when": "JSON with dynamic fields"
+        },
+        {
+          "approach": "Sort collections",
+          "code": "// Sort before snapshot:\nlet mut items: Vec<_> = collection.into_iter().collect();\nitems.sort();\nassert_debug_snapshot!(items);",
+          "when": "Order not guaranteed"
+        }
+      ]
+    },
+    {
+      "id": "snapshot_location",
+      "pattern": "snapshot.*file|wrong.*location|path.*error",
+      "message": "Snapshot file location issue",
+      "cause": "Snapshot file in unexpected location or missing",
+      "solutions": [
+        {
+          "approach": "Check snapshot directory",
+          "code": "// Default: tests/snapshots/\n// Named: <module>__<name>.snap\n\n// Configure location:\nlet mut settings = Settings::clone_current();\nsettings.set_snapshot_path(\"custom/path\");\nsettings.bind(|| {\n    assert_snapshot!(...);\n});",
+          "when": "Custom snapshot location"
+        },
+        {
+          "approach": "Set workspace root",
+          "code": "// In Cargo.toml:\n[package.metadata.insta]\nsnapshot_path = \"tests/snapshots\"\n\n// Or via env:\nINSTA_WORKSPACE_ROOT=/path/to/root cargo test",
+          "when": "Workspace issues"
+        },
+        {
+          "approach": "Debug snapshot path",
+          "code": "// Print snapshot info:\nINSTA_OUTPUT=json cargo test\n\n// Shows where insta looks for snapshots",
+          "when": "Finding snapshot files"
+        }
+      ]
+    },
+    {
+      "id": "inline_snapshot_limit",
+      "pattern": "inline.*too.*long|cannot.*inline|output.*too.*large",
+      "message": "Output too large for inline snapshot",
+      "cause": "Inline snapshot content exceeds reasonable size",
+      "solutions": [
+        {
+          "approach": "Use file snapshot",
+          "code": "// Instead of inline:\n// assert_snapshot!(output, @\"...\");\n\n// Use file-based:\nassert_snapshot!(\"large_output\", output);\n// Creates snapshots/module__large_output.snap",
+          "when": "Large output"
+        },
+        {
+          "approach": "Snapshot subset",
+          "code": "// Only snapshot relevant parts:\nassert_snapshot!(output.lines().take(10).collect::<Vec<_>>().join(\"\\n\"));",
+          "when": "Only care about part"
+        },
+        {
+          "approach": "Use summary",
+          "code": "// Snapshot a summary:\n#[derive(Debug)]\nstruct Summary {\n    item_count: usize,\n    first_item: String,\n    last_item: String,\n}\nassert_debug_snapshot!(Summary::from(&large_data));",
+          "when": "Details not important"
+        }
+      ]
+    },
+    {
+      "id": "ci_failure",
+      "pattern": "CI.*fail|pending.*not.*allowed|INSTA_UPDATE",
+      "message": "Snapshot test failing in CI",
+      "cause": "Pending snapshots in CI environment",
+      "solutions": [
+        {
+          "approach": "Review before commit",
+          "code": "# Before pushing:\ncargo insta test\ncargo insta review\ngit add -A\ngit commit -m \"Update snapshots\"",
+          "when": "Forgot to commit snapshots"
+        },
+        {
+          "approach": "Configure CI behavior",
+          "code": "# In CI:\nCI=true cargo test\n\n# Or explicitly:\nINSTA_UPDATE=no cargo test",
+          "when": "Setting CI mode"
+        },
+        {
+          "approach": "Force update in CI",
+          "code": "# If CI should update (unusual):\nINSTA_UPDATE=always cargo test\n\n# Then commit the changes",
+          "when": "CI-generated snapshots"
+        }
+      ]
+    },
+    {
+      "id": "glob_snapshots",
+      "pattern": "glob|multiple.*inputs|parametrized",
+      "message": "Need snapshots for multiple inputs",
+      "cause": "Want to snapshot test many files/inputs",
+      "solutions": [
+        {
+          "approach": "Use glob_exec",
+          "code": "use insta::glob;\n\n#[test]\nfn test_all_inputs() {\n    glob!(\"inputs/*.txt\", |path| {\n        let content = std::fs::read_to_string(path).unwrap();\n        let output = process(&content);\n        assert_snapshot!(output);\n    });\n}",
+          "when": "Multiple input files"
+        },
+        {
+          "approach": "Parametrized with names",
+          "code": "#[test]\nfn test_parametrized() {\n    for (name, input) in [(\"case1\", 1), (\"case2\", 2)] {\n        let output = process(input);\n        assert_snapshot!(name, output);\n    }\n}",
+          "when": "Named test cases"
+        }
+      ]
+    },
+    {
+      "id": "binary_snapshot",
+      "pattern": "binary|bytes|non-text",
+      "message": "Need to snapshot binary data",
+      "cause": "Output is binary, not text",
+      "solutions": [
+        {
+          "approach": "Use assert_binary_snapshot",
+          "code": "// For binary data:\nlet bytes = generate_binary();\nassert_binary_snapshot!(\".png\", bytes);",
+          "when": "Image or binary file"
+        },
+        {
+          "approach": "Convert to hex or base64",
+          "code": "let bytes = generate_binary();\nlet hex = hex::encode(&bytes);\nassert_snapshot!(hex);",
+          "when": "Small binary, want text"
+        },
+        {
+          "approach": "Snapshot hash",
+          "code": "use sha2::{Sha256, Digest};\nlet hash = Sha256::digest(&binary_data);\nassert_snapshot!(format!(\"{:x}\", hash));",
+          "when": "Only care about integrity"
+        }
+      ]
+    },
+    {
+      "id": "workspace_issue",
+      "pattern": "workspace|monorepo|multiple.*crates",
+      "message": "Snapshot issues in workspace",
+      "cause": "Multiple crates in workspace causing path issues",
+      "solutions": [
+        {
+          "approach": "Set workspace root",
+          "code": "# In .cargo/config.toml:\n[env]\nINSTA_WORKSPACE_ROOT = { value = \".\", relative = true }",
+          "when": "Workspace root not detected"
+        },
+        {
+          "approach": "Per-crate snapshots",
+          "code": "// In each crate's tests:\nlet mut settings = Settings::clone_current();\nsettings.set_snapshot_path(\"../snapshots\");\nsettings.bind(|| { ... });",
+          "when": "Custom per-crate paths"
+        },
+        {
+          "approach": "Central snapshot directory",
+          "code": "# Directory structure:\nworkspace/\n  snapshots/\n    crate1/\n    crate2/\n  crates/\n    crate1/\n    crate2/",
+          "when": "Centralized snapshots"
+        }
+      ]
+    }
+  ]
+}

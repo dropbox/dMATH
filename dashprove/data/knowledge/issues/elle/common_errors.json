@@ -1,0 +1,171 @@
+{
+  "tool": "elle",
+  "version": "0.1.6",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "g0_anomaly",
+      "pattern": "G0.*dirty.*write|aborted.*read",
+      "message": "G0: Dirty Write / Aborted Read detected",
+      "cause": "Transaction read data from an aborted transaction (dirty read) or overwrote uncommitted data (dirty write)",
+      "solutions": [
+        {
+          "approach": "Enable proper isolation",
+          "code": "; Use at least READ COMMITTED isolation\nSET TRANSACTION ISOLATION LEVEL READ COMMITTED",
+          "when": "Database allows dirty reads"
+        },
+        {
+          "approach": "Verify transaction boundaries",
+          "code": "; Ensure BEGIN/COMMIT wrapping\n(with-transaction [tx db]\n  (execute! tx [...]))",
+          "when": "Auto-commit causing issues"
+        }
+      ]
+    },
+    {
+      "id": "g1a_anomaly",
+      "pattern": "G1a.*aborted.*read",
+      "message": "G1a: Aborted Read detected",
+      "cause": "Transaction read data written by an aborted transaction",
+      "solutions": [
+        {
+          "approach": "Verify rollback mechanism",
+          "code": "; Check undo logs are working\nSHOW ENGINE INNODB STATUS",
+          "when": "Rollback not reverting writes"
+        },
+        {
+          "approach": "Use MVCC correctly",
+          "code": "; Ensure snapshot isolation\n:mvcc-enabled true",
+          "when": "Not using multi-version concurrency"
+        }
+      ]
+    },
+    {
+      "id": "g1b_anomaly",
+      "pattern": "G1b.*intermediate.*read",
+      "message": "G1b: Intermediate Read detected",
+      "cause": "Transaction read an intermediate state from another uncommitted transaction",
+      "solutions": [
+        {
+          "approach": "Use snapshot isolation",
+          "code": "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",
+          "when": "Need consistent reads within transaction"
+        },
+        {
+          "approach": "Add row versioning",
+          "code": "; Track version numbers\n:version-column :updated_at",
+          "when": "Database lacks native MVCC"
+        }
+      ]
+    },
+    {
+      "id": "g1c_anomaly",
+      "pattern": "G1c.*circular.*information.*flow",
+      "message": "G1c: Circular Information Flow detected",
+      "cause": "Cycle in transaction dependency graph where each transaction reads data written by another in the cycle",
+      "solutions": [
+        {
+          "approach": "Use serializable isolation",
+          "code": "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE",
+          "when": "Need strongest consistency"
+        },
+        {
+          "approach": "Add explicit locking",
+          "code": "SELECT * FROM t WHERE id = ? FOR UPDATE",
+          "when": "Cannot use serializable globally"
+        }
+      ]
+    },
+    {
+      "id": "g2_item_anti_dependency",
+      "pattern": "G2-item.*anti-dependency",
+      "message": "G2-item: Item Anti-Dependency Cycle detected",
+      "cause": "Anti-dependency cycle between transactions on specific items (write skew)",
+      "solutions": [
+        {
+          "approach": "Use SELECT FOR UPDATE",
+          "code": "SELECT * FROM table WHERE condition FOR UPDATE",
+          "when": "Need to prevent concurrent modifications"
+        },
+        {
+          "approach": "Implement materializing conflicts",
+          "code": "; Add conflict detection rows\n:conflict-table :locks",
+          "when": "Write skew on derived constraints"
+        },
+        {
+          "approach": "Use serializable transactions",
+          "code": ":isolation-level :serializable",
+          "when": "Performance allows serializable"
+        }
+      ]
+    },
+    {
+      "id": "g2_predicate_anti_dependency",
+      "pattern": "G2.*predicate|phantom.*read",
+      "message": "G2: Predicate Anti-Dependency (Phantom) detected",
+      "cause": "Transaction's predicate read was affected by another transaction's insert/delete",
+      "solutions": [
+        {
+          "approach": "Use predicate locks",
+          "code": "; Enable gap locking\n:lock-mode :next-key",
+          "when": "Database supports predicate locks"
+        },
+        {
+          "approach": "Use serializable snapshot isolation",
+          "code": "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE",
+          "when": "Need phantom protection"
+        },
+        {
+          "approach": "Lock the range explicitly",
+          "code": "SELECT * FROM t WHERE x BETWEEN a AND b FOR UPDATE",
+          "when": "Can identify affected ranges"
+        }
+      ]
+    },
+    {
+      "id": "lost_update",
+      "pattern": "lost.*update|concurrent.*overwrite",
+      "message": "Lost Update detected",
+      "cause": "Two transactions read-modify-write the same data, one update is lost",
+      "solutions": [
+        {
+          "approach": "Use atomic operations",
+          "code": "UPDATE t SET x = x + 1 WHERE id = ?",
+          "when": "Can express as single SQL"
+        },
+        {
+          "approach": "Use optimistic locking",
+          "code": "UPDATE t SET x = ?, version = version + 1\nWHERE id = ? AND version = ?",
+          "when": "Conflicts are rare"
+        },
+        {
+          "approach": "Use pessimistic locking",
+          "code": "SELECT * FROM t WHERE id = ? FOR UPDATE",
+          "when": "Conflicts are common"
+        }
+      ]
+    },
+    {
+      "id": "analysis_timeout",
+      "pattern": "analysis.*timeout|checking.*timeout",
+      "message": "Elle analysis timed out",
+      "cause": "History too large or complex for analysis to complete in time",
+      "solutions": [
+        {
+          "approach": "Reduce history size",
+          "code": ":max-history-size 10000",
+          "when": "History has too many operations"
+        },
+        {
+          "approach": "Use sampling",
+          "code": ":sample-rate 0.1",
+          "when": "Full analysis not needed"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": ":analysis-timeout 300000",
+          "when": "Analysis is feasible just slow"
+        }
+      ]
+    }
+  ]
+}

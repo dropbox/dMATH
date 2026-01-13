@@ -1,0 +1,108 @@
+{
+  "id": "polaris",
+  "name": "Polaris",
+  "category": "security",
+  "subcategory": "kubernetes_security",
+
+  "description": "Kubernetes best practices and security policy enforcement",
+  "long_description": "Polaris by Fairwinds validates Kubernetes resources against best practices and security policies. It identifies misconfigurations around security, efficiency, and reliability. Polaris can run as CLI, admission controller, or dashboard for cluster-wide visibility.",
+
+  "capabilities": [
+    "security_checks",
+    "best_practice_validation",
+    "admission_controller",
+    "dashboard",
+    "custom_checks",
+    "ci_integration"
+  ],
+  "property_types": ["security", "best_practices", "reliability"],
+  "input_languages": ["yaml", "json"],
+  "output_formats": ["text", "json", "yaml", "score"],
+
+  "installation": {
+    "methods": [
+      {"type": "brew", "command": "brew install FairwindsOps/tap/polaris", "platform": "macos"},
+      {"type": "helm", "command": "helm repo add fairwinds-stable https://charts.fairwinds.com/stable"},
+      {"type": "binary", "url": "https://github.com/FairwindsOps/polaris/releases"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://polaris.docs.fairwinds.com/",
+    "tutorial": "https://polaris.docs.fairwinds.com/infrastructure-as-code/",
+    "api_reference": "https://polaris.docs.fairwinds.com/checks/",
+    "examples": "https://github.com/FairwindsOps/polaris/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "audit",
+      "description": "Audit manifests",
+      "syntax": "polaris audit --audit-path ./manifests/",
+      "when_to_use": "Pre-deployment checks",
+      "examples": ["polaris audit --audit-path ./k8s/ --format yaml"]
+    },
+    {
+      "name": "score",
+      "description": "Get configuration score",
+      "syntax": "polaris audit --audit-path . --format score",
+      "when_to_use": "Overall health assessment",
+      "examples": ["polaris audit --audit-path ./manifests/ --format score"]
+    },
+    {
+      "name": "cluster",
+      "description": "Audit live cluster",
+      "syntax": "polaris audit --kubeconfig ~/.kube/config",
+      "when_to_use": "Cluster assessment",
+      "examples": ["polaris audit --namespace default"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "runAsRootAllowed",
+      "meaning": "Container can run as root",
+      "common_causes": ["Missing security context"],
+      "fixes": ["Set runAsNonRoot: true"]
+    },
+    {
+      "pattern": "cpuLimitsMissing",
+      "meaning": "No CPU limits set",
+      "common_causes": ["Missing resource limits"],
+      "fixes": ["Add resources.limits.cpu"]
+    },
+    {
+      "pattern": "privilegeEscalation",
+      "meaning": "Privilege escalation allowed",
+      "common_causes": ["Missing security context"],
+      "fixes": ["Set allowPrivilegeEscalation: false"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["security", "best_practices"],
+    "cli_command": "dashprove verify --backend polaris"
+  },
+
+  "performance": {
+    "typical_runtime": "Fast",
+    "scalability": "Good",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["kube-linter", "kubeaudit", "kube-bench", "checkov"],
+    "advantages": ["Dashboard mode", "Admission controller", "Comprehensive checks"],
+    "disadvantages": ["K8s specific"]
+  },
+
+  "metadata": {
+    "version": "8.5.6",
+    "last_updated": "2025-12-22",
+    "maintainer": "Fairwinds",
+    "license": "Apache-2.0"
+  }
+}

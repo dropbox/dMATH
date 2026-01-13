@@ -1,0 +1,126 @@
+{
+  "tool": "cargo_nextest",
+  "category": "rust_testing",
+  "common_errors": [
+    {
+      "id": "nextest_install",
+      "pattern": "cargo nextest not found|nextest install|cargo-nextest",
+      "severity": "error",
+      "causes": [
+        "nextest not installed",
+        "Not in PATH",
+        "Wrong cargo install"
+      ],
+      "solutions": [
+        "Install: cargo install cargo-nextest --locked",
+        "Or use: cargo binstall cargo-nextest",
+        "Verify: cargo nextest --version"
+      ]
+    },
+    {
+      "id": "nextest_config",
+      "pattern": "config error|.config/nextest.toml|profile",
+      "severity": "warning",
+      "causes": [
+        "Invalid config syntax",
+        "Profile not found",
+        "Config in wrong location"
+      ],
+      "solutions": [
+        "Place config at .config/nextest.toml",
+        "Define profiles: [profile.ci]",
+        "Run with profile: cargo nextest run --profile ci"
+      ]
+    },
+    {
+      "id": "nextest_archive",
+      "pattern": "archive|nextest archive|reuse build",
+      "severity": "info",
+      "causes": [
+        "Want to run tests on different machine",
+        "CI caching",
+        "Cross-compilation testing"
+      ],
+      "solutions": [
+        "Create: cargo nextest archive --archive-file tests.tar.zst",
+        "Run: cargo nextest run --archive-file tests.tar.zst",
+        "Useful for CI split builds"
+      ]
+    },
+    {
+      "id": "nextest_retries",
+      "pattern": "flaky test|retry|retries",
+      "severity": "warning",
+      "causes": [
+        "Test fails intermittently",
+        "Race conditions",
+        "External dependencies"
+      ],
+      "solutions": [
+        "Set retries: retries = 2 in config",
+        "Or CLI: --retries 2",
+        "Mark flaky: #[test_case::test_case(flaky)]"
+      ]
+    },
+    {
+      "id": "nextest_timeout",
+      "pattern": "timeout|test timed out|slow test",
+      "severity": "warning",
+      "causes": [
+        "Test takes too long",
+        "Infinite loop in test",
+        "Default timeout exceeded"
+      ],
+      "solutions": [
+        "Configure: slow-timeout = { period = '60s' }",
+        "Per-test: #[timeout(secs = 30)]",
+        "Use leak-timeout for hanging tests"
+      ]
+    },
+    {
+      "id": "nextest_filter",
+      "pattern": "filter|run specific|test selection",
+      "severity": "info",
+      "causes": [
+        "Want to run subset of tests",
+        "Filter by name/module",
+        "Complex filter expression"
+      ],
+      "solutions": [
+        "Name filter: cargo nextest run test_name",
+        "Package: -p package_name",
+        "Expression: -E 'test(name) & package(pkg)'"
+      ]
+    },
+    {
+      "id": "nextest_junit",
+      "pattern": "junit|xml output|ci integration",
+      "severity": "info",
+      "causes": [
+        "CI needs JUnit format",
+        "Test reporting",
+        "Integration with tools"
+      ],
+      "solutions": [
+        "Generate: --message-format json > results.json",
+        "Or configure junit output in config",
+        "Works with most CI systems"
+      ]
+    },
+    {
+      "id": "nextest_parallelism",
+      "pattern": "parallel|test-threads|job count",
+      "severity": "info",
+      "causes": [
+        "Tests interfering with each other",
+        "Resource contention",
+        "Control concurrency"
+      ],
+      "solutions": [
+        "Limit: --test-threads 1 for serial",
+        "Configure in profile: test-threads = 4",
+        "Use #[serial] for non-parallel tests"
+      ]
+    }
+  ]
+}

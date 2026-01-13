@@ -1,0 +1,168 @@
+{
+  "tool": "julia",
+  "version": "1.10.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "method_error",
+      "pattern": "MethodError|no method matching",
+      "message": "No matching method",
+      "cause": "Function not defined for given argument types",
+      "solutions": [
+        {
+          "approach": "Check types",
+          "code": "@show typeof(x)  # Debug type",
+          "when": "Unknown argument type"
+        },
+        {
+          "approach": "Define method",
+          "code": "function myf(x::MyType)\n    # implementation\nend",
+          "when": "Need custom type support"
+        },
+        {
+          "approach": "Convert type",
+          "code": "convert(Float64, x)\nFloat64(x)",
+          "when": "Type conversion needed"
+        }
+      ]
+    },
+    {
+      "id": "bounds_error",
+      "pattern": "BoundsError|index.*out of bounds",
+      "message": "Array index out of bounds",
+      "cause": "Index exceeds array dimensions",
+      "solutions": [
+        {
+          "approach": "Check bounds",
+          "code": "checkbounds(arr, idx)  # Throws if invalid\ncheckbounds(Bool, arr, idx)  # Returns bool",
+          "when": "Index may be invalid"
+        },
+        {
+          "approach": "Use get with default",
+          "code": "val = get(dict, key, default)",
+          "when": "Dictionary access"
+        },
+        {
+          "approach": "Use @inbounds carefully",
+          "code": "@inbounds arr[idx]  # Skip bounds check (careful!)",
+          "when": "Performance critical, bounds verified"
+        }
+      ]
+    },
+    {
+      "id": "type_instability",
+      "pattern": "@code_warntype.*::Any|type-instable",
+      "message": "Type instability",
+      "cause": "Compiler cannot infer concrete return type",
+      "solutions": [
+        {
+          "approach": "Add type annotations",
+          "code": "function f(x::Int)::Float64\n    return x / 2\nend",
+          "when": "Return type unclear"
+        },
+        {
+          "approach": "Avoid globals",
+          "code": "const GLOBAL_VALUE = 42  # Use const for globals",
+          "when": "Using global variables"
+        },
+        {
+          "approach": "Use function barriers",
+          "code": "# Split into type-stable inner function",
+          "when": "Complex branching"
+        }
+      ]
+    },
+    {
+      "id": "dimension_mismatch",
+      "pattern": "DimensionMismatch|dimensions.*must match",
+      "message": "Array dimension mismatch",
+      "cause": "Arrays have incompatible sizes for operation",
+      "solutions": [
+        {
+          "approach": "Check sizes",
+          "code": "@show size(A) size(B)",
+          "when": "Debug dimensions"
+        },
+        {
+          "approach": "Reshape array",
+          "code": "A_reshaped = reshape(A, (n, m))\nA_vec = vec(A)  # Flatten",
+          "when": "Need compatible shapes"
+        },
+        {
+          "approach": "Use broadcast",
+          "code": "result = A .+ B  # Broadcasting\nresult = broadcast(+, A, B)",
+          "when": "Element-wise operation"
+        }
+      ]
+    },
+    {
+      "id": "undefined_variable",
+      "pattern": "UndefVarError|not defined",
+      "message": "Variable not defined",
+      "cause": "Variable not in scope or module not loaded",
+      "solutions": [
+        {
+          "approach": "Import module",
+          "code": "using LinearAlgebra\nimport Statistics: mean, std",
+          "when": "From standard library"
+        },
+        {
+          "approach": "Add package",
+          "code": "using Pkg; Pkg.add(\"PackageName\")",
+          "when": "External package"
+        },
+        {
+          "approach": "Check scope",
+          "code": "# Variables in functions are local by default",
+          "when": "Scope issue"
+        }
+      ]
+    },
+    {
+      "id": "world_age",
+      "pattern": "world age|method too new",
+      "message": "World age error",
+      "cause": "Method defined after function was compiled",
+      "solutions": [
+        {
+          "approach": "Use invokelatest",
+          "code": "Base.invokelatest(f, args...)",
+          "when": "Calling dynamically defined method"
+        },
+        {
+          "approach": "Restart REPL",
+          "code": "# Restart Julia session",
+          "when": "Development workflow"
+        },
+        {
+          "approach": "Restructure code",
+          "code": "# Define methods before use",
+          "when": "Can reorder definitions"
+        }
+      ]
+    },
+    {
+      "id": "precompilation_error",
+      "pattern": "precompilation.*failed|LoadError during precompile",
+      "message": "Package precompilation error",
+      "cause": "Package cannot be precompiled",
+      "solutions": [
+        {
+          "approach": "Rebuild package",
+          "code": "using Pkg; Pkg.build(\"PackageName\")",
+          "when": "Package needs rebuild"
+        },
+        {
+          "approach": "Clear precompile cache",
+          "code": "rm -rf ~/.julia/compiled/",
+          "when": "Corrupted cache"
+        },
+        {
+          "approach": "Update packages",
+          "code": "using Pkg; Pkg.update()",
+          "when": "Version conflicts"
+        }
+      ]
+    }
+  ]
+}

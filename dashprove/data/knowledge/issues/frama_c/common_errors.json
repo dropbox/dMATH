@@ -1,0 +1,214 @@
+{
+  "tool": "frama_c",
+  "version": "28.1 (Nickel)",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "precondition_unknown",
+      "pattern": "Precondition .* got status unknown",
+      "message": "Cannot prove function precondition",
+      "cause": "WP plugin cannot verify the requires clause",
+      "solutions": [
+        {
+          "approach": "Add caller assertion",
+          "code": "//@ assert precondition;\ncalled_function(args);",
+          "when": "Help prover see precondition holds"
+        },
+        {
+          "approach": "Strengthen requires at caller",
+          "code": "/*@ requires precondition; */\nvoid caller(...) { ... }",
+          "when": "Push requirement to caller"
+        },
+        {
+          "approach": "Add loop assigns",
+          "code": "/*@ loop assigns var; */",
+          "when": "Loop modifies values needed for precondition"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_unknown",
+      "pattern": "Postcondition .* got status unknown",
+      "message": "Cannot prove function postcondition",
+      "cause": "Function body doesn't establish ensures clause",
+      "solutions": [
+        {
+          "approach": "Add intermediate assertions",
+          "code": "//@ assert intermediate_property;",
+          "when": "Break proof into steps"
+        },
+        {
+          "approach": "Add loop invariant",
+          "code": "/*@ loop invariant property; */",
+          "when": "Postcondition depends on loop"
+        },
+        {
+          "approach": "Check assigns clause",
+          "code": "/*@ assigns \\nothing; */  // or list modified locations",
+          "when": "Frame condition wrong"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_establishment",
+      "pattern": "Loop invariant .* not established",
+      "message": "Loop invariant false before loop entry",
+      "cause": "Invariant doesn't hold initially",
+      "solutions": [
+        {
+          "approach": "Weaken invariant",
+          "code": "/*@ loop invariant i == 0 || property; */",
+          "when": "Property only holds after first iteration"
+        },
+        {
+          "approach": "Initialize before loop",
+          "code": "x = initial_value;  // Satisfy invariant\n/*@ loop invariant ...; */",
+          "when": "Need setup code"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_preservation",
+      "pattern": "Loop invariant .* not preserved",
+      "message": "Loop body breaks invariant",
+      "cause": "After iteration, invariant no longer holds",
+      "solutions": [
+        {
+          "approach": "Fix loop body",
+          "code": "// Ensure updates maintain invariant",
+          "when": "Logic error in loop"
+        },
+        {
+          "approach": "Strengthen invariant",
+          "code": "/*@ loop invariant additional_fact; */",
+          "when": "Need more facts for preservation proof"
+        },
+        {
+          "approach": "Add loop assigns",
+          "code": "/*@ loop assigns i, arr[0..n-1]; */",
+          "when": "Frame condition incorrect"
+        }
+      ]
+    },
+    {
+      "id": "assigns_violation",
+      "pattern": "Assigns .* not valid",
+      "message": "Function modifies memory not in assigns clause",
+      "cause": "Code writes to location not declared in assigns",
+      "solutions": [
+        {
+          "approach": "Expand assigns clause",
+          "code": "/*@ assigns *ptr, arr[0..n-1]; */",
+          "when": "Forgot to list modified location"
+        },
+        {
+          "approach": "Use \\nothing",
+          "code": "/*@ assigns \\nothing; */",
+          "when": "Function should be pure"
+        },
+        {
+          "approach": "Use memory predicate",
+          "code": "/*@ assigns \\at(*p, Pre), \\at(*p, Post); */",
+          "when": "Complex memory pattern"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "Timeout|prover timeout",
+      "message": "SMT solver timed out",
+      "cause": "Proof obligation too complex for automatic proving",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "frama-c -wp -wp-timeout 60",
+          "when": "Proof needs more time"
+        },
+        {
+          "approach": "Try different prover",
+          "code": "frama-c -wp -wp-prover alt-ergo,cvc4,z3",
+          "when": "Try multiple provers"
+        },
+        {
+          "approach": "Add lemmas",
+          "code": "/*@ lemma name: \\forall ...; property; */",
+          "when": "Need intermediate facts"
+        },
+        {
+          "approach": "Simplify specification",
+          "code": "// Break into smaller functions with simpler specs",
+          "when": "Specification too complex"
+        }
+      ]
+    },
+    {
+      "id": "valid_pointer_unknown",
+      "pattern": "\\\\valid.* got status unknown",
+      "message": "Cannot prove pointer validity",
+      "cause": "Cannot verify pointer points to valid memory",
+      "solutions": [
+        {
+          "approach": "Add requires \\valid",
+          "code": "/*@ requires \\valid(ptr); */",
+          "when": "Caller should guarantee validity"
+        },
+        {
+          "approach": "Specify array bounds",
+          "code": "/*@ requires \\valid(arr + (0..n-1)); */",
+          "when": "Working with array"
+        },
+        {
+          "approach": "Add allocation info",
+          "code": "/*@ allocates \\result; ensures \\valid(\\result); */",
+          "when": "Function allocates memory"
+        }
+      ]
+    },
+    {
+      "id": "initialization_warning",
+      "pattern": "variable .* may be used uninitialized",
+      "message": "Possible use of uninitialized variable",
+      "cause": "Variable read before definite assignment",
+      "solutions": [
+        {
+          "approach": "Initialize at declaration",
+          "code": "int x = 0;  // Instead of: int x;",
+          "when": "Can provide default"
+        },
+        {
+          "approach": "Fix control flow",
+          "code": "// Ensure all paths initialize variable",
+          "when": "Missing initialization on some path"
+        },
+        {
+          "approach": "Use \\initialized",
+          "code": "//@ assert \\initialized(&x);",
+          "when": "Prove to Frama-C it's initialized"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "runtime error|division by zero|overflow",
+      "message": "Potential runtime error detected",
+      "cause": "Code may cause undefined behavior (div0, overflow, etc.)",
+      "solutions": [
+        {
+          "approach": "Add guard check",
+          "code": "if (divisor != 0) { result = x / divisor; }",
+          "when": "Division by zero possible"
+        },
+        {
+          "approach": "Add requires clause",
+          "code": "/*@ requires divisor != 0; */",
+          "when": "Caller should guarantee"
+        },
+        {
+          "approach": "Use RTE plugin",
+          "code": "frama-c -rte -then -wp file.c",
+          "when": "Auto-generate safety checks"
+        }
+      ]
+    }
+  ]
+}

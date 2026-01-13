@@ -1,0 +1,129 @@
+{
+  "id": "tlaplus_cosmos_db",
+  "name": "Azure Cosmos DB TLA+ Specifications",
+  "category": "tlaplus_specifications",
+  "subcategory": "distributed_database",
+
+  "description": "TLA+ specifications for Azure Cosmos DB consistency models",
+  "long_description": "Azure Cosmos DB uses TLA+ extensively to specify and verify its five consistency levels: Strong, Bounded Staleness, Session, Consistent Prefix, and Eventual. The specs define the guarantees each level provides and have been used to verify correct implementation. Microsoft published these specs to help users understand the tradeoffs between consistency levels.",
+
+  "capabilities": [
+    "consistency_specification",
+    "multi_region_replication",
+    "conflict_resolution",
+    "session_guarantees",
+    "bounded_staleness"
+  ],
+  "property_types": ["safety", "consistency", "liveness"],
+  "input_languages": ["tlaplus"],
+  "output_formats": ["tlaplus", "pdf"],
+
+  "source_urls": {
+    "primary": "https://github.com/Azure/azure-cosmos-tla",
+    "paper": "https://www.vldb.org/pvldb/vol12/p1889-shukla.pdf",
+    "docs": "https://learn.microsoft.com/azure/cosmos-db/consistency-levels"
+  },
+
+  "documentation": {
+    "official": "https://learn.microsoft.com/azure/cosmos-db/",
+    "consistency": "https://learn.microsoft.com/azure/cosmos-db/consistency-levels",
+    "tla_repo": "https://github.com/Azure/azure-cosmos-tla"
+  },
+
+  "consistency_levels": [
+    {
+      "name": "Strong",
+      "description": "Linearizable consistency",
+      "tla_property": "Reads always return most recent committed write",
+      "use_case": "Financial transactions, inventory",
+      "latency_impact": "Highest"
+    },
+    {
+      "name": "BoundedStaleness",
+      "description": "Reads lag behind writes by at most K versions or T time",
+      "tla_property": "staleness(read) <= K versions OR staleness(read) <= T seconds",
+      "use_case": "Leaderboards, IoT telemetry",
+      "latency_impact": "Medium-High"
+    },
+    {
+      "name": "Session",
+      "description": "Monotonic reads/writes within a session",
+      "tla_property": "read_your_writes AND monotonic_reads within session",
+      "use_case": "Shopping carts, user profiles",
+      "latency_impact": "Medium"
+    },
+    {
+      "name": "ConsistentPrefix",
+      "description": "Reads never see out-of-order writes",
+      "tla_property": "If write A precedes write B, no read sees B without A",
+      "use_case": "Social feeds, activity streams",
+      "latency_impact": "Low"
+    },
+    {
+      "name": "Eventual",
+      "description": "Eventually all replicas converge",
+      "tla_property": "Liveness: all replicas eventually have same value",
+      "use_case": "Like counts, non-critical analytics",
+      "latency_impact": "Lowest"
+    }
+  ],
+
+  "key_properties": [
+    {
+      "name": "ReadYourWrites",
+      "description": "A session always sees its own writes",
+      "tla_formula": "\\A s \\in Session, w \\in Writes(s), r \\in Reads(s) : w precedes r => r sees w"
+    },
+    {
+      "name": "MonotonicReads",
+      "description": "Successive reads never return older values",
+      "tla_formula": "\\A s \\in Session, r1, r2 \\in Reads(s) : r1 precedes r2 => version(r2) >= version(r1)"
+    },
+    {
+      "name": "BoundedStalenessProperty",
+      "description": "Read staleness is bounded",
+      "tla_formula": "\\A r \\in Reads : staleness(r) <= maxStalenessVersions \\/ staleness(r) <= maxStalenessSeconds"
+    },
+    {
+      "name": "ConsistentPrefixProperty",
+      "description": "No gaps in observed write sequence",
+      "tla_formula": "\\A r \\in Reads : prefix(r) is contiguous sequence of committed writes"
+    }
+  ],
+
+  "state_variables": [
+    {"name": "regions", "type": "Set(Region)", "description": "Database regions"},
+    {"name": "replica", "type": "Region -> Data", "description": "Regional replicas"},
+    {"name": "sessionToken", "type": "Session -> Token", "description": "Session consistency tokens"},
+    {"name": "commitLog", "type": "Seq(Write)", "description": "Committed writes"},
+    {"name": "replicationLag", "type": "Region -> Nat", "description": "Replication lag per region"}
+  ],
+
+  "model_checking_config": {
+    "tool": "TLC",
+    "recommended_constants": {
+      "Region": "{east, west}",
+      "Key": "{k1}",
+      "Value": "{v1, v2, v3}",
+      "Session": "{s1, s2}"
+    },
+    "invariants": ["TypeOK", "ConsistencyGuarantees"],
+    "expected_states": "Hundreds of thousands"
+  },
+
+  "related_specs": ["dynamo", "cassandra", "spanner"],
+
+  "used_by": [
+    "Xbox (player data)",
+    "Skype (messages)",
+    "Microsoft 365",
+    "Azure IoT Hub"
+  ],
+
+  "metadata": {
+    "version": "2023",
+    "last_updated": "2025-12-22",
+    "maintainer": "Microsoft",
+    "license": "MIT"
+  }
+}

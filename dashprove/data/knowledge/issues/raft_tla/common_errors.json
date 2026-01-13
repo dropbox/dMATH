@@ -1,0 +1,146 @@
+{
+  "tool": "raft_tla",
+  "version": "1.0.0",
+  "last_updated": "2025-12-23",
+  "description": "TLA+ specification of the Raft consensus algorithm (etcd/raft reference spec)",
+  "errors": [
+    {
+      "id": "leader_completeness_violation",
+      "pattern": "LeaderCompleteness.*FALSE|leader.*missing.*entry",
+      "message": "Leader Completeness property violated",
+      "cause": "A leader does not have all committed entries from previous terms",
+      "solutions": [
+        {
+          "approach": "Check election restriction",
+          "code": "\\* Leader must have up-to-date log\nCanVote(i, j) ==\n    /\\ lastTerm(log[j]) > lastTerm(log[i])\n    \\/ /\\ lastTerm(log[j]) = lastTerm(log[i])\n       /\\ Len(log[j]) >= Len(log[i])",
+          "when": "Leader elected without all committed entries"
+        },
+        {
+          "approach": "Verify commit index propagation",
+          "code": "\\* commitIndex must never decrease\nLeaderAction == \n    /\\ commitIndex' >= commitIndex\n    /\\ ...",
+          "when": "Commit index not monotonic"
+        },
+        {
+          "approach": "Check AppendEntries response handling",
+          "code": "\\* Only commit entries from current term\nAdvanceCommitIndex(i) ==\n    LET newCommitIndex == ... IN\n    /\\ log[i][newCommitIndex].term = currentTerm[i]",
+          "when": "Committing entries from old terms directly"
+        }
+      ]
+    },
+    {
+      "id": "election_safety_violation",
+      "pattern": "ElectionSafety.*FALSE|two leaders.*same term",
+      "message": "Two leaders elected in the same term",
+      "cause": "Election safety violated - multiple leaders in one term",
+      "solutions": [
+        {
+          "approach": "Ensure vote uniqueness",
+          "code": "\\* Each server votes at most once per term\nRequestVote(i, j) ==\n    /\\ votedFor[j] = Nil \\/ votedFor[j] = i\n    /\\ votedFor' = [votedFor EXCEPT ![j] = i]",
+          "when": "Server voting multiple times"
+        },
+        {
+          "approach": "Check quorum overlap",
+          "code": "\\* Quorums must overlap\nQuorum == {q \\in SUBSET Servers : Cardinality(q) * 2 > Cardinality(Servers)}",
+          "when": "Non-overlapping quorums"
+        },
+        {
+          "approach": "Verify term increment on election",
+          "code": "BecomeCandidate(i) ==\n    /\\ currentTerm' = [currentTerm EXCEPT ![i] = currentTerm[i] + 1]\n    /\\ votedFor' = [votedFor EXCEPT ![i] = i]",
+          "when": "Term not incremented"
+        }
+      ]
+    },
+    {
+      "id": "log_matching_violation",
+      "pattern": "LogMatching.*FALSE|log.*divergence",
+      "message": "Log Matching property violated",
+      "cause": "Two logs have different entries at the same index with same term",
+      "solutions": [
+        {
+          "approach": "Check AppendEntries log consistency",
+          "code": "AppendEntries(i, j, entries) ==\n    /\\ prevLogIndex > 0 =>\n       log[j][prevLogIndex].term = prevLogTerm\n    /\\ log' = [log EXCEPT ![j] = ...",
+          "when": "Accepting entries without consistency check"
+        },
+        {
+          "approach": "Verify log truncation",
+          "code": "\\* Truncate conflicting entries\nTruncateLog(j, index) ==\n    SubSeq(log[j], 1, index - 1)",
+          "when": "Not truncating on conflict"
+        },
+        {
+          "approach": "Check leader append-only",
+          "code": "\\* Leader never overwrites its own log\nLeaderAppend(i, entry) ==\n    /\\ state[i] = Leader\n    /\\ log' = [log EXCEPT ![i] = Append(log[i], entry)]",
+          "when": "Leader modifying existing entries"
+        }
+      ]
+    },
+    {
+      "id": "state_machine_safety_violation",
+      "pattern": "StateMachineSafety.*FALSE|different.*applied",
+      "message": "Servers applied different commands at same index",
+      "cause": "State machine safety violated - different commands applied",
+      "solutions": [
+        {
+          "approach": "Apply only committed entries",
+          "code": "ApplyEntry(i) ==\n    /\\ lastApplied[i] < commitIndex[i]\n    /\\ lastApplied' = [lastApplied EXCEPT ![i] = lastApplied[i] + 1]",
+          "when": "Applying uncommitted entries"
+        },
+        {
+          "approach": "Verify commit index correctness",
+          "code": "\\* Only commit if replicated on majority\nCalculateCommitIndex(i) ==\n    LET agreeIndexes == {index \\in 1..Len(log[i]) :\n        Cardinality({j \\in Servers : Len(log[j]) >= index}) * 2 > N}\n    IN Max(agreeIndexes)",
+          "when": "Incorrect commit index calculation"
+        },
+        {
+          "approach": "Check log at commit point",
+          "code": "\\* Committed entries are identical across all servers\nCommittedEntriesMatch ==\n    \\A i, j \\in Servers :\n        \\A idx \\in 1..Min(commitIndex[i], commitIndex[j]) :\n            log[i][idx] = log[j][idx]",
+          "when": "Committed entries differ"
+        }
+      ]
+    },
+    {
+      "id": "term_monotonicity_violation",
+      "pattern": "term.*decreased|non.?monotonic.*term",
+      "message": "Term decreased (should be monotonically increasing)",
+      "cause": "Server's term decreased which violates Raft invariant",
+      "solutions": [
+        {
+          "approach": "Always update term on message receive",
+          "code": "HandleMessage(i, msg) ==\n    IF msg.term > currentTerm[i] THEN\n        /\\ currentTerm' = [currentTerm EXCEPT ![i] = msg.term]\n        /\\ state' = [state EXCEPT ![i] = Follower]\n        /\\ votedFor' = [votedFor EXCEPT ![i] = Nil]",
+          "when": "Not stepping down on higher term"
+        },
+        {
+          "approach": "Reject messages from older terms",
+          "code": "ValidMessage(i, msg) ==\n    msg.term >= currentTerm[i]",
+          "when": "Processing stale messages"
+        },
+        {
+          "approach": "Persist term before responding",
+          "code": "\\* Term must be durable before any response\nRespondToMessage(i) ==\n    /\\ persisted'[i].term = currentTerm[i]\n    /\\ ...",
+          "when": "Term not persisted"
+        }
+      ]
+    },
+    {
+      "id": "liveness_no_progress",
+      "pattern": "temporal.*violated|no progress|deadlock",
+      "message": "System makes no progress (liveness violation)",
+      "cause": "Raft cluster is stuck and cannot elect a leader or commit entries",
+      "solutions": [
+        {
+          "approach": "Add fairness constraints",
+          "code": "Spec == Init /\\ [][Next]_vars\n    /\\ WF_vars(LeaderTimeout)\n    /\\ WF_vars(HandleAppendEntries)",
+          "when": "Actions not being taken fairly"
+        },
+        {
+          "approach": "Check for livelock in election",
+          "code": "\\* Randomize election timeout\nElectionTimeout(i) ==\n    /\\ timeout[i] = TRUE\n    /\\ timeout' = [timeout EXCEPT ![i] = FALSE]\n    /\\ ...",
+          "when": "Simultaneous elections causing livelock"
+        },
+        {
+          "approach": "Verify majority is reachable",
+          "code": "\\* Ensure quorum can communicate\nMajorityReachable ==\n    \\E Q \\in Quorum : \\A i, j \\in Q : CanCommunicate(i, j)",
+          "when": "Network partition preventing quorum"
+        }
+      ]
+    }
+  ]
+}

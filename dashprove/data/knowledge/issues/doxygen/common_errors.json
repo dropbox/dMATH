@@ -1,0 +1,242 @@
+{
+  "tool": "doxygen",
+  "version": "1.10+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "member_not_documented",
+      "pattern": "Member.*is not documented|Compound.*is not documented",
+      "message": "Code element lacks documentation",
+      "cause": "WARN_IF_UNDOCUMENTED enabled and element has no docs",
+      "solutions": [
+        {
+          "approach": "Add documentation",
+          "code": "/**\n * @brief Brief description.\n * @param x Parameter description.\n * @return Return value description.\n */",
+          "when": "Element needs docs"
+        },
+        {
+          "approach": "Disable warning",
+          "code": "WARN_IF_UNDOCUMENTED = NO",
+          "when": "Early development"
+        },
+        {
+          "approach": "Exclude pattern",
+          "code": "EXCLUDE_PATTERNS = */internal/*",
+          "when": "Internal code"
+        }
+      ]
+    },
+    {
+      "id": "unable_to_resolve_reference",
+      "pattern": "unable to resolve reference|unknown reference|link.*could not be resolved",
+      "message": "Cross-reference cannot be resolved",
+      "cause": "Referenced symbol doesn't exist or isn't documented",
+      "solutions": [
+        {
+          "approach": "Use correct syntax",
+          "code": "/// See @ref ClassName::methodName()",
+          "when": "Wrong reference format"
+        },
+        {
+          "approach": "Document target",
+          "code": "/// @class TargetClass\n/// Documentation for target.",
+          "when": "Target not documented"
+        },
+        {
+          "approach": "Use full path",
+          "code": "/// @see namespace::class::method",
+          "when": "Ambiguous reference"
+        },
+        {
+          "approach": "Enable AUTOLINK_SUPPORT",
+          "code": "AUTOLINK_SUPPORT = YES",
+          "when": "Auto-linking disabled"
+        }
+      ]
+    },
+    {
+      "id": "input_not_found",
+      "pattern": "source.*directory.*does not exist|INPUT.*not found|no input files",
+      "message": "Input directory/files not found",
+      "cause": "INPUT path in Doxyfile is wrong",
+      "solutions": [
+        {
+          "approach": "Fix INPUT path",
+          "code": "INPUT = ./src ./include",
+          "when": "Path incorrect"
+        },
+        {
+          "approach": "Use recursive",
+          "code": "RECURSIVE = YES",
+          "when": "Files in subdirectories"
+        },
+        {
+          "approach": "Set file patterns",
+          "code": "FILE_PATTERNS = *.cpp *.hpp *.h *.c",
+          "when": "Missing extensions"
+        }
+      ]
+    },
+    {
+      "id": "latex_error",
+      "pattern": "latex.*error|pdflatex failed|LaTeX Error",
+      "message": "PDF generation via LaTeX failed",
+      "cause": "LaTeX not installed or document errors",
+      "solutions": [
+        {
+          "approach": "Install LaTeX",
+          "code": "# Ubuntu: sudo apt install texlive-full\n# macOS: brew install --cask mactex",
+          "when": "LaTeX not installed"
+        },
+        {
+          "approach": "Use HTML only",
+          "code": "GENERATE_LATEX = NO",
+          "when": "PDF not needed"
+        },
+        {
+          "approach": "Fix special chars",
+          "code": "// Escape: _ # $ % & { } in comments",
+          "when": "Special chars in docs"
+        }
+      ]
+    },
+    {
+      "id": "graphviz_not_found",
+      "pattern": "dot not found|Graphviz.*not found|graph generation failed",
+      "message": "Graphviz not installed for diagrams",
+      "cause": "HAVE_DOT=YES but dot executable not found",
+      "solutions": [
+        {
+          "approach": "Install Graphviz",
+          "code": "# Ubuntu: sudo apt install graphviz\n# macOS: brew install graphviz",
+          "when": "Graphviz not installed"
+        },
+        {
+          "approach": "Set dot path",
+          "code": "DOT_PATH = /usr/local/bin",
+          "when": "dot in non-standard location"
+        },
+        {
+          "approach": "Disable graphs",
+          "code": "HAVE_DOT = NO",
+          "when": "Diagrams not needed"
+        }
+      ]
+    },
+    {
+      "id": "xml_parse_error",
+      "pattern": "xml.*parse error|malformed xml|XML syntax error",
+      "message": "XML output parsing error",
+      "cause": "Generated XML has syntax errors",
+      "solutions": [
+        {
+          "approach": "Escape special chars",
+          "code": "// Use &amp; &lt; &gt; in comments if needed",
+          "when": "XML special chars in code"
+        },
+        {
+          "approach": "Check encoding",
+          "code": "// Ensure UTF-8 encoding in source files",
+          "when": "Encoding issues"
+        },
+        {
+          "approach": "Update Doxygen",
+          "code": "# Use latest Doxygen version",
+          "when": "Known bug in old version"
+        }
+      ]
+    },
+    {
+      "id": "preprocessor_error",
+      "pattern": "preprocessing.*failed|macro.*error|PREDEFINED.*not set",
+      "message": "C preprocessor parsing failed",
+      "cause": "Complex macros confuse Doxygen parser",
+      "solutions": [
+        {
+          "approach": "Pre-define macros",
+          "code": "PREDEFINED = DEBUG=1 EXPORT=",
+          "when": "Macros affect parsing"
+        },
+        {
+          "approach": "Expand macros",
+          "code": "MACRO_EXPANSION = YES\nEXPAND_ONLY_PREDEF = YES",
+          "when": "Need macro expansion"
+        },
+        {
+          "approach": "Skip preprocessing",
+          "code": "ENABLE_PREPROCESSING = NO",
+          "when": "Macros too complex"
+        },
+        {
+          "approach": "Add skip macro",
+          "code": "PREDEFINED = DOXYGEN_SKIP=1\n#ifndef DOXYGEN_SKIP\n// complex code\n#endif",
+          "when": "Hide complex code from doxygen"
+        }
+      ]
+    },
+    {
+      "id": "duplicate_warning",
+      "pattern": "multiple definition|defined more than once|duplicate",
+      "message": "Duplicate documentation for same element",
+      "cause": "Same element documented multiple times",
+      "solutions": [
+        {
+          "approach": "Remove duplicate",
+          "code": "// Keep only one /// comment per element",
+          "when": "Accidental duplicate"
+        },
+        {
+          "approach": "Use @file once",
+          "code": "/** @file\n * @brief File description.\n */",
+          "when": "Multiple @file in one file"
+        },
+        {
+          "approach": "Use unique names",
+          "code": "/// @page page1 Page One\n/// @page page2 Page Two",
+          "when": "Page names collide"
+        }
+      ]
+    },
+    {
+      "id": "include_not_found",
+      "pattern": "include.*not found|INCLUDE_PATH.*missing|header.*not resolved",
+      "message": "Include file not found",
+      "cause": "INCLUDE_PATH doesn't contain needed directories",
+      "solutions": [
+        {
+          "approach": "Set include paths",
+          "code": "INCLUDE_PATH = ./include /usr/local/include",
+          "when": "Headers in non-standard paths"
+        },
+        {
+          "approach": "Use file patterns",
+          "code": "INCLUDE_FILE_PATTERNS = *.h *.hpp",
+          "when": "Non-standard extensions"
+        }
+      ]
+    },
+    {
+      "id": "output_directory_error",
+      "pattern": "output directory.*error|cannot create.*output|permission denied.*output",
+      "message": "Cannot create output directory",
+      "cause": "Output directory doesn't exist or no write permission",
+      "solutions": [
+        {
+          "approach": "Create directory",
+          "code": "mkdir -p docs/doxygen",
+          "when": "Directory missing"
+        },
+        {
+          "approach": "Fix permissions",
+          "code": "chmod u+w docs/",
+          "when": "No write permission"
+        },
+        {
+          "approach": "Set output dir",
+          "code": "OUTPUT_DIRECTORY = ./build/docs",
+          "when": "Change output location"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "tool": "swift-testing",
+  "version": "0.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "test_not_discovered",
+      "pattern": "test not found|no tests|0 tests discovered",
+      "message": "Test function not discovered",
+      "cause": "Missing @Test attribute or incorrect function signature",
+      "solutions": [
+        {
+          "approach": "Add @Test attribute",
+          "code": "@Test\nfunc myTest() { ... }",
+          "when": "Missing attribute"
+        },
+        {
+          "approach": "Check function is async if needed",
+          "code": "@Test\nfunc myAsyncTest() async { ... }",
+          "when": "Test has async code"
+        },
+        {
+          "approach": "Add throws if needed",
+          "code": "@Test\nfunc myThrowingTest() throws { ... }",
+          "when": "Test may throw"
+        }
+      ]
+    },
+    {
+      "id": "expectation_failed",
+      "pattern": "#expect.*failed|Expectation failed",
+      "message": "Test expectation not met",
+      "cause": "Condition in #expect macro evaluated to false",
+      "solutions": [
+        {
+          "approach": "Check actual vs expected",
+          "code": "#expect(actual == expected)  // Swift Testing shows both values",
+          "when": "Value comparison"
+        },
+        {
+          "approach": "Use custom message",
+          "code": "#expect(condition, \"Custom failure message\")",
+          "when": "Need better diagnostics"
+        },
+        {
+          "approach": "Check optional values",
+          "code": "#expect(value != nil)",
+          "when": "Testing optional"
+        }
+      ]
+    },
+    {
+      "id": "require_failed",
+      "pattern": "#require.*failed|Required condition.*false",
+      "message": "Required precondition not met",
+      "cause": "#require macro condition was false, stopping test",
+      "solutions": [
+        {
+          "approach": "Ensure setup is correct",
+          "code": "let value = try #require(setup())",
+          "when": "Setup may fail"
+        },
+        {
+          "approach": "Use #expect if not fatal",
+          "code": "#expect(condition)  // Continues test on failure",
+          "when": "Failure shouldn't stop test"
+        },
+        {
+          "approach": "Unwrap optionals safely",
+          "code": "let unwrapped = try #require(optionalValue)",
+          "when": "Need non-optional"
+        }
+      ]
+    },
+    {
+      "id": "suite_not_found",
+      "pattern": "suite.*not found|@Suite.*error",
+      "message": "Test suite not discovered",
+      "cause": "Missing @Suite attribute or struct/class issue",
+      "solutions": [
+        {
+          "approach": "Add @Suite attribute",
+          "code": "@Suite\nstruct MyTests { ... }",
+          "when": "Group related tests"
+        },
+        {
+          "approach": "Use struct for test suite",
+          "code": "@Suite struct MyTests { }  // Not class",
+          "when": "Converting from XCTest"
+        },
+        {
+          "approach": "Check nesting",
+          "code": "@Suite struct Outer {\n    @Suite struct Inner { ... }\n}",
+          "when": "Nested suites"
+        }
+      ]
+    },
+    {
+      "id": "parameterized_test_error",
+      "pattern": "arguments.*invalid|parameterized.*failed|cannot call",
+      "message": "Parameterized test configuration error",
+      "cause": "Invalid arguments attribute or type mismatch",
+      "solutions": [
+        {
+          "approach": "Use @Test with arguments",
+          "code": "@Test(arguments: [1, 2, 3])\nfunc myTest(_ value: Int) { ... }",
+          "when": "Simple argument list"
+        },
+        {
+          "approach": "Use zip for multiple arguments",
+          "code": "@Test(arguments: zip([1,2], [\"a\",\"b\"]))\nfunc myTest(_ num: Int, _ str: String) { ... }",
+          "when": "Multiple parameters"
+        },
+        {
+          "approach": "Use custom argument source",
+          "code": "@Test(arguments: MyType.testCases)\nfunc myTest(_ case: MyType) { ... }",
+          "when": "Complex argument generation"
+        }
+      ]
+    },
+    {
+      "id": "trait_conflict",
+      "pattern": "trait.*conflict|incompatible traits|cannot combine",
+      "message": "Test traits conflict with each other",
+      "cause": "Incompatible test configuration traits specified",
+      "solutions": [
+        {
+          "approach": "Check trait compatibility",
+          "code": "@Test(.disabled()) // Cannot combine with .enabled()",
+          "when": "Conflicting traits"
+        },
+        {
+          "approach": "Use one trait only",
+          "code": "@Test(.serialized)  // Not both .serialized and .parallel",
+          "when": "Execution mode conflict"
+        },
+        {
+          "approach": "Apply at correct level",
+          "code": "@Suite(.serialized) struct Tests { }  // Suite-level",
+          "when": "Wrong scope for trait"
+        }
+      ]
+    },
+    {
+      "id": "issue_not_caught",
+      "pattern": "issue.*not recorded|expected issue.*missing",
+      "message": "Expected issue was not caught",
+      "cause": "#expect(throws:) or withKnownIssue didn't catch error",
+      "solutions": [
+        {
+          "approach": "Check error type",
+          "code": "try #expect(throws: MyError.self) {\n    try functionThatThrows()\n}",
+          "when": "Wrong error type specified"
+        },
+        {
+          "approach": "Use any error",
+          "code": "try #expect(throws: (any Error).self) { ... }",
+          "when": "Don't care about error type"
+        },
+        {
+          "approach": "Check if issue still exists",
+          "code": "withKnownIssue { ... }  // Issue may be fixed",
+          "when": "Known issue resolved"
+        }
+      ]
+    },
+    {
+      "id": "timeout_exceeded",
+      "pattern": "timeout|timed out|exceeded time limit",
+      "message": "Test exceeded time limit",
+      "cause": "Test took longer than allowed",
+      "solutions": [
+        {
+          "approach": "Set explicit timeout",
+          "code": "@Test(.timeLimit(.minutes(5)))\nfunc slowTest() { ... }",
+          "when": "Need longer timeout"
+        },
+        {
+          "approach": "Optimize test",
+          "code": "// Reduce test scope or mock slow dependencies",
+          "when": "Test is too slow"
+        },
+        {
+          "approach": "Split test",
+          "code": "// Break into smaller, faster tests",
+          "when": "Monolithic test"
+        }
+      ]
+    },
+    {
+      "id": "xctest_migration",
+      "pattern": "XCT.*not found|import XCTest|XCTestCase",
+      "message": "Mixing XCTest and Swift Testing",
+      "cause": "Using XCTest APIs in Swift Testing context",
+      "solutions": [
+        {
+          "approach": "Replace XCTAssert with #expect",
+          "code": "#expect(value == expected)  // Not XCTAssertEqual",
+          "when": "Migrating assertions"
+        },
+        {
+          "approach": "Replace XCTFail with Issue.record",
+          "code": "Issue.record(\"failure message\")  // Not XCTFail",
+          "when": "Recording failures"
+        },
+        {
+          "approach": "Use @Test not func test*()",
+          "code": "@Test func myTest() { }  // Not func testMyTest()",
+          "when": "Test discovery"
+        }
+      ]
+    },
+    {
+      "id": "actor_isolation",
+      "pattern": "actor-isolated|cannot access|MainActor.*error",
+      "message": "Actor isolation error in test",
+      "cause": "Test trying to access actor-isolated state incorrectly",
+      "solutions": [
+        {
+          "approach": "Mark test with @MainActor",
+          "code": "@Test @MainActor\nfunc mainActorTest() { ... }",
+          "when": "Need MainActor access"
+        },
+        {
+          "approach": "Use await",
+          "code": "@Test\nfunc asyncTest() async {\n    await actor.method()\n}",
+          "when": "Accessing actor method"
+        },
+        {
+          "approach": "Test on correct isolation",
+          "code": "@Suite(.serialized) @MainActor\nstruct UITests { ... }",
+          "when": "Suite needs isolation"
+        }
+      ]
+    }
+  ]
+}

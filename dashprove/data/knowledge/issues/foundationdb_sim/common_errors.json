@@ -1,0 +1,237 @@
+{
+  "tool": "foundationdb_sim",
+  "version": "7.3",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "simulation_timeout",
+      "pattern": "simulation.*timeout|test.*exceeded.*time|slow.*simulation",
+      "message": "Simulation test timed out",
+      "cause": "Test taking too long due to complexity or infinite loop",
+      "solutions": [
+        {
+          "approach": "Reduce test scope",
+          "code": "// Reduce number of operations in test\nint numOperations = 100;  // Instead of 10000\nfor (int i = 0; i < numOperations; i++) {\n    doOperation();\n}",
+          "when": "Test too large"
+        },
+        {
+          "approach": "Add simulation time limits",
+          "code": "ACTOR Future<Void> testWithTimeout() {\n    state Future<Void> test = myTest();\n    state Future<Void> timeout = delay(300.0);  // 5 min\n    choose {\n        when (wait(test)) { return Void(); }\n        when (wait(timeout)) { throw timed_out(); }\n    }\n}",
+          "when": "Need timeout protection"
+        },
+        {
+          "approach": "Check for infinite loops",
+          "code": "// Add loop counters\nint iterations = 0;\nwhile (condition) {\n    if (++iterations > MAX_ITERATIONS) {\n        TraceEvent(SevError, \"InfiniteLoop\");\n        break;\n    }\n    // ...\n}",
+          "when": "Possible infinite loop"
+        }
+      ]
+    },
+    {
+      "id": "buggify_triggered",
+      "pattern": "BUGGIFY|buggify.*triggered|random.*fault.*injected",
+      "message": "BUGGIFY fault injection triggered a bug",
+      "cause": "Code doesn't handle injected fault correctly",
+      "solutions": [
+        {
+          "approach": "Handle BUGGIFY faults",
+          "code": "if (BUGGIFY) {\n    // Simulate fault\n    throw io_error();\n}\n// Make sure caller handles this properly",
+          "when": "Missing error handling"
+        },
+        {
+          "approach": "Add retry logic",
+          "code": "loop {\n    try {\n        wait(operation());\n        break;\n    } catch (Error& e) {\n        if (e.code() == error_code_io_error) {\n            wait(delay(0.1));\n            continue;  // Retry\n        }\n        throw;\n    }\n}",
+          "when": "Transient failures"
+        },
+        {
+          "approach": "Verify idempotency",
+          "code": "// Ensure operations are idempotent\n// If operation might be retried, make sure repeated\n// execution produces same result",
+          "when": "Non-idempotent operation"
+        }
+      ]
+    },
+    {
+      "id": "actor_leak",
+      "pattern": "actor.*leak|Future.*never.*completed|waiting.*forever",
+      "message": "Actor leaked or never completed",
+      "cause": "Future was discarded without being waited on or actor is stuck",
+      "solutions": [
+        {
+          "approach": "Always wait on futures",
+          "code": "ACTOR Future<Void> myActor() {\n    Future<int> f = asyncOperation();\n    int result = wait(f);  // Always wait\n    return Void();\n}",
+          "when": "Future not awaited"
+        },
+        {
+          "approach": "Use ACTOR with proper cleanup",
+          "code": "ACTOR Future<Void> withCleanup() {\n    state Transaction tr(db);\n    try {\n        wait(work(&tr));\n    } catch (Error& e) {\n        // Cleanup on error\n    }\n    return Void();\n}",
+          "when": "Missing error cleanup"
+        },
+        {
+          "approach": "Cancel orphaned actors",
+          "code": "state Future<Void> worker = workerActor();\ntry {\n    wait(mainWork());\n} catch (...) {\n    worker.cancel();\n    throw;\n}",
+          "when": "Background actor orphaned"
+        }
+      ]
+    },
+    {
+      "id": "transaction_conflict",
+      "pattern": "transaction.*conflict|commit.*failed|retry.*loop",
+      "message": "Transaction conflict requiring retry",
+      "cause": "Concurrent transactions conflicting on same keys",
+      "solutions": [
+        {
+          "approach": "Use onError retry loop",
+          "code": "loop {\n    try {\n        tr.set(key, value);\n        wait(tr.commit());\n        break;\n    } catch (Error& e) {\n        wait(tr.onError(e));\n    }\n}",
+          "when": "Standard transaction"
+        },
+        {
+          "approach": "Reduce conflict scope",
+          "code": "// Use snapshot reads when possible\nOptional<Value> val = wait(tr.get(key, Snapshot::True));\n// Only conflict on writes",
+          "when": "Read conflicts causing retries"
+        },
+        {
+          "approach": "Use versionstamped keys",
+          "code": "// Append versionstamp to avoid conflicts\ntr.atomicOp(key, versionstampedValue, MutationRef::SetVersionstampedValue);",
+          "when": "Append-only workload"
+        }
+      ]
+    },
+    {
+      "id": "simulation_determinism",
+      "pattern": "non-deterministic|different.*runs|seed.*mismatch",
+      "message": "Simulation behavior not deterministic",
+      "cause": "Using system time, random, or undefined behavior",
+      "solutions": [
+        {
+          "approach": "Use deterministicRandom()",
+          "code": "// Don't use std::random\nint r = deterministicRandom()->randomInt(0, 100);",
+          "when": "Need random values"
+        },
+        {
+          "approach": "Use simulation time",
+          "code": "// Don't use system time\ndouble now = g_simulator->now();\nwait(delay(1.0));  // Uses simulation time",
+          "when": "Need timestamps"
+        },
+        {
+          "approach": "Avoid undefined behavior",
+          "code": "// Initialize all variables\n// Don't rely on map iteration order\n// Use stable sorting",
+          "when": "Undefined behavior"
+        }
+      ]
+    },
+    {
+      "id": "network_partition_bug",
+      "pattern": "partition|split.*brain|quorum.*lost",
+      "message": "Bug triggered during simulated network partition",
+      "cause": "Cluster doesn't handle partitions correctly",
+      "solutions": [
+        {
+          "approach": "Implement proper quorum",
+          "code": "// Require majority for writes\nint required = (replicas / 2) + 1;\nif (acks >= required) {\n    commitWrite();\n}",
+          "when": "Missing quorum logic"
+        },
+        {
+          "approach": "Handle minority partition",
+          "code": "// Minority partition should stop accepting writes\nif (!hasQuorum()) {\n    throw not_enough_servers();\n}",
+          "when": "Minority keeps accepting writes"
+        },
+        {
+          "approach": "Fence old leaders",
+          "code": "// Use generation numbers to fence old leaders\nif (message.generation < currentGeneration) {\n    // Ignore stale message\n    return;\n}",
+          "when": "Old leader still active"
+        }
+      ]
+    },
+    {
+      "id": "disk_failure_handling",
+      "pattern": "disk.*failure|storage.*error|io_error",
+      "message": "Bug triggered by simulated disk failure",
+      "cause": "Disk I/O error not handled correctly",
+      "solutions": [
+        {
+          "approach": "Retry on transient errors",
+          "code": "loop {\n    try {\n        wait(diskWrite(data));\n        break;\n    } catch (Error& e) {\n        if (e.code() == error_code_io_error && retries++ < MAX_RETRIES) {\n            wait(delay(1.0));\n            continue;\n        }\n        throw;\n    }\n}",
+          "when": "Transient disk errors"
+        },
+        {
+          "approach": "Mark storage as failed",
+          "code": "try {\n    wait(storageOperation());\n} catch (Error& e) {\n    if (e.code() == error_code_io_error) {\n        markStorageFailed(storageId);\n        throw;\n    }\n}",
+          "when": "Permanent disk failure"
+        },
+        {
+          "approach": "Use checksums",
+          "code": "// Verify data integrity on read\nuint32_t stored_checksum = readChecksum();\nuint32_t computed = crc32(data);\nif (stored_checksum != computed) {\n    throw checksum_error();\n}",
+          "when": "Disk corruption"
+        }
+      ]
+    },
+    {
+      "id": "memory_limit_exceeded",
+      "pattern": "memory.*limit|OOM|out.*of.*memory",
+      "message": "Simulation exceeded memory limit",
+      "cause": "Test using too much memory",
+      "solutions": [
+        {
+          "approach": "Reduce data size",
+          "code": "// Use smaller test data\nconst int VALUE_SIZE = 100;  // Instead of 10000\nstd::string value(VALUE_SIZE, 'x');",
+          "when": "Large values"
+        },
+        {
+          "approach": "Process in batches",
+          "code": "for (int batch = 0; batch < totalKeys; batch += BATCH_SIZE) {\n    processKeys(batch, min(batch + BATCH_SIZE, totalKeys));\n    // Allow memory to be freed between batches\n}",
+          "when": "Processing many items"
+        },
+        {
+          "approach": "Check for memory leaks",
+          "code": "// Ensure actors complete and release resources\n// Check for circular references\n// Profile memory usage during test",
+          "when": "Memory keeps growing"
+        }
+      ]
+    },
+    {
+      "id": "trace_event_missing",
+      "pattern": "missing.*trace|no.*trace.*event|debugging.*difficult",
+      "message": "Missing trace events make debugging difficult",
+      "cause": "Insufficient logging/tracing in test or code",
+      "solutions": [
+        {
+          "approach": "Add TraceEvents",
+          "code": "TraceEvent(\"MyOperation\")\n    .detail(\"Key\", key)\n    .detail(\"Value\", value)\n    .detail(\"Result\", result);",
+          "when": "Need more visibility"
+        },
+        {
+          "approach": "Use severity levels",
+          "code": "TraceEvent(SevInfo, \"Normal\");      // Normal info\nTraceEvent(SevWarn, \"Warning\");     // Warnings\nTraceEvent(SevError, \"Error\");      // Errors\nTraceEvent(SevWarnAlways, \"Bug\");   // Always shown",
+          "when": "Prioritizing logs"
+        },
+        {
+          "approach": "Enable debug trace",
+          "code": "// In simulation config\nenableConnectionFailures = true;\nenableTraceEvents = true;\ntraceFileIdentifier = \"mytest\";",
+          "when": "Need detailed trace"
+        }
+      ]
+    },
+    {
+      "id": "recovery_failure",
+      "pattern": "recovery.*failed|restart.*failed|state.*corruption",
+      "message": "Cluster failed to recover after simulated crash",
+      "cause": "Recovery logic has bugs or state is corrupted",
+      "solutions": [
+        {
+          "approach": "Verify recovery path",
+          "code": "// Test recovery explicitly\nwait(cluster.kill());\nwait(cluster.restart());\nwait(cluster.waitForRecovery());\n// Verify data integrity",
+          "when": "Testing recovery"
+        },
+        {
+          "approach": "Check transaction log",
+          "code": "// Ensure transaction log is properly replayed\n// Verify all committed transactions are recovered\n// Check log sequence numbers",
+          "when": "Missing transactions after recovery"
+        },
+        {
+          "approach": "Handle partial writes",
+          "code": "// Use checksums to detect partial writes\n// Implement log truncation on recovery\n// Handle torn writes",
+          "when": "Crash during write"
+        }
+      ]
+    }
+  ]
+}

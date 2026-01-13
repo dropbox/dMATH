@@ -1,0 +1,273 @@
+{
+  "tool_id": "dmd_contracts",
+  "tool_name": "D Language Contracts",
+  "tool_version": "2.107",
+  "category": "contract_based_verification",
+  "error_patterns": [
+    {
+      "id": "dmd_precondition_failure",
+      "pattern": "core.exception.AssertError.*in contract|Precondition failure|in precondition",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A function's in contract (precondition) was violated at runtime",
+      "common_causes": [
+        "Caller passed invalid arguments",
+        "Null pointer passed when non-null required",
+        "Value out of expected range",
+        "Uninitialized data passed"
+      ],
+      "solutions": [
+        "Validate arguments before calling function",
+        "Check for null before passing pointers",
+        "Ensure values are within expected ranges",
+        "Initialize data before use"
+      ],
+      "examples": [
+        {
+          "error": "core.exception.AssertError@source.d(10): in contract",
+          "context": "in { assert(x > 0); }",
+          "fix": "if (x > 0) processPositive(x);"
+        }
+      ],
+      "related_errors": ["dmd_postcondition_failure"],
+      "documentation_url": "https://dlang.org/spec/contracts.html"
+    },
+    {
+      "id": "dmd_postcondition_failure",
+      "pattern": "core.exception.AssertError.*out contract|Postcondition failure|in postcondition",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A function's out contract (postcondition) was violated",
+      "common_causes": [
+        "Bug in function implementation",
+        "Postcondition doesn't match implementation",
+        "Side effects not accounted for",
+        "Return value computation error"
+      ],
+      "solutions": [
+        "Fix the function implementation",
+        "Review postcondition accuracy",
+        "Check all return paths",
+        "Debug with intermediate assertions"
+      ],
+      "examples": [
+        {
+          "error": "core.exception.AssertError@source.d(15): in out contract",
+          "context": "out(r) { assert(r >= 0); }",
+          "fix": "Ensure function never returns negative values"
+        }
+      ],
+      "related_errors": ["dmd_precondition_failure"],
+      "documentation_url": "https://dlang.org/spec/contracts.html"
+    },
+    {
+      "id": "dmd_invariant_failure",
+      "pattern": "core.exception.AssertError.*invariant|Invariant failure|class invariant",
+      "severity": "error",
+      "category": "contract_violation",
+      "description": "A class/struct invariant was violated",
+      "common_causes": [
+        "Constructor doesn't establish invariant",
+        "Method breaks class invariant",
+        "Field set to invalid value",
+        "Concurrent modification"
+      ],
+      "solutions": [
+        "Ensure constructor establishes invariant",
+        "Check all methods maintain invariant",
+        "Use private setters with validation",
+        "Add synchronization if needed"
+      ],
+      "examples": [
+        {
+          "error": "core.exception.AssertError@myclass.d(25): invariant failure",
+          "context": "invariant { assert(size >= 0); }",
+          "fix": "Prevent size from becoming negative"
+        }
+      ],
+      "related_errors": ["dmd_postcondition_failure"],
+      "documentation_url": "https://dlang.org/spec/contracts.html"
+    },
+    {
+      "id": "dmd_assert_failure",
+      "pattern": "core.exception.AssertError|Assertion failure|assert.*failed",
+      "severity": "error",
+      "category": "assertion_failure",
+      "description": "An assert statement failed at runtime",
+      "common_causes": [
+        "Unexpected program state",
+        "Logic error",
+        "Data corruption",
+        "Invalid assumptions"
+      ],
+      "solutions": [
+        "Review the condition that failed",
+        "Add debugging output to understand state",
+        "Check for data races",
+        "Validate assumptions with contracts"
+      ],
+      "examples": [
+        {
+          "error": "core.exception.AssertError@file.d(42): Assertion failure",
+          "context": "assert(array.length > 0)",
+          "fix": "Handle empty array case before assertion"
+        }
+      ],
+      "related_errors": ["dmd_bounds_error"],
+      "documentation_url": "https://dlang.org/spec/expression.html#assert"
+    },
+    {
+      "id": "dmd_bounds_error",
+      "pattern": "core.exception.RangeError|array bounds exceeded|ArrayIndexError",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Array bounds were exceeded",
+      "common_causes": [
+        "Index out of range",
+        "Off-by-one error",
+        "Empty array access",
+        "Slice exceeds bounds"
+      ],
+      "solutions": [
+        "Check index before access",
+        "Use foreach instead of indexed loops",
+        "Validate slice boundaries",
+        "Use .get() or similar safe access"
+      ],
+      "examples": [
+        {
+          "error": "core.exception.RangeError@source.d(30): array index 10 out of bounds for array of length 5",
+          "context": "arr[i] where i=10",
+          "fix": "if (i < arr.length) arr[i]"
+        }
+      ],
+      "related_errors": ["dmd_assert_failure"],
+      "documentation_url": "https://dlang.org/spec/arrays.html"
+    },
+    {
+      "id": "dmd_contract_disabled",
+      "pattern": "contracts disabled|release mode|no contracts",
+      "severity": "info",
+      "category": "configuration",
+      "description": "Contracts are disabled in release builds",
+      "common_causes": [
+        "Compiled with -release flag",
+        "Production build settings",
+        "Performance optimization",
+        "Intentionally disabled"
+      ],
+      "solutions": [
+        "Use debug builds for testing",
+        "Remove -release for contract checking",
+        "Use enforce() for always-on checks",
+        "Consider separate assertion levels"
+      ],
+      "examples": [
+        {
+          "error": "Contract not checked in release mode",
+          "context": "dmd -release source.d",
+          "fix": "dmd source.d (without -release)"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://dlang.org/spec/contracts.html"
+    },
+    {
+      "id": "dmd_null_dereference",
+      "pattern": "core.exception.NullPointerError|null dereference|access violation",
+      "severity": "error",
+      "category": "runtime_error",
+      "description": "Attempted to dereference a null pointer",
+      "common_causes": [
+        "Uninitialized class reference",
+        "Failed initialization",
+        "Null from failed lookup",
+        "Cleared reference"
+      ],
+      "solutions": [
+        "Check for null before dereference",
+        "Use nullable types appropriately",
+        "Initialize all references",
+        "Use enforce(!ptr.isNull)"
+      ],
+      "examples": [
+        {
+          "error": "core.exception.NullPointerError",
+          "context": "obj.method() where obj is null",
+          "fix": "if (obj !is null) obj.method()"
+        }
+      ],
+      "related_errors": ["dmd_assert_failure"],
+      "documentation_url": "https://dlang.org/spec/class.html"
+    },
+    {
+      "id": "dmd_scope_error",
+      "pattern": "scope variable|lifetime error|escaping reference",
+      "severity": "error",
+      "category": "safety_error",
+      "description": "A scope variable escaped its scope or lifetime",
+      "common_causes": [
+        "Returning local pointer",
+        "Storing scope variable in non-scope location",
+        "Delegate captures local variable",
+        "Scope mismatch"
+      ],
+      "solutions": [
+        "Don't return pointers to locals",
+        "Copy data instead of storing reference",
+        "Use heap allocation if needed",
+        "Review scope annotations"
+      ],
+      "examples": [
+        {
+          "error": "cannot implicitly convert scope variable",
+          "context": "return scope variable",
+          "fix": "Return copy instead of reference"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://dlang.org/spec/function.html#scope-parameters"
+    }
+  ],
+  "general_tips": [
+    "D contracts are compile-time checked and runtime enforced",
+    "Use 'in' blocks for preconditions, 'out' for postconditions",
+    "Invariants are checked after constructor and before/after public methods",
+    "Contracts are disabled in -release builds for performance",
+    "Use enforce() for checks that should always run",
+    "@safe functions have memory safety guarantees checked by compiler",
+    "Combine contracts with unit testing for comprehensive coverage"
+  ],
+  "common_workflows": [
+    {
+      "name": "Adding contracts to function",
+      "steps": [
+        "Add 'in' contract for parameter validation",
+        "Add 'out' contract for return value guarantees",
+        "Test with debug build",
+        "Verify contracts don't fire in normal use"
+      ]
+    },
+    {
+      "name": "Class invariants",
+      "steps": [
+        "Define invariant{} block in class",
+        "Ensure constructor establishes invariant",
+        "Check all mutating methods maintain invariant"
+      ]
+    },
+    {
+      "name": "Debugging contract failures",
+      "steps": [
+        "Run with -debug flag",
+        "Check stack trace for failure location",
+        "Add scope(exit) logging",
+        "Use -checkaction=context for details"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "2.100+": "Improved scope checking, better error messages",
+    "2.090+": "@live ownership/borrowing for memory safety"
+  }
+}

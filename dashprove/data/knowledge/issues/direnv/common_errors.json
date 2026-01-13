@@ -1,0 +1,145 @@
+{
+  "tool": "direnv",
+  "version": "2.33",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_allowed",
+      "pattern": "direnv.*blocked|not allowed|allow.*first|direnv: error",
+      "message": "Envrc file not allowed",
+      "cause": "New or modified .envrc needs explicit approval",
+      "solutions": [
+        {
+          "approach": "Allow directory",
+          "code": "direnv allow .",
+          "when": "Trust this .envrc"
+        },
+        {
+          "approach": "Allow file",
+          "code": "direnv allow /path/to/.envrc",
+          "when": "Specific file"
+        },
+        {
+          "approach": "Check status",
+          "code": "direnv status",
+          "when": "See current state"
+        }
+      ]
+    },
+    {
+      "id": "hook_not_setup",
+      "pattern": "direnv.*hook|eval.*direnv|shell not hooked|direnv: command not found",
+      "message": "Shell hook not configured",
+      "cause": "direnv hook not added to shell rc file",
+      "solutions": [
+        {
+          "approach": "Bash hook",
+          "code": "# Add to ~/.bashrc:\neval \"$(direnv hook bash)\"",
+          "when": "Bash shell"
+        },
+        {
+          "approach": "Zsh hook",
+          "code": "# Add to ~/.zshrc:\neval \"$(direnv hook zsh)\"",
+          "when": "Zsh shell"
+        },
+        {
+          "approach": "Fish hook",
+          "code": "# Add to ~/.config/fish/config.fish:\ndirenv hook fish | source",
+          "when": "Fish shell"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error|parse error|bash.*error|source.*failed",
+      "message": "Envrc syntax error",
+      "cause": "Invalid bash syntax in .envrc",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "bash -n .envrc  # Syntax check",
+          "when": "Validate bash"
+        },
+        {
+          "approach": "Use stdlib",
+          "code": "# Use direnv stdlib functions:\nuse python 3.11\nlayout python\ndotenv",
+          "when": "Built-in functions"
+        },
+        {
+          "approach": "Debug",
+          "code": "direnv exec . env  # Run in subshell",
+          "when": "Test execution"
+        }
+      ]
+    },
+    {
+      "id": "missing_command",
+      "pattern": "command not found|use.*failed|layout.*unknown|could not find",
+      "message": "Referenced command/layout not found",
+      "cause": "Tool not installed or stdlib function unknown",
+      "solutions": [
+        {
+          "approach": "Install tools",
+          "code": "# For 'use python':\npip install virtualenv\n# For 'use nix':\n# Install nix package manager",
+          "when": "Missing dependency"
+        },
+        {
+          "approach": "Check stdlib",
+          "code": "direnv stdlib  # List available functions",
+          "when": "Available layouts"
+        },
+        {
+          "approach": "Custom function",
+          "code": "# ~/.config/direnv/direnvrc\nuse_myenv() {\n  source /path/to/env.sh\n}",
+          "when": "Custom extension"
+        }
+      ]
+    },
+    {
+      "id": "slow_loading",
+      "pattern": "slow|timeout|taking too long|direnv.*seconds",
+      "message": "Environment loading slow",
+      "cause": "Complex .envrc or slow commands",
+      "solutions": [
+        {
+          "approach": "Cache results",
+          "code": "# .envrc\nwatch_file Pipfile.lock\nif has nix; then\n  use flake\nfi",
+          "when": "Conditional loading"
+        },
+        {
+          "approach": "Reduce work",
+          "code": "# Cache expensive operations:\ndirenv_layout_dir=$PWD/.direnv\nmkdir -p $direnv_layout_dir",
+          "when": "Optimize .envrc"
+        },
+        {
+          "approach": "Log timing",
+          "code": "export DIRENV_LOG_FORMAT='%s took %dms'",
+          "when": "Debug slow parts"
+        }
+      ]
+    },
+    {
+      "id": "env_not_unloading",
+      "pattern": "env.*still set|variable.*persisting|not unloading|PATH corrupted",
+      "message": "Environment not unloading properly",
+      "cause": "Variables set outside direnv or hook issue",
+      "solutions": [
+        {
+          "approach": "Reload shell",
+          "code": "exec $SHELL  # Fresh shell",
+          "when": "Reset environment"
+        },
+        {
+          "approach": "Deny current",
+          "code": "direnv deny\ncd ..\ncd -",
+          "when": "Force unload"
+        },
+        {
+          "approach": "Check exports",
+          "code": "# Only use export_* functions:\nexport_function my_func\nexport_alias my_alias",
+          "when": "Proper exports"
+        }
+      ]
+    }
+  ]
+}

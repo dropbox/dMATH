@@ -1,0 +1,174 @@
+{
+  "id": "fscheck",
+  "name": "FsCheck",
+  "category": "dotnet_testing",
+  "subcategory": "property_based_testing",
+
+  "description": "Property-based testing for .NET inspired by QuickCheck",
+  "long_description": "FsCheck is a tool for testing .NET programs automatically using property-based testing. Inspired by Haskell's QuickCheck, FsCheck generates random test data and checks that specified properties hold. When a property fails, FsCheck automatically shrinks the failing case to a minimal counterexample.",
+
+  "capabilities": [
+    "property_based_testing",
+    "random_data_generation",
+    "automatic_shrinking",
+    "custom_generators",
+    "stateful_testing",
+    "model_based_testing",
+    "integration_with_xunit_nunit"
+  ],
+  "property_types": ["property", "generator", "arbitrary"],
+  "input_languages": ["fsharp", "csharp"],
+  "output_formats": ["test_result", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "nuget", "command": "Install-Package FsCheck"},
+      {"type": "nuget", "command": "Install-Package FsCheck.Xunit"},
+      {"type": "nuget", "command": "Install-Package FsCheck.NUnit"}
+    ],
+    "dependencies": ["dotnet"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://fscheck.github.io/FsCheck/",
+    "quickstart": "https://fscheck.github.io/FsCheck/QuickStart.html",
+    "api_reference": "https://fscheck.github.io/FsCheck/reference/index.html",
+    "examples": "https://github.com/fscheck/FsCheck/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_property_fsharp",
+      "description": "Define property in F#",
+      "syntax": "let prop x = condition",
+      "when_to_use": "Basic property definition",
+      "examples": ["let revRevIsOrig (xs: int list) =\n    List.rev (List.rev xs) = xs\n\nCheck.Quick revRevIsOrig"]
+    },
+    {
+      "name": "basic_property_csharp",
+      "description": "Define property in C#",
+      "syntax": "[Property] public bool Name(args)",
+      "when_to_use": "xUnit/NUnit integration",
+      "examples": ["[Property]\npublic bool RevRevIsOrig(int[] xs)\n{\n    return xs.Reverse().Reverse().SequenceEqual(xs);\n}"]
+    },
+    {
+      "name": "custom_generator",
+      "description": "Create custom data generator",
+      "syntax": "Gen<T> and Arb.Register",
+      "when_to_use": "Domain-specific test data",
+      "examples": ["let genPositiveInt = Gen.choose(1, 100)\nlet genEmail = gen {\n    let! name = Gen.elements [\"alice\"; \"bob\"]\n    let! domain = Gen.elements [\"gmail.com\"; \"test.com\"]\n    return sprintf \"%s@%s\" name domain\n}"]
+    },
+    {
+      "name": "conditional_property",
+      "description": "Property with precondition",
+      "syntax": "condition ==> property",
+      "when_to_use": "Properties that only apply under certain conditions",
+      "examples": ["let insertThenGet (k: int) (v: string) =\n    (k > 0) ==> (dict |> insert k v |> get k = Some v)"]
+    },
+    {
+      "name": "classify_cases",
+      "description": "Classify test cases",
+      "syntax": "Prop.classify condition label",
+      "when_to_use": "Understanding test distribution",
+      "examples": ["let prop (xs: int list) =\n    (xs.Length > 10) |> Prop.classify \"long list\"\n    |> Prop.trivial (xs = [])"]
+    },
+    {
+      "name": "stateful_testing",
+      "description": "Test stateful systems",
+      "syntax": "Command-based testing",
+      "when_to_use": "Testing state machines, APIs",
+      "examples": ["type CounterCommand = Increment | Decrement | Reset\n// Define how commands affect model and system under test"]
+    }
+  ],
+
+  "generators": [
+    {
+      "name": "Gen.choose",
+      "description": "Generate int in range",
+      "examples": ["Gen.choose(0, 100)"]
+    },
+    {
+      "name": "Gen.elements",
+      "description": "Choose from list",
+      "examples": ["Gen.elements [\"a\"; \"b\"; \"c\"]"]
+    },
+    {
+      "name": "Gen.oneof",
+      "description": "Choose between generators",
+      "examples": ["Gen.oneof [genSmall; genLarge]"]
+    },
+    {
+      "name": "Gen.listOf",
+      "description": "Generate list of values",
+      "examples": ["Gen.listOf (Gen.choose(0, 10))"]
+    },
+    {
+      "name": "Gen.map",
+      "description": "Transform generated values",
+      "examples": ["Gen.choose(1, 12) |> Gen.map (fun m -> DateTime(2024, m, 1))"]
+    },
+    {
+      "name": "Arb.from",
+      "description": "Create Arbitrary from generator",
+      "examples": ["Arb.fromGen genEmail"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Falsifiable, after \\d+ tests",
+      "meaning": "Property violation found",
+      "common_causes": ["Bug in code", "Property too strict", "Edge case"],
+      "fixes": ["Fix the bug", "Refine property", "Handle edge case"]
+    },
+    {
+      "pattern": "Arguments exhausted",
+      "meaning": "Too many generated values rejected by precondition",
+      "common_causes": ["Precondition too restrictive"],
+      "fixes": ["Use custom generator instead of precondition", "Relax precondition"]
+    },
+    {
+      "pattern": "Shrunk.*to",
+      "meaning": "Counterexample minimized",
+      "common_causes": ["Normal behavior - showing minimal failing case"],
+      "fixes": ["Analyze minimal case to find bug"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["visual_studio", "rider", "vscode"],
+    "ci_integration": ["azure_devops", "github_actions", "jenkins"],
+    "test_frameworks": ["xunit", "nunit", "mstest"]
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds per property (100 tests default)",
+    "scalability": "Configurable test count",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["hypothesis", "quickcheck", "hedgehog", "fast_check"],
+    "advantages": [
+      "Mature .NET library",
+      "Both F# and C# support",
+      "Automatic shrinking",
+      "Model-based testing support",
+      "Good xUnit/NUnit integration"
+    ],
+    "disadvantages": [
+      "Learning curve for PBT concepts",
+      "F# API more natural than C#",
+      "Shrinking can be slow"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.16.6",
+    "last_updated": "2025-12-22",
+    "maintainer": "Kurt Schelfthout",
+    "license": "BSD-3-Clause"
+  }
+}

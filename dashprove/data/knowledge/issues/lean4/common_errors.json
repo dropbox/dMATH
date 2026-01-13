@@ -1,0 +1,206 @@
+{
+  "tool": "lean4",
+  "version": "4.x",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "type_mismatch",
+      "pattern": "type mismatch",
+      "message": "type mismatch: expected X, got Y",
+      "cause": "Expression has wrong type",
+      "solutions": [
+        {
+          "approach": "Check expected type",
+          "code": "#check expr  -- See what type Lean infers",
+          "when": "Unclear what type is expected"
+        },
+        {
+          "approach": "Add type annotation",
+          "code": "(expr : ExpectedType)",
+          "when": "Lean infers wrong type"
+        },
+        {
+          "approach": "Use coercion",
+          "code": "↑expr  -- Or explicit cast function",
+          "when": "Types are related but not equal"
+        }
+      ]
+    },
+    {
+      "id": "unknown_identifier",
+      "pattern": "unknown identifier",
+      "message": "unknown identifier 'name'",
+      "cause": "Variable or function not in scope",
+      "solutions": [
+        {
+          "approach": "Import the namespace",
+          "code": "open Namespace",
+          "when": "Identifier is in another namespace"
+        },
+        {
+          "approach": "Use qualified name",
+          "code": "Namespace.name",
+          "when": "Don't want to open entire namespace"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "-- Lean is case-sensitive",
+          "when": "May be typo"
+        },
+        {
+          "approach": "Import the file",
+          "code": "import Module.Name",
+          "when": "Definition is in another file"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_synthesize",
+      "pattern": "failed to synthesize",
+      "message": "failed to synthesize instance",
+      "cause": "Type class instance not found",
+      "solutions": [
+        {
+          "approach": "Add instance argument",
+          "code": "[inst : TypeClass α]",
+          "when": "Instance should be provided by caller"
+        },
+        {
+          "approach": "Define the instance",
+          "code": "instance : TypeClass MyType where\n  method := impl",
+          "when": "Instance doesn't exist and should"
+        },
+        {
+          "approach": "Check type parameters",
+          "code": "#check @function  -- See implicit args",
+          "when": "Wrong type is being inferred"
+        }
+      ]
+    },
+    {
+      "id": "tactic_failed",
+      "pattern": "tactic .* failed",
+      "message": "tactic 'simp' failed",
+      "cause": "Tactic couldn't solve the goal",
+      "solutions": [
+        {
+          "approach": "Use simp?",
+          "code": "simp?  -- Shows which lemmas would work",
+          "when": "simp fails and you need hints"
+        },
+        {
+          "approach": "Add lemmas to simp",
+          "code": "simp [lemma1, lemma2]",
+          "when": "simp needs additional lemmas"
+        },
+        {
+          "approach": "Try different tactic",
+          "code": "exact?, apply?, rw?",
+          "when": "simp isn't the right approach"
+        },
+        {
+          "approach": "Check goal state",
+          "code": "trace \"{goal}\"  -- or hover in VS Code",
+          "when": "Need to understand current goal"
+        }
+      ]
+    },
+    {
+      "id": "termination_proof",
+      "pattern": "failed to prove termination",
+      "message": "fail to show termination",
+      "cause": "Lean cannot prove recursive function terminates",
+      "solutions": [
+        {
+          "approach": "Use termination_by",
+          "code": "termination_by f x => measure x",
+          "when": "Custom measure needed"
+        },
+        {
+          "approach": "Use decreasing_by",
+          "code": "decreasing_by\n  simp_wf\n  omega",
+          "when": "Need custom termination proof"
+        },
+        {
+          "approach": "Use well-founded recursion",
+          "code": "def f (x : α) : β := WellFounded.fix ...",
+          "when": "Complex termination argument"
+        },
+        {
+          "approach": "Add fuel parameter",
+          "code": "def f (fuel : Nat) (x : α) : Option β",
+          "when": "Can't prove termination but function does terminate"
+        }
+      ]
+    },
+    {
+      "id": "universe_issue",
+      "pattern": "universe level",
+      "message": "universe level mismatch",
+      "cause": "Type universe levels don't match",
+      "solutions": [
+        {
+          "approach": "Add universe variable",
+          "code": "universe u v",
+          "when": "Need explicit universe polymorphism"
+        },
+        {
+          "approach": "Use Type*",
+          "code": "Type*  -- Instead of Type",
+          "when": "Want automatic universe inference"
+        },
+        {
+          "approach": "Use ULift",
+          "code": "ULift.{u} α",
+          "when": "Need to lift type to higher universe"
+        }
+      ]
+    },
+    {
+      "id": "structural_recursion",
+      "pattern": "structural recursion",
+      "message": "structural recursion cannot be used",
+      "cause": "Recursive call not on structurally smaller argument",
+      "solutions": [
+        {
+          "approach": "Reorder arguments",
+          "code": "def f (decreasing_arg) (other_args) := ...",
+          "when": "Decreasing argument not in right position"
+        },
+        {
+          "approach": "Use well-founded recursion",
+          "code": "termination_by measure",
+          "when": "Recursion isn't structural"
+        },
+        {
+          "approach": "Use mutual recursion",
+          "code": "mutual\ndef f := ...\ndef g := ...\nend",
+          "when": "Functions are mutually recursive"
+        }
+      ]
+    },
+    {
+      "id": "metavariable",
+      "pattern": "don't know how to synthesize",
+      "message": "don't know how to synthesize placeholder",
+      "cause": "Lean cannot infer value for underscore/hole",
+      "solutions": [
+        {
+          "approach": "Provide explicit value",
+          "code": "(explicit_value)  -- Instead of _",
+          "when": "Value cannot be inferred"
+        },
+        {
+          "approach": "Add type annotation",
+          "code": "(expr : Type)",
+          "when": "Type information helps inference"
+        },
+        {
+          "approach": "Use @",
+          "code": "@function arg1 arg2  -- All args explicit",
+          "when": "Need to provide implicit arguments"
+        }
+      ]
+    }
+  ]
+}

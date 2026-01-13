@@ -1,0 +1,216 @@
+{
+  "tool": "junit",
+  "version": "5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_tests_found",
+      "pattern": "No tests found|No tests were found|test class.*not found|No tests to run",
+      "message": "JUnit cannot find any tests",
+      "cause": "Test class not annotated, wrong package, or build tool config issue",
+      "solutions": [
+        {
+          "approach": "Add @Test annotation",
+          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass MyTest {\n    @Test\n    void shouldDoSomething() {\n        assertEquals(2, 1 + 1);\n    }\n}",
+          "when": "Missing annotation"
+        },
+        {
+          "approach": "Check test location",
+          "code": "# Maven: src/test/java/**/*Test.java\n# Gradle: src/test/java/**/*Test.java\n\n# Default naming: *Test, Test*, *Tests, *TestCase",
+          "when": "Test not in expected location"
+        },
+        {
+          "approach": "Configure Maven Surefire",
+          "code": "<!-- pom.xml -->\n<plugin>\n    <groupId>org.apache.maven.plugins</groupId>\n    <artifactId>maven-surefire-plugin</artifactId>\n    <version>3.2.5</version>\n    <configuration>\n        <includes>\n            <include>**/*Test.java</include>\n            <include>**/*Tests.java</include>\n        </includes>\n    </configuration>\n</plugin>",
+          "when": "Maven not finding tests"
+        },
+        {
+          "approach": "Configure Gradle",
+          "code": "// build.gradle.kts\ntasks.test {\n    useJUnitPlatform()\n}\n\ndependencies {\n    testImplementation(\"org.junit.jupiter:junit-jupiter:5.10.0\")\n}",
+          "when": "Gradle not finding tests"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "AssertionFailedError|expected:.*but was:|org\\.opentest4j|assertEquals|assertTrue",
+      "message": "Test assertion failed",
+      "cause": "Expected value doesn't match actual",
+      "solutions": [
+        {
+          "approach": "Use correct assertion",
+          "code": "import static org.junit.jupiter.api.Assertions.*;\n\n// Equality\nassertEquals(expected, actual);\nassertEquals(expected, actual, \"message\");\n\n// Boolean\nassertTrue(condition);\nassertFalse(condition);\n\n// Null checks\nassertNull(value);\nassertNotNull(value);\n\n// Same reference\nassertSame(expected, actual);\n\n// Arrays\nassertArrayEquals(expected, actual);",
+          "when": "Basic assertions"
+        },
+        {
+          "approach": "Use assertAll for multiple",
+          "code": "assertAll(\n    () -> assertEquals(\"John\", user.getFirstName()),\n    () -> assertEquals(\"Doe\", user.getLastName()),\n    () -> assertEquals(30, user.getAge())\n);",
+          "when": "Multiple assertions"
+        },
+        {
+          "approach": "Test exceptions",
+          "code": "// Assert exception is thrown\nassertThrows(IllegalArgumentException.class, () -> {\n    service.validate(null);\n});\n\n// Assert with message check\nException ex = assertThrows(MyException.class, () -> {\n    service.process();\n});\nassertTrue(ex.getMessage().contains(\"expected text\"));",
+          "when": "Testing exceptions"
+        },
+        {
+          "approach": "Use AssertJ (better messages)",
+          "code": "import static org.assertj.core.api.Assertions.*;\n\nassertThat(actual).isEqualTo(expected);\nassertThat(list).hasSize(3).contains(\"a\", \"b\");\nassertThat(string).startsWith(\"Hello\").endsWith(\"World\");",
+          "when": "Need better error messages"
+        }
+      ]
+    },
+    {
+      "id": "dependency_injection_error",
+      "pattern": "ParameterResolutionException|No ParameterResolver|Could not resolve parameter",
+      "message": "Cannot inject test parameter",
+      "cause": "Missing extension or parameter resolver",
+      "solutions": [
+        {
+          "approach": "Use @ExtendWith",
+          "code": "import org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.junit.jupiter.MockitoExtension;\n\n@ExtendWith(MockitoExtension.class)\nclass MyTest {\n    @Mock\n    private MyService service;\n    \n    @Test\n    void test() {\n        // service is mocked\n    }\n}",
+          "when": "Using Mockito"
+        },
+        {
+          "approach": "Use @RegisterExtension",
+          "code": "import org.junit.jupiter.api.extension.RegisterExtension;\n\nclass MyTest {\n    @RegisterExtension\n    static MyExtension ext = new MyExtension();\n    \n    @Test\n    void test(MyParam param) {\n        // param resolved by extension\n    }\n}",
+          "when": "Programmatic extension"
+        },
+        {
+          "approach": "Use TestInfo parameter",
+          "code": "import org.junit.jupiter.api.TestInfo;\n\n@Test\nvoid testWithInfo(TestInfo info) {\n    System.out.println(\"Running: \" + info.getDisplayName());\n}",
+          "when": "Need test metadata"
+        },
+        {
+          "approach": "Use RepetitionInfo",
+          "code": "@RepeatedTest(5)\nvoid repeatedTest(RepetitionInfo info) {\n    int current = info.getCurrentRepetition();\n    int total = info.getTotalRepetitions();\n}",
+          "when": "Repeated test info"
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_error",
+      "pattern": "BeforeAll|AfterAll|BeforeEach|AfterEach|static|lifecycle",
+      "message": "Lifecycle method error",
+      "cause": "Lifecycle method signature issue or static requirement",
+      "solutions": [
+        {
+          "approach": "Use correct lifecycle annotations",
+          "code": "import org.junit.jupiter.api.*;\n\nclass MyTest {\n    @BeforeAll\n    static void setupAll() {\n        // Once before all tests (must be static)\n    }\n    \n    @BeforeEach\n    void setup() {\n        // Before each test\n    }\n    \n    @AfterEach\n    void teardown() {\n        // After each test\n    }\n    \n    @AfterAll\n    static void cleanupAll() {\n        // Once after all tests (must be static)\n    }\n}",
+          "when": "Setup/teardown needed"
+        },
+        {
+          "approach": "Use @TestInstance for non-static",
+          "code": "@TestInstance(TestInstance.Lifecycle.PER_CLASS)\nclass MyTest {\n    @BeforeAll\n    void setupAll() {\n        // No longer needs to be static\n    }\n}",
+          "when": "Want non-static @BeforeAll"
+        },
+        {
+          "approach": "Nested test classes",
+          "code": "@Nested\nclass WhenLoggedIn {\n    @BeforeEach\n    void login() {\n        // Setup for nested tests\n    }\n    \n    @Test\n    void canAccessDashboard() {\n        // ...\n    }\n}",
+          "when": "Hierarchical tests"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timeout|@Timeout|timed out|TimeoutException",
+      "message": "Test timed out",
+      "cause": "Test execution exceeded time limit",
+      "solutions": [
+        {
+          "approach": "Set test timeout",
+          "code": "import org.junit.jupiter.api.Timeout;\nimport java.util.concurrent.TimeUnit;\n\n@Timeout(value = 5, unit = TimeUnit.SECONDS)\n@Test\nvoid slowTest() {\n    // Must complete within 5 seconds\n}",
+          "when": "Single test timeout"
+        },
+        {
+          "approach": "Set class timeout",
+          "code": "@Timeout(10)  // 10 seconds default\nclass MyTest {\n    @Test\n    void test1() { }\n    \n    @Test\n    void test2() { }\n}",
+          "when": "All tests in class"
+        },
+        {
+          "approach": "Use assertTimeout",
+          "code": "import static org.junit.jupiter.api.Assertions.*;\nimport java.time.Duration;\n\n@Test\nvoid timeoutTest() {\n    assertTimeout(Duration.ofSeconds(2), () -> {\n        // Code that must complete within 2 seconds\n        return slowOperation();\n    });\n}",
+          "when": "Programmatic timeout"
+        },
+        {
+          "approach": "Configure global timeout",
+          "code": "# junit-platform.properties\njunit.jupiter.execution.timeout.default = 5 s\njunit.jupiter.execution.timeout.testable.method.default = 10 s",
+          "when": "Global default"
+        }
+      ]
+    },
+    {
+      "id": "parameterized_test_error",
+      "pattern": "ParameterizedTest|@ValueSource|@CsvSource|@MethodSource|No arguments",
+      "message": "Parameterized test configuration error",
+      "cause": "Missing or incorrect argument source",
+      "solutions": [
+        {
+          "approach": "Use @ValueSource",
+          "code": "import org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.ValueSource;\n\n@ParameterizedTest\n@ValueSource(strings = {\"hello\", \"world\"})\nvoid testWithStrings(String arg) {\n    assertNotNull(arg);\n}\n\n@ParameterizedTest\n@ValueSource(ints = {1, 2, 3})\nvoid testWithInts(int arg) {\n    assertTrue(arg > 0);\n}",
+          "when": "Simple values"
+        },
+        {
+          "approach": "Use @CsvSource",
+          "code": "@ParameterizedTest\n@CsvSource({\n    \"1, 1, 2\",\n    \"2, 3, 5\",\n    \"10, 20, 30\"\n})\nvoid testAdd(int a, int b, int expected) {\n    assertEquals(expected, a + b);\n}",
+          "when": "Multiple parameters"
+        },
+        {
+          "approach": "Use @MethodSource",
+          "code": "@ParameterizedTest\n@MethodSource(\"provideData\")\nvoid testWithMethod(String input, int expected) {\n    assertEquals(expected, input.length());\n}\n\nstatic Stream<Arguments> provideData() {\n    return Stream.of(\n        Arguments.of(\"hello\", 5),\n        Arguments.of(\"world\", 5)\n    );\n}",
+          "when": "Complex test data"
+        },
+        {
+          "approach": "Use @EnumSource",
+          "code": "@ParameterizedTest\n@EnumSource(TimeUnit.class)\nvoid testAllEnums(TimeUnit unit) {\n    assertNotNull(unit);\n}\n\n@ParameterizedTest\n@EnumSource(value = TimeUnit.class, names = {\"DAYS\", \"HOURS\"})\nvoid testSomeEnums(TimeUnit unit) {\n    // Only DAYS and HOURS\n}",
+          "when": "Testing enums"
+        }
+      ]
+    },
+    {
+      "id": "parallel_execution_error",
+      "pattern": "parallel|concurrent|race condition|flaky|intermittent",
+      "message": "Parallel test execution issues",
+      "cause": "Tests sharing state or not thread-safe",
+      "solutions": [
+        {
+          "approach": "Enable parallel execution",
+          "code": "# junit-platform.properties\njunit.jupiter.execution.parallel.enabled = true\njunit.jupiter.execution.parallel.mode.default = concurrent\njunit.jupiter.execution.parallel.mode.classes.default = concurrent",
+          "when": "Enable parallelism"
+        },
+        {
+          "approach": "Isolate tests",
+          "code": "@Execution(ExecutionMode.SAME_THREAD)\nclass SequentialTests {\n    // These run sequentially\n}\n\n@Isolated\nclass IsolatedTests {\n    // These run alone, not with other tests\n}",
+          "when": "Some tests can't parallelize"
+        },
+        {
+          "approach": "Use @ResourceLock",
+          "code": "import org.junit.jupiter.api.parallel.ResourceLock;\n\n@ResourceLock(\"database\")\n@Test\nvoid testWithDb() {\n    // Only one test with this lock runs at a time\n}\n\n@ResourceLock(value = \"database\", mode = ResourceAccessMode.READ)\n@Test\nvoid readOnlyTest() {\n    // Multiple READ locks can run together\n}",
+          "when": "Shared resources"
+        }
+      ]
+    },
+    {
+      "id": "display_name_error",
+      "pattern": "DisplayName|test name|@DisplayNameGeneration",
+      "message": "Test naming issue",
+      "cause": "Test names not displaying as expected",
+      "solutions": [
+        {
+          "approach": "Use @DisplayName",
+          "code": "@DisplayName(\"User Service Tests\")\nclass UserServiceTest {\n    \n    @Test\n    @DisplayName(\"should create user with valid email\")\n    void createUserWithValidEmail() {\n        // ...\n    }\n}",
+          "when": "Custom test names"
+        },
+        {
+          "approach": "Use DisplayNameGeneration",
+          "code": "@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)\nclass My_Test {\n    @Test\n    void should_create_user() {\n        // Displays as \"should create user\"\n    }\n}",
+          "when": "Auto-generate names"
+        },
+        {
+          "approach": "Parameterized display name",
+          "code": "@ParameterizedTest(name = \"[{index}] {0} + {1} = {2}\")\n@CsvSource({\"1,1,2\", \"2,3,5\"})\nvoid testAdd(int a, int b, int sum) {\n    assertEquals(sum, a + b);\n}",
+          "when": "Parameterized test names"
+        }
+      ]
+    }
+  ]
+}

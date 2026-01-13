@@ -1,0 +1,232 @@
+{
+  "tool": "objdump",
+  "version": "2.41",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "file_format_not_recognized",
+      "pattern": "File format not recognized|not a recognized format",
+      "message": "File format not recognized",
+      "cause": "Not an ELF/object file or wrong architecture",
+      "solutions": [
+        {
+          "approach": "Check file type",
+          "code": "file ./target_file",
+          "when": "Identify file format"
+        },
+        {
+          "approach": "Specify target",
+          "code": "objdump -b binary -m i386 -D ./rawfile",
+          "when": "Raw binary file"
+        },
+        {
+          "approach": "List supported targets",
+          "code": "objdump -i  # Show supported formats",
+          "when": "Check compatibility"
+        }
+      ]
+    },
+    {
+      "id": "no_symbols",
+      "pattern": "no symbols|SYMBOL TABLE.*empty",
+      "message": "No symbol table",
+      "cause": "Binary stripped or no debug info",
+      "solutions": [
+        {
+          "approach": "Use dynamic symbols",
+          "code": "objdump -T ./program  # Dynamic symbol table",
+          "when": "Want exported symbols"
+        },
+        {
+          "approach": "Rebuild with symbols",
+          "code": "gcc -g -o program program.c",
+          "when": "Need debug info"
+        },
+        {
+          "approach": "Disassemble anyway",
+          "code": "objdump -d ./program  # Works without symbols",
+          "when": "Just need assembly"
+        }
+      ]
+    },
+    {
+      "id": "disassembly_options",
+      "pattern": "disassemble|syntax",
+      "message": "Disassembly formatting options",
+      "cause": "Want different disassembly format",
+      "solutions": [
+        {
+          "approach": "Intel syntax",
+          "code": "objdump -d -M intel ./program",
+          "when": "Prefer Intel syntax"
+        },
+        {
+          "approach": "With source",
+          "code": "objdump -d -S ./program  # Interleave source",
+          "when": "Have debug info"
+        },
+        {
+          "approach": "Specific section",
+          "code": "objdump -d -j .text ./program",
+          "when": "Only code section"
+        },
+        {
+          "approach": "Show addresses",
+          "code": "objdump -d --start-address=0x1000 --stop-address=0x2000 ./program",
+          "when": "Specific range"
+        }
+      ]
+    },
+    {
+      "id": "section_not_found",
+      "pattern": "section.*not found|no section",
+      "message": "Section not found",
+      "cause": "Requested section doesn't exist",
+      "solutions": [
+        {
+          "approach": "List all sections",
+          "code": "objdump -h ./program  # Show all section headers",
+          "when": "See available sections"
+        },
+        {
+          "approach": "Check section names",
+          "code": "readelf -S ./program  # More detailed section info",
+          "when": "Need section details"
+        }
+      ]
+    },
+    {
+      "id": "relocation_info",
+      "pattern": "relocation|relocatable",
+      "message": "Relocation information",
+      "cause": "Want to see relocations",
+      "solutions": [
+        {
+          "approach": "Show relocations",
+          "code": "objdump -r ./program.o  # Relocation entries",
+          "when": "Object file relocations"
+        },
+        {
+          "approach": "Dynamic relocations",
+          "code": "objdump -R ./program  # Dynamic relocations",
+          "when": "Shared library/executable"
+        },
+        {
+          "approach": "With disassembly",
+          "code": "objdump -dr ./program.o  # Disassemble with relocs",
+          "when": "See relocs in context"
+        }
+      ]
+    },
+    {
+      "id": "archive_handling",
+      "pattern": "archive|.a file",
+      "message": "Working with archives",
+      "cause": "Need to examine static library",
+      "solutions": [
+        {
+          "approach": "List archive contents",
+          "code": "objdump -a libfoo.a",
+          "when": "See archive structure"
+        },
+        {
+          "approach": "Examine all members",
+          "code": "objdump -d libfoo.a  # Disassemble all",
+          "when": "Full archive dump"
+        },
+        {
+          "approach": "Single member",
+          "code": "ar x libfoo.a foo.o && objdump -d foo.o",
+          "when": "Specific object only"
+        }
+      ]
+    },
+    {
+      "id": "debugging_info",
+      "pattern": "debug|DWARF",
+      "message": "Debug information options",
+      "cause": "Want to examine debug info",
+      "solutions": [
+        {
+          "approach": "Show debug sections",
+          "code": "objdump -g ./program  # Debug info",
+          "when": "See DWARF info"
+        },
+        {
+          "approach": "Line numbers",
+          "code": "objdump -l ./program  # Line number info",
+          "when": "Source line mapping"
+        },
+        {
+          "approach": "Use readelf instead",
+          "code": "readelf --debug-dump=info ./program",
+          "when": "More detailed DWARF"
+        }
+      ]
+    },
+    {
+      "id": "demangle_symbols",
+      "pattern": "mangle|C\\+\\+",
+      "message": "C++ symbol demangling",
+      "cause": "C++ names are mangled",
+      "solutions": [
+        {
+          "approach": "Demangle C++",
+          "code": "objdump -C -d ./program",
+          "when": "C++ code"
+        },
+        {
+          "approach": "Pipe through c++filt",
+          "code": "objdump -d ./program | c++filt",
+          "when": "Alternative"
+        }
+      ]
+    },
+    {
+      "id": "headers_info",
+      "pattern": "header|ELF",
+      "message": "Header information",
+      "cause": "Want to see file headers",
+      "solutions": [
+        {
+          "approach": "File header",
+          "code": "objdump -f ./program  # File header",
+          "when": "Basic info"
+        },
+        {
+          "approach": "All headers",
+          "code": "objdump -x ./program  # All headers",
+          "when": "Complete header info"
+        },
+        {
+          "approach": "Program headers",
+          "code": "objdump -p ./program  # Program/segment headers",
+          "when": "Segment info"
+        },
+        {
+          "approach": "Section headers",
+          "code": "objdump -h ./program  # Section headers",
+          "when": "Section info"
+        }
+      ]
+    },
+    {
+      "id": "wide_output",
+      "pattern": "truncated|wide",
+      "message": "Output width issues",
+      "cause": "Long lines truncated",
+      "solutions": [
+        {
+          "approach": "Wide output",
+          "code": "objdump -d -w ./program",
+          "when": "Long instructions"
+        },
+        {
+          "approach": "No line wrap",
+          "code": "objdump -d ./program | less -S",
+          "when": "Pager handles width"
+        }
+      ]
+    }
+  ]
+}

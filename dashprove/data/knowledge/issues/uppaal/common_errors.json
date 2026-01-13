@@ -1,0 +1,117 @@
+{
+  "tool": "uppaal",
+  "version": "4.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "deadlock_found",
+      "pattern": "Property is not satisfied.*deadlock|Trace ends in a deadlock state",
+      "message": "Model contains unintended deadlock",
+      "cause": "Missing outgoing transitions or violated location invariants",
+      "solutions": [
+        {
+          "approach": "Relax or reset invariants",
+          "code": "state { invariant x <= 10; } // ensure transitions before x>10",
+          "when": "Clock invariant blocks progress"
+        },
+        {
+          "approach": "Add urgent/committed locations",
+          "code": "urgent state; committed choice;",
+          "when": "Scheduler should not delay synchronization"
+        },
+        {
+          "approach": "Add default self-loop timeout",
+          "code": "state -> state { guard x == 10; assign x = 0; }",
+          "when": "Allow timer reset instead of deadlock"
+        }
+      ]
+    },
+    {
+      "id": "sync_mismatch",
+      "pattern": "Synchronization mismatch|No corresponding receiver/sender",
+      "message": "Channel synchronization failed",
+      "cause": "One process tries to send/receive on channel without a partner",
+      "solutions": [
+        {
+          "approach": "Ensure matching directions",
+          "code": "P1: ch!; P2: ch?;",
+          "when": "Channel used unidirectionally"
+        },
+        {
+          "approach": "Use broadcast channel for optional listeners",
+          "code": "broadcast chan ch;",
+          "when": "Zero or many receivers allowed"
+        },
+        {
+          "approach": "Guard on readiness",
+          "code": "guard ready && ch?",
+          "when": "Dependent on shared condition"
+        }
+      ]
+    },
+    {
+      "id": "query_unsatisfied",
+      "pattern": "Property is not satisfied|counterexample available",
+      "message": "Temporal query fails",
+      "cause": "Property too strong or clocks unbounded",
+      "solutions": [
+        {
+          "approach": "Bound response time",
+          "code": "A[] (req imply <>_<=5 grant)",
+          "when": "Need deadline-based property"
+        },
+        {
+          "approach": "Split property",
+          "code": "A[] not deadlock && A<> goal",
+          "when": "Single query mixes safety/liveness"
+        },
+        {
+          "approach": "Check diagnostic trace",
+          "code": "verifyta -t 1 model.xml",
+          "when": "Need failing path"
+        }
+      ]
+    },
+    {
+      "id": "state_space_explosion",
+      "pattern": "State space exploration aborted|out of memory during reachability",
+      "message": "Verification runs out of memory",
+      "cause": "Too many clocks or large integer domains",
+      "solutions": [
+        {
+          "approach": "Use symmetry and abstraction",
+          "code": "reduce identical processes with templates and parameters",
+          "when": "Many replicated components"
+        },
+        {
+          "approach": "Limit clock usage",
+          "code": "Merge clocks or use stopwatch features instead of per-process clocks",
+          "when": "Excessive clocks"
+        },
+        {
+          "approach": "Enable disk-based state space",
+          "code": "verifyta -o scratch -S model.xml",
+          "when": "Memory insufficient"
+        }
+      ]
+    },
+    {
+      "id": "bounded_integer_overflow",
+      "pattern": "value exceeds bound|integer domain overflow",
+      "message": "Integer variables exceed declared bounds",
+      "cause": "Assignments or guards ignore var range",
+      "solutions": [
+        {
+          "approach": "Raise or tighten bounds",
+          "code": "int[0,100] counter;",
+          "when": "Range too small"
+        },
+        {
+          "approach": "Guard increments",
+          "code": "guard counter < 100",
+          "when": "Avoid overflow transitions"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "tool": "pino",
+  "version": "9.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "stream_not_writable",
+      "pattern": "stream is not writable|The stream has been destroyed|write after end",
+      "message": "Log stream closed or not writable",
+      "cause": "Destination stream closed or file handle exhausted",
+      "solutions": [
+        {
+          "approach": "Use pino.destination",
+          "code": "const dest = pino.destination({ dest: './app.log', sync: false });\nconst logger = pino(dest);",
+          "when": "File destination needed"
+        },
+        {
+          "approach": "Handle stream errors",
+          "code": "dest.on('error', (err) => { console.error('Log stream error', err); });",
+          "when": "Need error recovery"
+        },
+        {
+          "approach": "Use multistream",
+          "code": "pino(pino.multistream([{ stream: process.stdout }, { stream: fileStream }]))",
+          "when": "Multiple destinations"
+        }
+      ]
+    },
+    {
+      "id": "worker_thread_issue",
+      "pattern": "cannot use pino\\.transport|worker_threads|thread pool exhausted",
+      "message": "Transport worker thread error",
+      "cause": "pino.transport() issues in worker threads or bundle",
+      "solutions": [
+        {
+          "approach": "Disable worker threads",
+          "code": "const logger = pino({ transport: { target: 'pino-pretty', options: { sync: true } } });",
+          "when": "Bundler doesn't support workers"
+        },
+        {
+          "approach": "Use pino-pretty CLI",
+          "code": "node app.js | pino-pretty",
+          "when": "Development pretty printing"
+        },
+        {
+          "approach": "Configure webpack/esbuild",
+          "code": "// Externalize pino-related modules from bundle",
+          "when": "Bundling application"
+        }
+      ]
+    },
+    {
+      "id": "serializer_error",
+      "pattern": "serializer.*error|Cannot convert.*to primitive|circular structure",
+      "message": "Object serialization failed",
+      "cause": "Custom serializer threw or object not serializable",
+      "solutions": [
+        {
+          "approach": "Define safe serializer",
+          "code": "serializers: {\n  req: (req) => ({ method: req.method, url: req.url }),\n  err: pino.stdSerializers.err\n}",
+          "when": "Serializing request/error objects"
+        },
+        {
+          "approach": "Use redact",
+          "code": "redact: ['req.headers.authorization', 'user.password']",
+          "when": "Sensitive data in logs"
+        },
+        {
+          "approach": "Safe stringify",
+          "code": "const safe = JSON.parse(JSON.stringify(obj, (k, v) => typeof v === 'bigint' ? v.toString() : v));",
+          "when": "BigInt or special types"
+        }
+      ]
+    },
+    {
+      "id": "esm_import",
+      "pattern": "ERR_REQUIRE_ESM|Cannot use import|require\\(\\) of ES Module",
+      "message": "Module system mismatch",
+      "cause": "pino v9+ has ESM-only dependencies",
+      "solutions": [
+        {
+          "approach": "Use dynamic import",
+          "code": "const pino = await import('pino');",
+          "when": "CommonJS entry point"
+        },
+        {
+          "approach": "Convert to ESM",
+          "code": "// package.json: \"type\": \"module\"",
+          "when": "Can migrate to ESM"
+        },
+        {
+          "approach": "Use older version",
+          "code": "npm install pino@8",
+          "when": "Must stay on CommonJS"
+        }
+      ]
+    },
+    {
+      "id": "level_not_logging",
+      "pattern": "logs not appearing|nothing logged|level.*disabled",
+      "message": "Log level filtering messages",
+      "cause": "Logger level set higher than logged messages",
+      "solutions": [
+        {
+          "approach": "Lower the level",
+          "code": "const logger = pino({ level: 'debug' });  // trace, debug, info, warn, error, fatal",
+          "when": "Debug logs not appearing"
+        },
+        {
+          "approach": "Set via environment",
+          "code": "const logger = pino({ level: process.env.LOG_LEVEL || 'info' });",
+          "when": "Runtime level control"
+        },
+        {
+          "approach": "Check child logger level",
+          "code": "const child = logger.child({ level: 'debug' });",
+          "when": "Child logger overriding"
+        }
+      ]
+    }
+  ]
+}

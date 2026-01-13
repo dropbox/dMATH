@@ -1,0 +1,128 @@
+{
+  "id": "go_elle",
+  "name": "go-elle",
+  "category": "model_based_testing",
+  "subcategory": "consistency_checking",
+
+  "description": "Go port of Elle linearizability checker for distributed database testing",
+  "long_description": "go-elle is a Go port of Elle, the linearizability checker developed by Kyle Kingsbury for Jepsen. It provides efficient consistency checking for distributed databases without requiring Clojure. Used by TiPocket and other Go-based testing frameworks. Supports list-append, register, and set workloads.",
+
+  "capabilities": [
+    "linearizability_checking",
+    "serializability_checking",
+    "strict_serializability_checking",
+    "snapshot_isolation_checking",
+    "workload_analysis",
+    "anomaly_detection"
+  ],
+  "property_types": ["linearizability", "serializability", "snapshot_isolation"],
+  "input_languages": ["go"],
+  "output_formats": ["json", "edn"],
+
+  "installation": {
+    "methods": [
+      {"type": "go", "command": "go get github.com/pingcap/go-elle"},
+      {"type": "source", "command": "git clone https://github.com/pingcap/go-elle"}
+    ],
+    "dependencies": ["go"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/pingcap/go-elle",
+    "original_elle": "https://github.com/jepsen-io/elle",
+    "examples": "https://github.com/pingcap/go-elle/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "check_list_append",
+      "description": "Check list-append workload for linearizability",
+      "syntax": "elle.CheckListAppend(history)",
+      "when_to_use": "For list-append style operations",
+      "examples": ["result := elle.CheckListAppend(history, elle.Linearizable)"]
+    },
+    {
+      "name": "check_register",
+      "description": "Check register workload for linearizability",
+      "syntax": "elle.CheckRegister(history)",
+      "when_to_use": "For single-value register operations",
+      "examples": ["result := elle.CheckRegister(history, elle.Linearizable)"]
+    },
+    {
+      "name": "analyze_history",
+      "description": "Analyze operation history for anomalies",
+      "syntax": "elle.Analyze(history)",
+      "when_to_use": "To detect consistency anomalies",
+      "examples": ["anomalies := elle.Analyze(history)\nfor _, a := range anomalies {\n    fmt.Printf(\"Anomaly: %s\\n\", a.Type)\n}"]
+    },
+    {
+      "name": "check_snapshot_isolation",
+      "description": "Check for snapshot isolation violations",
+      "syntax": "elle.CheckSI(history)",
+      "when_to_use": "For snapshot isolation workloads",
+      "examples": ["result := elle.CheckSI(history)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "G0.*dirty write",
+      "meaning": "Dirty write anomaly detected",
+      "common_causes": ["Missing write locks", "Weak isolation"],
+      "fixes": ["Implement proper locking", "Use stronger isolation"]
+    },
+    {
+      "pattern": "G1a.*aborted read",
+      "meaning": "Read of aborted transaction",
+      "common_causes": ["Improper abort handling"],
+      "fixes": ["Fix abort visibility"]
+    },
+    {
+      "pattern": "G1b.*intermediate read",
+      "meaning": "Read of intermediate value",
+      "common_causes": ["Read uncommitted data"],
+      "fixes": ["Implement read committed isolation"]
+    },
+    {
+      "pattern": "G2.*anti-dependency",
+      "meaning": "Anti-dependency cycle detected",
+      "common_causes": ["Snapshot isolation violation"],
+      "fixes": ["Fix predicate locking", "Use serializable isolation"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "usl_property_types": ["linearizability", "consistency"],
+    "cli_command": null
+  },
+
+  "performance": {
+    "typical_runtime": "Seconds to minutes",
+    "scalability": "Good for moderate histories",
+    "memory_usage": "Proportional to history size"
+  },
+
+  "comparisons": {
+    "similar_tools": ["elle", "jepsen", "tipocket"],
+    "advantages": [
+      "Go implementation (no Clojure)",
+      "Library for integration",
+      "Same algorithms as Elle",
+      "Good performance"
+    ],
+    "disadvantages": [
+      "Less mature than original Elle",
+      "Fewer workload types",
+      "Limited documentation"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.1.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "PingCAP",
+    "license": "Apache-2.0"
+  }
+}

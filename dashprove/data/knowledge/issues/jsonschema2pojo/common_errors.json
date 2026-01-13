@@ -1,0 +1,145 @@
+{
+  "tool": "jsonschema2pojo",
+  "version": "1.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "schema_parse_error",
+      "pattern": "Failed to read schema|Schema.*invalid|Could not parse.*JSON|JsonParseException",
+      "message": "Failed to parse JSON Schema",
+      "cause": "Invalid JSON syntax or non-compliant JSON Schema",
+      "solutions": [
+        {
+          "approach": "Validate schema",
+          "code": "python -c \"import json; json.load(open('schema.json'))\"",
+          "when": "JSON syntax error"
+        },
+        {
+          "approach": "Check schema version",
+          "code": "# Supports draft-04 through draft-07\n# Add: \"$schema\": \"http://json-schema.org/draft-07/schema#\"",
+          "when": "Schema version issue"
+        },
+        {
+          "approach": "Use example JSON",
+          "code": "jsonschema2pojo --source-type JSON -s example.json ...",
+          "when": "Generate from example instead"
+        }
+      ]
+    },
+    {
+      "id": "maven_dependency",
+      "pattern": "Could not resolve|Plugin.*not found|dependency.*failure",
+      "message": "Maven plugin resolution failure",
+      "cause": "Plugin not found or version mismatch",
+      "solutions": [
+        {
+          "approach": "Add plugin",
+          "code": "<plugin>\n  <groupId>org.jsonschema2pojo</groupId>\n  <artifactId>jsonschema2pojo-maven-plugin</artifactId>\n  <version>1.2.1</version>\n</plugin>",
+          "when": "Maven configuration"
+        },
+        {
+          "approach": "Force update",
+          "code": "mvn clean install -U",
+          "when": "Dependency cache issue"
+        },
+        {
+          "approach": "Use CLI",
+          "code": "npx jsonschema2pojo --help\n# Or download from releases",
+          "when": "Avoid Maven plugin"
+        }
+      ]
+    },
+    {
+      "id": "annotation_error",
+      "pattern": "Cannot find.*annotation|Annotation.*not found|Import.*failed",
+      "message": "Generated annotations not available",
+      "cause": "Annotation library (Jackson, Gson, etc.) not in classpath",
+      "solutions": [
+        {
+          "approach": "Add Jackson",
+          "code": "<dependency>\n  <groupId>com.fasterxml.jackson.core</groupId>\n  <artifactId>jackson-databind</artifactId>\n</dependency>",
+          "when": "Using Jackson annotations"
+        },
+        {
+          "approach": "Use Gson",
+          "code": "jsonschema2pojo --annotation-style GSON ...",
+          "when": "Switch to Gson"
+        },
+        {
+          "approach": "No annotations",
+          "code": "jsonschema2pojo --annotation-style NONE ...",
+          "when": "Plain POJOs"
+        }
+      ]
+    },
+    {
+      "id": "output_conflict",
+      "pattern": "File.*exists|Cannot overwrite|Class.*already defined",
+      "message": "Output file conflicts",
+      "cause": "Generated class conflicts with existing code",
+      "solutions": [
+        {
+          "approach": "Clean first",
+          "code": "rm -rf target/generated-sources/jsonschema2pojo/*",
+          "when": "Stale generated files"
+        },
+        {
+          "approach": "Different package",
+          "code": "jsonschema2pojo -p com.myapp.generated ...",
+          "when": "Package name collision"
+        },
+        {
+          "approach": "Custom class prefix",
+          "code": "jsonschema2pojo --class-prefix Api ...",
+          "when": "Name collision"
+        }
+      ]
+    },
+    {
+      "id": "type_mapping_error",
+      "pattern": "Unsupported.*type|Cannot map.*type|Unknown format",
+      "message": "Unsupported type or format",
+      "cause": "JSON Schema type/format not supported or mapped",
+      "solutions": [
+        {
+          "approach": "Format mappings",
+          "code": "# date-time -> java.time.OffsetDateTime\n# date -> java.time.LocalDate\njsonschema2pojo --date-time-type java.time.ZonedDateTime",
+          "when": "Date format issues"
+        },
+        {
+          "approach": "Custom type",
+          "code": "jsonschema2pojo --custom-type-mapping \"uri=java.net.URI\"",
+          "when": "Custom format"
+        },
+        {
+          "approach": "Disable format",
+          "code": "jsonschema2pojo --disable-format-validation",
+          "when": "Ignore format hints"
+        }
+      ]
+    },
+    {
+      "id": "ref_resolution_error",
+      "pattern": "Cannot resolve.*ref|\\$ref.*not found|Reference.*missing",
+      "message": "JSON Schema $ref resolution failed",
+      "cause": "Referenced schema file not found or invalid path",
+      "solutions": [
+        {
+          "approach": "Bundle refs",
+          "code": "# Use tool to bundle all refs into single file\nnpx json-schema-ref-parser bundle schema.json -o bundled.json",
+          "when": "External refs"
+        },
+        {
+          "approach": "Relative paths",
+          "code": "# $ref paths are relative to schema location\n\"$ref\": \"./definitions/User.json\"",
+          "when": "Path issues"
+        },
+        {
+          "approach": "Include source dir",
+          "code": "jsonschema2pojo -s ./schemas -T . ...",
+          "when": "Multiple schema files"
+        }
+      ]
+    }
+  ]
+}

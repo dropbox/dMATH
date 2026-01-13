@@ -1,0 +1,191 @@
+{
+  "tool": "torchtest",
+  "version": "0.5.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "vars_change_test_failed",
+      "pattern": "vars_change.*failed|Parameters did not change|Weights unchanged",
+      "message": "Test that parameters change during training failed",
+      "cause": "Model parameters not updating during training step",
+      "solutions": [
+        {
+          "approach": "Check optimizer",
+          "code": "optimizer = torch.optim.Adam(model.parameters(), lr=0.01)\nloss.backward()\noptimizer.step()",
+          "when": "Optimizer not stepping"
+        },
+        {
+          "approach": "Verify gradients exist",
+          "code": "for p in model.parameters():\n    print(p.grad is not None)",
+          "when": "Gradients not computed"
+        },
+        {
+          "approach": "Check requires_grad",
+          "code": "for p in model.parameters():\n    print(p.requires_grad)",
+          "when": "Parameters frozen"
+        }
+      ]
+    },
+    {
+      "id": "vars_dont_change_test_failed",
+      "pattern": "vars_dont_change.*failed|Parameters changed unexpectedly|Frozen weights changed",
+      "message": "Test that frozen parameters don't change failed",
+      "cause": "Parameters that should be frozen are being updated",
+      "solutions": [
+        {
+          "approach": "Freeze parameters properly",
+          "code": "for param in model.frozen_layer.parameters():\n    param.requires_grad = False",
+          "when": "Freezing layer"
+        },
+        {
+          "approach": "Exclude from optimizer",
+          "code": "optimizer = torch.optim.Adam(\n    filter(lambda p: p.requires_grad, model.parameters())\n)",
+          "when": "Optimizer includes frozen params"
+        },
+        {
+          "approach": "Use eval mode",
+          "code": "model.frozen_layer.eval()",
+          "when": "BatchNorm/Dropout should not update"
+        }
+      ]
+    },
+    {
+      "id": "nan_test_failed",
+      "pattern": "nan.*detected|NaN in output|Output contains NaN",
+      "message": "Test detected NaN values in output",
+      "cause": "Model produces NaN due to numerical instability",
+      "solutions": [
+        {
+          "approach": "Check for division by zero",
+          "code": "x = x / (y + 1e-8)  # Add small epsilon",
+          "when": "Division may produce NaN"
+        },
+        {
+          "approach": "Use gradient clipping",
+          "code": "torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)",
+          "when": "Exploding gradients"
+        },
+        {
+          "approach": "Lower learning rate",
+          "code": "optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)",
+          "when": "Unstable training"
+        },
+        {
+          "approach": "Check input data",
+          "code": "assert not torch.isnan(input_data).any()",
+          "when": "Input may contain NaN"
+        }
+      ]
+    },
+    {
+      "id": "inf_test_failed",
+      "pattern": "inf.*detected|Inf in output|Output contains Inf",
+      "message": "Test detected Inf values in output",
+      "cause": "Model produces infinity due to overflow",
+      "solutions": [
+        {
+          "approach": "Use mixed precision carefully",
+          "code": "scaler = torch.cuda.amp.GradScaler()\nwith torch.cuda.amp.autocast():\n    output = model(input)",
+          "when": "Float16 overflow"
+        },
+        {
+          "approach": "Clamp large values",
+          "code": "output = torch.clamp(output, min=-1e6, max=1e6)",
+          "when": "Extreme values possible"
+        },
+        {
+          "approach": "Normalize inputs",
+          "code": "input_data = (input_data - mean) / std",
+          "when": "Input scale too large"
+        }
+      ]
+    },
+    {
+      "id": "output_shape_test_failed",
+      "pattern": "output.*shape|Shape mismatch|Expected shape",
+      "message": "Output shape doesn't match expected",
+      "cause": "Model output dimensions incorrect",
+      "solutions": [
+        {
+          "approach": "Check test assertion",
+          "code": "torchtest.assert_output_shape(model, input_shape, expected_output_shape)",
+          "when": "Verifying shape"
+        },
+        {
+          "approach": "Print actual shape",
+          "code": "output = model(test_input)\nprint(f'Actual shape: {output.shape}')",
+          "when": "Debugging shape"
+        },
+        {
+          "approach": "Fix model architecture",
+          "code": "# Adjust final layer to produce correct output shape",
+          "when": "Model architecture wrong"
+        }
+      ]
+    },
+    {
+      "id": "cuda_error",
+      "pattern": "CUDA.*error|GPU.*not available|device.*mismatch",
+      "message": "CUDA/GPU error during testing",
+      "cause": "GPU not available or tensor device mismatch",
+      "solutions": [
+        {
+          "approach": "Check CUDA availability",
+          "code": "device = 'cuda' if torch.cuda.is_available() else 'cpu'\nmodel.to(device)\ninput = input.to(device)",
+          "when": "Setting device"
+        },
+        {
+          "approach": "Move all tensors to same device",
+          "code": "# Ensure model, input, and target are on same device",
+          "when": "Device mismatch"
+        },
+        {
+          "approach": "Test on CPU",
+          "code": "model.cpu()\ninput = input.cpu()",
+          "when": "GPU not needed for test"
+        }
+      ]
+    },
+    {
+      "id": "determinism_test_failed",
+      "pattern": "determinism|Non-deterministic|Results differ",
+      "message": "Model produces non-deterministic outputs",
+      "cause": "Model uses non-deterministic operations",
+      "solutions": [
+        {
+          "approach": "Set random seeds",
+          "code": "torch.manual_seed(42)\ntorch.cuda.manual_seed_all(42)",
+          "when": "Ensuring reproducibility"
+        },
+        {
+          "approach": "Enable deterministic mode",
+          "code": "torch.use_deterministic_algorithms(True)",
+          "when": "Full determinism needed"
+        },
+        {
+          "approach": "Set CUBLAS workspace",
+          "code": "os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'",
+          "when": "CUDA determinism"
+        }
+      ]
+    },
+    {
+      "id": "model_not_callable",
+      "pattern": "not callable|Cannot call model|forward.*error",
+      "message": "Model cannot be called for testing",
+      "cause": "Model missing forward method or not nn.Module",
+      "solutions": [
+        {
+          "approach": "Inherit from nn.Module",
+          "code": "class MyModel(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n    def forward(self, x):\n        return self.layers(x)",
+          "when": "Creating model class"
+        },
+        {
+          "approach": "Set eval mode",
+          "code": "model.eval()\nwith torch.no_grad():\n    output = model(input)",
+          "when": "Testing inference"
+        }
+      ]
+    }
+  ]
+}

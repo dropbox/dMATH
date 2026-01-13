@@ -1,0 +1,163 @@
+{
+  "tool": "prometheus",
+  "version": "2.50.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "scrape_failed",
+      "pattern": "scrape_duration_seconds|scrape_samples_scraped{.*}=0|context deadline exceeded",
+      "message": "Target scrape failed",
+      "cause": "Target unreachable, timeout, or returning invalid metrics",
+      "solutions": [
+        {
+          "approach": "Check target health",
+          "code": "# In Prometheus UI: Status -> Targets\n# Or via API:\ncurl http://localhost:9090/api/v1/targets",
+          "when": "Need to see which targets failing"
+        },
+        {
+          "approach": "Increase scrape timeout",
+          "code": "scrape_configs:\n  - job_name: 'slow-target'\n    scrape_timeout: 30s\n    scrape_interval: 60s",
+          "when": "Target responds slowly"
+        },
+        {
+          "approach": "Check target endpoint",
+          "code": "curl -v http://target:port/metrics",
+          "when": "Verify target exposes metrics"
+        }
+      ]
+    },
+    {
+      "id": "out_of_order_sample",
+      "pattern": "out of order sample|out of bounds",
+      "message": "Sample timestamp out of order",
+      "cause": "Metrics sent with old timestamp or clock skew",
+      "solutions": [
+        {
+          "approach": "Fix clock sync",
+          "code": "# Ensure NTP is running on all hosts\nsudo systemctl status ntpd",
+          "when": "Clock skew between hosts"
+        },
+        {
+          "approach": "Use scrape timestamps",
+          "code": "honor_timestamps: false  # Use Prometheus scrape time",
+          "when": "Target sending incorrect timestamps"
+        }
+      ]
+    },
+    {
+      "id": "storage_retention",
+      "pattern": "storage|retention|disk full|WAL",
+      "message": "Storage or retention issue",
+      "cause": "Disk full, retention too long, or WAL corruption",
+      "solutions": [
+        {
+          "approach": "Reduce retention",
+          "code": "prometheus --storage.tsdb.retention.time=15d",
+          "when": "Disk filling up"
+        },
+        {
+          "approach": "Add storage",
+          "code": "prometheus --storage.tsdb.path=/larger/disk/prometheus",
+          "when": "Need more retention"
+        },
+        {
+          "approach": "Check WAL",
+          "code": "promtool tsdb analyze /path/to/prometheus/data",
+          "when": "Storage may be corrupted"
+        }
+      ]
+    },
+    {
+      "id": "query_timeout",
+      "pattern": "query timeout|context deadline exceeded|query processing would load too many samples",
+      "message": "Query timeout or resource limit exceeded",
+      "cause": "Query too expensive, too much data, or insufficient resources",
+      "solutions": [
+        {
+          "approach": "Add time range",
+          "code": "rate(http_requests_total[5m])  # Add explicit range",
+          "when": "Query missing time bounds"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "prometheus --query.timeout=5m",
+          "when": "Query legitimately takes time"
+        },
+        {
+          "approach": "Use recording rules",
+          "code": "groups:\n- name: example\n  rules:\n  - record: job:http_requests:rate5m\n    expr: rate(http_requests_total[5m])",
+          "when": "Query used frequently"
+        },
+        {
+          "approach": "Reduce cardinality",
+          "code": "# Aggregate labels to reduce series count\nsum by (status_code) (http_requests_total)",
+          "when": "High cardinality causing issues"
+        }
+      ]
+    },
+    {
+      "id": "high_cardinality",
+      "pattern": "cardinality|too many time series|memory",
+      "message": "High cardinality causing resource issues",
+      "cause": "Labels with too many unique values (user IDs, URLs, etc.)",
+      "solutions": [
+        {
+          "approach": "Find high cardinality metrics",
+          "code": "# Use promtool\npromtool tsdb analyze /path/to/data\n# Or query\ntopk(10, count by (__name__)({__name__=~\".+\"}))",
+          "when": "Need to identify problematic metrics"
+        },
+        {
+          "approach": "Drop labels",
+          "code": "metric_relabel_configs:\n- source_labels: [high_card_label]\n  action: labeldrop",
+          "when": "Label not needed"
+        },
+        {
+          "approach": "Hash or bucket labels",
+          "code": "# In application: bucket URLs, hash user IDs",
+          "when": "Need some info but not full granularity"
+        }
+      ]
+    },
+    {
+      "id": "alertmanager_not_found",
+      "pattern": "alertmanager|notification failed|send failed",
+      "message": "Cannot connect to Alertmanager",
+      "cause": "Alertmanager not running or wrong address",
+      "solutions": [
+        {
+          "approach": "Check Alertmanager config",
+          "code": "alerting:\n  alertmanagers:\n  - static_configs:\n    - targets:\n      - alertmanager:9093",
+          "when": "Alertmanager address may be wrong"
+        },
+        {
+          "approach": "Verify Alertmanager running",
+          "code": "curl http://alertmanager:9093/-/healthy",
+          "when": "Alertmanager may be down"
+        }
+      ]
+    },
+    {
+      "id": "label_mismatch",
+      "pattern": "no data|vector|instant vector|range vector",
+      "message": "Query returns no data",
+      "cause": "Label selectors don't match any series",
+      "solutions": [
+        {
+          "approach": "Check available labels",
+          "code": "# List all values for a label\ncurl 'http://localhost:9090/api/v1/label/job/values'",
+          "when": "Unsure what labels exist"
+        },
+        {
+          "approach": "Use regex matching",
+          "code": "http_requests_total{job=~\"web.*\"}",
+          "when": "Need partial label match"
+        },
+        {
+          "approach": "Check metric name",
+          "code": "curl 'http://localhost:9090/api/v1/label/__name__/values'",
+          "when": "Metric may have different name"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "tool": "dramatiq",
+  "category": "task_queue",
+  "description": "Python task processing library",
+  "errors": [
+    {
+      "pattern": "ConnectionError|broker.*connection.*failed",
+      "meaning": "Cannot connect to broker",
+      "causes": ["RabbitMQ/Redis not running", "Wrong broker URL", "Network issue"],
+      "solutions": ["Start broker service", "Check broker configuration", "Verify network connectivity"]
+    },
+    {
+      "pattern": "ActorNotFound",
+      "meaning": "Task actor not registered",
+      "causes": ["Actor module not imported", "Worker missing actor", "Name mismatch"],
+      "solutions": ["Import actor module before starting", "Ensure same code on worker", "Check actor names match"]
+    },
+    {
+      "pattern": "Retry.*limit.*exceeded|retries.*exhausted",
+      "meaning": "Task exceeded retry limit",
+      "causes": ["Persistent failure", "External dependency issue", "Bug in actor"],
+      "solutions": ["Check actor logs", "Increase max_retries", "Fix underlying issue"]
+    },
+    {
+      "pattern": "MessageEncodingError|cannot serialize",
+      "meaning": "Message serialization failed",
+      "causes": ["Non-JSON serializable argument", "Custom encoder needed", "Complex object passed"],
+      "solutions": ["Use JSON-compatible types", "Configure custom encoder", "Simplify message data"]
+    },
+    {
+      "pattern": "AgeLimit.*exceeded",
+      "meaning": "Message too old to process",
+      "causes": ["Message sat in queue too long", "Workers behind", "max_age exceeded"],
+      "solutions": ["Increase max_age", "Add more workers", "Check queue backlog"]
+    },
+    {
+      "pattern": "TimeLimitExceeded",
+      "meaning": "Actor exceeded time limit",
+      "causes": ["Task took too long", "time_limit too short", "External service slow"],
+      "solutions": ["Increase time_limit option", "Optimize task code", "Handle timeout gracefully"]
+    },
+    {
+      "pattern": "MemoryError|worker.*OOM",
+      "meaning": "Worker out of memory",
+      "causes": ["Memory leak in actor", "Large message data", "Too many concurrent tasks"],
+      "solutions": ["Check for memory leaks", "Reduce message size", "Limit concurrency with --processes/--threads"]
+    },
+    {
+      "pattern": "QueueNotFound|Unknown.*queue",
+      "meaning": "Queue not declared",
+      "causes": ["Queue name typo", "Queue not created", "Broker misconfigured"],
+      "solutions": ["Check queue name in @dramatiq.actor", "Verify broker has queue", "Start worker to create queues"]
+    }
+  ]
+}

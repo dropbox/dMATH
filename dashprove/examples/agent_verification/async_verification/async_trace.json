@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "spec": "state_machine.tla",
+    "constants": {
+      "MaxIterations": 10,
+      "MaxMessages": 50,
+      "MaxToolCalls": 5
+    }
+  },
+  "states": [
+    {
+      "index": 0,
+      "variables": {
+        "state": "Idle",
+        "iteration": 0,
+        "messages": [],
+        "pendingTools": [],
+        "completedTools": []
+      }
+    },
+    {
+      "index": 1,
+      "variables": {
+        "state": "Processing",
+        "iteration": 1,
+        "messages": ["user_message"],
+        "pendingTools": [],
+        "completedTools": []
+      }
+    },
+    {
+      "index": 2,
+      "variables": {
+        "state": "ToolExecution",
+        "iteration": 1,
+        "messages": ["user_message"],
+        "pendingTools": [],
+        "completedTools": []
+      }
+    },
+    {
+      "index": 3,
+      "variables": {
+        "state": "Waiting",
+        "iteration": 1,
+        "messages": ["user_message"],
+        "pendingTools": ["write_file"],
+        "completedTools": []
+      }
+    },
+    {
+      "index": 4,
+      "variables": {
+        "state": "Processing",
+        "iteration": 2,
+        "messages": ["user_message"],
+        "pendingTools": [],
+        "completedTools": ["write_file"]
+      }
+    },
+    {
+      "index": 5,
+      "variables": {
+        "state": "Done",
+        "iteration": 2,
+        "messages": ["user_message"],
+        "pendingTools": [],
+        "completedTools": ["write_file"]
+      }
+    }
+  ],
+  "actions": [
+    {"name": "ReceiveMessage", "from": 0, "to": 1},
+    {"name": "ProcessMessage", "from": 1, "to": 2},
+    {"name": "InitiateToolCall", "from": 2, "to": 3, "params": {"tool": "write_file"}},
+    {"name": "CompleteToolCall", "from": 3, "to": 4, "params": {"tool": "write_file"}},
+    {"name": "Complete", "from": 4, "to": 5}
+  ],
+  "invariants_to_check": [
+    "TypeInvariant",
+    "BoundedIterations",
+    "NoOrphanedTools"
+  ],
+  "liveness_to_check": [
+    "EventuallyTerminates",
+    "ToolsEventuallyComplete"
+  ]
+}

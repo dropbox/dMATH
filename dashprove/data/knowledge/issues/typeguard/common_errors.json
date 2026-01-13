@@ -1,0 +1,237 @@
+{
+  "tool": "typeguard",
+  "version": "4.3.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "type_check_failed",
+      "pattern": "TypeCheckError|type of .* must be|expected .* got",
+      "message": "Runtime type check failed",
+      "cause": "Value doesn't match declared type annotation",
+      "solutions": [
+        {
+          "approach": "Fix the value type",
+          "code": "def func(x: int) -> str:\n    return str(x)  # Return correct type",
+          "when": "Code returning wrong type"
+        },
+        {
+          "approach": "Fix the annotation",
+          "code": "def func(x: int | str) -> str:  # Union if multiple types valid",
+          "when": "Annotation too restrictive"
+        },
+        {
+          "approach": "Use Any for dynamic",
+          "code": "from typing import Any\ndef func(x: Any) -> Any:",
+          "when": "Truly dynamic typing needed"
+        }
+      ]
+    },
+    {
+      "id": "argument_type_error",
+      "pattern": "argument .* is not an instance of|parameter.*type",
+      "message": "Function argument has wrong type",
+      "cause": "Passed argument doesn't match parameter annotation",
+      "solutions": [
+        {
+          "approach": "Convert argument",
+          "code": "func(int(value))  # Convert string to int",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Check call site",
+          "code": "# Ensure caller passes correct type",
+          "when": "Caller providing wrong type"
+        },
+        {
+          "approach": "Use overloads for multiple types",
+          "code": "from typing import overload\n@overload\ndef func(x: int) -> int: ...\n@overload\ndef func(x: str) -> str: ...",
+          "when": "Function handles multiple types"
+        }
+      ]
+    },
+    {
+      "id": "return_type_error",
+      "pattern": "return value.*is not.*instance|returned.*instead of",
+      "message": "Return value has wrong type",
+      "cause": "Function returns value not matching return annotation",
+      "solutions": [
+        {
+          "approach": "Fix return statement",
+          "code": "def func() -> int:\n    return 42  # Not '42' (string)",
+          "when": "Wrong return value"
+        },
+        {
+          "approach": "Handle None case",
+          "code": "def func() -> int | None:\n    if condition:\n        return 42\n    return None",
+          "when": "May return None"
+        },
+        {
+          "approach": "Use Optional",
+          "code": "from typing import Optional\ndef func() -> Optional[int]:",
+          "when": "Can return None"
+        }
+      ]
+    },
+    {
+      "id": "collection_type_error",
+      "pattern": "list\\[.*\\]|dict\\[.*\\]|item.*wrong type",
+      "message": "Collection contains wrong item type",
+      "cause": "Generic collection has item of wrong type",
+      "solutions": [
+        {
+          "approach": "Fix collection contents",
+          "code": "def func() -> list[int]:\n    return [1, 2, 3]  # Not [1, '2', 3]",
+          "when": "Mixed types in collection"
+        },
+        {
+          "approach": "Use looser type",
+          "code": "def func() -> list[int | str]:\n    return [1, 'two', 3]",
+          "when": "Multiple types intended"
+        },
+        {
+          "approach": "Filter items",
+          "code": "return [x for x in items if isinstance(x, int)]",
+          "when": "Filter to correct type"
+        }
+      ]
+    },
+    {
+      "id": "forward_reference",
+      "pattern": "NameError|forward reference|not defined",
+      "message": "Forward reference not resolved",
+      "cause": "Type annotation references class not yet defined",
+      "solutions": [
+        {
+          "approach": "Use string annotation",
+          "code": "class Node:\n    def add_child(self, child: 'Node') -> None:",
+          "when": "Self-referential type"
+        },
+        {
+          "approach": "Use from __future__ import",
+          "code": "from __future__ import annotations\nclass Node:\n    def add_child(self, child: Node) -> None:",
+          "when": "Python 3.7+"
+        },
+        {
+          "approach": "Import TYPE_CHECKING",
+          "code": "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    from module import OtherClass",
+          "when": "Circular import"
+        }
+      ]
+    },
+    {
+      "id": "callable_signature",
+      "pattern": "Callable.*signature|function.*wrong.*signature",
+      "message": "Callable signature mismatch",
+      "cause": "Function passed doesn't match Callable type",
+      "solutions": [
+        {
+          "approach": "Match Callable signature",
+          "code": "from typing import Callable\ndef process(fn: Callable[[int, str], bool]) -> None:\n    pass\n# fn must take (int, str) and return bool",
+          "when": "Function signature issue"
+        },
+        {
+          "approach": "Use Protocol for complex",
+          "code": "from typing import Protocol\nclass Handler(Protocol):\n    def __call__(self, x: int) -> str: ...",
+          "when": "Complex callable type"
+        },
+        {
+          "approach": "Use ... for any args",
+          "code": "Callable[..., ReturnType]",
+          "when": "Any arguments ok"
+        }
+      ]
+    },
+    {
+      "id": "typeguard_not_checking",
+      "pattern": "not checked|skipped|disabled",
+      "message": "Type checking not active",
+      "cause": "Typeguard not enabled or decorator missing",
+      "solutions": [
+        {
+          "approach": "Add typechecked decorator",
+          "code": "from typeguard import typechecked\n\n@typechecked\ndef func(x: int) -> str:\n    return str(x)",
+          "when": "Per-function checking"
+        },
+        {
+          "approach": "Use import hook",
+          "code": "from typeguard import install_import_hook\ninstall_import_hook('mypackage')",
+          "when": "Package-wide checking"
+        },
+        {
+          "approach": "Use pytest plugin",
+          "code": "pytest --typeguard-packages=mypackage",
+          "when": "Test-time checking"
+        }
+      ]
+    },
+    {
+      "id": "performance_impact",
+      "pattern": "slow|performance|overhead",
+      "message": "Runtime type checking has overhead",
+      "cause": "Checking every call adds latency",
+      "solutions": [
+        {
+          "approach": "Disable in production",
+          "code": "# Only check during development/testing\nif DEBUG:\n    from typeguard import install_import_hook\n    install_import_hook('mypackage')",
+          "when": "Production performance critical"
+        },
+        {
+          "approach": "Check only public API",
+          "code": "@typechecked\ndef public_api():  # Check\n    _internal()  # Don't check",
+          "when": "Selective checking"
+        },
+        {
+          "approach": "Use beartype instead",
+          "code": "from beartype import beartype  # O(1) checking",
+          "when": "Need lower overhead"
+        }
+      ]
+    },
+    {
+      "id": "union_type_error",
+      "pattern": "Union|none of the.*matched|neither.*nor",
+      "message": "Value doesn't match any Union member",
+      "cause": "Value not matching any type in Union",
+      "solutions": [
+        {
+          "approach": "Ensure value matches one type",
+          "code": "def func(x: int | str) -> None:\n    # x must be int OR str, not other type",
+          "when": "Value is wrong type"
+        },
+        {
+          "approach": "Add missing type to Union",
+          "code": "def func(x: int | str | float) -> None:",
+          "when": "Missing valid type"
+        },
+        {
+          "approach": "Use narrowing",
+          "code": "if isinstance(x, int):\n    # x is int here\nelse:\n    # x is str here",
+          "when": "Type narrowing needed"
+        }
+      ]
+    },
+    {
+      "id": "generic_type_error",
+      "pattern": "Generic|TypeVar|type variable",
+      "message": "Generic type constraint violation",
+      "cause": "Type variable bound or constraint not satisfied",
+      "solutions": [
+        {
+          "approach": "Respect type variable bounds",
+          "code": "from typing import TypeVar\nT = TypeVar('T', bound=Comparable)\ndef sort(items: list[T]) -> list[T]:  # T must be Comparable",
+          "when": "Bound not satisfied"
+        },
+        {
+          "approach": "Use constrained TypeVar",
+          "code": "T = TypeVar('T', int, str)  # Only int or str",
+          "when": "Limited types"
+        },
+        {
+          "approach": "Check generic instantiation",
+          "code": "# Ensure concrete type satisfies constraints",
+          "when": "Wrong generic argument"
+        }
+      ]
+    }
+  ]
+}

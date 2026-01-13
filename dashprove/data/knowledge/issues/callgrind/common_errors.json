@@ -1,0 +1,106 @@
+{
+  "tool": "callgrind",
+  "version": "3.22",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "valgrind_missing",
+      "pattern": "callgrind: command not found|failed to start tool 'callgrind'",
+      "message": "Callgrind binary missing",
+      "cause": "Valgrind not installed or built without callgrind",
+      "solutions": [
+        {
+          "approach": "Install valgrind",
+          "code": "sudo apt install valgrind",
+          "when": "Distro package install"
+        },
+        {
+          "approach": "Verify tool availability",
+          "code": "valgrind --tool=callgrind --version",
+          "when": "Check build options"
+        }
+      ]
+    },
+    {
+      "id": "output_missing",
+      "pattern": "callgrind_out\\.\\d+.*No such file|kcachegrind cannot open",
+      "message": "Callgrind output file not generated",
+      "cause": "Process exited early or output path wrong",
+      "solutions": [
+        {
+          "approach": "Set output path",
+          "code": "valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out.%p ./app",
+          "when": "Default directory not writable"
+        },
+        {
+          "approach": "Ensure program exit",
+          "code": "# Allow graceful shutdown; avoid kill -9",
+          "when": "Profiling interrupted"
+        }
+      ]
+    },
+    {
+      "id": "symbols_missing",
+      "pattern": "\\?\\? \\(\\)|[uU]nknown function",
+      "message": "Reports lack function names",
+      "cause": "Binary stripped or optimized without debug info",
+      "solutions": [
+        {
+          "approach": "Rebuild with -g",
+          "code": "CFLAGS='-O2 -g' make",
+          "when": "Need symbolized call graph"
+        },
+        {
+          "approach": "Install debug packages",
+          "code": "sudo apt install <pkg>-dbgsym",
+          "when": "Using distro binaries"
+        }
+      ]
+    },
+    {
+      "id": "instrumentation_disabled",
+      "pattern": "no events collected|all counts zero",
+      "message": "Callgrind captured no events",
+      "cause": "Instrumentation disabled or run stopped too early",
+      "solutions": [
+        {
+          "approach": "Start instrumentation manually",
+          "code": "valgrind --tool=callgrind --instr-atstart=no ./app\\ncallgrind_control -i on",
+          "when": "Only profile specific phase"
+        },
+        {
+          "approach": "Check event list",
+          "code": "callgrind_control -e events",
+          "when": "Verify counters configured"
+        }
+      ]
+    },
+    {
+      "id": "output_too_large",
+      "pattern": "callgrind file extremely large|disk space exhausted",
+      "message": "Callgrind output size explodes",
+      "cause": "Collecting instruction-level data on large programs",
+      "solutions": [
+        {
+          "approach": "Reduce detail",
+          "code": "valgrind --tool=callgrind --collect-jumps=no --compress-strings=yes ./app",
+          "when": "Need smaller output"
+        },
+        {
+          "approach": "Limit region",
+          "code": "valgrind --tool=callgrind --instr-atstart=no ./app\\ncallgrind_control -i on  # around target workload",
+          "when": "Profile only hot paths"
+        },
+        {
+          "approach": "Use sampling profiler",
+          "code": "perf record --call-graph dwarf ./app",
+          "when": "Accept sampling over tracing"
+        }
+      ]
+    }
+  ],
+  "documentation_urls": [
+    "https://valgrind.org/docs/manual/cl-manual.html",
+    "https://kcachegrind.github.io/html/"
+  ]
+}

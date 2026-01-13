@@ -1,0 +1,186 @@
+{
+  "tool": "act",
+  "version": "0.2.57",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "docker_not_running",
+      "pattern": "Cannot connect to Docker|docker.*not running|DOCKER_HOST",
+      "message": "Docker daemon not running",
+      "cause": "Docker is not running or not accessible",
+      "solutions": [
+        {
+          "approach": "Start Docker",
+          "code": "# Start Docker Desktop or:\nsudo systemctl start docker",
+          "when": "Docker not started"
+        },
+        {
+          "approach": "Check Docker",
+          "code": "docker info",
+          "when": "Verify Docker works"
+        },
+        {
+          "approach": "Set Docker host",
+          "code": "export DOCKER_HOST=unix:///var/run/docker.sock",
+          "when": "Custom Docker socket"
+        }
+      ]
+    },
+    {
+      "id": "workflow_not_found",
+      "pattern": "No workflows found|workflow.*not found|.github/workflows",
+      "message": "No workflow files found",
+      "cause": "No workflow YAML in .github/workflows/",
+      "solutions": [
+        {
+          "approach": "Create workflow",
+          "code": "mkdir -p .github/workflows\n# Create .github/workflows/ci.yml",
+          "when": "No workflows exist"
+        },
+        {
+          "approach": "Specify workflow",
+          "code": "act -W .github/workflows/ci.yml",
+          "when": "Run specific workflow"
+        },
+        {
+          "approach": "List workflows",
+          "code": "act -l",
+          "when": "See available workflows"
+        }
+      ]
+    },
+    {
+      "id": "image_pull_failed",
+      "pattern": "Image pull|cannot pull|registry.*error",
+      "message": "Failed to pull Docker image",
+      "cause": "Runner image unavailable or auth required",
+      "solutions": [
+        {
+          "approach": "Use micro image",
+          "code": "act -P ubuntu-latest=catthehacker/ubuntu:act-latest",
+          "when": "Smaller image"
+        },
+        {
+          "approach": "Use medium image",
+          "code": "act -P ubuntu-latest=catthehacker/ubuntu:act-22.04",
+          "when": "More tools"
+        },
+        {
+          "approach": "Configure in .actrc",
+          "code": "-P ubuntu-latest=catthehacker/ubuntu:act-latest\n-P ubuntu-22.04=catthehacker/ubuntu:act-22.04",
+          "when": "Persistent config"
+        }
+      ]
+    },
+    {
+      "id": "secrets_missing",
+      "pattern": "Secret.*not set|GITHUB_TOKEN|secrets\\..*",
+      "message": "Required secrets not provided",
+      "cause": "Workflow requires secrets not available locally",
+      "solutions": [
+        {
+          "approach": "Pass secrets",
+          "code": "act -s GITHUB_TOKEN=ghp_xxx -s MY_SECRET=value",
+          "when": "Command line secrets"
+        },
+        {
+          "approach": "Use secrets file",
+          "code": "# .secrets\nGITHUB_TOKEN=ghp_xxx\nNPM_TOKEN=npm_xxx\n\nact --secret-file .secrets",
+          "when": "File-based secrets"
+        },
+        {
+          "approach": "Use env vars",
+          "code": "export GITHUB_TOKEN=ghp_xxx\nact -s GITHUB_TOKEN",
+          "when": "From environment"
+        }
+      ]
+    },
+    {
+      "id": "job_failed",
+      "pattern": "Job.*failed|step.*failed|exit code",
+      "message": "Workflow job/step failed",
+      "cause": "Command in workflow step returned error",
+      "solutions": [
+        {
+          "approach": "Verbose mode",
+          "code": "act -v",
+          "when": "Debug output"
+        },
+        {
+          "approach": "Run specific job",
+          "code": "act -j build",
+          "when": "Test single job"
+        },
+        {
+          "approach": "Interactive shell",
+          "code": "act --reuse",
+          "when": "Reuse containers"
+        }
+      ]
+    },
+    {
+      "id": "action_not_supported",
+      "pattern": "Unsupported.*action|composite.*not supported|local action",
+      "message": "Action type not fully supported",
+      "cause": "Act doesn't support all action features",
+      "solutions": [
+        {
+          "approach": "Use container actions",
+          "code": "# Prefer actions that use docker containers",
+          "when": "Use container-based"
+        },
+        {
+          "approach": "Local actions",
+          "code": "act --local-repository owner/repo=./path",
+          "when": "Mount local action"
+        },
+        {
+          "approach": "Skip unsupported",
+          "code": "# Add if: ${{ !github.event.act }} to skip in act",
+          "when": "Conditional execution"
+        }
+      ]
+    },
+    {
+      "id": "artifact_error",
+      "pattern": "artifact.*not supported|upload-artifact|download-artifact",
+      "message": "Artifacts not fully supported",
+      "cause": "Artifact actions need special handling",
+      "solutions": [
+        {
+          "approach": "Use artifact server",
+          "code": "act --artifact-server-path /tmp/artifacts",
+          "when": "Enable artifacts"
+        },
+        {
+          "approach": "Skip artifact steps",
+          "code": "- uses: actions/upload-artifact@v3\n  if: ${{ !env.ACT }}",
+          "when": "Skip in act"
+        }
+      ]
+    },
+    {
+      "id": "event_error",
+      "pattern": "Event.*not found|trigger.*not supported|on:.*",
+      "message": "Workflow event not supported",
+      "cause": "Event type not supported or configured",
+      "solutions": [
+        {
+          "approach": "Specify event",
+          "code": "act push\nact pull_request\nact workflow_dispatch",
+          "when": "Run with event"
+        },
+        {
+          "approach": "Event payload",
+          "code": "act push -e event.json",
+          "when": "Custom event data"
+        },
+        {
+          "approach": "Default event",
+          "code": "act  # Defaults to push event",
+          "when": "Use default"
+        }
+      ]
+    }
+  ]
+}

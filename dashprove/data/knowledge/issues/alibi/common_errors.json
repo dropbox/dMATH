@@ -1,0 +1,130 @@
+{
+  "tool": "alibi",
+  "version": "0.9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "model_not_callable",
+      "pattern": "(model.*not callable|predict function)",
+      "message": "Model must be callable for explanation",
+      "cause": "Alibi explainers require a prediction function",
+      "solutions": [
+        {
+          "approach": "Wrap model prediction",
+          "code": "predict_fn = lambda x: model.predict_proba(x)\nexplainer = AnchorTabular(predict_fn, feature_names)",
+          "when": "Using sklearn-style model"
+        },
+        {
+          "approach": "Use model directly",
+          "code": "explainer = AnchorTabular(model.predict_proba, feature_names)",
+          "when": "Model has predict_proba method"
+        }
+      ]
+    },
+    {
+      "id": "anchor_not_found",
+      "pattern": "(No anchor found|anchor precision)",
+      "message": "Could not find satisfactory anchor explanation",
+      "cause": "Cannot find sufficient conditions for prediction with required precision",
+      "solutions": [
+        {
+          "approach": "Lower precision threshold",
+          "code": "explanation = explainer.explain(x, threshold=0.90)  # Default is 0.95",
+          "when": "Strict precision requirement"
+        },
+        {
+          "approach": "Increase beam size",
+          "code": "explainer = AnchorTabular(predict_fn, feature_names, ohe=True)\nexplainer.fit(X_train, disc_perc=[25, 50, 75])",
+          "when": "Need more feature combinations"
+        },
+        {
+          "approach": "Increase samples",
+          "code": "explanation = explainer.explain(x, max_anchor_size=None, batch_size=1000)",
+          "when": "Explanation may need more sampling"
+        }
+      ]
+    },
+    {
+      "id": "counterfactual_not_found",
+      "pattern": "(No counterfactual|could not find)",
+      "message": "Could not find valid counterfactual",
+      "cause": "No valid counterfactual exists within constraints",
+      "solutions": [
+        {
+          "approach": "Relax constraints",
+          "code": "cf = CounterfactualProto(model.predict, shape)\ncf.fit(X_train, trustscore_kwargs=None)  # Disable trust scores",
+          "when": "Constraints too strict"
+        },
+        {
+          "approach": "Increase search iterations",
+          "code": "explanation = cf.explain(x, max_iterations=1000, max_lam_steps=20)",
+          "when": "May need more search"
+        },
+        {
+          "approach": "Adjust target",
+          "code": "explanation = cf.explain(x, target_class=1, k=5)  # Return k nearest",
+          "when": "Target class may be hard to reach"
+        }
+      ]
+    },
+    {
+      "id": "shape_mismatch",
+      "pattern": "(shape mismatch|dimension|incompatible shapes)",
+      "message": "Input shape doesn't match model expectation",
+      "cause": "Explainer initialized with different shape than input",
+      "solutions": [
+        {
+          "approach": "Check input shape",
+          "code": "print(f\"Expected: {explainer.meta['input_shape']}\")\nprint(f\"Got: {x.shape}\")",
+          "when": "Debugging shape issues"
+        },
+        {
+          "approach": "Reshape input",
+          "code": "x_reshaped = x.reshape(1, -1)  # For single instance\nexplanation = explainer.explain(x_reshaped)",
+          "when": "Input missing batch dimension"
+        }
+      ]
+    },
+    {
+      "id": "kernel_shap_timeout",
+      "pattern": "(timeout|KernelSHAP.*slow)",
+      "message": "KernelSHAP taking too long",
+      "cause": "KernelSHAP is computationally expensive for many features",
+      "solutions": [
+        {
+          "approach": "Reduce samples",
+          "code": "explainer = KernelShap(predict_fn, link='logit')\nexplanation = explainer.explain(x, nsamples=100)  # Default is 'auto'",
+          "when": "Can accept approximation"
+        },
+        {
+          "approach": "Use TreeSHAP",
+          "code": "from alibi.explainers import TreeShap\nexplainer = TreeShap(model)  # For tree-based models",
+          "when": "Model is tree-based (RF, XGBoost)"
+        },
+        {
+          "approach": "Feature selection",
+          "code": "# Reduce features before explanation\nfrom sklearn.feature_selection import SelectKBest",
+          "when": "Many features not important"
+        }
+      ]
+    },
+    {
+      "id": "drift_detection_error",
+      "pattern": "(drift detector|reference data)",
+      "message": "Drift detector configuration error",
+      "cause": "Drift detector requires proper reference data setup",
+      "solutions": [
+        {
+          "approach": "Fit with reference data",
+          "code": "from alibi_detect.cd import MMDDrift\ncd = MMDDrift(X_ref, backend='pytorch', p_val=0.05)\ncd.predict(X_test)",
+          "when": "Setting up drift detection"
+        },
+        {
+          "approach": "Check reference size",
+          "code": "# Reference data should be representative\nassert len(X_ref) >= 100, 'Need more reference samples'",
+          "when": "Reference may be too small"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "envoy",
+  "version": "1.29.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_healthy_upstream",
+      "pattern": "no healthy upstream|all upstreams unhealthy|503 UH",
+      "message": "No healthy upstream hosts available",
+      "cause": "All backend hosts failed health checks",
+      "solutions": [
+        {
+          "approach": "Check cluster health",
+          "code": "curl localhost:9901/clusters | grep health_flags",
+          "when": "Need to see upstream health status"
+        },
+        {
+          "approach": "Adjust health check",
+          "code": "health_checks:\n- timeout: 5s\n  interval: 10s\n  unhealthy_threshold: 3\n  healthy_threshold: 1\n  http_health_check:\n    path: /health",
+          "when": "Health check too aggressive"
+        },
+        {
+          "approach": "Check backend availability",
+          "code": "curl -v http://backend-host:port/health",
+          "when": "Backend may actually be down"
+        }
+      ]
+    },
+    {
+      "id": "upstream_connection_failure",
+      "pattern": "upstream connect error|connection failure|503 UF",
+      "message": "Failed to connect to upstream",
+      "cause": "Network issue, wrong upstream address, or connection refused",
+      "solutions": [
+        {
+          "approach": "Verify upstream address",
+          "code": "# Check cluster configuration\ncurl localhost:9901/config_dump | jq '.configs[] | select(.\"@type\"==\"type.googleapis.com/envoy.admin.v3.ClustersConfigDump\")'",
+          "when": "Upstream address may be wrong"
+        },
+        {
+          "approach": "Check DNS resolution",
+          "code": "# Envoy logs will show DNS failures\n# Ensure dns_lookup_family is appropriate\ndns_lookup_family: V4_ONLY  # or AUTO",
+          "when": "DNS resolution may be failing"
+        },
+        {
+          "approach": "Increase connection timeout",
+          "code": "cluster:\n  connect_timeout: 10s",
+          "when": "Connection taking too long"
+        }
+      ]
+    },
+    {
+      "id": "no_route_matched",
+      "pattern": "no route|404|route_not_found",
+      "message": "No route matched the request",
+      "cause": "Request doesn't match any configured route",
+      "solutions": [
+        {
+          "approach": "Check route config",
+          "code": "curl localhost:9901/config_dump | jq '.configs[] | select(.\"@type\"==\"type.googleapis.com/envoy.admin.v3.RoutesConfigDump\")'",
+          "when": "Need to see route configuration"
+        },
+        {
+          "approach": "Add catch-all route",
+          "code": "routes:\n- match:\n    prefix: \"/\"\n  route:\n    cluster: default_cluster",
+          "when": "Want default route for unmatched requests"
+        },
+        {
+          "approach": "Check Host header",
+          "code": "# Virtual host may require specific Host header\nvirtual_hosts:\n- name: myhost\n  domains: [\"myapp.example.com\", \"*\"]",
+          "when": "Host header not matching virtual host"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "upstream request timeout|504|timeout",
+      "message": "Upstream request timeout",
+      "cause": "Backend took too long to respond",
+      "solutions": [
+        {
+          "approach": "Increase route timeout",
+          "code": "route:\n  cluster: my_cluster\n  timeout: 60s",
+          "when": "Backend legitimately slow"
+        },
+        {
+          "approach": "Configure retries",
+          "code": "route:\n  retry_policy:\n    retry_on: \"5xx,reset,connect-failure\"\n    num_retries: 3\n    per_try_timeout: 10s",
+          "when": "Want automatic retries"
+        },
+        {
+          "approach": "Check backend performance",
+          "code": "# Backend may need optimization",
+          "when": "Timeout consistently occurring"
+        }
+      ]
+    },
+    {
+      "id": "circuit_breaker",
+      "pattern": "overflow|cx_overflow|pending_overflow|503 UC",
+      "message": "Circuit breaker overflow",
+      "cause": "Connection or pending request limit exceeded",
+      "solutions": [
+        {
+          "approach": "Check circuit breaker stats",
+          "code": "curl localhost:9901/stats | grep circuit",
+          "when": "Need to see circuit breaker state"
+        },
+        {
+          "approach": "Increase limits",
+          "code": "circuit_breakers:\n  thresholds:\n  - max_connections: 1024\n    max_pending_requests: 1024\n    max_requests: 1024\n    max_retries: 3",
+          "when": "Limits too low for traffic"
+        },
+        {
+          "approach": "Scale backends",
+          "code": "# Add more backend instances to handle load",
+          "when": "Backends overloaded"
+        }
+      ]
+    },
+    {
+      "id": "tls_error",
+      "pattern": "TLS error|SSL|certificate verify failed|503 UC",
+      "message": "TLS/SSL error",
+      "cause": "Certificate validation failed, wrong TLS version, or cipher mismatch",
+      "solutions": [
+        {
+          "approach": "Configure TLS context",
+          "code": "transport_socket:\n  name: envoy.transport_sockets.tls\n  typed_config:\n    \"@type\": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext\n    sni: backend.example.com",
+          "when": "Backend requires TLS"
+        },
+        {
+          "approach": "Skip certificate verification",
+          "code": "validation_context:\n  trust_chain_verification: ACCEPT_UNTRUSTED  # Only for testing!",
+          "when": "Testing with self-signed certs"
+        },
+        {
+          "approach": "Configure CA bundle",
+          "code": "validation_context:\n  trusted_ca:\n    filename: /etc/ssl/certs/ca-certificates.crt",
+          "when": "Custom CA certificate needed"
+        }
+      ]
+    },
+    {
+      "id": "config_rejected",
+      "pattern": "config rejected|NACK|xDS|configuration error",
+      "message": "Configuration rejected by Envoy",
+      "cause": "Invalid configuration pushed by control plane",
+      "solutions": [
+        {
+          "approach": "Check admin interface",
+          "code": "curl localhost:9901/config_dump\ncurl localhost:9901/stats | grep rejected",
+          "when": "Need to see what config was rejected"
+        },
+        {
+          "approach": "View Envoy logs",
+          "code": "# Envoy logs will show specific validation error",
+          "when": "Need error details"
+        },
+        {
+          "approach": "Validate config",
+          "code": "envoy --mode validate -c envoy.yaml",
+          "when": "Testing static configuration"
+        }
+      ]
+    },
+    {
+      "id": "rate_limited",
+      "pattern": "rate_limited|429|local_rate_limit",
+      "message": "Request rate limited",
+      "cause": "Rate limiter rejected request",
+      "solutions": [
+        {
+          "approach": "Check rate limit stats",
+          "code": "curl localhost:9901/stats | grep ratelimit",
+          "when": "Need to see rate limit metrics"
+        },
+        {
+          "approach": "Adjust rate limits",
+          "code": "http_filters:\n- name: envoy.filters.http.local_ratelimit\n  typed_config:\n    token_bucket:\n      max_tokens: 1000\n      fill_interval: 1s",
+          "when": "Rate limits too restrictive"
+        }
+      ]
+    }
+  ]
+}

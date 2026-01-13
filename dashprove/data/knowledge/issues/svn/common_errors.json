@@ -1,0 +1,145 @@
+{
+  "tool": "svn",
+  "version": "1.14",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "working_copy_locked",
+      "pattern": "working copy.*locked|locked|cleanup",
+      "message": "Working copy is locked",
+      "cause": "Previous operation interrupted or crashed",
+      "solutions": [
+        {
+          "approach": "Run cleanup",
+          "code": "svn cleanup\nsvn cleanup --remove-locks",
+          "when": "Standard fix"
+        },
+        {
+          "approach": "Force break locks",
+          "code": "svn cleanup --remove-unversioned --remove-ignored --include-externals",
+          "when": "Thorough cleanup"
+        },
+        {
+          "approach": "Manual unlock",
+          "code": "find . -name '.svn' -type d -exec rm -rf {}/.wc.db.lock \\;",
+          "when": "Last resort"
+        }
+      ]
+    },
+    {
+      "id": "tree_conflict",
+      "pattern": "tree conflict|conflicted|conflict",
+      "message": "Tree conflict during merge/update",
+      "cause": "Conflicting changes to directory structure",
+      "solutions": [
+        {
+          "approach": "Resolve conflict",
+          "code": "svn resolve --accept=working path\nsvn resolve --accept=theirs-full path\nsvn resolve --accept=mine-full path",
+          "when": "Choose version"
+        },
+        {
+          "approach": "View conflicts",
+          "code": "svn status | grep '^C'\nsvn info path",
+          "when": "Find conflicts"
+        },
+        {
+          "approach": "Revert",
+          "code": "svn revert -R path\nsvn revert --depth=infinity path",
+          "when": "Start over"
+        }
+      ]
+    },
+    {
+      "id": "authentication_failed",
+      "pattern": "authentication|401|password|credentials|Authorization",
+      "message": "Authentication failed",
+      "cause": "Wrong or expired credentials",
+      "solutions": [
+        {
+          "approach": "Clear cache",
+          "code": "rm -rf ~/.subversion/auth/*\nsvn update --username user --password pass",
+          "when": "Reset creds"
+        },
+        {
+          "approach": "Specify credentials",
+          "code": "svn update --username myuser\nsvn update --non-interactive --no-auth-cache --username user --password pass",
+          "when": "Explicit auth"
+        },
+        {
+          "approach": "Check server",
+          "code": "curl -I https://svn.example.com/repo",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "out_of_date",
+      "pattern": "out of date|update.*first|commit failed",
+      "message": "Working copy out of date",
+      "cause": "Need to update before commit",
+      "solutions": [
+        {
+          "approach": "Update first",
+          "code": "svn update\nsvn commit -m 'message'",
+          "when": "Standard"
+        },
+        {
+          "approach": "Update specific",
+          "code": "svn update path/to/file",
+          "when": "Specific file"
+        },
+        {
+          "approach": "Force",
+          "code": "svn update --accept=postpone",
+          "when": "Handle later"
+        }
+      ]
+    },
+    {
+      "id": "certificate_error",
+      "pattern": "certificate|SSL|PKIX|trust",
+      "message": "SSL certificate error",
+      "cause": "Untrusted or expired certificate",
+      "solutions": [
+        {
+          "approach": "Accept permanently",
+          "code": "svn update  # When prompted, type 'p' for permanent",
+          "when": "Interactive"
+        },
+        {
+          "approach": "Trust server",
+          "code": "svn --trust-server-cert update\nsvn --trust-server-cert-failures=unknown-ca,cn-mismatch update",
+          "when": "Non-interactive"
+        },
+        {
+          "approach": "Config file",
+          "code": "# In ~/.subversion/servers:\n[global]\nssl-trust-default-ca = no",
+          "when": "Permanent config"
+        }
+      ]
+    },
+    {
+      "id": "not_working_copy",
+      "pattern": "not a working copy|not under version control",
+      "message": "Directory is not a working copy",
+      "cause": "Not checked out or .svn deleted",
+      "solutions": [
+        {
+          "approach": "Checkout",
+          "code": "svn checkout URL path",
+          "when": "Get fresh copy"
+        },
+        {
+          "approach": "Check path",
+          "code": "svn info  # Should show repo info\nls -la .svn",
+          "when": "Verify"
+        },
+        {
+          "approach": "Re-checkout",
+          "code": "mv dir dir.bak\nsvn checkout URL dir",
+          "when": "Corrupted"
+        }
+      ]
+    }
+  ]
+}

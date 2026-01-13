@@ -1,0 +1,44 @@
+// Security Property Examples
+// Demonstrates information flow properties (compiles to Tamarin/ProVerif)
+
+// Type for tenants in a multi-tenant system
+type Tenant = {
+    id: String,
+    data: Set<Record>
+}
+
+type Record = {
+    owner: Tenant,
+    content: String,
+    classification: String
+}
+
+// No information leak between tenants
+security tenant_isolation {
+    forall t1: Tenant, t2: Tenant .
+        t1.id != t2.id implies not can_observe(t1, actions(t2))
+}
+
+// Confidentiality: secrets cannot be leaked
+security confidentiality {
+    forall s: Secret, a: Agent .
+        not authorized(a, s) implies not knows(a, s.content)
+}
+
+// Integrity: data cannot be modified by unauthorized parties
+security data_integrity {
+    forall r: Record, a: Agent .
+        modified(a, r) implies authorized(a, r)
+}
+
+// Authentication: actions require valid credentials
+security authentication_required {
+    forall a: Action, u: User .
+        performed(u, a) implies authenticated(u)
+}
+
+// Non-interference: low-security inputs don't affect high-security outputs
+security noninterference {
+    forall h1: HighInput, h2: HighInput, l: LowInput .
+        output(h1, l) == output(h2, l)
+}

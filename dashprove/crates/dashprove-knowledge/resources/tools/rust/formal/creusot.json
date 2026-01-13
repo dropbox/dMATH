@@ -1,0 +1,138 @@
+{
+  "id": "creusot",
+  "name": "Creusot",
+  "category": "rust_formal_verification",
+  "subcategory": "deductive_verifier",
+
+  "description": "Deductive verifier for Rust targeting Why3",
+  "long_description": "Creusot is a deductive verification tool for Rust that translates annotated Rust programs to Why3, enabling verification with multiple automated and interactive theorem provers. It focuses on safe Rust and provides a path to full functional correctness proofs.",
+
+  "capabilities": [
+    "functional_correctness",
+    "memory_safety",
+    "ownership_verification",
+    "termination",
+    "prophetic_values",
+    "trait_verification",
+    "closure_verification"
+  ],
+  "property_types": ["requires", "ensures", "invariant", "variant"],
+  "input_languages": ["rust"],
+  "output_formats": ["why3", "proof", "counterexample"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "url": "https://github.com/creusot-rs/creusot", "command": "git clone https://github.com/creusot-rs/creusot && cd creusot && cargo install --path creusot"},
+      {"type": "opam", "command": "opam install why3 && why3 config detect"}
+    ],
+    "dependencies": ["why3", "z3", "cvc5", "alt-ergo"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://creusot-rs.github.io/creusot/",
+    "tutorial": "https://creusot-rs.github.io/creusot/guide/",
+    "api_reference": "https://creusot-rs.github.io/creusot/creusot_contracts/",
+    "examples": "https://github.com/creusot-rs/creusot/tree/master/creusot/tests/should_succeed"
+  },
+
+  "tactics": [
+    {
+      "name": "requires",
+      "description": "Function precondition",
+      "syntax": "#[requires(condition)]",
+      "when_to_use": "To specify what callers must guarantee",
+      "examples": ["#[requires(x > 0)]"]
+    },
+    {
+      "name": "ensures",
+      "description": "Function postcondition",
+      "syntax": "#[ensures(condition)]",
+      "when_to_use": "To specify function guarantees",
+      "examples": ["#[ensures(result@ == old(x@) + 1)]"]
+    },
+    {
+      "name": "invariant",
+      "description": "Loop invariant",
+      "syntax": "#[invariant(condition)]",
+      "when_to_use": "To verify loop correctness",
+      "examples": ["#[invariant(i@ <= n@)]"]
+    },
+    {
+      "name": "variant",
+      "description": "Termination measure",
+      "syntax": "#[variant(expression)]",
+      "when_to_use": "To prove loop/recursion terminates",
+      "examples": ["#[variant(n - i)]"]
+    },
+    {
+      "name": "snapshot",
+      "description": "Ghost snapshot of value",
+      "syntax": "snapshot!(expr)",
+      "when_to_use": "To capture value at specific point",
+      "examples": ["let old_x = snapshot!(x);"]
+    },
+    {
+      "name": "proof_assert",
+      "description": "Ghost assertion for proof",
+      "syntax": "proof_assert!(condition)",
+      "when_to_use": "To add intermediate proof steps",
+      "examples": ["proof_assert!(x@ + y@ == z@);"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "goal .* not proved",
+      "meaning": "Why3 prover couldn't discharge obligation",
+      "common_causes": ["Missing invariant", "Spec too strong", "Prover timeout"],
+      "fixes": ["Add proof_assert hints", "Try different prover", "Simplify spec"]
+    },
+    {
+      "pattern": "type mismatch in model",
+      "meaning": "Specification types don't match implementation",
+      "common_causes": ["Wrong @ operator usage", "Missing model trait"],
+      "fixes": ["Check model types", "Add DeepModel derive"]
+    },
+    {
+      "pattern": "pearlite syntax error",
+      "meaning": "Specification syntax invalid",
+      "common_causes": ["Wrong operator", "Missing parentheses"],
+      "fixes": ["Check Pearlite documentation", "Use @ for logical values"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["theorem", "contract", "invariant"],
+    "cli_command": "dashprove verify --backend creusot"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes per function",
+    "scalability": "Good modular scalability",
+    "memory_usage": "2-8GB"
+  },
+
+  "comparisons": {
+    "similar_tools": ["verus", "prusti", "kani"],
+    "advantages": [
+      "Access to multiple provers via Why3",
+      "Can use interactive provers (Coq) for hard goals",
+      "Clean specification language (Pearlite)",
+      "Good ownership reasoning"
+    ],
+    "disadvantages": [
+      "Requires Why3 ecosystem setup",
+      "Safe Rust focus (limited unsafe support)",
+      "Slower iteration than Kani"
+    ]
+  },
+
+  "metadata": {
+    "version": "0.2.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "Creusot Team",
+    "license": "LGPL-2.1"
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "bash",
+  "version": "5.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "command_not_found",
+      "pattern": "command not found|bash:.*not found",
+      "message": "Command not found",
+      "cause": "Command not installed or not in PATH",
+      "solutions": [
+        {
+          "approach": "Install package",
+          "code": "sudo apt install <package>  # Debian/Ubuntu\nbrew install <package>  # macOS",
+          "when": "Command not installed"
+        },
+        {
+          "approach": "Check PATH",
+          "code": "echo $PATH\nexport PATH=$PATH:/new/path",
+          "when": "Command exists but not in PATH"
+        },
+        {
+          "approach": "Use full path",
+          "code": "/usr/local/bin/command",
+          "when": "PATH modification not desired"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot execute",
+      "message": "Permission denied",
+      "cause": "No execute permission or file owned by different user",
+      "solutions": [
+        {
+          "approach": "Add execute permission",
+          "code": "chmod +x script.sh",
+          "when": "Script not executable"
+        },
+        {
+          "approach": "Run with sudo",
+          "code": "sudo ./script.sh",
+          "when": "Need elevated privileges"
+        },
+        {
+          "approach": "Change ownership",
+          "code": "sudo chown $USER file",
+          "when": "File owned by root"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error_unexpected",
+      "pattern": "syntax error.*unexpected|unexpected token",
+      "message": "Syntax error: unexpected token",
+      "cause": "Shell script syntax error, often from wrong line endings or quoting",
+      "solutions": [
+        {
+          "approach": "Fix line endings",
+          "code": "sed -i 's/\\r$//' script.sh  # Remove Windows CRLF",
+          "when": "Script edited on Windows"
+        },
+        {
+          "approach": "Check quoting",
+          "code": "Use shellcheck script.sh",
+          "when": "Quote issues"
+        },
+        {
+          "approach": "Add shebang",
+          "code": "#!/bin/bash at first line",
+          "when": "Missing interpreter"
+        }
+      ]
+    },
+    {
+      "id": "unbound_variable",
+      "pattern": "unbound variable|variable.*not set",
+      "message": "Unbound variable",
+      "cause": "Using set -u (nounset) and accessing undefined variable",
+      "solutions": [
+        {
+          "approach": "Use default value",
+          "code": "${VAR:-default}",
+          "when": "Want fallback value"
+        },
+        {
+          "approach": "Check if set",
+          "code": "${VAR:+value}  # Use value if VAR is set",
+          "when": "Conditional expansion"
+        },
+        {
+          "approach": "Test before use",
+          "code": "if [ -n \"${VAR:-}\" ]; then ...; fi",
+          "when": "Check existence"
+        }
+      ]
+    },
+    {
+      "id": "bad_substitution",
+      "pattern": "bad substitution",
+      "message": "Bad substitution",
+      "cause": "Invalid parameter expansion syntax or using bash-only syntax in sh",
+      "solutions": [
+        {
+          "approach": "Use bash shebang",
+          "code": "#!/bin/bash  (not #!/bin/sh)",
+          "when": "Using bash-specific syntax"
+        },
+        {
+          "approach": "Fix expansion syntax",
+          "code": "${var%pattern}  ${var#pattern}  ${var//find/replace}",
+          "when": "Syntax error in expansion"
+        },
+        {
+          "approach": "Check array syntax",
+          "code": "${array[@]}  (not $array[@])",
+          "when": "Array access error"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_redirect",
+      "pattern": "ambiguous redirect",
+      "message": "Ambiguous redirect",
+      "cause": "Variable expansion produced multiple words or empty string",
+      "solutions": [
+        {
+          "approach": "Quote the variable",
+          "code": "echo \"text\" > \"$filename\"",
+          "when": "Filename in variable"
+        },
+        {
+          "approach": "Check variable set",
+          "code": "[ -n \"$var\" ] && echo > \"$var\"",
+          "when": "Variable might be empty"
+        },
+        {
+          "approach": "Use default",
+          "code": "echo > \"${filename:-/dev/null}\"",
+          "when": "Need fallback target"
+        }
+      ]
+    },
+    {
+      "id": "integer_expression_expected",
+      "pattern": "integer expression expected",
+      "message": "Integer expression expected",
+      "cause": "Non-numeric value in arithmetic context",
+      "solutions": [
+        {
+          "approach": "Validate input",
+          "code": "[[ $var =~ ^[0-9]+$ ]] && echo valid",
+          "when": "Check if numeric"
+        },
+        {
+          "approach": "Use arithmetic expansion",
+          "code": "((count++))  instead of  [ $count -eq 0 ]",
+          "when": "Arithmetic operations"
+        },
+        {
+          "approach": "Default to 0",
+          "code": "count=${count:-0}",
+          "when": "Ensure numeric default"
+        }
+      ]
+    }
+  ]
+}

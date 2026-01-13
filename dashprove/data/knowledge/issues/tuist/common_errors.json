@@ -1,0 +1,237 @@
+{
+  "tool": "tuist",
+  "version": "4.0.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "manifest_not_found",
+      "pattern": "Project.swift.*not found|manifest.*missing|no manifest",
+      "message": "Tuist manifest file not found",
+      "cause": "No Project.swift or Workspace.swift in directory",
+      "solutions": [
+        {
+          "approach": "Initialize tuist project",
+          "code": "tuist init --platform ios",
+          "when": "New project"
+        },
+        {
+          "approach": "Create Project.swift",
+          "code": "import ProjectDescription\n\nlet project = Project(\n    name: \"MyApp\",\n    targets: [...]\n)",
+          "when": "Manual setup"
+        },
+        {
+          "approach": "Run from correct directory",
+          "code": "cd /path/to/project && tuist generate",
+          "when": "Wrong directory"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "manifest compilation failed|swift compilation error|cannot compile",
+      "message": "Manifest compilation failed",
+      "cause": "Syntax error or invalid code in Project.swift",
+      "solutions": [
+        {
+          "approach": "Check manifest syntax",
+          "code": "tuist edit  // Opens in Xcode with autocomplete",
+          "when": "Syntax errors"
+        },
+        {
+          "approach": "Validate types match",
+          "code": "// Ensure Target, Project etc. match ProjectDescription API",
+          "when": "Type mismatch"
+        },
+        {
+          "approach": "Update tuist",
+          "code": "tuist update",
+          "when": "API changed in new version"
+        }
+      ]
+    },
+    {
+      "id": "dependency_not_resolved",
+      "pattern": "dependency.*not found|cannot resolve|Package.*failed",
+      "message": "External dependency resolution failed",
+      "cause": "SPM package or Carthage dependency couldn't be resolved",
+      "solutions": [
+        {
+          "approach": "Fetch dependencies",
+          "code": "tuist fetch",
+          "when": "Dependencies not downloaded"
+        },
+        {
+          "approach": "Check Dependencies.swift",
+          "code": "import ProjectDescription\n\nlet dependencies = Dependencies(\n    swiftPackageManager: .init([\n        .remote(url: \"...\", requirement: .upToNextMajor(from: \"1.0.0\"))\n    ])\n)",
+          "when": "Dependencies.swift issue"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "tuist clean dependencies && tuist fetch",
+          "when": "Stale cache"
+        }
+      ]
+    },
+    {
+      "id": "target_not_found",
+      "pattern": "target.*not found|undefined target|unknown target",
+      "message": "Referenced target doesn't exist",
+      "cause": "Target dependency references non-existent target",
+      "solutions": [
+        {
+          "approach": "Check target name spelling",
+          "code": "// Ensure .target(name: \"ExactName\") matches",
+          "when": "Name typo"
+        },
+        {
+          "approach": "Define missing target",
+          "code": "Target(\n    name: \"MissingTarget\",\n    platform: .iOS,\n    product: .framework,\n    ...\n)",
+          "when": "Target not defined"
+        },
+        {
+          "approach": "Check project reference",
+          "code": ".project(target: \"Target\", path: \"../OtherProject\")",
+          "when": "Cross-project dependency"
+        }
+      ]
+    },
+    {
+      "id": "cache_miss",
+      "pattern": "cache miss|rebuilding|no cached artifact",
+      "message": "Target not found in cache",
+      "cause": "No cached build for target configuration",
+      "solutions": [
+        {
+          "approach": "Warm the cache",
+          "code": "tuist cache warm",
+          "when": "Cache empty"
+        },
+        {
+          "approach": "Check cache configuration",
+          "code": "// In Config.swift:\nlet config = Config(cache: .init(profiles: [...]))",
+          "when": "Profile mismatch"
+        },
+        {
+          "approach": "Use cloud cache",
+          "code": "tuist cloud auth && tuist cache warm --upload",
+          "when": "Team sharing"
+        }
+      ]
+    },
+    {
+      "id": "signing_error",
+      "pattern": "signing.*error|provisioning.*not found|code sign",
+      "message": "Code signing configuration error",
+      "cause": "Missing or misconfigured signing settings",
+      "solutions": [
+        {
+          "approach": "Configure signing",
+          "code": "Target(\n    settings: .settings(base: [\n        \"CODE_SIGN_IDENTITY\": \"Apple Development\",\n        \"DEVELOPMENT_TEAM\": \"TEAM_ID\"\n    ])\n)",
+          "when": "Missing signing config"
+        },
+        {
+          "approach": "Use automatic signing",
+          "code": "// Rely on Xcode automatic signing after generate",
+          "when": "Manual signing fails"
+        },
+        {
+          "approach": "Check provisioning profiles",
+          "code": "// Verify profiles exist in ~/Library/MobileDevice/Provisioning Profiles/",
+          "when": "Profile missing"
+        }
+      ]
+    },
+    {
+      "id": "workspace_conflict",
+      "pattern": "workspace.*conflict|duplicate project|already exists",
+      "message": "Workspace generation conflict",
+      "cause": "Project or file conflicts in generated workspace",
+      "solutions": [
+        {
+          "approach": "Clean generated files",
+          "code": "tuist clean && tuist generate",
+          "when": "Stale generated files"
+        },
+        {
+          "approach": "Remove .xcworkspace",
+          "code": "rm -rf *.xcworkspace && tuist generate",
+          "when": "Corrupted workspace"
+        },
+        {
+          "approach": "Check for duplicates",
+          "code": "// Ensure no duplicate target names across projects",
+          "when": "Name collision"
+        }
+      ]
+    },
+    {
+      "id": "resource_not_found",
+      "pattern": "resource.*not found|file.*missing|path.*invalid",
+      "message": "Resource file not found",
+      "cause": "Referenced resource file doesn't exist at path",
+      "solutions": [
+        {
+          "approach": "Check resource paths",
+          "code": "Target(\n    resources: [\n        \"Resources/**/*\",  // Glob pattern\n        .folderReference(path: \"Assets\")\n    ]\n)",
+          "when": "Path incorrect"
+        },
+        {
+          "approach": "Create missing directory",
+          "code": "mkdir -p Resources",
+          "when": "Directory doesn't exist"
+        },
+        {
+          "approach": "Use glob patterns",
+          "code": "\"Sources/**/*.{xib,storyboard}\"",
+          "when": "Match multiple files"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin.*error|cannot load plugin|plugin.*not found",
+      "message": "Tuist plugin error",
+      "cause": "Plugin failed to load or execute",
+      "solutions": [
+        {
+          "approach": "Install plugins",
+          "code": "tuist install",
+          "when": "Plugin not installed"
+        },
+        {
+          "approach": "Check Plugin.swift",
+          "code": "// In Plugins directory:\nimport ProjectDescription\n\nlet plugin = Plugin(name: \"MyPlugin\")",
+          "when": "Plugin manifest issue"
+        },
+        {
+          "approach": "Update plugin version",
+          "code": "// In Config.swift:\n.local(path: \".tuist/Plugins/MyPlugin\")",
+          "when": "Version mismatch"
+        }
+      ]
+    },
+    {
+      "id": "scheme_not_found",
+      "pattern": "scheme.*not found|no matching scheme|undefined scheme",
+      "message": "Build scheme not found",
+      "cause": "Referenced scheme doesn't exist",
+      "solutions": [
+        {
+          "approach": "Define scheme explicitly",
+          "code": "Scheme(\n    name: \"MyApp-Debug\",\n    buildAction: .buildAction(targets: [.target(\"MyApp\")]),\n    runAction: .runAction(configuration: \"Debug\")\n)",
+          "when": "Need custom scheme"
+        },
+        {
+          "approach": "Use auto-generated schemes",
+          "code": "// Tuist generates schemes automatically for targets",
+          "when": "Default schemes sufficient"
+        },
+        {
+          "approach": "Check scheme name",
+          "code": "tuist generate && ls *.xcworkspace/xcshareddata/xcschemes/",
+          "when": "Verify scheme exists"
+        }
+      ]
+    }
+  ]
+}

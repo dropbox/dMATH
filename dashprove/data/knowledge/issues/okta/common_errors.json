@@ -1,0 +1,191 @@
+{
+  "tool": "okta",
+  "version": "7.0.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "E0000011|invalid_client|The client.*is not authorized|api_token.*invalid",
+      "message": "Authentication error",
+      "cause": "Invalid API token or client credentials",
+      "solutions": [
+        {
+          "approach": "API token",
+          "code": "const { Client } = require('@okta/okta-sdk-nodejs');\n\nconst client = new Client({\n  orgUrl: 'https://your-org.okta.com',\n  token: 'your-api-token'\n});",
+          "when": "SDK setup"
+        },
+        {
+          "approach": "Create token",
+          "code": "# Okta Admin Console > Security > API > Tokens\n# Create Token with appropriate scopes",
+          "when": "Create token"
+        },
+        {
+          "approach": "OAuth client",
+          "code": "const { OktaAuth } = require('@okta/okta-auth-js');\n\nconst oktaAuth = new OktaAuth({\n  issuer: 'https://your-org.okta.com/oauth2/default',\n  clientId: 'your-client-id'\n});",
+          "when": "Client setup"
+        }
+      ]
+    },
+    {
+      "id": "redirect_error",
+      "pattern": "E0000014|redirect_uri.*not.*allowed|Login redirect URI.*does not match",
+      "message": "Redirect URI mismatch",
+      "cause": "Redirect URI not in allowed list",
+      "solutions": [
+        {
+          "approach": "Add redirect URI",
+          "code": "# Okta Admin Console > Applications > Your App > General\n# Sign-in redirect URIs: http://localhost:3000/login/callback\n# Sign-out redirect URIs: http://localhost:3000",
+          "when": "Add URI"
+        },
+        {
+          "approach": "Exact match",
+          "code": "// Redirect URI must match exactly:\n// Trailing slash matters\n// Protocol matters (http vs https)",
+          "when": "Match URI"
+        },
+        {
+          "approach": "Multiple URIs",
+          "code": "# Add multiple URIs for different environments:\n# http://localhost:3000/callback\n# https://staging.example.com/callback\n# https://example.com/callback",
+          "when": "Multiple environments"
+        }
+      ]
+    },
+    {
+      "id": "token_error",
+      "pattern": "E0000007|invalid_token|The access token.*expired|JWT.*invalid",
+      "message": "Token error",
+      "cause": "Invalid or expired token",
+      "solutions": [
+        {
+          "approach": "Refresh token",
+          "code": "// Using okta-auth-js:\nconst { tokens } = await oktaAuth.token.renewTokens();\n// Or:\nawait oktaAuth.tokenManager.renew('accessToken');",
+          "when": "Refresh tokens"
+        },
+        {
+          "approach": "Verify token",
+          "code": "const OktaJwtVerifier = require('@okta/jwt-verifier');\n\nconst verifier = new OktaJwtVerifier({\n  issuer: 'https://your-org.okta.com/oauth2/default'\n});\n\nconst jwt = await verifier.verifyAccessToken(token, 'api://default');",
+          "when": "Verify token"
+        },
+        {
+          "approach": "Token lifetime",
+          "code": "# Okta Admin Console > Security > API > Authorization Servers\n# default > Access Policies > Rules\n# Adjust token lifetime",
+          "when": "Extend lifetime"
+        }
+      ]
+    },
+    {
+      "id": "user_error",
+      "pattern": "E0000001|User not found|login.*not unique|E0000003",
+      "message": "User error",
+      "cause": "User not found or duplicate",
+      "solutions": [
+        {
+          "approach": "Find user",
+          "code": "const user = await client.getUser('user@example.com');\n// Or search:\nconst users = await client.listUsers({ q: 'John' });",
+          "when": "Find user"
+        },
+        {
+          "approach": "Create user",
+          "code": "const user = await client.createUser({\n  profile: {\n    firstName: 'John',\n    lastName: 'Doe',\n    email: 'john@example.com',\n    login: 'john@example.com'\n  }\n});",
+          "when": "Create user"
+        },
+        {
+          "approach": "Check status",
+          "code": "// User statuses: STAGED, PROVISIONED, ACTIVE, RECOVERY,\n// PASSWORD_EXPIRED, LOCKED_OUT, SUSPENDED, DEPROVISIONED",
+          "when": "User status"
+        }
+      ]
+    },
+    {
+      "id": "group_error",
+      "pattern": "E0000007|Group not found|group.*assignment.*failed",
+      "message": "Group error",
+      "cause": "Group not found or assignment issue",
+      "solutions": [
+        {
+          "approach": "Find group",
+          "code": "const groups = await client.listGroups({ q: 'Admins' });\nconst group = groups[0];",
+          "when": "Find group"
+        },
+        {
+          "approach": "Assign user",
+          "code": "await user.addToGroup(groupId);",
+          "when": "Add to group"
+        },
+        {
+          "approach": "App assignment",
+          "code": "# Okta Admin Console > Applications > Your App > Assignments\n# Assign groups to application",
+          "when": "Assign to app"
+        }
+      ]
+    },
+    {
+      "id": "mfa_error",
+      "pattern": "E0000068|MFA.*required|factor.*not enrolled|authenticator.*error",
+      "message": "MFA error",
+      "cause": "MFA required or not enrolled",
+      "solutions": [
+        {
+          "approach": "Enroll factor",
+          "code": "// List available factors:\nconst factors = await user.listFactors();\n\n// Enroll TOTP:\nconst factor = await user.addFactor({\n  factorType: 'token:software:totp',\n  provider: 'OKTA'\n});",
+          "when": "Enroll MFA"
+        },
+        {
+          "approach": "Verify factor",
+          "code": "// Challenge factor:\nconst transaction = await factor.verify({ passCode: '123456' });",
+          "when": "Verify MFA"
+        },
+        {
+          "approach": "MFA policy",
+          "code": "# Okta Admin Console > Security > Authenticators\n# Configure: Okta Verify, Google Authenticator, SMS, etc.\n# Set enrollment policy",
+          "when": "Configure MFA"
+        }
+      ]
+    },
+    {
+      "id": "rate_limit_error",
+      "pattern": "E0000047|rate limit|429|Too Many Requests",
+      "message": "Rate limit exceeded",
+      "cause": "API rate limit reached",
+      "solutions": [
+        {
+          "approach": "Check headers",
+          "code": "// Rate limit headers:\n// X-Rate-Limit-Limit: requests allowed\n// X-Rate-Limit-Remaining: requests remaining\n// X-Rate-Limit-Reset: reset time (epoch)",
+          "when": "View limits"
+        },
+        {
+          "approach": "Backoff",
+          "code": "// Implement exponential backoff:\nconst retryAfter = response.headers.get('Retry-After');\nawait new Promise(r => setTimeout(r, retryAfter * 1000));",
+          "when": "Add retry"
+        },
+        {
+          "approach": "Batch operations",
+          "code": "// Use bulk endpoints where available:\n// POST /api/v1/users (batch create)\n// Use pagination for list operations",
+          "when": "Reduce calls"
+        }
+      ]
+    },
+    {
+      "id": "scope_error",
+      "pattern": "E0000049|invalid_scope|scope.*not allowed|insufficient_scope",
+      "message": "Scope error",
+      "cause": "Requested scope not allowed",
+      "solutions": [
+        {
+          "approach": "Check scopes",
+          "code": "# Okta Admin Console > Security > API > Authorization Servers\n# default > Scopes\n# View available scopes",
+          "when": "View scopes"
+        },
+        {
+          "approach": "Add scope",
+          "code": "# Admin Console > Authorization Servers > default > Scopes\n# Add scope: name, description, consent",
+          "when": "Create scope"
+        },
+        {
+          "approach": "Request scopes",
+          "code": "const { tokens } = await oktaAuth.token.getWithRedirect({\n  scopes: ['openid', 'profile', 'email', 'custom_scope']\n});",
+          "when": "Request scope"
+        }
+      ]
+    }
+  ]
+}

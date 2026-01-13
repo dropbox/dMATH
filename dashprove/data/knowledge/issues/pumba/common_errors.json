@@ -1,0 +1,210 @@
+{
+  "tool": "pumba",
+  "version": "0.10.0",
+  "last_updated": "2025-12-22",
+  "description": "Chaos testing tool for Docker containers (kill, stop, pause, network)",
+  "errors": [
+    {
+      "id": "docker_socket_error",
+      "pattern": "Cannot connect to Docker|docker.*socket.*error|permission denied.*docker.sock",
+      "message": "Cannot connect to Docker daemon",
+      "cause": "Docker socket not accessible or not running",
+      "solutions": [
+        {
+          "approach": "Check Docker is running",
+          "code": "docker info  # Verify Docker daemon is running",
+          "when": "Docker might not be running"
+        },
+        {
+          "approach": "Mount Docker socket",
+          "code": "docker run -v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba",
+          "when": "Running Pumba in container"
+        },
+        {
+          "approach": "Set socket path",
+          "code": "pumba --host unix:///var/run/docker.sock kill ...",
+          "when": "Non-standard socket location"
+        },
+        {
+          "approach": "Add user to docker group",
+          "code": "sudo usermod -aG docker $USER\n# Log out and back in",
+          "when": "Permission denied"
+        }
+      ]
+    },
+    {
+      "id": "no_containers_matched",
+      "pattern": "no containers matched|empty container list|nothing to do",
+      "message": "No containers matched the filter",
+      "cause": "Filter pattern doesn't match any running containers",
+      "solutions": [
+        {
+          "approach": "List running containers",
+          "code": "docker ps --format '{{.Names}}'",
+          "when": "Check what's running"
+        },
+        {
+          "approach": "Use regex pattern",
+          "code": "pumba kill --random 're2:^myapp.*'",
+          "when": "Match multiple containers"
+        },
+        {
+          "approach": "Use exact name",
+          "code": "pumba kill mycontainer",
+          "when": "Target specific container"
+        },
+        {
+          "approach": "Use label selector",
+          "code": "pumba kill --label app=myapp",
+          "when": "Match by label"
+        }
+      ]
+    },
+    {
+      "id": "netem_not_available",
+      "pattern": "netem.*not found|tc.*error|NET_ADMIN.*required",
+      "message": "Network emulation not available",
+      "cause": "Missing kernel module or capabilities",
+      "solutions": [
+        {
+          "approach": "Add NET_ADMIN capability",
+          "code": "docker run --cap-add NET_ADMIN myapp\n# Then run pumba netem on it",
+          "when": "Target container needs capability"
+        },
+        {
+          "approach": "Load kernel module",
+          "code": "sudo modprobe sch_netem",
+          "when": "netem module not loaded"
+        },
+        {
+          "approach": "Use Pumba container with privileges",
+          "code": "docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem ...",
+          "when": "Running Pumba in Docker"
+        }
+      ]
+    },
+    {
+      "id": "kill_command_error",
+      "pattern": "kill.*failed|signal.*error|container.*not running",
+      "message": "Kill command failed",
+      "cause": "Container not running or invalid signal",
+      "solutions": [
+        {
+          "approach": "Check container state",
+          "code": "docker inspect --format '{{.State.Status}}' mycontainer",
+          "when": "Container might be stopped"
+        },
+        {
+          "approach": "Use valid signal",
+          "code": "pumba kill --signal SIGTERM mycontainer\n# Or: SIGKILL, SIGUSR1, SIGHUP, etc.",
+          "when": "Invalid signal name"
+        },
+        {
+          "approach": "Use random container",
+          "code": "pumba kill --random 're2:.*'",
+          "when": "Kill random from matching set"
+        }
+      ]
+    },
+    {
+      "id": "pause_duration_error",
+      "pattern": "invalid duration|duration.*parse.*error",
+      "message": "Invalid duration format",
+      "cause": "Duration string not in valid Go format",
+      "solutions": [
+        {
+          "approach": "Use correct duration format",
+          "code": "# Valid formats:\npumba pause --duration 30s mycontainer   # 30 seconds\npumba pause --duration 5m mycontainer    # 5 minutes\npumba pause --duration 1h30m mycontainer # 1.5 hours",
+          "when": "Duration parsing failed"
+        },
+        {
+          "approach": "Use interval for repeated chaos",
+          "code": "pumba --interval 1m kill --random 're2:^myapp.*'",
+          "when": "Periodic chaos"
+        }
+      ]
+    },
+    {
+      "id": "netem_delay_error",
+      "pattern": "netem delay.*error|invalid delay",
+      "message": "Network delay configuration error",
+      "cause": "Invalid delay parameters",
+      "solutions": [
+        {
+          "approach": "Set delay with jitter",
+          "code": "pumba netem --duration 1m delay --time 100 --jitter 50 mycontainer\n# 100ms delay with 50ms jitter",
+          "when": "Add network latency"
+        },
+        {
+          "approach": "Set delay correlation",
+          "code": "pumba netem delay --time 100 --jitter 50 --correlation 75 mycontainer\n# 75% correlation with previous packet",
+          "when": "Correlated jitter"
+        },
+        {
+          "approach": "Use distribution",
+          "code": "pumba netem delay --time 100 --jitter 50 --distribution normal mycontainer",
+          "when": "Normal distribution jitter"
+        }
+      ]
+    },
+    {
+      "id": "netem_loss_error",
+      "pattern": "netem loss.*error|packet loss.*failed",
+      "message": "Network packet loss configuration error",
+      "cause": "Invalid loss parameters",
+      "solutions": [
+        {
+          "approach": "Set packet loss",
+          "code": "pumba netem --duration 1m loss --percent 10 mycontainer\n# 10% packet loss",
+          "when": "Random packet loss"
+        },
+        {
+          "approach": "Set correlated loss",
+          "code": "pumba netem loss --percent 10 --correlation 75 mycontainer",
+          "when": "Burst packet loss"
+        },
+        {
+          "approach": "Combine with delay",
+          "code": "pumba netem --duration 2m loss --percent 5 delay --time 50 mycontainer",
+          "when": "Loss and delay together"
+        }
+      ]
+    },
+    {
+      "id": "stop_timeout_error",
+      "pattern": "stop.*timeout|container.*not stopping",
+      "message": "Container stop timeout",
+      "cause": "Container not responding to stop signal",
+      "solutions": [
+        {
+          "approach": "Set stop timeout",
+          "code": "pumba stop --time 30 mycontainer\n# Wait 30 seconds before SIGKILL",
+          "when": "Container needs graceful shutdown"
+        },
+        {
+          "approach": "Use kill instead",
+          "code": "pumba kill --signal SIGKILL mycontainer",
+          "when": "Force immediate stop"
+        }
+      ]
+    },
+    {
+      "id": "dry_run_mode",
+      "pattern": "dry-run|nothing executed",
+      "message": "Pumba ran in dry-run mode",
+      "cause": "Dry-run flag was set",
+      "solutions": [
+        {
+          "approach": "Remove dry-run flag",
+          "code": "pumba kill mycontainer  # Without --dry-run",
+          "when": "Want actual execution"
+        },
+        {
+          "approach": "Use dry-run to test",
+          "code": "pumba --dry-run kill 're2:^prod.*'\n# See what would be affected",
+          "when": "Safe testing"
+        }
+      ]
+    }
+  ]
+}

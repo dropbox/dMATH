@@ -1,0 +1,122 @@
+{
+  "version": "3.6",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error",
+      "message": "Parser failed due to invalid syntax",
+      "cause": "Typos in set/param declarations, missing semicolons, or malformed loops",
+      "solutions": [
+        {
+          "approach": "Enable verbose parsing output",
+          "code": "zimpl -v model.zpl",
+          "when": "Need line/column diagnostics"
+        },
+        {
+          "approach": "Check statement terminators",
+          "code": "param n := 10;  % ensure semicolons",
+          "when": "Blocks may be missing semicolons"
+        },
+        {
+          "approach": "Simplify complex generators",
+          "code": "set I := {1..n};",
+          "when": "Nested comprehensions are hard to read and debug"
+        }
+      ]
+    },
+    {
+      "id": "undefined_symbol",
+      "pattern": "unknown identifier|not defined",
+      "message": "Symbol used before definition",
+      "cause": "Set/parameter referenced without declaration or outside scope",
+      "solutions": [
+        {
+          "approach": "Declare sets and parameters first",
+          "code": "set I := {1..n}; param w[I];",
+          "when": "Indices depend on earlier declarations"
+        },
+        {
+          "approach": "Check include order",
+          "code": "% move include statements before use",
+          "when": "Split model across files"
+        },
+        {
+          "approach": "Align names with solver export",
+          "code": "% ensure variable names match LP/MPS expectations",
+          "when": "Downstream solver references different symbol"
+        }
+      ]
+    },
+    {
+      "id": "file_not_found",
+      "pattern": "cannot open file",
+      "message": "Zimpl cannot open referenced file",
+      "cause": "Incorrect include path or missing data file",
+      "solutions": [
+        {
+          "approach": "Use absolute or correct relative paths",
+          "code": "param data from \"/abs/path/data.dat\";",
+          "when": "Working directory differs from data location"
+        },
+        {
+          "approach": "Check file permissions",
+          "code": "ls -l data.dat",
+          "when": "File exists but not readable"
+        },
+        {
+          "approach": "Place data files next to model",
+          "code": "% keep .dat files with .zpl",
+          "when": "Simplify include paths"
+        }
+      ]
+    },
+    {
+      "id": "unbounded",
+      "pattern": "problem is unbounded",
+      "message": "Generated LP/MIP has unbounded objective",
+      "cause": "Objective variables lack bounds or constraints not orienting the problem",
+      "solutions": [
+        {
+          "approach": "Add bounds within Zimpl model",
+          "code": "var x >= 0 <= 1e6;",
+          "when": "Variables exported as free"
+        },
+        {
+          "approach": "Verify objective sense",
+          "code": "minimize cost: sum <i> c[i]*x[i];",
+          "when": "Wrong min/max choice creates unboundedness"
+        },
+        {
+          "approach": "Add regularization or penalties",
+          "code": "minimize cost: sum <i> c[i]*x[i] + 0.001*sum <i> x[i];",
+          "when": "Need bounded objective growth"
+        }
+      ]
+    },
+    {
+      "id": "missing_objective",
+      "pattern": "no objective defined",
+      "message": "Model lacks objective function",
+      "cause": "Only constraints declared without minimize/maximize section",
+      "solutions": [
+        {
+          "approach": "Add objective statement",
+          "code": "minimize cost: sum <i> c[i]*x[i];",
+          "when": "Forgot to declare objective"
+        },
+        {
+          "approach": "Export as LP to verify",
+          "code": "zimpl -o model.lp model.zpl",
+          "when": "Confirm objective appears in generated file"
+        },
+        {
+          "approach": "Use satisfy if only feasibility matters",
+          "code": "maximize dummy: 0;",
+          "when": "Need trivial objective to satisfy solver input requirements"
+        }
+      ]
+    }
+  ],
+  "tool": "zimpl",
+  "last_updated": "2025-12-23"
+}

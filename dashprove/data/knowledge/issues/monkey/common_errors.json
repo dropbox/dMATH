@@ -1,0 +1,186 @@
+{
+  "tool": "monkey",
+  "version": "Android SDK",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "anr_detected",
+      "pattern": "ANR in.*",
+      "message": "Application Not Responding detected",
+      "cause": "App main thread blocked for >5 seconds during monkey test",
+      "solutions": [
+        {
+          "approach": "Move work off main thread",
+          "code": "lifecycleScope.launch(Dispatchers.IO) {\n    heavyOperation()\n}",
+          "when": "Long operation blocking UI thread"
+        },
+        {
+          "approach": "Use StrictMode to find violations",
+          "code": "StrictMode.setThreadPolicy(\n    StrictMode.ThreadPolicy.Builder()\n        .detectAll()\n        .penaltyLog()\n        .build())",
+          "when": "Need to identify blocking calls"
+        },
+        {
+          "approach": "Check ANR traces",
+          "code": "adb pull /data/anr/traces.txt",
+          "when": "Need to analyze what caused ANR"
+        }
+      ]
+    },
+    {
+      "id": "crash_native",
+      "pattern": "Native crash",
+      "message": "Native code crash detected",
+      "cause": "Crash in native (C/C++) code via JNI",
+      "solutions": [
+        {
+          "approach": "Analyze tombstone",
+          "code": "adb shell cat /data/tombstones/tombstone_*",
+          "when": "Need crash details"
+        },
+        {
+          "approach": "Use ndk-stack for symbolication",
+          "code": "adb logcat | ndk-stack -sym obj/local/armeabi-v7a/",
+          "when": "Need readable stack traces"
+        },
+        {
+          "approach": "Add null checks in JNI",
+          "code": "if (env->ExceptionCheck()) {\n    env->ExceptionDescribe();\n    return;\n}",
+          "when": "JNI code causing issues"
+        }
+      ]
+    },
+    {
+      "id": "crash_java",
+      "pattern": "FATAL EXCEPTION",
+      "message": "Java/Kotlin exception crash",
+      "cause": "Uncaught exception in application code",
+      "solutions": [
+        {
+          "approach": "Add crash handler",
+          "code": "Thread.setDefaultUncaughtExceptionHandler { _, e ->\n    Log.e(TAG, \"Crash\", e)\n}",
+          "when": "Need to log crashes"
+        },
+        {
+          "approach": "Check logcat for stack trace",
+          "code": "adb logcat -d | grep -A 20 'FATAL EXCEPTION'",
+          "when": "Need to find crash location"
+        },
+        {
+          "approach": "Handle edge cases",
+          "code": "// Add null checks and bounds checking",
+          "when": "Random input causing unexpected states"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "Permission Denial",
+      "message": "Permission denied during monkey test",
+      "cause": "App tried to access protected resource without permission",
+      "solutions": [
+        {
+          "approach": "Grant permissions before test",
+          "code": "adb shell pm grant com.app android.permission.CAMERA",
+          "when": "Need runtime permissions"
+        },
+        {
+          "approach": "Handle permission denial gracefully",
+          "code": "if (checkSelfPermission(permission) != GRANTED) {\n    // Show fallback UI\n}",
+          "when": "App should work without permission"
+        }
+      ]
+    },
+    {
+      "id": "monkey_killed",
+      "pattern": "Monkey killed",
+      "message": "Monkey process was terminated",
+      "cause": "Device killed monkey process (low memory or timeout)",
+      "solutions": [
+        {
+          "approach": "Reduce event count",
+          "code": "adb shell monkey -p com.app -v 5000  # Smaller count",
+          "when": "Running too many events"
+        },
+        {
+          "approach": "Add throttle between events",
+          "code": "adb shell monkey -p com.app --throttle 100 -v 10000",
+          "when": "Events too rapid for device"
+        },
+        {
+          "approach": "Ignore security exceptions",
+          "code": "adb shell monkey --ignore-security-exceptions -p com.app -v 10000",
+          "when": "Security exceptions killing monkey"
+        }
+      ]
+    },
+    {
+      "id": "no_activities",
+      "pattern": "No activities found",
+      "message": "Cannot find launchable activities",
+      "cause": "Package has no activities with MAIN/LAUNCHER intent filter",
+      "solutions": [
+        {
+          "approach": "Check manifest",
+          "code": "<intent-filter>\n    <action android:name=\"android.intent.action.MAIN\" />\n    <category android:name=\"android.intent.category.LAUNCHER\" />\n</intent-filter>",
+          "when": "Activity not marked as launcher"
+        },
+        {
+          "approach": "Verify package name",
+          "code": "adb shell pm list packages | grep myapp",
+          "when": "Package name might be wrong"
+        },
+        {
+          "approach": "Use component directly",
+          "code": "adb shell monkey -c android.intent.category.LAUNCHER -p com.app -v 1000",
+          "when": "Need specific category"
+        }
+      ]
+    },
+    {
+      "id": "system_crash",
+      "pattern": "System appears to have crashed",
+      "message": "Android system crash during monkey test",
+      "cause": "Monkey triggered system-level crash",
+      "solutions": [
+        {
+          "approach": "Exclude system packages",
+          "code": "adb shell monkey -p com.myapp --pct-syskeys 0 -v 10000",
+          "when": "Don't want to test system keys"
+        },
+        {
+          "approach": "Reduce system event percentage",
+          "code": "adb shell monkey --pct-appswitch 0 --pct-anyevent 0 -p com.app -v 10000",
+          "when": "Limit to app-specific events"
+        },
+        {
+          "approach": "Check bugreport",
+          "code": "adb bugreport > bugreport.zip",
+          "when": "Need detailed system logs"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemoryError",
+      "message": "App ran out of memory",
+      "cause": "Memory leak or excessive allocation during stress test",
+      "solutions": [
+        {
+          "approach": "Profile memory",
+          "code": "adb shell dumpsys meminfo com.app",
+          "when": "Need to see memory usage"
+        },
+        {
+          "approach": "Use LeakCanary",
+          "code": "debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.x'",
+          "when": "Need to find memory leaks"
+        },
+        {
+          "approach": "Clear caches between screens",
+          "code": "override fun onDestroy() {\n    imageCache.clear()\n    super.onDestroy()\n}",
+          "when": "Caches growing unbounded"
+        }
+      ]
+    }
+  ]
+}

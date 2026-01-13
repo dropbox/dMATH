@@ -1,0 +1,169 @@
+{
+  "tool": "typeorm",
+  "category": "orm",
+  "common_errors": [
+    {
+      "error": "CONNECTION_NOT_FOUND",
+      "pattern": "Connection.*not found|ConnectionNotFoundError|no connection|default.*connection",
+      "severity": "critical",
+      "causes": [
+        "DataSource not initialized",
+        "Wrong connection name",
+        "Connection closed",
+        "Multiple data sources without names"
+      ],
+      "solutions": [
+        "Initialize DataSource: await dataSource.initialize()",
+        "Check connection name: getConnection('name')",
+        "Use getRepository with correct data source",
+        "Ensure initialization before queries"
+      ]
+    },
+    {
+      "error": "ENTITY_METADATA_NOT_FOUND",
+      "pattern": "Entity metadata.*not found|EntityMetadataNotFound|no repository.*found",
+      "severity": "high",
+      "causes": [
+        "Entity not registered in DataSource",
+        "Wrong entity path pattern",
+        "Entity class not decorated",
+        "Circular dependency issue"
+      ],
+      "solutions": [
+        "Add entity to DataSource: entities: [User, Post]",
+        "Check entities glob pattern: entities: ['dist/**/*.entity.js']",
+        "Add @Entity() decorator to class",
+        "Import entity before DataSource creation"
+      ]
+    },
+    {
+      "error": "QUERY_FAILED",
+      "pattern": "QueryFailedError|query.*failed|ER_|syntax error",
+      "severity": "high",
+      "causes": [
+        "Invalid SQL generated",
+        "Column doesn't exist",
+        "Data type mismatch",
+        "Constraint violation"
+      ],
+      "solutions": [
+        "Enable logging: logging: true",
+        "Check generated SQL in logs",
+        "Verify entity matches database schema",
+        "Run migrations: typeorm migration:run"
+      ]
+    },
+    {
+      "error": "MIGRATION_FAILED",
+      "pattern": "migration.*failed|MigrationExecutor|already.*applied|table.*exists",
+      "severity": "high",
+      "causes": [
+        "Migration already run",
+        "SQL syntax error",
+        "Table or column already exists",
+        "Database state out of sync"
+      ],
+      "solutions": [
+        "Check migration status: typeorm migration:show",
+        "Review migration SQL",
+        "Revert and re-run: typeorm migration:revert",
+        "Synchronize for development only: synchronize: true"
+      ]
+    },
+    {
+      "error": "RELATION_NOT_FOUND",
+      "pattern": "Relation.*not found|cannot.*relation|property.*not.*relation",
+      "severity": "medium",
+      "causes": [
+        "Relation not defined",
+        "Wrong relation name in query",
+        "Missing decorator (@OneToMany, @ManyToOne)",
+        "Inverse side not configured"
+      ],
+      "solutions": [
+        "Add relation decorator to entity",
+        "Check relation property name",
+        "Define inverse side: @OneToMany(() => Post, post => post.user)",
+        "Use relations in find: { relations: ['posts'] }"
+      ]
+    },
+    {
+      "error": "CIRCULAR_DEPENDENCY",
+      "pattern": "circular.*dependency|ReferenceError|Cannot access.*before initialization",
+      "severity": "high",
+      "causes": [
+        "Entities importing each other",
+        "Relation type functions not used",
+        "Eager loading creating cycles",
+        "Module resolution order"
+      ],
+      "solutions": [
+        "Use () => Entity for relation types",
+        "Avoid eager: true on both sides",
+        "Use lazy relations with Promise type",
+        "Restructure entity files"
+      ]
+    },
+    {
+      "error": "SUBSCRIBER_ERROR",
+      "pattern": "Subscriber.*error|listener.*error|AfterInsert.*failed",
+      "severity": "medium",
+      "causes": [
+        "Error in entity subscriber",
+        "Async operation without await",
+        "Subscriber not registered",
+        "Accessing disconnected entity"
+      ],
+      "solutions": [
+        "Add try/catch in subscriber methods",
+        "Make subscriber methods async with await",
+        "Register subscriber in DataSource: subscribers: [UserSubscriber]",
+        "Don't throw in subscribers, log errors"
+      ]
+    },
+    {
+      "error": "TRANSACTION_ALREADY_STARTED",
+      "pattern": "Transaction.*already started|nested transaction|savepoint",
+      "severity": "medium",
+      "causes": [
+        "Nested transaction without savepoint",
+        "QueryRunner reused incorrectly",
+        "Connection already in transaction",
+        "Missing commit/rollback"
+      ],
+      "solutions": [
+        "Use queryRunner.manager inside transaction",
+        "Don't nest @Transaction decorators",
+        "Always commit or rollback",
+        "Use savepoints for nested logic"
+      ]
+    },
+    {
+      "error": "EAGER_LOADING_DEPTH",
+      "pattern": "maximum.*depth|recursion|stack.*overflow|eager.*loop",
+      "severity": "high",
+      "causes": [
+        "Bidirectional eager relations",
+        "Deep relation chain",
+        "Circular eager loading",
+        "Too many eager relations"
+      ],
+      "solutions": [
+        "Remove eager from one side of relation",
+        "Use lazy loading with Promise",
+        "Load relations explicitly with QueryBuilder",
+        "Set maxQueryExecutionTime"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Use migrations in production, not synchronize",
+    "Prefer lazy relations for performance",
+    "Use QueryBuilder for complex queries",
+    "Implement proper transaction handling",
+    "Register entities explicitly, not by glob",
+    "Use select to limit returned columns",
+    "Enable logging in development"
+  ],
+  "related_tools": ["prisma", "drizzle", "sequelize", "mikro_orm"]
+}

@@ -1,0 +1,186 @@
+{
+  "tool": "crown",
+  "version": "1.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout",
+      "pattern": "timeout",
+      "message": "Verification timed out",
+      "cause": "Network too large or bounds too loose",
+      "solutions": [
+        {
+          "approach": "Reduce epsilon",
+          "code": "eps = 0.01  # instead of 0.1",
+          "when": "Perturbation too large"
+        },
+        {
+          "approach": "Use GPU",
+          "code": "model.to('cuda')",
+          "when": "CPU too slow"
+        },
+        {
+          "approach": "Use beta-CROWN",
+          "code": "# Enable beta-CROWN for tighter bounds",
+          "when": "Need tighter bounds"
+        }
+      ]
+    },
+    {
+      "id": "unstable_neurons",
+      "pattern": "unstable",
+      "message": "Too many unstable neurons",
+      "cause": "Bounds cannot determine neuron activation",
+      "solutions": [
+        {
+          "approach": "Tighten input bounds",
+          "code": "x_L, x_U = x - eps, x + eps  # smaller eps",
+          "when": "Input bounds too wide"
+        },
+        {
+          "approach": "Use alpha-CROWN",
+          "code": "# Optimize alpha parameters",
+          "when": "Need adaptive bounds"
+        },
+        {
+          "approach": "Branch and bound",
+          "code": "# Enable BaB for complete verification",
+          "when": "Need complete verification"
+        }
+      ]
+    },
+    {
+      "id": "model_error",
+      "pattern": "model",
+      "message": "Model loading error",
+      "cause": "Incompatible model format",
+      "solutions": [
+        {
+          "approach": "Check ONNX format",
+          "code": "# Convert to supported ONNX opset",
+          "when": "ONNX compatibility"
+        },
+        {
+          "approach": "Use PyTorch model",
+          "code": "model = torch.load('model.pt')",
+          "when": "Can use native format"
+        },
+        {
+          "approach": "Check supported layers",
+          "code": "# Conv, Linear, ReLU, BatchNorm supported",
+          "when": "Unsupported layer type"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "CUDA out of memory",
+      "message": "GPU memory exhausted",
+      "cause": "Model or batch size too large",
+      "solutions": [
+        {
+          "approach": "Reduce batch size",
+          "code": "batch_size = 1",
+          "when": "Batch too large"
+        },
+        {
+          "approach": "Use CPU",
+          "code": "model.to('cpu')",
+          "when": "GPU memory insufficient"
+        },
+        {
+          "approach": "Enable gradient checkpointing",
+          "code": "# Trade compute for memory",
+          "when": "Need memory optimization"
+        }
+      ]
+    },
+    {
+      "id": "verified_unsafe",
+      "pattern": "unsafe",
+      "message": "Property verification failed",
+      "cause": "Found adversarial example or bounds show violation",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "# Examine the adversarial input found",
+          "when": "Understanding attack"
+        },
+        {
+          "approach": "Adversarial training",
+          "code": "# Retrain with adversarial examples",
+          "when": "Improving robustness"
+        },
+        {
+          "approach": "Reduce epsilon",
+          "code": "# Verify smaller perturbation",
+          "when": "Bound too large"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "unknown",
+      "message": "Verification inconclusive",
+      "cause": "Bounds too loose for decision",
+      "solutions": [
+        {
+          "approach": "Enable complete verification",
+          "code": "# Use branch and bound",
+          "when": "Need complete result"
+        },
+        {
+          "approach": "Use tighter relaxation",
+          "code": "# Enable beta-CROWN, GCP-CROWN",
+          "when": "Bounds too loose"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "timeout = 3600",
+          "when": "May succeed with more time"
+        }
+      ]
+    },
+    {
+      "id": "spec_error",
+      "pattern": "specification",
+      "message": "Invalid specification",
+      "cause": "Property specification error",
+      "solutions": [
+        {
+          "approach": "Check VNN-LIB format",
+          "code": "# Verify VNNLIB spec file",
+          "when": "Wrong spec format"
+        },
+        {
+          "approach": "Check dimensions",
+          "code": "# Input/output dimensions must match model",
+          "when": "Dimension mismatch"
+        }
+      ]
+    },
+    {
+      "id": "numerical_error",
+      "pattern": "nan",
+      "message": "Numerical instability",
+      "cause": "NaN or inf in computation",
+      "solutions": [
+        {
+          "approach": "Use float64",
+          "code": "model.double()",
+          "when": "Precision issues"
+        },
+        {
+          "approach": "Check model weights",
+          "code": "# Look for extreme values in weights",
+          "when": "Model has bad weights"
+        },
+        {
+          "approach": "Normalize inputs",
+          "code": "# Ensure inputs in expected range",
+          "when": "Input range issue"
+        }
+      ]
+    }
+  ]
+}

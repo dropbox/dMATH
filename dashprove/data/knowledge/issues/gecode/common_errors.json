@@ -1,0 +1,122 @@
+{
+  "version": "6.x",
+  "errors": [
+    {
+      "id": "domain_wipeout",
+      "pattern": "domain is empty|propagation failed",
+      "message": "Constraint propagation removed all values from a variable domain",
+      "cause": "Conflicting constraints force a variable to have no legal value",
+      "solutions": [
+        {
+          "approach": "Relax or split the conflicting constraint",
+          "code": "constraint sum(x) <= capacity;  % temporarily raise capacity or split by item type",
+          "when": "Single aggregate constraint drives domains negative"
+        },
+        {
+          "approach": "Tighten variable domains to realistic ranges",
+          "code": "var 0..50: x;  % avoid unconstrained large domains",
+          "when": "Domains are too wide and combine poorly with all_different or global constraints"
+        },
+        {
+          "approach": "Use a safer search heuristic",
+          "code": "solve :: int_search(x, first_fail, indomain_median) satisfy;",
+          "when": "Default search commits too early and triggers failures"
+        }
+      ]
+    },
+    {
+      "id": "no_solution",
+      "pattern": "UNSATISFIABLE|no solution",
+      "message": "Search exhausted all nodes without finding a solution",
+      "cause": "Model is over-constrained or contains contradictory assumptions",
+      "solutions": [
+        {
+          "approach": "Temporarily drop optional constraints",
+          "code": "% remove soft constraints or relax equality to inequality",
+          "when": "Need to isolate which constraint makes the model infeasible"
+        },
+        {
+          "approach": "Add diagnostic output",
+          "code": "output [\"x=\" ++ show(x) ++ \" capacity=\" ++ show(capacity) ++ \"\n\"];",
+          "when": "Inspect data to confirm expectations"
+        },
+        {
+          "approach": "Start with satisfy before optimize",
+          "code": "solve satisfy;  % ensure feasibility before adding objective",
+          "when": "Objective makes feasible region empty"
+        }
+      ]
+    },
+    {
+      "id": "resource_limit",
+      "pattern": "time limit|too many failures|Search stopped",
+      "message": "Search terminated due to time/failure limit",
+      "cause": "Branching produced too many failures before finding a solution",
+      "solutions": [
+        {
+          "approach": "Increase limits for large instances",
+          "code": "gecode -time 600 -search dfs model.fzn",
+          "when": "Problem is solvable but needs more time"
+        },
+        {
+          "approach": "Improve branching strategy",
+          "code": "solve :: int_search(vars, first_fail, indomain_min) minimize cost;",
+          "when": "Bad branching order explodes search tree"
+        },
+        {
+          "approach": "Add symmetry breaking",
+          "code": "constraint x1 < x2;  % impose ordering on interchangeable items",
+          "when": "Many symmetric solutions slow search"
+        }
+      ]
+    },
+    {
+      "id": "integer_overflow",
+      "pattern": "Integer value outside domain|overflow",
+      "message": "Value computed in propagation exceeded domain bounds",
+      "cause": "Coefficients or sums exceed the 32-bit bounds used by Gecode",
+      "solutions": [
+        {
+          "approach": "Rescale units to smaller numbers",
+          "code": "% use kilograms instead of grams to shrink coefficients",
+          "when": "Large coefficients cause intermediate overflow"
+        },
+        {
+          "approach": "Add tighter bounds on accumulators",
+          "code": "var 0..1_000_000: total;",
+          "when": "Sum variables without explicit upper bounds"
+        },
+        {
+          "approach": "Break constraints into smaller parts",
+          "code": "constraint total1 + total2 = total; constraint total1 <= limit;",
+          "when": "Single constraint multiplies large coefficients together"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_constraint",
+      "pattern": "not supported|unknown FlatZinc item",
+      "message": "FlatZinc model uses a constraint not implemented by the chosen Gecode build",
+      "cause": "Model relies on a global constraint or option unavailable in this binary",
+      "solutions": [
+        {
+          "approach": "Switch solver or enable Gecode globals",
+          "code": "minizinc --solver chuffed model.mzn",
+          "when": "Constraint has better support in another solver"
+        },
+        {
+          "approach": "Reformulate using supported primitives",
+          "code": "% replace cumulative with linear resource constraints",
+          "when": "Global constraint not available"
+        },
+        {
+          "approach": "Upgrade MiniZinc/Gecode package",
+          "code": "brew upgrade minizinc",
+          "when": "Older solver build missing recent globals"
+        }
+      ]
+    }
+  ],
+  "tool": "gecode",
+  "last_updated": "2025-12-23"
+}

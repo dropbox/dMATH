@@ -1,0 +1,191 @@
+{
+  "tool": "pulumi",
+  "version": "3.100.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "login_required",
+      "pattern": "not logged in|pulumi login|access token",
+      "message": "Not logged in to Pulumi",
+      "cause": "Need to authenticate with Pulumi service or backend",
+      "solutions": [
+        {
+          "approach": "Login to Pulumi Cloud",
+          "code": "pulumi login\n# Or with access token\nexport PULUMI_ACCESS_TOKEN=<token>\npulumi login",
+          "when": "Use Pulumi Cloud"
+        },
+        {
+          "approach": "Use local backend",
+          "code": "pulumi login --local\n# Or specify path\npulumi login file://~/.pulumi-state",
+          "when": "Store state locally"
+        },
+        {
+          "approach": "Use S3 backend",
+          "code": "pulumi login s3://<bucket-name>",
+          "when": "Store state in S3"
+        }
+      ]
+    },
+    {
+      "id": "stack_not_found",
+      "pattern": "stack .* not found|no stack selected",
+      "message": "Stack not found or not selected",
+      "cause": "Stack doesn't exist or not initialized",
+      "solutions": [
+        {
+          "approach": "Select stack",
+          "code": "pulumi stack select <stack-name>\n# Or list available\npulumi stack ls",
+          "when": "Stack exists but not selected"
+        },
+        {
+          "approach": "Create new stack",
+          "code": "pulumi stack init <stack-name>",
+          "when": "Stack doesn't exist"
+        },
+        {
+          "approach": "Initialize project",
+          "code": "pulumi new <template>\n# Or from existing\npulumi stack init <name>",
+          "when": "New project"
+        }
+      ]
+    },
+    {
+      "id": "resource_creation_failed",
+      "pattern": "creating .* failed|resource .* failed|error creating",
+      "message": "Resource creation failed",
+      "cause": "Provider error, permissions, or invalid configuration",
+      "solutions": [
+        {
+          "approach": "Check provider credentials",
+          "code": "# AWS\nexport AWS_PROFILE=<profile>\naws sts get-caller-identity\n\n# Azure\naz login\naz account show",
+          "when": "Auth issue"
+        },
+        {
+          "approach": "Preview changes",
+          "code": "pulumi preview --diff",
+          "when": "See what would change"
+        },
+        {
+          "approach": "Check resource config",
+          "code": "# Ensure all required props set\npulumi config get <key>",
+          "when": "Missing configuration"
+        }
+      ]
+    },
+    {
+      "id": "state_conflict",
+      "pattern": "state.*conflict|resource already exists|import",
+      "message": "State conflict with existing resource",
+      "cause": "Resource exists outside Pulumi or state mismatch",
+      "solutions": [
+        {
+          "approach": "Import existing resource",
+          "code": "pulumi import <type> <name> <id>\n# Example:\npulumi import aws:s3/bucket:Bucket my-bucket my-bucket-name",
+          "when": "Resource exists externally"
+        },
+        {
+          "approach": "Refresh state",
+          "code": "pulumi refresh",
+          "when": "Sync state with reality"
+        },
+        {
+          "approach": "Delete from state only",
+          "code": "pulumi state delete <urn>",
+          "when": "Remove from state without destroying"
+        }
+      ]
+    },
+    {
+      "id": "dependency_error",
+      "pattern": "dependency|circular|depends",
+      "message": "Resource dependency error",
+      "cause": "Circular dependency or missing dependency",
+      "solutions": [
+        {
+          "approach": "Explicit depends_on",
+          "code": "const bucket = new aws.s3.Bucket(\"bucket\");\nconst obj = new aws.s3.BucketObject(\"obj\", {\n  bucket: bucket.id,\n}, { dependsOn: [bucket] });",
+          "when": "Add explicit dependency"
+        },
+        {
+          "approach": "Break circular deps",
+          "code": "// Use outputs instead of whole resource\nconst vpcId = vpc.id.apply(id => id);",
+          "when": "Resources depend on each other"
+        },
+        {
+          "approach": "Check import order",
+          "code": "// Ensure modules imported correctly\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as aws from \"@pulumi/aws\";",
+          "when": "Module loading issue"
+        }
+      ]
+    },
+    {
+      "id": "output_error",
+      "pattern": "Output|apply|then|Promise",
+      "message": "Output value handling error",
+      "cause": "Incorrect handling of Pulumi Output types",
+      "solutions": [
+        {
+          "approach": "Use apply",
+          "code": "const url = bucket.websiteEndpoint.apply(ep => `https://${ep}`);",
+          "when": "Transform output value"
+        },
+        {
+          "approach": "Combine outputs",
+          "code": "const combined = pulumi.all([a.id, b.id]).apply(([aId, bId]) => {\n  return `${aId}-${bId}`;\n});",
+          "when": "Need multiple outputs"
+        },
+        {
+          "approach": "Export for stack output",
+          "code": "export const bucketName = bucket.id;",
+          "when": "Make available externally"
+        }
+      ]
+    },
+    {
+      "id": "config_error",
+      "pattern": "configuration|config|secret",
+      "message": "Configuration error",
+      "cause": "Config value missing or wrong type",
+      "solutions": [
+        {
+          "approach": "Set config value",
+          "code": "pulumi config set <key> <value>\n# For secrets\npulumi config set --secret <key> <value>",
+          "when": "Value not set"
+        },
+        {
+          "approach": "Get config in code",
+          "code": "const config = new pulumi.Config();\nconst value = config.require(\"key\");\nconst optional = config.get(\"key\") || \"default\";",
+          "when": "Access config value"
+        },
+        {
+          "approach": "Use structured config",
+          "code": "pulumi config set --path 'db.host' localhost\n// Access as\nconfig.requireObject<{host: string}>(\"db\");",
+          "when": "Complex config structure"
+        }
+      ]
+    },
+    {
+      "id": "plugin_error",
+      "pattern": "plugin|provider.*not found|version",
+      "message": "Plugin or provider error",
+      "cause": "Plugin not installed or version mismatch",
+      "solutions": [
+        {
+          "approach": "Install plugin",
+          "code": "pulumi plugin install resource aws v6.0.0",
+          "when": "Plugin missing"
+        },
+        {
+          "approach": "Update dependencies",
+          "code": "npm update @pulumi/aws\n# Or\npip install --upgrade pulumi-aws",
+          "when": "Update provider version"
+        },
+        {
+          "approach": "Clear plugin cache",
+          "code": "rm -rf ~/.pulumi/plugins\npulumi plugin install",
+          "when": "Plugin cache corrupted"
+        }
+      ]
+    }
+  ]
+}

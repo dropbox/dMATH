@@ -1,0 +1,110 @@
+{
+  "tool": "parted",
+  "version": "GNU Parted",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|Error: Can't have a partition|must be root",
+      "message": "Need root privileges",
+      "cause": "Disk operations require root",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo parted /dev/sda print",
+          "when": "Standard method"
+        }
+      ]
+    },
+    {
+      "id": "device_busy",
+      "pattern": "Partition.*is being used|device is busy",
+      "message": "Device is busy",
+      "cause": "Partition is mounted or in use",
+      "solutions": [
+        {
+          "approach": "Unmount first",
+          "code": "sudo umount /dev/sda1\nsudo parted /dev/sda",
+          "when": "Partition mounted"
+        },
+        {
+          "approach": "Check mounts",
+          "code": "mount | grep sda\nlsblk",
+          "when": "Find mounts"
+        }
+      ]
+    },
+    {
+      "id": "invalid_token",
+      "pattern": "invalid token|expecting|Syntax error",
+      "message": "Invalid command syntax",
+      "cause": "Wrong parted command syntax",
+      "solutions": [
+        {
+          "approach": "Common commands",
+          "code": "parted /dev/sda print           # Show partitions\nparted /dev/sda mklabel gpt     # Create GPT table\nparted /dev/sda mkpart primary ext4 1MiB 100%  # Create partition\nparted /dev/sda rm 1            # Delete partition 1",
+          "when": "Reference"
+        },
+        {
+          "approach": "Use units",
+          "code": "# Specify units:\nparted /dev/sda unit MiB print\nparted /dev/sda mkpart primary 1MiB 1024MiB",
+          "when": "Size specification"
+        }
+      ]
+    },
+    {
+      "id": "unrecognized_disk_label",
+      "pattern": "unrecognised disk label|unknown partition table",
+      "message": "No partition table",
+      "cause": "Disk has no partition table",
+      "solutions": [
+        {
+          "approach": "Create label",
+          "code": "sudo parted /dev/sda mklabel gpt  # For GPT\nsudo parted /dev/sda mklabel msdos  # For MBR",
+          "when": "New/blank disk"
+        }
+      ]
+    },
+    {
+      "id": "partition_overlap",
+      "pattern": "overlap|start.*end|Can't have overlapping partitions",
+      "message": "Partition overlap",
+      "cause": "Partition boundaries conflict",
+      "solutions": [
+        {
+          "approach": "Check boundaries",
+          "code": "sudo parted /dev/sda unit s print  # Show in sectors",
+          "when": "See exact positions"
+        },
+        {
+          "approach": "Align partitions",
+          "code": "# Start after previous end:\nparted /dev/sda mkpart primary ext4 1MiB 50%\nparted /dev/sda mkpart primary ext4 50% 100%",
+          "when": "Proper spacing"
+        }
+      ]
+    },
+    {
+      "id": "resize_warning",
+      "pattern": "resize|shrink|grow|data loss",
+      "message": "Resize operation",
+      "cause": "Resizing partitions",
+      "solutions": [
+        {
+          "approach": "Resize partition",
+          "code": "sudo parted /dev/sda resizepart 1 50GiB",
+          "when": "Change size"
+        },
+        {
+          "approach": "Resize filesystem too",
+          "code": "# Shrink: resize filesystem FIRST\nsudo resize2fs /dev/sda1 40G\nsudo parted /dev/sda resizepart 1 50GiB\n\n# Grow: resize partition FIRST\nsudo parted /dev/sda resizepart 1 100%\nsudo resize2fs /dev/sda1",
+          "when": "Complete resize"
+        },
+        {
+          "approach": "Backup first",
+          "code": "sudo dd if=/dev/sda1 of=/backup/sda1.img bs=4M",
+          "when": "Before resize"
+        }
+      ]
+    }
+  ]
+}

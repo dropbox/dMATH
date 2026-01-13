@@ -1,0 +1,108 @@
+{
+  "id": "bap",
+  "name": "Binary Analysis Platform (BAP)",
+  "category": "binary_analysis",
+  "subcategory": "lifting",
+
+  "description": "OCaml-based binary analysis toolkit that lifts machine code to BIL for static, symbolic, and semantic analysis.",
+  "long_description": "Binary Analysis Platform (BAP) provides a modular framework for analyzing compiled binaries. It lifts instructions from multiple architectures into the BIL intermediate representation, supports CFG reconstruction, dataflow and taint analyses, and integrates with Primus for symbolic execution and automated reasoning.",
+
+  "capabilities": [
+    "binary_lifting",
+    "static_analysis",
+    "symbolic_execution",
+    "taint_analysis",
+    "control_flow_recovery"
+  ],
+  "property_types": ["binary_safety", "reachability", "control_flow_integrity"],
+  "input_languages": ["binary", "elf", "mach-o", "pe"],
+  "output_formats": ["bil", "cfg", "callgraph", "traces"],
+
+  "installation": {
+    "methods": [
+      {"type": "opam", "command": "opam install bap"},
+      {"type": "deb", "command": "wget https://github.com/BinaryAnalysisPlatform/bap/releases/download/v2.5.0/bap_2.5.0.deb"},
+      {"type": "source", "url": "https://github.com/BinaryAnalysisPlatform/bap"}
+    ],
+    "dependencies": ["ocaml", "llvm", "python3"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://binaryanalysisplatform.github.io/",
+    "tutorial": "https://github.com/BinaryAnalysisPlatform/bap/tree/master/docs",
+    "api_reference": "https://binaryanalysisplatform.github.io/bap/api/master/",
+    "examples": "https://github.com/BinaryAnalysisPlatform/bap/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "lift",
+      "description": "Lift a binary into BIL for further analysis.",
+      "syntax": "bap <binary> --pass=bap-plugin-lifter",
+      "when_to_use": "Any time you need architecture-independent IR for analysis.",
+      "examples": ["bap /bin/ls --pass=dump --dump=bil"]
+    },
+    {
+      "name": "primus",
+      "description": "Run Primus symbolic execution with configurable semantics.",
+      "syntax": "bap <binary> --primus-lisp=<script.lisp>",
+      "when_to_use": "To explore paths or synthesize counterexamples at the binary level.",
+      "examples": ["bap target --primus-lisp=explore.lisp --primus-limit=50"]
+    },
+    {
+      "name": "knowledge_base",
+      "description": "Use BAP KB to propagate facts across analyses.",
+      "syntax": "bap <binary> --pass=abi-spec --pass=type-propagation",
+      "when_to_use": "To annotate lifter output with ABI, types, and calling conventions.",
+      "examples": ["bap firmware.bin --pass=abi-spec --pass=type-propagation"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Failed to identify architecture",
+      "meaning": "BAP could not detect the target ISA.",
+      "common_causes": ["Custom firmware header", "Stripped metadata"],
+      "fixes": ["Specify --arch explicitly", "Provide correct loader/ogre file"]
+    },
+    {
+      "pattern": "Not lifted",
+      "meaning": "Instruction sequence could not be lifted to BIL.",
+      "common_causes": ["Unsupported instruction", "Corrupted binary section"],
+      "fixes": ["Upgrade BAP/primus loaders", "Enable pcode lifter or provide custom semantics"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["binary_property", "temporal"],
+    "cli_command": "dashprove reverse --backend bap --binary <path>"
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes per binary",
+    "scalability": "Handles medium binaries; path explosion for large symbolic runs",
+    "memory_usage": "Moderate to high depending on Primus configuration"
+  },
+
+  "comparisons": {
+    "similar_tools": ["ghidra", "angr", "manticore"],
+    "advantages": [
+      "Architecture-agnostic BIL IR",
+      "Rich OCaml API and plugin system",
+      "Integrated symbolic execution via Primus"
+    ],
+    "disadvantages": [
+      "OCaml toolchain required",
+      "Symbolic execution can be slow without pruning"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.5.0",
+    "last_updated": "2025-12-29",
+    "maintainer": "BAP Team (CMU)",
+    "license": "Apache-2.0"
+  }
+}

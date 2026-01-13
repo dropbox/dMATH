@@ -1,0 +1,232 @@
+{
+  "tool": "proptest",
+  "version": "1.4.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "shrinking_timeout",
+      "pattern": "shrinking.*timeout|shrink.*too.*long|minimize.*fail",
+      "message": "Shrinking process timed out or took too long",
+      "cause": "Input space too large or shrinking inefficient",
+      "solutions": [
+        {
+          "approach": "Increase shrink timeout",
+          "code": "proptest! {\n    #![proptest_config(ProptestConfig {\n        max_shrink_iters: 100000,\n        ..ProptestConfig::default()\n    })]\n    #[test]\n    fn my_test(v in any::<u32>()) {\n        // test\n    }\n}",
+          "when": "Need more shrinking time"
+        },
+        {
+          "approach": "Disable shrinking",
+          "code": "proptest! {\n    #![proptest_config(ProptestConfig {\n        max_shrink_iters: 0,  // Disable shrinking\n        ..ProptestConfig::default()\n    })]\n    #[test]\n    fn quick_test(v in any::<String>()) { }\n}",
+          "when": "Don't need minimal example"
+        },
+        {
+          "approach": "Use simpler strategy",
+          "code": "// Instead of complex nested structures:\n// any::<Vec<Vec<String>>>()\n// Use bounded:\nprop::collection::vec(prop::string::string_regex(\"[a-z]{1,10}\").unwrap(), 0..5)",
+          "when": "Strategy too complex"
+        }
+      ]
+    },
+    {
+      "id": "test_failure",
+      "pattern": "test.*fail|assertion.*fail|panicked|minimal.*failing.*input",
+      "message": "Property test found a failing case",
+      "cause": "Code doesn't satisfy property for some input",
+      "solutions": [
+        {
+          "approach": "Examine minimal case",
+          "code": "// proptest will show minimal failing input:\n// thread 'test' panicked at 'assertion failed'\n// minimal failing input: v = [1, 0, 3]\n// Use this to write a unit test:\n#[test]\nfn regression_test() {\n    let v = vec![1, 0, 3];\n    assert!(my_function(&v));  // Debug this case\n}",
+          "when": "Found bug"
+        },
+        {
+          "approach": "Save failing case",
+          "code": "// proptest saves failures to proptest-regressions/\n// These are replayed on future runs\n// To persist permanently, add to test:\nproptest! {\n    #[test]\n    fn my_test(v in any::<Vec<i32>>()) {\n        // Test runs saved regressions too\n    }\n}",
+          "when": "Want regression test"
+        },
+        {
+          "approach": "Increase verbosity",
+          "code": "PROPTEST_VERBOSE=1 cargo test\n// Or in config:\nProptestConfig {\n    verbose: 2,\n    ..Default::default()\n}",
+          "when": "Need more debug info"
+        }
+      ]
+    },
+    {
+      "id": "strategy_error",
+      "pattern": "strategy.*error|cannot.*generate|no.*values",
+      "message": "Strategy cannot generate valid values",
+      "cause": "Strategy constraints too restrictive or impossible",
+      "solutions": [
+        {
+          "approach": "Check strategy bounds",
+          "code": "// Bad - impossible range:\n// 10..5 generates nothing\n\n// Good:\nlet strat = 0..100u32;  // Valid range\nlet strat = prop::collection::vec(any::<i32>(), 1..10);  // 1-9 elements",
+          "when": "Invalid range"
+        },
+        {
+          "approach": "Use prop_filter correctly",
+          "code": "// prop_filter may reject too many:\nlet strat = any::<u32>().prop_filter(\n    \"reasonable filter\",\n    |v| *v % 7 == 0  // Only multiples of 7\n);\n\n// Better - generate directly:\nlet strat = (0..1000u32).prop_map(|v| v * 7);",
+          "when": "Filter rejects too much"
+        },
+        {
+          "approach": "Debug strategy",
+          "code": "// Test strategy in isolation:\nlet strat = /* your strategy */;\nlet mut runner = TestRunner::default();\nfor _ in 0..10 {\n    let val = strat.new_tree(&mut runner).unwrap().current();\n    println!(\"{:?}\", val);\n}",
+          "when": "Strategy not generating expected values"
+        }
+      ]
+    },
+    {
+      "id": "too_many_cases",
+      "pattern": "too.*many.*cases|timeout|cases.*exceeded",
+      "message": "Test running too many cases or timing out",
+      "cause": "Default case count too high or tests too slow",
+      "solutions": [
+        {
+          "approach": "Reduce case count",
+          "code": "proptest! {\n    #![proptest_config(ProptestConfig {\n        cases: 100,  // Default is 256\n        ..ProptestConfig::default()\n    })]\n    #[test]\n    fn slow_test(v in any::<Vec<u8>>()) { }\n}",
+          "when": "Tests too slow"
+        },
+        {
+          "approach": "Use PROPTEST_CASES env var",
+          "code": "# Run with fewer cases:\nPROPTEST_CASES=10 cargo test",
+          "when": "Quick iteration"
+        },
+        {
+          "approach": "Optimize test",
+          "code": "// Make assertions faster:\n// Avoid expensive operations in hot loop\nfn check_property(data: &[u8]) -> bool {\n    // Use references, avoid clones\n    data.iter().all(|&x| x < 100)\n}",
+          "when": "Test body slow"
+        }
+      ]
+    },
+    {
+      "id": "regression_failure",
+      "pattern": "regression|persisted.*failure|replay.*fail",
+      "message": "Regression test from previous failure",
+      "cause": "A previously saved failure case is still failing",
+      "solutions": [
+        {
+          "approach": "Fix the bug",
+          "code": "// The regression file shows the failing input\n// Fix the code so it passes\n// Or if behavior intentionally changed:\n// Delete the regression file in proptest-regressions/",
+          "when": "Real bug regression"
+        },
+        {
+          "approach": "Clear regressions",
+          "code": "# If failures are obsolete:\nrm -rf proptest-regressions/\n# Or delete specific file",
+          "when": "Test changed intentionally"
+        },
+        {
+          "approach": "View regression input",
+          "code": "// Check proptest-regressions/<test_name>.txt\n// Format: seed value pairs\n// Can replay with:\n// PROPTEST_SEED=<seed> cargo test <test_name>",
+          "when": "Understanding saved failure"
+        }
+      ]
+    },
+    {
+      "id": "flaky_test",
+      "pattern": "flaky|intermittent|sometimes.*fail",
+      "message": "Test fails intermittently",
+      "cause": "Non-deterministic behavior or race condition",
+      "solutions": [
+        {
+          "approach": "Use deterministic seed",
+          "code": "proptest! {\n    #![proptest_config(ProptestConfig {\n        failure_persistence: None,  // Disable persistence\n        ..ProptestConfig::default()\n    })]\n    // Run with same seed:\n}",
+          "when": "Debugging flaky test"
+        },
+        {
+          "approach": "Increase cases to catch",
+          "code": "proptest! {\n    #![proptest_config(ProptestConfig {\n        cases: 10000,  // More cases to catch flaky bugs\n        ..Default::default()\n    })]\n    #[test]\n    fn catch_flaky(v in any::<i32>()) { }\n}",
+          "when": "Flaky bug elusive"
+        },
+        {
+          "approach": "Check for non-determinism",
+          "code": "// Avoid in tests:\n// - HashMap iteration order (use BTreeMap)\n// - System time\n// - Thread ordering without synchronization\n// - Floating point equality",
+          "when": "Non-deterministic code"
+        }
+      ]
+    },
+    {
+      "id": "custom_arbitrary_error",
+      "pattern": "Arbitrary.*not.*implemented|cannot.*derive|strategy.*required",
+      "message": "Cannot generate arbitrary values for type",
+      "cause": "Type doesn't implement Arbitrary or need custom strategy",
+      "solutions": [
+        {
+          "approach": "Derive Arbitrary",
+          "code": "use proptest_derive::Arbitrary;\n\n#[derive(Debug, Arbitrary)]\nstruct MyStruct {\n    field1: u32,\n    field2: String,\n}",
+          "when": "Simple struct"
+        },
+        {
+          "approach": "Implement custom strategy",
+          "code": "use proptest::strategy::{Strategy, BoxedStrategy};\n\nfn my_struct_strategy() -> BoxedStrategy<MyStruct> {\n    (any::<u32>(), \"[a-z]+\")\n        .prop_map(|(field1, field2)| MyStruct { field1, field2 })\n        .boxed()\n}\n\nproptest! {\n    #[test]\n    fn test_my_struct(s in my_struct_strategy()) { }\n}",
+          "when": "Need custom generation"
+        },
+        {
+          "approach": "Use prop_compose",
+          "code": "prop_compose! {\n    fn arb_my_struct()\n        (field1 in 0..100u32, field2 in \"[a-z]{1,10}\")\n    -> MyStruct {\n        MyStruct { field1, field2 }\n    }\n}\n\nproptest! {\n    #[test]\n    fn test(s in arb_my_struct()) { }\n}",
+          "when": "Composing strategies"
+        }
+      ]
+    },
+    {
+      "id": "filter_rejection",
+      "pattern": "filter.*rejected|too.*many.*rejects|gave.*up",
+      "message": "Too many generated values rejected by filter",
+      "cause": "Filter condition rejects most generated values",
+      "solutions": [
+        {
+          "approach": "Generate directly instead of filtering",
+          "code": "// Bad - filter rejects most:\nany::<u32>().prop_filter(\"even\", |v| v % 2 == 0)\n\n// Good - generate directly:\n(0..u32::MAX/2).prop_map(|v| v * 2)",
+          "when": "Can compute valid values"
+        },
+        {
+          "approach": "Use prop_flat_map",
+          "code": "// Generate dependent values:\n(1..100usize).prop_flat_map(|len| {\n    prop::collection::vec(any::<u8>(), len..=len)\n})",
+          "when": "Dependent generation"
+        },
+        {
+          "approach": "Relax filter",
+          "code": "// Make filter less restrictive:\nany::<u32>().prop_filter_map(\"transform\", |v| {\n    if v < 100 { Some(v) } else { Some(v % 100) }\n})",
+          "when": "Can transform instead of reject"
+        }
+      ]
+    },
+    {
+      "id": "string_regex_error",
+      "pattern": "regex.*error|invalid.*regex|string_regex.*fail",
+      "message": "Invalid regex for string generation",
+      "cause": "Regex syntax error or unsupported pattern",
+      "solutions": [
+        {
+          "approach": "Check regex syntax",
+          "code": "// Use proptest regex syntax:\nlet strat = prop::string::string_regex(\"[a-z]{1,10}\").unwrap();\n// Not all regex features supported",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Use simpler patterns",
+          "code": "// Supported patterns:\n// [a-z] - character class\n// {n,m} - repetition\n// (a|b) - alternation\n// .     - any char\n\n// May not support:\n// Lookahead/lookbehind\n// Backreferences",
+          "when": "Complex regex"
+        },
+        {
+          "approach": "Use string strategy",
+          "code": "// Alternative to regex:\nprop::collection::vec(prop::char::range('a', 'z'), 1..10)\n    .prop_map(|chars| chars.into_iter().collect::<String>())",
+          "when": "Regex too limited"
+        }
+      ]
+    },
+    {
+      "id": "state_machine_testing",
+      "pattern": "state.*machine|sequential|stateful.*test",
+      "message": "Need to test stateful/sequential code",
+      "cause": "Code has state that changes over sequence of operations",
+      "solutions": [
+        {
+          "approach": "Generate operation sequences",
+          "code": "#[derive(Debug, Clone, Arbitrary)]\nenum Op {\n    Push(i32),\n    Pop,\n    Clear,\n}\n\nproptest! {\n    #[test]\n    fn test_stack(ops in prop::collection::vec(any::<Op>(), 0..100)) {\n        let mut stack = Vec::new();\n        let mut model = Vec::new();\n        for op in ops {\n            match op {\n                Op::Push(v) => { stack.push(v); model.push(v); }\n                Op::Pop => { stack.pop(); model.pop(); }\n                Op::Clear => { stack.clear(); model.clear(); }\n            }\n            assert_eq!(stack, model);\n        }\n    }\n}",
+          "when": "Testing state machine"
+        },
+        {
+          "approach": "Use proptest-state-machine crate",
+          "code": "// For more complex state machine testing:\n// proptest-state-machine provides:\n// - Reference model comparison\n// - Precondition checking\n// - Shrinking that maintains valid sequences",
+          "when": "Complex state machine"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "tool": "minisat",
+  "version": "2.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "cnf_parse_error",
+      "pattern": "PARSE ERROR|invalid CNF|p cnf line expected",
+      "message": "CNF file could not be parsed",
+      "cause": "Dimacs header mismatch, zero-based variables, or missing terminators",
+      "solutions": [
+        {
+          "approach": "Fix DIMACS header",
+          "code": "p cnf <num_vars> <num_clauses>\n1 -3 0\n2 3 -1 0",
+          "when": "Header counts incorrect"
+        },
+        {
+          "approach": "Use 1-based variable IDs",
+          "code": "# Variables must start at 1, not 0",
+          "when": "CNF generator emits zero"
+        },
+        {
+          "approach": "Terminate every clause with 0",
+          "code": "1 2 -3 0",
+          "when": "Clauses missing sentinel"
+        }
+      ]
+    },
+    {
+      "id": "memory_exhausted",
+      "pattern": "INDETERMINATE \\(memory\\)|std::bad_alloc|out of memory",
+      "message": "Solver ran out of memory",
+      "cause": "Formula too large or restart/learnt clause budget not tuned",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "ulimit -v unlimited && minisat formula.cnf",
+          "when": "Limit imposed by shell"
+        },
+        {
+          "approach": "Simplify before solving",
+          "code": "cadical --simplify formula.cnf > reduced.cnf",
+          "when": "Input contains redundant clauses"
+        },
+        {
+          "approach": "Adjust restart/garbage collection",
+          "code": "minisat -rinc=2.0 -gc-frac=0.1 formula.cnf",
+          "when": "Learnt clauses explode"
+        }
+      ]
+    },
+    {
+      "id": "unsat_without_proof",
+      "pattern": "UNSAT\n.*no proof|proof not generated",
+      "message": "Solver reports UNSAT but no proof emitted",
+      "cause": "Proof logging not enabled or writing to full disk",
+      "solutions": [
+        {
+          "approach": "Enable DRUP/DRAT proof",
+          "code": "minisat -verb=0 -proof=out.drup formula.cnf",
+          "when": "Need UNSAT certificate"
+        },
+        {
+          "approach": "Check disk space",
+          "code": "df -h .",
+          "when": "Proof file truncated"
+        }
+      ]
+    },
+    {
+      "id": "timeout_no_result",
+      "pattern": "INDETERMINATE|solver aborted after",
+      "message": "Solver timed out without SAT/UNSAT",
+      "cause": "Hard instances with default restart/decision heuristics",
+      "solutions": [
+        {
+          "approach": "Increase time budget",
+          "code": "timeout 300 minisat formula.cnf",
+          "when": "Short timeouts"
+        },
+        {
+          "approach": "Switch polarity and randomness",
+          "code": "minisat -rnd-freq=0.05 -polarity-mode=phase-saving formula.cnf",
+          "when": "Heuristics stuck"
+        },
+        {
+          "approach": "Decompose problem",
+          "code": "# Use portfolio: run multiple instances with different seeds",
+          "when": "Single configuration stalls"
+        }
+      ]
+    },
+    {
+      "id": "assumptions_misused",
+      "pattern": "inconsistent assumptions|assumption literal not found",
+      "message": "Incremental solve with assumptions fails",
+      "cause": "Assumptions not part of variable set or reused after solver reset",
+      "solutions": [
+        {
+          "approach": "Ensure variables allocated",
+          "code": "solver.newVar(); // for each variable before assumptions",
+          "when": "Programmatic API users"
+        },
+        {
+          "approach": "Clear assumptions each call",
+          "code": "assumptions.clear(); solver.solve(assumptions);",
+          "when": "Looping over queries"
+        }
+      ]
+    }
+  ]
+}

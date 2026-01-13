@@ -1,0 +1,174 @@
+{
+  "id": "appium",
+  "name": "Appium",
+  "category": "mobile_testing",
+  "subcategory": "cross_platform",
+
+  "description": "Cross-platform mobile test automation framework supporting iOS, Android, and desktop",
+  "long_description": "Appium is an open-source test automation framework for native, hybrid, and mobile web applications. It uses the WebDriver protocol to interact with iOS, Android, Windows, and Mac apps. Appium allows writing tests in any WebDriver-compatible language (Java, Python, JavaScript, Ruby, C#) and supports both real devices and simulators/emulators.",
+
+  "capabilities": [
+    "cross_platform_testing",
+    "native_app_testing",
+    "hybrid_app_testing",
+    "mobile_web_testing",
+    "real_device_testing",
+    "simulator_testing",
+    "parallel_execution",
+    "cloud_device_farms"
+  ],
+  "property_types": ["element_locator", "action", "capability"],
+  "input_languages": ["java", "python", "javascript", "ruby", "csharp"],
+  "output_formats": ["junit_xml", "allure", "html_report"],
+
+  "installation": {
+    "methods": [
+      {"type": "npm", "command": "npm install -g appium"},
+      {"type": "npm", "command": "appium driver install uiautomator2"},
+      {"type": "npm", "command": "appium driver install xcuitest"}
+    ],
+    "dependencies": ["nodejs", "java", "android_sdk", "xcode"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://appium.io/docs/en/latest/",
+    "quickstart": "https://appium.io/docs/en/latest/quickstart/",
+    "capabilities": "https://appium.io/docs/en/latest/guides/caps/",
+    "examples": "https://github.com/appium/appium/tree/master/packages/appium/sample-code"
+  },
+
+  "tactics": [
+    {
+      "name": "setup_driver",
+      "description": "Initialize Appium driver",
+      "syntax": "new AndroidDriver(url, capabilities)",
+      "when_to_use": "Start of every test session",
+      "examples": ["DesiredCapabilities caps = new DesiredCapabilities();\ncaps.setCapability(\"platformName\", \"Android\");\ncaps.setCapability(\"deviceName\", \"Pixel 5\");\ncaps.setCapability(\"app\", \"/path/to/app.apk\");\ndriver = new AndroidDriver(new URL(\"http://localhost:4723\"), caps);"]
+    },
+    {
+      "name": "find_element",
+      "description": "Locate UI element",
+      "syntax": "driver.findElement(By.strategy(value))",
+      "when_to_use": "Interacting with UI elements",
+      "examples": ["driver.findElement(By.id(\"login_button\"))", "driver.findElement(AppiumBy.accessibilityId(\"Submit\"))", "driver.findElement(AppiumBy.xpath(\"//button[@text='OK']\"))"]
+    },
+    {
+      "name": "touch_actions",
+      "description": "Perform touch gestures",
+      "syntax": "TouchAction / W3C Actions",
+      "when_to_use": "Complex gestures like swipe, pinch",
+      "examples": ["new TouchAction(driver)\n    .press(PointOption.point(100, 200))\n    .moveTo(PointOption.point(100, 500))\n    .release()\n    .perform();"]
+    },
+    {
+      "name": "wait_for_element",
+      "description": "Wait for element with explicit wait",
+      "syntax": "WebDriverWait(driver, timeout).until(condition)",
+      "when_to_use": "Handling async UI changes",
+      "examples": ["WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));\nwait.until(ExpectedConditions.visibilityOfElementLocated(By.id(\"result\")));"]
+    },
+    {
+      "name": "switch_context",
+      "description": "Switch between native and webview",
+      "syntax": "driver.context(contextName)",
+      "when_to_use": "Testing hybrid apps",
+      "examples": ["Set<String> contexts = driver.getContextHandles();\ndriver.context(\"WEBVIEW_com.app\");"]
+    }
+  ],
+
+  "locator_strategies": [
+    {
+      "name": "id",
+      "description": "Find by resource-id (Android) or name (iOS)",
+      "examples": ["By.id(\"com.app:id/button\")", "By.id(\"loginButton\")"]
+    },
+    {
+      "name": "accessibilityId",
+      "description": "Find by accessibility identifier (cross-platform)",
+      "examples": ["AppiumBy.accessibilityId(\"Submit Button\")"]
+    },
+    {
+      "name": "xpath",
+      "description": "Find by XPath expression",
+      "examples": ["By.xpath(\"//android.widget.Button[@text='Login']\")"]
+    },
+    {
+      "name": "className",
+      "description": "Find by class name",
+      "examples": ["By.className(\"android.widget.EditText\")"]
+    },
+    {
+      "name": "iOSClassChain",
+      "description": "iOS-specific chain selector",
+      "examples": ["AppiumBy.iOSClassChain(\"**/XCUIElementTypeButton[`label == 'Login'`]\")"]
+    },
+    {
+      "name": "androidUIAutomator",
+      "description": "Android UI Automator selector",
+      "examples": ["AppiumBy.androidUIAutomator(\"new UiSelector().text(\\\"Login\\\")\")"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "NoSuchElementException",
+      "meaning": "Element not found",
+      "common_causes": ["Wrong locator", "Element not loaded", "Wrong context"],
+      "fixes": ["Verify locator with Appium Inspector", "Add explicit wait", "Check context (native/webview)"]
+    },
+    {
+      "pattern": "SessionNotCreatedException",
+      "meaning": "Could not start Appium session",
+      "common_causes": ["Wrong capabilities", "Device not connected", "App not found"],
+      "fixes": ["Check capabilities", "Verify device/emulator", "Check app path"]
+    },
+    {
+      "pattern": "StaleElementReferenceException",
+      "meaning": "Element reference is stale",
+      "common_causes": ["Page changed", "Element re-rendered"],
+      "fixes": ["Re-find element", "Add synchronization"]
+    },
+    {
+      "pattern": "WebDriverException.*ECONNREFUSED",
+      "meaning": "Cannot connect to Appium server",
+      "common_causes": ["Server not running", "Wrong port"],
+      "fixes": ["Start Appium server", "Check server URL"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["intellij", "vscode", "eclipse"],
+    "ci_integration": ["github_actions", "jenkins", "circleci", "bitrise"],
+    "cloud_platforms": ["browserstack", "sauce_labs", "aws_device_farm", "lambdatest"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds to minutes per test",
+    "scalability": "Parallel execution on device farms",
+    "memory_usage": "Moderate (separate server process)"
+  },
+
+  "comparisons": {
+    "similar_tools": ["detox", "maestro", "xcuitest", "espresso"],
+    "advantages": [
+      "Cross-platform (iOS, Android, Windows, Mac)",
+      "Write tests in any language",
+      "Large community and ecosystem",
+      "Cloud device farm integration"
+    ],
+    "disadvantages": [
+      "Slower than native frameworks",
+      "Complex setup",
+      "Can be flaky without proper waits",
+      "Learning curve for mobile-specific patterns"
+    ]
+  },
+
+  "metadata": {
+    "version": "2.5.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Appium Project",
+    "license": "Apache-2.0"
+  }
+}

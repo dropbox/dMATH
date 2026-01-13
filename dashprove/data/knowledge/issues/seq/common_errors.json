@@ -1,0 +1,135 @@
+{
+  "tool": "seq",
+  "version": "coreutils 8.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "invalid_argument",
+      "pattern": "seq:.*invalid|seq:.*argument|not.*number",
+      "message": "Invalid numeric argument",
+      "cause": "Arguments must be numbers",
+      "solutions": [
+        {
+          "approach": "Basic range",
+          "code": "seq 5       # 1 to 5\nseq 3 7     # 3 to 7\nseq 1 2 10  # 1, 3, 5, 7, 9 (step 2)",
+          "when": "Integer sequences"
+        },
+        {
+          "approach": "Floating point",
+          "code": "seq 0.5 0.1 1.0  # 0.5 to 1.0 step 0.1",
+          "when": "Decimal steps"
+        },
+        {
+          "approach": "Negative/reverse",
+          "code": "seq 10 -1 1  # 10 down to 1\nseq -5 -1    # -5 to -1",
+          "when": "Descending or negative"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "seq:.*command not found|seq:.*not found",
+      "message": "seq not available",
+      "cause": "seq not on all systems (BSD/macOS may differ)",
+      "solutions": [
+        {
+          "approach": "Install on macOS",
+          "code": "brew install coreutils\ngseq 1 10",
+          "when": "macOS"
+        },
+        {
+          "approach": "jot alternative (BSD)",
+          "code": "jot 10        # 1 to 10\njot 5 3       # 3 to 7 (5 numbers starting at 3)\njot - 1 10 2  # 1, 3, 5, 7, 9",
+          "when": "BSD/macOS native"
+        },
+        {
+          "approach": "bash brace expansion",
+          "code": "echo {1..10}     # 1 2 3 ... 10\necho {1..10..2}  # 1 3 5 7 9 (bash 4+)",
+          "when": "Bash alternative"
+        },
+        {
+          "approach": "awk alternative",
+          "code": "awk 'BEGIN{for(i=1;i<=10;i++)print i}'",
+          "when": "Portable"
+        }
+      ]
+    },
+    {
+      "id": "format_error",
+      "pattern": "seq:.*format|invalid format|conversion",
+      "message": "Invalid format specifier",
+      "cause": "-f format string issue",
+      "solutions": [
+        {
+          "approach": "Printf-style format",
+          "code": "seq -f '%03g' 10    # 001 002 ... 010\nseq -f 'file%03g.txt' 5  # file001.txt ...",
+          "when": "Custom format"
+        },
+        {
+          "approach": "Zero padding",
+          "code": "seq -w 1 100  # Auto-pad: 001 002 ... 100",
+          "when": "Equal width"
+        }
+      ]
+    },
+    {
+      "id": "separator",
+      "pattern": "separator|delimiter|newline|space",
+      "message": "Change output separator",
+      "cause": "Default is newline",
+      "solutions": [
+        {
+          "approach": "Custom separator",
+          "code": "seq -s ',' 5       # 1,2,3,4,5\nseq -s ' ' 5       # 1 2 3 4 5\nseq -s '' 5        # 12345",
+          "when": "Different delimiter"
+        },
+        {
+          "approach": "tr alternative",
+          "code": "seq 5 | tr '\\n' ','  # With trailing comma",
+          "when": "Post-process"
+        }
+      ]
+    },
+    {
+      "id": "empty_range",
+      "pattern": "no output|empty|backwards",
+      "message": "No output produced",
+      "cause": "Start > end without negative step",
+      "solutions": [
+        {
+          "approach": "Reverse needs step",
+          "code": "seq 10 1      # Empty! (no output)\nseq 10 -1 1   # 10 9 8 ... 1 (correct)",
+          "when": "Descending sequence"
+        },
+        {
+          "approach": "Check order",
+          "code": "# seq START INCREMENT END\n# If START > END, need negative INCREMENT",
+          "when": "Understanding order"
+        }
+      ]
+    },
+    {
+      "id": "precision_issues",
+      "pattern": "floating.*precision|rounding|inexact",
+      "message": "Floating point precision problems",
+      "cause": "Binary floating point representation",
+      "solutions": [
+        {
+          "approach": "Set precision",
+          "code": "seq -f '%.2f' 0 0.1 1  # Two decimal places",
+          "when": "Control decimals"
+        },
+        {
+          "approach": "Integer steps",
+          "code": "# Use integer math when possible\nseq 0 100 | awk '{print $1/100}'",
+          "when": "Avoid float math"
+        },
+        {
+          "approach": "bc for precision",
+          "code": "for i in $(seq 0 10); do\n  echo \"scale=2; $i/10\" | bc\ndone",
+          "when": "Need exact decimals"
+        }
+      ]
+    }
+  ]
+}

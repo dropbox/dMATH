@@ -1,0 +1,96 @@
+{
+  "id": "kubeconform",
+  "name": "Kubeconform",
+  "category": "static_analysis",
+  "subcategory": "kubernetes_validation",
+
+  "description": "Fast Kubernetes manifest validator with CRD support",
+  "long_description": "Kubeconform is a fast Kubernetes manifest validator that validates against Kubernetes OpenAPI schemas. It's the spiritual successor to kubeval with better performance, CRD support, and active maintenance. It can validate against custom schemas from various sources.",
+
+  "capabilities": [
+    "schema_validation",
+    "crd_support",
+    "multi_version",
+    "parallel_validation",
+    "custom_schemas",
+    "ci_integration"
+  ],
+  "property_types": ["schema_compliance", "configuration"],
+  "input_languages": ["yaml", "json"],
+  "output_formats": ["text", "json", "tap", "junit"],
+
+  "installation": {
+    "methods": [
+      {"type": "brew", "command": "brew install kubeconform", "platform": "macos"},
+      {"type": "go", "command": "go install github.com/yannh/kubeconform/cmd/kubeconform@latest"},
+      {"type": "binary", "url": "https://github.com/yannh/kubeconform/releases"}
+    ],
+    "dependencies": [],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/yannh/kubeconform",
+    "tutorial": "https://github.com/yannh/kubeconform#usage",
+    "api_reference": "https://github.com/yannh/kubeconform#usage",
+    "examples": "https://github.com/yannh/kubeconform#usage"
+  },
+
+  "tactics": [
+    {
+      "name": "validate",
+      "description": "Validate manifests",
+      "syntax": "kubeconform deployment.yaml",
+      "when_to_use": "Validating K8s resources",
+      "examples": ["kubeconform -kubernetes-version 1.28.0 *.yaml"]
+    },
+    {
+      "name": "with_crds",
+      "description": "Validate with CRD schemas",
+      "syntax": "kubeconform -schema-location URL manifest.yaml",
+      "when_to_use": "Validating custom resources",
+      "examples": ["kubeconform -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' argocd.yaml"]
+    },
+    {
+      "name": "parallel",
+      "description": "Parallel validation",
+      "syntax": "kubeconform -n 8 manifests/",
+      "when_to_use": "Large manifest sets",
+      "examples": ["find . -name '*.yaml' | kubeconform -n 16"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "is invalid",
+      "meaning": "Schema validation failed",
+      "common_causes": ["Wrong type", "Missing required field"],
+      "fixes": ["Fix manifest according to schema"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["schema_compliance"],
+    "cli_command": "dashprove verify --backend kubeconform"
+  },
+
+  "performance": {
+    "typical_runtime": "Very fast",
+    "scalability": "Excellent with parallelism",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["kubeval", "kube-linter", "polaris"],
+    "advantages": ["Fast", "CRD support", "Active development"],
+    "disadvantages": ["Requires schema URLs for CRDs"]
+  },
+
+  "metadata": {
+    "version": "0.6.4",
+    "last_updated": "2025-12-22",
+    "maintainer": "Yann Hamon",
+    "license": "Apache-2.0"
+  }
+}

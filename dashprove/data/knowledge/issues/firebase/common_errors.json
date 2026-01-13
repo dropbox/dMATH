@@ -1,0 +1,191 @@
+{
+  "tool": "firebase",
+  "version": "13.0.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "PERMISSION_DENIED|auth/.*|not authenticated|Missing.*credentials",
+      "message": "Authentication/authorization error",
+      "cause": "Not logged in or missing permissions",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "firebase login\nfirebase login:ci  # For CI environments",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Check project",
+          "code": "firebase projects:list\nfirebase use <project-id>",
+          "when": "Wrong project"
+        },
+        {
+          "approach": "Service account",
+          "code": "export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json\nfirebase deploy",
+          "when": "CI/CD deployment"
+        }
+      ]
+    },
+    {
+      "id": "deploy_error",
+      "pattern": "deploy.*failed|Error.*deploying|hosting.*error",
+      "message": "Deployment failed",
+      "cause": "Configuration or build error",
+      "solutions": [
+        {
+          "approach": "Check firebase.json",
+          "code": "{\n  \"hosting\": {\n    \"public\": \"dist\",\n    \"ignore\": [\"firebase.json\", \"**/.*\", \"**/node_modules/**\"],\n    \"rewrites\": [{\"source\": \"**\", \"destination\": \"/index.html\"}]\n  }\n}",
+          "when": "Config issue"
+        },
+        {
+          "approach": "Build first",
+          "code": "npm run build && firebase deploy --only hosting",
+          "when": "Missing build"
+        },
+        {
+          "approach": "Debug deploy",
+          "code": "firebase deploy --debug",
+          "when": "Need more info"
+        }
+      ]
+    },
+    {
+      "id": "firestore_rules_error",
+      "pattern": "rules.*error|security rules.*failed|firestore.rules.*invalid",
+      "message": "Firestore rules error",
+      "cause": "Invalid security rules syntax",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Test rules",
+          "code": "firebase emulators:start\n# Use Rules Playground in Firebase Console",
+          "when": "Test before deploy"
+        },
+        {
+          "approach": "Deploy only rules",
+          "code": "firebase deploy --only firestore:rules",
+          "when": "Deploy rules"
+        }
+      ]
+    },
+    {
+      "id": "functions_error",
+      "pattern": "functions.*error|Function.*failed|Cannot deploy functions",
+      "message": "Cloud Functions deployment error",
+      "cause": "Function code or configuration issue",
+      "solutions": [
+        {
+          "approach": "Check dependencies",
+          "code": "cd functions && npm install\nnpm run build  # If TypeScript",
+          "when": "Missing dependencies"
+        },
+        {
+          "approach": "Check Node version",
+          "code": "// In functions/package.json\n{\n  \"engines\": {\n    \"node\": \"18\"\n  }\n}",
+          "when": "Node version mismatch"
+        },
+        {
+          "approach": "Local test",
+          "code": "firebase emulators:start --only functions\ncurl http://localhost:5001/project-id/us-central1/functionName",
+          "when": "Test locally"
+        }
+      ]
+    },
+    {
+      "id": "emulator_error",
+      "pattern": "emulator.*failed|could not start|port.*in use",
+      "message": "Emulator startup error",
+      "cause": "Port conflict or Java issue",
+      "solutions": [
+        {
+          "approach": "Check ports",
+          "code": "lsof -i :8080\nlsof -i :9000\n# Kill conflicting processes",
+          "when": "Port in use"
+        },
+        {
+          "approach": "Install Java",
+          "code": "java -version\n# Install JDK 11+ if missing",
+          "when": "Java not found"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "firebase emulators:start --clear-data-before",
+          "when": "Corrupted data"
+        }
+      ]
+    },
+    {
+      "id": "quota_error",
+      "pattern": "RESOURCE_EXHAUSTED|quota.*exceeded|rate limit",
+      "message": "Quota or rate limit exceeded",
+      "cause": "Usage limits reached",
+      "solutions": [
+        {
+          "approach": "Check quotas",
+          "code": "firebase open quotas\n# Or check Firebase Console",
+          "when": "View limits"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Upgrade from Spark to Blaze in Firebase Console",
+          "when": "Need higher limits"
+        },
+        {
+          "approach": "Implement backoff",
+          "code": "// Exponential backoff in client code\nconst delay = Math.pow(2, retryCount) * 1000;\nawait new Promise(r => setTimeout(r, delay));",
+          "when": "Rate limiting"
+        }
+      ]
+    },
+    {
+      "id": "init_error",
+      "pattern": "firebase init.*error|Could not detect|project.*not found",
+      "message": "Firebase initialization error",
+      "cause": "Project not set up correctly",
+      "solutions": [
+        {
+          "approach": "Initialize",
+          "code": "firebase init\n# Select services: Hosting, Firestore, Functions, etc.",
+          "when": "New project"
+        },
+        {
+          "approach": "Set project",
+          "code": "firebase use --add\nfirebase use <project-id>",
+          "when": "Project not selected"
+        },
+        {
+          "approach": "Create project",
+          "code": "firebase projects:create <project-id>\nfirebase use <project-id>",
+          "when": "No project exists"
+        }
+      ]
+    },
+    {
+      "id": "sdk_error",
+      "pattern": "Firebase.*not initialized|No Firebase App|app.*not created",
+      "message": "Firebase SDK not initialized",
+      "cause": "Missing initialization in app code",
+      "solutions": [
+        {
+          "approach": "Initialize app",
+          "code": "import { initializeApp } from 'firebase/app';\n\nconst firebaseConfig = {\n  apiKey: \"...\",\n  authDomain: \"...\",\n  projectId: \"...\"\n};\n\nconst app = initializeApp(firebaseConfig);",
+          "when": "Web app"
+        },
+        {
+          "approach": "Admin SDK",
+          "code": "const admin = require('firebase-admin');\nadmin.initializeApp();\n// Uses GOOGLE_APPLICATION_CREDENTIALS",
+          "when": "Server/Functions"
+        },
+        {
+          "approach": "Get config",
+          "code": "firebase apps:sdkconfig web",
+          "when": "Need config values"
+        }
+      ]
+    }
+  ]
+}

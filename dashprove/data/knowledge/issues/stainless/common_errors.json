@@ -1,0 +1,330 @@
+{
+  "tool_id": "stainless",
+  "tool_name": "Stainless",
+  "tool_version": "0.9.8",
+  "category": "scala_verification",
+  "error_patterns": [
+    {
+      "id": "stainless_precondition_violation",
+      "pattern": "precondition violation|require.* failed|Precondition .* is violated",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless found that a precondition (require clause) may not hold at a call site",
+      "common_causes": [
+        "Caller does not establish precondition before call",
+        "Precondition is stronger than available context",
+        "Missing case analysis for different input types",
+        "Incorrect assumptions about input ranges"
+      ],
+      "solutions": [
+        "Add assertions before call to establish precondition",
+        "Strengthen preconditions at call sites",
+        "Use pattern matching to handle all cases",
+        "Add @require annotations to callers"
+      ],
+      "examples": [
+        {
+          "error": "Precondition violation for call sort(list): require(list.nonEmpty)",
+          "context": "Calling sort on potentially empty list",
+          "fix": "if (list.nonEmpty) sort(list) else list"
+        }
+      ],
+      "related_errors": ["stainless_postcondition_violation"],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_postcondition_violation",
+      "pattern": "postcondition violation|ensuring.* failed|Postcondition .* is violated",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless found that a postcondition (ensuring clause) may not hold after execution",
+      "common_causes": [
+        "Function does not satisfy its specification",
+        "Missing base case in recursive function",
+        "Postcondition too strong for implementation",
+        "Bug in the implementation"
+      ],
+      "solutions": [
+        "Fix implementation to satisfy postcondition",
+        "Weaken postcondition if too strong",
+        "Add decreasing measure for recursion",
+        "Check base cases return correct values"
+      ],
+      "examples": [
+        {
+          "error": "Postcondition violation: ensuring(res => res.size == this.size)",
+          "context": "List reversal implementation",
+          "fix": "Ensure implementation preserves list length"
+        }
+      ],
+      "related_errors": ["stainless_precondition_violation"],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_measure_not_decreasing",
+      "pattern": "measure not decreasing|termination check failed|non-terminating recursion",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless cannot prove that recursive calls decrease the termination measure",
+      "common_causes": [
+        "Missing @decreases annotation",
+        "Wrong measure (not decreasing on all paths)",
+        "Mutual recursion without proper measures",
+        "Non-structural recursion"
+      ],
+      "solutions": [
+        "Add @decreases annotation with valid measure",
+        "Use structural recursion on ADTs when possible",
+        "For mutual recursion, use tuple measures",
+        "Consider using @extern for trusted termination"
+      ],
+      "examples": [
+        {
+          "error": "measure not decreasing for recursive call gcd(b, a % b)",
+          "context": "GCD implementation",
+          "fix": "@decreases(b) def gcd(a: BigInt, b: BigInt): BigInt"
+        }
+      ],
+      "related_errors": ["stainless_non_termination"],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_non_termination",
+      "pattern": "potential non-termination|may not terminate|infinite recursion possible",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless cannot prove the function terminates on all inputs",
+      "common_causes": [
+        "Unbounded while loop",
+        "Recursion without proper base case",
+        "Measure does not decrease on some path",
+        "Infinite mutual recursion"
+      ],
+      "solutions": [
+        "Add loop invariant and variant for while loops",
+        "Ensure all recursive paths decrease the measure",
+        "Add explicit termination argument",
+        "Use @extern if termination is trusted"
+      ],
+      "examples": [
+        {
+          "error": "potential non-termination in while loop",
+          "context": "Loop without decreasing variant",
+          "fix": "Add @loop_invariant and decreasing variant"
+        }
+      ],
+      "related_errors": ["stainless_measure_not_decreasing"],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_unknown_result",
+      "pattern": "unknown|solver timeout|could not determine|inconclusive",
+      "severity": "warning",
+      "category": "verification_result",
+      "description": "Stainless could not definitively prove or disprove the verification condition",
+      "common_causes": [
+        "SMT solver timeout",
+        "Complex non-linear arithmetic",
+        "Quantifier instantiation issues",
+        "Insufficient induction depth"
+      ],
+      "solutions": [
+        "Add lemmas to help the solver",
+        "Increase timeout with --timeout",
+        "Simplify arithmetic expressions",
+        "Add intermediate assertions"
+      ],
+      "examples": [
+        {
+          "error": "unknown: solver timeout after 30s",
+          "context": "Complex mathematical property",
+          "fix": "Add intermediate lemmas or increase --timeout=60"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_unsupported_feature",
+      "pattern": "unsupported feature|not supported|cannot handle|illegal construct",
+      "severity": "error",
+      "category": "limitation",
+      "description": "Stainless encountered a Scala feature it cannot verify",
+      "common_causes": [
+        "Mutable state outside local scope",
+        "Exceptions and try-catch",
+        "Reflection",
+        "Unsupported library functions"
+      ],
+      "solutions": [
+        "Use immutable data structures",
+        "Replace exceptions with Option/Either",
+        "Avoid reflection and macros",
+        "Use @extern for library calls"
+      ],
+      "examples": [
+        {
+          "error": "unsupported feature: mutable var in class field",
+          "context": "Class with mutable state",
+          "fix": "Use immutable case class instead"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_type_error",
+      "pattern": "type mismatch|expected .* but found|cannot unify types",
+      "severity": "error",
+      "category": "input_error",
+      "description": "Stainless detected a type error in the specification or code",
+      "common_causes": [
+        "Spec return type doesn't match function",
+        "Wrong type in require/ensure",
+        "Refinement type mismatch",
+        "Generic type instantiation error"
+      ],
+      "solutions": [
+        "Check that postcondition type matches return type",
+        "Verify specification types match implementation",
+        "Use explicit type annotations",
+        "Check generic type parameters"
+      ],
+      "examples": [
+        {
+          "error": "type mismatch: expected BigInt, found Int",
+          "context": "Mixing Int and BigInt",
+          "fix": "Use BigInt consistently for verified arithmetic"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_assertion_violation",
+      "pattern": "assertion violation|assert.* failed|body assertion .* violated",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless found that an assertion in the function body may fail",
+      "common_causes": [
+        "Bug in implementation logic",
+        "Assert is too strong",
+        "Missing preconditions",
+        "Incorrect intermediate state"
+      ],
+      "solutions": [
+        "Check the logic leading to the assertion",
+        "Add preconditions that guarantee assertion",
+        "Weaken assertion if too strong",
+        "Add intermediate assertions to find issue"
+      ],
+      "examples": [
+        {
+          "error": "assertion violation: assert(index >= 0)",
+          "context": "Array indexing",
+          "fix": "Add require(index >= 0) or check before assertion"
+        }
+      ],
+      "related_errors": ["stainless_precondition_violation"],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_match_exhaustiveness",
+      "pattern": "match may not be exhaustive|missing case|incomplete pattern match",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless detected a pattern match that may not cover all cases",
+      "common_causes": [
+        "Missing case in sealed hierarchy",
+        "Guard conditions not exhaustive",
+        "Forgotten None/Nil case",
+        "ADT extended after function written"
+      ],
+      "solutions": [
+        "Add all missing cases",
+        "Use wildcard pattern for catch-all",
+        "Check sealed trait for all subclasses",
+        "Make guards exhaustive"
+      ],
+      "examples": [
+        {
+          "error": "match may not be exhaustive: missing case Nil",
+          "context": "List pattern matching",
+          "fix": "case Nil => ... // handle empty list"
+        }
+      ],
+      "related_errors": [],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    },
+    {
+      "id": "stainless_invariant_violation",
+      "pattern": "invariant violation|class invariant .* violated|object invariant failed",
+      "severity": "error",
+      "category": "verification_failure",
+      "description": "Stainless found that a class invariant may be violated",
+      "common_causes": [
+        "Constructor doesn't establish invariant",
+        "Method breaks invariant",
+        "Invariant too strong for class",
+        "Field mutation without maintaining invariant"
+      ],
+      "solutions": [
+        "Ensure constructor establishes invariant",
+        "Check all methods maintain invariant",
+        "Weaken invariant if too strong",
+        "Add private helpers to maintain invariant"
+      ],
+      "examples": [
+        {
+          "error": "class invariant violated: require(size >= 0)",
+          "context": "Size field becomes negative",
+          "fix": "Ensure decrement operations check size > 0"
+        }
+      ],
+      "related_errors": ["stainless_postcondition_violation"],
+      "documentation_url": "https://epfl-lara.github.io/stainless/"
+    }
+  ],
+  "general_tips": [
+    "Stainless verifies functional Scala (pure subset) with formal contracts",
+    "Use BigInt instead of Int for verified arithmetic (avoids overflow)",
+    "ADTs (case classes/sealed traits) are fully supported",
+    "Recursion requires termination proofs via @decreases",
+    "Use @extern for trusted library functions",
+    "Stainless extracts to Inox IR then uses SMT solvers",
+    "Pure functions are easier to verify than imperative code"
+  ],
+  "common_workflows": [
+    {
+      "name": "Basic verification",
+      "steps": [
+        "sbt stainless:run (in sbt project)",
+        "Or: stainless file.scala",
+        "Check verification results",
+        "Fix reported issues iteratively"
+      ]
+    },
+    {
+      "name": "Adding specifications",
+      "steps": [
+        "Import stainless.lang._ and stainless.annotation._",
+        "Add require() for preconditions",
+        "Add ensuring() for postconditions",
+        "Add @decreases for recursive functions"
+      ]
+    },
+    {
+      "name": "Debugging verification failures",
+      "steps": [
+        "Use --debug to see generated VCs",
+        "Add intermediate assert() to isolate issue",
+        "Check counterexample if provided",
+        "Add lemmas to help solver"
+      ]
+    }
+  ],
+  "version_specific_notes": {
+    "0.9.x": "Scala 3 support, improved SMT encoding",
+    "0.8.x": "Scala 2.13 support, GenC code generation"
+  }
+}

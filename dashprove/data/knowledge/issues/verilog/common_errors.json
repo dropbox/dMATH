@@ -1,0 +1,68 @@
+{
+  "tool_id": "verilog",
+  "tool_name": "Verilog HDL",
+  "description": "Hardware description language for digital circuit design, with formal verification support through assertion-based verification and model checking",
+  "common_errors": [
+    {
+      "id": "latch_inference",
+      "pattern": "inferred latch|incomplete case|missing else branch",
+      "category": "synthesis",
+      "severity": "high",
+      "cause": "Combinational block doesn't assign output in all branches, causing unintended latch inference",
+      "solution": "Add default assignments at block start. Use 'full_case' pragma if intentional. Ensure all case items covered. Add else clause to all if statements in combinational logic.",
+      "example": "always_comb begin\n  y = 0;  // default assignment prevents latch\n  if (sel) y = a;\nend",
+      "related_concepts": ["combinational_logic", "latch_free_design", "case_coverage"]
+    },
+    {
+      "id": "clock_domain_crossing",
+      "pattern": "CDC violation|metastability|unsynchronized clock crossing",
+      "category": "timing",
+      "severity": "critical",
+      "cause": "Signal crosses between clock domains without proper synchronization, risking metastability",
+      "solution": "Use 2-flip-flop synchronizer for single bits. Use gray coding for multi-bit buses. Use async FIFOs for data transfers. Run CDC analysis tools.",
+      "example": "// 2-FF synchronizer\nalways_ff @(posedge clk_b) begin\n  sync_ff1 <= async_in;\n  sync_ff2 <= sync_ff1;\nend",
+      "related_concepts": ["metastability", "synchronizer", "async_fifo"]
+    },
+    {
+      "id": "race_condition",
+      "pattern": "race condition|simulation mismatch|non-deterministic behavior",
+      "category": "semantics",
+      "severity": "high",
+      "cause": "Multiple always blocks writing to same signal, or blocking/non-blocking assignment misuse",
+      "solution": "Use non-blocking (<=) for sequential logic, blocking (=) for combinational. Avoid multiple drivers. Ensure single always block per register.",
+      "example": "// Sequential: use <=\nalways_ff @(posedge clk) q <= d;\n// Combinational: use =\nalways_comb y = a & b;",
+      "related_concepts": ["blocking_nonblocking", "multiple_drivers", "simulation_synthesis_mismatch"]
+    },
+    {
+      "id": "assertion_failure",
+      "pattern": "assertion failed|property violated|cover goal unreached",
+      "category": "verification",
+      "severity": "medium",
+      "cause": "SVA assertion detected a design bug or coverage goal was never hit",
+      "solution": "Analyze waveform at assertion failure time. Check if assertion is too strict. Debug design logic. For unreached cover, verify stimulus exercises that path.",
+      "example": "assert property (@(posedge clk) req |-> ##[1:3] ack);",
+      "related_concepts": ["sva_assertions", "formal_verification", "coverage"]
+    },
+    {
+      "id": "x_propagation",
+      "pattern": "X-propagation|unknown value|don't care became X",
+      "category": "simulation",
+      "severity": "medium",
+      "cause": "X (unknown) values propagating through design due to uninitialized registers or unconnected inputs",
+      "solution": "Initialize all registers. Use X-optimism or X-pessimism analysis. Add reset logic. Check for unconnected ports. Use casex/casez carefully.",
+      "related_concepts": ["four_state_logic", "reset_strategy", "x_optimism"]
+    }
+  ],
+  "best_practices": [
+    "Use always_comb, always_ff, always_latch for clear intent",
+    "Initialize all registers with reset",
+    "Run lint checks before simulation (Verilator, Spyglass)",
+    "Use SVA assertions for formal verification",
+    "Check CDC early and continuously in design flow"
+  ],
+  "references": [
+    "https://www.veripool.org/wiki/verilator",
+    "https://www.doulos.com/knowhow/systemverilog/",
+    "https://www.accellera.org/downloads/standards/systemverilog"
+  ]
+}

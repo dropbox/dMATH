@@ -1,0 +1,145 @@
+{
+  "tool": "kong",
+  "version": "3.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "admin_api_unreachable",
+      "pattern": "connection refused|failed to connect to admin api|dial tcp .*8001",
+      "message": "Admin API not reachable",
+      "cause": "Kong not running, wrong admin_listen, or firewall",
+      "solutions": [
+        {
+          "approach": "Check process",
+          "code": "ps -ef | grep kong\nnetstat -plnt | grep 8001",
+          "when": "Confirm Kong is listening"
+        },
+        {
+          "approach": "Adjust admin listen",
+          "code": "KONG_ADMIN_LISTEN=0.0.0.0:8001 kong start",
+          "when": "Binding only to localhost"
+        },
+        {
+          "approach": "Use correct protocol",
+          "code": "curl -k https://host:8444 | head",
+          "when": "Admin API served over TLS"
+        }
+      ]
+    },
+    {
+      "id": "schema_violation",
+      "pattern": "schema violation|invalid value|expected .* got",
+      "message": "Declarative config invalid",
+      "cause": "Wrong field types or missing required attributes in service/route/plugin",
+      "solutions": [
+        {
+          "approach": "Validate config",
+          "code": "deck validate --state kong.yaml",
+          "when": "Catch schema issues before apply"
+        },
+        {
+          "approach": "Check example",
+          "code": "curl -s http://localhost:8001/schemas/routes | jq '.fields'",
+          "when": "Unsure of required fields"
+        },
+        {
+          "approach": "Remove unknown fields",
+          "code": "hosts, paths, protocols must match plugin expectations",
+          "when": "Using plugin-specific options"
+        }
+      ]
+    },
+    {
+      "id": "no_route_matched",
+      "pattern": "no Route matched with those values|HTTP/1.1 404 Not Found",
+      "message": "Request did not match any route",
+      "cause": "Hosts/paths/methods do not align with request",
+      "solutions": [
+        {
+          "approach": "Inspect routing",
+          "code": "curl -s localhost:8001/routes | jq '.data[] | {id,hosts,paths,methods}'",
+          "when": "Verify configured routes"
+        },
+        {
+          "approach": "Set Host header",
+          "code": "curl -H 'Host: api.example.com' http://proxy:8000/status",
+          "when": "Routes require specific host"
+        },
+        {
+          "approach": "Add default route",
+          "code": "kong route create --service example --paths /",
+          "when": "Need catch-all behavior"
+        }
+      ]
+    },
+    {
+      "id": "dns_resolution_failed",
+      "pattern": "name resolution failed|DNS resolution failed|host not found",
+      "message": "Upstream name cannot be resolved",
+      "cause": "Resolver not configured or upstream hostname wrong",
+      "solutions": [
+        {
+          "approach": "Configure resolver",
+          "code": "KONG_DNS_RESOLVER=8.8.8.8 kong reload",
+          "when": "Cluster lacks DNS settings"
+        },
+        {
+          "approach": "Test host",
+          "code": "dig api-upstream.default.svc.cluster.local",
+          "when": "Validate upstream DNS"
+        },
+        {
+          "approach": "Use IP as fallback",
+          "code": "host: 10.0.0.5",
+          "when": "DNS unavailable"
+        }
+      ]
+    },
+    {
+      "id": "migrations_required",
+      "pattern": "database .* is not up to date|no migration strategy was specified",
+      "message": "Database migrations missing",
+      "cause": "Postgres/Cassandra schema not migrated to current version",
+      "solutions": [
+        {
+          "approach": "Bootstrap migrations",
+          "code": "kong migrations bootstrap",
+          "when": "Fresh database"
+        },
+        {
+          "approach": "Run upgrade",
+          "code": "kong migrations up && kong migrations finish",
+          "when": "Upgrading Kong version"
+        },
+        {
+          "approach": "Verify strategy",
+          "code": "KONG_DATABASE=off|postgres|cassandra",
+          "when": "Wrong database mode"
+        }
+      ]
+    },
+    {
+      "id": "plugin_not_found",
+      "pattern": "plugin .* not enabled|no plugin named|strategy plugins",
+      "message": "Plugin missing or disabled",
+      "cause": "Plugin not installed or not listed in KONG_PLUGINS",
+      "solutions": [
+        {
+          "approach": "Enable plugin",
+          "code": "export KONG_PLUGINS=bundled,<custom>\nkong reload",
+          "when": "Custom plugin needs whitelist"
+        },
+        {
+          "approach": "Install custom plugin",
+          "code": "luarocks install kong-plugin-myplugin",
+          "when": "Binary not present"
+        },
+        {
+          "approach": "Check compatibility",
+          "code": "Ensure plugin supports current Kong version",
+          "when": "Version mismatch"
+        }
+      ]
+    }
+  ]
+}

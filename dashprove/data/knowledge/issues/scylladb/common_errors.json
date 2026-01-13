@@ -1,0 +1,191 @@
+{
+  "tool": "scylladb",
+  "version": "6.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "timeout_error",
+      "pattern": "ReadTimeout|WriteTimeout|Operation timed out|Timed out",
+      "message": "Operation timed out",
+      "cause": "Query took longer than timeout allows",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "cqlsh --request-timeout=60\n-- Or in driver:\ncluster.set_core_connections_per_host(2)",
+          "when": "More time needed"
+        },
+        {
+          "approach": "Use consistency LOCAL_ONE",
+          "code": "SELECT * FROM table\nUSING CONSISTENCY LOCAL_ONE;",
+          "when": "Reduce latency"
+        },
+        {
+          "approach": "Check cluster health",
+          "code": "nodetool status\nnodetool tpstats",
+          "when": "Debug cluster"
+        }
+      ]
+    },
+    {
+      "id": "consistency_error",
+      "pattern": "Consistency level|Unavailable|consistency cannot be achieved",
+      "message": "Consistency level cannot be achieved",
+      "cause": "Not enough replicas available",
+      "solutions": [
+        {
+          "approach": "Lower consistency",
+          "code": "SELECT * FROM table\nUSING CONSISTENCY ONE;\n-- Or LOCAL_QUORUM for multi-DC",
+          "when": "Accept lower consistency"
+        },
+        {
+          "approach": "Check node status",
+          "code": "nodetool status\nnodetool describecluster",
+          "when": "Nodes down"
+        },
+        {
+          "approach": "Repair data",
+          "code": "nodetool repair keyspace table",
+          "when": "Data inconsistent"
+        }
+      ]
+    },
+    {
+      "id": "tombstone_error",
+      "pattern": "tombstone|TombstoneOverwhelmingException|tombstone_warn_threshold",
+      "message": "Too many tombstones",
+      "cause": "Query scanning too many deleted rows",
+      "solutions": [
+        {
+          "approach": "Run compaction",
+          "code": "nodetool compact keyspace table",
+          "when": "Clear tombstones"
+        },
+        {
+          "approach": "Reduce gc_grace",
+          "code": "ALTER TABLE table WITH gc_grace_seconds = 86400;",
+          "when": "Speed up GC"
+        },
+        {
+          "approach": "Redesign data model",
+          "code": "-- Avoid frequent deletes\n-- Use TTL instead: INSERT ... USING TTL 3600",
+          "when": "Reduce tombstones"
+        }
+      ]
+    },
+    {
+      "id": "partition_size_error",
+      "pattern": "partition|Large partition|compaction stuck|partition size",
+      "message": "Partition too large",
+      "cause": "Single partition exceeds recommended size",
+      "solutions": [
+        {
+          "approach": "Add bucket column",
+          "code": "CREATE TABLE data (\n    id UUID,\n    bucket INT,  -- time-based bucket\n    data TEXT,\n    PRIMARY KEY ((id, bucket))\n);",
+          "when": "Split partitions"
+        },
+        {
+          "approach": "Use time bucketing",
+          "code": "-- Bucket by day/week/month\nbucket = timestamp / 86400000  -- days",
+          "when": "Time series"
+        },
+        {
+          "approach": "Monitor partitions",
+          "code": "SELECT * FROM system.large_partitions;",
+          "when": "Find large partitions"
+        }
+      ]
+    },
+    {
+      "id": "cql_syntax_error",
+      "pattern": "SyntaxException|Invalid CQL|no viable alternative",
+      "message": "CQL syntax error",
+      "cause": "Invalid CQL query syntax",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "SELECT * FROM keyspace.table\nWHERE partition_key = 'value'\nAND clustering_key > 100;",
+          "when": "Basic query"
+        },
+        {
+          "approach": "Allow filtering",
+          "code": "SELECT * FROM table\nWHERE non_key_column = 'value'\nALLOW FILTERING;  -- Use with caution!",
+          "when": "Non-key filter"
+        },
+        {
+          "approach": "Use prepared statement",
+          "code": "PREPARE stmt FROM 'SELECT * FROM t WHERE id = ?';\nEXECUTE stmt USING 'value';",
+          "when": "Parameterized query"
+        }
+      ]
+    },
+    {
+      "id": "schema_error",
+      "pattern": "schema|keyspace|table does not exist|InvalidRequest",
+      "message": "Schema or keyspace error",
+      "cause": "Keyspace or table doesn't exist",
+      "solutions": [
+        {
+          "approach": "Create keyspace",
+          "code": "CREATE KEYSPACE IF NOT EXISTS myks\nWITH replication = {\n    'class': 'NetworkTopologyStrategy',\n    'dc1': 3\n};",
+          "when": "Missing keyspace"
+        },
+        {
+          "approach": "Use keyspace",
+          "code": "USE myks;\nSELECT * FROM mytable;",
+          "when": "Select keyspace"
+        },
+        {
+          "approach": "List schemas",
+          "code": "DESCRIBE KEYSPACES;\nDESCRIBE TABLES;",
+          "when": "View schema"
+        }
+      ]
+    },
+    {
+      "id": "materialized_view_error",
+      "pattern": "materialized view|MV|view build|view is being built",
+      "message": "Materialized view error",
+      "cause": "Issue with materialized view",
+      "solutions": [
+        {
+          "approach": "Create MV",
+          "code": "CREATE MATERIALIZED VIEW users_by_email AS\nSELECT * FROM users\nWHERE email IS NOT NULL\nPRIMARY KEY (email, user_id);",
+          "when": "Create view"
+        },
+        {
+          "approach": "Check view status",
+          "code": "SELECT * FROM system_schema.views\nWHERE keyspace_name = 'myks';",
+          "when": "View build status"
+        },
+        {
+          "approach": "Use secondary index",
+          "code": "CREATE INDEX ON users(email);",
+          "when": "Alternative to MV"
+        }
+      ]
+    },
+    {
+      "id": "driver_error",
+      "pattern": "driver|NoHostAvailable|cluster metadata|reconnect",
+      "message": "Driver connection error",
+      "cause": "Driver cannot connect to cluster",
+      "solutions": [
+        {
+          "approach": "Python driver",
+          "code": "from cassandra.cluster import Cluster\ncluster = Cluster(['node1', 'node2'])\nsession = cluster.connect('keyspace')",
+          "when": "Connect with Python"
+        },
+        {
+          "approach": "Set load balancing",
+          "code": "from cassandra.policies import DCAwareRoundRobinPolicy\ncluster = Cluster(\n    contact_points=['node1'],\n    load_balancing_policy=DCAwareRoundRobinPolicy(local_dc='dc1')\n)",
+          "when": "Multi-DC"
+        },
+        {
+          "approach": "Connection pooling",
+          "code": "cluster = Cluster(\n    contact_points=['node1'],\n    protocol_version=4,\n    executor_threads=4\n)",
+          "when": "Performance tuning"
+        }
+      ]
+    }
+  ]
+}

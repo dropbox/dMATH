@@ -1,0 +1,110 @@
+{
+  "id": "nemo_guardrails",
+  "name": "NeMo Guardrails",
+  "category": "llm_guardrails",
+  "subcategory": "safety",
+
+  "description": "NVIDIA toolkit for adding guardrails to LLM applications",
+  "long_description": "NeMo Guardrails is a toolkit from NVIDIA for adding programmable guardrails to LLM-based conversational applications. It allows you to define rules that govern the behavior of the LLM, including topic control, safety filtering, fact-checking, and custom business logic.",
+
+  "capabilities": [
+    "topic_control",
+    "safety_filtering",
+    "jailbreak_prevention",
+    "hallucination_detection",
+    "input_validation",
+    "output_validation",
+    "dialog_flows",
+    "custom_actions"
+  ],
+  "property_types": ["llm_safety", "guardrails"],
+  "input_languages": ["python", "colang"],
+  "output_formats": ["filtered_response", "safety_score"],
+
+  "installation": {
+    "methods": [
+      {"type": "pip", "command": "pip install nemoguardrails"},
+      {"type": "source", "url": "https://github.com/NVIDIA/NeMo-Guardrails"}
+    ],
+    "dependencies": ["python", "openai/nvidia_nim"],
+    "platforms": ["linux", "macos", "windows"]
+  },
+
+  "documentation": {
+    "official": "https://docs.nvidia.com/nemo/guardrails/",
+    "tutorial": "https://docs.nvidia.com/nemo/guardrails/getting_started/index.html",
+    "api_reference": "https://docs.nvidia.com/nemo/guardrails/api/index.html",
+    "examples": "https://github.com/NVIDIA/NeMo-Guardrails/tree/main/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "define_flow",
+      "description": "Define conversation flow in Colang",
+      "syntax": "define flow FLOW_NAME ...",
+      "when_to_use": "Creating guardrail rules",
+      "examples": ["define flow self_check_input\n  $input = user said\n  $is_safe = execute check_input(input=$input)"]
+    },
+    {
+      "name": "input_rails",
+      "description": "Add input validation",
+      "syntax": "rails.input",
+      "when_to_use": "Validating user input",
+      "examples": ["rails:\n  input:\n    flows:\n      - self check input"]
+    },
+    {
+      "name": "output_rails",
+      "description": "Add output validation",
+      "syntax": "rails.output",
+      "when_to_use": "Filtering LLM responses",
+      "examples": ["rails:\n  output:\n    flows:\n      - self check output"]
+    },
+    {
+      "name": "topical_rails",
+      "description": "Control conversation topics",
+      "syntax": "define user ask off topic",
+      "when_to_use": "Keeping conversations on-topic",
+      "examples": ["define user ask off topic\n  \"What's the weather?\"\n\ndefine bot refuse to respond\n  \"I can only help with product questions.\""]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Blocked by input rail",
+      "meaning": "User input violated safety rule",
+      "common_causes": ["Jailbreak attempt", "Harmful content"],
+      "fixes": ["Response blocked correctly, no fix needed"]
+    },
+    {
+      "pattern": "Blocked by output rail",
+      "meaning": "LLM response violated safety rule",
+      "common_causes": ["Hallucination", "Unsafe content"],
+      "fixes": ["Response correctly filtered"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["llm_safety"],
+    "cli_command": "dashprove verify --backend nemo-guardrails"
+  },
+
+  "performance": {
+    "typical_runtime": "Milliseconds per check",
+    "scalability": "Designed for production",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["guardrails_ai", "guidance", "rebuff"],
+    "advantages": ["Comprehensive safety", "Colang DSL", "NVIDIA support", "Production ready"],
+    "disadvantages": ["Learning curve for Colang", "NVIDIA ecosystem focus"]
+  },
+
+  "metadata": {
+    "version": "0.7.0",
+    "last_updated": "2025-12-20",
+    "maintainer": "NVIDIA",
+    "license": "Apache-2.0"
+  }
+}

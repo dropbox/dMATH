@@ -1,0 +1,100 @@
+{
+  "id": "boolector",
+  "name": "Boolector",
+  "category": "smt_solver",
+  "subcategory": "bit_vectors",
+
+  "description": "High-performance SMT solver for bit-vectors and arrays",
+  "long_description": "Boolector is an SMT solver specialized in the theory of bit-vectors and arrays. It won multiple competitions in the QF_BV (quantifier-free bit-vector) division of SMT-COMP. Boolector uses a combination of rewriting, word-level propagation, and bit-blasting with SAT solving.",
+
+  "capabilities": [
+    "bit_vectors",
+    "arrays",
+    "word_level_reasoning",
+    "sat_solving",
+    "model_generation",
+    "incremental_solving"
+  ],
+  "property_types": ["formula", "assertion", "constraint"],
+  "input_languages": ["smtlib2", "btor2", "cpp", "python"],
+  "output_formats": ["sat/unsat", "model", "witness"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "command": "git clone https://github.com/Boolector/boolector && cd boolector && ./contrib/setup-lingeling.sh && ./configure.sh && cd build && make"},
+      {"type": "pip", "command": "pip install pyboolector"}
+    ],
+    "dependencies": ["cmake", "lingeling"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://github.com/Boolector/boolector",
+    "api_reference": "https://boolector.github.io/docs/",
+    "examples": "https://github.com/Boolector/boolector/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "eager_bit_blasting",
+      "description": "Eagerly convert to SAT",
+      "syntax": "boolector_set_opt(btor, BTOR_OPT_ENGINE, BTOR_ENGINE_FUN)",
+      "when_to_use": "For pure bit-vector problems",
+      "examples": ["boolector --engine=fun formula.smt2"]
+    },
+    {
+      "name": "lazy_solving",
+      "description": "DPLL(T)-style lazy solving",
+      "syntax": "boolector_set_opt(btor, BTOR_OPT_ENGINE, BTOR_ENGINE_SLS)",
+      "when_to_use": "For larger problems with many soft constraints",
+      "examples": ["boolector --engine=sls formula.smt2"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "timeout",
+      "meaning": "Solver exceeded time limit",
+      "common_causes": ["Large bit-width", "Many array operations"],
+      "fixes": ["Reduce bit-width", "Add bounds"]
+    },
+    {
+      "pattern": "unknown",
+      "meaning": "Solver could not determine result",
+      "common_causes": ["Resource exhaustion", "Complex array logic"],
+      "fixes": ["Increase resources", "Simplify formula"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["constraint", "assertion"],
+    "cli_command": "dashprove verify --backend boolector"
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to minutes",
+    "scalability": "Excellent for QF_BV, good for arrays",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["bitwuzla", "stp", "z3"],
+    "advantages": [
+      "Top performance in QF_BV",
+      "Efficient word-level reasoning",
+      "Clean API"
+    ],
+    "disadvantages": [
+      "Limited to bit-vectors and arrays",
+      "No quantifier support"
+    ]
+  },
+
+  "metadata": {
+    "version": "3.2.2",
+    "last_updated": "2025-12-21",
+    "maintainer": "JKU Linz",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "tool": "k3s",
+  "category": "kubernetes_lightweight",
+  "description": "k3s - lightweight Kubernetes distribution by Rancher",
+  "common_errors": [
+    {
+      "id": "service_not_running",
+      "pattern": "k3s service not running",
+      "regex": "(?i)k3s.*not running|failed to connect|connection refused.*6443|service.*dead",
+      "cause": "k3s service is not running",
+      "solution": "Start with 'sudo systemctl start k3s' or run k3s server directly",
+      "severity": "high",
+      "category": "service"
+    },
+    {
+      "id": "token_error",
+      "pattern": "token error",
+      "regex": "(?i)token.*invalid|node.*token|K3S_TOKEN|unable to join|authentication.*error",
+      "cause": "Invalid or missing node join token",
+      "solution": "Get token from server at /var/lib/rancher/k3s/server/node-token, set K3S_TOKEN",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "port_in_use",
+      "pattern": "port already in use",
+      "regex": "(?i)port.*in use|address already in use|failed to listen|bind.*error",
+      "cause": "Required port (6443, 10250, etc.) is already in use",
+      "solution": "Stop conflicting process, or change ports with --https-listen-port flag",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "etcd_error",
+      "pattern": "etcd error",
+      "regex": "(?i)etcd.*error|embedded.*etcd|database.*error|wal.*error",
+      "cause": "Embedded etcd datastore error",
+      "solution": "Check disk space, verify permissions on /var/lib/rancher/k3s, try k3s server reset",
+      "severity": "critical",
+      "category": "datastore"
+    },
+    {
+      "id": "containerd_error",
+      "pattern": "containerd error",
+      "regex": "(?i)containerd.*error|cri.*error|runtime.*error|container.*create",
+      "cause": "Embedded containerd runtime error",
+      "solution": "Check containerd logs, verify no conflicting container runtime, restart k3s",
+      "severity": "high",
+      "category": "runtime"
+    },
+    {
+      "id": "network_error",
+      "pattern": "network error",
+      "regex": "(?i)flannel.*error|cni.*error|networking.*failed|coredns.*error",
+      "cause": "Network/CNI plugin initialization failed",
+      "solution": "Check firewall rules for flannel VXLAN (UDP 8472), verify --flannel-backend setting",
+      "severity": "high",
+      "category": "networking"
+    },
+    {
+      "id": "kubeconfig_error",
+      "pattern": "kubeconfig error",
+      "regex": "(?i)kubeconfig.*not found|k3s\\.yaml|KUBECONFIG|unable to read",
+      "cause": "Cannot access k3s kubeconfig file",
+      "solution": "Set KUBECONFIG=/etc/rancher/k3s/k3s.yaml or copy to ~/.kube/config",
+      "severity": "medium",
+      "category": "configuration"
+    },
+    {
+      "id": "agent_error",
+      "pattern": "agent error",
+      "regex": "(?i)agent.*error|k3s.*agent|worker.*failed|node.*registration",
+      "cause": "k3s agent failed to start or register with server",
+      "solution": "Check K3S_URL and K3S_TOKEN, verify network connectivity to server, review agent logs",
+      "severity": "high",
+      "category": "agent"
+    },
+    {
+      "id": "storage_error",
+      "pattern": "storage error",
+      "regex": "(?i)local-path.*error|storage.*provisioner|pvc.*pending|volume.*error",
+      "cause": "Local path storage provisioner error",
+      "solution": "Check local-path-provisioner deployment, verify storage path permissions",
+      "severity": "medium",
+      "category": "storage"
+    },
+    {
+      "id": "traefik_error",
+      "pattern": "traefik error",
+      "regex": "(?i)traefik.*error|ingress.*failed|loadbalancer.*error",
+      "cause": "Traefik ingress controller error",
+      "solution": "Check traefik pod logs, disable with --disable=traefik if not needed",
+      "severity": "medium",
+      "category": "ingress"
+    }
+  ],
+  "related_tools": ["kubectl", "helm", "rancher", "rke2"],
+  "documentation_url": "https://docs.k3s.io/"
+}

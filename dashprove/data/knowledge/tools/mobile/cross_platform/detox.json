@@ -1,0 +1,178 @@
+{
+  "id": "detox",
+  "name": "Detox",
+  "category": "mobile_testing",
+  "subcategory": "react_native_testing",
+
+  "description": "Gray box end-to-end testing for React Native apps",
+  "long_description": "Detox is Wix's gray-box end-to-end testing framework designed specifically for React Native apps. It synchronizes with the app's internals (React Native bridge, async operations, animations) to eliminate flakiness. Detox runs on real devices and simulators, supports both iOS and Android, and integrates with Jest for a familiar testing experience.",
+
+  "capabilities": [
+    "react_native_testing",
+    "automatic_synchronization",
+    "device_automation",
+    "screenshot_capture",
+    "parallel_execution",
+    "ci_optimization",
+    "animation_sync",
+    "network_sync"
+  ],
+  "property_types": ["element_matcher", "action", "expectation"],
+  "input_languages": ["javascript", "typescript"],
+  "output_formats": ["junit_xml", "json", "html"],
+
+  "installation": {
+    "methods": [
+      {"type": "npm", "command": "npm install detox --save-dev"},
+      {"type": "npm", "command": "detox init"}
+    ],
+    "dependencies": ["nodejs", "react_native_cli", "xcode", "android_sdk"],
+    "platforms": ["macos", "linux"]
+  },
+
+  "documentation": {
+    "official": "https://wix.github.io/Detox/",
+    "getting_started": "https://wix.github.io/Detox/docs/introduction/getting-started",
+    "api_reference": "https://wix.github.io/Detox/docs/api/actions-on-element",
+    "examples": "https://github.com/wix/Detox/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_test",
+      "description": "Write a basic Detox test",
+      "syntax": "it('description', async () => { ... })",
+      "when_to_use": "Every E2E test",
+      "examples": ["it('should login successfully', async () => {\n  await element(by.id('email')).typeText('test@test.com');\n  await element(by.id('password')).typeText('password');\n  await element(by.id('login')).tap();\n  await expect(element(by.id('welcome'))).toBeVisible();\n});"]
+    },
+    {
+      "name": "element_matching",
+      "description": "Find elements using matchers",
+      "syntax": "element(by.matcher(value))",
+      "when_to_use": "Locating UI elements",
+      "examples": ["element(by.id('submit'))", "element(by.text('Login'))", "element(by.label('Menu Button'))"]
+    },
+    {
+      "name": "element_actions",
+      "description": "Perform actions on elements",
+      "syntax": "element(matcher).action()",
+      "when_to_use": "User interactions",
+      "examples": ["await element(by.id('button')).tap();", "await element(by.id('input')).typeText('hello');", "await element(by.id('list')).scroll(200, 'down');"]
+    },
+    {
+      "name": "expectations",
+      "description": "Assert element state",
+      "syntax": "await expect(element).matcher()",
+      "when_to_use": "Verifying UI state",
+      "examples": ["await expect(element(by.id('success'))).toBeVisible();", "await expect(element(by.id('error'))).not.toExist();", "await expect(element(by.id('title'))).toHaveText('Welcome');"]
+    },
+    {
+      "name": "device_actions",
+      "description": "Control device state",
+      "syntax": "device.action()",
+      "when_to_use": "Device-level operations",
+      "examples": ["await device.reloadReactNative();", "await device.launchApp({ newInstance: true });", "await device.sendToHome();"]
+    },
+    {
+      "name": "wait_for",
+      "description": "Wait for element condition",
+      "syntax": "waitFor(element).matcher().withTimeout(ms)",
+      "when_to_use": "Handling async operations",
+      "examples": ["await waitFor(element(by.id('loaded')))\n  .toBeVisible()\n  .withTimeout(5000);"]
+    }
+  ],
+
+  "matchers": [
+    {
+      "name": "by.id",
+      "description": "Match by testID prop",
+      "examples": ["by.id('login-button')"]
+    },
+    {
+      "name": "by.text",
+      "description": "Match by text content",
+      "examples": ["by.text('Submit')", "by.text(/Welcome.*/i)"]
+    },
+    {
+      "name": "by.label",
+      "description": "Match by accessibility label",
+      "examples": ["by.label('Close button')"]
+    },
+    {
+      "name": "by.type",
+      "description": "Match by native view type",
+      "examples": ["by.type('RCTTextInput')"]
+    },
+    {
+      "name": "by.traits",
+      "description": "Match by accessibility traits (iOS)",
+      "examples": ["by.traits(['button'])"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "Cannot find element",
+      "meaning": "Element not found with given matcher",
+      "common_causes": ["Wrong testID", "Element not rendered", "Wrong screen"],
+      "fixes": ["Verify testID in React Native code", "Add waitFor", "Navigate to correct screen"]
+    },
+    {
+      "pattern": "Detox.*not found in.*bundle",
+      "meaning": "Detox not properly linked",
+      "common_causes": ["Missing native module", "Build not updated"],
+      "fixes": ["Run pod install", "Rebuild app", "Check Detox setup"]
+    },
+    {
+      "pattern": "Test.*timed out",
+      "meaning": "Test exceeded timeout",
+      "common_causes": ["Slow operation", "Element never appeared", "Network issue"],
+      "fixes": ["Increase timeout", "Check for infinite loading", "Mock network"]
+    },
+    {
+      "pattern": "App not running",
+      "meaning": "App crashed or didn't launch",
+      "common_causes": ["Crash on startup", "Wrong app configuration"],
+      "fixes": ["Check app logs", "Verify app path in .detoxrc.js"]
+    }
+  ],
+
+  "configuration": {
+    "filename": ".detoxrc.js",
+    "example": "module.exports = {\n  testRunner: {\n    args: { $0: 'jest', config: 'e2e/jest.config.js' },\n  },\n  apps: {\n    'ios.debug': {\n      type: 'ios.app',\n      binaryPath: 'ios/build/MyApp.app',\n    },\n  },\n  devices: {\n    simulator: {\n      type: 'ios.simulator',\n      device: { type: 'iPhone 15' },\n    },\n  },\n};"
+  },
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["vscode", "webstorm"],
+    "ci_integration": ["github_actions", "circleci", "bitrise", "expo_eas"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds per test",
+    "scalability": "Parallel on multiple simulators",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["appium", "maestro", "xcuitest", "espresso"],
+    "advantages": [
+      "Built for React Native - best RN support",
+      "Automatic synchronization eliminates flakiness",
+      "Fast test execution",
+      "Jest integration"
+    ],
+    "disadvantages": [
+      "React Native apps only",
+      "Complex initial setup",
+      "macOS required for iOS testing"
+    ]
+  },
+
+  "metadata": {
+    "version": "20.20.0",
+    "last_updated": "2025-12-22",
+    "maintainer": "Wix",
+    "license": "MIT"
+  }
+}

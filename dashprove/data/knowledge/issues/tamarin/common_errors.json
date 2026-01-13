@@ -1,0 +1,182 @@
+{
+  "tool": "tamarin",
+  "version": "1.8.0",
+  "last_updated": "2025-12-22",
+  "description": "Security protocol verification tool with automated Dolev-Yao reasoning",
+  "errors": [
+    {
+      "id": "parse_error",
+      "pattern": "parse error|unexpected token|syntax error",
+      "message": "Tamarin theory parsing failed",
+      "cause": "Invalid Tamarin syntax",
+      "solutions": [
+        {
+          "approach": "Check theory structure",
+          "code": "theory MyProtocol\nbegin\n  // builtins, functions, rules, lemmas\nend",
+          "when": "Missing begin/end"
+        },
+        {
+          "approach": "Check rule syntax",
+          "code": "rule MyRule:\n  [ In(x) ] --[ Action(x) ]-> [ Out(x) ]",
+          "when": "Rule syntax error"
+        },
+        {
+          "approach": "Check lemma syntax",
+          "code": "lemma secrecy:\n  \"All x #i. Secret(x)@i ==> not(Ex #j. K(x)@j)\"",
+          "when": "Lemma syntax error"
+        }
+      ]
+    },
+    {
+      "id": "unbound_variable",
+      "pattern": "unbound variable|variable.*not bound|free variable",
+      "message": "Unbound variable in term",
+      "cause": "Variable used without being bound in premise",
+      "solutions": [
+        {
+          "approach": "Bind in premise",
+          "code": "rule Send:\n  [ !Key(k) ]  // k is bound here\n  --[ Sent(k) ]->\n  [ Out(senc(m, k)) ]  // Error: m not bound",
+          "when": "Variable not in premise"
+        },
+        {
+          "approach": "Use fresh for new values",
+          "code": "rule Generate:\n  [ Fr(~n) ]  // ~n is fresh\n  --[ Generated(~n) ]->\n  [ Out(~n) ]",
+          "when": "Need new random value"
+        },
+        {
+          "approach": "Use public for constants",
+          "code": "rule UseConstant:\n  [ ]  --[ ]->\n  [ Out($A) ]  // $A is public constant",
+          "when": "Need public name"
+        }
+      ]
+    },
+    {
+      "id": "non_termination",
+      "pattern": "non-termination|does not terminate|analysis running",
+      "message": "Proof search doesn't terminate",
+      "cause": "State space explosion or non-terminating protocol",
+      "solutions": [
+        {
+          "approach": "Add typing lemmas",
+          "code": "lemma types [sources]:\n  \"All x #i. Action(x)@i ==> (Ex #j. Source(x)@j & j < i)\"",
+          "when": "Help prover with types"
+        },
+        {
+          "approach": "Use heuristics",
+          "code": "tamarin-prover --heuristic=O MyProtocol.spthy\n// O: Oracle, S: Smart, C: Charac, I: Immediate",
+          "when": "Change proof strategy"
+        },
+        {
+          "approach": "Use manual proof",
+          "code": "// Add: interactive or tamarin-prover interactive MyProtocol.spthy",
+          "when": "Automatic proof fails"
+        },
+        {
+          "approach": "Bound sessions",
+          "code": "// Simplify model to bound number of protocol runs",
+          "when": "Unbounded verification"
+        }
+      ]
+    },
+    {
+      "id": "no_proof_found",
+      "pattern": "proof.*not found|cannot prove|attack found",
+      "message": "Cannot prove lemma (potential attack)",
+      "cause": "Property doesn't hold or model is wrong",
+      "solutions": [
+        {
+          "approach": "Check counterexample",
+          "code": "tamarin-prover --prove MyProtocol.spthy\n// Look at trace in output",
+          "when": "Understand attack"
+        },
+        {
+          "approach": "Use interactive mode",
+          "code": "tamarin-prover interactive MyProtocol.spthy\n// Opens web interface on localhost:3001",
+          "when": "Debug interactively"
+        },
+        {
+          "approach": "Strengthen model",
+          "code": "// Add restrictions (axioms) to rule out unrealistic behaviors",
+          "when": "Model too general"
+        }
+      ]
+    },
+    {
+      "id": "builtin_error",
+      "pattern": "unknown builtin|builtin.*not found",
+      "message": "Unknown builtin theory",
+      "cause": "Invalid builtin specification",
+      "solutions": [
+        {
+          "approach": "Use valid builtins",
+          "code": "builtins: diffie-hellman, symmetric-encryption, \n         asymmetric-encryption, signing, hashing,\n         bilinear-pairing, multiset, revealing-signing",
+          "when": "Choose correct builtin"
+        },
+        {
+          "approach": "Define custom function",
+          "code": "functions: myFunc/2\nequations: myFunc(x, myFunc(y, z)) = myFunc(myFunc(x, y), z)",
+          "when": "Need custom algebraic property"
+        }
+      ]
+    },
+    {
+      "id": "restriction_error",
+      "pattern": "restriction.*error|invalid restriction",
+      "message": "Invalid restriction (axiom)",
+      "cause": "Restriction syntax or logic error",
+      "solutions": [
+        {
+          "approach": "Check restriction syntax",
+          "code": "restriction Equality:\n  \"All x y #i. Eq(x, y)@i ==> x = y\"",
+          "when": "Syntax issue"
+        },
+        {
+          "approach": "Use temporal operators",
+          "code": "// #i < #j  means i before j\n// #i = #j  means same time\n\"All x #i #j. A(x)@i & B(x)@j ==> #i < #j\"",
+          "when": "Temporal ordering"
+        }
+      ]
+    },
+    {
+      "id": "oracle_error",
+      "pattern": "oracle.*failed|oracle.*not found",
+      "message": "Oracle script error",
+      "cause": "Custom oracle script has issues",
+      "solutions": [
+        {
+          "approach": "Check oracle path",
+          "code": "tamarin-prover --heuristic=O --oraclename=myoracle.py MyProtocol.spthy",
+          "when": "Oracle not found"
+        },
+        {
+          "approach": "Debug oracle output",
+          "code": "// Oracle should output goal rankings as integers\n// Test oracle separately with sample input",
+          "when": "Oracle giving wrong rankings"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "out of memory|memory.*exceeded|stack overflow",
+      "message": "Memory exhausted during verification",
+      "cause": "Proof search using too much memory",
+      "solutions": [
+        {
+          "approach": "Increase memory limit",
+          "code": "tamarin-prover +RTS -M8G -RTS MyProtocol.spthy",
+          "when": "Need more memory"
+        },
+        {
+          "approach": "Simplify model",
+          "code": "// Reduce number of rules\n// Bound protocol runs\n// Remove unnecessary actions",
+          "when": "Model too complex"
+        },
+        {
+          "approach": "Use diff-equivalence instead",
+          "code": "// For observational equivalence, consider simpler properties first",
+          "when": "Equivalence checking"
+        }
+      ]
+    }
+  ]
+}

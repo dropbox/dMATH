@@ -1,0 +1,168 @@
+{
+  "tool": "zig",
+  "version": "0.13.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "null_pointer",
+      "pattern": "null pointer|dereference.*null",
+      "message": "Null pointer dereference",
+      "cause": "Attempted to dereference an optional pointer that is null",
+      "solutions": [
+        {
+          "approach": "Use orelse",
+          "code": "const value = optional_ptr orelse default_value;",
+          "when": "Have suitable default"
+        },
+        {
+          "approach": "Use if unwrap",
+          "code": "if (optional_ptr) |ptr| {\n    // use ptr\n}",
+          "when": "Need to handle null case"
+        },
+        {
+          "approach": "Use .? for optional chaining",
+          "code": "const len = str.?.len;",
+          "when": "Chaining optional access"
+        }
+      ]
+    },
+    {
+      "id": "slice_out_of_bounds",
+      "pattern": "index out of bounds|slice.*overflow",
+      "message": "Index out of bounds",
+      "cause": "Array or slice index exceeds valid range",
+      "solutions": [
+        {
+          "approach": "Check length first",
+          "code": "if (index < slice.len) {\n    const value = slice[index];\n}",
+          "when": "Index may be invalid"
+        },
+        {
+          "approach": "Use get or null",
+          "code": "const value = slice.get(index);  // Returns ?T",
+          "when": "Want optional result"
+        },
+        {
+          "approach": "Use clamp",
+          "code": "const safe_idx = @min(index, slice.len - 1);",
+          "when": "Want to clamp to valid range"
+        }
+      ]
+    },
+    {
+      "id": "integer_overflow",
+      "pattern": "integer overflow|overflow.*detected",
+      "message": "Integer overflow detected",
+      "cause": "Arithmetic operation exceeded integer bounds",
+      "solutions": [
+        {
+          "approach": "Use saturating arithmetic",
+          "code": "const result = a +| b;  // Saturating add",
+          "when": "Clamping acceptable"
+        },
+        {
+          "approach": "Use wrapping arithmetic",
+          "code": "const result = a +% b;  // Wrapping add",
+          "when": "Wrapping intended"
+        },
+        {
+          "approach": "Use @addWithOverflow",
+          "code": "const result = @addWithOverflow(a, b);\nif (result.overflow) { ... }",
+          "when": "Need explicit overflow check"
+        }
+      ]
+    },
+    {
+      "id": "use_after_free",
+      "pattern": "use after free|dangling pointer",
+      "message": "Use after free",
+      "cause": "Memory accessed after being deallocated",
+      "solutions": [
+        {
+          "approach": "Use arena allocator",
+          "code": "var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);",
+          "when": "Batch allocation/deallocation"
+        },
+        {
+          "approach": "Set to undefined after free",
+          "code": "allocator.free(ptr);\nptr = undefined;",
+          "when": "Want to catch misuse"
+        },
+        {
+          "approach": "Use defer",
+          "code": "const ptr = try allocator.alloc(u8, size);\ndefer allocator.free(ptr);",
+          "when": "Scope-based lifetime"
+        }
+      ]
+    },
+    {
+      "id": "comptime_error",
+      "pattern": "comptime|compile time.*error",
+      "message": "Compile-time evaluation error",
+      "cause": "Comptime block contains runtime-only operation",
+      "solutions": [
+        {
+          "approach": "Use @compileError for debug",
+          "code": "@compileError(\"debug message\");",
+          "when": "Debugging comptime code"
+        },
+        {
+          "approach": "Avoid runtime calls",
+          "code": "// No allocators, I/O, or syscalls in comptime",
+          "when": "Using runtime-only features"
+        },
+        {
+          "approach": "Use inline for",
+          "code": "inline for (items) |item| { ... }",
+          "when": "Need compile-time iteration"
+        }
+      ]
+    },
+    {
+      "id": "alignment_error",
+      "pattern": "alignment.*violated|incorrect alignment",
+      "message": "Memory alignment error",
+      "cause": "Pointer cast or access violates alignment requirements",
+      "solutions": [
+        {
+          "approach": "Use @alignCast",
+          "code": "const aligned: *align(8) u64 = @alignCast(ptr);",
+          "when": "Casting to stricter alignment"
+        },
+        {
+          "approach": "Use packed struct",
+          "code": "const S = packed struct { ... };",
+          "when": "Need unaligned access"
+        },
+        {
+          "approach": "Allocate with alignment",
+          "code": "const ptr = try allocator.alignedAlloc(T, alignment, count);",
+          "when": "Need specific alignment"
+        }
+      ]
+    },
+    {
+      "id": "error_not_handled",
+      "pattern": "error.*not handled|error set.*mismatch",
+      "message": "Error not handled",
+      "cause": "Fallible function's error not handled",
+      "solutions": [
+        {
+          "approach": "Use try",
+          "code": "const result = try fallible_fn();",
+          "when": "Propagate error up"
+        },
+        {
+          "approach": "Use catch",
+          "code": "const result = fallible_fn() catch |err| {\n    // handle err\n};",
+          "when": "Handle error locally"
+        },
+        {
+          "approach": "Use catch unreachable",
+          "code": "const result = fallible_fn() catch unreachable;",
+          "when": "Error should never occur (careful!)"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "tool": "locust",
+  "version": "2.24.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_users_defined",
+      "pattern": "No User.*defined|Could not find any.*class|No locust.*found",
+      "message": "No Locust user classes found",
+      "cause": "locustfile.py doesn't define User classes or file not found",
+      "solutions": [
+        {
+          "approach": "Define User class",
+          "code": "from locust import HttpUser, task, between\n\nclass WebUser(HttpUser):\n    wait_time = between(1, 3)\n    \n    @task\n    def load_page(self):\n        self.client.get(\"/\")",
+          "when": "Missing user definition"
+        },
+        {
+          "approach": "Specify locustfile path",
+          "code": "locust -f path/to/locustfile.py",
+          "when": "File in different location"
+        }
+      ]
+    },
+    {
+      "id": "connection_refused",
+      "pattern": "Connection refused|ConnectionRefusedError|connect ECONNREFUSED",
+      "message": "Cannot connect to target host",
+      "cause": "Target server not running or wrong host/port",
+      "solutions": [
+        {
+          "approach": "Verify target is running",
+          "code": "curl http://localhost:8080/healthz\n# Then run:\nlocust --host=http://localhost:8080",
+          "when": "Server not running"
+        },
+        {
+          "approach": "Check host URL",
+          "code": "locust --host=http://actual-server:port",
+          "when": "Wrong host configured"
+        }
+      ]
+    },
+    {
+      "id": "ssl_certificate_error",
+      "pattern": "SSL.*error|certificate.*verify|CERTIFICATE_VERIFY_FAILED",
+      "message": "SSL certificate verification failed",
+      "cause": "Self-signed or invalid SSL certificate",
+      "solutions": [
+        {
+          "approach": "Disable SSL verification",
+          "code": "class WebUser(HttpUser):\n    def on_start(self):\n        self.client.verify = False",
+          "when": "Development/testing environment"
+        },
+        {
+          "approach": "Provide CA bundle",
+          "code": "class WebUser(HttpUser):\n    def on_start(self):\n        self.client.verify = '/path/to/ca-bundle.crt'",
+          "when": "Custom CA"
+        }
+      ]
+    },
+    {
+      "id": "high_failure_rate",
+      "pattern": "100%.*fail|failure rate.*high|all requests failed",
+      "message": "All or most requests failing",
+      "cause": "Server error, wrong endpoint, or authentication issue",
+      "solutions": [
+        {
+          "approach": "Check server logs",
+          "code": "# Check server for 4xx/5xx errors\ntail -f /var/log/nginx/error.log",
+          "when": "Server-side issue"
+        },
+        {
+          "approach": "Add authentication",
+          "code": "class WebUser(HttpUser):\n    def on_start(self):\n        self.client.post('/login', json={\n            'username': 'test',\n            'password': 'test'\n        })",
+          "when": "Auth required"
+        },
+        {
+          "approach": "Debug request",
+          "code": "with self.client.get('/api', catch_response=True) as resp:\n    print(resp.text)\n    resp.success()",
+          "when": "Need to see response"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timeout|ReadTimeoutError|request.*timed out",
+      "message": "Request timeout",
+      "cause": "Server too slow to respond or overloaded",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "class WebUser(HttpUser):\n    @task\n    def slow_request(self):\n        self.client.get('/slow', timeout=60)",
+          "when": "Expected slow endpoint"
+        },
+        {
+          "approach": "Reduce load",
+          "code": "locust --users 10 --spawn-rate 1",
+          "when": "Server overloaded"
+        },
+        {
+          "approach": "Add wait time",
+          "code": "wait_time = between(2, 5)  # Wait 2-5 seconds between tasks",
+          "when": "Too aggressive"
+        }
+      ]
+    },
+    {
+      "id": "port_already_in_use",
+      "pattern": "port.*in use|Address already in use|bind.*failed",
+      "message": "Locust web UI port in use",
+      "cause": "Another process using port 8089 (default)",
+      "solutions": [
+        {
+          "approach": "Use different port",
+          "code": "locust --web-port 8090",
+          "when": "Port conflict"
+        },
+        {
+          "approach": "Run headless",
+          "code": "locust --headless -u 100 -r 10 --run-time 1m",
+          "when": "Don't need web UI"
+        },
+        {
+          "approach": "Kill existing process",
+          "code": "lsof -i :8089 | awk 'NR>1 {print $2}' | xargs kill",
+          "when": "Stop other Locust"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "MemoryError|out of memory|killed",
+      "message": "Locust ran out of memory",
+      "cause": "Too many users or storing too much data",
+      "solutions": [
+        {
+          "approach": "Use distributed mode",
+          "code": "# Master:\nlocust --master\n# Workers:\nlocust --worker --master-host=master-ip",
+          "when": "Need more capacity"
+        },
+        {
+          "approach": "Reduce user count",
+          "code": "locust --users 1000  # Reduce from higher number",
+          "when": "Single machine limit"
+        },
+        {
+          "approach": "Don't store responses",
+          "code": "@task\ndef api_call(self):\n    with self.client.get('/large', catch_response=True) as r:\n        r.success()  # Don't store response body",
+          "when": "Large responses"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "ImportError|ModuleNotFoundError|No module named",
+      "message": "Module import error in locustfile",
+      "cause": "Missing dependency or wrong Python environment",
+      "solutions": [
+        {
+          "approach": "Install missing module",
+          "code": "pip install missing-module",
+          "when": "Missing dependency"
+        },
+        {
+          "approach": "Check Python path",
+          "code": "PYTHONPATH=. locust -f locustfile.py",
+          "when": "Custom modules"
+        },
+        {
+          "approach": "Use virtual environment",
+          "code": "python -m venv venv\nsource venv/bin/activate\npip install locust\nlocust",
+          "when": "Environment issue"
+        }
+      ]
+    },
+    {
+      "id": "task_not_decorated",
+      "pattern": "No tasks defined|has no tasks",
+      "message": "User class has no tasks",
+      "cause": "Methods not decorated with @task",
+      "solutions": [
+        {
+          "approach": "Add @task decorator",
+          "code": "from locust import task\n\nclass WebUser(HttpUser):\n    @task\n    def my_task(self):\n        self.client.get('/')",
+          "when": "Missing decorator"
+        },
+        {
+          "approach": "Use TaskSet",
+          "code": "from locust import TaskSet, task\n\nclass UserTasks(TaskSet):\n    @task\n    def browse(self):\n        self.client.get('/')\n\nclass WebUser(HttpUser):\n    tasks = [UserTasks]",
+          "when": "Organize tasks"
+        }
+      ]
+    },
+    {
+      "id": "master_worker_disconnect",
+      "pattern": "worker.*disconnect|lost connection.*master|heartbeat.*failed",
+      "message": "Worker disconnected from master",
+      "cause": "Network issue or worker crashed",
+      "solutions": [
+        {
+          "approach": "Check network connectivity",
+          "code": "ping master-host\ntelnet master-host 5557",
+          "when": "Network issue"
+        },
+        {
+          "approach": "Restart worker",
+          "code": "locust --worker --master-host=master-ip",
+          "when": "Worker crashed"
+        },
+        {
+          "approach": "Increase heartbeat timeout",
+          "code": "locust --master --heartbeat-interval 2 --heartbeat-liveness 10",
+          "when": "Flaky network"
+        }
+      ]
+    }
+  ]
+}

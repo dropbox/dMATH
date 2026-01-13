@@ -1,0 +1,168 @@
+{
+  "tool": "awk",
+  "version": "5.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "syntax_error",
+      "pattern": "syntax error|unexpected.*token",
+      "message": "Syntax error",
+      "cause": "Invalid awk syntax, often quoting issues",
+      "solutions": [
+        {
+          "approach": "Use single quotes",
+          "code": "awk '{print $1}' file  # Not double quotes",
+          "when": "Shell expanding $ prematurely"
+        },
+        {
+          "approach": "Escape in double quotes",
+          "code": "awk \"{print \\$1}\" file",
+          "when": "Need shell variables"
+        },
+        {
+          "approach": "Use -v for variables",
+          "code": "awk -v var=\"$shell_var\" '{print var}'",
+          "when": "Pass shell variables safely"
+        }
+      ]
+    },
+    {
+      "id": "illegal_reference",
+      "pattern": "illegal reference to array|not.*array|subscript",
+      "message": "Illegal reference to array",
+      "cause": "Using scalar as array or vice versa",
+      "solutions": [
+        {
+          "approach": "Check variable type",
+          "code": "Don't use same name for scalar and array",
+          "when": "Name collision"
+        },
+        {
+          "approach": "Initialize array",
+          "code": "arr[1] = value  # Creates array",
+          "when": "Need array"
+        },
+        {
+          "approach": "Use split",
+          "code": "split(string, arr, delimiter)",
+          "when": "Create array from string"
+        }
+      ]
+    },
+    {
+      "id": "division_by_zero",
+      "pattern": "division by zero|attempt to divide by zero",
+      "message": "Division by zero",
+      "cause": "Dividing by zero in expression",
+      "solutions": [
+        {
+          "approach": "Check divisor",
+          "code": "awk '{if ($2 != 0) print $1/$2}'",
+          "when": "Guard against zero"
+        },
+        {
+          "approach": "Use ternary",
+          "code": "awk '{print ($2 ? $1/$2 : 0)}'",
+          "when": "Default to zero"
+        },
+        {
+          "approach": "Handle empty fields",
+          "code": "awk '{x = ($2+0); print (x ? $1/x : \"N/A\")}'",
+          "when": "Empty field becomes 0"
+        }
+      ]
+    },
+    {
+      "id": "field_separator",
+      "pattern": "field.*not found|wrong.*delimiter|FS",
+      "message": "Field separator issue",
+      "cause": "Wrong field separator for data format",
+      "solutions": [
+        {
+          "approach": "Set field separator",
+          "code": "awk -F: '{print $1}' /etc/passwd",
+          "when": "Colon-separated"
+        },
+        {
+          "approach": "Multiple separators",
+          "code": "awk -F'[,;:]' '{print $1}'",
+          "when": "Multiple delimiters"
+        },
+        {
+          "approach": "Tab separator",
+          "code": "awk -F'\\t' '{print $1}'",
+          "when": "Tab-delimited"
+        }
+      ]
+    },
+    {
+      "id": "regex_error",
+      "pattern": "illegal.*regex|bad.*bracket|regular expression",
+      "message": "Regular expression error",
+      "cause": "Invalid regex syntax",
+      "solutions": [
+        {
+          "approach": "Escape metacharacters",
+          "code": "awk '/\\[pattern\\]/' file",
+          "when": "Literal brackets"
+        },
+        {
+          "approach": "Use string match",
+          "code": "awk 'index($0, \"literal\")' file",
+          "when": "Literal string search"
+        },
+        {
+          "approach": "Double escaping",
+          "code": "awk '/\\\\./' file  # Match literal dot",
+          "when": "Escape in pattern"
+        }
+      ]
+    },
+    {
+      "id": "newline_in_string",
+      "pattern": "newline in string|unterminated string",
+      "message": "Unterminated string",
+      "cause": "String literal spans multiple lines",
+      "solutions": [
+        {
+          "approach": "Escape newline",
+          "code": "awk 'BEGIN{print \"line1\\nline2\"}'",
+          "when": "Embed newline"
+        },
+        {
+          "approach": "Use printf",
+          "code": "awk 'BEGIN{printf \"line1\\nline2\\n\"}'",
+          "when": "Formatted output"
+        },
+        {
+          "approach": "Concatenate",
+          "code": "awk '{print $1 \" \" $2}'",
+          "when": "Join fields"
+        }
+      ]
+    },
+    {
+      "id": "function_not_defined",
+      "pattern": "function.*not defined|unknown function|call to undefined",
+      "message": "Function not defined",
+      "cause": "Using unavailable function",
+      "solutions": [
+        {
+          "approach": "Use gawk",
+          "code": "gawk instead of awk for GNU extensions",
+          "when": "Need gawk functions"
+        },
+        {
+          "approach": "Define function",
+          "code": "awk 'function myfunc(x) {return x*2} {print myfunc($1)}'",
+          "when": "Custom function needed"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "length, substr, split, sprintf, tolower, toupper",
+          "when": "Typo in builtin"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "tool": "clang_tidy",
+  "version": "18.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "modernize_use_nullptr",
+      "pattern": "modernize-use-nullptr",
+      "message": "Use nullptr instead of NULL or 0",
+      "cause": "Legacy NULL macro or 0 used for null pointer",
+      "solutions": [
+        {
+          "approach": "Use nullptr",
+          "code": "int* ptr = nullptr;  // Not NULL or 0",
+          "when": "C++11 or later"
+        },
+        {
+          "approach": "Auto-fix",
+          "code": "clang-tidy --fix -checks=modernize-use-nullptr file.cpp",
+          "when": "Want automatic fix"
+        }
+      ]
+    },
+    {
+      "id": "modernize_use_auto",
+      "pattern": "modernize-use-auto",
+      "message": "Use auto for iterator types",
+      "cause": "Explicit iterator type declaration is verbose",
+      "solutions": [
+        {
+          "approach": "Use auto",
+          "code": "auto it = container.begin();  // Not std::vector<int>::iterator",
+          "when": "Type is obvious from context"
+        },
+        {
+          "approach": "Keep explicit for clarity",
+          "code": "// Disable check if explicit types preferred\n// -checks=-modernize-use-auto",
+          "when": "Team prefers explicit types"
+        }
+      ]
+    },
+    {
+      "id": "modernize_use_override",
+      "pattern": "modernize-use-override",
+      "message": "Use override for virtual function overrides",
+      "cause": "Virtual function override missing override specifier",
+      "solutions": [
+        {
+          "approach": "Add override",
+          "code": "void foo() override;  // Not just virtual void foo();",
+          "when": "Function overrides base class virtual"
+        },
+        {
+          "approach": "Auto-fix",
+          "code": "clang-tidy --fix -checks=modernize-use-override file.cpp",
+          "when": "Want automatic fix"
+        }
+      ]
+    },
+    {
+      "id": "modernize_make_unique",
+      "pattern": "modernize-make-unique",
+      "message": "Use std::make_unique instead of new",
+      "cause": "Raw new with unique_ptr is less safe",
+      "solutions": [
+        {
+          "approach": "Use make_unique",
+          "code": "auto ptr = std::make_unique<MyClass>(args);",
+          "when": "Creating unique_ptr"
+        }
+      ]
+    },
+    {
+      "id": "cppcoreguidelines_slicing",
+      "pattern": "cppcoreguidelines-slicing",
+      "message": "Object slicing detected",
+      "cause": "Derived class object assigned to base class value",
+      "solutions": [
+        {
+          "approach": "Use pointer or reference",
+          "code": "Base& ref = derived;  // Not Base base = derived;",
+          "when": "Need polymorphism"
+        },
+        {
+          "approach": "Use smart pointer",
+          "code": "std::unique_ptr<Base> ptr = std::make_unique<Derived>();",
+          "when": "Need ownership transfer"
+        }
+      ]
+    },
+    {
+      "id": "bugprone_use_after_move",
+      "pattern": "bugprone-use-after-move",
+      "message": "Use after move",
+      "cause": "Object used after being moved from",
+      "solutions": [
+        {
+          "approach": "Don't use after move",
+          "code": "auto moved = std::move(obj);\n// Don't use obj here",
+          "when": "Move is intentional"
+        },
+        {
+          "approach": "Reset if needed",
+          "code": "auto moved = std::move(obj);\nobj = T{};  // Reset to valid state",
+          "when": "Object needs reuse"
+        }
+      ]
+    },
+    {
+      "id": "bugprone_sizeof_container",
+      "pattern": "bugprone-sizeof-container",
+      "message": "sizeof() called on STL container",
+      "cause": "sizeof(vector) gives size of object, not contents",
+      "solutions": [
+        {
+          "approach": "Use .size()",
+          "code": "vec.size()  // Not sizeof(vec)",
+          "when": "Want element count"
+        },
+        {
+          "approach": "Calculate data size",
+          "code": "vec.size() * sizeof(vec[0])  // Size of data in bytes",
+          "when": "Want data size in bytes"
+        }
+      ]
+    },
+    {
+      "id": "readability_implicit_bool_conversion",
+      "pattern": "readability-implicit-bool-conversion",
+      "message": "Implicit conversion to/from bool",
+      "cause": "Pointer or integer implicitly converted to bool",
+      "solutions": [
+        {
+          "approach": "Make explicit",
+          "code": "if (ptr != nullptr)  // Not if (ptr)",
+          "when": "Checking pointer"
+        },
+        {
+          "approach": "Use explicit comparison",
+          "code": "if (count != 0)  // Not if (count)",
+          "when": "Checking integer"
+        }
+      ]
+    },
+    {
+      "id": "performance_unnecessary_copy",
+      "pattern": "performance-unnecessary-copy-initialization",
+      "message": "Unnecessary copy initialization",
+      "cause": "Variable copied when reference would suffice",
+      "solutions": [
+        {
+          "approach": "Use const reference",
+          "code": "const auto& item = container[i];  // Not auto item = ...",
+          "when": "Read-only access"
+        },
+        {
+          "approach": "Use reference for loop",
+          "code": "for (const auto& item : items)  // Not auto item",
+          "when": "Iterating container"
+        }
+      ]
+    },
+    {
+      "id": "clang_analyzer_deadcode",
+      "pattern": "clang-analyzer-deadcode",
+      "message": "Dead code detected",
+      "cause": "Code that can never be executed",
+      "solutions": [
+        {
+          "approach": "Remove dead code",
+          "code": "// Remove unreachable statements",
+          "when": "Code is truly dead"
+        },
+        {
+          "approach": "Fix control flow",
+          "code": "// Check if return/break is misplaced",
+          "when": "Logic error"
+        }
+      ]
+    },
+    {
+      "id": "misc_unused_parameters",
+      "pattern": "misc-unused-parameters",
+      "message": "Unused function parameter",
+      "cause": "Parameter declared but not used",
+      "solutions": [
+        {
+          "approach": "Remove parameter name",
+          "code": "void foo(int /*unused*/) { }",
+          "when": "Required by interface"
+        },
+        {
+          "approach": "Use [[maybe_unused]]",
+          "code": "void foo([[maybe_unused]] int x) { }",
+          "when": "C++17 or later"
+        },
+        {
+          "approach": "Remove parameter",
+          "code": "void foo() { }  // If not needed by interface",
+          "when": "Can change signature"
+        }
+      ]
+    },
+    {
+      "id": "cert_err58_cpp",
+      "pattern": "cert-err58-cpp",
+      "message": "Static object construction may throw",
+      "cause": "Static/global object constructor may throw before main()",
+      "solutions": [
+        {
+          "approach": "Use function-local static",
+          "code": "T& getInstance() {\n    static T instance;  // Lazy init\n    return instance;\n}",
+          "when": "Singleton pattern"
+        },
+        {
+          "approach": "Use noexcept constructor",
+          "code": "class T {\n    T() noexcept { ... }\n};",
+          "when": "Can guarantee no throw"
+        }
+      ]
+    }
+  ]
+}

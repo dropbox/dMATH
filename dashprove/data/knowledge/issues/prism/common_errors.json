@@ -1,0 +1,115 @@
+{
+  "tool": "prism",
+  "version": "4.8",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "model_parse_error",
+      "pattern": "Error: could not parse model|syntax error in module",
+      "message": "PRISM model file failed to parse",
+      "cause": "Missing module keyword, misplaced constants, or malformed updates",
+      "solutions": [
+        {
+          "approach": "Check module structure",
+          "code": "mdp\nmodule scheduler\n  s : [0..2] init 0;\n  [] s=0 -> (s'=1);\nendmodule",
+          "when": "Baseline template fails"
+        },
+        {
+          "approach": "Move constants before modules",
+          "code": "const int MAX = 10;\nmodule ...",
+          "when": "Constants declared after modules"
+        }
+      ]
+    },
+    {
+      "id": "unbounded_reward",
+      "pattern": "infinite expected reward|Reward is unbounded",
+      "message": "Reward property diverges",
+      "cause": "Reward structure without termination or missing discounting",
+      "solutions": [
+        {
+          "approach": "Add terminating condition",
+          "code": "[] s=2 -> (s'=2); // absorbing end state",
+          "when": "Marking completion"
+        },
+        {
+          "approach": "Use discounted reward",
+          "code": "R{\"cost\"}min=? [ F<=100 done ]",
+          "when": "Bounded horizon acceptable"
+        }
+      ]
+    },
+    {
+      "id": "scheduler_nondet",
+      "pattern": "Result may depend on the scheduler|nondeterminism detected",
+      "message": "Property affected by nondeterminism",
+      "cause": "MDP requires scheduler selection; property not resolved uniquely",
+      "solutions": [
+        {
+          "approach": "Specify min/max semantics",
+          "code": "Pmin=? [ F goal ]  /  Pmax=? [ F goal ]",
+          "when": "Need bounds on nondeterminism"
+        },
+        {
+          "approach": "Resolve with explicit controller",
+          "code": "Add controllable actions to remove ambiguous choices",
+          "when": "Model nondeterminism is modeling artifact"
+        }
+      ]
+    },
+    {
+      "id": "engine_mismatch",
+      "pattern": "unsupported by current engine|switch to sparse or hybrid",
+      "message": "Chosen engine cannot evaluate property",
+      "cause": "MTBDD engine used for rewards/long horizons or hybrid not enabled",
+      "solutions": [
+        {
+          "approach": "Select sparse engine",
+          "code": "prism -sparse model.pm property.pctl",
+          "when": "Large explicit state fits in memory"
+        },
+        {
+          "approach": "Use hybrid + backwards reachability",
+          "code": "prism -hybrid -backwards model.pm property.pctl",
+          "when": "Symbolic forward fails"
+        }
+      ]
+    },
+    {
+      "id": "constant_not_set",
+      "pattern": "No value specified for constant|undefined constant",
+      "message": "Constant parameters missing",
+      "cause": "Parameterized models invoked without -const or values file",
+      "solutions": [
+        {
+          "approach": "Provide constants on command line",
+          "code": "prism model.pm property.pctl -const N=5,MAX=10",
+          "when": "Single configuration"
+        },
+        {
+          "approach": "Use filter file for experiments",
+          "code": "prism model.pm property.pctl -constfile params.txt",
+          "when": "Batch parameter sweeps"
+        }
+      ]
+    },
+    {
+      "id": "query_format_error",
+      "pattern": "Could not parse property|PCTL/CSL syntax error",
+      "message": "Property specification invalid",
+      "cause": "Using CTL operators or missing reward label binding",
+      "solutions": [
+        {
+          "approach": "Use PCTL style",
+          "code": "P>=0.99 [ F<=50 success ]",
+          "when": "Reachability probability"
+        },
+        {
+          "approach": "Bind reward structures",
+          "code": "R{\"time\"}<=10 [ F done ]",
+          "when": "Reward queries"
+        }
+      ]
+    }
+  ]
+}

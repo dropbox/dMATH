@@ -1,0 +1,65 @@
+{
+  "tool_id": "verifuzz",
+  "tool_name": "VeriFuzz",
+  "description": "Combines fuzzing with formal verification to generate test inputs that exercise hard-to-reach code paths using constraint solving",
+  "common_errors": [
+    {
+      "id": "constraint_unsatisfiable",
+      "pattern": "UNSAT|no solution found|constraints unsatisfiable",
+      "category": "constraint_solving",
+      "severity": "medium",
+      "cause": "The path constraints collected during execution have no satisfying assignment, possibly due to conflicting conditions or over-constrained paths",
+      "solution": "Simplify branch conditions. Check for dead code with impossible conditions. Review constraint encoding for correctness. Try different SMT solver strategies.",
+      "related_concepts": ["symbolic_execution", "path_constraints", "smt_solving"]
+    },
+    {
+      "id": "path_explosion",
+      "pattern": "state explosion|too many paths|memory limit exceeded during exploration",
+      "category": "scalability",
+      "severity": "high",
+      "cause": "Program has too many execution paths due to loops, branches, or data-dependent control flow",
+      "solution": "Use bounded exploration with path limits. Focus on specific functions with annotations. Use abstraction to merge similar states. Prioritize paths toward target.",
+      "example": "--max-paths 10000 --timeout 3600",
+      "related_concepts": ["path_merging", "state_merging", "concolic_testing"]
+    },
+    {
+      "id": "symbolic_pointer_resolution",
+      "pattern": "could not resolve symbolic pointer|invalid memory access during symbolic execution",
+      "category": "symbolic_execution",
+      "severity": "high",
+      "cause": "Pointer value depends on symbolic input, making it impossible to determine memory location statically",
+      "solution": "Concretize pointer bounds where possible. Use memory models that handle symbolic pointers. Limit pointer arithmetic scope. Consider array theory for bounded arrays.",
+      "related_concepts": ["pointer_analysis", "memory_model", "symbolic_memory"]
+    },
+    {
+      "id": "coverage_plateau",
+      "pattern": "no new coverage|stuck at.*% coverage|coverage not improving",
+      "category": "fuzzing",
+      "severity": "medium",
+      "cause": "Fuzzer unable to generate inputs that reach new code due to complex input validation or deep nesting",
+      "solution": "Analyze uncovered code to identify blocking conditions. Add custom mutators for structured inputs. Use symbolic execution to generate coverage-increasing inputs.",
+      "related_concepts": ["hybrid_fuzzing", "coverage_guided", "input_generation"]
+    },
+    {
+      "id": "instrumentation_overhead",
+      "pattern": "slowdown too high|instrumentation overhead|execution timeout",
+      "category": "performance",
+      "severity": "medium",
+      "cause": "Heavy instrumentation for coverage tracking or constraint collection slowing execution too much",
+      "solution": "Use lightweight instrumentation modes. Instrument only relevant functions. Use hardware-assisted coverage (Intel PT). Balance coverage precision vs performance.",
+      "related_concepts": ["binary_instrumentation", "coverage_collection", "performance_tradeoff"]
+    }
+  ],
+  "best_practices": [
+    "Start with pure fuzzing to find shallow bugs quickly",
+    "Use concolic execution for code with complex input validation",
+    "Set reasonable bounds to prevent path explosion",
+    "Combine with sanitizers (ASan, UBSan) for bug detection",
+    "Profile to identify and skip expensive/unimportant code paths"
+  ],
+  "references": [
+    "https://github.com/verifuzz/verifuzz",
+    "https://www.usenix.org/conference/usenixsecurity20/presentation/chen-peng",
+    "https://dl.acm.org/doi/10.1145/3133956.3134020"
+  ]
+}

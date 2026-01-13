@@ -1,0 +1,232 @@
+{
+  "tool": "cargo-publish",
+  "version": "1.75+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_logged_in",
+      "pattern": "no upload token|not logged in|authentication.*required",
+      "message": "Not logged in to crates.io",
+      "cause": "No API token configured",
+      "solutions": [
+        {
+          "approach": "Login with token",
+          "code": "cargo login YOUR_API_TOKEN",
+          "when": "Need to authenticate"
+        },
+        {
+          "approach": "Get token",
+          "code": "# Get token from crates.io/settings/tokens",
+          "when": "No token yet"
+        },
+        {
+          "approach": "Use environment",
+          "code": "CARGO_REGISTRY_TOKEN=token cargo publish",
+          "when": "CI/CD"
+        }
+      ]
+    },
+    {
+      "id": "version_exists",
+      "pattern": "already.*uploaded|version.*exists|crate.*already exists",
+      "message": "Crate version already exists",
+      "cause": "Cannot overwrite existing version",
+      "solutions": [
+        {
+          "approach": "Bump version",
+          "code": "# Update version in Cargo.toml",
+          "when": "Publish new version"
+        },
+        {
+          "approach": "Use cargo-release",
+          "code": "cargo release patch",
+          "when": "Automate versioning"
+        },
+        {
+          "approach": "Yank old version",
+          "code": "cargo yank --vers 1.0.0",
+          "when": "Hide broken version"
+        }
+      ]
+    },
+    {
+      "id": "manifest_error",
+      "pattern": "Cargo.toml.*error|missing.*field|manifest.*invalid",
+      "message": "Cargo.toml validation error",
+      "cause": "Missing required metadata",
+      "solutions": [
+        {
+          "approach": "Add required fields",
+          "code": "[package]\nlicense = \"MIT\"\ndescription = \"A description\"\nrepository = \"https://github.com/...\"\n",
+          "when": "Missing metadata"
+        },
+        {
+          "approach": "Add license file",
+          "code": "license-file = \"LICENSE\"",
+          "when": "Non-standard license"
+        },
+        {
+          "approach": "Check manifest",
+          "code": "cargo verify-project",
+          "when": "Validate Cargo.toml"
+        }
+      ]
+    },
+    {
+      "id": "build_failed",
+      "pattern": "build.*failed|compilation.*error|cannot compile",
+      "message": "Crate build failed",
+      "cause": "Crate doesn't compile",
+      "solutions": [
+        {
+          "approach": "Fix build errors",
+          "code": "cargo build --release",
+          "when": "Has build errors"
+        },
+        {
+          "approach": "Check all features",
+          "code": "cargo build --all-features",
+          "when": "Feature-gated code"
+        },
+        {
+          "approach": "Run tests",
+          "code": "cargo test",
+          "when": "Verify correctness"
+        }
+      ]
+    },
+    {
+      "id": "name_taken",
+      "pattern": "crate name.*taken|name.*already exists",
+      "message": "Crate name already taken",
+      "cause": "Another crate has this name",
+      "solutions": [
+        {
+          "approach": "Choose different name",
+          "code": "# Update name in Cargo.toml",
+          "when": "Name unavailable"
+        },
+        {
+          "approach": "Search crates.io",
+          "code": "cargo search yourname",
+          "when": "Check availability"
+        },
+        {
+          "approach": "Add prefix/suffix",
+          "code": "# myproject-cli instead of myproject",
+          "when": "Similar names"
+        }
+      ]
+    },
+    {
+      "id": "exclude_error",
+      "pattern": "exclude.*error|include.*pattern|file.*not found",
+      "message": "File include/exclude error",
+      "cause": "Include/exclude patterns incorrect",
+      "solutions": [
+        {
+          "approach": "Check package contents",
+          "code": "cargo package --list",
+          "when": "Verify included files"
+        },
+        {
+          "approach": "Configure include",
+          "code": "[package]\ninclude = [\"src/**/*\", \"Cargo.toml\", \"README.md\"]",
+          "when": "Explicit include"
+        },
+        {
+          "approach": "Configure exclude",
+          "code": "[package]\nexclude = [\"tests/*\", \"benches/*\"]",
+          "when": "Exclude files"
+        }
+      ]
+    },
+    {
+      "id": "dependency_error",
+      "pattern": "dependency.*not published|git.*dependency|path.*dependency",
+      "message": "Dependency not allowed",
+      "cause": "Can't publish with git/path dependencies",
+      "solutions": [
+        {
+          "approach": "Publish dependency first",
+          "code": "# Publish dependent crates first",
+          "when": "Local dependency"
+        },
+        {
+          "approach": "Use version instead",
+          "code": "dep = \"1.0\"  # instead of { path = \"../dep\" }",
+          "when": "Replace path dep"
+        },
+        {
+          "approach": "Use both",
+          "code": "dep = { version = \"1.0\", path = \"../dep\" }",
+          "when": "Dev with path, publish with version"
+        }
+      ]
+    },
+    {
+      "id": "rate_limited",
+      "pattern": "rate limit|too many requests|try again later",
+      "message": "Rate limited by crates.io",
+      "cause": "Too many publish attempts",
+      "solutions": [
+        {
+          "approach": "Wait and retry",
+          "code": "# Wait a few minutes",
+          "when": "Temporary limit"
+        },
+        {
+          "approach": "Use delay between publishes",
+          "code": "# In workspace, publish with delays",
+          "when": "Publishing many crates"
+        }
+      ]
+    },
+    {
+      "id": "size_error",
+      "pattern": "crate.*too large|size.*limit|maximum.*exceeded",
+      "message": "Crate too large",
+      "cause": "Package exceeds 10MB limit",
+      "solutions": [
+        {
+          "approach": "Exclude large files",
+          "code": "[package]\nexclude = [\"data/*\", \"*.bin\"]",
+          "when": "Has data files"
+        },
+        {
+          "approach": "Use git-lfs",
+          "code": "# Move large files to separate repo",
+          "when": "Large assets"
+        },
+        {
+          "approach": "Check package",
+          "code": "cargo package --list | xargs -I{} ls -lh {}",
+          "when": "Find large files"
+        }
+      ]
+    },
+    {
+      "id": "readme_error",
+      "pattern": "readme.*not found|readme.*error",
+      "message": "README file error",
+      "cause": "README specified but not found",
+      "solutions": [
+        {
+          "approach": "Create README",
+          "code": "echo '# My Crate' > README.md",
+          "when": "Missing README"
+        },
+        {
+          "approach": "Update path",
+          "code": "[package]\nreadme = \"docs/README.md\"",
+          "when": "Non-standard path"
+        },
+        {
+          "approach": "Remove readme field",
+          "code": "# Remove readme from Cargo.toml",
+          "when": "No README needed"
+        }
+      ]
+    }
+  ]
+}

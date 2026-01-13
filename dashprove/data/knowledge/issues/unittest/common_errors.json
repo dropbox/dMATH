@@ -1,0 +1,166 @@
+{
+  "tool": "unittest",
+  "version": "3.12",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError:.*",
+      "message": "Test assertion failed",
+      "cause": "assertEqual, assertTrue, or other assertion method failed",
+      "solutions": [
+        {
+          "approach": "Use specific assertion methods",
+          "code": "self.assertEqual(actual, expected)  # Better than assertTrue(a == b)",
+          "when": "Need informative failure messages"
+        },
+        {
+          "approach": "Use assertAlmostEqual for floats",
+          "code": "self.assertAlmostEqual(0.1 + 0.2, 0.3, places=7)",
+          "when": "Comparing floating-point numbers"
+        },
+        {
+          "approach": "Add custom message",
+          "code": "self.assertEqual(a, b, msg=f'Failed with input {input}')",
+          "when": "Need additional context"
+        }
+      ]
+    },
+    {
+      "id": "setup_error",
+      "pattern": "Error in setUp",
+      "message": "setUp method failed",
+      "cause": "Exception raised during test setup",
+      "solutions": [
+        {
+          "approach": "Use setUpClass for expensive setup",
+          "code": "@classmethod\ndef setUpClass(cls):\n    cls.resource = expensive_setup()",
+          "when": "Setup is slow and can be shared"
+        },
+        {
+          "approach": "Handle setup failures gracefully",
+          "code": "def setUp(self):\n    try:\n        self.resource = setup()\n    except Exception:\n        self.skipTest('Setup failed')",
+          "when": "Setup may fail in some environments"
+        }
+      ]
+    },
+    {
+      "id": "teardown_error",
+      "pattern": "Error in tearDown",
+      "message": "tearDown method failed",
+      "cause": "Exception raised during test cleanup",
+      "solutions": [
+        {
+          "approach": "Use addCleanup for reliable cleanup",
+          "code": "def setUp(self):\n    self.file = open('test.txt')\n    self.addCleanup(self.file.close)",
+          "when": "Need cleanup even if test fails"
+        },
+        {
+          "approach": "Handle None resources",
+          "code": "def tearDown(self):\n    if hasattr(self, 'resource') and self.resource:\n        self.resource.close()",
+          "when": "Resource may not exist"
+        }
+      ]
+    },
+    {
+      "id": "no_tests_found",
+      "pattern": "Ran 0 tests",
+      "message": "No tests were discovered",
+      "cause": "Test methods don't start with 'test_' or class doesn't inherit TestCase",
+      "solutions": [
+        {
+          "approach": "Name tests correctly",
+          "code": "def test_my_feature(self):  # Must start with test_",
+          "when": "Test methods not discovered"
+        },
+        {
+          "approach": "Inherit from TestCase",
+          "code": "class MyTests(unittest.TestCase):",
+          "when": "Class not recognized as test class"
+        },
+        {
+          "approach": "Use discover",
+          "code": "python -m unittest discover -s tests -p 'test_*.py'",
+          "when": "Running from wrong directory"
+        }
+      ]
+    },
+    {
+      "id": "subtest_failure",
+      "pattern": "FAIL: .* \\(.*\\) \\[.*\\]",
+      "message": "Subtest failed",
+      "cause": "One or more subtests within a test method failed",
+      "solutions": [
+        {
+          "approach": "Use subTest for parametrized tests",
+          "code": "for value in test_values:\n    with self.subTest(value=value):\n        self.assertEqual(func(value), expected[value])",
+          "when": "Testing multiple inputs in one test"
+        },
+        {
+          "approach": "Check specific subtest",
+          "code": "python -m unittest TestClass.test_method",
+          "when": "Need to debug specific subtest"
+        }
+      ]
+    },
+    {
+      "id": "import_error",
+      "pattern": "ImportError:.*",
+      "message": "Cannot import test module",
+      "cause": "Module or its dependencies cannot be imported",
+      "solutions": [
+        {
+          "approach": "Check PYTHONPATH",
+          "code": "export PYTHONPATH=$PYTHONPATH:$(pwd)",
+          "when": "Module not on Python path"
+        },
+        {
+          "approach": "Check circular imports",
+          "code": "# Move imports inside functions if needed",
+          "when": "Circular dependency between modules"
+        },
+        {
+          "approach": "Check dependencies",
+          "code": "pip install -r requirements-test.txt",
+          "when": "Missing test dependencies"
+        }
+      ]
+    },
+    {
+      "id": "expected_failure",
+      "pattern": "expected failure",
+      "message": "Test marked as expected failure passed unexpectedly",
+      "cause": "Test decorated with @expectedFailure now passes",
+      "solutions": [
+        {
+          "approach": "Remove expectedFailure decorator",
+          "code": "# @unittest.expectedFailure  # Bug #123 fixed\ndef test_feature(self):",
+          "when": "Bug has been fixed"
+        },
+        {
+          "approach": "Update test expectations",
+          "code": "# Review if test is still valid",
+          "when": "Implementation changed"
+        }
+      ]
+    },
+    {
+      "id": "skip_reason",
+      "pattern": "skipped '.*'",
+      "message": "Test was skipped",
+      "cause": "Test decorated with skip or skipIf/skipUnless condition met",
+      "solutions": [
+        {
+          "approach": "Check skip conditions",
+          "code": "@unittest.skipIf(sys.platform == 'win32', 'Unix only')",
+          "when": "Understanding why test skipped"
+        },
+        {
+          "approach": "Run with verbose",
+          "code": "python -m unittest -v",
+          "when": "Need to see skip reasons"
+        }
+      ]
+    }
+  ]
+}

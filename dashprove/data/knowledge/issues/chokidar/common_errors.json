@@ -1,0 +1,118 @@
+{
+  "tool": "chokidar",
+  "category": "filesystem",
+  "common_errors": [
+    {
+      "id": "chokidar_not_detecting_changes",
+      "pattern": "changes not detected|watcher not triggering|no events fired",
+      "severity": "error",
+      "causes": [
+        "Watcher not ready when changes occur",
+        "Pattern doesn't match changed files",
+        "Polling mode needed but not enabled"
+      ],
+      "solutions": [
+        "Wait for 'ready' event before testing",
+        "watcher.on('ready', () => console.log('watching'))",
+        "Use { usePolling: true } for network drives",
+        "Check pattern matches file paths correctly"
+      ]
+    },
+    {
+      "id": "chokidar_initial_add_events",
+      "pattern": "add event on startup|initial files triggering|don't want existing files",
+      "severity": "warning",
+      "causes": [
+        "ignoreInitial defaults to false",
+        "All existing files fire 'add' events",
+        "Processing files unintentionally"
+      ],
+      "solutions": [
+        "Use { ignoreInitial: true } option",
+        "Or wait for 'ready' event to set flag",
+        "Filter events based on timestamp",
+        "Process only 'change' events if appropriate"
+      ]
+    },
+    {
+      "id": "chokidar_too_many_watchers",
+      "pattern": "ENOSPC|EMFILE|too many open files|System limit.*watchers",
+      "severity": "error",
+      "causes": [
+        "Watching too many files/directories",
+        "inotify limit reached on Linux",
+        "File descriptor limit exceeded"
+      ],
+      "solutions": [
+        "Linux: increase inotify limit in sysctl",
+        "echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf",
+        "Use { usePolling: true } as fallback",
+        "Watch fewer directories or use ignore patterns"
+      ]
+    },
+    {
+      "id": "chokidar_duplicate_events",
+      "pattern": "duplicate events|file changed twice|multiple notifications",
+      "severity": "warning",
+      "causes": [
+        "Editor save creates multiple events",
+        "Atomic writes cause add+unlink",
+        "Same file matched by multiple watchers"
+      ],
+      "solutions": [
+        "Use { awaitWriteFinish: true } option",
+        "Configure stabilityThreshold and pollInterval",
+        "Debounce event handlers manually",
+        "Use { atomic: true } for atomic saves"
+      ]
+    },
+    {
+      "id": "chokidar_permission_denied",
+      "pattern": "EACCES|permission denied|cannot watch",
+      "severity": "error",
+      "causes": [
+        "No read permission on directory",
+        "Protected system directory",
+        "File owned by different user"
+      ],
+      "solutions": [
+        "Check file/directory permissions",
+        "Run process with appropriate user",
+        "Add { ignorePermissionErrors: true }",
+        "Exclude protected directories from watch"
+      ]
+    },
+    {
+      "id": "chokidar_memory_leak",
+      "pattern": "memory leak|watcher not closed|heap growing",
+      "severity": "warning",
+      "causes": [
+        "Watcher not closed when done",
+        "Creating new watchers without cleanup",
+        "Event listeners not removed"
+      ],
+      "solutions": [
+        "Call watcher.close() when finished",
+        "Use await watcher.close() (returns Promise)",
+        "Remove event listeners before close",
+        "Reuse single watcher instance when possible"
+      ]
+    },
+    {
+      "id": "chokidar_v4_breaking",
+      "pattern": "ERR_REQUIRE_ESM|chokidar.*not a function|import error",
+      "severity": "error",
+      "causes": [
+        "chokidar v4+ is ESM-only",
+        "Using require() instead of import",
+        "Old CommonJS code"
+      ],
+      "solutions": [
+        "v4+: import chokidar from 'chokidar'",
+        "Use v3.x for CommonJS: npm i chokidar@3",
+        "Or use dynamic import() in CommonJS",
+        "Update project to ESM if possible"
+      ]
+    }
+  ]
+}

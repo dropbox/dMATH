@@ -1,0 +1,166 @@
+{
+  "tool": "checkov",
+  "version": "3.1.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "s3_public_access",
+      "pattern": "CKV_AWS_19|CKV_AWS_20|S3 bucket.*public",
+      "message": "S3 bucket allows public access",
+      "cause": "S3 bucket ACL or policy allows public read/write",
+      "solutions": [
+        {
+          "approach": "Block public access",
+          "code": "resource \"aws_s3_bucket_public_access_block\" \"example\" {\n  bucket = aws_s3_bucket.example.id\n  block_public_acls = true\n  block_public_policy = true\n  ignore_public_acls = true\n  restrict_public_buckets = true\n}",
+          "when": "Bucket should be private"
+        },
+        {
+          "approach": "Skip check",
+          "code": "#checkov:skip=CKV_AWS_19:Public access required for static hosting",
+          "when": "Public access is intentional"
+        }
+      ]
+    },
+    {
+      "id": "unencrypted_storage",
+      "pattern": "CKV_AWS_19|encryption|unencrypted",
+      "message": "Storage resource not encrypted",
+      "cause": "EBS/S3/RDS without encryption enabled",
+      "solutions": [
+        {
+          "approach": "Enable encryption",
+          "code": "resource \"aws_s3_bucket_server_side_encryption_configuration\" \"example\" {\n  bucket = aws_s3_bucket.example.id\n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm = \"AES256\"\n    }\n  }\n}",
+          "when": "Data needs encryption at rest"
+        },
+        {
+          "approach": "Use KMS key",
+          "code": "sse_algorithm = \"aws:kms\"\nkms_master_key_id = aws_kms_key.example.arn",
+          "when": "Need key management"
+        }
+      ]
+    },
+    {
+      "id": "security_group_open",
+      "pattern": "CKV_AWS_23|CKV_AWS_24|security group.*0\\.0\\.0\\.0",
+      "message": "Security group allows traffic from anywhere",
+      "cause": "Ingress rule with 0.0.0.0/0 CIDR",
+      "solutions": [
+        {
+          "approach": "Restrict CIDR",
+          "code": "ingress {\n  from_port = 443\n  to_port = 443\n  protocol = \"tcp\"\n  cidr_blocks = [\"10.0.0.0/8\"]  # Internal only\n}",
+          "when": "Should restrict to known IPs"
+        },
+        {
+          "approach": "Use security group reference",
+          "code": "security_groups = [aws_security_group.allowed.id]",
+          "when": "Should allow from specific SGs"
+        },
+        {
+          "approach": "Document exception",
+          "code": "#checkov:skip=CKV_AWS_23:Public ALB requires 0.0.0.0/0",
+          "when": "Public access is required"
+        }
+      ]
+    },
+    {
+      "id": "hardcoded_secret",
+      "pattern": "CKV_SECRET|hardcoded|secret|password",
+      "message": "Hardcoded secret detected",
+      "cause": "Credentials embedded in infrastructure code",
+      "solutions": [
+        {
+          "approach": "Use variables",
+          "code": "variable \"db_password\" {\n  type = string\n  sensitive = true\n}\n\npassword = var.db_password",
+          "when": "Need to parameterize"
+        },
+        {
+          "approach": "Use secrets manager",
+          "code": "password = data.aws_secretsmanager_secret_version.db.secret_string",
+          "when": "Production secrets"
+        },
+        {
+          "approach": "Use environment",
+          "code": "password = var.db_password  # Set via TF_VAR_db_password",
+          "when": "CI/CD pipeline"
+        }
+      ]
+    },
+    {
+      "id": "missing_logging",
+      "pattern": "CKV_AWS_18|CKV_AWS_144|logging.*not enabled",
+      "message": "Resource logging not enabled",
+      "cause": "CloudTrail, S3 access logs, or flow logs disabled",
+      "solutions": [
+        {
+          "approach": "Enable S3 logging",
+          "code": "resource \"aws_s3_bucket_logging\" \"example\" {\n  bucket = aws_s3_bucket.example.id\n  target_bucket = aws_s3_bucket.log_bucket.id\n  target_prefix = \"log/\"\n}",
+          "when": "S3 bucket needs logging"
+        },
+        {
+          "approach": "Enable CloudTrail",
+          "code": "resource \"aws_cloudtrail\" \"example\" {\n  name = \"audit-trail\"\n  s3_bucket_name = aws_s3_bucket.trail.id\n  include_global_service_events = true\n}",
+          "when": "Need audit trail"
+        }
+      ]
+    },
+    {
+      "id": "missing_tags",
+      "pattern": "CKV_AWS_TAG|tagging|missing tags",
+      "message": "Resource missing required tags",
+      "cause": "Resources should have cost/ownership tags",
+      "solutions": [
+        {
+          "approach": "Add tags",
+          "code": "tags = {\n  Environment = var.environment\n  Owner = var.owner\n  Project = var.project\n}",
+          "when": "Need resource tracking"
+        },
+        {
+          "approach": "Use default tags",
+          "code": "provider \"aws\" {\n  default_tags {\n    tags = { ManagedBy = \"terraform\" }\n  }\n}",
+          "when": "Apply tags globally"
+        }
+      ]
+    },
+    {
+      "id": "iam_overpermissioned",
+      "pattern": "CKV_AWS_.*IAM|Action.*\\*|Resource.*\\*",
+      "message": "IAM policy is overly permissive",
+      "cause": "Policy uses wildcards for actions or resources",
+      "solutions": [
+        {
+          "approach": "Use least privilege",
+          "code": "statement {\n  actions = [\"s3:GetObject\", \"s3:PutObject\"]\n  resources = [\"${aws_s3_bucket.data.arn}/*\"]\n}",
+          "when": "Can specify exact permissions"
+        },
+        {
+          "approach": "Use managed policies",
+          "code": "managed_policy_arns = [\"arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess\"]",
+          "when": "Standard permissions needed"
+        }
+      ]
+    },
+    {
+      "id": "framework_not_found",
+      "pattern": "Unable to identify framework|No framework detected",
+      "message": "Checkov cannot identify IaC framework",
+      "cause": "Files not recognized as Terraform/CloudFormation/etc.",
+      "solutions": [
+        {
+          "approach": "Specify framework",
+          "code": "checkov -f file.tf --framework terraform",
+          "when": "Framework detection fails"
+        },
+        {
+          "approach": "Check file extension",
+          "code": "// Ensure .tf for Terraform, .yaml/.json for CloudFormation",
+          "when": "Wrong file extension"
+        },
+        {
+          "approach": "Use directory scan",
+          "code": "checkov -d ./terraform/",
+          "when": "Scanning whole directory"
+        }
+      ]
+    }
+  ]
+}

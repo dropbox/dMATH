@@ -1,0 +1,145 @@
+{
+  "tool": "verimap",
+  "version": "2024",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "unsafe_result",
+      "pattern": "UNSAFE|property violated",
+      "message": "Safety property violation found",
+      "cause": "VeriMAP found reachable error via CHC solving",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "# Check output for counterexample trace",
+          "when": "Need violation path"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Constrained Horn Clause solving found real bug",
+          "when": "Genuine property violation"
+        },
+        {
+          "approach": "Strengthen invariants",
+          "code": "// Add assertions to guide analysis",
+          "when": "Analysis too imprecise"
+        }
+      ]
+    },
+    {
+      "id": "unknown_result",
+      "pattern": "UNKNOWN|could not determine",
+      "message": "Verification inconclusive",
+      "cause": "VeriMAP could not solve CHC system",
+      "solutions": [
+        {
+          "approach": "Increase resources",
+          "code": "verimap --timeout 900 program.c",
+          "when": "CHC solving needs more time"
+        },
+        {
+          "approach": "Try different strategy",
+          "code": "verimap --strategy interpolation program.c",
+          "when": "Current strategy stuck"
+        },
+        {
+          "approach": "Simplify program",
+          "code": "// Add loop bounds or simpler control flow",
+          "when": "CHC system too complex"
+        }
+      ]
+    },
+    {
+      "id": "chc_generation_error",
+      "pattern": "CHC generation failed|could not encode",
+      "message": "Constrained Horn Clause generation failed",
+      "cause": "Could not translate program to CHC",
+      "solutions": [
+        {
+          "approach": "Check program features",
+          "code": "// VeriMAP supports specific C subset",
+          "when": "Unsupported constructs"
+        },
+        {
+          "approach": "Simplify pointers",
+          "code": "// Reduce pointer arithmetic complexity",
+          "when": "Complex memory operations"
+        },
+        {
+          "approach": "Handle recursion",
+          "code": "// Ensure recursive functions are bounded",
+          "when": "Unbounded recursion"
+        }
+      ]
+    },
+    {
+      "id": "solver_timeout",
+      "pattern": "solver timeout|Z3.*timeout",
+      "message": "CHC solver timed out",
+      "cause": "Underlying solver could not solve CHC",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "verimap --solver-timeout 600 program.c",
+          "when": "Solver making progress"
+        },
+        {
+          "approach": "Try different solver",
+          "code": "verimap --solver eldarica program.c",
+          "when": "Z3 struggling with CHC"
+        },
+        {
+          "approach": "Add invariants",
+          "code": "// Manual invariants simplify CHC solving",
+          "when": "Complex inductive invariants needed"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "parsing error|syntax error",
+      "message": "C source parsing failed",
+      "cause": "Invalid C syntax or unsupported features",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "gcc -fsyntax-only program.c",
+          "when": "Source has errors"
+        },
+        {
+          "approach": "Use SV-COMP harness",
+          "code": "#include <sv-comp.h> for __VERIFIER_*",
+          "when": "Using verification functions"
+        },
+        {
+          "approach": "Preprocess",
+          "code": "gcc -E program.c > preprocessed.c && verimap preprocessed.c",
+          "when": "Macro expansion needed"
+        }
+      ]
+    },
+    {
+      "id": "invariant_inference_failed",
+      "pattern": "invariant inference failed|could not find invariant",
+      "message": "Could not infer loop invariant",
+      "cause": "VeriMAP's CHC solver could not find inductive invariant",
+      "solutions": [
+        {
+          "approach": "Add manual invariant",
+          "code": "__VERIFIER_assert(loop_invariant);",
+          "when": "Know the invariant"
+        },
+        {
+          "approach": "Try different template",
+          "code": "verimap --template linear program.c",
+          "when": "Default template insufficient"
+        },
+        {
+          "approach": "Bound the loop",
+          "code": "__VERIFIER_assume(n < BOUND);",
+          "when": "Bounded verification acceptable"
+        }
+      ]
+    }
+  ]
+}

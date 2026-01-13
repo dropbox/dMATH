@@ -1,0 +1,191 @@
+{
+  "tool": "haproxy",
+  "version": "2.8.5",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "config_parse_error",
+      "pattern": "parsing.*error|configuration file.*invalid|line \\d+.*unknown keyword",
+      "message": "Configuration file parsing error",
+      "cause": "Syntax error in haproxy.cfg",
+      "solutions": [
+        {
+          "approach": "Validate config",
+          "code": "haproxy -c -f /etc/haproxy/haproxy.cfg",
+          "when": "Check syntax"
+        },
+        {
+          "approach": "Check keywords",
+          "code": "# Verify keyword is valid for section (global, defaults, frontend, backend)",
+          "when": "Unknown keyword"
+        },
+        {
+          "approach": "Check indentation",
+          "code": "frontend http_front\n    bind *:80\n    default_backend servers\n\nbackend servers\n    server s1 127.0.0.1:8080 check",
+          "when": "Section structure"
+        }
+      ]
+    },
+    {
+      "id": "bind_error",
+      "pattern": "cannot bind socket|Address already in use|permission denied.*bind",
+      "message": "Cannot bind to address/port",
+      "cause": "Port in use or permission issue",
+      "solutions": [
+        {
+          "approach": "Check port",
+          "code": "ss -tlnp | grep :80\n# Kill conflicting process or use different port",
+          "when": "Port in use"
+        },
+        {
+          "approach": "Run as root",
+          "code": "sudo haproxy -f /etc/haproxy/haproxy.cfg",
+          "when": "Privileged port (<1024)"
+        },
+        {
+          "approach": "Use capability",
+          "code": "setcap 'cap_net_bind_service=+ep' /usr/sbin/haproxy",
+          "when": "Run as non-root"
+        }
+      ]
+    },
+    {
+      "id": "backend_down",
+      "pattern": "server.*is DOWN|no server.*available|Connection refused",
+      "message": "Backend server unavailable",
+      "cause": "Backend server not responding to health checks",
+      "solutions": [
+        {
+          "approach": "Check backend",
+          "code": "curl -I http://localhost:8080/health",
+          "when": "Verify backend"
+        },
+        {
+          "approach": "Check health",
+          "code": "backend servers\n    option httpchk GET /health\n    server s1 127.0.0.1:8080 check inter 5s rise 2 fall 3",
+          "when": "Configure health check"
+        },
+        {
+          "approach": "Stats page",
+          "code": "listen stats\n    bind *:8404\n    stats enable\n    stats uri /stats\n    stats refresh 10s",
+          "when": "Enable monitoring"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL.*error|certificate.*not found|unable to load SSL|no SSL cert",
+      "message": "SSL/TLS configuration error",
+      "cause": "Certificate file issue or SSL config wrong",
+      "solutions": [
+        {
+          "approach": "Check cert path",
+          "code": "frontend https_front\n    bind *:443 ssl crt /etc/haproxy/certs/domain.pem\n    # PEM file must contain cert + key",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Create PEM",
+          "code": "cat /etc/ssl/certs/domain.crt /etc/ssl/private/domain.key > /etc/haproxy/certs/domain.pem\nchmod 600 /etc/haproxy/certs/domain.pem",
+          "when": "Combine cert and key"
+        },
+        {
+          "approach": "Verify cert",
+          "code": "openssl x509 -in domain.pem -text -noout",
+          "when": "Check certificate"
+        }
+      ]
+    },
+    {
+      "id": "acl_error",
+      "pattern": "ACL.*error|unknown ACL|missing argument.*acl",
+      "message": "ACL configuration error",
+      "cause": "ACL syntax wrong or missing",
+      "solutions": [
+        {
+          "approach": "Path ACL",
+          "code": "frontend http_front\n    acl is_api path_beg /api\n    use_backend api_servers if is_api",
+          "when": "Path-based routing"
+        },
+        {
+          "approach": "Host ACL",
+          "code": "frontend http_front\n    acl host_main hdr(host) -i example.com\n    use_backend main_servers if host_main",
+          "when": "Host-based routing"
+        },
+        {
+          "approach": "Multiple ACLs",
+          "code": "frontend http_front\n    acl is_api path_beg /api\n    acl is_secure hdr(X-Forwarded-Proto) https\n    use_backend api_servers if is_api is_secure",
+          "when": "Combined conditions"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timeout.*reached|client.*timeout|server.*timeout",
+      "message": "Connection timeout",
+      "cause": "Timeout value too low or slow backend",
+      "solutions": [
+        {
+          "approach": "Adjust timeouts",
+          "code": "defaults\n    timeout connect 10s\n    timeout client 30s\n    timeout server 30s\n    timeout http-request 10s\n    timeout http-keep-alive 10s",
+          "when": "Timeouts too short"
+        },
+        {
+          "approach": "Long-polling",
+          "code": "backend websocket\n    timeout tunnel 1h\n    server ws1 127.0.0.1:8080",
+          "when": "WebSocket/long connections"
+        },
+        {
+          "approach": "Per-backend",
+          "code": "backend slow_api\n    timeout server 120s\n    server s1 127.0.0.1:8080",
+          "when": "Slow backend"
+        }
+      ]
+    },
+    {
+      "id": "maxconn_error",
+      "pattern": "maxconn.*reached|too many connections|connection limit",
+      "message": "Connection limit reached",
+      "cause": "Maximum connections exceeded",
+      "solutions": [
+        {
+          "approach": "Increase global",
+          "code": "global\n    maxconn 50000",
+          "when": "Need more connections"
+        },
+        {
+          "approach": "Frontend limit",
+          "code": "frontend http_front\n    bind *:80\n    maxconn 10000",
+          "when": "Limit per frontend"
+        },
+        {
+          "approach": "Backend limit",
+          "code": "backend servers\n    server s1 127.0.0.1:8080 maxconn 500",
+          "when": "Limit per server"
+        }
+      ]
+    },
+    {
+      "id": "reload_error",
+      "pattern": "reload.*failed|cannot reload|pid.*not found",
+      "message": "Configuration reload failed",
+      "cause": "Error in new config or process issue",
+      "solutions": [
+        {
+          "approach": "Validate first",
+          "code": "haproxy -c -f /etc/haproxy/haproxy.cfg && systemctl reload haproxy",
+          "when": "Check before reload"
+        },
+        {
+          "approach": "Graceful reload",
+          "code": "haproxy -f /etc/haproxy/haproxy.cfg -p /var/run/haproxy.pid -sf $(cat /var/run/haproxy.pid)",
+          "when": "Manual reload"
+        },
+        {
+          "approach": "Check logs",
+          "code": "journalctl -u haproxy -f",
+          "when": "Debug reload"
+        }
+      ]
+    }
+  ]
+}

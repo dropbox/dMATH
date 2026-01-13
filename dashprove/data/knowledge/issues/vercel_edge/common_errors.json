@@ -1,0 +1,181 @@
+{
+  "tool": "vercel_edge",
+  "version": "0.3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "edge_config_error",
+      "pattern": "Edge Config.*error|EDGE_CONFIG|config not found",
+      "message": "Edge Config not configured",
+      "cause": "Edge Config store not set up or connected",
+      "solutions": [
+        {
+          "approach": "Create Edge Config",
+          "code": "# Create via Vercel Dashboard or CLI\nvercel edge-config add my-config",
+          "when": "New setup"
+        },
+        {
+          "approach": "Connect to project",
+          "code": "vercel link\n# Then link Edge Config in dashboard",
+          "when": "Project not linked"
+        },
+        {
+          "approach": "Check env var",
+          "code": "// EDGE_CONFIG env var should be set automatically\nconsole.log(process.env.EDGE_CONFIG);",
+          "when": "Verify connection"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "Edge Runtime|unsupported API|not available",
+      "message": "API not available in Edge Runtime",
+      "cause": "Using Node.js API not available in Edge Runtime",
+      "solutions": [
+        {
+          "approach": "Check supported APIs",
+          "code": "// Edge Runtime supports:\n// - fetch, Request, Response\n// - crypto.subtle\n// - TextEncoder/Decoder\n// NOT: fs, path, child_process, etc.",
+          "when": "API compatibility"
+        },
+        {
+          "approach": "Use Edge-compatible packages",
+          "code": "// Use edge-compatible alternatives\nimport { Redis } from '@upstash/redis'\nimport { kv } from '@vercel/kv'",
+          "when": "Third-party packages"
+        },
+        {
+          "approach": "Switch to Node.js runtime",
+          "code": "export const runtime = 'nodejs';  // Instead of 'edge'",
+          "when": "Need full Node.js"
+        }
+      ]
+    },
+    {
+      "id": "size_limit",
+      "pattern": "size limit|too large|bundle size",
+      "message": "Edge Function bundle too large",
+      "cause": "Function exceeds 1MB compressed limit",
+      "solutions": [
+        {
+          "approach": "Check bundle size",
+          "code": "vercel build --debug",
+          "when": "Analyze size"
+        },
+        {
+          "approach": "Reduce dependencies",
+          "code": "// Use lighter alternatives\n// lodash -> lodash-es or native\n// moment -> date-fns or native Date",
+          "when": "Heavy dependencies"
+        },
+        {
+          "approach": "Code splitting",
+          "code": "// Split into multiple edge functions",
+          "when": "Large codebase"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "timeout|execution.*exceeded|EDGE_TIMEOUT",
+      "message": "Edge Function timed out",
+      "cause": "Function exceeded execution time limit",
+      "solutions": [
+        {
+          "approach": "Optimize code",
+          "code": "// Edge functions have 30s limit (Hobby) or configurable (Pro)\n// Optimize slow operations",
+          "when": "Slow execution"
+        },
+        {
+          "approach": "Use streaming",
+          "code": "export default function handler(req) {\n  const stream = new TransformStream();\n  // Stream response instead of waiting\n  return new Response(stream.readable);\n}",
+          "when": "Long responses"
+        },
+        {
+          "approach": "Configure timeout",
+          "code": "// vercel.json\n{\n  \"functions\": {\n    \"api/edge.ts\": {\n      \"maxDuration\": 60\n    }\n  }\n}",
+          "when": "Pro plan - increase limit"
+        }
+      ]
+    },
+    {
+      "id": "env_var_error",
+      "pattern": "Environment variable|process.env|undefined",
+      "message": "Environment variable not available",
+      "cause": "Env var not set or not exposed to Edge Runtime",
+      "solutions": [
+        {
+          "approach": "Add via CLI",
+          "code": "vercel env add MY_VAR",
+          "when": "Missing env var"
+        },
+        {
+          "approach": "Check environments",
+          "code": "vercel env ls\n# Ensure var is set for correct environment (dev/preview/production)",
+          "when": "Wrong environment"
+        },
+        {
+          "approach": "Pull env vars",
+          "code": "vercel env pull .env.local",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "middleware_error",
+      "pattern": "Middleware.*error|middleware.ts|NextResponse",
+      "message": "Middleware execution error",
+      "cause": "Error in Next.js middleware",
+      "solutions": [
+        {
+          "approach": "Check middleware export",
+          "code": "// middleware.ts (root or src/)\nimport { NextResponse } from 'next/server'\n\nexport function middleware(request) {\n  return NextResponse.next()\n}\n\nexport const config = {\n  matcher: '/api/:path*'\n}",
+          "when": "Basic middleware"
+        },
+        {
+          "approach": "Debug middleware",
+          "code": "export function middleware(request) {\n  console.log('Middleware running:', request.url)\n  return NextResponse.next()\n}",
+          "when": "Debug execution"
+        }
+      ]
+    },
+    {
+      "id": "geo_error",
+      "pattern": "geo.*undefined|request.geo|geolocation",
+      "message": "Geo data not available",
+      "cause": "Geolocation data not accessible",
+      "solutions": [
+        {
+          "approach": "Access geo data",
+          "code": "export default function handler(req) {\n  const { geo } = req;\n  const country = geo?.country || 'US';\n  // geo available: city, country, region, latitude, longitude\n}",
+          "when": "Access location"
+        },
+        {
+          "approach": "Local development",
+          "code": "// Geo data not available locally\n// Use fallbacks for development",
+          "when": "Testing locally"
+        }
+      ]
+    },
+    {
+      "id": "kv_error",
+      "pattern": "Vercel KV|@vercel/kv|Redis.*error",
+      "message": "Vercel KV error",
+      "cause": "KV store not configured or operation failed",
+      "solutions": [
+        {
+          "approach": "Set up KV",
+          "code": "# Create KV store in Vercel Dashboard\n# Install package: npm i @vercel/kv",
+          "when": "Initial setup"
+        },
+        {
+          "approach": "Use KV",
+          "code": "import { kv } from '@vercel/kv';\n\nconst value = await kv.get('key');\nawait kv.set('key', 'value');",
+          "when": "Basic operations"
+        },
+        {
+          "approach": "Local development",
+          "code": "# KV_REST_API_URL and KV_REST_API_TOKEN\n# must be set locally\nvercel env pull .env.local",
+          "when": "Local testing"
+        }
+      ]
+    }
+  ]
+}

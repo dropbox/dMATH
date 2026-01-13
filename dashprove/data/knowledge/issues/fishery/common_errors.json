@@ -1,0 +1,148 @@
+{
+  "tool": "fishery",
+  "category": "test_data_generation",
+  "common_errors": [
+    {
+      "error_pattern": "Factory is not a constructor",
+      "description": "Incorrect factory usage in TypeScript/JavaScript",
+      "causes": [
+        "Wrong import syntax",
+        "Not using Factory.define",
+        "Default export issue"
+      ],
+      "solutions": [
+        "Import correctly: import { Factory } from 'fishery'",
+        "Define factory: const userFactory = Factory.define<User>()",
+        "Check TypeScript module settings"
+      ]
+    },
+    {
+      "error_pattern": "Type.*not assignable",
+      "description": "TypeScript type mismatch in factory",
+      "causes": [
+        "Factory attributes don't match type",
+        "Missing required properties",
+        "Transient types mismatched"
+      ],
+      "solutions": [
+        "Ensure all required properties defined",
+        "Use partial: Factory.define<User, UserTransient>()",
+        "Add missing properties to factory"
+      ]
+    },
+    {
+      "error_pattern": "sequence.*undefined",
+      "description": "Sequence not available in context",
+      "causes": [
+        "Using sequence outside build function",
+        "Destructuring incorrectly"
+      ],
+      "solutions": [
+        "Access from params: ({ sequence }) => ({ id: sequence })",
+        "Use in define: Factory.define<User>(({ sequence }) => ({...}))"
+      ]
+    },
+    {
+      "error_pattern": "associations.*not defined",
+      "description": "Associated factory not found",
+      "causes": [
+        "Association factory not registered",
+        "Circular dependency"
+      ],
+      "solutions": [
+        "Pass associations: ({ associations }) => associations.profile",
+        "Register associated factories first",
+        "Use lazy evaluation for circular deps"
+      ]
+    },
+    {
+      "error_pattern": "transient.*undefined",
+      "description": "Transient parameter not accessible",
+      "causes": [
+        "Transient not defined in factory",
+        "Wrong destructuring"
+      ],
+      "solutions": [
+        "Define transient type: Factory.define<User, { admin: boolean }>()",
+        "Access: ({ transientParams }) => transientParams.admin"
+      ]
+    },
+    {
+      "error_pattern": "Cannot read.*params",
+      "description": "Build params not available",
+      "causes": [
+        "Wrong callback signature",
+        "Not using arrow function correctly"
+      ],
+      "solutions": [
+        "Use callback: ({ params }) => ({ ...params })",
+        "Check fishery version for API changes"
+      ]
+    },
+    {
+      "error_pattern": "buildList.*not a function",
+      "description": "Build method not available on factory",
+      "causes": [
+        "Factory not properly defined",
+        "Using wrong factory instance"
+      ],
+      "solutions": [
+        "Use factory.buildList(5)",
+        "Ensure factory created with Factory.define",
+        "Check factory export/import"
+      ]
+    },
+    {
+      "error_pattern": "onCreate.*async",
+      "description": "Async onCreate not awaited",
+      "causes": [
+        "onCreate returns promise not awaited",
+        "create() not awaited"
+      ],
+      "solutions": [
+        "Use await: await factory.create()",
+        "Handle promise: factory.create().then(...)",
+        "onCreate should be async if doing async work"
+      ]
+    },
+    {
+      "error_pattern": "afterBuild.*not called",
+      "description": "afterBuild hook not executing",
+      "causes": [
+        "Using params instead of afterBuild",
+        "Hook defined incorrectly"
+      ],
+      "solutions": [
+        "Use hooks object in define",
+        "afterBuild: (user) => { user.computed = ...; return user }",
+        "Hooks run in order: afterBuild, onCreate"
+      ]
+    },
+    {
+      "error_pattern": "rewindSequence.*undefined",
+      "description": "Cannot reset sequence",
+      "causes": [
+        "Method name changed",
+        "Using wrong factory instance"
+      ],
+      "solutions": [
+        "Use factory.rewindSequence()",
+        "Call before each test: beforeEach(() => factory.rewindSequence())",
+        "Check fishery version"
+      ]
+    },
+    {
+      "error_pattern": "Trait.*not found",
+      "description": "Using undefined trait",
+      "causes": [
+        "Trait not defined with traits()",
+        "Trait name typo"
+      ],
+      "solutions": [
+        "Define trait: const factory = Factory.define<User>().traits({ admin: ... })",
+        "Use trait: factory.use((t) => t.admin).build()",
+        "Check trait registration"
+      ]
+    }
+  ]
+}

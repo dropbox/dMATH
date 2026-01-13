@@ -1,0 +1,186 @@
+{
+  "tool": "heaptrack",
+  "version": "1.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "ld_preload_failed",
+      "pattern": "LD_PRELOAD.*failed|cannot preload",
+      "message": "Failed to preload heaptrack library",
+      "cause": "Library path incorrect or binary incompatible",
+      "solutions": [
+        {
+          "approach": "Use heaptrack wrapper",
+          "code": "heaptrack ./my_program",
+          "when": "Direct execution"
+        },
+        {
+          "approach": "Check library path",
+          "code": "ls /usr/lib/heaptrack/libheaptrack_preload.so",
+          "when": "Library missing"
+        },
+        {
+          "approach": "Set library path",
+          "code": "export LD_LIBRARY_PATH=/usr/lib/heaptrack:$LD_LIBRARY_PATH",
+          "when": "Custom installation"
+        }
+      ]
+    },
+    {
+      "id": "no_data_collected",
+      "pattern": "no data|empty trace",
+      "message": "No heap data collected",
+      "cause": "Program too short or using custom allocator",
+      "solutions": [
+        {
+          "approach": "Run longer",
+          "code": "# Ensure program runs long enough to allocate",
+          "when": "Short-lived program"
+        },
+        {
+          "approach": "Force malloc use",
+          "code": "LD_PRELOAD=libheaptrack_preload.so ./program",
+          "when": "Bypassing custom allocator"
+        },
+        {
+          "approach": "Check for static linking",
+          "code": "ldd ./program  # If no libc, won't work",
+          "when": "Static binary"
+        }
+      ]
+    },
+    {
+      "id": "gui_not_found",
+      "pattern": "heaptrack_gui.*not found|Qt.*missing",
+      "message": "heaptrack GUI not available",
+      "cause": "GUI package not installed or Qt missing",
+      "solutions": [
+        {
+          "approach": "Install GUI package",
+          "code": "# Ubuntu:\nsudo apt install heaptrack-gui\n# Fedora:\nsudo dnf install heaptrack-gui",
+          "when": "GUI not installed"
+        },
+        {
+          "approach": "Use analyzer CLI",
+          "code": "heaptrack_print heaptrack.program.12345.gz",
+          "when": "CLI analysis sufficient"
+        },
+        {
+          "approach": "Install Qt dependencies",
+          "code": "sudo apt install qtbase5-dev libkf5coreaddons-dev",
+          "when": "Qt libraries missing"
+        }
+      ]
+    },
+    {
+      "id": "file_too_large",
+      "pattern": "memory.*exhausted|file too large",
+      "message": "Heaptrack output file too large",
+      "cause": "Too many allocations recorded",
+      "solutions": [
+        {
+          "approach": "Use sampling",
+          "code": "heaptrack --sampling=1000 ./program",
+          "when": "Too many allocations"
+        },
+        {
+          "approach": "Run shorter",
+          "code": "# Profile specific operation only",
+          "when": "Long-running program"
+        },
+        {
+          "approach": "Compress output",
+          "code": "heaptrack ./program  # Already compresses with zstd",
+          "when": "Disk space issue"
+        }
+      ]
+    },
+    {
+      "id": "symbols_missing",
+      "pattern": "\\?\\?|no debug info",
+      "message": "Missing debug symbols",
+      "cause": "Binary compiled without debug info",
+      "solutions": [
+        {
+          "approach": "Compile with debug info",
+          "code": "gcc -g -fno-omit-frame-pointer -o program program.c",
+          "when": "Building from source"
+        },
+        {
+          "approach": "Install debug packages",
+          "code": "sudo apt install libc6-dbg",
+          "when": "Library symbols needed"
+        },
+        {
+          "approach": "Keep frame pointers",
+          "code": "CFLAGS=\"-fno-omit-frame-pointer\" ./configure && make",
+          "when": "Need call stacks"
+        }
+      ]
+    },
+    {
+      "id": "attach_failed",
+      "pattern": "cannot attach|ptrace failed",
+      "message": "Failed to attach to running process",
+      "cause": "Ptrace disabled or permission denied",
+      "solutions": [
+        {
+          "approach": "Enable ptrace",
+          "code": "sudo sysctl kernel.yama.ptrace_scope=0",
+          "when": "Ptrace restricted"
+        },
+        {
+          "approach": "Run as root",
+          "code": "sudo heaptrack -p PID",
+          "when": "Permission denied"
+        },
+        {
+          "approach": "Start with heaptrack",
+          "code": "heaptrack ./program  # Start fresh instead of attach",
+          "when": "Can restart program"
+        }
+      ]
+    },
+    {
+      "id": "version_mismatch",
+      "pattern": "version mismatch|incompatible format",
+      "message": "Heaptrack file version mismatch",
+      "cause": "Profile created with different heaptrack version",
+      "solutions": [
+        {
+          "approach": "Match versions",
+          "code": "heaptrack --version\nheaptrack_gui --version",
+          "when": "Check versions"
+        },
+        {
+          "approach": "Reprofile",
+          "code": "# Re-run with current heaptrack version",
+          "when": "Can re-profile"
+        },
+        {
+          "approach": "Update heaptrack",
+          "code": "sudo apt update && sudo apt upgrade heaptrack heaptrack-gui",
+          "when": "Update available"
+        }
+      ]
+    },
+    {
+      "id": "stack_depth_limited",
+      "pattern": "stack.*truncated|max depth",
+      "message": "Stack trace depth limited",
+      "cause": "Default stack depth insufficient",
+      "solutions": [
+        {
+          "approach": "Increase stack depth",
+          "code": "HEAPTRACK_STACK_DEPTH=64 heaptrack ./program",
+          "when": "Need deeper stacks"
+        },
+        {
+          "approach": "Use frame pointers",
+          "code": "# Compile with -fno-omit-frame-pointer for reliable unwinding",
+          "when": "Using fp unwinding"
+        }
+      ]
+    }
+  ]
+}

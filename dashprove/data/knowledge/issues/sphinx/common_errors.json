@@ -1,0 +1,247 @@
+{
+  "tool": "sphinx",
+  "version": "7.2+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "autodoc_import_error",
+      "pattern": "autodoc.*import|failed to import|ModuleNotFoundError.*autodoc",
+      "message": "Autodoc cannot import module",
+      "cause": "Module not in Python path or missing dependencies",
+      "solutions": [
+        {
+          "approach": "Add to sys.path in conf.py",
+          "code": "import sys\nsys.path.insert(0, os.path.abspath('..'))",
+          "when": "Module not found"
+        },
+        {
+          "approach": "Install package in editable mode",
+          "code": "pip install -e .",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Use autodoc_mock_imports",
+          "code": "autodoc_mock_imports = ['numpy', 'torch']",
+          "when": "Heavy dependencies slow builds"
+        },
+        {
+          "approach": "Check __init__.py",
+          "code": "# Ensure __init__.py exists in package",
+          "when": "Package structure issue"
+        }
+      ]
+    },
+    {
+      "id": "toctree_not_included",
+      "pattern": "toctree contains reference.*not included|document isn't included in any toctree",
+      "message": "Document not included in toctree",
+      "cause": "RST file exists but not referenced in any toctree",
+      "solutions": [
+        {
+          "approach": "Add to toctree",
+          "code": ".. toctree::\n   :maxdepth: 2\n\n   newfile",
+          "when": "File should be in nav"
+        },
+        {
+          "approach": "Use orphan directive",
+          "code": ":orphan:\n\nStandalone Page\n===============",
+          "when": "Intentionally standalone"
+        },
+        {
+          "approach": "Set glob pattern",
+          "code": ".. toctree::\n   :glob:\n\n   api/*",
+          "when": "Auto-include files"
+        }
+      ]
+    },
+    {
+      "id": "undefined_label",
+      "pattern": "undefined label|unknown target|undefined ref",
+      "message": "Cross-reference target not found",
+      "cause": "Referenced label doesn't exist",
+      "solutions": [
+        {
+          "approach": "Define the label",
+          "code": ".. _my-label:\n\nSection Title\n=============",
+          "when": "Label missing"
+        },
+        {
+          "approach": "Use correct syntax",
+          "code": ":ref:`my-label`",
+          "when": "Wrong reference syntax"
+        },
+        {
+          "approach": "Check for typos",
+          "code": "grep -r '_target-name' docs/",
+          "when": "Possible typo in label"
+        },
+        {
+          "approach": "Use doc role for files",
+          "code": ":doc:`path/to/file`",
+          "when": "Referencing document not label"
+        }
+      ]
+    },
+    {
+      "id": "extension_not_found",
+      "pattern": "extension.*not found|Could not import extension",
+      "message": "Sphinx extension not installed",
+      "cause": "Extension in conf.py not available",
+      "solutions": [
+        {
+          "approach": "Install extension",
+          "code": "pip install sphinx-rtd-theme sphinx-autodoc-typehints",
+          "when": "Extension not installed"
+        },
+        {
+          "approach": "Check extension name",
+          "code": "extensions = ['sphinx.ext.autodoc']  # Not 'autodoc'",
+          "when": "Wrong extension name"
+        },
+        {
+          "approach": "Add local extension path",
+          "code": "sys.path.append(os.path.abspath('./_ext'))",
+          "when": "Custom local extension"
+        }
+      ]
+    },
+    {
+      "id": "rst_parsing_error",
+      "pattern": "WARNING:.*rst|Unexpected section title|Title underline too short",
+      "message": "reStructuredText parsing error",
+      "cause": "Invalid RST syntax",
+      "solutions": [
+        {
+          "approach": "Match underline length",
+          "code": "Section Title\n=============",
+          "when": "Underline too short"
+        },
+        {
+          "approach": "Fix indentation",
+          "code": ".. code-block:: python\n\n   code here  # 3 space indent",
+          "when": "Block indentation wrong"
+        },
+        {
+          "approach": "Escape special chars",
+          "code": "Use \\*asterisks\\* for literal",
+          "when": "Special chars not escaped"
+        },
+        {
+          "approach": "Blank line before list",
+          "code": "Paragraph text.\n\n* List item one\n* List item two",
+          "when": "List not recognized"
+        }
+      ]
+    },
+    {
+      "id": "build_encoding_error",
+      "pattern": "UnicodeDecodeError|encoding.*error|codec can't decode",
+      "message": "File encoding error",
+      "cause": "Source file not UTF-8 or has invalid characters",
+      "solutions": [
+        {
+          "approach": "Set source encoding",
+          "code": "source_encoding = 'utf-8-sig'",
+          "when": "Files have BOM"
+        },
+        {
+          "approach": "Convert file encoding",
+          "code": "iconv -f ISO-8859-1 -t UTF-8 file.rst > file_utf8.rst",
+          "when": "File is not UTF-8"
+        },
+        {
+          "approach": "Remove invalid chars",
+          "code": "sed -i 's/[\\x80-\\xFF]//g' file.rst",
+          "when": "Has non-UTF8 bytes"
+        }
+      ]
+    },
+    {
+      "id": "circular_reference",
+      "pattern": "circular toctree|recursive include",
+      "message": "Circular toctree reference",
+      "cause": "Documents include each other creating cycle",
+      "solutions": [
+        {
+          "approach": "Remove circular ref",
+          "code": "# A.rst includes B.rst, B.rst must not include A.rst",
+          "when": "Direct circular ref"
+        },
+        {
+          "approach": "Use cross-references instead",
+          "code": ":doc:`other_doc` instead of toctree include",
+          "when": "Only need link"
+        }
+      ]
+    },
+    {
+      "id": "theme_not_found",
+      "pattern": "Theme.*not found|no theme named",
+      "message": "HTML theme not installed",
+      "cause": "Theme package not installed",
+      "solutions": [
+        {
+          "approach": "Install theme",
+          "code": "pip install sphinx-rtd-theme",
+          "when": "Using Read the Docs theme"
+        },
+        {
+          "approach": "Use built-in theme",
+          "code": "html_theme = 'alabaster'",
+          "when": "Don't need custom theme"
+        },
+        {
+          "approach": "Install furo",
+          "code": "pip install furo\n# html_theme = 'furo'",
+          "when": "Modern theme needed"
+        }
+      ]
+    },
+    {
+      "id": "intersphinx_timeout",
+      "pattern": "intersphinx.*timeout|inventory.*not fetch|failed to reach",
+      "message": "Intersphinx inventory fetch failed",
+      "cause": "Remote documentation inventory unreachable",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "intersphinx_timeout = 30",
+          "when": "Slow network"
+        },
+        {
+          "approach": "Use local inventory",
+          "code": "intersphinx_mapping = {\n    'python': ('https://docs.python.org/3', 'python-inv.txt')\n}",
+          "when": "Have local copy"
+        },
+        {
+          "approach": "Disable in development",
+          "code": "intersphinx_mapping = {} if os.getenv('SPHINX_LOCAL') else {...}",
+          "when": "Offline development"
+        }
+      ]
+    },
+    {
+      "id": "docstring_format_error",
+      "pattern": "napoleon.*error|docstring.*parse|Args:.*expected",
+      "message": "Docstring parsing error",
+      "cause": "Docstring format doesn't match expected style",
+      "solutions": [
+        {
+          "approach": "Enable Napoleon",
+          "code": "extensions = ['sphinx.ext.napoleon']",
+          "when": "Using Google/NumPy style"
+        },
+        {
+          "approach": "Configure style",
+          "code": "napoleon_google_docstring = True\nnapoleon_numpy_docstring = False",
+          "when": "Using specific style"
+        },
+        {
+          "approach": "Fix docstring format",
+          "code": "Args:\n    param (type): Description.",
+          "when": "Format incorrect"
+        }
+      ]
+    }
+  ]
+}

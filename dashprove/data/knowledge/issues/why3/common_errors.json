@@ -1,0 +1,232 @@
+{
+  "tool": "why3",
+  "version": "1.7.2",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "precondition_not_proven",
+      "pattern": "precondition .* not proved",
+      "message": "Cannot prove function precondition",
+      "cause": "Requires clause not established at call site",
+      "solutions": [
+        {
+          "approach": "Add assertion before call",
+          "code": "assert { precondition };\ncall_function args",
+          "when": "Help prover see precondition holds"
+        },
+        {
+          "approach": "Add lemma",
+          "code": "lemma helper: forall x. condition",
+          "when": "Need intermediate fact"
+        },
+        {
+          "approach": "Propagate to caller",
+          "code": "requires { precondition }",
+          "when": "Cannot establish locally"
+        }
+      ]
+    },
+    {
+      "id": "postcondition_not_proven",
+      "pattern": "postcondition .* not proved",
+      "message": "Cannot prove function postcondition",
+      "cause": "Ensures clause not established by function body",
+      "solutions": [
+        {
+          "approach": "Add intermediate assertions",
+          "code": "assert { intermediate_fact };",
+          "when": "Break proof into steps"
+        },
+        {
+          "approach": "Strengthen loop invariant",
+          "code": "invariant { property_for_ensures }",
+          "when": "Postcondition depends on loop"
+        },
+        {
+          "approach": "Check specification",
+          "code": "// Verify ensures matches actual behavior",
+          "when": "Spec might be wrong"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_init",
+      "pattern": "loop invariant .* not established",
+      "message": "Loop invariant not true on entry",
+      "cause": "Invariant false before first iteration",
+      "solutions": [
+        {
+          "approach": "Weaken invariant",
+          "code": "invariant { i = 0 \\/ property }",
+          "when": "Only true after first iteration"
+        },
+        {
+          "approach": "Initialize before loop",
+          "code": "x <- init_value;\nwhile ... do\n  invariant { ... }",
+          "when": "Need setup code"
+        }
+      ]
+    },
+    {
+      "id": "loop_invariant_preservation",
+      "pattern": "loop invariant .* not preserved",
+      "message": "Loop invariant broken by loop body",
+      "cause": "Iteration doesn't maintain invariant",
+      "solutions": [
+        {
+          "approach": "Strengthen invariant",
+          "code": "invariant { additional_property }",
+          "when": "Need more facts"
+        },
+        {
+          "approach": "Fix loop body",
+          "code": "// Ensure body maintains invariant",
+          "when": "Logic error in loop"
+        },
+        {
+          "approach": "Add variant",
+          "code": "variant { expression }",
+          "when": "Also need termination proof"
+        }
+      ]
+    },
+    {
+      "id": "variant_not_decreasing",
+      "pattern": "variant .* not decreasing|variant .* not natural",
+      "message": "Cannot prove loop terminates",
+      "cause": "Variant doesn't strictly decrease each iteration",
+      "solutions": [
+        {
+          "approach": "Fix variant expression",
+          "code": "variant { correct_decreasing_expr }",
+          "when": "Wrong variant chosen"
+        },
+        {
+          "approach": "Ensure variant is natural",
+          "code": "invariant { variant_expr >= 0 }\nvariant { variant_expr }",
+          "when": "Need to prove non-negativity"
+        },
+        {
+          "approach": "Use measure type",
+          "code": "use int.Lex\nvariant { (a, b) with lex_order }",
+          "when": "Need lexicographic ordering"
+        }
+      ]
+    },
+    {
+      "id": "prover_timeout",
+      "pattern": "timeout|unknown",
+      "message": "Prover timed out or returned unknown",
+      "cause": "Proof obligation too hard for automatic proving",
+      "solutions": [
+        {
+          "approach": "Try different prover",
+          "code": "why3 prove -P cvc5 file.mlw",
+          "when": "One prover struggles"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "why3 prove -t 60 file.mlw",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Add lemma",
+          "code": "lemma helper: property",
+          "when": "Need intermediate step"
+        },
+        {
+          "approach": "Use transformations",
+          "code": "split_goal_right; auto",
+          "when": "Break into subgoals"
+        }
+      ]
+    },
+    {
+      "id": "type_mismatch",
+      "pattern": "type mismatch|expected type .* got",
+      "message": "Type error in specification or code",
+      "cause": "Expression has wrong type for context",
+      "solutions": [
+        {
+          "approach": "Check type annotations",
+          "code": "let x : int = expr",
+          "when": "Add explicit type"
+        },
+        {
+          "approach": "Use conversion",
+          "code": "to_int expr  // or from_int expr",
+          "when": "Need type conversion"
+        }
+      ]
+    },
+    {
+      "id": "unbound_identifier",
+      "pattern": "unbound .* identifier|unbound symbol",
+      "message": "Unknown variable or function",
+      "cause": "Identifier not in scope",
+      "solutions": [
+        {
+          "approach": "Import module",
+          "code": "use int.Int\nuse list.List",
+          "when": "Need standard library"
+        },
+        {
+          "approach": "Check spelling",
+          "code": "// Why3 is case-sensitive",
+          "when": "Typo in identifier"
+        },
+        {
+          "approach": "Clone theory",
+          "code": "clone MyTheory with type t = int",
+          "when": "Instantiate generic theory"
+        }
+      ]
+    },
+    {
+      "id": "exception_not_caught",
+      "pattern": "exception .* may escape",
+      "message": "Function may raise unhandled exception",
+      "cause": "Exception not in raises clause",
+      "solutions": [
+        {
+          "approach": "Add raises clause",
+          "code": "raises { MyExn -> condition }",
+          "when": "Exception is expected"
+        },
+        {
+          "approach": "Handle exception",
+          "code": "try ... with MyExn -> handler end",
+          "when": "Can handle locally"
+        },
+        {
+          "approach": "Prove it won't raise",
+          "code": "requires { condition_preventing_exception }",
+          "when": "Exception impossible with precondition"
+        }
+      ]
+    },
+    {
+      "id": "ghost_in_code",
+      "pattern": "ghost .* in non-ghost|ghost status mismatch",
+      "message": "Ghost/non-ghost mismatch",
+      "cause": "Used ghost value in executable code or vice versa",
+      "solutions": [
+        {
+          "approach": "Mark as ghost",
+          "code": "ghost let x = ...  // Specification only",
+          "when": "Value is for verification only"
+        },
+        {
+          "approach": "Remove ghost",
+          "code": "let x = ...  // Executable",
+          "when": "Value needed at runtime"
+        },
+        {
+          "approach": "Use ghost parameters",
+          "code": "let f (ghost n: int) = ...",
+          "when": "Parameter for specification only"
+        }
+      ]
+    }
+  ]
+}

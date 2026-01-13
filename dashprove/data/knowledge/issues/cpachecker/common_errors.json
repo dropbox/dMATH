@@ -1,0 +1,201 @@
+{
+  "tool": "cpachecker",
+  "version": "2.3",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "false_verdict",
+      "pattern": "Verification result: FALSE",
+      "message": "Property violation found",
+      "cause": "CPAchecker discovered a counterexample reaching error state",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "# Check output/Report.html or output/ErrorPath.*.txt",
+          "when": "Need to examine violating path"
+        },
+        {
+          "approach": "Add specification",
+          "code": "cpachecker --spec reach.spc program.c",
+          "when": "Checking custom property"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Counterexample shows real bug",
+          "when": "Verification found genuine issue"
+        }
+      ]
+    },
+    {
+      "id": "unknown_verdict",
+      "pattern": "Verification result: UNKNOWN",
+      "message": "Verification inconclusive",
+      "cause": "CPAchecker could not determine property truth",
+      "solutions": [
+        {
+          "approach": "Increase resources",
+          "code": "cpachecker -timelimit 600 -heap 16384m program.c",
+          "when": "Analysis needs more time/memory"
+        },
+        {
+          "approach": "Try different configuration",
+          "code": "cpachecker -config bmc-incremental.properties program.c",
+          "when": "Default analysis insufficient"
+        },
+        {
+          "approach": "Add loop invariants",
+          "code": "__VERIFIER_loop_invariant(condition);",
+          "when": "Loop analysis imprecise"
+        },
+        {
+          "approach": "Use CEGAR",
+          "code": "cpachecker -config predicateAnalysis.properties program.c",
+          "when": "Need predicate abstraction"
+        }
+      ]
+    },
+    {
+      "id": "parsing_error",
+      "pattern": "Parsing failed|ParserException",
+      "message": "C parsing error",
+      "cause": "Invalid C syntax or unsupported language features",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "gcc -fsyntax-only program.c",
+          "when": "Code has syntax errors"
+        },
+        {
+          "approach": "Use correct standard",
+          "code": "cpachecker -preprocess program.c",
+          "when": "Need preprocessing"
+        },
+        {
+          "approach": "Specify dialect",
+          "code": "cpachecker -setprop cpa.composite.aggregateBasicBlocks=false program.c",
+          "when": "Parser configuration issue"
+        }
+      ]
+    },
+    {
+      "id": "out_of_memory",
+      "pattern": "OutOfMemoryError|Java heap space",
+      "message": "CPAchecker ran out of memory",
+      "cause": "Analysis state space too large for available heap",
+      "solutions": [
+        {
+          "approach": "Increase heap",
+          "code": "cpachecker -heap 32768m program.c",
+          "when": "System has more memory"
+        },
+        {
+          "approach": "Use BMC",
+          "code": "cpachecker -config bmc-incremental.properties program.c",
+          "when": "Bounded checking sufficient"
+        },
+        {
+          "approach": "Use value analysis",
+          "code": "cpachecker -config valueAnalysis.properties program.c",
+          "when": "Need lightweight analysis"
+        },
+        {
+          "approach": "Limit exploration",
+          "code": "cpachecker -setprop cpa.loopbound.loopIterationsBeforeAbstraction=10 program.c",
+          "when": "Can bound loop unrolling"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "TIMEOUT|Time limit exceeded",
+      "message": "Analysis timed out",
+      "cause": "Verification did not complete within time limit",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "cpachecker -timelimit 3600 program.c",
+          "when": "Analysis is progressing"
+        },
+        {
+          "approach": "Try different approach",
+          "code": "cpachecker -config bmc-incremental.properties program.c",
+          "when": "CEGAR too slow"
+        },
+        {
+          "approach": "Focus analysis",
+          "code": "cpachecker -setprop analysis.entryFunction=target_func program.c",
+          "when": "Only need to verify specific function"
+        }
+      ]
+    },
+    {
+      "id": "spec_error",
+      "pattern": "Specification .* not found|Invalid specification",
+      "message": "Specification file error",
+      "cause": "Specified property file missing or invalid",
+      "solutions": [
+        {
+          "approach": "Check spec path",
+          "code": "ls config/specification/",
+          "when": "Spec file path wrong"
+        },
+        {
+          "approach": "Use builtin spec",
+          "code": "cpachecker --spec sv-comp-reachability.spc program.c",
+          "when": "Using standard property"
+        },
+        {
+          "approach": "Create spec file",
+          "code": "CONTROL AUTOMATON ErrorPath\nINITIAL STATE Init;\nSTATE USEALL Init:\n  CHECK(location, \"functionCall(__VERIFIER_error)\") -> ERROR;\nEND AUTOMATON",
+          "when": "Need custom property"
+        }
+      ]
+    },
+    {
+      "id": "refinement_loop",
+      "pattern": "Refinement .* failed|CEGAR .* did not progress",
+      "message": "CEGAR refinement failed to make progress",
+      "cause": "Abstraction refinement couldn't find useful predicates",
+      "solutions": [
+        {
+          "approach": "Use different refinement",
+          "code": "cpachecker -setprop cpa.predicate.refinement.strategy=tree program.c",
+          "when": "Default refinement insufficient"
+        },
+        {
+          "approach": "Try BMC",
+          "code": "cpachecker -config bmc-incremental.properties program.c",
+          "when": "Predicate abstraction unsuitable"
+        },
+        {
+          "approach": "Add manual predicates",
+          "code": "cpachecker -setprop cpa.predicate.initialPredicates=predicates.txt program.c",
+          "when": "Know important predicates"
+        }
+      ]
+    },
+    {
+      "id": "external_function",
+      "pattern": "external function .* has no definition",
+      "message": "Undefined function referenced",
+      "cause": "Program calls function without implementation",
+      "solutions": [
+        {
+          "approach": "Use nondet stub",
+          "code": "extern int __VERIFIER_nondet_int(void);",
+          "when": "Function returns nondeterministic value"
+        },
+        {
+          "approach": "Link implementation",
+          "code": "cpachecker program.c library.c",
+          "when": "Implementation in separate file"
+        },
+        {
+          "approach": "Provide stub",
+          "code": "int external_func() { return __VERIFIER_nondet_int(); }",
+          "when": "Need custom modeling"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "id": "memorysanitizer",
+  "name": "MemorySanitizer (MSan)",
+  "category": "sanitizer",
+  "subcategory": "memory",
+
+  "description": "Detects reads of uninitialized memory in Rust/C/C++",
+  "long_description": "MemorySanitizer (MSan) is a detector for uninitialized memory reads. It tracks the initialization state of every bit of memory and reports when uninitialized values are used. Requires special runtime and nightly Rust.",
+
+  "capabilities": [
+    "uninitialized_read_detection",
+    "bit_precise_tracking",
+    "stack_and_heap",
+    "origin_tracking"
+  ],
+  "property_types": ["memory_safety"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["error_report", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "RUSTFLAGS='-Zsanitizer=memory' cargo +nightly run"}
+    ],
+    "dependencies": ["nightly_rust", "llvm"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/sanitizer.html",
+    "tutorial": "https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/sanitizer.html#memorysanitizer",
+    "api_reference": "https://clang.llvm.org/docs/MemorySanitizer.html",
+    "examples": "https://github.com/rust-lang/rust/tree/master/tests/ui/sanitize"
+  },
+
+  "tactics": [
+    {
+      "name": "basic",
+      "description": "Enable MSan",
+      "syntax": "RUSTFLAGS='-Zsanitizer=memory'",
+      "when_to_use": "For uninitialized memory bugs",
+      "examples": ["RUSTFLAGS='-Zsanitizer=memory' cargo +nightly test"]
+    },
+    {
+      "name": "track-origins",
+      "description": "Track origin of uninitialized values",
+      "syntax": "-Zsanitizer-memory-track-origins",
+      "when_to_use": "For debugging complex cases",
+      "examples": ["RUSTFLAGS='-Zsanitizer=memory -Zsanitizer-memory-track-origins' cargo +nightly test"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "use-of-uninitialized-value",
+      "meaning": "Read of uninitialized memory",
+      "common_causes": ["Uninitialized struct field", "MaybeUninit misuse"],
+      "fixes": ["Initialize all fields", "Use proper initialization"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["memory_safety"],
+    "cli_command": "dashprove verify --backend memorysanitizer"
+  },
+
+  "performance": {
+    "typical_runtime": "3x slowdown",
+    "scalability": "Moderate",
+    "memory_usage": "2-3x increase"
+  },
+
+  "comparisons": {
+    "similar_tools": ["valgrind", "asan"],
+    "advantages": [
+      "Faster than Valgrind",
+      "Bit-precise"
+    ],
+    "disadvantages": [
+      "Nightly only",
+      "Linux only"
+    ]
+  },
+
+  "metadata": {
+    "version": "via LLVM",
+    "last_updated": "2025-12-22",
+    "maintainer": "LLVM/Rust Team",
+    "license": "Apache-2.0"
+  }
+}

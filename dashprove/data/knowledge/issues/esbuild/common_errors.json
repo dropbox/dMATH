@@ -1,0 +1,216 @@
+{
+  "tool": "esbuild",
+  "version": "0.20+",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_resolved",
+      "pattern": "Could not resolve|not found|No matching export",
+      "message": "esbuild cannot resolve module",
+      "cause": "Module not installed or wrong import syntax",
+      "solutions": [
+        {
+          "approach": "Install package",
+          "code": "npm install missing-package",
+          "when": "Package not installed"
+        },
+        {
+          "approach": "Mark as external",
+          "code": "// For Node.js built-ins or optional deps\nrequire('esbuild').buildSync({\n  entryPoints: ['app.js'],\n  external: ['fs', 'path', 'node:*'],\n  bundle: true\n});",
+          "when": "Node built-in or optional"
+        },
+        {
+          "approach": "Configure resolve extensions",
+          "code": "require('esbuild').buildSync({\n  resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json']\n});",
+          "when": "Non-standard extension"
+        },
+        {
+          "approach": "Use alias plugin",
+          "code": "const alias = require('esbuild-plugin-alias');\n\nrequire('esbuild').build({\n  plugins: [\n    alias({\n      '@': path.resolve(__dirname, 'src')\n    })\n  ]\n});",
+          "when": "Path alias not working"
+        }
+      ]
+    },
+    {
+      "id": "cjs_esm_error",
+      "pattern": "__require|require.*not.*function|Cannot use import|Top-level await",
+      "message": "CommonJS/ESM format issue",
+      "cause": "Mixing module formats or wrong output format",
+      "solutions": [
+        {
+          "approach": "Set correct format",
+          "code": "require('esbuild').buildSync({\n  format: 'esm',  // or 'cjs' or 'iife'\n  outfile: 'out.js'\n});",
+          "when": "Wrong output format"
+        },
+        {
+          "approach": "Set platform",
+          "code": "require('esbuild').buildSync({\n  platform: 'node',  // or 'browser' or 'neutral'\n  format: 'cjs'  // Node commonly uses CJS\n});",
+          "when": "Platform mismatch"
+        },
+        {
+          "approach": "Handle require in ESM",
+          "code": "// If you need require() in ESM output\nimport { createRequire } from 'module';\nconst require = createRequire(import.meta.url);",
+          "when": "Need require in ESM"
+        },
+        {
+          "approach": "Enable top-level await",
+          "code": "// Requires ESM format\nrequire('esbuild').buildSync({\n  format: 'esm',\n  supported: { 'top-level-await': true }\n});",
+          "when": "Top-level await needed"
+        }
+      ]
+    },
+    {
+      "id": "jsx_error",
+      "pattern": "JSX|React|Unexpected <|pragma",
+      "message": "JSX not configured correctly",
+      "cause": "JSX loader not enabled or React not imported",
+      "solutions": [
+        {
+          "approach": "Enable JSX loader",
+          "code": "require('esbuild').buildSync({\n  loader: {\n    '.js': 'jsx',\n    '.tsx': 'tsx'\n  }\n});",
+          "when": "JSX in .js files"
+        },
+        {
+          "approach": "Set JSX factory",
+          "code": "require('esbuild').buildSync({\n  jsxFactory: 'React.createElement',\n  jsxFragment: 'React.Fragment',\n  // Or for automatic runtime (React 17+)\n  jsx: 'automatic',\n  jsxImportSource: 'react'\n});",
+          "when": "Custom JSX pragma"
+        },
+        {
+          "approach": "Auto-inject React",
+          "code": "require('esbuild').buildSync({\n  jsx: 'automatic',  // No need to import React\n  jsxImportSource: 'react'\n});",
+          "when": "Don't want to import React everywhere"
+        }
+      ]
+    },
+    {
+      "id": "css_error",
+      "pattern": "CSS|@import|.css|stylesheet|style",
+      "message": "CSS handling error",
+      "cause": "CSS not bundled or import issue",
+      "solutions": [
+        {
+          "approach": "Bundle CSS",
+          "code": "require('esbuild').buildSync({\n  entryPoints: ['app.js', 'styles.css'],\n  bundle: true,\n  outdir: 'dist'\n});",
+          "when": "CSS not bundled"
+        },
+        {
+          "approach": "Enable CSS loader",
+          "code": "// esbuild handles CSS by default for imports\nimport './styles.css';  // Will be bundled",
+          "when": "CSS import not working"
+        },
+        {
+          "approach": "CSS modules",
+          "code": "// esbuild doesn't support CSS modules natively\n// Use a plugin\nconst cssModulesPlugin = require('esbuild-css-modules-plugin');\n\nrequire('esbuild').build({\n  plugins: [cssModulesPlugin()]\n});",
+          "when": "Need CSS modules"
+        },
+        {
+          "approach": "External CSS",
+          "code": "// Don't bundle CSS, just copy\nrequire('esbuild').buildSync({\n  loader: { '.css': 'copy' }\n});",
+          "when": "Keep CSS separate"
+        }
+      ]
+    },
+    {
+      "id": "node_api",
+      "pattern": "process|__dirname|__filename|Buffer|global",
+      "message": "Node.js globals not available",
+      "cause": "Building for browser but using Node APIs",
+      "solutions": [
+        {
+          "approach": "Define globals",
+          "code": "require('esbuild').buildSync({\n  define: {\n    'process.env.NODE_ENV': '\"production\"',\n    'global': 'globalThis'\n  }\n});",
+          "when": "Need process.env"
+        },
+        {
+          "approach": "Use polyfills",
+          "code": "const polyfill = require('esbuild-plugin-polyfill-node');\n\nrequire('esbuild').build({\n  plugins: [polyfill.polyfillNode()]\n});",
+          "when": "Need full Node polyfills"
+        },
+        {
+          "approach": "Set platform to node",
+          "code": "require('esbuild').buildSync({\n  platform: 'node'\n});",
+          "when": "Building for Node.js"
+        },
+        {
+          "approach": "Inject shims",
+          "code": "require('esbuild').buildSync({\n  inject: ['./shims.js']  // shims.js defines globals\n});",
+          "when": "Custom shims needed"
+        }
+      ]
+    },
+    {
+      "id": "tree_shaking",
+      "pattern": "tree.?shaking|unused|dead code|side.?effects",
+      "message": "Tree shaking not working as expected",
+      "cause": "Side effects or dynamic imports preventing tree shaking",
+      "solutions": [
+        {
+          "approach": "Mark side-effect-free",
+          "code": "// package.json\n{\n  \"sideEffects\": false,\n  // Or specific files\n  \"sideEffects\": [\"*.css\", \"./polyfill.js\"]\n}",
+          "when": "Whole modules included"
+        },
+        {
+          "approach": "Use pure annotations",
+          "code": "// Tell esbuild function is pure\nconst result = /* @__PURE__ */ createExpensiveThing();",
+          "when": "Function call not removed"
+        },
+        {
+          "approach": "Check entry points",
+          "code": "// Use multiple entry points instead of barrel files\nrequire('esbuild').buildSync({\n  entryPoints: {\n    'feature-a': 'src/features/a.js',\n    'feature-b': 'src/features/b.js'\n  }\n});",
+          "when": "Barrel file including everything"
+        },
+        {
+          "approach": "Enable minification",
+          "code": "require('esbuild').buildSync({\n  minify: true,  // Also removes unused code\n  treeShaking: true\n});",
+          "when": "Tree shaking alone not enough"
+        }
+      ]
+    },
+    {
+      "id": "sourcemap_error",
+      "pattern": "source.?map|sourceMappingURL|mapping",
+      "message": "Source map issues",
+      "cause": "Source maps not generated or misconfigured",
+      "solutions": [
+        {
+          "approach": "Enable source maps",
+          "code": "require('esbuild').buildSync({\n  sourcemap: true,  // External .map file\n  // Or 'inline', 'linked', 'external', 'both'\n});",
+          "when": "Source maps not generated"
+        },
+        {
+          "approach": "Source map paths",
+          "code": "require('esbuild').buildSync({\n  sourcemap: true,\n  sourceRoot: 'https://example.com/src/',\n  sourcesContent: true  // Include source in map\n});",
+          "when": "Paths in map incorrect"
+        },
+        {
+          "approach": "Development mode",
+          "code": "require('esbuild').buildSync({\n  sourcemap: 'inline',  // Faster for dev\n  minify: false\n});",
+          "when": "Development builds"
+        }
+      ]
+    },
+    {
+      "id": "watch_error",
+      "pattern": "watch|ENOSPC|inotify|file watcher",
+      "message": "Watch mode error",
+      "cause": "File watcher limit exceeded or watch not configured",
+      "solutions": [
+        {
+          "approach": "Use watch mode",
+          "code": "const ctx = await require('esbuild').context({\n  entryPoints: ['app.js'],\n  bundle: true,\n  outfile: 'out.js'\n});\n\nawait ctx.watch();\nconsole.log('Watching...');\n\n// Later: await ctx.dispose();",
+          "when": "Need file watching"
+        },
+        {
+          "approach": "Increase inotify limit",
+          "code": "# Linux - increase file watcher limit\necho fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf\nsudo sysctl -p",
+          "when": "ENOSPC error on Linux"
+        },
+        {
+          "approach": "Exclude node_modules",
+          "code": "// esbuild watches input files by default\n// node_modules should be external or resolved\n// to avoid watching thousands of files",
+          "when": "Watching too many files"
+        }
+      ]
+    }
+  ]
+}

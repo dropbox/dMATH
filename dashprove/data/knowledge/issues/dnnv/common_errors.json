@@ -1,0 +1,200 @@
+{
+  "tool": "dnnv",
+  "version": "0.6.0",
+  "last_updated": "2025-12-22",
+  "description": "Deep Neural Network Verification tool and framework for standardized verification",
+  "errors": [
+    {
+      "id": "installation_error",
+      "pattern": "dnnv.*not found|import.*error|dependency.*failed",
+      "message": "DNNV installation error",
+      "cause": "Missing dependencies or installation issue",
+      "solutions": [
+        {
+          "approach": "Install with pip",
+          "code": "pip install dnnv",
+          "when": "Basic installation"
+        },
+        {
+          "approach": "Install with verifiers",
+          "code": "pip install dnnv[eran,marabou,neurify,nnenum]\n# Or all verifiers:\npip install dnnv[all]",
+          "when": "Need specific verifiers"
+        },
+        {
+          "approach": "Install from source",
+          "code": "git clone https://github.com/dlshriver/dnnv.git\ncd dnnv\npip install -e .[dev]",
+          "when": "Development version"
+        }
+      ]
+    },
+    {
+      "id": "network_error",
+      "pattern": "Failed to load network|unsupported.*format|cannot parse",
+      "message": "Network loading error",
+      "cause": "Unsupported network format or architecture",
+      "solutions": [
+        {
+          "approach": "Use ONNX format",
+          "code": "dnnv path/to/model.onnx path/to/property.py",
+          "when": "Standard format"
+        },
+        {
+          "approach": "Convert from PyTorch",
+          "code": "import torch.onnx\ntorch.onnx.export(model, dummy_input, 'model.onnx', opset_version=11)",
+          "when": "PyTorch model"
+        },
+        {
+          "approach": "Check supported ops",
+          "code": "# DNNV supports: Conv, ReLU, Linear, MaxPool, Flatten\n# May need to simplify model for some verifiers",
+          "when": "Unsupported operation"
+        }
+      ]
+    },
+    {
+      "id": "property_error",
+      "pattern": "property.*error|DNNP.*invalid|specification.*failed",
+      "message": "Property specification error",
+      "cause": "Invalid DNNP property or syntax error",
+      "solutions": [
+        {
+          "approach": "Check DNNP syntax",
+          "code": "# property.py (DNNP format):\nfrom dnnv.properties import *\n\nN = Network('N')\nx = Image('x')\nepsilon = Parameter('epsilon', float, default=0.03)\n\nForall(\n    x,\n    Implies(\n        (0 <= x <= 1),\n        And(*[\n            N[:-1](x + delta).argmax() == N[:-1](x).argmax()\n            for delta in [-epsilon, epsilon]\n        ])\n    )\n)",
+          "when": "Write DNNP property"
+        },
+        {
+          "approach": "Use local robustness",
+          "code": "# Simple robustness property:\nForall(\n    x,\n    Implies(\n        And(x >= x0 - epsilon, x <= x0 + epsilon),\n        N(x).argmax() == label\n    )\n)",
+          "when": "Standard robustness"
+        },
+        {
+          "approach": "Debug property",
+          "code": "dnnv model.onnx property.py --debug",
+          "when": "Property not working"
+        }
+      ]
+    },
+    {
+      "id": "verifier_error",
+      "pattern": "verifier.*not found|backend.*error|.*Verifier.*failed",
+      "message": "Verifier backend error",
+      "cause": "Verifier not installed or crashed",
+      "solutions": [
+        {
+          "approach": "Install verifier",
+          "code": "# Install specific verifier:\npip install dnnv[eran]  # or marabou, neurify, etc.",
+          "when": "Verifier not installed"
+        },
+        {
+          "approach": "List available verifiers",
+          "code": "dnnv --help  # Shows installed verifiers",
+          "when": "Check what's available"
+        },
+        {
+          "approach": "Use different verifier",
+          "code": "dnnv model.onnx property.py --verifier nnenum\n# Options: eran, marabou, neurify, nnenum, reluplex, planet",
+          "when": "One verifier failing"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|time.*exceeded|verification.*timeout",
+      "message": "Verification timeout",
+      "cause": "Verification taking too long",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "dnnv model.onnx property.py --verifier eran --set timeout=300",
+          "when": "Need more time"
+        },
+        {
+          "approach": "Try faster verifier",
+          "code": "# Verifier speed (generally):\n# ERAN (incomplete) > nnenum > Marabou (complete)",
+          "when": "Speed needed"
+        },
+        {
+          "approach": "Simplify property",
+          "code": "# Reduce epsilon or region size\nepsilon = Parameter('epsilon', float, default=0.01)  # smaller",
+          "when": "Property too hard"
+        }
+      ]
+    },
+    {
+      "id": "memory_error",
+      "pattern": "out of memory|MemoryError|killed",
+      "message": "Out of memory error",
+      "cause": "Verification using too much memory",
+      "solutions": [
+        {
+          "approach": "Use memory-efficient verifier",
+          "code": "dnnv model.onnx property.py --verifier eran",
+          "when": "Marabou using too much"
+        },
+        {
+          "approach": "Reduce batch size",
+          "code": "dnnv model.onnx property.py --verifier eran --set batch_size=1",
+          "when": "Batch too large"
+        }
+      ]
+    },
+    {
+      "id": "result_error",
+      "pattern": "sat|unsat|unknown|error interpreting",
+      "message": "Result interpretation",
+      "cause": "Understanding DNNV output",
+      "solutions": [
+        {
+          "approach": "SAT result",
+          "code": "# sat: Property is SATISFIABLE\n# Means: There EXISTS an input satisfying the property\n# For safety: property usually asks if violation exists\n# So sat = violation found = UNSAFE",
+          "when": "SAT output"
+        },
+        {
+          "approach": "UNSAT result",
+          "code": "# unsat: Property is UNSATISFIABLE\n# No input satisfies the (negated) property\n# For safety: unsat = no violation = SAFE",
+          "when": "UNSAT output"
+        },
+        {
+          "approach": "Unknown result",
+          "code": "# unknown: Verification inconclusive\n# Try: different verifier, more time, simpler property",
+          "when": "Unknown output"
+        }
+      ]
+    },
+    {
+      "id": "vnnlib_error",
+      "pattern": "VNNLIB.*error|vnnlib.*parse|specification.*invalid",
+      "message": "VNNLIB format error",
+      "cause": "Issue with VNNLIB specification",
+      "solutions": [
+        {
+          "approach": "Use VNNLIB directly",
+          "code": "dnnv model.onnx property.vnnlib --format vnnlib",
+          "when": "Have VNNLIB file"
+        },
+        {
+          "approach": "Convert DNNP to VNNLIB",
+          "code": "# DNNV can convert between formats\ndnnv property.py --convert vnnlib --output property.vnnlib",
+          "when": "Need VNNLIB format"
+        }
+      ]
+    },
+    {
+      "id": "parameter_error",
+      "pattern": "parameter.*not found|undefined.*parameter",
+      "message": "Property parameter error",
+      "cause": "Missing or invalid parameter in property",
+      "solutions": [
+        {
+          "approach": "Set parameter values",
+          "code": "dnnv model.onnx property.py --set epsilon=0.03 --set label=5",
+          "when": "Provide parameter values"
+        },
+        {
+          "approach": "Use defaults",
+          "code": "# In property.py:\nepsilon = Parameter('epsilon', float, default=0.03)",
+          "when": "Define default"
+        }
+      ]
+    }
+  ]
+}

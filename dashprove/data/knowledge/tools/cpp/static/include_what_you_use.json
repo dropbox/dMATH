@@ -1,0 +1,85 @@
+{
+  "id": "include_what_you_use",
+  "name": "include-what-you-use",
+  "category": "static_analysis",
+  "subcategory": "cpp_headers",
+
+  "description": "Tool to suggest minimal necessary C/C++ headers",
+  "long_description": "include-what-you-use (IWYU) analyzes C and C++ source code to determine the headers actually used and recommends additions or removals. It reduces compile times and avoids transitive dependency reliance.",
+
+  "capabilities": [
+    "header_pruning",
+    "include_suggestions",
+    "fix_includes",
+    "clang_based_analysis"
+  ],
+  "property_types": ["code_quality", "build_health"],
+  "input_languages": ["c", "cpp"],
+  "output_formats": ["text_report", "patch"],
+  "installation": {
+    "methods": [
+      {"type": "brew", "command": "brew install include-what-you-use"},
+      {"type": "apt", "command": "apt install iwyu"}
+    ],
+    "dependencies": ["clang"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://include-what-you-use.org/",
+    "tutorial": "https://include-what-you-use.org/",
+    "api_reference": "https://github.com/include-what-you-use/include-what-you-use/blob/master/README.md",
+    "examples": "https://github.com/include-what-you-use/include-what-you-use/tree/master/tests"
+  },
+
+  "tactics": [
+    {
+      "name": "analyze",
+      "description": "Run IWYU against a translation unit",
+      "syntax": "iwyu -Xiwyu --mapping_file=... file.cc -- -Iinclude",
+      "when_to_use": "Trim includes and reveal missing direct dependencies",
+      "examples": ["iwyu --mapping_file iwyu.imp file.cc -- -std=c++20"]
+    },
+    {
+      "name": "apply_fixes",
+      "description": "Generate patches using fix_includes.py",
+      "syntax": "python3 fix_includes.py --comments < iwyu.out",
+      "when_to_use": "Automate include cleanup from IWYU output",
+      "examples": ["python3 fix_includes.py < iwyu.out"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "error: cannot find include file",
+      "meaning": "IWYU could not locate header during analysis",
+      "common_causes": ["Missing include paths", "Incorrect mapping file"],
+      "fixes": ["Pass correct -I flags", "Update mapping files"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["code_quality"],
+    "cli_command": "dashprove verify --backend include-what-you-use"
+  },
+
+  "performance": {
+    "typical_runtime": "Comparable to clang compile; per translation unit",
+    "scalability": "Requires compile_commands.json for large projects",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["clang-tidy", "clang-include-fixer"],
+    "advantages": ["Targets include hygiene", "Provides patch output"],
+    "disadvantages": ["Needs full compile flags", "Per-TU invocation"]
+  },
+
+  "metadata": {
+    "version": "0.21.0",
+    "last_updated": "2025-12-23",
+    "maintainer": "IWYU project",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "tool": "winappdriver",
+  "version": "1.2.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "driver_not_running",
+      "pattern": "Connection refused|Cannot connect|WebDriverException",
+      "message": "WinAppDriver is not running",
+      "cause": "WinAppDriver.exe service not started",
+      "solutions": [
+        {
+          "approach": "Start WinAppDriver",
+          "code": "\"C:\\Program Files (x86)\\Windows Application Driver\\WinAppDriver.exe\"",
+          "when": "Driver not running"
+        },
+        {
+          "approach": "Run as Administrator",
+          "code": "# Right-click WinAppDriver.exe -> Run as administrator",
+          "when": "Permission issues"
+        },
+        {
+          "approach": "Check port",
+          "code": "# Default port is 4723, ensure it's not in use\nnetstat -an | findstr 4723",
+          "when": "Port conflict"
+        }
+      ]
+    },
+    {
+      "id": "element_not_found",
+      "pattern": "NoSuchElementException|Element not found|Unable to locate",
+      "message": "Cannot find UI element",
+      "cause": "Element locator incorrect or element not visible",
+      "solutions": [
+        {
+          "approach": "Use Inspect.exe",
+          "code": "# Use Windows SDK Inspect.exe to find correct AutomationId",
+          "when": "Finding element properties"
+        },
+        {
+          "approach": "Try different locator",
+          "code": "driver.FindElementByAccessibilityId('ButtonId')\ndriver.FindElementByName('Button Text')\ndriver.FindElementByClassName('Button')",
+          "when": "One locator type doesn't work"
+        },
+        {
+          "approach": "Add wait",
+          "code": "WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));\nwait.Until(d => d.FindElementByAccessibilityId('id'));",
+          "when": "Element appears after delay"
+        }
+      ]
+    },
+    {
+      "id": "app_not_found",
+      "pattern": "Application not found|Cannot start|Invalid capabilities",
+      "message": "Cannot launch application",
+      "cause": "App path incorrect or capability configuration wrong",
+      "solutions": [
+        {
+          "approach": "Set correct app path",
+          "code": "capabilities.SetCapability('app', @'C:\\path\\to\\app.exe')",
+          "when": "Win32 application"
+        },
+        {
+          "approach": "Use app ID for UWP",
+          "code": "capabilities.SetCapability('app', 'Microsoft.WindowsCalculator_8wekyb3d8bbwe!App')",
+          "when": "UWP/MSIX app"
+        },
+        {
+          "approach": "Attach to running app",
+          "code": "capabilities.SetCapability('app', 'Root')\n// Then find app window",
+          "when": "App already running"
+        }
+      ]
+    },
+    {
+      "id": "session_error",
+      "pattern": "Session.*error|Invalid session|SessionNotCreatedException",
+      "message": "Cannot create WinAppDriver session",
+      "cause": "Previous session not cleaned up or invalid configuration",
+      "solutions": [
+        {
+          "approach": "Quit previous session",
+          "code": "driver?.Quit();",
+          "when": "Previous session still active"
+        },
+        {
+          "approach": "Restart WinAppDriver",
+          "code": "# Kill and restart WinAppDriver.exe",
+          "when": "Driver in bad state"
+        },
+        {
+          "approach": "Check capabilities",
+          "code": "var options = new AppiumOptions();\noptions.AddAdditionalCapability('app', appPath);\noptions.AddAdditionalCapability('platformName', 'Windows');",
+          "when": "Invalid capability format"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "Timeout|TimeoutException|Command timed out",
+      "message": "Operation timed out",
+      "cause": "Element or action took too long",
+      "solutions": [
+        {
+          "approach": "Increase implicit wait",
+          "code": "driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);",
+          "when": "Elements load slowly"
+        },
+        {
+          "approach": "Use explicit wait",
+          "code": "var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));\nwait.Until(ExpectedConditions.ElementToBeClickable(By.Name('btn')));",
+          "when": "Waiting for specific condition"
+        },
+        {
+          "approach": "Check app responsiveness",
+          "code": "# Verify app is not hanging or showing dialog",
+          "when": "App may be unresponsive"
+        }
+      ]
+    },
+    {
+      "id": "click_intercepted",
+      "pattern": "Element.*intercepted|Click not performed|Obscured",
+      "message": "Element click was intercepted",
+      "cause": "Another element is covering the target element",
+      "solutions": [
+        {
+          "approach": "Scroll element into view",
+          "code": "Actions actions = new Actions(driver);\nactions.MoveToElement(element).Click().Perform();",
+          "when": "Element not in viewport"
+        },
+        {
+          "approach": "Wait for overlay to close",
+          "code": "wait.Until(d => !d.FindElementByClassName('Popup').Displayed);",
+          "when": "Popup or loading overlay"
+        },
+        {
+          "approach": "Click with JavaScript",
+          "code": "// Not supported in WinAppDriver - use SendKeys instead\nelement.SendKeys(Keys.Enter);",
+          "when": "Standard click fails"
+        }
+      ]
+    },
+    {
+      "id": "developer_mode",
+      "pattern": "Developer Mode|not enabled|0x80073CF6",
+      "message": "Windows Developer Mode not enabled",
+      "cause": "Developer Mode required but not turned on",
+      "solutions": [
+        {
+          "approach": "Enable Developer Mode",
+          "code": "# Settings -> Update & Security -> For developers -> Developer mode",
+          "when": "Testing UWP apps"
+        },
+        {
+          "approach": "Use PowerShell",
+          "code": "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock\" /t REG_DWORD /f /v AllowDevelopmentWithoutDevLicense /d 1",
+          "when": "Scripted enablement"
+        }
+      ]
+    },
+    {
+      "id": "screenshot_error",
+      "pattern": "Screenshot.*error|Cannot capture|GetScreenshot",
+      "message": "Failed to capture screenshot",
+      "cause": "Cannot capture screen due to permissions or driver state",
+      "solutions": [
+        {
+          "approach": "Use driver screenshot",
+          "code": "Screenshot screenshot = ((ITakesScreenshot)driver).GetScreenshot();\nscreenshot.SaveAsFile('screenshot.png');",
+          "when": "Taking test evidence"
+        },
+        {
+          "approach": "Ensure session is valid",
+          "code": "# Verify driver session is still active before screenshot",
+          "when": "Session may be closed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "tool": "ring",
+  "category": "crypto",
+  "common_errors": [
+    {
+      "pattern": "Unspecified|ring::error::Unspecified",
+      "meaning": "Cryptographic operation failed (generic)",
+      "causes": [
+        "Invalid key material",
+        "Verification failed",
+        "Random number generation failed"
+      ],
+      "solutions": [
+        "ring uses Unspecified to prevent oracle attacks",
+        "Check input validity before crypto operations",
+        "Ensure system RNG is working"
+      ]
+    },
+    {
+      "pattern": "KeyRejected|invalid key length",
+      "meaning": "Key format or size invalid",
+      "causes": [
+        "Wrong key size for algorithm",
+        "Invalid PKCS#8 encoding",
+        "Using public key where private expected"
+      ],
+      "solutions": [
+        "ECDSA P-256: 32 byte private key",
+        "Ed25519: 32 byte seed",
+        "Use proper key generation methods"
+      ]
+    },
+    {
+      "pattern": "InvalidLength|input too short|output too short",
+      "meaning": "Buffer size incorrect",
+      "causes": [
+        "Nonce wrong size",
+        "Tag buffer too small",
+        "Input truncated"
+      ],
+      "solutions": [
+        "ChaCha20-Poly1305: 12 byte nonce",
+        "AES-GCM: 12 byte nonce recommended",
+        "Check algorithm documentation for sizes"
+      ]
+    },
+    {
+      "pattern": "linking with `ring`.*failed|native.*cc.*error",
+      "meaning": "ring compilation failed",
+      "causes": [
+        "Missing C compiler",
+        "Cross-compilation issues",
+        "Assembly not supported on target"
+      ],
+      "solutions": [
+        "Install clang/gcc for compilation",
+        "For cross-compile: CC_target=... cargo build",
+        "Use CARGO_FEATURE_USE_PIC=1 for some targets"
+      ]
+    },
+    {
+      "pattern": "cannot generate random|RNG failure",
+      "meaning": "Random number generation failed",
+      "causes": [
+        "System RNG not available",
+        "Running in restricted environment",
+        "getrandom syscall failed"
+      ],
+      "solutions": [
+        "Ensure /dev/urandom or getrandom available",
+        "Check container/VM has entropy source",
+        "Use SystemRandom for OS-provided randomness"
+      ]
+    },
+    {
+      "pattern": "signature verification failed|bad signature",
+      "meaning": "Signature doesn't match",
+      "causes": [
+        "Message modified",
+        "Wrong public key",
+        "Signature format mismatch"
+      ],
+      "solutions": [
+        "Verify exact message bytes match signing input",
+        "Check public key corresponds to signing private key",
+        "ring uses fixed-size signature format"
+      ]
+    },
+    {
+      "pattern": "OpeningKey.*SealingKey|wrong direction",
+      "meaning": "Using encryption/decryption key incorrectly",
+      "causes": [
+        "Using SealingKey for open operation",
+        "Using OpeningKey for seal operation"
+      ],
+      "solutions": [
+        "SealingKey for encryption: seal_in_place()",
+        "OpeningKey for decryption: open_in_place()",
+        "Both derive from same UnboundKey"
+      ]
+    },
+    {
+      "pattern": "NonceSequence|nonce reuse|counter overflow",
+      "meaning": "Nonce handling error",
+      "causes": [
+        "Nonce sequence exhausted",
+        "Custom NonceSequence returned duplicate",
+        "Counter reached maximum"
+      ],
+      "solutions": [
+        "Never reuse nonce with same key",
+        "Implement NonceSequence trait correctly",
+        "Rotate keys before nonce exhaustion"
+      ]
+    }
+  ]
+}

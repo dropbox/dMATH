@@ -1,0 +1,190 @@
+{
+  "tool": "comcast",
+  "version": "1.0.1",
+  "last_updated": "2025-12-22",
+  "description": "Network traffic shaping tool for simulating bad network conditions",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "permission denied|Operation not permitted|must be root",
+      "message": "Permission denied - needs root/admin",
+      "cause": "Comcast requires elevated privileges for traffic control",
+      "solutions": [
+        {
+          "approach": "Run with sudo",
+          "code": "sudo comcast --device=eth0 --latency=250 --bandwidth=1000",
+          "when": "Linux/macOS"
+        },
+        {
+          "approach": "Run as Administrator",
+          "code": "# Open PowerShell as Administrator\ncomcast.exe --device=\"Ethernet\" --latency=250",
+          "when": "Windows"
+        }
+      ]
+    },
+    {
+      "id": "device_not_found",
+      "pattern": "device.*not found|interface.*does not exist|no such device",
+      "message": "Network device not found",
+      "cause": "Specified network interface doesn't exist",
+      "solutions": [
+        {
+          "approach": "List network interfaces",
+          "code": "# Linux:\nip link show\n# macOS:\nnetworksetup -listallhardwareports\n# Windows:\nGet-NetAdapter",
+          "when": "Find correct device name"
+        },
+        {
+          "approach": "Use correct device",
+          "code": "# Linux: eth0, enp0s3, wlan0\n# macOS: en0, en1\n# Windows: \"Ethernet\", \"Wi-Fi\"\ncomcast --device=en0 --latency=100",
+          "when": "Specify correct interface"
+        }
+      ]
+    },
+    {
+      "id": "tc_not_found",
+      "pattern": "tc.*not found|command not found.*tc",
+      "message": "Traffic control (tc) command not found",
+      "cause": "iproute2 package not installed (Linux)",
+      "solutions": [
+        {
+          "approach": "Install iproute2",
+          "code": "# Ubuntu/Debian:\nsudo apt install iproute2\n# RHEL/CentOS:\nsudo yum install iproute",
+          "when": "Linux tc missing"
+        },
+        {
+          "approach": "Check tc location",
+          "code": "which tc\n# Usually /sbin/tc or /usr/sbin/tc",
+          "when": "tc installed but not in PATH"
+        }
+      ]
+    },
+    {
+      "id": "pfctl_error",
+      "pattern": "pfctl.*error|pf.*not enabled",
+      "message": "macOS pf firewall error",
+      "cause": "pf (packet filter) issues on macOS",
+      "solutions": [
+        {
+          "approach": "Enable pf",
+          "code": "sudo pfctl -e",
+          "when": "pf disabled"
+        },
+        {
+          "approach": "Check pf status",
+          "code": "sudo pfctl -s info",
+          "when": "Debug pf issues"
+        },
+        {
+          "approach": "Reset pf rules",
+          "code": "sudo pfctl -F all",
+          "when": "Clear existing rules"
+        }
+      ]
+    },
+    {
+      "id": "ipfw_error",
+      "pattern": "ipfw.*error|dummynet.*failed",
+      "message": "ipfw/dummynet error on macOS",
+      "cause": "dummynet kernel extension issues",
+      "solutions": [
+        {
+          "approach": "Load dummynet",
+          "code": "sudo kextload /System/Library/Extensions/dummynet.kext",
+          "when": "dummynet not loaded"
+        },
+        {
+          "approach": "Check SIP status",
+          "code": "csrutil status\n# If enabled, some network features may be restricted",
+          "when": "System Integrity Protection blocking"
+        }
+      ]
+    },
+    {
+      "id": "invalid_parameters",
+      "pattern": "invalid.*parameter|out of range|must be.*between",
+      "message": "Invalid parameter values",
+      "cause": "Parameter values outside valid range",
+      "solutions": [
+        {
+          "approach": "Check latency range",
+          "code": "# Latency in milliseconds (0-10000 typical)\ncomcast --latency=100",
+          "when": "Latency parameter"
+        },
+        {
+          "approach": "Check bandwidth range",
+          "code": "# Bandwidth in kbit/s\ncomcast --bandwidth=1000  # 1 Mbps",
+          "when": "Bandwidth parameter"
+        },
+        {
+          "approach": "Check packet loss range",
+          "code": "# Packet loss percentage (0-100)\ncomcast --packet-loss=10  # 10% loss",
+          "when": "Packet loss parameter"
+        }
+      ]
+    },
+    {
+      "id": "stop_failed",
+      "pattern": "stop.*failed|could not remove|rules.*not cleared",
+      "message": "Failed to stop/clear network shaping",
+      "cause": "Cannot remove traffic control rules",
+      "solutions": [
+        {
+          "approach": "Stop comcast",
+          "code": "sudo comcast --stop",
+          "when": "Normal stop"
+        },
+        {
+          "approach": "Manual cleanup on Linux",
+          "code": "sudo tc qdisc del dev eth0 root\nsudo iptables -F",
+          "when": "Force clear Linux rules"
+        },
+        {
+          "approach": "Manual cleanup on macOS",
+          "code": "sudo dnctl -q flush\nsudo pfctl -F all",
+          "when": "Force clear macOS rules"
+        }
+      ]
+    },
+    {
+      "id": "target_ports_error",
+      "pattern": "port.*invalid|target-port.*error",
+      "message": "Invalid target port specification",
+      "cause": "Port number or range invalid",
+      "solutions": [
+        {
+          "approach": "Single port",
+          "code": "comcast --target-port=8080 --latency=100",
+          "when": "Target specific port"
+        },
+        {
+          "approach": "Multiple ports",
+          "code": "comcast --target-port=80,443,8080 --latency=100",
+          "when": "Multiple ports"
+        },
+        {
+          "approach": "Target IP and port",
+          "code": "comcast --target-addr=10.0.0.1 --target-port=6379 --latency=50",
+          "when": "Specific destination"
+        }
+      ]
+    },
+    {
+      "id": "protocol_error",
+      "pattern": "protocol.*not supported|invalid protocol",
+      "message": "Protocol not supported",
+      "cause": "Invalid or unsupported protocol specified",
+      "solutions": [
+        {
+          "approach": "Use valid protocols",
+          "code": "comcast --target-proto=tcp --latency=100\n# Or: udp, icmp",
+          "when": "Specify protocol"
+        },
+        {
+          "approach": "Default to all",
+          "code": "# Without --target-proto, affects all protocols",
+          "when": "Target all traffic"
+        }
+      ]
+    }
+  ]
+}

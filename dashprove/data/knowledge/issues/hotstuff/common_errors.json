@@ -1,0 +1,97 @@
+{
+  "tool": "hotstuff",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "view_change_timeout",
+      "pattern": "(view.*change|timeout|leader.*rotation)",
+      "message": "View change timeout",
+      "cause": "Leader failed and view change taking too long",
+      "solutions": [
+        {
+          "approach": "Adjust timeout",
+          "code": "// Increase view change timeout\nconfig.view_change_timeout = Duration::from_secs(10);\nconfig.delta = Duration::from_millis(500);  // Timeout increment",
+          "when": "Frequent view changes"
+        },
+        {
+          "approach": "Check network",
+          "code": "// Verify replica connectivity\nfor replica in replicas:\n    ping(replica.address)",
+          "when": "Network issues"
+        }
+      ]
+    },
+    {
+      "id": "quorum_certificate_invalid",
+      "pattern": "(QC|quorum.*certificate|signature)",
+      "message": "Invalid quorum certificate",
+      "cause": "QC doesn't have enough valid signatures",
+      "solutions": [
+        {
+          "approach": "Verify threshold",
+          "code": "// Need 2f+1 signatures for n=3f+1 replicas\nlet threshold = 2 * f + 1;\nassert!(qc.signatures.len() >= threshold);",
+          "when": "Checking QC validity"
+        },
+        {
+          "approach": "Verify signatures",
+          "code": "// Verify each signature against replica public key\nfor (replica_id, sig) in qc.signatures {\n    verify_sig(replica_pubkey[replica_id], qc.block_hash, sig)?;\n}",
+          "when": "Signature verification"
+        }
+      ]
+    },
+    {
+      "id": "safety_violation",
+      "pattern": "(safety|conflicting|fork|equivocation)",
+      "message": "Safety property violation detected",
+      "cause": "Leader signed conflicting proposals at same height",
+      "solutions": [
+        {
+          "approach": "Detect equivocation",
+          "code": "// If see two QCs at same view with different blocks\nif qc1.view == qc2.view && qc1.block != qc2.block {\n    // Leader equivocated - trigger view change\n    evidence.push((qc1, qc2));\n    trigger_view_change();\n}",
+          "when": "Detecting Byzantine leader"
+        },
+        {
+          "approach": "Check chain",
+          "code": "// Verify block extends from locked QC\nassert!(block.parent == locked_qc.block || \n        block.view > locked_qc.view + 1);",
+          "when": "Validating proposal"
+        }
+      ]
+    },
+    {
+      "id": "liveness_stall",
+      "pattern": "(liveness|stall|no progress|stuck)",
+      "message": "Liveness stall - no progress",
+      "cause": "System not making progress despite honest majority",
+      "solutions": [
+        {
+          "approach": "Pacemaker sync",
+          "code": "// Use pacemaker for view synchronization\nif current_view < highest_seen_qc.view {\n    sync_to_view(highest_seen_qc.view + 1);\n}",
+          "when": "View desynchronization"
+        },
+        {
+          "approach": "Check message delivery",
+          "code": "// Ensure all replicas receiving messages\nbroadcast_with_ack(proposal)?;\nwait_for_acks(threshold)?;",
+          "when": "Messages not delivered"
+        }
+      ]
+    },
+    {
+      "id": "crypto_error",
+      "pattern": "(threshold.*signature|BLS|aggregate)",
+      "message": "Threshold signature error",
+      "cause": "Error in threshold/aggregate signature operations",
+      "solutions": [
+        {
+          "approach": "Aggregate signatures",
+          "code": "// Combine partial signatures into aggregate\nlet agg_sig = bls::aggregate_signatures(&partial_sigs)?;\nlet agg_pubkey = bls::aggregate_pubkeys(&signer_pubkeys)?;\nassert!(bls::verify(&agg_sig, &msg, &agg_pubkey));",
+          "when": "Using BLS signatures"
+        },
+        {
+          "approach": "Handle missing signers",
+          "code": "// Need only 2f+1 out of 3f+1\nlet valid_sigs: Vec<_> = sigs.iter()\n    .filter(|(id, sig)| verify(sig, msg, pubkeys[id]))\n    .collect();\nif valid_sigs.len() >= threshold {\n    // Proceed with available signatures\n}",
+          "when": "Some replicas unavailable"
+        }
+      ]
+    }
+  ]
+}

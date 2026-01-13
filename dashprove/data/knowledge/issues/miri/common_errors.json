@@ -1,0 +1,191 @@
+{
+  "tool": "miri",
+  "version": "latest (nightly)",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "undefined_behavior_ptr",
+      "pattern": "Undefined Behavior: .* pointer",
+      "message": "Undefined Behavior: dereferencing pointer with alignment",
+      "cause": "Accessed memory through a misaligned pointer or invalid pointer",
+      "solutions": [
+        {
+          "approach": "Check pointer alignment",
+          "code": "use std::ptr::read_unaligned instead of *ptr",
+          "when": "Working with packed structs or external data"
+        },
+        {
+          "approach": "Use safe references",
+          "code": "let ref_val = &*ptr; // Ensure ptr is valid first",
+          "when": "Can guarantee pointer validity"
+        },
+        {
+          "approach": "Use MaybeUninit",
+          "code": "let val = MaybeUninit::<T>::uninit();\nlet ptr = val.as_ptr();",
+          "when": "Dealing with uninitialized memory"
+        }
+      ]
+    },
+    {
+      "id": "stacked_borrows_violation",
+      "pattern": "Stacked Borrows: .* tag .* was created here",
+      "message": "Stacked Borrows violation",
+      "cause": "Code violates Rust's aliasing rules (multiple mutable references, use after invalidation)",
+      "solutions": [
+        {
+          "approach": "Avoid pointer-reference mixing",
+          "code": "// Don't create references while holding raw pointers to same data",
+          "when": "Mixing raw pointers and references"
+        },
+        {
+          "approach": "Use UnsafeCell for interior mutability",
+          "code": "use std::cell::UnsafeCell;\nlet cell = UnsafeCell::new(value);",
+          "when": "Need shared mutation"
+        },
+        {
+          "approach": "Restructure to avoid aliasing",
+          "code": "// Split data structure to avoid overlapping borrows",
+          "when": "Can refactor code structure"
+        },
+        {
+          "approach": "Try Tree Borrows model",
+          "code": "MIRIFLAGS='-Zmiri-tree-borrows' cargo miri test",
+          "when": "Stacked Borrows is too restrictive"
+        }
+      ]
+    },
+    {
+      "id": "data_race",
+      "pattern": "Data race detected",
+      "message": "Data race between threads",
+      "cause": "Concurrent unsynchronized access to shared memory",
+      "solutions": [
+        {
+          "approach": "Use atomic operations",
+          "code": "use std::sync::atomic::{AtomicU64, Ordering};\nlet val = atomic.load(Ordering::SeqCst);",
+          "when": "Simple shared counter or flag"
+        },
+        {
+          "approach": "Use mutex",
+          "code": "use std::sync::Mutex;\nlet data = Mutex::new(value);",
+          "when": "Complex shared state"
+        },
+        {
+          "approach": "Use channels",
+          "code": "use std::sync::mpsc::channel;",
+          "when": "Can restructure as message passing"
+        }
+      ]
+    },
+    {
+      "id": "use_after_free",
+      "pattern": "pointer to .* was dereferenced after this allocation got freed",
+      "message": "Use after free detected",
+      "cause": "Dereferenced a pointer to memory that has been deallocated",
+      "solutions": [
+        {
+          "approach": "Extend lifetime",
+          "code": "// Ensure owner lives long enough",
+          "when": "Object freed too early"
+        },
+        {
+          "approach": "Use Arc/Rc for shared ownership",
+          "code": "use std::sync::Arc;\nlet shared = Arc::new(value);",
+          "when": "Multiple owners need the data"
+        },
+        {
+          "approach": "Clone instead of borrowing",
+          "code": "let owned = borrowed.clone();",
+          "when": "Can afford to copy the data"
+        }
+      ]
+    },
+    {
+      "id": "invalid_bool",
+      "pattern": "constructing invalid value: .* is not a valid bool",
+      "message": "Invalid boolean value",
+      "cause": "Created a bool from a value other than 0 or 1",
+      "solutions": [
+        {
+          "approach": "Validate before transmute",
+          "code": "let b = match byte { 0 => false, 1 => true, _ => panic!(\"invalid\") };",
+          "when": "Reading bool from external source"
+        },
+        {
+          "approach": "Use proper type",
+          "code": "Use u8 instead of bool if values can be non-boolean",
+          "when": "Data may contain values other than 0/1"
+        }
+      ]
+    },
+    {
+      "id": "uninitialized_read",
+      "pattern": "reading uninitialized memory",
+      "message": "Read of uninitialized memory",
+      "cause": "Read a value before it was initialized",
+      "solutions": [
+        {
+          "approach": "Initialize before reading",
+          "code": "let mut val = 0;\n// ... then read val",
+          "when": "Value should have been initialized"
+        },
+        {
+          "approach": "Use MaybeUninit properly",
+          "code": "let val = MaybeUninit::uninit();\nunsafe { val.assume_init() } // Only after writing!",
+          "when": "Working with uninitialized memory intentionally"
+        },
+        {
+          "approach": "Use Option<T>",
+          "code": "let val: Option<T> = None; // Explicitly uninitialized",
+          "when": "Value may or may not exist"
+        }
+      ]
+    },
+    {
+      "id": "out_of_bounds",
+      "pattern": "accessing .* at offset .* but .* has size",
+      "message": "Out of bounds memory access",
+      "cause": "Accessed memory outside allocated bounds",
+      "solutions": [
+        {
+          "approach": "Check bounds before access",
+          "code": "if index < slice.len() { slice[index] } else { default }",
+          "when": "Index may be out of bounds"
+        },
+        {
+          "approach": "Use get() method",
+          "code": "slice.get(index).copied()",
+          "when": "Want Option instead of panic"
+        },
+        {
+          "approach": "Fix offset calculation",
+          "code": "let offset = (index * std::mem::size_of::<T>()) as isize;",
+          "when": "Manual pointer arithmetic"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "pattern": "memory leaked",
+      "message": "Memory leak detected (with -Zmiri-leak-check)",
+      "cause": "Allocated memory was not freed before program exit",
+      "solutions": [
+        {
+          "approach": "Ensure Drop runs",
+          "code": "drop(value); // Explicitly drop if needed",
+          "when": "Object not being dropped"
+        },
+        {
+          "approach": "Break reference cycles",
+          "code": "use std::rc::Weak instead of Rc for back-references",
+          "when": "Rc/Arc cycles preventing cleanup"
+        },
+        {
+          "approach": "Use mem::forget intentionally",
+          "code": "// Document why leak is intentional\nstd::mem::forget(value);",
+          "when": "Leak is actually intended"
+        }
+      ]
+    }
+  ]
+}

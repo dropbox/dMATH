@@ -1,0 +1,168 @@
+{
+  "tool": "cogent",
+  "version": "2.17.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "linear_type_violation",
+      "pattern": "Variable.*used more than once|linear type.*violated",
+      "message": "Linear type system violation",
+      "cause": "Linear variable used multiple times or not used at all",
+      "solutions": [
+        {
+          "approach": "Split the value",
+          "code": "let (x1, x2) = split x in ...",
+          "when": "Need to use value twice"
+        },
+        {
+          "approach": "Use let! for discarding",
+          "code": "let! _ = unused_value in ...",
+          "when": "Value intentionally unused"
+        },
+        {
+          "approach": "Pass through function",
+          "code": "let (result, x') = f x in ...",
+          "when": "Function should return ownership"
+        }
+      ]
+    },
+    {
+      "id": "type_error_record",
+      "pattern": "Record type mismatch|field.*not found",
+      "message": "Record type error",
+      "cause": "Record field access or update type mismatch",
+      "solutions": [
+        {
+          "approach": "Use take for field extraction",
+          "code": "let (field, rest) = take record.field in ...",
+          "when": "Extracting field transfers ownership"
+        },
+        {
+          "approach": "Use put for field update",
+          "code": "let record' = put record.field := new_value in ...",
+          "when": "Updating record field"
+        },
+        {
+          "approach": "Check field types",
+          "code": "type MyRec = { field1 : U32, field2 : String }",
+          "when": "Field type different than expected"
+        }
+      ]
+    },
+    {
+      "id": "antiquotation_error",
+      "pattern": "Antiquote.*failed|\\$.*undefined",
+      "message": "Antiquotation to C failed",
+      "cause": "Embedding C code in Cogent failed",
+      "solutions": [
+        {
+          "approach": "Check C function signature",
+          "code": "-- Cogent: foo : (U32, U32) -> U32\n/* C: u32 foo(u32 a, u32 b) */",
+          "when": "C signature doesn't match Cogent"
+        },
+        {
+          "approach": "Use correct antiquote syntax",
+          "code": "$exp:foo(x, y)  -- for expressions",
+          "when": "Wrong antiquotation form"
+        },
+        {
+          "approach": "Define abstract type",
+          "code": "type CPtr  -- Abstract type for C pointer",
+          "when": "Need to pass opaque C types"
+        }
+      ]
+    },
+    {
+      "id": "isabelle_proof_error",
+      "pattern": "Isabelle.*proof failed|refinement.*unsolved",
+      "message": "Isabelle/HOL refinement proof failed",
+      "cause": "Generated Isabelle proof obligation couldn't be discharged",
+      "solutions": [
+        {
+          "approach": "Check preconditions",
+          "code": "-- Add assumes to function specification",
+          "when": "Missing precondition in spec"
+        },
+        {
+          "approach": "Simplify control flow",
+          "code": "-- Reduce nested conditionals",
+          "when": "Proof too complex"
+        },
+        {
+          "approach": "Add intermediate invariant",
+          "code": "-- Use Cogent assertions",
+          "when": "Loop invariant needed"
+        }
+      ]
+    },
+    {
+      "id": "c_generation_error",
+      "pattern": "C code generation.*failed|Cannot generate C for",
+      "message": "C code generation error",
+      "cause": "Cogent cannot generate valid C code",
+      "solutions": [
+        {
+          "approach": "Avoid polymorphism at FFI boundary",
+          "code": "-- Monomorphize before calling C",
+          "when": "Polymorphic function at C boundary"
+        },
+        {
+          "approach": "Use concrete types",
+          "code": "type ConcreteArray = Array[100] U8",
+          "when": "Abstract array type"
+        },
+        {
+          "approach": "Check layout compatibility",
+          "code": "-- Cogent record layout must match C struct",
+          "when": "Memory layout mismatch"
+        }
+      ]
+    },
+    {
+      "id": "uniqueness_error",
+      "pattern": "Cannot share.*unique|unique.*aliased",
+      "message": "Uniqueness typing error",
+      "cause": "Attempting to alias a unique/unboxed value",
+      "solutions": [
+        {
+          "approach": "Use boxed type",
+          "code": "type BoxedT = Box T  -- Allow sharing via indirection",
+          "when": "Need to share the value"
+        },
+        {
+          "approach": "Clone explicitly",
+          "code": "let x' = clone x in ...",
+          "when": "Need a copy of the value"
+        },
+        {
+          "approach": "Restructure to single use",
+          "code": "-- Ensure each unique value has single owner",
+          "when": "Can reorganize code"
+        }
+      ]
+    },
+    {
+      "id": "build_error",
+      "pattern": "cogent: command not found|stack build.*failed",
+      "message": "Cogent build/installation error",
+      "cause": "Cogent compiler not installed or build failed",
+      "solutions": [
+        {
+          "approach": "Install via stack",
+          "code": "git clone https://github.com/NICTA/cogent && cd cogent && stack build",
+          "when": "Fresh installation"
+        },
+        {
+          "approach": "Update dependencies",
+          "code": "stack update && stack build",
+          "when": "Dependency version mismatch"
+        },
+        {
+          "approach": "Use Docker",
+          "code": "docker pull cogent/cogent:latest",
+          "when": "Local build issues"
+        }
+      ]
+    }
+  ]
+}

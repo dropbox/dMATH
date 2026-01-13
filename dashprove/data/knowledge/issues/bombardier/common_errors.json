@@ -1,0 +1,191 @@
+{
+  "tool": "bombardier",
+  "version": "1.2.6",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_error",
+      "pattern": "dial tcp.*connection refused|no such host|connection reset",
+      "message": "Cannot connect to target",
+      "cause": "Server not running or wrong URL",
+      "solutions": [
+        {
+          "approach": "Verify server",
+          "code": "curl -I http://localhost:8080/",
+          "when": "Server may be down"
+        },
+        {
+          "approach": "Check URL format",
+          "code": "bombardier -c 10 -d 10s http://localhost:8080/api",
+          "when": "URL format wrong"
+        },
+        {
+          "approach": "Test DNS",
+          "code": "nslookup api.example.com",
+          "when": "DNS issue"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|context deadline exceeded|i/o timeout",
+      "message": "Request timed out",
+      "cause": "Server response too slow",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "bombardier -c 10 -d 30s --timeout 30s http://localhost:8080/",
+          "when": "Slow requests"
+        },
+        {
+          "approach": "Reduce concurrency",
+          "code": "bombardier -c 5 -d 30s http://localhost:8080/",
+          "when": "Server overwhelmed"
+        },
+        {
+          "approach": "Check server",
+          "code": "# Profile server to find bottlenecks",
+          "when": "Server issue"
+        }
+      ]
+    },
+    {
+      "id": "tls_error",
+      "pattern": "tls: handshake failure|x509.*certificate|certificate.*expired",
+      "message": "TLS/SSL error",
+      "cause": "Certificate issue or TLS mismatch",
+      "solutions": [
+        {
+          "approach": "Skip verification",
+          "code": "bombardier -c 10 -d 10s --insecure https://localhost:8443/",
+          "when": "Self-signed cert"
+        },
+        {
+          "approach": "Use HTTP",
+          "code": "bombardier -c 10 -d 10s http://localhost:8080/",
+          "when": "Don't need HTTPS"
+        },
+        {
+          "approach": "Fix certificate",
+          "code": "# Ensure valid cert is installed on server",
+          "when": "Production issue"
+        }
+      ]
+    },
+    {
+      "id": "file_limit",
+      "pattern": "too many open files|socket: too many|EMFILE",
+      "message": "File descriptor limit reached",
+      "cause": "Too many concurrent connections",
+      "solutions": [
+        {
+          "approach": "Increase limit",
+          "code": "ulimit -n 10000\nbombardier -c 1000 -d 30s http://localhost:8080/",
+          "when": "Need more connections"
+        },
+        {
+          "approach": "Reduce connections",
+          "code": "bombardier -c 100 -d 30s http://localhost:8080/",
+          "when": "Cannot increase limit"
+        },
+        {
+          "approach": "Use rate limit",
+          "code": "bombardier -c 50 -r 1000 -d 30s http://localhost:8080/",
+          "when": "Limit requests/sec"
+        }
+      ]
+    },
+    {
+      "id": "http2_error",
+      "pattern": "http2.*error|stream.*reset|GOAWAY",
+      "message": "HTTP/2 protocol error",
+      "cause": "HTTP/2 compatibility issue",
+      "solutions": [
+        {
+          "approach": "Force HTTP/1.1",
+          "code": "bombardier -c 10 -d 10s --http1 http://localhost:8080/",
+          "when": "HTTP/2 not supported"
+        },
+        {
+          "approach": "Check server",
+          "code": "curl -v --http2 https://localhost:8443/",
+          "when": "Verify HTTP/2 support"
+        },
+        {
+          "approach": "Reduce streams",
+          "code": "# Reduce concurrent connections to avoid stream limits",
+          "when": "Too many streams"
+        }
+      ]
+    },
+    {
+      "id": "body_file_error",
+      "pattern": "body file.*not found|cannot read file|no such file",
+      "message": "Request body file not found",
+      "cause": "Specified body file doesn't exist",
+      "solutions": [
+        {
+          "approach": "Check path",
+          "code": "bombardier -c 10 -d 10s -m POST -f ./body.json http://localhost:8080/api",
+          "when": "Wrong path"
+        },
+        {
+          "approach": "Use inline body",
+          "code": "bombardier -c 10 -d 10s -m POST -b '{\"key\":\"value\"}' http://localhost:8080/api",
+          "when": "Small body"
+        },
+        {
+          "approach": "Verify file",
+          "code": "cat body.json  # Verify file exists and is valid",
+          "when": "Check file"
+        }
+      ]
+    },
+    {
+      "id": "high_error_rate",
+      "pattern": "Reqs/sec.*0|Status.*5xx|errors.*[1-9]",
+      "message": "High error rate during test",
+      "cause": "Server returning errors under load",
+      "solutions": [
+        {
+          "approach": "Check status codes",
+          "code": "bombardier -c 10 -d 10s --print=result http://localhost:8080/",
+          "when": "See status breakdown"
+        },
+        {
+          "approach": "Add headers",
+          "code": "bombardier -c 10 -d 10s -H \"Authorization: Bearer token\" http://localhost:8080/",
+          "when": "Auth required"
+        },
+        {
+          "approach": "Reduce load",
+          "code": "bombardier -c 5 -r 100 -d 30s http://localhost:8080/",
+          "when": "Server overwhelmed"
+        }
+      ]
+    },
+    {
+      "id": "latency_output",
+      "pattern": "Latency|Reqs/sec|Throughput",
+      "message": "Understanding output format",
+      "cause": "Not an error - output explanation",
+      "solutions": [
+        {
+          "approach": "Read stats",
+          "code": "# Statistics shows: Avg, Stdev, Max\n# Latency Distribution shows percentiles\n# HTTP codes shows response breakdown",
+          "when": "Understanding output"
+        },
+        {
+          "approach": "JSON output",
+          "code": "bombardier -c 10 -d 10s -o json http://localhost:8080/ > results.json",
+          "when": "Need machine-readable"
+        },
+        {
+          "approach": "Detailed output",
+          "code": "bombardier -c 10 -d 10s --latencies http://localhost:8080/",
+          "when": "Need percentiles"
+        }
+      ]
+    }
+  ]
+}

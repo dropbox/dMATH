@@ -1,0 +1,280 @@
+{
+  "tool": "espresso",
+  "version": "3.5.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "no_matching_view",
+      "pattern": "NoMatchingViewException|No views in hierarchy found matching",
+      "message": "View not found in hierarchy",
+      "cause": "ViewMatcher couldn't find any view matching criteria",
+      "solutions": [
+        {
+          "approach": "Wait for view to appear",
+          "code": "onView(isRoot()).perform(waitFor(matcher, timeout))",
+          "when": "View loading asynchronously"
+        },
+        {
+          "approach": "Use IdlingResource",
+          "code": "IdlingRegistry.getInstance().register(idlingResource)\n// ... perform test\nIdlingRegistry.getInstance().unregister(idlingResource)",
+          "when": "Async operations"
+        },
+        {
+          "approach": "Check view hierarchy",
+          "code": "// Add to test:\nscenario.onActivity { Espresso.onView(isRoot()).check(matches(isDisplayed())) }",
+          "when": "Debugging what's on screen"
+        },
+        {
+          "approach": "Verify correct matcher",
+          "code": "onView(allOf(\n    withId(R.id.button),\n    withText(\"Submit\"),\n    isDisplayed()\n))",
+          "when": "Multiple views with same ID"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_view_matcher",
+      "pattern": "AmbiguousViewMatcherException|matches multiple views",
+      "message": "Multiple views match the given criteria",
+      "cause": "ViewMatcher found more than one view, need to be more specific",
+      "solutions": [
+        {
+          "approach": "Add more matchers with allOf",
+          "code": "onView(allOf(\n    withId(R.id.textView),\n    withParent(withId(R.id.container)),\n    isDisplayed()\n))",
+          "when": "Need to narrow down"
+        },
+        {
+          "approach": "Use position matcher",
+          "code": "onView(withId(R.id.item))\n    .atPosition(0)\n    .perform(click())",
+          "when": "RecyclerView items"
+        },
+        {
+          "approach": "Match by ancestor",
+          "code": "onView(allOf(\n    withId(R.id.title),\n    isDescendantOfA(withId(R.id.card1))\n))",
+          "when": "View in specific container"
+        },
+        {
+          "approach": "Use hasSibling",
+          "code": "onView(allOf(\n    withId(R.id.button),\n    hasSibling(withText(\"Item 1\"))\n))",
+          "when": "Sibling identifies correct view"
+        }
+      ]
+    },
+    {
+      "id": "perform_exception",
+      "pattern": "PerformException|Error performing .* on view",
+      "message": "Action couldn't be performed on view",
+      "cause": "View exists but action failed (not visible, not clickable, etc.)",
+      "solutions": [
+        {
+          "approach": "Scroll to view first",
+          "code": "onView(withId(R.id.button))\n    .perform(scrollTo())\n    .perform(click())",
+          "when": "View off screen"
+        },
+        {
+          "approach": "Wait for clickable",
+          "code": "onView(withId(R.id.button))\n    .check(matches(isClickable()))\n    .perform(click())",
+          "when": "Button may be disabled"
+        },
+        {
+          "approach": "Use NestedScrollView scrollTo",
+          "code": "onView(withId(R.id.button))\n    .perform(nestedScrollTo())\n    .perform(click())",
+          "when": "Inside NestedScrollView"
+        },
+        {
+          "approach": "Check for overlapping views",
+          "code": "// Ensure no view is blocking the target\nonView(withId(R.id.overlay)).check(matches(not(isDisplayed())))",
+          "when": "FAB or overlay blocking"
+        }
+      ]
+    },
+    {
+      "id": "idling_resource_timeout",
+      "pattern": "IdlingResourceTimeoutException|timed out while waiting",
+      "message": "IdlingResource didn't become idle before timeout",
+      "cause": "Async operation didn't complete within timeout period",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "IdlingPolicies.setIdlingResourceTimeout(30, TimeUnit.SECONDS)",
+          "when": "Long-running operation"
+        },
+        {
+          "approach": "Fix IdlingResource implementation",
+          "code": "class MyIdlingResource : IdlingResource {\n    override fun isIdleNow(): Boolean {\n        val idle = checkIfIdle()\n        if (idle && callback != null) {\n            callback!!.onTransitionToIdle()\n        }\n        return idle\n    }\n}",
+          "when": "IdlingResource never transitions"
+        },
+        {
+          "approach": "Use CountingIdlingResource",
+          "code": "val idlingResource = CountingIdlingResource(\"Network\")\nidlingResource.increment()  // Before async call\nidlingResource.decrement()  // In callback",
+          "when": "Tracking async operations"
+        },
+        {
+          "approach": "Debug IdlingResource state",
+          "code": "IdlingRegistry.getInstance().resources.forEach {\n    println(\"${it.name}: ${it.isIdleNow}\")\n}",
+          "when": "Finding stuck resource"
+        }
+      ]
+    },
+    {
+      "id": "injection_event_failed",
+      "pattern": "InjectEventSecurityException|Injecting.*event.*failed",
+      "message": "Input event injection failed",
+      "cause": "Touch/key event couldn't be injected (animations, system dialog, etc.)",
+      "solutions": [
+        {
+          "approach": "Disable animations",
+          "code": "// In build.gradle test options:\ntestOptions {\n    animationsDisabled = true\n}",
+          "when": "Animations interfering"
+        },
+        {
+          "approach": "Use adb to disable animations",
+          "code": "adb shell settings put global window_animation_scale 0\nadb shell settings put global transition_animation_scale 0\nadb shell settings put global animator_duration_scale 0",
+          "when": "Manual testing setup"
+        },
+        {
+          "approach": "Handle system dialogs",
+          "code": "@get:Rule\nval grantPermissionRule = GrantPermissionRule.grant(\n    Manifest.permission.ACCESS_FINE_LOCATION\n)",
+          "when": "Permission dialog blocking"
+        }
+      ]
+    },
+    {
+      "id": "root_view_never_focused",
+      "pattern": "AppNotIdleException|root view never focused",
+      "message": "App window didn't receive focus",
+      "cause": "Another window (dialog, keyboard, etc.) has focus",
+      "solutions": [
+        {
+          "approach": "Dismiss keyboard",
+          "code": "onView(isRoot()).perform(closeSoftKeyboard())",
+          "when": "Keyboard visible"
+        },
+        {
+          "approach": "Press back to dismiss dialog",
+          "code": "pressBack()\nonView(withId(R.id.button)).perform(click())",
+          "when": "System dialog showing"
+        },
+        {
+          "approach": "Wait for window focus",
+          "code": "scenario.onActivity { activity ->\n    activity.window.decorView.hasWindowFocus()\n}",
+          "when": "Checking focus state"
+        }
+      ]
+    },
+    {
+      "id": "no_activities_in_stage",
+      "pattern": "No activities in stage RESUMED|No activities found",
+      "message": "No activity in resumed state",
+      "cause": "Activity destroyed or not yet created",
+      "solutions": [
+        {
+          "approach": "Launch activity explicitly",
+          "code": "@get:Rule\nval scenario = ActivityScenarioRule(MainActivity::class.java)",
+          "when": "Activity not launching"
+        },
+        {
+          "approach": "Wait for activity state",
+          "code": "scenario.moveToState(Lifecycle.State.RESUMED)",
+          "when": "Activity in wrong state"
+        },
+        {
+          "approach": "Check for crash",
+          "code": "scenario.onActivity { activity ->\n    assertNotNull(activity)\n}",
+          "when": "Activity may have crashed"
+        }
+      ]
+    },
+    {
+      "id": "recyclerview_not_scrollable",
+      "pattern": "Error performing.*RecyclerViewActions|cannot scroll",
+      "message": "RecyclerView action failed",
+      "cause": "RecyclerView not scrollable or item not found",
+      "solutions": [
+        {
+          "approach": "Scroll to position",
+          "code": "onView(withId(R.id.recyclerView))\n    .perform(RecyclerViewActions.scrollToPosition<RecyclerView.ViewHolder>(5))",
+          "when": "Known position"
+        },
+        {
+          "approach": "Scroll to item matching",
+          "code": "onView(withId(R.id.recyclerView))\n    .perform(RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(\n        hasDescendant(withText(\"Target Item\"))\n    ))",
+          "when": "Find by content"
+        },
+        {
+          "approach": "Action on specific item",
+          "code": "onView(withId(R.id.recyclerView))\n    .perform(RecyclerViewActions.actionOnItemAtPosition<RecyclerView.ViewHolder>(\n        0, click()\n    ))",
+          "when": "Click item at position"
+        },
+        {
+          "approach": "Wait for adapter data",
+          "code": "// Ensure adapter has data before scrolling\nonView(withId(R.id.recyclerView))\n    .check(matches(hasMinimumChildCount(1)))",
+          "when": "Data loading async"
+        }
+      ]
+    },
+    {
+      "id": "assertion_failed",
+      "pattern": "AssertionError|expected.*but was|doesn't match",
+      "message": "View assertion failed",
+      "cause": "View property didn't match expected value",
+      "solutions": [
+        {
+          "approach": "Check actual state",
+          "code": "// Log actual state for debugging\nonView(withId(R.id.text))\n    .check { view, _ -> println(\"Text: ${(view as TextView).text}\") }",
+          "when": "Understanding failure"
+        },
+        {
+          "approach": "Use containsString for partial match",
+          "code": "onView(withId(R.id.text))\n    .check(matches(withText(containsString(\"partial\"))))",
+          "when": "Don't need exact match"
+        },
+        {
+          "approach": "Check visibility first",
+          "code": "onView(withId(R.id.text))\n    .check(matches(isDisplayed()))\n    .check(matches(withText(\"Expected\")))",
+          "when": "View may be gone"
+        }
+      ]
+    },
+    {
+      "id": "main_thread_assertion",
+      "pattern": "Method .* must be called from.*main thread",
+      "message": "Method must be called on main thread",
+      "cause": "Test method accessing UI from background thread",
+      "solutions": [
+        {
+          "approach": "Use runOnUiThread",
+          "code": "scenario.onActivity { activity ->\n    // This runs on main thread\n    activity.updateUI()\n}",
+          "when": "Need main thread access"
+        },
+        {
+          "approach": "Use InstrumentationRegistry",
+          "code": "InstrumentationRegistry.getInstrumentation().runOnMainSync {\n    // UI operations here\n}",
+          "when": "Outside scenario"
+        },
+        {
+          "approach": "Let Espresso handle it",
+          "code": "// Espresso actions automatically run on main thread\nonView(withId(R.id.view)).perform(click())",
+          "when": "Use Espresso API"
+        }
+      ]
+    },
+    {
+      "id": "view_not_part_of_hierarchy",
+      "pattern": "View .* was not injected into the view hierarchy",
+      "message": "View not attached to window",
+      "cause": "Trying to interact with detached view",
+      "solutions": [
+        {
+          "approach": "Wait for attachment",
+          "code": "onView(withId(R.id.view))\n    .check(matches(isCompletelyDisplayed()))",
+          "when": "View loading"
+        },
+        {
+          "approach": "Check activity state",
+          "code": "scenario.onActivity { activity ->\n    assertTrue(activity.window.decorView.isAttachedToWindow)\n}",
+          "when": "Debugging"
+        }
+      ]
+    }
+  ]
+}

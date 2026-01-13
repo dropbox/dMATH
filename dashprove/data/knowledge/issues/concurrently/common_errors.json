@@ -1,0 +1,119 @@
+{
+  "tool": "concurrently",
+  "category": "process_management",
+  "common_errors": [
+    {
+      "pattern": "concurrently: command not found|not recognized",
+      "meaning": "Concurrently not installed or not in PATH",
+      "causes": [
+        "Not installed",
+        "Installed locally but not in node_modules/.bin",
+        "PATH not including node_modules/.bin"
+      ],
+      "solutions": [
+        "Install: npm install --save-dev concurrently",
+        "Use npx: npx concurrently \"cmd1\" \"cmd2\"",
+        "Add to npm script: \"dev\": \"concurrently 'npm:client' 'npm:server'\""
+      ]
+    },
+    {
+      "pattern": "error: missing required argument|no commands given",
+      "meaning": "No commands specified to run",
+      "causes": [
+        "Empty command string",
+        "Wrong quote escaping",
+        "Shell expansion issue"
+      ],
+      "solutions": [
+        "Quote commands: concurrently \"npm run server\" \"npm run client\"",
+        "In package.json: \"dev\": \"concurrently \\\"cmd1\\\" \\\"cmd2\\\"\"",
+        "Use npm: prefix: concurrently \"npm:server\" \"npm:client\""
+      ]
+    },
+    {
+      "pattern": "Killing other processes|Process .* exited with code",
+      "meaning": "One process failed, affecting others",
+      "causes": [
+        "Default kill-others behavior",
+        "One command crashed",
+        "Port conflict between commands"
+      ],
+      "solutions": [
+        "Add --kill-others-on-fail to only kill on failure",
+        "Remove --kill-others if you want processes to continue",
+        "Fix the failing command",
+        "Use --success first for different success criteria"
+      ]
+    },
+    {
+      "pattern": "spawn ENOENT|command not found in subprocess",
+      "meaning": "Command inside concurrently not found",
+      "causes": [
+        "Command not in PATH",
+        "Shell-specific syntax not interpreted",
+        "Binary not installed"
+      ],
+      "solutions": [
+        "Use full path to commands",
+        "Wrap in shell: concurrently \"sh -c 'complex command'\"",
+        "Ensure dependencies installed"
+      ]
+    },
+    {
+      "pattern": "output garbled|colors overlapping|prefix issues",
+      "meaning": "Output from multiple processes mixed",
+      "causes": [
+        "Default prefix mode",
+        "Colors interfering",
+        "Buffering issues"
+      ],
+      "solutions": [
+        "Add --prefix: concurrently --prefix '[{name}]' ...",
+        "Name commands: concurrently -n server,client ...",
+        "Disable colors: --no-color",
+        "Add --raw for unbuffered output"
+      ]
+    },
+    {
+      "pattern": "didn't exit cleanly|timeout|hung process",
+      "meaning": "Process didn't terminate properly",
+      "causes": [
+        "Process ignoring signals",
+        "Cleanup code hanging",
+        "Child processes not terminated"
+      ],
+      "solutions": [
+        "Add signal handler in your scripts",
+        "Use --kill-signal SIGKILL for force kill",
+        "Set --max-timeout for stuck processes"
+      ]
+    },
+    {
+      "pattern": "npm ERR.*lifecycle|script .* exited",
+      "meaning": "npm script inside concurrently failed",
+      "causes": [
+        "npm script has error",
+        "Missing dependency",
+        "Script not defined in package.json"
+      ],
+      "solutions": [
+        "Run individual npm script to debug",
+        "Check package.json scripts section",
+        "Use npm run <script> without concurrently first"
+      ]
+    },
+    {
+      "pattern": "port already in use.*sequential startup",
+      "meaning": "Port race condition between commands",
+      "causes": [
+        "Both commands starting before server is ready",
+        "No wait for dependency"
+      ],
+      "solutions": [
+        "Use wait-on: concurrently \"npm:server\" \"wait-on http://localhost:3000 && npm:client\"",
+        "Or use concurrently-wait: --wait-on",
+        "Restructure to use different ports"
+      ]
+    }
+  ]
+}

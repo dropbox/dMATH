@@ -1,0 +1,191 @@
+{
+  "tool": "neon",
+  "version": "1.27.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not authenticated|authentication.*failed|NEON_API_KEY|unauthorized",
+      "message": "Authentication error",
+      "cause": "Not logged in or API key invalid",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "neonctl auth",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "API key",
+          "code": "export NEON_API_KEY=your-api-key\nneonctl projects list",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Check auth",
+          "code": "neonctl me",
+          "when": "Verify auth"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection.*refused|timeout|SSL.*required|endpoint.*suspended",
+      "message": "Database connection error",
+      "cause": "Connection issue or endpoint suspended",
+      "solutions": [
+        {
+          "approach": "Check endpoint",
+          "code": "neonctl branches list --project-id your-project\n# Verify endpoint is active",
+          "when": "Endpoint issue"
+        },
+        {
+          "approach": "Connection string",
+          "code": "# Use pooled connection string:\npostgresql://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require",
+          "when": "Get connection"
+        },
+        {
+          "approach": "Wake endpoint",
+          "code": "# Neon auto-suspends after inactivity\n# First connection wakes it (cold start ~500ms)",
+          "when": "Suspended"
+        }
+      ]
+    },
+    {
+      "id": "branch_error",
+      "pattern": "branch.*not found|branch.*already exists|parent branch",
+      "message": "Branch management error",
+      "cause": "Branch doesn't exist or naming conflict",
+      "solutions": [
+        {
+          "approach": "Create branch",
+          "code": "neonctl branches create --project-id your-project --name dev",
+          "when": "Create branch"
+        },
+        {
+          "approach": "List branches",
+          "code": "neonctl branches list --project-id your-project",
+          "when": "View branches"
+        },
+        {
+          "approach": "From parent",
+          "code": "neonctl branches create --project-id your-project --name feature --parent main",
+          "when": "Branch from specific parent"
+        }
+      ]
+    },
+    {
+      "id": "compute_error",
+      "pattern": "compute.*limit|CPU.*exceeded|memory.*limit|compute units",
+      "message": "Compute resource error",
+      "cause": "Compute limits exceeded",
+      "solutions": [
+        {
+          "approach": "Check usage",
+          "code": "neonctl projects get --project-id your-project\n# Shows compute hours used",
+          "when": "View usage"
+        },
+        {
+          "approach": "Scale compute",
+          "code": "neonctl endpoints update --project-id your-project --endpoint-id ep-xxx --min-cu 0.25 --max-cu 2",
+          "when": "Adjust limits"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Upgrade in Neon console for more compute hours",
+          "when": "Need more compute"
+        }
+      ]
+    },
+    {
+      "id": "storage_error",
+      "pattern": "storage.*limit|data.*exceeded|branch.*size",
+      "message": "Storage limit error",
+      "cause": "Storage quota exceeded",
+      "solutions": [
+        {
+          "approach": "Check storage",
+          "code": "neonctl projects get --project-id your-project\n# Shows storage used",
+          "when": "View storage"
+        },
+        {
+          "approach": "Delete branches",
+          "code": "neonctl branches delete --project-id your-project --branch-id br-xxx",
+          "when": "Remove old branches"
+        },
+        {
+          "approach": "Vacuum",
+          "code": "-- Reclaim space:\nVACUUM FULL your_table;",
+          "when": "Reclaim space"
+        }
+      ]
+    },
+    {
+      "id": "pooler_error",
+      "pattern": "pooler.*error|too many connections|connection pool|PgBouncer",
+      "message": "Connection pooler error",
+      "cause": "Connection pool exhausted",
+      "solutions": [
+        {
+          "approach": "Use pooled URL",
+          "code": "# Pooled connection (port 5432 with -pooler suffix):\npostgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/dbname",
+          "when": "Enable pooling"
+        },
+        {
+          "approach": "Direct connection",
+          "code": "# For migrations/DDL, use direct connection:\npostgresql://user:pass@ep-xxx.region.aws.neon.tech/dbname",
+          "when": "Need direct"
+        },
+        {
+          "approach": "Pool settings",
+          "code": "// Reduce client pool size:\nconst pool = new Pool({\n  connectionString: process.env.DATABASE_URL,\n  max: 10  // Reduce from default\n});",
+          "when": "Too many connections"
+        }
+      ]
+    },
+    {
+      "id": "serverless_driver_error",
+      "pattern": "@neondatabase/serverless|WebSocket.*error|fetch.*failed",
+      "message": "Serverless driver error",
+      "cause": "Driver configuration or network issue",
+      "solutions": [
+        {
+          "approach": "Install driver",
+          "code": "npm install @neondatabase/serverless",
+          "when": "Driver missing"
+        },
+        {
+          "approach": "Configure driver",
+          "code": "import { neon } from '@neondatabase/serverless';\n\nconst sql = neon(process.env.DATABASE_URL);\nconst result = await sql`SELECT * FROM users`;",
+          "when": "Basic usage"
+        },
+        {
+          "approach": "Pool usage",
+          "code": "import { Pool } from '@neondatabase/serverless';\n\nconst pool = new Pool({ connectionString: process.env.DATABASE_URL });\nconst { rows } = await pool.query('SELECT * FROM users');",
+          "when": "Use pool"
+        }
+      ]
+    },
+    {
+      "id": "role_error",
+      "pattern": "role.*not found|permission denied|access.*denied|GRANT",
+      "message": "Role/permission error",
+      "cause": "Database role permissions issue",
+      "solutions": [
+        {
+          "approach": "Create role",
+          "code": "neonctl roles create --project-id your-project --branch-id br-xxx --name app_user",
+          "when": "Create role"
+        },
+        {
+          "approach": "List roles",
+          "code": "neonctl roles list --project-id your-project --branch-id br-xxx",
+          "when": "View roles"
+        },
+        {
+          "approach": "Grant permissions",
+          "code": "-- As owner:\nGRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;",
+          "when": "Grant access"
+        }
+      ]
+    }
+  ]
+}

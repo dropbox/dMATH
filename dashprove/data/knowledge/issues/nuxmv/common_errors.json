@@ -1,0 +1,68 @@
+{
+  "tool_id": "nuxmv",
+  "tool_name": "nuXmv",
+  "description": "Symbolic model checker extending NuSMV with advanced algorithms for infinite-state systems, IC3/PDR, and SMT-based verification",
+  "common_errors": [
+    {
+      "id": "state_explosion",
+      "pattern": "BDD.*too large|out of memory|state space explosion",
+      "category": "scalability",
+      "severity": "high",
+      "cause": "Model has too many reachable states for BDD-based techniques to handle efficiently",
+      "solution": "Use SAT-based bounded model checking (check_ltlspec_bmc). Try IC3/PDR algorithms (check_invar_ic3). Apply cone-of-influence reduction. Use abstraction.",
+      "example": "go_bmc\ncheck_ltlspec_bmc -k 50  -- bounded to depth 50",
+      "related_concepts": ["bdd_explosion", "bmc", "ic3_pdr"]
+    },
+    {
+      "id": "infinite_state_unsupported",
+      "pattern": "infinite domain|cannot handle.*integer|unbounded type",
+      "category": "modeling",
+      "severity": "medium",
+      "cause": "Using integer/real variables with BDD algorithms that only support finite domains",
+      "solution": "Use SMT-based algorithms for infinite state (set on_failure_script_qelim). Bound integers to finite ranges. Use IC3 for infinite-state properties.",
+      "example": "set on_failure_script_qelim\ngo_msat\ncheck_invar_ic3",
+      "related_concepts": ["infinite_state", "smt_backend", "quantifier_elimination"]
+    },
+    {
+      "id": "ltl_counterexample_lasso",
+      "pattern": "counterexample is a lasso|infinite trace",
+      "category": "output",
+      "severity": "info",
+      "cause": "LTL property violated; counterexample shows a prefix leading to a loop (lasso-shaped trace)",
+      "solution": "Analyze the lasso: prefix shows how to reach the loop, loop shows the repeating violation. Fix model or refine property.",
+      "related_concepts": ["lasso_trace", "ltl_counterexample", "omega_regular"]
+    },
+    {
+      "id": "property_syntax_error",
+      "pattern": "syntax error in property|parse error in SPEC|invalid LTL formula",
+      "category": "syntax",
+      "severity": "low",
+      "cause": "LTL/CTL property specification has syntax errors or uses unsupported operators",
+      "solution": "Check operator syntax (G, F, X, U for LTL; AG, AF, AX, AU, EG... for CTL). Parenthesize correctly. Use atomic propositions defined in model.",
+      "example": "LTLSPEC G (request -> F grant)  -- always request leads to grant",
+      "related_concepts": ["ltl_syntax", "ctl_syntax", "temporal_operators"]
+    },
+    {
+      "id": "fairness_required",
+      "pattern": "property holds vacuously|unfair counterexample|need fairness constraint",
+      "category": "semantics",
+      "severity": "medium",
+      "cause": "Property appears satisfied but only because unfair (unrealistic) infinite paths are considered",
+      "solution": "Add FAIRNESS constraints to exclude unrealistic paths. Use COMPASSION for strong fairness. Verify counterexamples are realistic.",
+      "example": "FAIRNESS running  -- exclude paths where 'running' is always false",
+      "related_concepts": ["fairness_constraints", "liveness", "justice_compassion"]
+    }
+  ],
+  "best_practices": [
+    "Start with invariant checking (simpler) before full LTL",
+    "Use BMC for quick bug finding, IC3 for complete verification",
+    "Apply cone-of-influence reduction for large models",
+    "Add fairness constraints for liveness properties",
+    "Use SMT backend (go_msat) for infinite-state systems"
+  ],
+  "references": [
+    "https://nuxmv.fbk.eu/",
+    "https://nuxmv.fbk.eu/pmwiki.php?n=Documentation.Documentation",
+    "https://es-static.fbk.eu/tools/nuxmv/index.php?n=Documentation.Tutorial"
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "tool_id": "btor2",
+  "tool_name": "BTOR2",
+  "description": "Word-level model checking format used by hardware verification tools like Boolector, btormc, and the Hardware Model Checking Competition (HWMCC)",
+  "common_errors": [
+    {
+      "id": "sort_width_mismatch",
+      "pattern": "width mismatch|sort error|incompatible bit-widths",
+      "category": "typing",
+      "severity": "high",
+      "cause": "Operands have different bit-widths where same width is required (e.g., binary operations)",
+      "solution": "Check sort declarations. Use sext/uext/slice for width conversion. Ensure all operands in binary ops have matching widths. Verify input sort IDs.",
+      "example": "1 sort bitvec 32\n2 input 1 a\n3 input 1 b\n4 add 1 2 3  ; both inputs have sort 1 (32-bit)",
+      "related_concepts": ["bitvector_sorts", "width_matching", "sign_extension"]
+    },
+    {
+      "id": "undefined_nid",
+      "pattern": "undefined node|invalid nid reference|node not found",
+      "category": "syntax",
+      "severity": "high",
+      "cause": "BTOR2 line references a node ID (nid) that hasn't been defined yet",
+      "solution": "BTOR2 is single-assignment: each nid must be defined before use. Check node ordering. Verify referenced nids exist. Line numbers must be sequential.",
+      "related_concepts": ["single_assignment", "node_ordering", "nid_reference"]
+    },
+    {
+      "id": "property_unreachable",
+      "pattern": "property trivially holds|bad state unreachable|no counterexample found in.*steps",
+      "category": "verification",
+      "severity": "info",
+      "cause": "The bad/constraint/fair property cannot be reached/violated, either due to strong invariants or bounded checking limits",
+      "solution": "Increase BMC depth. Verify property encodes intended bug. Check if init state constrains reachability. Use unbounded techniques (IC3/PDR) for complete verification.",
+      "example": "btormc -kmax 100 model.btor2  ; increase bound",
+      "related_concepts": ["bounded_model_checking", "completeness", "invariant_checking"]
+    },
+    {
+      "id": "init_next_inconsistency",
+      "pattern": "init and next disagree|state initialization conflict|unreachable after init",
+      "category": "semantics",
+      "severity": "medium",
+      "cause": "Initial state (init) and transition relation (next) are inconsistent, making some states unreachable",
+      "solution": "Ensure init values are consistent with next constraints. Check for typos in state variable references. Verify init isn't overly constrained.",
+      "related_concepts": ["initial_state", "transition_relation", "state_variables"]
+    },
+    {
+      "id": "array_indexing_error",
+      "pattern": "array index out of bounds|invalid array access|element sort mismatch",
+      "category": "arrays",
+      "severity": "medium",
+      "cause": "Array read/write with index width not matching array's index sort, or element sort mismatch",
+      "solution": "Check array declaration: array(index_sort, element_sort). Ensure read/write indices match index sort width. Verify stored values match element sort.",
+      "example": "1 sort bitvec 8  ; index sort\n2 sort bitvec 32 ; element sort\n3 sort array 1 2 ; array indexed by 8-bit, holding 32-bit",
+      "related_concepts": ["array_theory", "index_element_sorts", "smt_arrays"]
+    }
+  ],
+  "best_practices": [
+    "Use btorsim for simulation-based debugging before verification",
+    "Verify sort consistency before running model checker",
+    "Start with BMC for bug finding, use IC3 for complete proofs",
+    "Use witness format for counterexample analysis",
+    "Keep models minimal - remove unused state for performance"
+  ],
+  "references": [
+    "https://github.com/Boolector/btor2tools",
+    "https://hwmcc.github.io/",
+    "https://fmv.jku.at/papers/NiemetzPreinerWolfBiere-CAV18.pdf"
+  ]
+}

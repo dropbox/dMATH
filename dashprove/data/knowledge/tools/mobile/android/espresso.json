@@ -1,0 +1,172 @@
+{
+  "id": "espresso",
+  "name": "Espresso",
+  "category": "android_testing",
+  "subcategory": "ui_testing",
+
+  "description": "Google's UI testing framework for Android with automatic synchronization",
+  "long_description": "Espresso is Google's native UI testing framework for Android. It provides automatic synchronization with the UI thread, ensuring tests don't proceed until the UI is idle. Espresso's concise API makes tests readable and reliable, and it integrates seamlessly with Android Studio, AndroidX Test, and the Android testing ecosystem.",
+
+  "capabilities": [
+    "ui_automation",
+    "view_matching",
+    "view_actions",
+    "view_assertions",
+    "intent_stubbing",
+    "idling_resources",
+    "multi_window_support",
+    "accessibility_checking"
+  ],
+  "property_types": ["view_assertion", "view_matcher", "action"],
+  "input_languages": ["kotlin", "java"],
+  "output_formats": ["android_test_report", "junit_xml", "allure"],
+
+  "installation": {
+    "methods": [
+      {"type": "gradle", "command": "androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'"}
+    ],
+    "dependencies": ["android_sdk", "androidx_test"],
+    "platforms": ["android"]
+  },
+
+  "documentation": {
+    "official": "https://developer.android.com/training/testing/espresso",
+    "tutorial": "https://developer.android.com/training/testing/espresso/basics",
+    "cheatsheet": "https://developer.android.com/training/testing/espresso/cheat-sheet",
+    "examples": "https://github.com/android/testing-samples"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_test",
+      "description": "Basic view interaction pattern",
+      "syntax": "onView(matcher).perform(action).check(assertion)",
+      "when_to_use": "Every UI test interaction",
+      "examples": ["onView(withId(R.id.login_button))\n    .perform(click())\n    .check(matches(isDisplayed()))"]
+    },
+    {
+      "name": "view_matchers",
+      "description": "Find views by various criteria",
+      "syntax": "withId(), withText(), withContentDescription()",
+      "when_to_use": "Locating specific UI elements",
+      "examples": ["withId(R.id.email)", "withText(\"Login\")", "withContentDescription(\"Submit\")"]
+    },
+    {
+      "name": "view_actions",
+      "description": "Perform actions on views",
+      "syntax": "click(), typeText(), scrollTo()",
+      "when_to_use": "Simulating user interactions",
+      "examples": ["perform(click())", "perform(typeText(\"test@email.com\"))", "perform(scrollTo(), click())"]
+    },
+    {
+      "name": "view_assertions",
+      "description": "Assert view state",
+      "syntax": "check(matches(matcher))",
+      "when_to_use": "Verifying UI state",
+      "examples": ["check(matches(isDisplayed()))", "check(matches(withText(\"Success\")))", "check(doesNotExist())"]
+    },
+    {
+      "name": "idling_resource",
+      "description": "Handle async operations",
+      "syntax": "IdlingRegistry.getInstance().register(resource)",
+      "when_to_use": "Waiting for async operations (network, DB)",
+      "examples": ["IdlingRegistry.getInstance().register(okHttp3IdlingResource)"]
+    },
+    {
+      "name": "intent_stubbing",
+      "description": "Mock intents for isolated testing",
+      "syntax": "Intents.intending(matcher).respondWith(result)",
+      "when_to_use": "Testing without launching external apps",
+      "examples": ["intending(hasAction(Intent.ACTION_CALL))\n    .respondWith(ActivityResult(RESULT_OK, null))"]
+    }
+  ],
+
+  "matchers": [
+    {
+      "name": "withId",
+      "description": "Match by resource ID",
+      "examples": ["withId(R.id.button)"]
+    },
+    {
+      "name": "withText",
+      "description": "Match by displayed text",
+      "examples": ["withText(\"Hello\")", "withText(containsString(\"Hello\"))"]
+    },
+    {
+      "name": "withContentDescription",
+      "description": "Match by accessibility content description",
+      "examples": ["withContentDescription(\"Submit button\")"]
+    },
+    {
+      "name": "isDisplayed",
+      "description": "Match views currently displayed",
+      "examples": ["allOf(withId(R.id.item), isDisplayed())"]
+    },
+    {
+      "name": "withParent",
+      "description": "Match by parent view",
+      "examples": ["allOf(withText(\"Item\"), withParent(withId(R.id.list)))"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "NoMatchingViewException",
+      "meaning": "No view matches the given matcher",
+      "common_causes": ["Wrong ID", "View not inflated yet", "View in different hierarchy"],
+      "fixes": ["Verify view ID", "Add IdlingResource", "Check view hierarchy"]
+    },
+    {
+      "pattern": "AmbiguousViewMatcherException",
+      "meaning": "Multiple views match the matcher",
+      "common_causes": ["Non-unique matcher", "Duplicate IDs"],
+      "fixes": ["Use allOf() with multiple matchers", "Use atPosition()"]
+    },
+    {
+      "pattern": "PerformException.*not visible",
+      "meaning": "View exists but not visible/clickable",
+      "common_causes": ["View off-screen", "View behind other view"],
+      "fixes": ["Add scrollTo() action", "Wait for animations"]
+    },
+    {
+      "pattern": "AppNotIdleException",
+      "meaning": "App has pending async work",
+      "common_causes": ["Pending network request", "Animation running", "Handler messages"],
+      "fixes": ["Register IdlingResource", "Disable animations", "Wait for idle"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["android_studio", "intellij"],
+    "ci_integration": ["github_actions", "gitlab_ci", "bitrise", "firebase_test_lab"]
+  },
+
+  "performance": {
+    "typical_runtime": "seconds per test",
+    "scalability": "Runs on device/emulator, can parallelize",
+    "memory_usage": "Runs in app process"
+  },
+
+  "comparisons": {
+    "similar_tools": ["ui_automator", "appium", "maestro", "robolectric"],
+    "advantages": [
+      "Automatic synchronization - less flaky tests",
+      "Native Google framework",
+      "Runs in-process for speed",
+      "Great Android Studio integration"
+    ],
+    "disadvantages": [
+      "Android only",
+      "Can't test across apps (use UI Automator)",
+      "Requires IdlingResources for custom async"
+    ]
+  },
+
+  "metadata": {
+    "version": "3.5.1",
+    "last_updated": "2025-12-22",
+    "maintainer": "Google",
+    "license": "Apache-2.0"
+  }
+}

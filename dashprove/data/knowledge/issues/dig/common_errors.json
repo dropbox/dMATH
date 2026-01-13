@@ -1,0 +1,145 @@
+{
+  "tool": "dig",
+  "version": "9.18",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "connection_timed_out",
+      "pattern": "connection timed out|no servers could be reached|communications error|timed out",
+      "message": "DNS server unreachable",
+      "cause": "DNS server down or firewall blocking",
+      "solutions": [
+        {
+          "approach": "Try other server",
+          "code": "dig @8.8.8.8 example.com\ndig @1.1.1.1 example.com",
+          "when": "Local DNS down"
+        },
+        {
+          "approach": "Use TCP",
+          "code": "dig +tcp example.com",
+          "when": "UDP blocked"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "dig +time=10 +tries=3 example.com",
+          "when": "Slow server"
+        }
+      ]
+    },
+    {
+      "id": "nxdomain",
+      "pattern": "NXDOMAIN|status: NXDOMAIN|ANSWER: 0|does not exist",
+      "message": "Domain does not exist",
+      "cause": "Invalid domain or not yet propagated",
+      "solutions": [
+        {
+          "approach": "Check spelling",
+          "code": "dig example.com  # Verify domain name",
+          "when": "Typo in domain"
+        },
+        {
+          "approach": "Check registrar",
+          "code": "whois example.com",
+          "when": "Verify registration"
+        },
+        {
+          "approach": "Query authoritative",
+          "code": "dig +trace example.com",
+          "when": "Check delegation"
+        }
+      ]
+    },
+    {
+      "id": "servfail",
+      "pattern": "SERVFAIL|status: SERVFAIL|Server failure",
+      "message": "DNS server internal error",
+      "cause": "Server configuration or DNSSEC issue",
+      "solutions": [
+        {
+          "approach": "Try without DNSSEC",
+          "code": "dig +cd example.com  # Disable DNSSEC checking",
+          "when": "DNSSEC issue"
+        },
+        {
+          "approach": "Different server",
+          "code": "dig @8.8.8.8 example.com",
+          "when": "Server misconfigured"
+        },
+        {
+          "approach": "Check DNSSEC",
+          "code": "dig +dnssec example.com\ndig DNSKEY example.com",
+          "when": "Verify DNSSEC"
+        }
+      ]
+    },
+    {
+      "id": "refused",
+      "pattern": "REFUSED|status: REFUSED|Query refused",
+      "message": "DNS server refused query",
+      "cause": "Server ACL rejecting queries",
+      "solutions": [
+        {
+          "approach": "Use public DNS",
+          "code": "dig @8.8.8.8 example.com\ndig @9.9.9.9 example.com",
+          "when": "Recursive denied"
+        },
+        {
+          "approach": "Query authoritative",
+          "code": "dig +trace example.com\ndig @ns1.example.com example.com",
+          "when": "Direct to authoritative"
+        },
+        {
+          "approach": "Check source IP",
+          "code": "# Your IP may be blocked\ncurl ifconfig.me",
+          "when": "IP blocked"
+        }
+      ]
+    },
+    {
+      "id": "truncated",
+      "pattern": "truncated|;; Truncated|tc flag set",
+      "message": "Response truncated over UDP",
+      "cause": "Response larger than 512 bytes",
+      "solutions": [
+        {
+          "approach": "Use TCP",
+          "code": "dig +tcp example.com",
+          "when": "Force TCP"
+        },
+        {
+          "approach": "Enable EDNS",
+          "code": "dig +bufsize=4096 example.com",
+          "when": "Larger UDP"
+        },
+        {
+          "approach": "Ignore truncation",
+          "code": "dig +ignore example.com",
+          "when": "Accept partial"
+        }
+      ]
+    },
+    {
+      "id": "no_answer",
+      "pattern": "ANSWER: 0|NOERROR.*ANSWER: 0|No answer",
+      "message": "No records found",
+      "cause": "Record type doesn't exist for domain",
+      "solutions": [
+        {
+          "approach": "Check record type",
+          "code": "dig example.com A\ndig example.com AAAA\ndig example.com MX\ndig example.com TXT",
+          "when": "Try different types"
+        },
+        {
+          "approach": "Check any",
+          "code": "dig example.com ANY",
+          "when": "Show all records"
+        },
+        {
+          "approach": "Check subdomain",
+          "code": "dig www.example.com\ndig mail.example.com",
+          "when": "Record on subdomain"
+        }
+      ]
+    }
+  ]
+}

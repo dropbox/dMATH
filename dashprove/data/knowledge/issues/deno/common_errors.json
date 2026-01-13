@@ -1,0 +1,216 @@
+{
+  "tool": "deno",
+  "version": "2.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "PermissionDenied|Requires.*permission|--allow-|permission.*not.*granted",
+      "message": "Deno permission not granted",
+      "cause": "Script requires permission not passed via flags",
+      "solutions": [
+        {
+          "approach": "Grant specific permissions",
+          "code": "# Network access\ndeno run --allow-net script.ts\n\n# File read\ndeno run --allow-read=/path/to/dir script.ts\n\n# File write\ndeno run --allow-write script.ts\n\n# Environment variables\ndeno run --allow-env=API_KEY,DEBUG script.ts\n\n# Run subprocess\ndeno run --allow-run=git,npm script.ts",
+          "when": "Know which permissions needed"
+        },
+        {
+          "approach": "Use prompt mode",
+          "code": "# Prompt for permissions at runtime\ndeno run --prompt script.ts",
+          "when": "Want interactive prompts"
+        },
+        {
+          "approach": "Grant all (development only)",
+          "code": "deno run -A script.ts\n# Or\ndeno run --allow-all script.ts",
+          "when": "Development/testing only"
+        },
+        {
+          "approach": "Use deno.json",
+          "code": "// deno.json (Deno 2+)\n{\n  \"unstable\": [\"kv\"],\n  // Note: Can't specify permissions here, only unstable features\n}",
+          "when": "Need unstable APIs"
+        }
+      ]
+    },
+    {
+      "id": "module_not_found",
+      "pattern": "Module not found|Cannot resolve|error downloading|404|import.*failed",
+      "message": "Cannot resolve remote or local module",
+      "cause": "URL incorrect, network issue, or local path wrong",
+      "solutions": [
+        {
+          "approach": "Check URL",
+          "code": "// Use exact URL\nimport { serve } from \"https://deno.land/std@0.220.0/http/server.ts\";\n\n// Or use import map\n// deno.json\n{\n  \"imports\": {\n    \"std/\": \"https://deno.land/std@0.220.0/\"\n  }\n}\n// Then: import { serve } from \"std/http/server.ts\";",
+          "when": "Remote module"
+        },
+        {
+          "approach": "Use npm specifier",
+          "code": "// Deno 2+ supports npm:\nimport express from \"npm:express@4\";\nimport { z } from \"npm:zod\";\n\n// Or in deno.json imports\n{\n  \"imports\": {\n    \"express\": \"npm:express@4\"\n  }\n}",
+          "when": "Using npm packages"
+        },
+        {
+          "approach": "Check local path",
+          "code": "// Local imports must use ./\nimport { foo } from \"./utils.ts\";\nimport { bar } from \"../lib/bar.ts\";\n\n// Not\nimport { foo } from \"utils.ts\";  // Won't work",
+          "when": "Local file"
+        },
+        {
+          "approach": "Clear cache",
+          "code": "# Clear cached modules\ndeno cache --reload script.ts",
+          "when": "Stale cache"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "Type.*not assignable|Expected.*got|Property.*does not exist",
+      "message": "TypeScript type error",
+      "cause": "Type mismatch in TypeScript code",
+      "solutions": [
+        {
+          "approach": "Fix type error",
+          "code": "// Deno type-checks TypeScript by default\n// Fix the actual type issue in your code",
+          "when": "Code has type errors"
+        },
+        {
+          "approach": "Skip type checking",
+          "code": "# Skip type checking (not recommended)\ndeno run --no-check script.ts\n\n// Or use @ts-ignore\n// @ts-ignore - reason for ignoring\nproblematicCode();",
+          "when": "Third-party type issue"
+        },
+        {
+          "approach": "Add type declaration",
+          "code": "// For modules without types\n// @deno-types=\"./types.d.ts\"\nimport { foo } from \"./untyped-module.js\";",
+          "when": "Missing type definitions"
+        },
+        {
+          "approach": "Configure strict mode",
+          "code": "// deno.json or tsconfig.json\n{\n  \"compilerOptions\": {\n    \"strict\": false,\n    \"noImplicitAny\": false\n  }\n}",
+          "when": "Want less strict checking"
+        }
+      ]
+    },
+    {
+      "id": "node_compatibility",
+      "pattern": "node:|require.*not defined|__dirname|process\\.env|Buffer",
+      "message": "Node.js API compatibility issue",
+      "cause": "Using Node API without compatibility layer",
+      "solutions": [
+        {
+          "approach": "Use node: specifier",
+          "code": "// Deno 2+ supports node: built-ins\nimport fs from \"node:fs\";\nimport path from \"node:path\";\nimport { Buffer } from \"node:buffer\";",
+          "when": "Need Node built-ins"
+        },
+        {
+          "approach": "Use Deno equivalents",
+          "code": "// Instead of __dirname\nconst __dirname = new URL(\".\", import.meta.url).pathname;\n\n// Instead of process.env\nDeno.env.get(\"MY_VAR\");\n\n// Instead of fs.readFile\nconst content = await Deno.readTextFile(\"file.txt\");",
+          "when": "Native Deno preferred"
+        },
+        {
+          "approach": "Use std/node",
+          "code": "import { createRequire } from \"node:module\";\nconst require = createRequire(import.meta.url);\n\n// Now can use require()\nconst pkg = require(\"./package.json\");",
+          "when": "Need require()"
+        }
+      ]
+    },
+    {
+      "id": "cert_error",
+      "pattern": "TLS|certificate|SSL|CERT_|unable to get local issuer",
+      "message": "TLS certificate verification failed",
+      "cause": "Self-signed cert or CA not recognized",
+      "solutions": [
+        {
+          "approach": "Provide CA cert",
+          "code": "# Use custom CA\nDENO_CERT=/path/to/ca.crt deno run script.ts\n\n// Or in code\nconst caCert = await Deno.readTextFile(\"./ca.crt\");\nconst conn = await Deno.connectTls({\n  hostname: \"example.com\",\n  port: 443,\n  caCerts: [caCert]\n});",
+          "when": "Custom CA needed"
+        },
+        {
+          "approach": "Skip verification (dev only)",
+          "code": "// For development/testing only\nconst client = Deno.createHttpClient({\n  proxy: { url: \"http://localhost:8080\" }\n});\n\n// Or use environment variable\n// DENO_TLS_CA_STORE=system",
+          "when": "Local development"
+        }
+      ]
+    },
+    {
+      "id": "compile_error",
+      "pattern": "deno compile|Compile error|cannot compile|executable",
+      "message": "Error compiling to executable",
+      "cause": "Dynamic imports, unsupported features, or missing permissions",
+      "solutions": [
+        {
+          "approach": "Include permissions",
+          "code": "deno compile --allow-net --allow-read main.ts\n\n# Output specific file\ndeno compile --output myapp main.ts",
+          "when": "Permissions needed"
+        },
+        {
+          "approach": "Use static imports",
+          "code": "// Dynamic imports may not work\n// const mod = await import(varPath);  // Won't compile\n\n// Use static imports\nimport { foo } from \"./mod.ts\";",
+          "when": "Dynamic import issue"
+        },
+        {
+          "approach": "Include assets",
+          "code": "deno compile --include static/ --allow-read main.ts\n\n// In code, embed at compile time\nconst data = await Deno.readTextFile(\n  new URL(\"./data.json\", import.meta.url)\n);",
+          "when": "Need embedded files"
+        },
+        {
+          "approach": "Target different OS",
+          "code": "# Cross-compile\ndeno compile --target x86_64-unknown-linux-gnu main.ts\ndeno compile --target x86_64-apple-darwin main.ts\ndeno compile --target x86_64-pc-windows-msvc main.ts",
+          "when": "Building for different OS"
+        }
+      ]
+    },
+    {
+      "id": "test_error",
+      "pattern": "deno test|Test failed|AssertionError|assertEquals",
+      "message": "Deno test failure",
+      "cause": "Test assertion failed or test configuration issue",
+      "solutions": [
+        {
+          "approach": "Run specific test",
+          "code": "# Run specific file\ndeno test my_test.ts\n\n# Filter by name\ndeno test --filter \"my test name\"\n\n# Watch mode\ndeno test --watch",
+          "when": "Need to isolate test"
+        },
+        {
+          "approach": "Fix assertion",
+          "code": "import { assertEquals, assertStrictEquals, assertThrows } from \"jsr:@std/assert\";\n\nDeno.test(\"my test\", () => {\n  assertEquals(1 + 1, 2);\n  assertStrictEquals(\"a\", \"a\");\n  assertThrows(() => { throw new Error(); });\n});",
+          "when": "Assertion failed"
+        },
+        {
+          "approach": "Async test",
+          "code": "Deno.test(\"async test\", async () => {\n  const result = await fetchData();\n  assertEquals(result, expected);\n});\n\n// With sanitizers disabled\nDeno.test({\n  name: \"leaky test\",\n  sanitizeOps: false,\n  sanitizeResources: false,\n  fn: async () => { /* ... */ }\n});",
+          "when": "Async/sanitizer issues"
+        },
+        {
+          "approach": "Grant test permissions",
+          "code": "deno test --allow-net --allow-read",
+          "when": "Test needs permissions"
+        }
+      ]
+    },
+    {
+      "id": "fmt_lint_error",
+      "pattern": "deno fmt|deno lint|Formatting|Lint error|expected.*found",
+      "message": "Formatting or linting error",
+      "cause": "Code doesn't match Deno style or has lint violations",
+      "solutions": [
+        {
+          "approach": "Auto-format",
+          "code": "# Format all files\ndeno fmt\n\n# Check without modifying\ndeno fmt --check",
+          "when": "Formatting issues"
+        },
+        {
+          "approach": "Configure lint",
+          "code": "// deno.json\n{\n  \"lint\": {\n    \"rules\": {\n      \"exclude\": [\"no-unused-vars\"],\n      \"include\": [\"ban-untagged-todo\"]\n    }\n  }\n}",
+          "when": "Need custom rules"
+        },
+        {
+          "approach": "Ignore specific lines",
+          "code": "// deno-lint-ignore no-explicit-any\nconst x: any = something;\n\n// deno-fmt-ignore\nconst matrix = [\n    [1, 2, 3],\n    [4, 5, 6]\n];",
+          "when": "Specific line needs ignoring"
+        },
+        {
+          "approach": "Exclude files",
+          "code": "// deno.json\n{\n  \"fmt\": {\n    \"exclude\": [\"dist/\", \"vendor/\"]\n  },\n  \"lint\": {\n    \"exclude\": [\"generated/\"]\n  }\n}",
+          "when": "Exclude directories"
+        }
+      ]
+    }
+  ]
+}

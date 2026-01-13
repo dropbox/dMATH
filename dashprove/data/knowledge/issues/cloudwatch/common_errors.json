@@ -1,0 +1,99 @@
+{
+  "tool": "cloudwatch",
+  "category": "aws_monitoring",
+  "description": "Amazon CloudWatch - monitoring and observability service",
+  "common_errors": [
+    {
+      "id": "access_denied",
+      "pattern": "AccessDenied",
+      "regex": "(?i)access.*denied|not.*authorized|iam.*permission|cloudwatch.*policy",
+      "cause": "IAM policy missing CloudWatch permissions",
+      "solution": "Add CloudWatchFullAccess or specific cloudwatch:* permissions to IAM role/user",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "metric_not_found",
+      "pattern": "metric not found",
+      "regex": "(?i)metric.*not.*found|no.*data.*points|empty.*result|dimension.*not.*found",
+      "cause": "Specified metric or dimensions do not exist",
+      "solution": "Verify namespace, metric name, and dimensions; check metric publishing is working",
+      "severity": "medium",
+      "category": "metrics"
+    },
+    {
+      "id": "log_group_not_found",
+      "pattern": "ResourceNotFoundException",
+      "regex": "(?i)log.*group.*not.*found|ResourceNotFoundException|log.*stream.*not.*exist",
+      "cause": "Log group or log stream does not exist",
+      "solution": "Create log group before writing logs, verify log group name matches application configuration",
+      "severity": "medium",
+      "category": "logs"
+    },
+    {
+      "id": "invalid_parameter",
+      "pattern": "InvalidParameterValue",
+      "regex": "(?i)invalid.*parameter|validation.*error|invalid.*dimension|invalid.*period",
+      "cause": "API parameter validation failed",
+      "solution": "Check period is multiple of 60 for standard metrics, verify dimension format, review API documentation",
+      "severity": "medium",
+      "category": "api"
+    },
+    {
+      "id": "limit_exceeded",
+      "pattern": "LimitExceeded",
+      "regex": "(?i)limit.*exceeded|rate.*exceeded|throttling|too.*many.*requests|quota",
+      "cause": "CloudWatch API rate limits or service quotas exceeded",
+      "solution": "Implement exponential backoff, batch metrics with PutMetricData, request quota increase if needed",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "agent_not_sending",
+      "pattern": "agent",
+      "regex": "(?i)cloudwatch.*agent|cwagent|agent.*not.*running|configuration.*error",
+      "cause": "CloudWatch agent not collecting or sending metrics",
+      "solution": "Check agent status with 'systemctl status amazon-cloudwatch-agent', review agent config JSON, check agent logs",
+      "severity": "high",
+      "category": "agent"
+    },
+    {
+      "id": "retention_policy",
+      "pattern": "retention",
+      "regex": "(?i)retention.*policy|log.*expiration|invalid.*retention|never.*expire",
+      "cause": "Log retention policy configuration issue",
+      "solution": "Set retention policy with put-retention-policy, valid values: 1,3,5,7,14,30,60,90,120,150,180,365,400,545,731,1827,3653",
+      "severity": "low",
+      "category": "logs"
+    },
+    {
+      "id": "alarm_state",
+      "pattern": "INSUFFICIENT_DATA",
+      "regex": "(?i)insufficient.*data|alarm.*state|missing.*data|breaching|treating.*missing",
+      "cause": "Alarm showing INSUFFICIENT_DATA state",
+      "solution": "Verify metric is publishing, check evaluation periods, configure 'treat missing data' setting appropriately",
+      "severity": "medium",
+      "category": "alarms"
+    },
+    {
+      "id": "insight_query",
+      "pattern": "Insights",
+      "regex": "(?i)logs.*insights|query.*error|syntax.*error|field.*not.*found",
+      "cause": "CloudWatch Logs Insights query syntax error",
+      "solution": "Review query syntax, use 'fields @' prefix for parsed fields, check log format matches query expectations",
+      "severity": "low",
+      "category": "logs"
+    },
+    {
+      "id": "cross_account",
+      "pattern": "cross-account",
+      "regex": "(?i)cross.*account|sharing.*error|organization|resource.*policy",
+      "cause": "Cross-account CloudWatch access not configured",
+      "solution": "Set up cross-account sharing via Organization, configure resource policy on shared log groups",
+      "severity": "medium",
+      "category": "permissions"
+    }
+  ],
+  "related_tools": ["aws_cli", "prometheus", "grafana", "datadog"],
+  "documentation_url": "https://docs.aws.amazon.com/cloudwatch/"
+}

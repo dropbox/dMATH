@@ -1,0 +1,84 @@
+{
+  "id": "threadsanitizer",
+  "name": "ThreadSanitizer (TSan)",
+  "category": "sanitizer",
+  "subcategory": "concurrency",
+
+  "description": "Detects data races in Rust/C/C++ programs",
+  "long_description": "ThreadSanitizer (TSan) is a fast data race detector. It finds data races where two threads access the same memory location without synchronization and at least one access is a write.",
+
+  "capabilities": [
+    "data_race_detection",
+    "lock_order_checking",
+    "deadlock_detection",
+    "happens_before_tracking"
+  ],
+  "property_types": ["concurrency_safety"],
+  "input_languages": ["rust", "c", "cpp"],
+  "output_formats": ["error_report", "stack_trace"],
+
+  "installation": {
+    "methods": [
+      {"type": "rustup", "command": "RUSTFLAGS='-Zsanitizer=thread' cargo +nightly run"}
+    ],
+    "dependencies": ["nightly_rust", "llvm"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/sanitizer.html",
+    "tutorial": "https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/sanitizer.html#threadsanitizer",
+    "api_reference": "https://clang.llvm.org/docs/ThreadSanitizer.html",
+    "examples": "https://github.com/rust-lang/rust/tree/master/tests/ui/sanitize"
+  },
+
+  "tactics": [
+    {
+      "name": "basic",
+      "description": "Enable TSan",
+      "syntax": "RUSTFLAGS='-Zsanitizer=thread'",
+      "when_to_use": "For concurrent programs",
+      "examples": ["RUSTFLAGS='-Zsanitizer=thread' cargo +nightly test"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "WARNING: ThreadSanitizer: data race",
+      "meaning": "Unsynchronized concurrent access",
+      "common_causes": ["Missing lock", "Wrong atomics"],
+      "fixes": ["Add synchronization", "Use proper atomics"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["concurrency_safety"],
+    "cli_command": "dashprove verify --backend threadsanitizer"
+  },
+
+  "performance": {
+    "typical_runtime": "5-15x slowdown",
+    "scalability": "Good",
+    "memory_usage": "5-10x increase"
+  },
+
+  "comparisons": {
+    "similar_tools": ["helgrind", "loom"],
+    "advantages": [
+      "Fast",
+      "Good accuracy"
+    ],
+    "disadvantages": [
+      "High memory",
+      "Nightly only"
+    ]
+  },
+
+  "metadata": {
+    "version": "via LLVM",
+    "last_updated": "2025-12-22",
+    "maintainer": "LLVM/Rust Team",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "tool_id": "trivy",
+  "tool_name": "Trivy",
+  "description": "Comprehensive vulnerability scanner for containers, filesystems, Git repositories, Kubernetes, and infrastructure as code (IaC)",
+  "common_errors": [
+    {
+      "id": "db_update_failed",
+      "pattern": "failed to update vulnerability database|DB update failed|database download error",
+      "category": "database",
+      "severity": "medium",
+      "cause": "Cannot download the vulnerability database due to network issues, proxy settings, or rate limiting",
+      "solution": "Check network connectivity. Configure HTTP_PROXY/HTTPS_PROXY if behind proxy. Use --skip-db-update with offline DB. Try trivy image --download-db-only first.",
+      "example": "trivy image --download-db-only  # pre-download database",
+      "related_concepts": ["offline_scanning", "db_caching", "proxy_configuration"]
+    },
+    {
+      "id": "image_pull_error",
+      "pattern": "failed to pull image|unauthorized: authentication required|MANIFEST_UNKNOWN",
+      "category": "registry",
+      "severity": "medium",
+      "cause": "Cannot pull container image from registry due to authentication, permissions, or the image doesn't exist",
+      "solution": "Login to registry with docker/podman login first. Set TRIVY_USERNAME and TRIVY_PASSWORD for private registries. Verify image name and tag exist.",
+      "related_concepts": ["registry_auth", "image_reference", "manifest_resolution"]
+    },
+    {
+      "id": "false_positive_cve",
+      "pattern": "CVE.*false positive|vulnerability not applicable",
+      "category": "accuracy",
+      "severity": "low",
+      "cause": "Vulnerability detected but not actually exploitable due to configuration, architecture, or backported fixes",
+      "solution": "Use .trivyignore to suppress known false positives. Add CVE with expiration date and comment. Use --ignore-unfixed to hide unfixed vulns.",
+      "example": "echo 'CVE-2022-12345 exp:2024-12-31' >> .trivyignore",
+      "related_concepts": ["vulnerability_suppression", "false_positive_management", "risk_acceptance"]
+    },
+    {
+      "id": "sbom_parse_error",
+      "pattern": "failed to parse SBOM|unsupported SBOM format|SBOM validation failed",
+      "category": "sbom",
+      "severity": "medium",
+      "cause": "Software Bill of Materials (SBOM) file is malformed, uses unsupported format, or has version incompatibility",
+      "solution": "Use supported formats: CycloneDX, SPDX. Validate SBOM with format-specific tools first. Check Trivy version supports the SBOM version.",
+      "related_concepts": ["cyclonedx", "spdx", "sbom_generation"]
+    },
+    {
+      "id": "iac_misconfiguration_fp",
+      "pattern": "misconfiguration.*false positive|AVD-.*not applicable",
+      "category": "iac",
+      "severity": "low",
+      "cause": "IaC misconfiguration detected but acceptable for the specific use case or environment",
+      "solution": "Use inline comments to ignore: # trivy:ignore:AVD-AWS-0001. Create .trivyignore.yaml for policy-based ignores. Use --skip-dirs to exclude generated files.",
+      "example": "# trivy:ignore:AVD-AWS-0001\nresource \"aws_s3_bucket\" \"public\" { }",
+      "related_concepts": ["iac_scanning", "policy_exceptions", "compliance_customization"]
+    }
+  ],
+  "best_practices": [
+    "Run trivy in CI/CD with --exit-code 1 for critical vulnerabilities",
+    "Use --ignore-unfixed to focus on actionable vulnerabilities",
+    "Generate SBOM alongside vulnerability scan for compliance",
+    "Cache the vulnerability database in CI for faster scans",
+    "Combine container and filesystem scanning for comprehensive coverage"
+  ],
+  "references": [
+    "https://aquasecurity.github.io/trivy/",
+    "https://github.com/aquasecurity/trivy",
+    "https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/"
+  ]
+}

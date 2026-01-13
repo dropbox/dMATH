@@ -1,0 +1,191 @@
+{
+  "tool": "planetscale",
+  "version": "0.169.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "auth_error",
+      "pattern": "not authenticated|authentication.*failed|PLANETSCALE_TOKEN|unauthorized",
+      "message": "Authentication error",
+      "cause": "Not logged in or token invalid",
+      "solutions": [
+        {
+          "approach": "Login",
+          "code": "pscale auth login",
+          "when": "Not authenticated"
+        },
+        {
+          "approach": "Service token",
+          "code": "export PLANETSCALE_SERVICE_TOKEN=your-token\nexport PLANETSCALE_SERVICE_TOKEN_NAME=your-token-name\npscale deploy-request create db main --from dev",
+          "when": "CI/CD"
+        },
+        {
+          "approach": "Check auth",
+          "code": "pscale auth status",
+          "when": "Verify auth"
+        }
+      ]
+    },
+    {
+      "id": "connection_error",
+      "pattern": "connection.*refused|dial tcp|cannot connect|SSL.*required",
+      "message": "Database connection error",
+      "cause": "Connection string or SSL configuration issue",
+      "solutions": [
+        {
+          "approach": "Use proxy",
+          "code": "pscale connect your-db main --port 3306\n# Connect via localhost:3306",
+          "when": "Local development"
+        },
+        {
+          "approach": "Connection string",
+          "code": "# Use connection string from dashboard\n# Format: mysql://user:pass@host/db?ssl={\"rejectUnauthorized\":true}",
+          "when": "Direct connection"
+        },
+        {
+          "approach": "SSL config",
+          "code": "// Node.js mysql2:\nconst connection = mysql.createConnection({\n  uri: process.env.DATABASE_URL,\n  ssl: { rejectUnauthorized: true }\n});",
+          "when": "SSL required"
+        }
+      ]
+    },
+    {
+      "id": "branch_error",
+      "pattern": "branch.*not found|branch.*already exists|production branch",
+      "message": "Branch management error",
+      "cause": "Branch doesn't exist or conflict",
+      "solutions": [
+        {
+          "approach": "Create branch",
+          "code": "pscale branch create your-db dev",
+          "when": "Branch missing"
+        },
+        {
+          "approach": "List branches",
+          "code": "pscale branch list your-db",
+          "when": "View branches"
+        },
+        {
+          "approach": "Switch branch",
+          "code": "pscale connect your-db dev --port 3306",
+          "when": "Connect to branch"
+        }
+      ]
+    },
+    {
+      "id": "deploy_request_error",
+      "pattern": "deploy request.*failed|schema conflict|cannot merge|blocking error",
+      "message": "Deploy request error",
+      "cause": "Schema conflict or validation error",
+      "solutions": [
+        {
+          "approach": "View diff",
+          "code": "pscale deploy-request diff your-db 1\n# Shows schema changes",
+          "when": "See changes"
+        },
+        {
+          "approach": "Fix conflicts",
+          "code": "# Sync dev branch with main:\npscale branch refresh your-db dev\n# Then reapply changes",
+          "when": "Schema conflict"
+        },
+        {
+          "approach": "Create request",
+          "code": "pscale deploy-request create your-db main --from dev",
+          "when": "Merge changes"
+        }
+      ]
+    },
+    {
+      "id": "foreign_key_error",
+      "pattern": "foreign key.*not supported|referential integrity|FK constraint",
+      "message": "Foreign key constraint error",
+      "cause": "PlanetScale doesn't support traditional FKs",
+      "solutions": [
+        {
+          "approach": "App-level enforcement",
+          "code": "// Enforce relationships in application code\n// Use transactions and checks",
+          "when": "Design pattern"
+        },
+        {
+          "approach": "Use indexes",
+          "code": "-- Create indexes for relationships:\nCREATE INDEX idx_posts_user_id ON posts(user_id);",
+          "when": "Performance"
+        },
+        {
+          "approach": "Vitess docs",
+          "code": "# PlanetScale uses Vitess which has FK limitations\n# See: https://vitess.io/docs/reference/compatibility/mysql-compatibility/",
+          "when": "Learn more"
+        }
+      ]
+    },
+    {
+      "id": "schema_error",
+      "pattern": "schema.*error|DDL.*failed|ALTER.*blocked|table.*locked",
+      "message": "Schema change error",
+      "cause": "DDL operation blocked or failed",
+      "solutions": [
+        {
+          "approach": "Use branch",
+          "code": "# Make changes on dev branch:\npscale connect your-db dev --port 3306\nmysql -u root -h 127.0.0.1 -P 3306\nALTER TABLE ...",
+          "when": "Schema change"
+        },
+        {
+          "approach": "Online DDL",
+          "code": "# PlanetScale performs online DDL\n# Large tables may take time\n# Check deploy request status",
+          "when": "Long running"
+        },
+        {
+          "approach": "Import schema",
+          "code": "pscale database import your-db --from mysql://...\n# Or use schema file",
+          "when": "Initial import"
+        }
+      ]
+    },
+    {
+      "id": "quota_error",
+      "pattern": "quota.*exceeded|row limit|storage limit|connections.*limit",
+      "message": "Quota exceeded error",
+      "cause": "Plan limits reached",
+      "solutions": [
+        {
+          "approach": "Check usage",
+          "code": "pscale database show your-db\n# Shows storage and row count",
+          "when": "View usage"
+        },
+        {
+          "approach": "Upgrade plan",
+          "code": "# Upgrade in PlanetScale dashboard\n# Scaler plan has higher limits",
+          "when": "Need more"
+        },
+        {
+          "approach": "Optimize",
+          "code": "-- Remove old data:\nDELETE FROM logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY);\nOPTIMIZE TABLE logs;",
+          "when": "Reduce usage"
+        }
+      ]
+    },
+    {
+      "id": "password_error",
+      "pattern": "password.*expired|credential.*invalid|access denied",
+      "message": "Password/credential error",
+      "cause": "Database password expired or invalid",
+      "solutions": [
+        {
+          "approach": "Create password",
+          "code": "pscale password create your-db main my-password",
+          "when": "New password"
+        },
+        {
+          "approach": "List passwords",
+          "code": "pscale password list your-db main",
+          "when": "View passwords"
+        },
+        {
+          "approach": "Delete and recreate",
+          "code": "pscale password delete your-db main old-password\npscale password create your-db main new-password",
+          "when": "Reset password"
+        }
+      ]
+    }
+  ]
+}

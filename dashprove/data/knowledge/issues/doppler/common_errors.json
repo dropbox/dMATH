@@ -1,0 +1,145 @@
+{
+  "tool": "doppler",
+  "version": "3.67",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "not_authenticated",
+      "pattern": "not authenticated|login required|token.*invalid|authentication failed",
+      "message": "Not authenticated with Doppler",
+      "cause": "Not logged in or token expired",
+      "solutions": [
+        {
+          "approach": "Interactive login",
+          "code": "doppler login",
+          "when": "Browser-based login"
+        },
+        {
+          "approach": "Service token",
+          "code": "export DOPPLER_TOKEN='dp.st.xxx'\ndoppler secrets",
+          "when": "CI/CD environment"
+        },
+        {
+          "approach": "Check auth",
+          "code": "doppler whoami",
+          "when": "Verify identity"
+        }
+      ]
+    },
+    {
+      "id": "project_not_found",
+      "pattern": "project.*not found|no project|select a project|config.*missing",
+      "message": "Project or config not found",
+      "cause": "Wrong project/config name or not set up",
+      "solutions": [
+        {
+          "approach": "Setup project",
+          "code": "doppler setup  # Interactive selection",
+          "when": "First time setup"
+        },
+        {
+          "approach": "Specify project",
+          "code": "doppler secrets --project myapp --config dev",
+          "when": "Explicit project/config"
+        },
+        {
+          "approach": "List projects",
+          "code": "doppler projects\ndoppler configs",
+          "when": "Find available"
+        }
+      ]
+    },
+    {
+      "id": "secret_not_found",
+      "pattern": "secret.*not found|key.*does not exist|missing secret",
+      "message": "Secret not found",
+      "cause": "Secret doesn't exist in this config",
+      "solutions": [
+        {
+          "approach": "List secrets",
+          "code": "doppler secrets",
+          "when": "See available secrets"
+        },
+        {
+          "approach": "Check config",
+          "code": "doppler secrets --config production\ndoppler secrets --config development",
+          "when": "Different config"
+        },
+        {
+          "approach": "Add secret",
+          "code": "doppler secrets set MY_SECRET=\"value\"",
+          "when": "Create secret"
+        }
+      ]
+    },
+    {
+      "id": "permission_denied",
+      "pattern": "permission denied|access denied|not authorized|403",
+      "message": "Insufficient permissions",
+      "cause": "User/token lacks access to project or action",
+      "solutions": [
+        {
+          "approach": "Check role",
+          "code": "doppler projects  # Shows access level",
+          "when": "Verify permissions"
+        },
+        {
+          "approach": "Use correct token",
+          "code": "# Service tokens are project/config specific\n# Personal tokens have user's full access",
+          "when": "Token scope"
+        },
+        {
+          "approach": "Request access",
+          "code": "# Contact project admin to grant access\n# Or use correct token scope",
+          "when": "Need more access"
+        }
+      ]
+    },
+    {
+      "id": "run_failed",
+      "pattern": "doppler run.*failed|command.*failed|subprocess.*error",
+      "message": "Doppler run command failed",
+      "cause": "Injected command failed or env not set",
+      "solutions": [
+        {
+          "approach": "Debug run",
+          "code": "doppler run --command 'env' | grep MY_VAR",
+          "when": "Check injected vars"
+        },
+        {
+          "approach": "Use fallback",
+          "code": "doppler run --fallback ./secrets.backup --command 'my-app'",
+          "when": "Offline fallback"
+        },
+        {
+          "approach": "Mount secrets",
+          "code": "doppler secrets download --no-file --format env > .env\nsource .env && my-app",
+          "when": "Alternative injection"
+        }
+      ]
+    },
+    {
+      "id": "network_error",
+      "pattern": "network error|connection.*failed|timeout|unable to reach",
+      "message": "Network connectivity error",
+      "cause": "Cannot reach Doppler API",
+      "solutions": [
+        {
+          "approach": "Use fallback",
+          "code": "doppler run --fallback ./secrets.enc --command 'app'",
+          "when": "Offline mode"
+        },
+        {
+          "approach": "Create fallback",
+          "code": "doppler secrets download --no-file --format env-no-quotes > .env.backup",
+          "when": "Prepare fallback"
+        },
+        {
+          "approach": "Check connectivity",
+          "code": "curl https://api.doppler.com/v3/me -H \"Authorization: Bearer $DOPPLER_TOKEN\"",
+          "when": "Test API access"
+        }
+      ]
+    }
+  ]
+}

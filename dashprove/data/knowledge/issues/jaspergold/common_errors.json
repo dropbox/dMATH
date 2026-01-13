@@ -1,0 +1,270 @@
+{
+  "tool": "jaspergold",
+  "version": "2024.03",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "property_timeout",
+      "pattern": "timeout|inconclusive|max.*iterations.*reached",
+      "message": "Property verification timed out",
+      "cause": "Property too complex to prove within time/resource limits",
+      "solutions": [
+        {
+          "approach": "Increase effort level",
+          "code": "set_prove_options -effort high\nprove -all",
+          "when": "Low effort insufficient"
+        },
+        {
+          "approach": "Use bounded proof",
+          "code": "set_prove_options -depth 50\nprove -property my_prop",
+          "when": "Deep temporal property"
+        },
+        {
+          "approach": "Add helper assertions",
+          "code": "// Add cut points and helper lemmas\nassert_helper: assert property (@(posedge clk)\n  intermediate_condition);\n\nassert_main: assert property (@(posedge clk)\n  main_property);  // Now easier to prove",
+          "when": "Need proof decomposition"
+        },
+        {
+          "approach": "Blackbox complex logic",
+          "code": "set_blackbox -module complex_submodule\n// Verify with assumptions about blackbox behavior",
+          "when": "Submodule too complex"
+        }
+      ]
+    },
+    {
+      "id": "counterexample_found",
+      "pattern": "CEX|counter.*example|property.*fail",
+      "message": "Property violated with counterexample",
+      "cause": "Design bug or incorrect specification",
+      "solutions": [
+        {
+          "approach": "View counterexample",
+          "code": "visualize -violation\n# Or export to waveform:\nvisualize -violation -format vcd -filename cex.vcd",
+          "when": "Need to understand failure"
+        },
+        {
+          "approach": "Debug with assumptions",
+          "code": "// Add assumption to constrain scenario:\nassume_debug: assume property (@(posedge clk)\n  suspected_condition);\n// Re-run to see if CEX changes",
+          "when": "Narrowing down cause"
+        },
+        {
+          "approach": "Use formal debug",
+          "code": "check_cex -root_cause\n// Shows signals contributing to failure",
+          "when": "Complex failure path"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax.*error|parse.*error|SVA.*error",
+      "message": "SystemVerilog/SVA syntax error",
+      "cause": "Invalid property or assertion syntax",
+      "solutions": [
+        {
+          "approach": "Fix SVA syntax",
+          "code": "// Common issues:\n\n// Use |-> not ->\nassert property (@(posedge clk)\n  req |-> ##1 ack);  // Correct\n\n// Use ## for delay\nassert property (@(posedge clk)\n  a ##2 b);  // 2 cycle delay",
+          "when": "SVA syntax wrong"
+        },
+        {
+          "approach": "Check sequence operators",
+          "code": "// Sequence operators:\nsequence s1;\n  a ##1 b ##[1:3] c;  // a, then b after 1 cycle, then c after 1-3\nendsequence\n\nassert property (@(posedge clk) s1 |=> d);",
+          "when": "Sequence definition wrong"
+        },
+        {
+          "approach": "Verify clock specification",
+          "code": "// Must have clock event:\nassert property (@(posedge clk) p);  // Correct\nassert property (p);  // Wrong - no clock",
+          "when": "Missing clock"
+        }
+      ]
+    },
+    {
+      "id": "reset_abstraction",
+      "pattern": "reset.*issue|initial.*state|X.*state",
+      "message": "Reset abstraction or initialization issue",
+      "cause": "Design not properly reset in formal environment",
+      "solutions": [
+        {
+          "approach": "Define reset sequence",
+          "code": "define_reset_sequence -expr {rst_n == 0}",
+          "when": "Reset signal not recognized"
+        },
+        {
+          "approach": "Constrain initial state",
+          "code": "// Add initial state constraints:\nassume_init: assume property (@(posedge clk)\n  $fell(rst_n) |=> (state == IDLE));",
+          "when": "Unknown initial state"
+        },
+        {
+          "approach": "Use async reset properly",
+          "code": "// For async reset, need constraint:\nassume_reset: assume property (\n  rst_n == 0 |-> (state == IDLE));",
+          "when": "Async reset issues"
+        }
+      ]
+    },
+    {
+      "id": "state_space_explosion",
+      "pattern": "state.*explosion|memory.*exceeded|BDD.*blowup",
+      "message": "State space too large",
+      "cause": "Design complexity exceeds verification capacity",
+      "solutions": [
+        {
+          "approach": "Use bounded model checking",
+          "code": "set_engine_mode bmc\nset_prove_options -depth 100\nprove -property my_prop",
+          "when": "Full proof too expensive"
+        },
+        {
+          "approach": "Add case splitting",
+          "code": "// Split proof by cases:\nassert_case1: assert property (@(posedge clk)\n  mode == A |-> property_for_A);\nassert_case2: assert property (@(posedge clk)\n  mode == B |-> property_for_B);",
+          "when": "Large state machine"
+        },
+        {
+          "approach": "Abstract data paths",
+          "code": "// Cut data path, assume constraints:\nassume_data: assume property (@(posedge clk)\n  data_valid |-> data inside {[0:255]});",
+          "when": "Wide data paths"
+        },
+        {
+          "approach": "Hierarchical verification",
+          "code": "// Verify submodules separately:\nset_task -name verify_sub\nset_property_target submodule\nprove -all",
+          "when": "Large hierarchical design"
+        }
+      ]
+    },
+    {
+      "id": "clock_domain_crossing",
+      "pattern": "CDC|clock.*domain|metastability",
+      "message": "Clock domain crossing issue",
+      "cause": "Properties span multiple clock domains",
+      "solutions": [
+        {
+          "approach": "Use multi-clock properties",
+          "code": "assert property (\n  @(posedge clk1) req |-> ##1 @(posedge clk2) ack);",
+          "when": "Cross-domain property"
+        },
+        {
+          "approach": "Add CDC constraints",
+          "code": "// Constrain CDC signals:\nassume_sync: assume property (@(posedge clk2)\n  !$isunknown(sync_signal));",
+          "when": "Metastability issues"
+        },
+        {
+          "approach": "Use CDC checking app",
+          "code": "analyze -format sv -library my_lib rtl/*.sv\ncheck_cdc -report cdc_report",
+          "when": "Need dedicated CDC analysis"
+        }
+      ]
+    },
+    {
+      "id": "coverage_gap",
+      "pattern": "cover.*unreached|coverage.*gap|uncovered.*state",
+      "message": "Coverage goal not reached",
+      "cause": "State or scenario not reachable",
+      "solutions": [
+        {
+          "approach": "Check reachability",
+          "code": "cover_point: cover property (@(posedge clk)\n  rare_state);  // Check if reachable\n\nprove -cover",
+          "when": "State might be unreachable"
+        },
+        {
+          "approach": "Review constraints",
+          "code": "// Assumptions may be too restrictive:\n// Comment out and see if cover passes:\n// assume_restrictive: assume property (...);\n\nprove -cover",
+          "when": "Over-constrained"
+        },
+        {
+          "approach": "Add witness trace",
+          "code": "visualize -cover cover_point\n// If reachable, shows trace to reach state",
+          "when": "Need reaching trace"
+        }
+      ]
+    },
+    {
+      "id": "proof_convergence",
+      "pattern": "convergence.*fail|induction.*fail|proof.*incomplete",
+      "message": "Proof failed to converge",
+      "cause": "Inductive proof needs stronger invariants",
+      "solutions": [
+        {
+          "approach": "Add helper assertions",
+          "code": "// Add invariants:\ninvariant1: assert property (@(posedge clk)\n  counter <= MAX_COUNT);\n\ninvariant2: assert property (@(posedge clk)\n  state inside {IDLE, RUN, DONE});\n\n// Now main property easier",
+          "when": "Induction too weak"
+        },
+        {
+          "approach": "Use proof cores",
+          "code": "set_prove_options -proof_core\nprove -property main_prop\n// Shows what's needed for proof",
+          "when": "Understanding dependencies"
+        },
+        {
+          "approach": "Increase k-induction depth",
+          "code": "set_prove_options -k 10\nprove -property difficult_prop",
+          "when": "Simple induction fails"
+        }
+      ]
+    },
+    {
+      "id": "assumption_conflict",
+      "pattern": "assumption.*conflict|constraint.*unsatisfiable|deadlock",
+      "message": "Assumptions are conflicting or too strong",
+      "cause": "Multiple assumptions create impossible scenario",
+      "solutions": [
+        {
+          "approach": "Check assumption consistency",
+          "code": "check_assumptions\n// Reports if assumptions are satisfiable",
+          "when": "Suspect conflict"
+        },
+        {
+          "approach": "Review assumptions",
+          "code": "// Print all active assumptions:\nget_property_list -type assume\n// Disable suspicious ones:\nset_property_disabled assume_name",
+          "when": "Finding conflicting assume"
+        },
+        {
+          "approach": "Cover assumption scenario",
+          "code": "// Check assumptions allow interesting states:\ncover_inputs: cover property (@(posedge clk)\n  valid_input_scenario);\n// If unreachable, assumptions too strong",
+          "when": "Checking constraint strength"
+        }
+      ]
+    },
+    {
+      "id": "license_error",
+      "pattern": "license.*error|no.*license|license.*expired",
+      "message": "License not available",
+      "cause": "License server issue or no available licenses",
+      "solutions": [
+        {
+          "approach": "Check license server",
+          "code": "lmstat -a -c $LM_LICENSE_FILE\n# Check server status and available features",
+          "when": "License server down"
+        },
+        {
+          "approach": "Queue for license",
+          "code": "set_license_options -queue\n# Wait for license to become available",
+          "when": "All licenses in use"
+        },
+        {
+          "approach": "Use lower-tier license",
+          "code": "# Some operations work with base license\nset_engine_mode bmc  # May require less",
+          "when": "Limited license availability"
+        }
+      ]
+    },
+    {
+      "id": "hierarchy_issue",
+      "pattern": "hierarchy|module.*not.*found|port.*connection",
+      "message": "Design hierarchy issue",
+      "cause": "Module not found or incorrectly instantiated",
+      "solutions": [
+        {
+          "approach": "Analyze all files",
+          "code": "analyze -format sv -library work rtl/*.sv\n// Include all source files",
+          "when": "Missing files"
+        },
+        {
+          "approach": "Set top module",
+          "code": "elaborate -top my_top_module\n// Explicitly set top",
+          "when": "Wrong top inferred"
+        },
+        {
+          "approach": "Check include paths",
+          "code": "analyze -format sv +incdir+./include rtl/*.sv",
+          "when": "Missing includes"
+        }
+      ]
+    }
+  ]
+}

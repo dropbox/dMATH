@@ -1,0 +1,114 @@
+{
+  "id": "klee",
+  "name": "KLEE",
+  "category": "model_checker",
+  "subcategory": "software",
+
+  "description": "LLVM-based symbolic execution engine",
+  "long_description": "KLEE is a symbolic execution engine built on LLVM. It executes programs symbolically, exploring all possible execution paths and generating test cases that achieve high code coverage. KLEE can find bugs like buffer overflows, assertion failures, and division by zero.",
+
+  "capabilities": [
+    "symbolic_execution",
+    "test_generation",
+    "bug_finding",
+    "coverage_analysis",
+    "constraint_solving",
+    "path_exploration"
+  ],
+  "property_types": ["assertion", "memory_safety", "coverage"],
+  "input_languages": ["llvm_bitcode", "c"],
+  "output_formats": ["test_cases", "counterexample", "statistics"],
+
+  "installation": {
+    "methods": [
+      {"type": "docker", "command": "docker pull klee/klee"},
+      {"type": "source", "command": "cmake -G Ninja -B build && ninja -C build"}
+    ],
+    "dependencies": ["llvm", "stp", "z3"],
+    "platforms": ["linux"]
+  },
+
+  "documentation": {
+    "official": "https://klee.github.io/",
+    "tutorial": "https://klee.github.io/tutorials/",
+    "api_reference": "https://klee.github.io/docs/",
+    "examples": "https://github.com/klee/klee/tree/master/examples"
+  },
+
+  "tactics": [
+    {
+      "name": "search",
+      "description": "Set search strategy",
+      "syntax": "--search=dfs|bfs|random-path|nurs:covnew",
+      "when_to_use": "To guide path exploration",
+      "examples": ["klee --search=nurs:covnew program.bc"]
+    },
+    {
+      "name": "max-time",
+      "description": "Set time limit",
+      "syntax": "--max-time=Ns",
+      "when_to_use": "To limit exploration time",
+      "examples": ["klee --max-time=60s program.bc"]
+    },
+    {
+      "name": "emit-all-errors",
+      "description": "Report all errors",
+      "syntax": "--emit-all-errors",
+      "when_to_use": "For comprehensive bug finding",
+      "examples": ["klee --emit-all-errors program.bc"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "memory error",
+      "meaning": "Memory safety violation",
+      "common_causes": ["Buffer overflow", "Use after free"],
+      "fixes": ["Fix memory access"]
+    },
+    {
+      "pattern": "ASSERTION FAIL",
+      "meaning": "Assertion violation",
+      "common_causes": ["Bug in code"],
+      "fixes": ["Fix code logic"]
+    },
+    {
+      "pattern": "solver timeout",
+      "meaning": "Constraint too complex",
+      "common_causes": ["Complex path condition"],
+      "fixes": ["Simplify program", "Use different solver"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["assertion", "memory_safety"],
+    "cli_command": "dashprove verify --backend klee"
+  },
+
+  "performance": {
+    "typical_runtime": "minutes to hours",
+    "scalability": "Good for unit testing",
+    "memory_usage": "High"
+  },
+
+  "comparisons": {
+    "similar_tools": ["angr", "manticore", "seahorn"],
+    "advantages": [
+      "High code coverage",
+      "Test case generation",
+      "Active development"
+    ],
+    "disadvantages": [
+      "Path explosion",
+      "Complex setup"
+    ]
+  },
+
+  "metadata": {
+    "version": "3.0",
+    "last_updated": "2025-12-21",
+    "maintainer": "KLEE Team",
+    "license": "UIUC/NCSA"
+  }
+}

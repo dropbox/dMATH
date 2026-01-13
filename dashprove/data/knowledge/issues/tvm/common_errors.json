@@ -1,0 +1,143 @@
+{
+  "tool": "tvm",
+  "version": "0.15.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "import_error",
+      "pattern": "(import|relay|frontend)",
+      "message": "Model import error",
+      "cause": "Failed to import model to Relay IR",
+      "solutions": [
+        {
+          "approach": "Import ONNX",
+          "code": "import tvm\nfrom tvm import relay\nimport onnx\nonnx_model = onnx.load('model.onnx')\nmod, params = relay.frontend.from_onnx(\n    onnx_model, shape={'input': (1, 3, 224, 224)}\n)",
+          "when": "Importing ONNX"
+        },
+        {
+          "approach": "Import PyTorch",
+          "code": "import torch\nfrom tvm import relay\nscripted_model = torch.jit.trace(model, example_input)\nmod, params = relay.frontend.from_pytorch(\n    scripted_model, [('input', (1, 3, 224, 224))]\n)",
+          "when": "Importing PyTorch"
+        },
+        {
+          "approach": "Import TensorFlow",
+          "code": "from tvm import relay\nmod, params = relay.frontend.from_tensorflow(\n    graph_def, shape={'input': (1, 224, 224, 3)}\n)",
+          "when": "Importing TensorFlow"
+        }
+      ]
+    },
+    {
+      "id": "compilation_error",
+      "pattern": "(compile|build|target)",
+      "message": "Compilation error",
+      "cause": "Failed to compile for target",
+      "solutions": [
+        {
+          "approach": "Compile for CPU",
+          "code": "target = tvm.target.Target('llvm')\nwith tvm.transform.PassContext(opt_level=3):\n    lib = relay.build(mod, target=target, params=params)",
+          "when": "CPU compilation"
+        },
+        {
+          "approach": "Compile for GPU",
+          "code": "target = tvm.target.Target('cuda')\nwith tvm.transform.PassContext(opt_level=3):\n    lib = relay.build(mod, target=target, params=params)",
+          "when": "CUDA compilation"
+        },
+        {
+          "approach": "Cross-compile",
+          "code": "target = tvm.target.Target('llvm -mtriple=aarch64-linux-gnu')\nwith tvm.transform.PassContext(opt_level=3):\n    lib = relay.build(mod, target=target, params=params)",
+          "when": "Cross-compiling for ARM"
+        }
+      ]
+    },
+    {
+      "id": "runtime_error",
+      "pattern": "(runtime|GraphExecutor|module|execute)",
+      "message": "Runtime execution error",
+      "cause": "Error running compiled model",
+      "solutions": [
+        {
+          "approach": "Run inference",
+          "code": "from tvm.contrib import graph_executor\ndev = tvm.cpu()  # or tvm.cuda()\nm = graph_executor.GraphModule(lib['default'](dev))\nm.set_input('input', tvm.nd.array(input_data))\nm.run()\noutput = m.get_output(0).numpy()",
+          "when": "Running inference"
+        },
+        {
+          "approach": "Load exported module",
+          "code": "lib.export_library('model.so')\nloaded_lib = tvm.runtime.load_module('model.so')\nm = graph_executor.GraphModule(loaded_lib['default'](dev))",
+          "when": "Loading saved model"
+        }
+      ]
+    },
+    {
+      "id": "autotuning_error",
+      "pattern": "(autotvm|auto_scheduler|tune|ansor)",
+      "message": "Auto-tuning error",
+      "cause": "Error during auto-tuning process",
+      "solutions": [
+        {
+          "approach": "Use AutoScheduler",
+          "code": "from tvm import auto_scheduler\ntasks, task_weights = auto_scheduler.extract_tasks(\n    mod['main'], params, target\n)\ntuner = auto_scheduler.TaskScheduler(tasks, task_weights)\ntune_option = auto_scheduler.TuningOptions(\n    num_measure_trials=1000,\n    measure_callbacks=[auto_scheduler.RecordToFile('log.json')]\n)\ntuner.tune(tune_option)",
+          "when": "Auto-tuning with Ansor"
+        },
+        {
+          "approach": "Use tuning log",
+          "code": "with auto_scheduler.ApplyHistoryBest('log.json'):\n    with tvm.transform.PassContext(opt_level=3):\n        lib = relay.build(mod, target=target, params=params)",
+          "when": "Using tuned schedule"
+        }
+      ]
+    },
+    {
+      "id": "shape_error",
+      "pattern": "(shape|dimension|dynamic)",
+      "message": "Shape inference error",
+      "cause": "Could not infer shapes in model",
+      "solutions": [
+        {
+          "approach": "Specify input shapes",
+          "code": "shape_dict = {'input': (1, 3, 224, 224)}\nmod, params = relay.frontend.from_onnx(onnx_model, shape_dict)",
+          "when": "Static shapes"
+        },
+        {
+          "approach": "Use dynamic shapes",
+          "code": "from tvm.relay import transform\nmod = transform.DynamicToStatic()(mod)",
+          "when": "Converting dynamic to static"
+        }
+      ]
+    },
+    {
+      "id": "quantization_error",
+      "pattern": "(quantize|calibrate|QNN|int8)",
+      "message": "Quantization error",
+      "cause": "Error during model quantization",
+      "solutions": [
+        {
+          "approach": "Quantize model",
+          "code": "from tvm.relay.quantize import quantize\nwith relay.quantize.qconfig(\n    calibrate_mode='global_scale',\n    global_scale=8.0,\n    skip_conv_layers=[0]\n):\n    qmod = quantize(mod, params)",
+          "when": "Basic quantization"
+        },
+        {
+          "approach": "Calibrated quantization",
+          "code": "with relay.quantize.qconfig(\n    calibrate_mode='kl_divergence',\n    weight_scale='max'\n):\n    qmod = quantize(mod, params, dataset=calibration_data)",
+          "when": "With calibration"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_op_error",
+      "pattern": "(unsupported|operator|not implemented)",
+      "message": "Unsupported operator",
+      "cause": "Model contains operator not supported by TVM",
+      "solutions": [
+        {
+          "approach": "Check supported ops",
+          "code": "from tvm.relay.op import op as _op\nprint(_op.get_registry())",
+          "when": "Listing ops"
+        },
+        {
+          "approach": "Register custom op",
+          "code": "from tvm import te\n@tvm.te.tag_scope(tag='custom_op')\ndef my_op(A, B):\n    return te.compute(A.shape, lambda *i: A(*i) + B(*i))",
+          "when": "Adding custom op"
+        }
+      ]
+    }
+  ]
+}

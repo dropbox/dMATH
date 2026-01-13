@@ -1,0 +1,140 @@
+{
+  "tool": "patch",
+  "version": "2.7",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "hunk_failed",
+      "pattern": "FAILED|Hunk.*FAILED|offset|fuzz",
+      "message": "Patch hunk failed to apply",
+      "cause": "File changed since patch was created",
+      "solutions": [
+        {
+          "approach": "Try fuzz",
+          "code": "patch -F 3 < file.patch  # Allow 3 lines fuzz",
+          "when": "Minor offset"
+        },
+        {
+          "approach": "Force",
+          "code": "patch --force < file.patch\n# Check .rej files for failures",
+          "when": "Partial apply"
+        },
+        {
+          "approach": "Reverse",
+          "code": "patch -R < file.patch  # Undo patch\npatch --dry-run < file.patch  # Test first",
+          "when": "Revert/test"
+        }
+      ]
+    },
+    {
+      "id": "wrong_directory",
+      "pattern": "can't find file|No file to patch|missing header",
+      "message": "File not found for patching",
+      "cause": "Wrong directory level (strip count)",
+      "solutions": [
+        {
+          "approach": "Strip prefix",
+          "code": "patch -p1 < file.patch  # Strip 1 dir level\npatch -p0 < file.patch  # No stripping\npatch -p2 < file.patch  # Strip 2 levels",
+          "when": "Adjust level"
+        },
+        {
+          "approach": "Dry run",
+          "code": "patch --dry-run -p1 < file.patch  # Test without applying",
+          "when": "Test first"
+        },
+        {
+          "approach": "Specify file",
+          "code": "patch specific_file.c < file.patch",
+          "when": "Direct file"
+        }
+      ]
+    },
+    {
+      "id": "already_applied",
+      "pattern": "already applied|Reversed|previously applied|Unreversed",
+      "message": "Patch already applied",
+      "cause": "Patch was already applied to file",
+      "solutions": [
+        {
+          "approach": "Skip",
+          "code": "patch -N < file.patch  # Skip already applied",
+          "when": "Continue anyway"
+        },
+        {
+          "approach": "Reverse",
+          "code": "patch -R < file.patch  # Undo patch",
+          "when": "Remove patch"
+        },
+        {
+          "approach": "Check state",
+          "code": "patch --dry-run < file.patch  # Test without applying",
+          "when": "Verify"
+        }
+      ]
+    },
+    {
+      "id": "reject_files",
+      "pattern": "\\.rej|reject|saving rejects",
+      "message": "Patch created reject files",
+      "cause": "Some hunks couldn't be applied",
+      "solutions": [
+        {
+          "approach": "Find rejects",
+          "code": "find . -name '*.rej'\ncat file.rej",
+          "when": "Review failures"
+        },
+        {
+          "approach": "Manual apply",
+          "code": "# Edit .rej file to understand changes\n# Manually apply to target file\nrm file.rej",
+          "when": "Fix manually"
+        },
+        {
+          "approach": "Clean up",
+          "code": "find . -name '*.rej' -delete\nfind . -name '*.orig' -delete",
+          "when": "After fixing"
+        }
+      ]
+    },
+    {
+      "id": "unified_vs_context",
+      "pattern": "malformed|format|context|unified",
+      "message": "Wrong patch format",
+      "cause": "Patch format mismatch",
+      "solutions": [
+        {
+          "approach": "Unified",
+          "code": "patch -u < file.patch  # Unified format (diff -u)",
+          "when": "Unified diff"
+        },
+        {
+          "approach": "Context",
+          "code": "patch -c < file.patch  # Context format (diff -c)",
+          "when": "Context diff"
+        },
+        {
+          "approach": "Check format",
+          "code": "head file.patch\n# --- +++ = unified\n# *** --- = context",
+          "when": "Identify format"
+        }
+      ]
+    },
+    {
+      "id": "binary_files",
+      "pattern": "binary|Binary files differ|not text",
+      "message": "Patch contains binary files",
+      "cause": "Standard patch doesn't handle binary",
+      "solutions": [
+        {
+          "approach": "Use git",
+          "code": "git apply --binary file.patch",
+          "when": "Git binary patch"
+        },
+        {
+          "approach": "Separate binary",
+          "code": "# Manually copy binary files\n# Apply text patch separately",
+          "when": "Mixed patch"
+        }
+      ]
+    }
+  ]
+}

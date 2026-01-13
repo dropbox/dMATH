@@ -1,0 +1,238 @@
+{
+  "tool": "valgrind",
+  "version": "3.23",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "invalid_read",
+      "pattern": "Invalid read of size",
+      "message": "Invalid memory read",
+      "cause": "Reading from unallocated or freed memory",
+      "solutions": [
+        {
+          "approach": "Check pointer validity",
+          "code": "if (ptr != NULL) {\n    value = *ptr;\n}",
+          "when": "Pointer may be invalid"
+        },
+        {
+          "approach": "Fix use-after-free",
+          "code": "// Don't use pointer after free()\nfree(ptr);\nptr = NULL;  // Prevent reuse",
+          "when": "Use after free"
+        },
+        {
+          "approach": "Fix bounds",
+          "code": "if (index < array_size) {\n    value = array[index];\n}",
+          "when": "Out of bounds read"
+        }
+      ]
+    },
+    {
+      "id": "invalid_write",
+      "pattern": "Invalid write of size",
+      "message": "Invalid memory write",
+      "cause": "Writing to unallocated or freed memory",
+      "solutions": [
+        {
+          "approach": "Allocate enough memory",
+          "code": "char* buf = malloc(strlen(str) + 1);  // +1 for null",
+          "when": "Buffer too small"
+        },
+        {
+          "approach": "Check bounds before write",
+          "code": "if (index < capacity) {\n    array[index] = value;\n}",
+          "when": "Index may exceed bounds"
+        }
+      ]
+    },
+    {
+      "id": "definitely_lost",
+      "pattern": "definitely lost.*bytes in.*blocks",
+      "message": "Memory definitely leaked",
+      "cause": "No pointer to allocated memory (cannot be freed)",
+      "solutions": [
+        {
+          "approach": "Track all allocations",
+          "code": "void* ptr = malloc(size);\n// ... use ptr ...\nfree(ptr);",
+          "when": "Forgot to free"
+        },
+        {
+          "approach": "Fix early return leak",
+          "code": "void* ptr = malloc(size);\nif (error) {\n    free(ptr);  // Free before return\n    return;\n}",
+          "when": "Error path leaks"
+        },
+        {
+          "approach": "Use RAII (C++)",
+          "code": "auto ptr = std::make_unique<T>();",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "indirectly_lost",
+      "pattern": "indirectly lost.*bytes in.*blocks",
+      "message": "Memory indirectly leaked",
+      "cause": "Memory reachable only through lost memory",
+      "solutions": [
+        {
+          "approach": "Fix root leak",
+          "code": "// Fix the 'definitely lost' block first\n// Indirect losses will resolve",
+          "when": "Caused by direct leak"
+        },
+        {
+          "approach": "Proper cleanup",
+          "code": "// Free nested structures properly\nfree(node->data);\nfree(node);",
+          "when": "Need deep free"
+        }
+      ]
+    },
+    {
+      "id": "possibly_lost",
+      "pattern": "possibly lost.*bytes in.*blocks",
+      "message": "Memory possibly leaked",
+      "cause": "Pointer to middle of allocated block (may be intentional)",
+      "solutions": [
+        {
+          "approach": "Keep base pointer",
+          "code": "char* base = malloc(size);\nchar* ptr = base + offset;\n// ...\nfree(base);  // Free original, not ptr",
+          "when": "Using interior pointer"
+        },
+        {
+          "approach": "Check custom allocator",
+          "code": "// If using custom allocator, may be false positive",
+          "when": "Custom memory management"
+        }
+      ]
+    },
+    {
+      "id": "still_reachable",
+      "pattern": "still reachable.*bytes in.*blocks",
+      "message": "Memory still reachable at exit",
+      "cause": "Memory not freed but still pointed to (often acceptable)",
+      "solutions": [
+        {
+          "approach": "Free at exit (optional)",
+          "code": "atexit(cleanup_function);",
+          "when": "Want clean valgrind output"
+        },
+        {
+          "approach": "Often acceptable",
+          "code": "// OS reclaims on exit anyway\n// Focus on 'definitely lost' first",
+          "when": "Global data structures"
+        }
+      ]
+    },
+    {
+      "id": "conditional_jump",
+      "pattern": "Conditional jump.*depends on uninitialised value",
+      "message": "Using uninitialized value in condition",
+      "cause": "Variable used in branch without being initialized",
+      "solutions": [
+        {
+          "approach": "Initialize variable",
+          "code": "int flag = 0;  // Not just 'int flag;'",
+          "when": "Simple initialization"
+        },
+        {
+          "approach": "Use memset for structs",
+          "code": "struct S s;\nmemset(&s, 0, sizeof(s));",
+          "when": "Struct initialization"
+        },
+        {
+          "approach": "Use = {} in C++",
+          "code": "struct S s{};  // Zero-initialized",
+          "when": "C++ code"
+        }
+      ]
+    },
+    {
+      "id": "syscall_param_uninit",
+      "pattern": "Syscall param.*points to uninitialised byte",
+      "message": "Uninitialized data passed to syscall",
+      "cause": "Buffer with uninitialized bytes passed to OS",
+      "solutions": [
+        {
+          "approach": "Initialize buffer",
+          "code": "char buf[SIZE];\nmemset(buf, 0, sizeof(buf));",
+          "when": "Need zero buffer"
+        },
+        {
+          "approach": "Only write used portion",
+          "code": "// If only part of buffer is meaningful,\n// ensure syscall size matches used portion",
+          "when": "Partial buffer use"
+        }
+      ]
+    },
+    {
+      "id": "invalid_free",
+      "pattern": "Invalid free\\(\\)",
+      "message": "Invalid free (not allocated or double free)",
+      "cause": "Freeing memory not from malloc/realloc or already freed",
+      "solutions": [
+        {
+          "approach": "Check allocation source",
+          "code": "// Only free memory from malloc/calloc/realloc\n// Don't free stack or global memory",
+          "when": "Wrong memory source"
+        },
+        {
+          "approach": "Prevent double free",
+          "code": "free(ptr);\nptr = NULL;  // free(NULL) is safe",
+          "when": "Double free"
+        }
+      ]
+    },
+    {
+      "id": "mismatched_free",
+      "pattern": "Mismatched free\\(\\).*delete.*new",
+      "message": "Mismatched allocation/deallocation",
+      "cause": "Using wrong deallocation function",
+      "solutions": [
+        {
+          "approach": "Match alloc/dealloc",
+          "code": "// malloc -> free\n// new -> delete\n// new[] -> delete[]",
+          "when": "Mismatched pair"
+        },
+        {
+          "approach": "Be consistent",
+          "code": "// Use one allocation style consistently\nint* arr = new int[10];\ndelete[] arr;  // Not free() or delete",
+          "when": "Arrays"
+        }
+      ]
+    },
+    {
+      "id": "source_and_destination_overlap",
+      "pattern": "Source and destination overlap",
+      "message": "Overlapping memory in copy operation",
+      "cause": "memcpy/strcpy with overlapping source and destination",
+      "solutions": [
+        {
+          "approach": "Use memmove",
+          "code": "memmove(dest, src, n);  // Handles overlap",
+          "when": "Regions may overlap"
+        },
+        {
+          "approach": "Use intermediate buffer",
+          "code": "char tmp[SIZE];\nmemcpy(tmp, src, n);\nmemcpy(dest, tmp, n);",
+          "when": "Need memcpy semantics"
+        }
+      ]
+    },
+    {
+      "id": "helgrind_race",
+      "pattern": "Possible data race.*writing",
+      "message": "Possible data race (Helgrind)",
+      "cause": "Concurrent access without synchronization",
+      "solutions": [
+        {
+          "approach": "Add mutex",
+          "code": "pthread_mutex_lock(&mutex);\nshared_var = value;\npthread_mutex_unlock(&mutex);",
+          "when": "Protecting shared data"
+        },
+        {
+          "approach": "Use atomic",
+          "code": "#include <stdatomic.h>\natomic_int counter;\natomic_fetch_add(&counter, 1);",
+          "when": "Simple atomic ops"
+        }
+      ]
+    }
+  ]
+}

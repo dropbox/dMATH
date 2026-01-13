@@ -1,0 +1,99 @@
+{
+  "tool": "azure_blob",
+  "category": "azure_storage",
+  "description": "Azure Blob Storage - object storage for unstructured data",
+  "common_errors": [
+    {
+      "id": "auth_error",
+      "pattern": "AuthorizationFailure",
+      "regex": "(?i)authorization.*failure|403|access.*denied|authentication.*failed",
+      "cause": "Blob storage authentication or authorization failed",
+      "solution": "Check storage account key or SAS token, verify RBAC roles, check managed identity configuration",
+      "severity": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "container_not_found",
+      "pattern": "ContainerNotFound",
+      "regex": "(?i)container.*not.*found|specified.*container|404",
+      "cause": "Blob container does not exist",
+      "solution": "Create container with lowercase name, verify container exists before operations",
+      "severity": "medium",
+      "category": "resources"
+    },
+    {
+      "id": "blob_not_found",
+      "pattern": "BlobNotFound",
+      "regex": "(?i)blob.*not.*found|specified.*blob|404",
+      "cause": "Blob does not exist at specified path",
+      "solution": "Verify blob path including virtual directories, check case sensitivity, list blobs to confirm",
+      "severity": "medium",
+      "category": "resources"
+    },
+    {
+      "id": "lease_conflict",
+      "pattern": "LeaseConflict",
+      "regex": "(?i)lease.*conflict|lease.*id|412|there.*is.*currently.*a.*lease",
+      "cause": "Blob has active lease preventing operation",
+      "solution": "Include lease ID in request headers, break lease if owned, wait for lease to expire",
+      "severity": "medium",
+      "category": "concurrency"
+    },
+    {
+      "id": "block_count_exceeded",
+      "pattern": "BlockCountExceedsLimit",
+      "regex": "(?i)block.*count|maximum.*blocks|50000.*blocks|block.*id",
+      "cause": "Block blob exceeds 50,000 block limit",
+      "solution": "Use larger block sizes, commit blocks more frequently, use Page or Append blob for large files",
+      "severity": "medium",
+      "category": "limits"
+    },
+    {
+      "id": "blob_type_mismatch",
+      "pattern": "InvalidBlobType",
+      "regex": "(?i)invalid.*blob.*type|blob.*type|block.*blob|page.*blob|append.*blob",
+      "cause": "Operation not supported for blob type",
+      "solution": "Use correct API methods for blob type, delete and recreate with correct type",
+      "severity": "medium",
+      "category": "api"
+    },
+    {
+      "id": "snapshot_operation",
+      "pattern": "SnapshotOperationRateExceeded",
+      "regex": "(?i)snapshot.*rate|too.*many.*snapshots|snapshot.*limit",
+      "cause": "Snapshot creation rate limit exceeded",
+      "solution": "Reduce snapshot frequency, delete old snapshots, implement retry with backoff",
+      "severity": "low",
+      "category": "snapshots"
+    },
+    {
+      "id": "immutable_policy",
+      "pattern": "ImmutableStorage",
+      "regex": "(?i)immutable|worm|legal.*hold|retention.*policy|cannot.*delete",
+      "cause": "Immutability policy prevents modification or deletion",
+      "solution": "Wait for retention period to expire, remove legal hold, modify policy if allowed",
+      "severity": "medium",
+      "category": "compliance"
+    },
+    {
+      "id": "copy_error",
+      "pattern": "CopyFailed",
+      "regex": "(?i)copy.*failed|copy.*aborted|source.*not.*accessible|pending.*copy",
+      "cause": "Blob copy operation failed",
+      "solution": "Verify source blob access, check copy status, ensure destination has write permissions",
+      "severity": "medium",
+      "category": "operations"
+    },
+    {
+      "id": "tier_error",
+      "pattern": "BlobAccessTierNotSupportedForAccountType",
+      "regex": "(?i)access.*tier|hot|cool|archive|tier.*not.*supported|rehydrate",
+      "cause": "Access tier operation not supported or rehydration required",
+      "solution": "Check account type supports tiers, initiate rehydration for archived blobs, wait for rehydration to complete",
+      "severity": "medium",
+      "category": "tiers"
+    }
+  ],
+  "related_tools": ["azure_cli", "azcopy", "storage_explorer"],
+  "documentation_url": "https://docs.microsoft.com/azure/storage/blobs/"
+}

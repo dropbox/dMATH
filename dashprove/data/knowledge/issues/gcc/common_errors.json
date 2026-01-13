@@ -1,0 +1,168 @@
+{
+  "tool": "gcc",
+  "version": "14.2",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "undefined_reference",
+      "pattern": "undefined reference to|unresolved.*symbol",
+      "message": "Undefined reference (linker error)",
+      "cause": "Symbol declared but not defined, missing library",
+      "solutions": [
+        {
+          "approach": "Link library",
+          "code": "gcc -o prog main.o -lm -lpthread",
+          "when": "Missing library link"
+        },
+        {
+          "approach": "Add object file",
+          "code": "gcc -o prog main.o util.o",
+          "when": "Missing object file"
+        },
+        {
+          "approach": "Check function signature",
+          "code": "Ensure declaration matches definition (name mangling in C++)",
+          "when": "Declaration/definition mismatch"
+        }
+      ]
+    },
+    {
+      "id": "implicit_declaration",
+      "pattern": "implicit declaration of function",
+      "message": "Implicit declaration of function",
+      "cause": "Function used without prior declaration",
+      "solutions": [
+        {
+          "approach": "Include header",
+          "code": "#include <stdlib.h>",
+          "when": "Standard library function"
+        },
+        {
+          "approach": "Add declaration",
+          "code": "int myfunction(int arg);",
+          "when": "Custom function"
+        },
+        {
+          "approach": "Include own header",
+          "code": "#include \"myheader.h\"",
+          "when": "Function in other file"
+        }
+      ]
+    },
+    {
+      "id": "incompatible_pointer_type",
+      "pattern": "incompatible pointer type|assignment from incompatible",
+      "message": "Incompatible pointer type",
+      "cause": "Pointer type mismatch in assignment or function call",
+      "solutions": [
+        {
+          "approach": "Cast pointer",
+          "code": "void *p = (void *)other_ptr;",
+          "when": "Intentional type conversion"
+        },
+        {
+          "approach": "Fix declaration",
+          "code": "int *p = &int_var;  // Not &float_var",
+          "when": "Wrong pointer type"
+        },
+        {
+          "approach": "Use correct format",
+          "code": "printf(\"%p\", (void *)ptr);",
+          "when": "Printing pointers"
+        }
+      ]
+    },
+    {
+      "id": "dereferencing_incomplete",
+      "pattern": "dereferencing pointer to incomplete type",
+      "message": "Dereferencing pointer to incomplete type",
+      "cause": "Using struct/union before full definition visible",
+      "solutions": [
+        {
+          "approach": "Include definition",
+          "code": "#include \"struct_def.h\"",
+          "when": "Definition in header"
+        },
+        {
+          "approach": "Move definition up",
+          "code": "struct foo { ... }; before usage",
+          "when": "Definition in same file"
+        },
+        {
+          "approach": "Forward declare then define",
+          "code": "struct foo;  // Forward\nstruct foo { int x; };  // Define before use",
+          "when": "Need forward declaration"
+        }
+      ]
+    },
+    {
+      "id": "multiple_definition",
+      "pattern": "multiple definition of|redefinition of",
+      "message": "Multiple definition",
+      "cause": "Symbol defined in multiple translation units",
+      "solutions": [
+        {
+          "approach": "Use header guards",
+          "code": "#ifndef HEADER_H\n#define HEADER_H\n...\n#endif",
+          "when": "Header included multiple times"
+        },
+        {
+          "approach": "Declare extern",
+          "code": "extern int global_var;  // In header\nint global_var;  // In one .c file",
+          "when": "Global variable"
+        },
+        {
+          "approach": "Use static",
+          "code": "static int local_var;",
+          "when": "File-local variable"
+        }
+      ]
+    },
+    {
+      "id": "expected_expression",
+      "pattern": "expected expression|expected.*before",
+      "message": "Expected expression/identifier",
+      "cause": "Syntax error, often missing semicolon or brace",
+      "solutions": [
+        {
+          "approach": "Check previous line",
+          "code": "Often missing ; on line before error",
+          "when": "Semicolon missing"
+        },
+        {
+          "approach": "Match braces",
+          "code": "Check { } [ ] ( ) are balanced",
+          "when": "Unbalanced brackets"
+        },
+        {
+          "approach": "Check macro expansion",
+          "code": "gcc -E file.c | grep -A5 'error line'",
+          "when": "Macro causing issue"
+        }
+      ]
+    },
+    {
+      "id": "format_security",
+      "pattern": "format.*not.*string literal|format string is not",
+      "message": "Format string is not a string literal",
+      "cause": "printf/scanf format string from variable (security risk)",
+      "solutions": [
+        {
+          "approach": "Use %s format",
+          "code": "printf(\"%s\", user_string);",
+          "when": "Printing user input"
+        },
+        {
+          "approach": "Use puts/fputs",
+          "code": "puts(string);  // No format parsing",
+          "when": "Simple string output"
+        },
+        {
+          "approach": "Disable warning",
+          "code": "-Wno-format-security  (not recommended)",
+          "when": "Know what you're doing"
+        }
+      ]
+    }
+  ]
+}

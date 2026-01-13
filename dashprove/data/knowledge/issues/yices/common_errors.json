@@ -1,0 +1,227 @@
+{
+  "tool": "yices",
+  "version": "2.6.4",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "unknown_result",
+      "pattern": "unknown|status.*unknown",
+      "message": "Solver returned unknown",
+      "cause": "Solver couldn't determine satisfiability within limits",
+      "solutions": [
+        {
+          "approach": "Increase timeout",
+          "code": "(set-param timeout 60000)",
+          "when": "Query needs more time"
+        },
+        {
+          "approach": "Simplify the problem",
+          "code": "; Remove unnecessary constraints",
+          "when": "Problem too complex"
+        },
+        {
+          "approach": "Use appropriate logic",
+          "code": "(set-logic QF_LRA)  ; Quantifier-free linear real",
+          "when": "Simpler logic suffices"
+        }
+      ]
+    },
+    {
+      "id": "type_error",
+      "pattern": "type.*error|type.*mismatch|incompatible.*types",
+      "message": "Type mismatch in expression",
+      "cause": "Expression has incompatible types",
+      "solutions": [
+        {
+          "approach": "Check variable declarations",
+          "code": "(define x::int)  ; Yices native syntax\n; or SMT-LIB: (declare-const x Int)",
+          "when": "Variable has wrong type"
+        },
+        {
+          "approach": "Use explicit casting",
+          "code": "; Yices typically requires explicit type matching",
+          "when": "Need type conversion"
+        },
+        {
+          "approach": "Match function argument types",
+          "code": "(define f::(-> int int))  ; Function type",
+          "when": "Function type mismatch"
+        }
+      ]
+    },
+    {
+      "id": "syntax_error",
+      "pattern": "syntax.*error|parse.*error|unexpected",
+      "message": "Input syntax error",
+      "cause": "Input doesn't conform to Yices or SMT-LIB syntax",
+      "solutions": [
+        {
+          "approach": "Use correct input mode",
+          "code": "yices2 --mode=smt2  ; For SMT-LIB2 input",
+          "when": "Using wrong syntax variant"
+        },
+        {
+          "approach": "Check Yices native syntax",
+          "code": "(assert (> x 0))  ; Similar to SMT-LIB",
+          "when": "Using Yices native mode"
+        },
+        {
+          "approach": "Verify parentheses balance",
+          "code": "; Count opening and closing parens",
+          "when": "Mismatched parentheses"
+        }
+      ]
+    },
+    {
+      "id": "unsupported_feature",
+      "pattern": "unsupported|not.*supported|feature.*unavailable",
+      "message": "Feature not supported",
+      "cause": "Yices doesn't support requested feature or theory combination",
+      "solutions": [
+        {
+          "approach": "Check supported logics",
+          "code": "; Yices excels at: QF_LIA, QF_LRA, QF_BV, QF_UF\n; Limited quantifier support",
+          "when": "Using unsupported logic"
+        },
+        {
+          "approach": "Avoid quantifiers",
+          "code": "; Yices has limited quantifier support\n; Rewrite quantifier-free if possible",
+          "when": "Using quantifiers"
+        },
+        {
+          "approach": "Use alternative solver",
+          "code": "; Consider Z3 or CVC5 for unsupported features",
+          "when": "Need unsupported theory"
+        }
+      ]
+    },
+    {
+      "id": "model_construction",
+      "pattern": "model.*error|cannot.*construct.*model",
+      "message": "Cannot construct satisfying model",
+      "cause": "Solver couldn't build a concrete model",
+      "solutions": [
+        {
+          "approach": "Enable model generation",
+          "code": "(set-option :produce-models true)",
+          "when": "Models not enabled"
+        },
+        {
+          "approach": "Check for uninterpreted functions",
+          "code": "; Models for uninterpreted functions may be partial",
+          "when": "Using uninterpreted functions"
+        }
+      ]
+    },
+    {
+      "id": "bitvector_error",
+      "pattern": "bitvector.*error|bv.*error|bit-vector",
+      "message": "Bitvector operation error",
+      "cause": "Invalid bitvector operation or width mismatch",
+      "solutions": [
+        {
+          "approach": "Match bitvector widths",
+          "code": "(bv-zero-extend x 8)  ; Extend by 8 bits",
+          "when": "Width mismatch"
+        },
+        {
+          "approach": "Use correct BV operations",
+          "code": "(bv-add x y)   ; Addition\n(bv-mul x y)   ; Multiplication\n(bv-and x y)   ; Bitwise AND",
+          "when": "Wrong operation name"
+        },
+        {
+          "approach": "Declare BV constants correctly",
+          "code": "(define x::(bitvector 32))  ; 32-bit BV",
+          "when": "Declaration error"
+        }
+      ]
+    },
+    {
+      "id": "arithmetic_overflow",
+      "pattern": "overflow|arithmetic.*error|division.*zero",
+      "message": "Arithmetic operation error",
+      "cause": "Division by zero or arithmetic overflow in evaluation",
+      "solutions": [
+        {
+          "approach": "Guard division",
+          "code": "(assert (not (= denom 0)))\n(assert (= result (/ num denom)))",
+          "when": "Possible division by zero"
+        },
+        {
+          "approach": "Use appropriate theory",
+          "code": "; Use integers to avoid real division issues",
+          "when": "Precision problems"
+        }
+      ]
+    },
+    {
+      "id": "linear_arithmetic_only",
+      "pattern": "non-linear|multiplication.*variables|nonlinear",
+      "message": "Nonlinear arithmetic not supported in this logic",
+      "cause": "Multiplying two non-constant terms in linear arithmetic logic",
+      "solutions": [
+        {
+          "approach": "Use nonlinear logic",
+          "code": "(set-logic QF_NRA)  ; Nonlinear real arithmetic",
+          "when": "Need nonlinear arithmetic"
+        },
+        {
+          "approach": "Linearize the problem",
+          "code": "; Introduce auxiliary variables for products",
+          "when": "Can approximate linearly"
+        },
+        {
+          "approach": "Use Yices MCSAT",
+          "code": "yices2 --mode=mcsat  ; MCSAT solver for nonlinear",
+          "when": "Need nonlinear with MCSAT"
+        }
+      ]
+    },
+    {
+      "id": "incremental_mode",
+      "pattern": "push.*pop.*error|context.*error|incremental",
+      "message": "Incremental solving error",
+      "cause": "Error with push/pop context management",
+      "solutions": [
+        {
+          "approach": "Enable incremental mode",
+          "code": "(set-option :incremental true)",
+          "when": "Incremental not enabled"
+        },
+        {
+          "approach": "Balance push/pop",
+          "code": "(push)  ; Save state\n...\n(pop)   ; Restore state",
+          "when": "Unbalanced push/pop"
+        },
+        {
+          "approach": "Reset context",
+          "code": "(reset)  ; Clear all assertions",
+          "when": "Context corrupted"
+        }
+      ]
+    },
+    {
+      "id": "interpolant_error",
+      "pattern": "interpolant.*error|cannot.*compute.*interpolant",
+      "message": "Cannot compute interpolant",
+      "cause": "Interpolant requested but formula not in suitable fragment",
+      "solutions": [
+        {
+          "approach": "Check supported fragment",
+          "code": "; Yices supports interpolation for QF_LRA, QF_LIA, QF_UF",
+          "when": "Logic doesn't support interpolation"
+        },
+        {
+          "approach": "Partition formulas correctly",
+          "code": "(define-term A ...)\n(define-term B ...)\n(get-interpolant A B)",
+          "when": "Partitioning issue"
+        },
+        {
+          "approach": "Verify unsat",
+          "code": "; Interpolants only exist for unsat formulas",
+          "when": "Formula is satisfiable"
+        }
+      ]
+    }
+  ]
+}

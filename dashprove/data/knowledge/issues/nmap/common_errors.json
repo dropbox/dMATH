@@ -1,0 +1,150 @@
+{
+  "tool": "nmap",
+  "version": "7.94",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "requires root|operation not permitted|TCP/IP fingerprinting|raw sockets|permission denied",
+      "message": "Insufficient privileges for scan type",
+      "cause": "Many scans require root/admin privileges",
+      "solutions": [
+        {
+          "approach": "Run as root",
+          "code": "sudo nmap -sS target.com  # SYN scan needs root",
+          "when": "TCP SYN scan"
+        },
+        {
+          "approach": "Use connect scan",
+          "code": "nmap -sT target.com  # TCP connect scan, no root needed",
+          "when": "Non-root user"
+        },
+        {
+          "approach": "Set capabilities",
+          "code": "sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip /usr/bin/nmap",
+          "when": "Permanent non-root"
+        }
+      ]
+    },
+    {
+      "id": "host_seems_down",
+      "pattern": "host seems down|Note: Host seems down|0 hosts up",
+      "message": "Target host appears unreachable",
+      "cause": "Host blocking probes or ICMP disabled",
+      "solutions": [
+        {
+          "approach": "Skip ping",
+          "code": "nmap -Pn target.com  # Treat host as up",
+          "when": "ICMP blocked"
+        },
+        {
+          "approach": "Different discovery",
+          "code": "nmap -PS22,80,443 target.com  # TCP SYN discovery\nnmap -PA80 target.com  # TCP ACK discovery",
+          "when": "Try other probes"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "nmap --max-retries 5 --host-timeout 30m target.com",
+          "when": "Slow response"
+        }
+      ]
+    },
+    {
+      "id": "failed_to_resolve",
+      "pattern": "Failed to resolve|Failed to resolve|couldn't resolve|Unknown host",
+      "message": "DNS resolution failed",
+      "cause": "Invalid hostname or DNS unavailable",
+      "solutions": [
+        {
+          "approach": "Use IP directly",
+          "code": "nmap 192.168.1.1",
+          "when": "Know IP"
+        },
+        {
+          "approach": "Specify DNS server",
+          "code": "nmap --dns-servers 8.8.8.8 target.com",
+          "when": "Custom DNS"
+        },
+        {
+          "approach": "No DNS",
+          "code": "nmap -n 192.168.1.0/24  # Skip reverse DNS",
+          "when": "Faster scan"
+        }
+      ]
+    },
+    {
+      "id": "filtered_ports",
+      "pattern": "filtered|Filtered|1000 filtered|no-response",
+      "message": "Ports are filtered by firewall",
+      "cause": "Firewall dropping packets silently",
+      "solutions": [
+        {
+          "approach": "Fragment packets",
+          "code": "sudo nmap -f target.com  # Tiny fragments",
+          "when": "Basic firewall"
+        },
+        {
+          "approach": "Custom MTU",
+          "code": "sudo nmap --mtu 24 target.com",
+          "when": "Evade simple filters"
+        },
+        {
+          "approach": "Decoy scan",
+          "code": "sudo nmap -D RND:10 target.com",
+          "when": "Hide source"
+        },
+        {
+          "approach": "Different scan",
+          "code": "sudo nmap -sA target.com  # ACK scan for firewall rules",
+          "when": "Map firewall"
+        }
+      ]
+    },
+    {
+      "id": "script_error",
+      "pattern": "NSE.*error|Script.*failed|ERROR.*nse|syntax error in script",
+      "message": "Nmap scripting engine error",
+      "cause": "Script error or missing dependency",
+      "solutions": [
+        {
+          "approach": "Update scripts",
+          "code": "sudo nmap --script-updatedb",
+          "when": "Refresh database"
+        },
+        {
+          "approach": "Debug script",
+          "code": "nmap --script-trace --script=vuln target.com",
+          "when": "Trace execution"
+        },
+        {
+          "approach": "Check args",
+          "code": "nmap --script-help=http-enum | less  # View script docs",
+          "when": "Wrong arguments"
+        }
+      ]
+    },
+    {
+      "id": "scan_timeout",
+      "pattern": "Giving up|Timing out|RTTVAR|Increasing timeout|very slow",
+      "message": "Scan is timing out",
+      "cause": "Network latency or rate limiting",
+      "solutions": [
+        {
+          "approach": "Slower timing",
+          "code": "nmap -T2 target.com  # Polite timing\nnmap -T1 target.com  # Sneaky timing",
+          "when": "High latency"
+        },
+        {
+          "approach": "Limit rate",
+          "code": "nmap --max-rate 100 target.com  # 100 packets/sec",
+          "when": "Rate limited"
+        },
+        {
+          "approach": "Increase timeout",
+          "code": "nmap --min-rtt-timeout 1s --max-rtt-timeout 10s target.com",
+          "when": "Slow network"
+        }
+      ]
+    }
+  ]
+}

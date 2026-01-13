@@ -1,0 +1,3 @@
+# Cadence EDA reference entry
+
+This placeholder summarizes Cadence simulation and formal tools when direct API manuals require an authenticated portal. Cadence exposes scripting and automation through SKILL for Virtuoso, Tcl interfaces for Xcelium and JasperGold, and unified command-line frontends such as `xrun`/`irun` and `imc` for coverage. Regression flows typically rely on Tcl scripts to load libraries, elaborate RTL, run UVM testbenches, and export coverage databases or Jasper proofs. Licensing is handled via FlexNet with `LM_LICENSE_FILE` pointing at a vendor daemon, and most commands support `-licqueue` for queued checkout. See the public JasperGold overview at cadence.com for product details and contact Cadence for full API documentation.

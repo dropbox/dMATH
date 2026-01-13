@@ -1,0 +1,158 @@
+{
+  "tool": "strace",
+  "version": "strace 5.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|attach.*denied|ptrace.*denied|Operation not permitted",
+      "message": "Cannot trace process",
+      "cause": "ptrace restricted for security",
+      "solutions": [
+        {
+          "approach": "Use sudo",
+          "code": "sudo strace -p PID\nsudo strace command",
+          "when": "Trace as root"
+        },
+        {
+          "approach": "Check ptrace_scope",
+          "code": "cat /proc/sys/kernel/yama/ptrace_scope\n# 0 = classic (any process)\n# 1 = restricted (parent only)\n# 2 = admin only\n# 3 = no ptrace",
+          "when": "Understand restriction"
+        },
+        {
+          "approach": "Temporarily allow",
+          "code": "sudo sysctl kernel.yama.ptrace_scope=0",
+          "when": "Enable for debugging"
+        }
+      ]
+    },
+    {
+      "id": "too_much_output",
+      "pattern": "verbose|filter|too much|overwhelming",
+      "message": "Output overwhelming",
+      "cause": "All syscalls traced by default",
+      "solutions": [
+        {
+          "approach": "Filter syscalls",
+          "code": "strace -e open,read,write cmd  # Specific syscalls\nstrace -e trace=file cmd       # File operations\nstrace -e trace=network cmd    # Network calls\nstrace -e trace=memory cmd     # Memory operations\nstrace -e trace=process cmd    # Process operations",
+          "when": "Specific category"
+        },
+        {
+          "approach": "Exclude syscalls",
+          "code": "strace -e '!clock_gettime,!gettimeofday' cmd",
+          "when": "Exclude noisy calls"
+        },
+        {
+          "approach": "Summary only",
+          "code": "strace -c cmd  # Count and time syscalls\nstrace -C cmd  # Count + regular output",
+          "when": "Statistics"
+        }
+      ]
+    },
+    {
+      "id": "output_format",
+      "pattern": "output|format|timestamp|file",
+      "message": "Output formatting",
+      "cause": "Need specific output format",
+      "solutions": [
+        {
+          "approach": "Add timestamps",
+          "code": "strace -t cmd   # Time of day\nstrace -tt cmd  # Microseconds\nstrace -ttt cmd # Epoch seconds\nstrace -r cmd   # Relative time between calls",
+          "when": "Timing info"
+        },
+        {
+          "approach": "Output to file",
+          "code": "strace -o trace.log cmd",
+          "when": "Save output"
+        },
+        {
+          "approach": "Verbose strings",
+          "code": "strace -s 256 cmd  # Show 256 chars of strings (default 32)\nstrace -v cmd      # Verbose structures",
+          "when": "Full data"
+        }
+      ]
+    },
+    {
+      "id": "attach_running",
+      "pattern": "attach|running|pid|-p",
+      "message": "Trace running process",
+      "cause": "Need to attach to existing process",
+      "solutions": [
+        {
+          "approach": "Attach by PID",
+          "code": "sudo strace -p 1234",
+          "when": "Single process"
+        },
+        {
+          "approach": "Attach to all threads",
+          "code": "sudo strace -f -p 1234  # Follow threads",
+          "when": "Multi-threaded"
+        },
+        {
+          "approach": "Find process",
+          "code": "pgrep -f myprocess  # Get PID\nsudo strace -p $(pgrep -f myprocess)",
+          "when": "Find then attach"
+        }
+      ]
+    },
+    {
+      "id": "follow_forks",
+      "pattern": "fork|child|subprocess|thread",
+      "message": "Child processes not traced",
+      "cause": "Default doesn't follow forks",
+      "solutions": [
+        {
+          "approach": "Follow forks",
+          "code": "strace -f cmd  # Trace child processes too",
+          "when": "Multi-process program"
+        },
+        {
+          "approach": "Separate files per process",
+          "code": "strace -ff -o trace cmd\n# Creates trace.PID files for each process",
+          "when": "Many children"
+        }
+      ]
+    },
+    {
+      "id": "slow_traced",
+      "pattern": "slow|performance|overhead",
+      "message": "Program very slow when traced",
+      "cause": "strace has significant overhead",
+      "solutions": [
+        {
+          "approach": "Filter syscalls",
+          "code": "strace -e trace=open cmd  # Only what you need",
+          "when": "Reduce tracing"
+        },
+        {
+          "approach": "Use perf instead",
+          "code": "perf trace cmd  # Lower overhead\nperf trace -e 'syscalls:sys_enter_open*' cmd",
+          "when": "Need better performance"
+        }
+      ]
+    },
+    {
+      "id": "command_not_found",
+      "pattern": "strace:.*command not found|strace:.*not found",
+      "message": "strace not installed",
+      "cause": "strace not installed by default",
+      "solutions": [
+        {
+          "approach": "Install on Debian/Ubuntu",
+          "code": "sudo apt install strace",
+          "when": "Debian-based"
+        },
+        {
+          "approach": "Install on RHEL",
+          "code": "sudo yum install strace",
+          "when": "RHEL-based"
+        },
+        {
+          "approach": "macOS alternative",
+          "code": "# strace not available on macOS\n# Use dtruss instead:\nsudo dtruss command",
+          "when": "macOS"
+        }
+      ]
+    }
+  ]
+}

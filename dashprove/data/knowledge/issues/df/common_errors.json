@@ -1,0 +1,130 @@
+{
+  "tool": "df",
+  "version": "9.4",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "no_such_file",
+      "pattern": "No such file or directory|cannot access",
+      "message": "Path not found",
+      "cause": "Invalid path specified",
+      "solutions": [
+        {
+          "approach": "Use existing path",
+          "code": "df /home  # Use mount point\ndf .  # Current directory's filesystem",
+          "when": "Verify path"
+        },
+        {
+          "approach": "List all",
+          "code": "df -h  # Show all filesystems",
+          "when": "See all"
+        }
+      ]
+    },
+    {
+      "id": "human_readable",
+      "pattern": "blocks|1K-blocks|KB|MB|GB|human readable",
+      "message": "Want human-readable sizes",
+      "cause": "Default shows 1K blocks",
+      "solutions": [
+        {
+          "approach": "Human readable",
+          "code": "df -h  # Powers of 1024 (K, M, G)\ndf -H  # Powers of 1000 (KB, MB, GB)",
+          "when": "Readable"
+        },
+        {
+          "approach": "Specific unit",
+          "code": "df -BG  # In gigabytes\ndf -BM  # In megabytes",
+          "when": "Fixed unit"
+        }
+      ]
+    },
+    {
+      "id": "inode_usage",
+      "pattern": "inode|no space.*available|cannot create",
+      "message": "Disk full but space shows available",
+      "cause": "Out of inodes, not disk space",
+      "solutions": [
+        {
+          "approach": "Show inodes",
+          "code": "df -i  # Inode usage\ndf -ih  # Human readable inodes",
+          "when": "Check inodes"
+        },
+        {
+          "approach": "Find many files",
+          "code": "find / -xdev -type f | cut -d/ -f2 | sort | uniq -c | sort -rn | head",
+          "when": "Find culprit"
+        },
+        {
+          "approach": "Count files",
+          "code": "for d in /*; do echo -n \"$d: \"; find \"$d\" -xdev 2>/dev/null | wc -l; done",
+          "when": "Per directory"
+        }
+      ]
+    },
+    {
+      "id": "filesystem_type",
+      "pattern": "type|filesystem|ext4|xfs|ntfs",
+      "message": "Want to see filesystem type",
+      "cause": "Need filesystem type info",
+      "solutions": [
+        {
+          "approach": "Show type",
+          "code": "df -T  # Include filesystem type\ndf -Th  # With human sizes",
+          "when": "Include type"
+        },
+        {
+          "approach": "Filter type",
+          "code": "df -t ext4  # Only ext4\ndf -x tmpfs  # Exclude tmpfs",
+          "when": "Specific types"
+        }
+      ]
+    },
+    {
+      "id": "pseudo_filesystems",
+      "pattern": "tmpfs|devtmpfs|pseudo|virtual|too many",
+      "message": "Too many pseudo-filesystems shown",
+      "cause": "Virtual filesystems cluttering output",
+      "solutions": [
+        {
+          "approach": "Exclude types",
+          "code": "df -h -x tmpfs -x devtmpfs -x squashfs",
+          "when": "Hide pseudo"
+        },
+        {
+          "approach": "Local only",
+          "code": "df -hl  # Local filesystems only",
+          "when": "No network"
+        },
+        {
+          "approach": "Specific types",
+          "code": "df -t ext4 -t xfs -t btrfs  # Only real FS",
+          "when": "Include list"
+        }
+      ]
+    },
+    {
+      "id": "mount_point",
+      "pattern": "mount|device|where.*mounted",
+      "message": "Find mount point for device",
+      "cause": "Need to correlate device and mount",
+      "solutions": [
+        {
+          "approach": "df output",
+          "code": "df -h  # Shows device and mount point",
+          "when": "Basic view"
+        },
+        {
+          "approach": "Specific device",
+          "code": "df -h /dev/sda1\nmount | grep sda1",
+          "when": "Find mount"
+        },
+        {
+          "approach": "For path",
+          "code": "df -h /path/to/file  # Shows FS containing path",
+          "when": "Path lookup"
+        }
+      ]
+    }
+  ]
+}

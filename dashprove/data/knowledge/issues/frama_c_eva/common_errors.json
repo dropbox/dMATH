@@ -1,0 +1,201 @@
+{
+  "tool": "frama_c_eva",
+  "version": "28.1 (Nickel)",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "red_alarm",
+      "pattern": "Red alarm|definitely invalid",
+      "message": "Definite error detected",
+      "cause": "Eva found guaranteed undefined behavior",
+      "solutions": [
+        {
+          "approach": "View alarm",
+          "code": "frama-c -eva -eva-show-alarms program.c",
+          "when": "Need alarm details"
+        },
+        {
+          "approach": "Fix the bug",
+          "code": "// Red alarms are definite bugs",
+          "when": "Genuine error found"
+        },
+        {
+          "approach": "Check counterexample",
+          "code": "frama-c -eva -eva-msg-key pointer program.c",
+          "when": "Need pointer analysis details"
+        }
+      ]
+    },
+    {
+      "id": "orange_alarm",
+      "pattern": "Orange alarm|potentially invalid",
+      "message": "Potential error detected",
+      "cause": "Eva cannot prove absence of undefined behavior",
+      "solutions": [
+        {
+          "approach": "Refine analysis",
+          "code": "frama-c -eva -eva-precision 11 program.c",
+          "when": "Analysis too imprecise"
+        },
+        {
+          "approach": "Add assertions",
+          "code": "/*@ assert condition; */",
+          "when": "Know property holds"
+        },
+        {
+          "approach": "Use Eva domains",
+          "code": "frama-c -eva -eva-domains cvalue,gauges program.c",
+          "when": "Need specific domain"
+        },
+        {
+          "approach": "Review code",
+          "code": "// Orange may indicate real bug",
+          "when": "Verify manually"
+        }
+      ]
+    },
+    {
+      "id": "imprecise_value",
+      "pattern": "imprecise|interval too large|\\[-inf..inf\\]",
+      "message": "Value analysis too imprecise",
+      "cause": "Abstract domain lost precision",
+      "solutions": [
+        {
+          "approach": "Increase precision",
+          "code": "frama-c -eva -eva-precision 11 program.c",
+          "when": "Need finer analysis"
+        },
+        {
+          "approach": "Add loop bounds",
+          "code": "/*@ loop invariant 0 <= i <= n; */",
+          "when": "Loop causing imprecision"
+        },
+        {
+          "approach": "Enable domains",
+          "code": "frama-c -eva -eva-equality-domain program.c",
+          "when": "Need equality tracking"
+        },
+        {
+          "approach": "Unroll loops",
+          "code": "frama-c -eva -eva-unroll 100 program.c",
+          "when": "Small loop iterations"
+        }
+      ]
+    },
+    {
+      "id": "unreachable_code",
+      "pattern": "unreachable|dead code|never executed",
+      "message": "Unreachable code detected",
+      "cause": "Eva determined code path is infeasible",
+      "solutions": [
+        {
+          "approach": "Verify reachability",
+          "code": "frama-c -eva -eva-show-progress program.c",
+          "when": "Check analysis coverage"
+        },
+        {
+          "approach": "Check conditions",
+          "code": "// Verify branching conditions",
+          "when": "May be over-constrained"
+        },
+        {
+          "approach": "Remove dead code",
+          "code": "// If truly unreachable, delete it",
+          "when": "Code is vestigial"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "pattern": "timeout|analysis did not complete",
+      "message": "Eva analysis timed out",
+      "cause": "Analysis didn't reach fixpoint in time",
+      "solutions": [
+        {
+          "approach": "Reduce precision",
+          "code": "frama-c -eva -eva-precision 3 program.c",
+          "when": "Trading precision for speed"
+        },
+        {
+          "approach": "Bound loops",
+          "code": "frama-c -eva -eva-slevel 50 program.c",
+          "when": "Large loop unrolling"
+        },
+        {
+          "approach": "Use widening",
+          "code": "frama-c -eva -eva-widening-delay 5 program.c",
+          "when": "Slow convergence"
+        }
+      ]
+    },
+    {
+      "id": "memory_model",
+      "pattern": "memory model.*violated|invalid memory",
+      "message": "Memory model violation",
+      "cause": "Program violates Frama-C memory model",
+      "solutions": [
+        {
+          "approach": "Check pointers",
+          "code": "frama-c -eva -eva-msg-key pointer program.c",
+          "when": "Pointer aliasing issue"
+        },
+        {
+          "approach": "Add valid annotations",
+          "code": "/*@ requires \\valid(p); */",
+          "when": "Pointer validity assumed"
+        },
+        {
+          "approach": "Initialize variables",
+          "code": "int x = 0;  // Not just int x;",
+          "when": "Uninitialized access"
+        }
+      ]
+    },
+    {
+      "id": "stub_missing",
+      "pattern": "function .* has no body|undefined function",
+      "message": "Missing function definition",
+      "cause": "Called function not defined or stubbed",
+      "solutions": [
+        {
+          "approach": "Use builtin",
+          "code": "frama-c -eva -eva-use-builtin name:Frama_C_memset program.c",
+          "when": "Common library function"
+        },
+        {
+          "approach": "Add stub",
+          "code": "/*@ assigns \\result \\from \\nothing; */\nint stub_func(void);",
+          "when": "Need function model"
+        },
+        {
+          "approach": "Link implementation",
+          "code": "frama-c -eva program.c library.c",
+          "when": "Have implementation"
+        }
+      ]
+    },
+    {
+      "id": "spec_invalid",
+      "pattern": "invalid ACSL|specification error",
+      "message": "Invalid ACSL specification",
+      "cause": "ACSL annotation syntax or semantics error",
+      "solutions": [
+        {
+          "approach": "Check syntax",
+          "code": "/*@ requires x > 0; ensures \\result >= 0; */",
+          "when": "Syntax error"
+        },
+        {
+          "approach": "Use valid predicates",
+          "code": "/*@ \\valid(p+(0..n-1)) */",
+          "when": "Invalid predicate"
+        },
+        {
+          "approach": "Check types",
+          "code": "// Ensure annotation types match",
+          "when": "Type mismatch"
+        }
+      ]
+    }
+  ]
+}

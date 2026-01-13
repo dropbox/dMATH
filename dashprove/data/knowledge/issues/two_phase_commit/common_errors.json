@@ -1,0 +1,97 @@
+{
+  "tool": "two_phase_commit",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "coordinator_failure",
+      "pattern": "(coordinator.*fail|crash|unavailable)",
+      "message": "Coordinator failure during commit",
+      "cause": "Coordinator crashed after prepare, before commit",
+      "solutions": [
+        {
+          "approach": "Coordinator recovery",
+          "code": "// Recovery: check transaction log\nfn recover() {\n    for tx in read_log() {\n        match tx.state {\n            Prepared => {\n                // Re-drive commit\n                if all_voted_yes(&tx) {\n                    send_commit_to_all(&tx);\n                } else {\n                    send_abort_to_all(&tx);\n                }\n            }\n            Committed | Aborted => {\n                // Send decision to any who missed it\n            }\n        }\n    }\n}",
+          "when": "Coordinator restarts"
+        },
+        {
+          "approach": "Use timeout",
+          "code": "// Participant timeout while uncertain\nif state == Prepared && timeout_expired() {\n    // Ask coordinator or other participants\n    query_outcome(tx_id);\n}",
+          "when": "Participant uncertain"
+        }
+      ]
+    },
+    {
+      "id": "participant_failure",
+      "pattern": "(participant.*fail|cohort|timeout)",
+      "message": "Participant failure",
+      "cause": "Participant crashed or unreachable",
+      "solutions": [
+        {
+          "approach": "Abort on failure",
+          "code": "// Coordinator: abort if any participant fails in prepare\nlet votes = collect_prepare_votes(timeout);\nif votes.iter().any(|v| v.is_err() || v == Vote::No) {\n    broadcast_abort();\n} else {\n    broadcast_commit();\n}",
+          "when": "Prepare phase failure"
+        },
+        {
+          "approach": "Retry commit",
+          "code": "// Keep retrying commit until acknowledged\nwhile !all_acknowledged(&participants) {\n    for p in unacknowledged_participants() {\n        send_commit(p);\n    }\n    sleep(retry_interval);\n}",
+          "when": "Commit phase failure"
+        }
+      ]
+    },
+    {
+      "id": "blocking_scenario",
+      "pattern": "(block|stuck|uncertain|waiting)",
+      "message": "Participants blocked waiting for decision",
+      "cause": "Coordinator and prepared participant both failed",
+      "solutions": [
+        {
+          "approach": "Cooperative termination",
+          "code": "// Ask other participants\nfn query_other_participants(tx_id: TxId) -> Option<Decision> {\n    for p in other_participants {\n        match p.get_decision(tx_id) {\n            Some(Committed) => return Some(Committed),\n            Some(Aborted) => return Some(Aborted),\n            None => continue,  // Also uncertain\n        }\n    }\n    None  // All uncertain - must wait\n}",
+          "when": "Trying to unblock"
+        },
+        {
+          "approach": "Use 3PC",
+          "code": "// Three-phase commit adds pre-commit\nenum State {\n    Initial,\n    Waiting,     // Received prepare\n    Precommit,   // Received precommit (can abort on timeout)\n    Committed,   // Received commit\n}",
+          "when": "Avoiding blocking"
+        }
+      ]
+    },
+    {
+      "id": "vote_inconsistency",
+      "pattern": "(vote|prepare|yes|no)",
+      "message": "Inconsistent votes",
+      "cause": "Logic error in voting decision",
+      "solutions": [
+        {
+          "approach": "Proper prepare handling",
+          "code": "// Participant prepare vote\nfn on_prepare(tx: &Transaction) -> Vote {\n    // Check if can commit\n    if can_acquire_locks(&tx) && validate(&tx) {\n        write_to_log(Prepared, tx);\n        acquire_locks(&tx);\n        Vote::Yes\n    } else {\n        Vote::No\n    }\n}",
+          "when": "Voting logic"
+        },
+        {
+          "approach": "Log before voting",
+          "code": "// MUST log before sending vote\nwrite_to_wal(Vote::Yes, tx_id)?;\nflush_wal()?;\nsend_vote(coordinator, Vote::Yes);",
+          "when": "Durability"
+        }
+      ]
+    },
+    {
+      "id": "resource_deadlock",
+      "pattern": "(deadlock|lock|resource|wait)",
+      "message": "Resource deadlock between transactions",
+      "cause": "Multiple transactions holding conflicting locks",
+      "solutions": [
+        {
+          "approach": "Timeout and abort",
+          "code": "// Abort long-waiting transactions\nif lock_wait_time > max_lock_wait {\n    abort_transaction();\n    release_all_locks();\n}",
+          "when": "Deadlock detection"
+        },
+        {
+          "approach": "Lock ordering",
+          "code": "// Acquire locks in consistent order\nlet sorted_keys = tx.keys().sorted();\nfor key in sorted_keys {\n    acquire_lock(key)?;\n}",
+          "when": "Preventing deadlock"
+        }
+      ]
+    }
+  ]
+}

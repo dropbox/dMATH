@@ -1,0 +1,126 @@
+{
+  "id": "kaldi",
+  "name": "Kaldi",
+  "category": "speech_recognition",
+  "subcategory": "asr_framework",
+
+  "description": "Speech recognition research toolkit",
+  "long_description": "Kaldi is a toolkit for speech recognition research that provides extensive documentation and scripts for building ASR systems. It offers state-of-the-art algorithms including GMM-HMM, DNN-HMM, and end-to-end models. The standard for academic speech recognition research.",
+
+  "capabilities": [
+    "acoustic_modeling",
+    "language_modeling",
+    "feature_extraction",
+    "decoding",
+    "alignment",
+    "lattice_generation",
+    "speaker_adaptation"
+  ],
+  "property_types": ["wer", "rtf", "latency"],
+  "input_languages": ["bash", "c++", "python"],
+  "output_formats": ["text", "lattice", "ctm", "ark"],
+
+  "installation": {
+    "methods": [
+      {"type": "source", "command": "git clone https://github.com/kaldi-asr/kaldi && cd kaldi/tools && make && cd ../src && ./configure && make"},
+      {"type": "docker", "command": "docker pull kaldiasr/kaldi"}
+    ],
+    "dependencies": ["openblas", "mkl"],
+    "platforms": ["linux", "macos"]
+  },
+
+  "documentation": {
+    "official": "https://kaldi-asr.org/doc/",
+    "tutorial": "https://kaldi-asr.org/doc/tutorial.html",
+    "api_reference": "https://kaldi-asr.org/doc/classes.html",
+    "examples": "https://github.com/kaldi-asr/kaldi/tree/master/egs"
+  },
+
+  "tactics": [
+    {
+      "name": "feature_extraction",
+      "description": "Extract acoustic features",
+      "syntax": "compute-mfcc-feats",
+      "when_to_use": "To prepare audio for ASR",
+      "examples": ["compute-mfcc-feats --config=conf/mfcc.conf \\\n  scp:wav.scp ark:feats.ark"]
+    },
+    {
+      "name": "decode",
+      "description": "Run ASR decoding",
+      "syntax": "decode.sh",
+      "when_to_use": "For transcription",
+      "examples": ["steps/decode.sh --nj 4 \\\n  exp/chain/tdnn/graph \\\n  data/test \\\n  exp/chain/tdnn/decode_test"]
+    },
+    {
+      "name": "train_gmm",
+      "description": "Train GMM-HMM model",
+      "syntax": "train_mono.sh / train_deltas.sh",
+      "when_to_use": "For baseline acoustic model",
+      "examples": ["steps/train_mono.sh --nj 4 \\\n  data/train data/lang exp/mono"]
+    },
+    {
+      "name": "evaluate",
+      "description": "Calculate WER",
+      "syntax": "compute-wer",
+      "when_to_use": "For evaluation",
+      "examples": ["compute-wer --mode=present \\\n  ark:ref.txt ark:hyp.txt"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "No such file",
+      "meaning": "Missing input file",
+      "common_causes": ["Wrong path", "File not prepared"],
+      "fixes": ["Check file paths", "Run data prep scripts"]
+    },
+    {
+      "pattern": "Matrix.*mismatch",
+      "meaning": "Feature dimension error",
+      "common_causes": ["Wrong feature config"],
+      "fixes": ["Check feature dimensions match model"]
+    },
+    {
+      "pattern": "FST.*empty",
+      "meaning": "Empty decoding graph",
+      "common_causes": ["Language model issue"],
+      "fixes": ["Check LM and lexicon"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": true,
+    "usl_property_types": ["wer", "latency"],
+    "cli_command": "dashprove verify --backend kaldi"
+  },
+
+  "performance": {
+    "typical_runtime": "Highly optimized, real-time capable",
+    "scalability": "Excellent with distributed training",
+    "memory_usage": "Moderate"
+  },
+
+  "comparisons": {
+    "similar_tools": ["espnet", "fairseq", "speechbrain"],
+    "advantages": [
+      "Industry standard",
+      "Highly optimized",
+      "Extensive recipes",
+      "Production-ready",
+      "Large community"
+    ],
+    "disadvantages": [
+      "Steep learning curve",
+      "Bash-heavy workflow",
+      "Complex installation",
+      "Not Python-native"
+    ]
+  },
+
+  "metadata": {
+    "version": "5.5",
+    "last_updated": "2025-12-22",
+    "maintainer": "Kaldi Community",
+    "license": "Apache-2.0"
+  }
+}

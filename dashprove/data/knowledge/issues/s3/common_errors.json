@@ -1,0 +1,99 @@
+{
+  "tool": "s3",
+  "category": "aws_storage",
+  "description": "Amazon Simple Storage Service - object storage service",
+  "common_errors": [
+    {
+      "id": "access_denied",
+      "pattern": "AccessDenied",
+      "regex": "(?i)access.*denied|403|forbidden|not.*authorized",
+      "cause": "Insufficient IAM permissions or bucket policy denies access",
+      "solution": "Check IAM policy for s3:GetObject/PutObject permissions, review bucket policy, verify no explicit deny statements",
+      "severity": "high",
+      "category": "permissions"
+    },
+    {
+      "id": "no_such_bucket",
+      "pattern": "NoSuchBucket",
+      "regex": "(?i)no.*such.*bucket|bucket.*does.*not.*exist|bucket.*not.*found",
+      "cause": "Specified S3 bucket does not exist",
+      "solution": "Verify bucket name spelling, check region (bucket names are global but DNS resolution is regional)",
+      "severity": "high",
+      "category": "resources"
+    },
+    {
+      "id": "no_such_key",
+      "pattern": "NoSuchKey",
+      "regex": "(?i)no.*such.*key|key.*does.*not.*exist|object.*not.*found|404",
+      "cause": "Specified object key does not exist in bucket",
+      "solution": "Verify object key/prefix, check for typos, list bucket contents to confirm object exists",
+      "severity": "medium",
+      "category": "resources"
+    },
+    {
+      "id": "bucket_exists",
+      "pattern": "BucketAlreadyExists",
+      "regex": "(?i)bucket.*already.*exists|BucketAlreadyOwnedByYou|bucket.*name.*taken",
+      "cause": "Bucket name already in use (globally unique across all AWS accounts)",
+      "solution": "Choose a unique bucket name, use naming convention with account ID/random suffix",
+      "severity": "medium",
+      "category": "resources"
+    },
+    {
+      "id": "cors_error",
+      "pattern": "CORS",
+      "regex": "(?i)cors|cross.*origin|access-control-allow-origin|preflight",
+      "cause": "CORS configuration missing or misconfigured for browser access",
+      "solution": "Configure bucket CORS rules to allow required origins and methods",
+      "severity": "medium",
+      "category": "configuration"
+    },
+    {
+      "id": "slow_down",
+      "pattern": "SlowDown",
+      "regex": "(?i)slow.*down|503|reduce.*request.*rate|service.*unavailable",
+      "cause": "Request rate exceeded S3 prefix limits",
+      "solution": "Add random prefixes to object keys, use multipart uploads, implement exponential backoff",
+      "severity": "medium",
+      "category": "throttling"
+    },
+    {
+      "id": "multipart_incomplete",
+      "pattern": "multipart",
+      "regex": "(?i)multipart.*upload|incomplete.*upload|abort.*multipart|upload.*id",
+      "cause": "Multipart upload incomplete or failed",
+      "solution": "List and abort incomplete multipart uploads, configure lifecycle rule to auto-abort incomplete uploads",
+      "severity": "low",
+      "category": "uploads"
+    },
+    {
+      "id": "encryption_error",
+      "pattern": "encryption",
+      "regex": "(?i)kms.*error|encryption.*error|server.*side.*encryption|sse|bucket.*key",
+      "cause": "Server-side encryption configuration issue",
+      "solution": "Verify KMS key permissions, check bucket encryption settings, ensure proper encryption header in requests",
+      "severity": "high",
+      "category": "security"
+    },
+    {
+      "id": "presigned_expired",
+      "pattern": "ExpiredToken",
+      "regex": "(?i)expired.*token|presigned.*expired|request.*expired|signature.*expired",
+      "cause": "Pre-signed URL has expired",
+      "solution": "Generate new pre-signed URL with appropriate expiration time, check system clock synchronization",
+      "severity": "medium",
+      "category": "authentication"
+    },
+    {
+      "id": "version_id_error",
+      "pattern": "InvalidVersion",
+      "regex": "(?i)invalid.*version|version.*id|no.*such.*version|versioning.*suspended",
+      "cause": "Invalid version ID or versioning not enabled",
+      "solution": "Enable versioning on bucket if needed, use correct version ID from list-object-versions",
+      "severity": "low",
+      "category": "versioning"
+    }
+  ],
+  "related_tools": ["aws_cli", "cloudfront", "glacier"],
+  "documentation_url": "https://docs.aws.amazon.com/s3/"
+}

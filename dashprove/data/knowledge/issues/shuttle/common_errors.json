@@ -1,0 +1,222 @@
+{
+  "tool": "shuttle",
+  "version": "0.7.1",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "schedule_exhausted",
+      "pattern": "exhausted.*schedules|no.*more.*interleavings|state.*space.*complete",
+      "message": "All possible schedules have been explored",
+      "cause": "Shuttle has exhaustively checked all interleavings",
+      "solutions": [
+        {
+          "approach": "Verify completeness",
+          "code": "// Good! This means no bugs found in any schedule\n// Shuttle has proven correctness for this test",
+          "when": "Test passes all schedules"
+        },
+        {
+          "approach": "Add more test scenarios",
+          "code": "#[test]\nfn test_more_threads() {\n    shuttle::check_random(|| {\n        // Add more complex scenario\n        let handles: Vec<_> = (0..4).map(|_| {\n            shuttle::thread::spawn(|| work())\n        }).collect();\n        for h in handles { h.join().unwrap(); }\n    }, 1000);\n}",
+          "when": "Want more coverage"
+        }
+      ]
+    },
+    {
+      "id": "deadlock_detected",
+      "pattern": "deadlock|all.*threads.*blocked|circular.*wait",
+      "message": "Deadlock detected in concurrent code",
+      "cause": "Circular wait dependency between threads",
+      "solutions": [
+        {
+          "approach": "Check lock ordering",
+          "code": "// Always acquire locks in consistent order\nlet _a = mutex_a.lock().unwrap();\nlet _b = mutex_b.lock().unwrap();  // Same order everywhere",
+          "when": "Lock order inconsistent"
+        },
+        {
+          "approach": "Use try_lock to avoid deadlock",
+          "code": "use shuttle::sync::Mutex;\nloop {\n    if let Ok(a) = mutex_a.try_lock() {\n        if let Ok(b) = mutex_b.try_lock() {\n            // Got both locks\n            break;\n        }\n    }\n    // Back off and retry\n}",
+          "when": "Can't fix lock order"
+        },
+        {
+          "approach": "Reduce lock scope",
+          "code": "let value = {\n    let guard = mutex.lock().unwrap();\n    guard.clone()\n};  // Lock released\nprocess(value);  // Work without lock",
+          "when": "Holding locks too long"
+        }
+      ]
+    },
+    {
+      "id": "data_race",
+      "pattern": "data.*race|concurrent.*mutation|unsynchronized.*access",
+      "message": "Data race on shared memory",
+      "cause": "Multiple threads accessing same memory without synchronization",
+      "solutions": [
+        {
+          "approach": "Use atomic types",
+          "code": "use shuttle::sync::atomic::{AtomicUsize, Ordering};\nlet counter = AtomicUsize::new(0);\ncounter.fetch_add(1, Ordering::SeqCst);",
+          "when": "Simple counter or flag"
+        },
+        {
+          "approach": "Protect with mutex",
+          "code": "use shuttle::sync::Mutex;\nlet data = Mutex::new(vec![]);\ndata.lock().unwrap().push(item);",
+          "when": "Complex shared data"
+        },
+        {
+          "approach": "Use RwLock for read-heavy",
+          "code": "use shuttle::sync::RwLock;\nlet data = RwLock::new(Config::default());\nlet config = data.read().unwrap();  // Many readers\ndata.write().unwrap().update();      // Exclusive write",
+          "when": "Many reads, few writes"
+        }
+      ]
+    },
+    {
+      "id": "memory_ordering_violation",
+      "pattern": "ordering.*violation|Relaxed.*incorrect|acquire.*release.*mismatch",
+      "message": "Memory ordering issue found",
+      "cause": "Using too weak memory ordering for synchronization",
+      "solutions": [
+        {
+          "approach": "Use SeqCst when unsure",
+          "code": "// Start with SeqCst, optimize later\nflag.store(true, Ordering::SeqCst);\nif flag.load(Ordering::SeqCst) { ... }",
+          "when": "Not sure about ordering"
+        },
+        {
+          "approach": "Use Acquire/Release pairs",
+          "code": "// Writer thread\ndata.store(value, Ordering::Release);\n// Reader thread\nlet v = data.load(Ordering::Acquire);",
+          "when": "Synchronizing between threads"
+        },
+        {
+          "approach": "Document ordering requirements",
+          "code": "// Relaxed is safe here because:\n// 1. Only used for statistics\n// 2. No other data depends on this value\ncounter.fetch_add(1, Ordering::Relaxed);",
+          "when": "Relaxed is intentional"
+        }
+      ]
+    },
+    {
+      "id": "condvar_missed_signal",
+      "pattern": "missed.*signal|condvar.*wait.*forever|notification.*lost",
+      "message": "Condition variable signal was missed",
+      "cause": "Signal sent before wait started",
+      "solutions": [
+        {
+          "approach": "Always check predicate first",
+          "code": "let mut guard = mutex.lock().unwrap();\nwhile !guard.ready {\n    guard = condvar.wait(guard).unwrap();\n}\n// Now ready is true",
+          "when": "Missing condition check"
+        },
+        {
+          "approach": "Use wait_while",
+          "code": "let guard = condvar.wait_while(\n    mutex.lock().unwrap(),\n    |state| !state.ready\n).unwrap();",
+          "when": "Simple predicate"
+        },
+        {
+          "approach": "Set state before signal",
+          "code": "// Producer\n{\n    let mut guard = mutex.lock().unwrap();\n    guard.data = Some(value);\n    guard.ready = true;\n}  // Lock released\ncondvar.notify_one();  // Then signal",
+          "when": "Signal/wait race"
+        }
+      ]
+    },
+    {
+      "id": "channel_deadlock",
+      "pattern": "channel.*blocked|send.*waiting|recv.*blocked",
+      "message": "Channel operation blocked forever",
+      "cause": "Bounded channel full or unbounded channel with no receiver",
+      "solutions": [
+        {
+          "approach": "Use unbounded channels",
+          "code": "use shuttle::sync::mpsc::channel;\nlet (tx, rx) = channel();  // Unbounded\ntx.send(msg).unwrap();",
+          "when": "Can accept unbounded memory"
+        },
+        {
+          "approach": "Handle send failure",
+          "code": "match tx.send(msg) {\n    Ok(()) => {},\n    Err(SendError(msg)) => {\n        // Receiver dropped, handle gracefully\n    }\n}",
+          "when": "Receiver might disconnect"
+        },
+        {
+          "approach": "Use try_send for bounded",
+          "code": "match tx.try_send(msg) {\n    Ok(()) => {},\n    Err(TrySendError::Full(msg)) => {\n        // Channel full, retry or drop\n    }\n    Err(TrySendError::Disconnected(msg)) => {\n        // Receiver gone\n    }\n}",
+          "when": "Non-blocking send needed"
+        }
+      ]
+    },
+    {
+      "id": "thread_panic_propagation",
+      "pattern": "thread.*panicked|panic.*in.*spawned|join.*failed",
+      "message": "Spawned thread panicked",
+      "cause": "Panic in thread not properly handled",
+      "solutions": [
+        {
+          "approach": "Handle join result",
+          "code": "let handle = shuttle::thread::spawn(|| risky_work());\nmatch handle.join() {\n    Ok(result) => result,\n    Err(panic) => {\n        // Log and handle panic\n        default_value()\n    }\n}",
+          "when": "Thread might panic"
+        },
+        {
+          "approach": "Use catch_unwind in thread",
+          "code": "shuttle::thread::spawn(|| {\n    if let Err(e) = std::panic::catch_unwind(|| {\n        risky_work()\n    }) {\n        log::error!(\"Thread panicked: {:?}\", e);\n    }\n});",
+          "when": "Need panic recovery"
+        },
+        {
+          "approach": "Handle mutex poisoning",
+          "code": "match mutex.lock() {\n    Ok(guard) => guard,\n    Err(poisoned) => {\n        // Previous holder panicked\n        poisoned.into_inner()\n    }\n}",
+          "when": "Mutex may be poisoned"
+        }
+      ]
+    },
+    {
+      "id": "once_cell_race",
+      "pattern": "OnceCell.*race|lazy.*initialization.*race|double.*init",
+      "message": "Race condition in lazy initialization",
+      "cause": "Multiple threads trying to initialize simultaneously",
+      "solutions": [
+        {
+          "approach": "Use shuttle's OnceCell",
+          "code": "use shuttle::sync::OnceCell;\nstatic CONFIG: OnceCell<Config> = OnceCell::new();\nfn get_config() -> &'static Config {\n    CONFIG.get_or_init(|| load_config())\n}",
+          "when": "Global lazy init"
+        },
+        {
+          "approach": "Use Once for side effects",
+          "code": "use shuttle::sync::Once;\nstatic INIT: Once = Once::new();\nINIT.call_once(|| {\n    initialize_logging();\n});",
+          "when": "One-time side effect"
+        }
+      ]
+    },
+    {
+      "id": "barrier_timeout",
+      "pattern": "barrier.*timeout|barrier.*not.*reached|threads.*not.*synchronized",
+      "message": "Barrier wait failed or timed out",
+      "cause": "Not all threads reached the barrier",
+      "solutions": [
+        {
+          "approach": "Ensure all threads reach barrier",
+          "code": "use shuttle::sync::Barrier;\nlet barrier = Arc::new(Barrier::new(num_threads));\n// Each thread must call:\nbarrier.wait();  // All threads must reach this",
+          "when": "Thread missing barrier"
+        },
+        {
+          "approach": "Handle early termination",
+          "code": "// If threads might exit early, use channels instead\nlet (tx, rx) = channel();\n// Each thread sends when ready\n// Coordinator collects all signals",
+          "when": "Threads may exit early"
+        }
+      ]
+    },
+    {
+      "id": "check_random_insufficient",
+      "pattern": "check_random.*iterations|low.*coverage|missed.*bug",
+      "message": "Random testing may have missed bugs",
+      "cause": "Not enough random iterations to find rare bugs",
+      "solutions": [
+        {
+          "approach": "Increase iterations",
+          "code": "shuttle::check_random(|| {\n    concurrent_test()\n}, 10000);  // More iterations",
+          "when": "Want higher confidence"
+        },
+        {
+          "approach": "Use check_dfs for exhaustive",
+          "code": "shuttle::check_dfs(|| {\n    concurrent_test()\n});  // Exhaustive, may be slow",
+          "when": "Need complete coverage"
+        },
+        {
+          "approach": "Use replay for debugging",
+          "code": "// Save failing schedule\nlet schedule = shuttle::scheduler::Schedule::new_from_seed(seed);\nshuttle::check_with_schedule(schedule, || {\n    failing_test()\n});",
+          "when": "Reproducing specific failure"
+        }
+      ]
+    }
+  ]
+}

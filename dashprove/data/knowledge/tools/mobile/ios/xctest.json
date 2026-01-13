@@ -1,0 +1,164 @@
+{
+  "id": "xctest",
+  "name": "XCTest",
+  "category": "ios_testing",
+  "subcategory": "unit_testing",
+
+  "description": "Apple's official testing framework for iOS, macOS, tvOS, watchOS",
+  "long_description": "XCTest is Apple's native testing framework integrated into Xcode. It provides unit testing, performance testing, and UI testing capabilities for all Apple platforms. XCTest includes test discovery, assertions, expectations for async code, performance measurements, and seamless Xcode integration with test navigator and code coverage.",
+
+  "capabilities": [
+    "unit_testing",
+    "integration_testing",
+    "performance_testing",
+    "async_testing",
+    "code_coverage",
+    "test_plans",
+    "parameterized_tests",
+    "test_attachments"
+  ],
+  "property_types": ["assertion", "expectation", "performance_metric"],
+  "input_languages": ["swift", "objective_c"],
+  "output_formats": ["xcode_report", "junit_xml", "xcresult"],
+
+  "installation": {
+    "methods": [
+      {"type": "builtin", "command": "Included in Xcode"}
+    ],
+    "dependencies": ["xcode"],
+    "platforms": ["macos"]
+  },
+
+  "documentation": {
+    "official": "https://developer.apple.com/documentation/xctest",
+    "tutorial": "https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods",
+    "assertions": "https://developer.apple.com/documentation/xctest/boolean_assertions",
+    "examples": "https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/testing_with_xcode/chapters/01-introduction.html"
+  },
+
+  "tactics": [
+    {
+      "name": "basic_test",
+      "description": "Write a basic test method",
+      "syntax": "func testMethodName() throws",
+      "when_to_use": "Every unit test",
+      "examples": ["func testAddition() {\n    XCTAssertEqual(2 + 2, 4)\n}"]
+    },
+    {
+      "name": "async_test",
+      "description": "Test async code with expectations",
+      "syntax": "XCTestExpectation + wait(for:timeout:)",
+      "when_to_use": "Testing async/await or completion handlers",
+      "examples": ["func testAsyncLoad() async throws {\n    let result = await loadData()\n    XCTAssertNotNil(result)\n}", "let expectation = expectation(description: \"load\")\nloadAsync { expectation.fulfill() }\nwait(for: [expectation], timeout: 5.0)"]
+    },
+    {
+      "name": "performance_test",
+      "description": "Measure code performance",
+      "syntax": "measure { ... }",
+      "when_to_use": "Benchmarking critical code paths",
+      "examples": ["func testPerformance() {\n    measure {\n        _ = expensiveOperation()\n    }\n}"]
+    },
+    {
+      "name": "setup_teardown",
+      "description": "Test lifecycle methods",
+      "syntax": "setUpWithError() / tearDownWithError()",
+      "when_to_use": "Shared test setup and cleanup",
+      "examples": ["override func setUpWithError() throws {\n    sut = MyClass()\n}\noverride func tearDownWithError() throws {\n    sut = nil\n}"]
+    },
+    {
+      "name": "skip_test",
+      "description": "Conditionally skip tests",
+      "syntax": "throw XCTSkip(reason)",
+      "when_to_use": "Skip tests based on conditions",
+      "examples": ["guard #available(iOS 16, *) else {\n    throw XCTSkip(\"Requires iOS 16\")\n}"]
+    }
+  ],
+
+  "assertions": [
+    {
+      "name": "XCTAssertEqual",
+      "description": "Assert two values are equal",
+      "syntax": "XCTAssertEqual(a, b)",
+      "examples": ["XCTAssertEqual(result, expected)", "XCTAssertEqual(array.count, 3)"]
+    },
+    {
+      "name": "XCTAssertTrue/False",
+      "description": "Assert boolean condition",
+      "syntax": "XCTAssertTrue(condition)",
+      "examples": ["XCTAssertTrue(user.isLoggedIn)", "XCTAssertFalse(list.isEmpty)"]
+    },
+    {
+      "name": "XCTAssertNil/NotNil",
+      "description": "Assert nil/non-nil",
+      "syntax": "XCTAssertNil(value)",
+      "examples": ["XCTAssertNil(error)", "XCTAssertNotNil(result)"]
+    },
+    {
+      "name": "XCTAssertThrowsError",
+      "description": "Assert code throws error",
+      "syntax": "XCTAssertThrowsError(try expression)",
+      "examples": ["XCTAssertThrowsError(try parse(invalid)) { error in\n    XCTAssertEqual(error as? ParseError, .invalidFormat)\n}"]
+    },
+    {
+      "name": "XCTUnwrap",
+      "description": "Unwrap optional or fail",
+      "syntax": "let value = try XCTUnwrap(optional)",
+      "examples": ["let user = try XCTUnwrap(result.user)"]
+    }
+  ],
+
+  "error_patterns": [
+    {
+      "pattern": "XCTAssertEqual failed.*was not equal to",
+      "meaning": "Assertion failed - values don't match",
+      "common_causes": ["Bug in code under test", "Wrong expected value", "Test setup issue"],
+      "fixes": ["Fix the bug", "Update expected value", "Check test setup"]
+    },
+    {
+      "pattern": "Asynchronous wait failed.*Exceeded timeout",
+      "meaning": "Async expectation not fulfilled in time",
+      "common_causes": ["Slow operation", "Expectation never fulfilled", "Deadlock"],
+      "fixes": ["Increase timeout", "Ensure fulfill() is called", "Debug async flow"]
+    },
+    {
+      "pattern": "Test crashed",
+      "meaning": "Test caused crash",
+      "common_causes": ["Nil dereference", "Array bounds", "Unhandled exception"],
+      "fixes": ["Add nil checks", "Fix array access", "Handle exceptions"]
+    }
+  ],
+
+  "integration": {
+    "dashprove_backend": false,
+    "ide_support": ["xcode"],
+    "ci_integration": ["xcode_cloud", "github_actions", "jenkins", "fastlane"]
+  },
+
+  "performance": {
+    "typical_runtime": "milliseconds to seconds per test",
+    "scalability": "Handles thousands of tests",
+    "memory_usage": "Low"
+  },
+
+  "comparisons": {
+    "similar_tools": ["swift_testing", "quick", "nimble"],
+    "advantages": [
+      "Native Xcode integration",
+      "No external dependencies",
+      "Full Apple platform support",
+      "Built-in code coverage"
+    ],
+    "disadvantages": [
+      "Verbose compared to Swift Testing",
+      "Limited parameterized testing",
+      "macOS only"
+    ]
+  },
+
+  "metadata": {
+    "version": "Xcode 15+",
+    "last_updated": "2025-12-22",
+    "maintainer": "Apple",
+    "license": "Proprietary"
+  }
+}

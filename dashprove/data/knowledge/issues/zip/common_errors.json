@@ -1,0 +1,150 @@
+{
+  "tool": "zip",
+  "version": "3.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "permission_denied",
+      "pattern": "Permission denied|cannot open|can't open",
+      "message": "Cannot read/write file",
+      "cause": "Insufficient permissions",
+      "solutions": [
+        {
+          "approach": "Check permissions",
+          "code": "ls -la file.txt\nls -la archive.zip",
+          "when": "Debug"
+        },
+        {
+          "approach": "Use sudo",
+          "code": "sudo zip archive.zip /etc/config",
+          "when": "Read protected"
+        },
+        {
+          "approach": "Fix output dir",
+          "code": "chmod u+w directory/\nzip archive.zip files",
+          "when": "Write protected"
+        }
+      ]
+    },
+    {
+      "id": "no_files",
+      "pattern": "nothing to do|no files|zip warning",
+      "message": "No files to zip",
+      "cause": "No matching files or empty glob",
+      "solutions": [
+        {
+          "approach": "Check glob",
+          "code": "ls *.txt  # Check pattern matches\nzip archive.zip ./*  # Explicit current dir",
+          "when": "Pattern issue"
+        },
+        {
+          "approach": "Include hidden",
+          "code": "zip archive.zip .* *  # Include dotfiles",
+          "when": "Hidden files"
+        },
+        {
+          "approach": "Force empty",
+          "code": "zip archive.zip -e  # Create empty archive",
+          "when": "Allow empty"
+        }
+      ]
+    },
+    {
+      "id": "file_too_large",
+      "pattern": "file too large|4G|zip64|limit",
+      "message": "File exceeds 4GB limit",
+      "cause": "Classic ZIP format limited to 4GB",
+      "solutions": [
+        {
+          "approach": "Use ZIP64",
+          "code": "zip -fz archive.zip largefile  # ZIP64 format",
+          "when": "Large files"
+        },
+        {
+          "approach": "Split archive",
+          "code": "zip -s 2g archive.zip largefile  # Split into 2GB parts",
+          "when": "Split archive"
+        },
+        {
+          "approach": "Use 7z",
+          "code": "7z a archive.7z largefile  # Better compression, no limit",
+          "when": "Alternative"
+        }
+      ]
+    },
+    {
+      "id": "recursive_directory",
+      "pattern": "directory|recursive|subdirectories|folder",
+      "message": "How to zip directories",
+      "cause": "Need to include subdirectories",
+      "solutions": [
+        {
+          "approach": "Recursive",
+          "code": "zip -r archive.zip directory/",
+          "when": "Include all"
+        },
+        {
+          "approach": "With symlinks",
+          "code": "zip -r --symlinks archive.zip directory/",
+          "when": "Keep symlinks"
+        },
+        {
+          "approach": "Exclude patterns",
+          "code": "zip -r archive.zip directory/ -x '*.git*' -x '*.DS_Store'",
+          "when": "Filter files"
+        }
+      ]
+    },
+    {
+      "id": "update_archive",
+      "pattern": "update|add to|append|modify",
+      "message": "Update existing archive",
+      "cause": "Want to add/update files in archive",
+      "solutions": [
+        {
+          "approach": "Add files",
+          "code": "zip archive.zip newfile.txt",
+          "when": "Add new"
+        },
+        {
+          "approach": "Update changed",
+          "code": "zip -u archive.zip *  # Only changed files",
+          "when": "Update only"
+        },
+        {
+          "approach": "Freshen",
+          "code": "zip -f archive.zip  # Update existing entries only",
+          "when": "Refresh"
+        },
+        {
+          "approach": "Delete entry",
+          "code": "zip -d archive.zip unwanted.txt",
+          "when": "Remove file"
+        }
+      ]
+    },
+    {
+      "id": "password_protection",
+      "pattern": "password|encrypt|protect|secure",
+      "message": "Password protect archive",
+      "cause": "Need encryption",
+      "solutions": [
+        {
+          "approach": "Interactive password",
+          "code": "zip -e archive.zip files",
+          "when": "Prompt for pw"
+        },
+        {
+          "approach": "Command line",
+          "code": "zip -P 'password' archive.zip files\n# Warning: password visible in history",
+          "when": "Script"
+        },
+        {
+          "approach": "Strong encryption",
+          "code": "7z a -p -mhe=on archive.7z files\n# Encrypts filenames too",
+          "when": "Better security"
+        }
+      ]
+    }
+  ]
+}

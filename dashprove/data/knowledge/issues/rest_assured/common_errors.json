@@ -1,0 +1,186 @@
+{
+  "tool": "rest_assured",
+  "version": "5.4.0",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "base_uri_not_set",
+      "pattern": "baseURI|Cannot invoke|NullPointerException|URI",
+      "message": "Base URI not configured",
+      "cause": "RestAssured.baseURI not set",
+      "solutions": [
+        {
+          "approach": "Set base URI",
+          "code": "RestAssured.baseURI = \"https://api.example.com\";\nRestAssured.basePath = \"/v1\";",
+          "when": "Global config"
+        },
+        {
+          "approach": "Per request",
+          "code": "given()\n    .baseUri(\"https://api.example.com\")\n.when()\n    .get(\"/users\")\n.then()\n    .statusCode(200);",
+          "when": "Single request"
+        },
+        {
+          "approach": "Request spec",
+          "code": "RequestSpecification spec = new RequestSpecBuilder()\n    .setBaseUri(\"https://api.example.com\")\n    .build();\ngiven().spec(spec).when().get(\"/users\");",
+          "when": "Reusable spec"
+        }
+      ]
+    },
+    {
+      "id": "json_path_error",
+      "pattern": "JsonPathException|path does not exist|no results",
+      "message": "JSON path expression failed",
+      "cause": "JSONPath doesn't match response structure",
+      "solutions": [
+        {
+          "approach": "Check path syntax",
+          "code": ".body(\"users[0].name\", equalTo(\"John\"))\n.body(\"data.items.size()\", greaterThan(0))",
+          "when": "Basic path"
+        },
+        {
+          "approach": "Use root path",
+          "code": ".root(\"data\")\n.body(\"name\", equalTo(\"John\"))\n.body(\"email\", containsString(\"@\"))",
+          "when": "Nested data"
+        },
+        {
+          "approach": "Debug response",
+          "code": "Response response = get(\"/users\");\nSystem.out.println(response.prettyPrint());",
+          "when": "Inspect response"
+        }
+      ]
+    },
+    {
+      "id": "assertion_error",
+      "pattern": "AssertionError|Expected:|but:|was:",
+      "message": "Response assertion failed",
+      "cause": "Response doesn't match expectation",
+      "solutions": [
+        {
+          "approach": "Status code",
+          "code": ".then()\n    .statusCode(200)\n    .statusCode(anyOf(is(200), is(201)));",
+          "when": "Check status"
+        },
+        {
+          "approach": "Body matchers",
+          "code": ".body(\"name\", equalTo(\"John\"))\n.body(\"age\", greaterThan(18))\n.body(\"items\", hasSize(3));",
+          "when": "Body assertions"
+        },
+        {
+          "approach": "Headers",
+          "code": ".header(\"Content-Type\", containsString(\"application/json\"))\n.header(\"X-Request-Id\", notNullValue());",
+          "when": "Header checks"
+        }
+      ]
+    },
+    {
+      "id": "content_type_error",
+      "pattern": "Content-Type|ContentType|cannot deserialize|parsing",
+      "message": "Content type mismatch",
+      "cause": "Response content type different than expected",
+      "solutions": [
+        {
+          "approach": "Set content type",
+          "code": "given()\n    .contentType(ContentType.JSON)\n    .accept(ContentType.JSON)\n.when()\n    .post(\"/users\");",
+          "when": "Set request type"
+        },
+        {
+          "approach": "Parse as string",
+          "code": "String body = get(\"/endpoint\").asString();",
+          "when": "Non-JSON response"
+        },
+        {
+          "approach": "Relaxed parsing",
+          "code": "RestAssured.config = RestAssuredConfig.config()\n    .jsonConfig(JsonConfig.jsonConfig()\n        .numberReturnType(JsonPathConfig.NumberReturnType.BIG_DECIMAL));",
+          "when": "Number parsing"
+        }
+      ]
+    },
+    {
+      "id": "ssl_error",
+      "pattern": "SSL|certificate|PKIX|SSLHandshakeException",
+      "message": "SSL certificate error",
+      "cause": "Certificate verification failed",
+      "solutions": [
+        {
+          "approach": "Relax HTTPS",
+          "code": "RestAssured.useRelaxedHTTPSValidation();",
+          "when": "Skip verification"
+        },
+        {
+          "approach": "Trust store",
+          "code": "RestAssured.config = RestAssuredConfig.config()\n    .sslConfig(SSLConfig.sslConfig()\n        .trustStore(\"/path/to/truststore.jks\", \"password\"));",
+          "when": "Custom trust"
+        },
+        {
+          "approach": "Key store",
+          "code": "RestAssured.config = RestAssuredConfig.config()\n    .sslConfig(SSLConfig.sslConfig()\n        .keyStore(\"/path/to/keystore.p12\", \"password\"));",
+          "when": "Client cert"
+        }
+      ]
+    },
+    {
+      "id": "authentication_error",
+      "pattern": "401|403|Unauthorized|authentication|auth",
+      "message": "Authentication failed",
+      "cause": "Credentials missing or invalid",
+      "solutions": [
+        {
+          "approach": "Basic auth",
+          "code": "given()\n    .auth().basic(\"username\", \"password\")\n.when()\n    .get(\"/protected\");",
+          "when": "Basic auth"
+        },
+        {
+          "approach": "OAuth2",
+          "code": "given()\n    .auth().oauth2(accessToken)\n.when()\n    .get(\"/resource\");",
+          "when": "Bearer token"
+        },
+        {
+          "approach": "Preemptive",
+          "code": "given()\n    .auth().preemptive().basic(\"user\", \"pass\")\n.when()\n    .get(\"/resource\");",
+          "when": "Send auth immediately"
+        }
+      ]
+    },
+    {
+      "id": "multipart_error",
+      "pattern": "multipart|file upload|MultiPartSpecification",
+      "message": "Multipart upload error",
+      "cause": "File upload configuration issue",
+      "solutions": [
+        {
+          "approach": "Upload file",
+          "code": "given()\n    .multiPart(\"file\", new File(\"/path/to/file.pdf\"))\n.when()\n    .post(\"/upload\");",
+          "when": "File upload"
+        },
+        {
+          "approach": "With content type",
+          "code": "given()\n    .multiPart(\"file\", new File(\"doc.pdf\"), \"application/pdf\")\n    .multiPart(\"name\", \"My Document\")\n.when()\n    .post(\"/upload\");",
+          "when": "Specify type"
+        },
+        {
+          "approach": "Byte array",
+          "code": "given()\n    .multiPart(\"file\", \"data.txt\", byteArray, \"text/plain\")\n.when()\n    .post(\"/upload\");",
+          "when": "From bytes"
+        }
+      ]
+    },
+    {
+      "id": "timeout_error",
+      "pattern": "SocketTimeout|ConnectTimeout|Read timed out",
+      "message": "Request timed out",
+      "cause": "Server didn't respond in time",
+      "solutions": [
+        {
+          "approach": "Set timeouts",
+          "code": "RestAssured.config = RestAssuredConfig.config()\n    .httpClient(HttpClientConfig.httpClientConfig()\n        .setParam(\"http.connection.timeout\", 30000)\n        .setParam(\"http.socket.timeout\", 30000));",
+          "when": "Global timeout"
+        },
+        {
+          "approach": "Per request",
+          "code": "given()\n    .config(RestAssured.config()\n        .httpClient(HttpClientConfig.httpClientConfig()\n            .setParam(\"http.socket.timeout\", 60000)))\n.when()\n    .get(\"/slow-endpoint\");",
+          "when": "Single request"
+        }
+      ]
+    }
+  ]
+}

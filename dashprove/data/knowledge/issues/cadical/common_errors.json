@@ -1,0 +1,120 @@
+{
+  "tool": "cadical",
+  "version": "1.9.5",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "incorrect_dimacs",
+      "pattern": "invalid DIMACS|header mismatch|literal out of range",
+      "message": "Input CNF is malformed",
+      "cause": "Wrong clause counts, zero variable IDs, or missing 0 terminators",
+      "solutions": [
+        {
+          "approach": "Validate CNF with cadical --check",
+          "code": "cadical --check formula.cnf",
+          "when": "Before long runs"
+        },
+        {
+          "approach": "Regenerate header",
+          "code": "p cnf <vars> <clauses>\n...",
+          "when": "Counts differ from body"
+        }
+      ]
+    },
+    {
+      "id": "resource_limit",
+      "pattern": "out of memory|unknown result|maximum conflicts reached",
+      "message": "Solver aborted due to resource limits",
+      "cause": "Conflict budget, timeouts, or memory exhausted",
+      "solutions": [
+        {
+          "approach": "Lift limits",
+          "code": "cadical -t 300 -c 0 formula.cnf",
+          "when": "Default conflict limit hit"
+        },
+        {
+          "approach": "Enable incremental simplification",
+          "code": "cadical -O 2 formula.cnf",
+          "when": "Preprocessing disabled"
+        },
+        {
+          "approach": "Compact learned clauses",
+          "code": "cadical --ternary --vivify formula.cnf",
+          "when": "Learnt clause blowup"
+        }
+      ]
+    },
+    {
+      "id": "proof_missing",
+      "pattern": "no proof|cannot open proof file|DRAT not produced",
+      "message": "Proof logging failed",
+      "cause": "Proof flag omitted or file path unwritable",
+      "solutions": [
+        {
+          "approach": "Enable LRAT/DRAT",
+          "code": "cadical -f proof.drat formula.cnf",
+          "when": "Need UNSAT certificate"
+        },
+        {
+          "approach": "Write to writable filesystem",
+          "code": "cadical -f /tmp/proof.drat formula.cnf",
+          "when": "Read-only working dir"
+        }
+      ]
+    },
+    {
+      "id": "incremental_api_bug",
+      "pattern": "invalid literal in assumption|unresolved variables",
+      "message": "Programmatic incremental solving fails",
+      "cause": "Assumptions reference variables not yet added or solver reused after reset",
+      "solutions": [
+        {
+          "approach": "Call solver.vars(size) before assumptions",
+          "code": "Solver solver; solver.vars(n); solver.assume(lit);",
+          "when": "Adding clauses lazily"
+        },
+        {
+          "approach": "Recreate solver after reset",
+          "code": "solver.reset(); solver = Solver();",
+          "when": "Need clean state"
+        }
+      ]
+    },
+    {
+      "id": "preprocessing_disabled",
+      "pattern": "--no-preprocessing|preprocessing disabled",
+      "message": "Performance degraded due to missing preprocessing",
+      "cause": "Flags disable variable elimination, subsumption, or vivification",
+      "solutions": [
+        {
+          "approach": "Enable default pipeline",
+          "code": "cadical -O 1 formula.cnf",
+          "when": "No special incremental needs"
+        },
+        {
+          "approach": "Selective preprocessing",
+          "code": "cadical --subsumption --vivify formula.cnf",
+          "when": "Need some simplification but keep structure"
+        }
+      ]
+    },
+    {
+      "id": "unsat_core_missing",
+      "pattern": "core requested but not available|unsat core not produced",
+      "message": "Unsat core extraction failed",
+      "cause": "Solve called without --unsat-core or assumptions not tracked",
+      "solutions": [
+        {
+          "approach": "Enable core tracking",
+          "code": "cadical --unsat-core formula.cnf",
+          "when": "Need minimal unsat subset"
+        },
+        {
+          "approach": "Tag clauses with selectors",
+          "code": "# Add selector literals to clauses when generating CNF",
+          "when": "Programmatic API users"
+        }
+      ]
+    }
+  ]
+}

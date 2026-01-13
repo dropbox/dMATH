@@ -1,0 +1,97 @@
+{
+  "tool": "cosmos_db",
+  "version": "N/A",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "consistency_violation",
+      "pattern": "(consistency|session|eventual|strong)",
+      "message": "Consistency level violation",
+      "cause": "Read returned stale data due to consistency configuration",
+      "solutions": [
+        {
+          "approach": "Use stronger consistency",
+          "code": "// Use Strong consistency for critical reads\ncontainer.read_item(\n    item='id',\n    partition_key='pk',\n    consistency_level='Strong'\n)",
+          "when": "Need latest data"
+        },
+        {
+          "approach": "Use session consistency",
+          "code": "// Session token for read-your-writes\nsession_token = response.headers['x-ms-session-token']\ncontainer.read_item(..., session_token=session_token)",
+          "when": "Need read-your-writes"
+        }
+      ]
+    },
+    {
+      "id": "partition_split",
+      "pattern": "(partition|split|throughput)",
+      "message": "Partition split or hot partition",
+      "cause": "Uneven data distribution causing hot partitions",
+      "solutions": [
+        {
+          "approach": "Review partition key",
+          "code": "// Choose high-cardinality partition key\n// Bad: /region (few values)\n// Good: /userId (many values)",
+          "when": "Hot partition detected"
+        },
+        {
+          "approach": "Synthetic partition key",
+          "code": "// Add suffix for better distribution\npartition_key = f\"{user_id}_{hash(timestamp) % 10}\"",
+          "when": "Low cardinality data"
+        }
+      ]
+    },
+    {
+      "id": "rate_limiting",
+      "pattern": "(429|rate.*limit|Request rate.*large|throttle)",
+      "message": "Request rate too large",
+      "cause": "Exceeding provisioned throughput (RU/s)",
+      "solutions": [
+        {
+          "approach": "Implement retry",
+          "code": "from azure.cosmos import exceptions\ntry:\n    container.upsert_item(item)\nexcept exceptions.CosmosHttpResponseError as e:\n    if e.status_code == 429:\n        retry_after = e.headers.get('x-ms-retry-after-ms', 1000)\n        time.sleep(retry_after / 1000)",
+          "when": "Handling 429 errors"
+        },
+        {
+          "approach": "Enable autoscale",
+          "code": "// Scale throughput automatically\ncontainer = database.create_container(\n    id='container',\n    offer_throughput=autoscale_max_throughput=10000\n)",
+          "when": "Variable workload"
+        }
+      ]
+    },
+    {
+      "id": "conflict_resolution",
+      "pattern": "(conflict|last.*write.*wins|merge)",
+      "message": "Write conflict in multi-region",
+      "cause": "Concurrent writes to same item in different regions",
+      "solutions": [
+        {
+          "approach": "Use custom conflict resolution",
+          "code": "// Configure custom stored procedure for conflicts\ncontainer_def['conflictResolutionPolicy'] = {\n    'mode': 'Custom',\n    'conflictResolutionProcedure': 'dbs/db/colls/coll/sprocs/resolver'\n}",
+          "when": "Need custom merge logic"
+        },
+        {
+          "approach": "Use ETags",
+          "code": "// Optimistic concurrency\nitem['_etag'] = current_etag\ntry:\n    container.replace_item(item, etag=current_etag)\nexcept exceptions.CosmosAccessConditionFailedError:\n    # Retry with fresh item",
+          "when": "Preventing lost updates"
+        }
+      ]
+    },
+    {
+      "id": "cross_partition_query",
+      "pattern": "(cross.*partition|fan.*out|expensive query)",
+      "message": "Expensive cross-partition query",
+      "cause": "Query spans multiple partitions",
+      "solutions": [
+        {
+          "approach": "Include partition key",
+          "code": "// Always filter by partition key\nquery = 'SELECT * FROM c WHERE c.pk = @pk AND c.status = @status'\ncontainer.query_items(query, parameters=[...], partition_key='pk-value')",
+          "when": "Can filter by partition"
+        },
+        {
+          "approach": "Enable parallel query",
+          "code": "container.query_items(\n    query,\n    enable_cross_partition_query=True,\n    max_degree_of_parallelism=10\n)",
+          "when": "Cross-partition unavoidable"
+        }
+      ]
+    }
+  ]
+}

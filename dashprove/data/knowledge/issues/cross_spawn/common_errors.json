@@ -1,0 +1,145 @@
+{
+  "tool": "cross_spawn",
+  "version": "7.x",
+  "last_updated": "2025-12-23",
+  "errors": [
+    {
+      "id": "enoent_error",
+      "pattern": "ENOENT|spawn.*ENOENT|not found",
+      "message": "Executable not found",
+      "cause": "Command doesn't exist or not in PATH",
+      "solutions": [
+        {
+          "approach": "Check command exists",
+          "code": "const which = require('which');\ntry {\n  which.sync('git');\n} catch {\n  console.error('git not installed');\n}",
+          "when": "Verify first"
+        },
+        {
+          "approach": "Use full path",
+          "code": "spawn('/usr/local/bin/node', ['script.js']);",
+          "when": "Known path"
+        },
+        {
+          "approach": "Handle Windows .cmd/.bat",
+          "code": "// cross-spawn handles this automatically\nconst spawn = require('cross-spawn');\nspawn('npm', ['install']);  // works on Windows too",
+          "when": "Windows scripts"
+        }
+      ]
+    },
+    {
+      "id": "error_event_not_handled",
+      "pattern": "unhandled.*error|Error.*spawn|spawn error not caught",
+      "message": "Spawn error not handled",
+      "cause": "Error event listener not attached",
+      "solutions": [
+        {
+          "approach": "Listen to error event",
+          "code": "const child = spawn('command', args);\nchild.on('error', (err) => {\n  console.error('Spawn error:', err);\n});",
+          "when": "Spawn failure"
+        },
+        {
+          "approach": "Handle all events",
+          "code": "const child = spawn('command', args);\nchild.on('error', handleError);\nchild.on('close', (code) => {\n  if (code !== 0) console.log('Exit code:', code);\n});\nchild.stdout.on('data', (data) => console.log(data.toString()));",
+          "when": "Full handling"
+        },
+        {
+          "approach": "Use sync variant",
+          "code": "const result = spawn.sync('command', args);\nif (result.error) {\n  console.error('Error:', result.error);\n}\nif (result.status !== 0) {\n  console.error('Failed with:', result.status);\n}",
+          "when": "Synchronous"
+        }
+      ]
+    },
+    {
+      "id": "windows_path_issues",
+      "pattern": "Windows|cmd|PATHEXT|bat|cmd|shell",
+      "message": "Windows-specific path issues",
+      "cause": "Windows handles executables differently",
+      "solutions": [
+        {
+          "approach": "Use cross-spawn",
+          "code": "// Don't use child_process.spawn directly\nconst spawn = require('cross-spawn');\nspawn('npm', ['test']);  // handles .cmd extension",
+          "when": "Cross-platform"
+        },
+        {
+          "approach": "Shell option",
+          "code": "spawn('npm', ['test'], { shell: true });\n// Runs through cmd.exe on Windows",
+          "when": "Need shell"
+        },
+        {
+          "approach": "Normalize paths",
+          "code": "const path = require('path');\nspawn(path.normalize('/some/path/cmd'), args);",
+          "when": "Path separators"
+        }
+      ]
+    },
+    {
+      "id": "argument_escaping",
+      "pattern": "argument.*invalid|unexpected.*argument|quote|escape",
+      "message": "Arguments not properly escaped",
+      "cause": "Special characters in arguments",
+      "solutions": [
+        {
+          "approach": "Pass as array",
+          "code": "// Correct - arguments as array\nspawn('echo', ['hello world']);  // properly handled\n\n// Wrong - don't concatenate\nspawn('echo hello world');  // won't work",
+          "when": "Basic arguments"
+        },
+        {
+          "approach": "Handle special chars",
+          "code": "// cross-spawn handles escaping\nspawn('echo', ['$HOME', 'file with spaces.txt']);\n// On Windows, quotes are added automatically",
+          "when": "Special chars"
+        },
+        {
+          "approach": "Use shell for complex cases",
+          "code": "spawn('sh', ['-c', 'echo $HOME && ls -la'], { shell: true });",
+          "when": "Shell features"
+        }
+      ]
+    },
+    {
+      "id": "stdio_issues",
+      "pattern": "stdout.*null|stderr.*null|pipe.*broken|no output",
+      "message": "Standard streams not working",
+      "cause": "stdio not configured correctly",
+      "solutions": [
+        {
+          "approach": "Configure stdio",
+          "code": "const child = spawn('command', args, {\n  stdio: ['pipe', 'pipe', 'pipe']  // stdin, stdout, stderr\n});\nchild.stdout.on('data', (d) => console.log(d.toString()));",
+          "when": "Need streams"
+        },
+        {
+          "approach": "Inherit stdio",
+          "code": "spawn('command', args, { stdio: 'inherit' });\n// Passes through to parent process",
+          "when": "Show output directly"
+        },
+        {
+          "approach": "Ignore output",
+          "code": "spawn('command', args, { stdio: 'ignore' });",
+          "when": "Silent execution"
+        }
+      ]
+    },
+    {
+      "id": "sync_buffer_overflow",
+      "pattern": "maxBuffer|buffer size|ENOBUFS|output truncated",
+      "message": "Output buffer exceeded",
+      "cause": "Command output exceeds default buffer size",
+      "solutions": [
+        {
+          "approach": "Increase buffer",
+          "code": "const result = spawn.sync('command', args, {\n  maxBuffer: 50 * 1024 * 1024  // 50MB\n});",
+          "when": "Large output"
+        },
+        {
+          "approach": "Use async and stream",
+          "code": "const child = spawn('command', args);\nconst chunks = [];\nchild.stdout.on('data', (chunk) => chunks.push(chunk));\nchild.on('close', () => {\n  const output = Buffer.concat(chunks).toString();\n});",
+          "when": "Very large output"
+        },
+        {
+          "approach": "Redirect to file",
+          "code": "const fs = require('fs');\nconst out = fs.openSync('output.txt', 'w');\nspawn('command', args, { stdio: ['ignore', out, 'ignore'] });",
+          "when": "Write to file"
+        }
+      ]
+    }
+  ]
+}

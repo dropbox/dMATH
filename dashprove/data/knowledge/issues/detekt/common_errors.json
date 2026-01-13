@@ -1,0 +1,278 @@
+{
+  "tool": "detekt",
+  "version": "1.23.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "complexity_long_method",
+      "pattern": "LongMethod|Method .* is too long",
+      "message": "Method exceeds maximum allowed lines",
+      "cause": "Method has too many lines of code, reducing readability",
+      "solutions": [
+        {
+          "approach": "Extract helper methods",
+          "code": "private fun processItem(item: Item) { ... }\nprivate fun validateInput(input: String) { ... }",
+          "when": "Method has distinct logical sections"
+        },
+        {
+          "approach": "Configure threshold",
+          "code": "complexity:\n  LongMethod:\n    threshold: 60",
+          "when": "Default threshold too strict"
+        },
+        {
+          "approach": "Suppress for specific method",
+          "code": "@Suppress(\"LongMethod\")\nfun complexMethod() { ... }",
+          "when": "Justified exception"
+        }
+      ]
+    },
+    {
+      "id": "complexity_complex_method",
+      "pattern": "ComplexMethod|has a complexity of \\d+",
+      "message": "Method cyclomatic complexity too high",
+      "cause": "Too many branches (if/when/loops) in single method",
+      "solutions": [
+        {
+          "approach": "Extract conditions",
+          "code": "private fun isValidState(): Boolean = ...\nif (isValidState()) { ... }",
+          "when": "Complex boolean expressions"
+        },
+        {
+          "approach": "Use polymorphism",
+          "code": "sealed class State { abstract fun handle() }\nclass StateA : State() { override fun handle() = ... }",
+          "when": "Large when expressions"
+        },
+        {
+          "approach": "Configure threshold",
+          "code": "complexity:\n  ComplexMethod:\n    threshold: 15",
+          "when": "Default too strict"
+        }
+      ]
+    },
+    {
+      "id": "style_magic_number",
+      "pattern": "MagicNumber|magic number",
+      "message": "Magic number should be named constant",
+      "cause": "Numeric literal lacks semantic meaning",
+      "solutions": [
+        {
+          "approach": "Extract to constant",
+          "code": "companion object {\n    private const val MAX_RETRIES = 3\n}\nrepeat(MAX_RETRIES) { ... }",
+          "when": "Number has business meaning"
+        },
+        {
+          "approach": "Configure ignored numbers",
+          "code": "style:\n  MagicNumber:\n    ignoreNumbers: ['-1', '0', '1', '2']",
+          "when": "Common values like 0, 1"
+        },
+        {
+          "approach": "Suppress locally",
+          "code": "@Suppress(\"MagicNumber\")\nval percentage = value / 100.0",
+          "when": "Obviously clear context"
+        }
+      ]
+    },
+    {
+      "id": "style_max_line_length",
+      "pattern": "MaxLineLength|line is longer than \\d+ characters",
+      "message": "Line exceeds maximum length",
+      "cause": "Single line too long for readability",
+      "solutions": [
+        {
+          "approach": "Break line at operators",
+          "code": "val result = firstPart\n    + secondPart\n    + thirdPart",
+          "when": "Long expressions"
+        },
+        {
+          "approach": "Extract variables",
+          "code": "val config = getConfiguration()\nval result = service.processWithConfig(config)",
+          "when": "Long method chains"
+        },
+        {
+          "approach": "Configure threshold",
+          "code": "style:\n  MaxLineLength:\n    maxLineLength: 140",
+          "when": "Wide monitors available"
+        }
+      ]
+    },
+    {
+      "id": "naming_function_naming",
+      "pattern": "FunctionNaming|function name .* does not match",
+      "message": "Function name violates naming convention",
+      "cause": "Function name not in camelCase or contains invalid characters",
+      "solutions": [
+        {
+          "approach": "Use camelCase",
+          "code": "fun processUserData() { ... }  // Not process_user_data",
+          "when": "Standard function"
+        },
+        {
+          "approach": "Configure for test methods",
+          "code": "naming:\n  FunctionNaming:\n    excludes: ['**/test/**']",
+          "when": "Test method names with backticks"
+        },
+        {
+          "approach": "Use backticks for tests",
+          "code": "@Test\nfun `should return empty when input is null`() { ... }",
+          "when": "Descriptive test names"
+        }
+      ]
+    },
+    {
+      "id": "naming_variable_naming",
+      "pattern": "VariableNaming|variable name .* does not match",
+      "message": "Variable name violates naming convention",
+      "cause": "Variable not in camelCase or inappropriate prefix",
+      "solutions": [
+        {
+          "approach": "Use camelCase",
+          "code": "val userName = ...  // Not user_name or UserName",
+          "when": "Standard variable"
+        },
+        {
+          "approach": "Remove Hungarian notation",
+          "code": "val name = ...  // Not strName or mName",
+          "when": "Using prefixes"
+        }
+      ]
+    },
+    {
+      "id": "empty_empty_function_block",
+      "pattern": "EmptyFunctionBlock|empty function block",
+      "message": "Function body is empty",
+      "cause": "Function declared but not implemented",
+      "solutions": [
+        {
+          "approach": "Add TODO comment",
+          "code": "override fun onPause() {\n    // TODO: Save state\n}",
+          "when": "Will implement later"
+        },
+        {
+          "approach": "Throw not implemented",
+          "code": "fun newFeature(): String = TODO(\"Implement in next sprint\")",
+          "when": "Placeholder"
+        },
+        {
+          "approach": "Use Unit explicitly",
+          "code": "override fun onResume() = Unit  // Intentionally empty",
+          "when": "Deliberately empty"
+        }
+      ]
+    },
+    {
+      "id": "potential_bugs_unsafe_cast",
+      "pattern": "UnsafeCast|unsafe cast",
+      "message": "Using unsafe cast (as) instead of safe cast (as?)",
+      "cause": "Cast can throw ClassCastException at runtime",
+      "solutions": [
+        {
+          "approach": "Use safe cast",
+          "code": "val str = value as? String ?: return",
+          "when": "Type may not match"
+        },
+        {
+          "approach": "Check type first",
+          "code": "if (value is String) {\n    val str = value  // Smart cast\n}",
+          "when": "Need conditional handling"
+        },
+        {
+          "approach": "Use filterIsInstance",
+          "code": "list.filterIsInstance<String>().forEach { ... }",
+          "when": "Filtering collection"
+        }
+      ]
+    },
+    {
+      "id": "potential_bugs_unused_parameter",
+      "pattern": "UnusedParameter|parameter .* is never used",
+      "message": "Function parameter is never used",
+      "cause": "Parameter declared but not referenced in function body",
+      "solutions": [
+        {
+          "approach": "Remove unused parameter",
+          "code": "fun process(data: Data) { ... }  // Removed unused logger param",
+          "when": "Parameter truly unnecessary"
+        },
+        {
+          "approach": "Rename to underscore",
+          "code": "override fun onCallback(_, result: Result) { ... }",
+          "when": "Required by interface but unused"
+        },
+        {
+          "approach": "Suppress if intentional",
+          "code": "@Suppress(\"UNUSED_PARAMETER\")\nfun apiCallback(context: Context) { ... }",
+          "when": "Future use or API requirement"
+        }
+      ]
+    },
+    {
+      "id": "style_wildcard_import",
+      "pattern": "WildcardImport|wildcard import",
+      "message": "Wildcard imports should be avoided",
+      "cause": "Star import hides actual dependencies",
+      "solutions": [
+        {
+          "approach": "Use explicit imports",
+          "code": "import kotlinx.coroutines.launch\nimport kotlinx.coroutines.async",
+          "when": "Few classes needed"
+        },
+        {
+          "approach": "Configure allowed wildcards",
+          "code": "style:\n  WildcardImport:\n    excludeImports: ['java.util.*', 'kotlinx.android.synthetic.*']",
+          "when": "Some wildcards acceptable"
+        },
+        {
+          "approach": "Let IDE organize",
+          "code": "// Use 'Optimize Imports' in Android Studio",
+          "when": "Auto-formatting"
+        }
+      ]
+    },
+    {
+      "id": "performance_spread_operator",
+      "pattern": "SpreadOperator|spread operator.*performance",
+      "message": "Spread operator creates array copy",
+      "cause": "Using * operator on arrays creates unnecessary copy",
+      "solutions": [
+        {
+          "approach": "Pass list directly",
+          "code": "fun process(items: List<String>) { ... }\nprocess(items)  // Not process(*items.toTypedArray())",
+          "when": "Can change signature"
+        },
+        {
+          "approach": "Use vararg at source",
+          "code": "fun log(vararg messages: String) = messages.forEach { println(it) }",
+          "when": "Defining vararg function"
+        },
+        {
+          "approach": "Suppress if minor",
+          "code": "@Suppress(\"SpreadOperator\")\nformat(*args)",
+          "when": "Small array, acceptable cost"
+        }
+      ]
+    },
+    {
+      "id": "coroutines_global_scope",
+      "pattern": "GlobalCoroutineUsage|GlobalScope",
+      "message": "GlobalScope should be avoided",
+      "cause": "GlobalScope ignores structured concurrency, can leak coroutines",
+      "solutions": [
+        {
+          "approach": "Use lifecycle scope",
+          "code": "lifecycleScope.launch {\n    // Automatically cancelled with lifecycle\n}",
+          "when": "In Activity/Fragment"
+        },
+        {
+          "approach": "Use viewModelScope",
+          "code": "viewModelScope.launch {\n    // Cancelled when ViewModel cleared\n}",
+          "when": "In ViewModel"
+        },
+        {
+          "approach": "Inject CoroutineScope",
+          "code": "class MyClass(private val scope: CoroutineScope) {\n    fun doWork() = scope.launch { ... }\n}",
+          "when": "Custom scope needed"
+        }
+      ]
+    }
+  ]
+}

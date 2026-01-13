@@ -1,0 +1,260 @@
+{
+  "tool": "appium",
+  "version": "2.4.0",
+  "last_updated": "2025-12-22",
+  "errors": [
+    {
+      "id": "session_not_created",
+      "pattern": "SessionNotCreatedException|session could not be created|Unable to create.*session",
+      "message": "Failed to create automation session",
+      "cause": "Driver or device configuration issue",
+      "solutions": [
+        {
+          "approach": "Check capabilities",
+          "code": "{\n  \"platformName\": \"Android\",\n  \"appium:automationName\": \"UiAutomator2\",\n  \"appium:deviceName\": \"emulator-5554\",\n  \"appium:app\": \"/path/to/app.apk\"\n}",
+          "when": "Capabilities missing"
+        },
+        {
+          "approach": "Install driver",
+          "code": "appium driver install uiautomator2\n# or for iOS:\nappium driver install xcuitest",
+          "when": "Driver not installed"
+        },
+        {
+          "approach": "Check device connected",
+          "code": "adb devices  # Android\nidevice_id -l  # iOS",
+          "when": "Device not found"
+        },
+        {
+          "approach": "Check app path",
+          "code": "// Use absolute path or URL:\n\"appium:app\": \"/Users/me/app.apk\"\n// Or app already installed:\n\"appium:appPackage\": \"com.example.app\",\n\"appium:appActivity\": \".MainActivity\"",
+          "when": "App not found"
+        }
+      ]
+    },
+    {
+      "id": "no_such_element",
+      "pattern": "NoSuchElementException|no such element|element could not be located",
+      "message": "Element not found on screen",
+      "cause": "Locator doesn't match any visible element",
+      "solutions": [
+        {
+          "approach": "Use Appium Inspector",
+          "code": "# Launch Appium Inspector\n# Connect and inspect actual hierarchy\n# Get correct locator strategy",
+          "when": "Debug locators"
+        },
+        {
+          "approach": "Wait for element",
+          "code": "const el = await driver.$(\"~accessibilityId\");\nawait el.waitForDisplayed({ timeout: 10000 });",
+          "when": "Element loads async"
+        },
+        {
+          "approach": "Try different locator",
+          "code": "// Try these strategies:\ndriver.$('~accessibilityId')  // Accessibility ID\ndriver.$('android=new UiSelector().text(\"Login\")')  // Android\ndriver.$('-ios class chain:**/XCUIElementTypeButton[`name == \"Login\"`]')  // iOS",
+          "when": "Wrong locator"
+        },
+        {
+          "approach": "Scroll to element",
+          "code": "await driver.execute('mobile: scroll', {\n  strategy: 'accessibility id',\n  selector: 'targetElement'\n});",
+          "when": "Element off screen"
+        }
+      ]
+    },
+    {
+      "id": "stale_element_reference",
+      "pattern": "StaleElementReferenceException|stale element|element is no longer valid",
+      "message": "Element reference became stale",
+      "cause": "Page changed after element was found",
+      "solutions": [
+        {
+          "approach": "Re-find element before action",
+          "code": "// Don't cache elements across page changes:\nasync function clickButton() {\n  const btn = await driver.$('~submit');\n  await btn.click();\n}",
+          "when": "Dynamic page"
+        },
+        {
+          "approach": "Add explicit wait",
+          "code": "await driver.waitUntil(async () => {\n  const el = await driver.$('~element');\n  return el.isDisplayed();\n}, { timeout: 5000 });",
+          "when": "Page transitioning"
+        }
+      ]
+    },
+    {
+      "id": "invalid_selector",
+      "pattern": "InvalidSelectorException|invalid selector|locator strategy .* is not supported",
+      "message": "Invalid locator strategy",
+      "cause": "Using wrong selector syntax for platform",
+      "solutions": [
+        {
+          "approach": "Use platform-specific selectors",
+          "code": "// Android UiAutomator:\ndriver.$('android=new UiSelector().resourceId(\"com.app:id/btn\")')\n\n// iOS predicate:\ndriver.$('-ios predicate string:name == \"Submit\"')\n\n// Cross-platform accessibility ID:\ndriver.$('~accessibilityId')",
+          "when": "Cross-platform"
+        },
+        {
+          "approach": "Check selector prefix",
+          "code": "// Prefixes:\n// ~ = accessibility id\n// android= = UiAutomator\n// -ios predicate string: = iOS predicate\n// -ios class chain: = iOS class chain",
+          "when": "Missing prefix"
+        }
+      ]
+    },
+    {
+      "id": "app_not_installed",
+      "pattern": "app.*not installed|Package .* not found|Could not find app",
+      "message": "Application not installed on device",
+      "cause": "App package not found on device",
+      "solutions": [
+        {
+          "approach": "Install app first",
+          "code": "adb install path/to/app.apk  # Android\nideviceinstaller -i path/to/app.ipa  # iOS",
+          "when": "Manual install"
+        },
+        {
+          "approach": "Use app capability",
+          "code": "{\n  \"appium:app\": \"/full/path/to/app.apk\"\n}",
+          "when": "Auto-install"
+        },
+        {
+          "approach": "Verify package name",
+          "code": "adb shell pm list packages | grep example\n# Get exact package name",
+          "when": "Wrong package name"
+        }
+      ]
+    },
+    {
+      "id": "driver_not_found",
+      "pattern": "driver.*not found|No installed driver|Could not find.*driver",
+      "message": "Appium driver not installed",
+      "cause": "Required automation driver missing",
+      "solutions": [
+        {
+          "approach": "List installed drivers",
+          "code": "appium driver list --installed",
+          "when": "Check installed"
+        },
+        {
+          "approach": "Install required driver",
+          "code": "# For Android:\nappium driver install uiautomator2\n\n# For iOS:\nappium driver install xcuitest\n\n# For Mac:\nappium driver install mac2",
+          "when": "Install driver"
+        },
+        {
+          "approach": "Update driver",
+          "code": "appium driver update uiautomator2",
+          "when": "Outdated driver"
+        }
+      ]
+    },
+    {
+      "id": "webview_context",
+      "pattern": "WebView|WEBVIEW|context.*not found|no such context",
+      "message": "WebView context issues",
+      "cause": "Can't switch to or find WebView context",
+      "solutions": [
+        {
+          "approach": "Get available contexts",
+          "code": "const contexts = await driver.getContexts();\nconsole.log(contexts);  // ['NATIVE_APP', 'WEBVIEW_com.app']",
+          "when": "Find context"
+        },
+        {
+          "approach": "Switch to WebView",
+          "code": "const contexts = await driver.getContexts();\nconst webview = contexts.find(c => c.includes('WEBVIEW'));\nawait driver.switchContext(webview);",
+          "when": "Test WebView"
+        },
+        {
+          "approach": "Enable WebView debugging",
+          "code": "// In Android app:\nWebView.setWebContentsDebuggingEnabled(true);\n\n// Capability:\n\"appium:chromeOptions\": { \"w3c\": false }",
+          "when": "WebView not visible"
+        }
+      ]
+    },
+    {
+      "id": "adb_server_error",
+      "pattern": "adb.*error|ADB server|daemon not running|cannot connect to daemon",
+      "message": "ADB connection error",
+      "cause": "Android Debug Bridge server issue",
+      "solutions": [
+        {
+          "approach": "Restart ADB",
+          "code": "adb kill-server\nadb start-server",
+          "when": "ADB stuck"
+        },
+        {
+          "approach": "Check USB debugging",
+          "code": "# On device:\n# Settings > Developer options > USB debugging: ON",
+          "when": "Device not authorized"
+        },
+        {
+          "approach": "Revoke authorizations",
+          "code": "# On device:\n# Settings > Developer options > Revoke USB debugging authorizations\n# Then reconnect and accept prompt",
+          "when": "Auth issues"
+        }
+      ]
+    },
+    {
+      "id": "ios_signing_error",
+      "pattern": "Code signing|Provisioning profile|Unable to launch|Xcode.*error",
+      "message": "iOS code signing or Xcode error",
+      "cause": "Provisioning or signing configuration issue",
+      "solutions": [
+        {
+          "approach": "Update WDA",
+          "code": "# In capabilities:\n{\n  \"appium:xcodeOrgId\": \"YOUR_TEAM_ID\",\n  \"appium:xcodeSigningId\": \"iPhone Developer\"\n}",
+          "when": "WebDriverAgent signing"
+        },
+        {
+          "approach": "Build WDA manually",
+          "code": "cd ~/.appium/node_modules/appium-xcuitest-driver/node_modules/appium-webdriveragent\nxcodebuild -project WebDriverAgent.xcodeproj -scheme WebDriverAgentRunner -destination 'id=DEVICE_UDID' test",
+          "when": "Manual WDA build"
+        },
+        {
+          "approach": "Use simulator",
+          "code": "{\n  \"platformName\": \"iOS\",\n  \"appium:deviceName\": \"iPhone 14\",\n  \"appium:platformVersion\": \"16.0\"\n}",
+          "when": "Avoid signing (simulator)"
+        }
+      ]
+    },
+    {
+      "id": "keyboard_not_visible",
+      "pattern": "keyboard.*not visible|Cannot interact with keyboard|IME.*error",
+      "message": "Keyboard interaction failed",
+      "cause": "Keyboard not visible or can't send keys",
+      "solutions": [
+        {
+          "approach": "Use sendKeys instead",
+          "code": "const field = await driver.$('~inputField');\nawait field.setValue('text to type');",
+          "when": "Direct input"
+        },
+        {
+          "approach": "Hide keyboard",
+          "code": "await driver.hideKeyboard();",
+          "when": "Keyboard blocking"
+        },
+        {
+          "approach": "Configure keyboard capability",
+          "code": "{\n  \"appium:unicodeKeyboard\": true,\n  \"appium:resetKeyboard\": true\n}",
+          "when": "Unicode input needed"
+        }
+      ]
+    },
+    {
+      "id": "permission_dialog",
+      "pattern": "permission.*dialog|Allow.*denied|system.*popup",
+      "message": "System permission dialog blocking test",
+      "cause": "OS permission prompt needs handling",
+      "solutions": [
+        {
+          "approach": "Auto-accept permissions (Android)",
+          "code": "{\n  \"appium:autoGrantPermissions\": true\n}",
+          "when": "Android auto-grant"
+        },
+        {
+          "approach": "Handle iOS alert",
+          "code": "{\n  \"appium:autoAcceptAlerts\": true\n}\n// Or handle manually:\nawait driver.acceptAlert();",
+          "when": "iOS alerts"
+        },
+        {
+          "approach": "Grant via ADB",
+          "code": "adb shell pm grant com.example.app android.permission.CAMERA",
+          "when": "Pre-grant specific permission"
+        }
+      ]
+    }
+  ]
+}
