@@ -5,6 +5,8 @@
 
 Formal verification and theorem proving tools.
 
+*All d* projects are entirely AI generated.*
+
 ## Thesis
 
 **Proof is the only scalable code review.** AI generates code faster than humans can review it. But we don't need to understand the code or remember the proof—we just need to verify that a proof exists. These tools make verification practical: SMT solvers check constraints, model checkers explore state spaces, theorem provers verify logic. The result is durable progress without growing context windows or trusting code we haven't read.
