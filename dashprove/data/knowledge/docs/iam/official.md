@@ -31,7 +31,7 @@ aws iam create-access-key --user-name developer
 aws iam list-access-keys --user-name developer
 
 # Delete access key
-aws iam delete-access-key --user-name developer --access-key-id AKIAIOSFODNN7EXAMPLE
+aws iam delete-access-key --user-name developer --access-key-id AKIAFAKEEXAMPLEKEY00
 ```
 
 ### Groups

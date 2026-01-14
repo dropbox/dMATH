@@ -64,18 +64,18 @@ region = us-east-1
 ```ini
 # ~/.aws/credentials
 [default]
-aws_access_key_id = AKIAIOSFODNN7EXAMPLE
+aws_access_key_id = AKIAFAKEEXAMPLEKEY00
 aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 [production]
-aws_access_key_id = AKIAI44QH8DHBEXAMPLE
+aws_access_key_id = AKIAFAKEEXAMPLEKEY01
 aws_secret_access_key = je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY
 ```
 
 ### Environment Variables
 
 ```bash
-export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+export AWS_ACCESS_KEY_ID=AKIAFAKEEXAMPLEKEY00
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_DEFAULT_REGION=us-east-1
 export AWS_PROFILE=production
