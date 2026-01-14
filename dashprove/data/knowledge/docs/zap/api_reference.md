@@ -952,7 +952,7 @@ onfig)
 def set_user_auth_config():
     user = 'Test User'
     username = '[[email protected]][71]'
-    password = 'weakPassword'
+    password = 'FAKE_PASSWORD_EXAMPLE'
 
     user_id = zap.users.new_user(context_id, user)
     user_auth_config = 'username=' + urllib.parse.quote(username) + '&password=' + urllib.parse.quot
@@ -1042,7 +1042,7 @@ d(contextId).toString(0));
         // Prepare info
         String user = "Test User";
         String username = "[[email protected]][72]";
-        String password = "weakPassword";
+        String password = "FAKE_PASSWORD_EXAMPLE";
 
         // Make sure we have at least one user
         String userId = extractUserId(clientApi.users.newUser(contextId, user));
@@ -1604,7 +1604,7 @@ onfig)
 def set_user_auth_config():
     user = 'Test User'
     username = '[[email protected]][91]'
-    password = 'testtest'
+    password = 'FAKE_TEST_PASS'
 
     user_id = zap.users.new_user(context_id, user)
     user_auth_config = 'username=' + urllib.parse.quote(username) + '&password=' + urllib.parse.quot
@@ -1661,7 +1661,7 @@ tedEncodingException {
         // Prepare info
         String user = "Test User";
         String username = "[[email protected]][92]";
-        String password = "testtest";
+        String password = "FAKE_TEST_PASS";
 
         // Make sure we have at least one user
         String userId = extractUserId(clientApi.users.newUser(contextId, user));

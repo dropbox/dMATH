@@ -237,7 +237,7 @@ class User(BaseModel):
     name: str
     password: str
 
-user = User(id=1, name="John", password="secret")
+user = User(id=1, name="John", password="FAKE_SECRET")
 
 # To dict
 user.model_dump()
