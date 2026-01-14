@@ -1272,7 +1272,7 @@ est_data)
 def set_user_auth_config():
     user = 'Administrator'
     username = 'admin'
-    password = 'password'
+    password = 'FAKE_PASS'
 
     user_id = zap.users.new_user(context_id, user)
     user_auth_config = 'Username=' + urllib.parse.quote(username) + '&Password=' + urllib.parse.quot
@@ -1358,7 +1358,7 @@ nsupportedEncodingException {
         // Prepare info
         String user = "Admin";
         String username = "admin";
-        String password = "password";
+        String password = "FAKE_PASS";
 
         // Make sure we have at least one user
         String userId = extractUserId(clientApi.users.newUser(contextId, user));
