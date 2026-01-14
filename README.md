@@ -5,7 +5,7 @@
 
 Formal verification and theorem proving tools.
 
-*All d* projects are entirely AI generated.*
+> All d* projects are entirely AI generated.
 
 ## Thesis
 
